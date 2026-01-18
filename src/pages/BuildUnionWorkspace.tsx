@@ -15,10 +15,10 @@ const newsItems = [
   },
   {
     id: 2,
-    title: "AI-Powered Document Analysis Now Available",
-    description: "Our dual-engine analysis system is now live, combining OpenAI and Gemini for unparalleled accuracy in document processing.",
+    title: "Multi-Engine Smart Synthesis Agents",
+    description: "Our system leverages industry-leading AI reasoning engines, like OpenAI and Google Gemini, orchestrated through the MESSA synthesis layer to support complex, construction-grade decision making.",
     date: "Jan 10, 2026",
-    category: "Feature",
+    category: "Core Intelligence: M.E.S.S.A.",
   },
   {
     id: 3,
