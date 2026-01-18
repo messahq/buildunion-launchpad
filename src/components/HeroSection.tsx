@@ -32,8 +32,8 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-hero-overlay/60" />
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col items-start justify-center px-6 pt-0 md:-mt-32">
-        <div className="max-w-4xl">
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 pt-0 md:-mt-32">
+        <div className="max-w-4xl text-center">
           <h1 
             className="font-display text-4xl font-light tracking-tight text-hero-text sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl animate-fade-in-up"
             style={{ animationDelay: "0.2s" }}
