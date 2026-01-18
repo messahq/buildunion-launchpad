@@ -1,5 +1,7 @@
+import { useState } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
+import AskMessaChat from "@/components/AskMessaChat";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle } from "lucide-react";
@@ -45,6 +47,7 @@ const processSteps = [
 
 const BuildUnionWorkspace = () => {
   const navigate = useNavigate();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (
     <main className="bg-slate-50 min-h-screen">
@@ -771,6 +774,19 @@ const BuildUnionWorkspace = () => {
       </section>
 
       <BuildUnionFooter />
+
+      {/* Ask Messa Floating Button */}
+      {!isChatOpen && (
+        <button
+          onClick={() => setIsChatOpen(true)}
+          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50"
+        >
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 group-hover:scale-110 transition-transform" />
+        </button>
+      )}
+
+      {/* Ask Messa Chat */}
+      <AskMessaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </main>
   );
 };
