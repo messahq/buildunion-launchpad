@@ -7,24 +7,49 @@ export interface SubscriptionData {
   tier: "pro" | "premium" | null;
   productId: string | null;
   subscriptionEnd: string | null;
+  billingInterval: "monthly" | "yearly" | null;
 }
 
 export const SUBSCRIPTION_TIERS = {
   pro: {
     name: "Pro",
-    price_id: "price_1Sr2e51Vyb1rmc7TrmRauDEo",
-    product_id: "prod_Tog02cwkocBGA0",
-    price: 19.99,
+    monthly: {
+      price_id: "price_1Sr2e51Vyb1rmc7TrmRauDEo",
+      product_id: "prod_Tog02cwkocBGA0",
+      price: 19.99,
+    },
+    yearly: {
+      price_id: "price_1Sr2lb1Vyb1rmc7Tpd0pq7Yr",
+      product_id: "prod_Tog7TlfoWskDXG",
+      price: 199.99,
+      monthlyEquivalent: 16.67,
+    },
     currency: "CAD",
   },
   premium: {
     name: "Premium",
-    price_id: "price_1Sr2eI1Vyb1rmc7TOD7OzXWa",
-    product_id: "prod_Tog0mYcKDEXUfl",
-    price: 49.99,
+    monthly: {
+      price_id: "price_1Sr2eI1Vyb1rmc7TOD7OzXWa",
+      product_id: "prod_Tog0mYcKDEXUfl",
+      price: 49.99,
+    },
+    yearly: {
+      price_id: "price_1Sr2lr1Vyb1rmc7TJuydqxZ0",
+      product_id: "prod_Tog8IdlcfqOduT",
+      price: 499.99,
+      monthlyEquivalent: 41.67,
+    },
     currency: "CAD",
   },
 } as const;
+
+// All product IDs for tier detection
+export const PRODUCT_TO_TIER: Record<string, { tier: "pro" | "premium"; interval: "monthly" | "yearly" }> = {
+  "prod_Tog02cwkocBGA0": { tier: "pro", interval: "monthly" },
+  "prod_Tog7TlfoWskDXG": { tier: "pro", interval: "yearly" },
+  "prod_Tog0mYcKDEXUfl": { tier: "premium", interval: "monthly" },
+  "prod_Tog8IdlcfqOduT": { tier: "premium", interval: "yearly" },
+};
 
 export const useSubscription = () => {
   const { user, session } = useAuth();
@@ -33,6 +58,7 @@ export const useSubscription = () => {
     tier: null,
     productId: null,
     subscriptionEnd: null,
+    billingInterval: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +70,7 @@ export const useSubscription = () => {
         tier: null,
         productId: null,
         subscriptionEnd: null,
+        billingInterval: null,
       });
       return;
     }
@@ -60,11 +87,14 @@ export const useSubscription = () => {
 
       if (fnError) throw fnError;
 
+      const productInfo = data.product_id ? PRODUCT_TO_TIER[data.product_id] : null;
+
       setSubscription({
         subscribed: data.subscribed,
-        tier: data.tier,
+        tier: productInfo?.tier || null,
         productId: data.product_id,
         subscriptionEnd: data.subscription_end,
+        billingInterval: productInfo?.interval || null,
       });
     } catch (err) {
       console.error("Error checking subscription:", err);

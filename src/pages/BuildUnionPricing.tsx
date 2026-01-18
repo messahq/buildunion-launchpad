@@ -1,9 +1,11 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Check, Zap, Crown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +17,7 @@ const BuildUnionPricing = () => {
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { subscription, loading: subLoading, createCheckout, openCustomerPortal, checkSubscription } = useSubscription();
+  const [isAnnual, setIsAnnual] = useState(false);
 
   // Handle checkout result
   useEffect(() => {
@@ -34,7 +37,10 @@ const BuildUnionPricing = () => {
     }
 
     try {
-      await createCheckout(SUBSCRIPTION_TIERS[tier].price_id);
+      const priceId = isAnnual 
+        ? SUBSCRIPTION_TIERS[tier].yearly.price_id 
+        : SUBSCRIPTION_TIERS[tier].monthly.price_id;
+      await createCheckout(priceId);
     } catch (error) {
       console.error("Checkout error:", error);
       toast.error("An error occurred while initiating payment");
@@ -52,6 +58,20 @@ const BuildUnionPricing = () => {
 
   const isCurrentPlan = (tier: "pro" | "premium") => {
     return subscription.tier === tier;
+  };
+
+  const getPrice = (tier: "pro" | "premium") => {
+    if (isAnnual) {
+      return SUBSCRIPTION_TIERS[tier].yearly.monthlyEquivalent.toFixed(2);
+    }
+    return SUBSCRIPTION_TIERS[tier].monthly.price.toFixed(2);
+  };
+
+  const getFullPrice = (tier: "pro" | "premium") => {
+    if (isAnnual) {
+      return SUBSCRIPTION_TIERS[tier].yearly.price.toFixed(2);
+    }
+    return SUBSCRIPTION_TIERS[tier].monthly.price.toFixed(2);
   };
 
   const plans = [
@@ -74,7 +94,9 @@ const BuildUnionPricing = () => {
     {
       id: "pro" as const,
       name: "Pro",
-      price: "19.99",
+      price: getPrice("pro"),
+      fullPrice: getFullPrice("pro"),
+      originalMonthly: SUBSCRIPTION_TIERS.pro.monthly.price.toFixed(2),
       description: "Professional tools for construction experts",
       icon: <Zap className="w-6 h-6 text-blue-500" />,
       features: [
@@ -92,7 +114,9 @@ const BuildUnionPricing = () => {
     {
       id: "premium" as const,
       name: "Premium",
-      price: "49.99",
+      price: getPrice("premium"),
+      fullPrice: getFullPrice("premium"),
+      originalMonthly: SUBSCRIPTION_TIERS.premium.monthly.price.toFixed(2),
       description: "Full access for larger teams",
       icon: <Crown className="w-6 h-6 text-amber-500" />,
       features: [
@@ -124,9 +148,30 @@ const BuildUnionPricing = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Choose the Right Plan for You
           </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-8">
             Build the future with BuildUnion. Every plan includes essential features to get you started.
           </p>
+          
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-4">
+            <Label htmlFor="billing-toggle" className={`text-lg ${!isAnnual ? "text-white font-semibold" : "text-slate-400"}`}>
+              Monthly
+            </Label>
+            <Switch
+              id="billing-toggle"
+              checked={isAnnual}
+              onCheckedChange={setIsAnnual}
+              className="data-[state=checked]:bg-amber-500"
+            />
+            <Label htmlFor="billing-toggle" className={`text-lg ${isAnnual ? "text-white font-semibold" : "text-slate-400"}`}>
+              Annual
+            </Label>
+            {isAnnual && (
+              <Badge className="bg-green-500 text-white ml-2">
+                Save 2 months!
+              </Badge>
+            )}
+          </div>
         </div>
       </section>
 
@@ -155,8 +200,20 @@ const BuildUnionPricing = () => {
                   </div>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold text-slate-900">C${plan.price}</span>
-                    {plan.id !== "free" && <span className="text-slate-500">/mo</span>}
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold text-slate-900">C${plan.price}</span>
+                      <span className="text-slate-500">/mo</span>
+                    </div>
+                    {plan.id !== "free" && isAnnual && (
+                      <div className="mt-1 space-y-1">
+                        <p className="text-sm text-slate-500 line-through">
+                          C${plan.originalMonthly}/mo
+                        </p>
+                        <p className="text-sm text-green-600 font-medium">
+                          C${plan.fullPrice} billed annually
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -202,9 +259,12 @@ const BuildUnionPricing = () => {
             <div className="text-center mt-12">
               <p className="text-slate-600 mb-4">
                 Current subscription: <strong className="text-slate-900 capitalize">{subscription.tier}</strong>
+                {subscription.billingInterval && (
+                  <span className="text-slate-500"> ({subscription.billingInterval})</span>
+                )}
                 {subscription.subscriptionEnd && (
                   <span className="text-slate-500">
-                    {" "}(valid until: {new Date(subscription.subscriptionEnd).toLocaleDateString("en-US")})
+                    {" "}· valid until: {new Date(subscription.subscriptionEnd).toLocaleDateString("en-US")}
                   </span>
                 )}
               </p>
@@ -223,15 +283,15 @@ const BuildUnionPricing = () => {
           <div className="space-y-6">
             <div>
               <h3 className="font-semibold text-lg mb-2">When will I be billed?</h3>
-              <p className="text-slate-600">The first monthly fee is charged immediately upon purchase, then on the same date each month.</p>
+              <p className="text-slate-600">The first fee is charged immediately upon purchase. For monthly plans, you're billed each month. For annual plans, you're billed once per year.</p>
             </div>
             <div>
               <h3 className="font-semibold text-lg mb-2">Can I cancel anytime?</h3>
               <p className="text-slate-600">Yes, you can cancel your subscription at any time using the "Manage Subscription" button. After cancellation, you can still use the service until the end of the billing period.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Can I switch plans?</h3>
-              <p className="text-slate-600">Absolutely! You can upgrade or downgrade to a different plan at any time through the "Manage Subscription" menu.</p>
+              <h3 className="font-semibold text-lg mb-2">Can I switch between monthly and annual?</h3>
+              <p className="text-slate-600">Absolutely! You can switch billing periods at any time through the "Manage Subscription" menu. Switching to annual saves you 2 months!</p>
             </div>
           </div>
         </div>
