@@ -1113,9 +1113,13 @@ const BuildUnionProjectDetails = () => {
                   <span className="text-sm font-medium text-slate-900">{documents.length + siteImageUrls.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Doc Size</span>
+                  <span className="text-sm text-slate-500">Total Size</span>
                   <span className="text-sm font-medium text-slate-900">
-                    {formatFileSize(documents.reduce((acc, d) => acc + (d.file_size || 0), 0))}
+                    {documents.reduce((acc, d) => acc + (d.file_size || 0), 0) > 0 
+                      ? formatFileSize(documents.reduce((acc, d) => acc + (d.file_size || 0), 0))
+                      : siteImageUrls.length > 0 
+                        ? `${siteImageUrls.length} image${siteImageUrls.length !== 1 ? 's' : ''}`
+                        : 'No files'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -1161,14 +1165,14 @@ const BuildUnionProjectDetails = () => {
 
             {/* Messages */}
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-              {documents.length === 0 ? (
+              {documents.length === 0 && siteImageUrls.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center px-4">
                   <Brain className="h-12 w-12 text-slate-300 mb-4" />
                   <h4 className="text-lg font-semibold text-slate-900 mb-2">
-                    Upload Documents First
+                    Upload Files First
                   </h4>
                   <p className="text-slate-500 text-sm leading-relaxed">
-                    Upload project documents to enable AI analysis with dual-engine verification.
+                    Upload project documents or site photos to enable AI analysis with dual-engine verification.
                   </p>
                 </div>
               ) : messages.length === 0 ? (
@@ -1177,40 +1181,52 @@ const BuildUnionProjectDetails = () => {
                     <Brain className="h-8 w-8 text-white" />
                   </div>
                   <h4 className="text-lg font-semibold text-slate-900 mb-2">
-                    Ask About Your Documents
+                    Ask About Your Project
                   </h4>
                   <p className="text-slate-500 text-sm leading-relaxed mb-4">
-                    I analyze your project documents using dual AI engines. Only verified information is shown.
+                    I analyze your {documents.length > 0 ? 'documents' : ''}{documents.length > 0 && siteImageUrls.length > 0 ? ' and ' : ''}{siteImageUrls.length > 0 ? 'site photos' : ''} using dual AI engines. Only verified information is shown.
                   </p>
                   {/* Quick Questions */}
                   <div className="space-y-2 w-full max-w-xs">
                     <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Quick Questions
                     </p>
+                    {siteImageUrls.length > 0 && (
+                      <button
+                        onClick={() => handleQuickQuestion("Analyze the site photos and describe what you see")}
+                        className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
+                      >
+                        📷 Analyze site photos
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleQuickQuestion("Summarize key project details from the documents")}
+                      onClick={() => handleQuickQuestion("Summarize key project details")}
                       className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
                     >
                       📋 Summarize key project details
                     </button>
                     <button
-                      onClick={() => handleQuickQuestion("Identify potential risks mentioned in documents")}
+                      onClick={() => handleQuickQuestion("Identify potential risks or issues")}
                       className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
                     >
                       ⚠️ Identify potential risks
                     </button>
-                    <button
-                      onClick={() => handleQuickQuestion("Extract timeline and milestones from the documents")}
-                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                    >
-                      📅 Extract timeline & milestones
-                    </button>
-                    <button
-                      onClick={() => handleQuickQuestion("Review budget and cost information")}
-                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                    >
-                      💰 Review budget & costs
-                    </button>
+                    {documents.length > 0 && (
+                      <>
+                        <button
+                          onClick={() => handleQuickQuestion("Extract timeline and milestones from the documents")}
+                          className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
+                        >
+                          📅 Extract timeline & milestones
+                        </button>
+                        <button
+                          onClick={() => handleQuickQuestion("Review budget and cost information")}
+                          className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
+                        >
+                          💰 Review budget & costs
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -1251,7 +1267,6 @@ const BuildUnionProjectDetails = () => {
               )}
             </ScrollArea>
 
-            {/* Input */}
             <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
               <div className="flex gap-2">
                 <Input
@@ -1259,13 +1274,19 @@ const BuildUnionProjectDetails = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={documents.length === 0 ? "Upload documents first..." : "Ask about your documents..."}
+                  placeholder={
+                    documents.length === 0 && siteImageUrls.length === 0 
+                      ? "Upload files first..." 
+                      : siteImageUrls.length > 0 && documents.length === 0
+                        ? "Ask about your site photos..."
+                        : "Ask about your documents..."
+                  }
                   className="flex-1"
-                  disabled={isLoading || documents.length === 0 || !user}
+                  disabled={isLoading || (documents.length === 0 && siteImageUrls.length === 0) || !user}
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!input.trim() || isLoading || documents.length === 0 || !user}
+                  disabled={!input.trim() || isLoading || (documents.length === 0 && siteImageUrls.length === 0) || !user}
                   className="bg-cyan-500 hover:bg-cyan-600 text-white"
                 >
                   <Send className="h-4 w-4" />
