@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
+import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
 import OrbPage from "./pages/OrbPage";
 import NotFound from "./pages/NotFound";
 
@@ -19,6 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/buildunion" element={<BuildUnion />} />
+          <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
           <Route path="/orb" element={<OrbPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
