@@ -5,51 +5,116 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <main className="relative min-h-screen w-full bg-slate-50 flex items-center justify-center overflow-hidden">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-white to-slate-50" />
+    <main className="relative min-h-screen w-full bg-slate-950 flex items-center justify-center overflow-hidden">
+      {/* Deep space background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
       
-      {/* Subtle grid pattern */}
-      <div 
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgb(0 0 0) 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }}
-      />
+      {/* Animated stars */}
+      <div className="absolute inset-0">
+        {[...Array(50)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-white animate-pulse"
+            style={{
+              width: Math.random() * 2 + 1 + 'px',
+              height: Math.random() * 2 + 1 + 'px',
+              left: Math.random() * 100 + '%',
+              top: Math.random() * 100 + '%',
+              animationDelay: Math.random() * 3 + 's',
+              animationDuration: Math.random() * 2 + 2 + 's',
+              opacity: Math.random() * 0.5 + 0.2
+            }}
+          />
+        ))}
+      </div>
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6">
         {/* MessaDock Title */}
-        <h1 className="font-display text-2xl font-light tracking-widest text-slate-400 mb-12 uppercase">
+        <h1 className="font-display text-2xl font-light tracking-[0.3em] text-slate-400/80 mb-16 uppercase animate-pulse">
           MessaDock
         </h1>
 
-        {/* Interactive Orb */}
+        {/* Interactive Orb Container */}
         <button
           onClick={() => navigate("/buildunion")}
-          className="relative group cursor-pointer transition-all duration-500 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-slate-200 rounded-full"
+          className="relative group cursor-pointer focus:outline-none rounded-full"
           aria-label="Enter BuildUnion"
         >
-          {/* Glow effect on hover */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-400/20 to-cyan-400/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-150" />
+          {/* Outer glow rings - breathing animation */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500/30 to-cyan-500/30 blur-3xl scale-150 animate-[pulse_4s_ease-in-out_infinite]" />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500/20 to-orange-500/20 blur-2xl scale-125 animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
           
-          {/* Orb image */}
-          <img
-            src={messaOrb}
-            alt="MESSA Orb"
-            className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain drop-shadow-2xl transition-all duration-500 group-hover:drop-shadow-[0_0_60px_rgba(251,146,60,0.3)]"
+          {/* Rotating energy ring */}
+          <div 
+            className="absolute inset-[-20px] rounded-full border border-cyan-500/30 animate-[spin_20s_linear_infinite]"
+            style={{
+              background: 'conic-gradient(from 0deg, transparent, rgba(6, 182, 212, 0.3), transparent, rgba(251, 146, 60, 0.3), transparent)'
+            }}
           />
           
-          {/* Subtle pulse animation ring */}
-          <div className="absolute inset-0 rounded-full border border-slate-200/50 animate-ping opacity-20" />
+          {/* Second rotating ring - opposite direction */}
+          <div 
+            className="absolute inset-[-40px] rounded-full border border-orange-500/20 animate-[spin_30s_linear_infinite_reverse]"
+            style={{
+              background: 'conic-gradient(from 180deg, transparent, rgba(251, 146, 60, 0.2), transparent, rgba(6, 182, 212, 0.2), transparent)'
+            }}
+          />
+
+          {/* Orb container with breathing effect */}
+          <div className="relative animate-[pulse_4s_cubic-bezier(0.4,0,0.6,1)_infinite]">
+            {/* Inner glow */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400/40 to-cyan-400/40 blur-xl scale-90" />
+            
+            {/* Orb image with floating animation */}
+            <img
+              src={messaOrb}
+              alt="MESSA Orb"
+              className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain transition-all duration-700 group-hover:scale-110"
+              style={{
+                animation: 'float 6s ease-in-out infinite',
+                filter: 'drop-shadow(0 0 40px rgba(251, 146, 60, 0.4)) drop-shadow(0 0 80px rgba(6, 182, 212, 0.3))'
+              }}
+            />
+          </div>
+          
+          {/* Particle effects */}
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full"
+              style={{
+                background: i % 2 === 0 ? 'rgba(251, 146, 60, 0.6)' : 'rgba(6, 182, 212, 0.6)',
+                left: '50%',
+                top: '50%',
+                animation: `orbit ${8 + i * 2}s linear infinite`,
+                animationDelay: `${i * 0.5}s`,
+                transformOrigin: `${120 + i * 20}px 0`
+              }}
+            />
+          ))}
         </button>
 
-        {/* Subtle hint text */}
-        <p className="mt-12 text-sm text-slate-400 font-light tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Hint text with fade */}
+        <p className="mt-16 text-sm text-slate-500 font-light tracking-widest uppercase animate-pulse">
           Click to enter
         </p>
       </div>
+
+      {/* Custom keyframes */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-10px) rotate(1deg); }
+          50% { transform: translateY(0px) rotate(0deg); }
+          75% { transform: translateY(-5px) rotate(-1deg); }
+        }
+        
+        @keyframes orbit {
+          from { transform: rotate(0deg) translateX(150px) rotate(0deg); }
+          to { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+        }
+      `}</style>
     </main>
   );
 };
