@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +23,9 @@ import {
   ShieldCheck,
   Scale,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Save,
+  BookmarkCheck
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,6 +57,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  question?: string; // The user's question that triggered this response
   verification?: {
     status: "verified" | "not-verified" | "gemini-only" | "openai-only" | "error";
     engines: { gemini: boolean; openai: boolean };
@@ -67,6 +71,7 @@ interface Message {
     gemini: "idle" | "analyzing" | "complete" | "error";
     openai: "idle" | "verifying" | "complete" | "error";
   };
+  isSaved?: boolean;
 }
 
 interface DualEngineChatProps {
@@ -75,11 +80,12 @@ interface DualEngineChatProps {
 }
 
 const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [savingMessageId, setSavingMessageId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -111,16 +117,19 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
+    const userQuestion = input.trim();
+    
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: "user",
-      content: input.trim(),
+      content: userQuestion,
     };
 
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
       role: "assistant",
       content: "",
+      question: userQuestion, // Store the original question
       isLoading: true,
       analysisSteps: createInitialSteps(),
       engineStatus: {
@@ -185,6 +194,7 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
             ? {
                 ...m,
                 content: data.content,
+                question: userQuestion,
                 verification: data.verification,
                 sources: data.sources,
                 engineResponses: data.engineResponses,
@@ -223,6 +233,79 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
     }
   };
 
+  const saveSynthesis = async (message: Message) => {
+    if (!user || !message.verification?.verified || message.isSaved) return;
+
+    setSavingMessageId(message.id);
+    
+    try {
+      const { error } = await supabase.from("project_syntheses").insert({
+        project_id: projectId,
+        user_id: user.id,
+        question: message.question || "Unknown question",
+        answer: message.content,
+        gemini_response: message.engineResponses?.gemini || null,
+        openai_response: message.engineResponses?.openai || null,
+        verification_status: message.verification.status,
+        sources: message.sources || [],
+      });
+
+      if (error) throw error;
+
+      // Mark as saved
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === message.id ? { ...m, isSaved: true } : m
+        )
+      );
+
+      toast.success("Synthesis saved to project!");
+    } catch (err) {
+      console.error("Save synthesis error:", err);
+      toast.error("Failed to save synthesis");
+    } finally {
+      setSavingMessageId(null);
+    }
+  };
+
+  const renderSaveButton = (message: Message) => {
+    // Only show for verified dual-engine responses
+    if (!message.verification?.verified || message.isLoading) return null;
+
+    if (message.isSaved) {
+      return (
+        <div className="mt-3 flex items-center gap-2 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+          <BookmarkCheck className="h-4 w-4 text-green-600" />
+          <span className="text-sm font-medium text-green-600">
+            Saved to Project
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="mt-3 w-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-300 hover:border-amber-400 hover:bg-amber-500/20 text-amber-700"
+        onClick={() => saveSynthesis(message)}
+        disabled={savingMessageId === message.id}
+      >
+        {savingMessageId === message.id ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Saving...
+          </>
+        ) : (
+          <>
+            <Save className="h-4 w-4 mr-2" />
+            Save to Project
+          </>
+        )}
+      </Button>
+    );
+  };
+
   const getVerificationBadge = (verification?: Message["verification"]) => {
     if (!verification) return null;
 
@@ -232,10 +315,10 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
           <CheckCircle2 className="h-4 w-4 text-green-500" />
           <span className="text-sm font-medium text-green-600">Verified by Dual-Engine</span>
           <div className="flex gap-1 ml-auto">
-            <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse">
               <GeminiIcon className="w-3 h-3 text-blue-500" />
             </div>
-            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
               <OpenAIIcon className="w-3 h-3 text-emerald-500" />
             </div>
           </div>
@@ -263,19 +346,26 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
     const isAnalyzing = engineStatus.gemini === "analyzing" || engineStatus.openai === "verifying";
 
     return (
-      <div className={`mb-4 ${isLoading ? 'p-3 rounded-lg bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-emerald-500/5 border border-slate-200' : ''}`}>
-        {isLoading && (
-          <div className="text-xs font-medium text-slate-600 mb-3 flex items-center gap-2">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Querying dual AI engines...
+      <div className={`mb-4 ${isLoading ? 'p-4 rounded-lg bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-emerald-500/10 border border-slate-200 shadow-sm' : ''}`}>
+        {isLoading && isAnalyzing && (
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+            <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+              Parallel Dual-Engine Analysis
+            </span>
           </div>
         )}
-        <div className="flex items-center gap-4">
-          {/* Gemini Status */}
-          <div className="flex items-center gap-2">
-            <div className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+        
+        <div className="flex items-center justify-center gap-6">
+          {/* Gemini Status - Enhanced */}
+          <div className="flex flex-col items-center gap-2">
+            <div className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all ${
               engineStatus.gemini === "complete" 
-                ? "bg-blue-500/20 ring-2 ring-blue-500" 
+                ? "bg-blue-500/20 ring-2 ring-blue-500 ring-offset-2" 
                 : engineStatus.gemini === "analyzing"
                   ? "bg-blue-500/10"
                   : engineStatus.gemini === "error"
@@ -283,29 +373,34 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                     : "bg-gray-200"
             }`}>
               {engineStatus.gemini === "analyzing" && (
-                <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+                <>
+                  <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+                  <div className="absolute inset-[-4px] rounded-full border-2 border-blue-400/20 border-t-blue-400/50 animate-spin" style={{ animationDuration: '1.5s' }} />
+                </>
               )}
-              <GeminiIcon className={`w-4 h-4 ${
+              <GeminiIcon className={`w-6 h-6 ${
                 engineStatus.gemini === "complete" 
                   ? "text-blue-500" 
-                  : engineStatus.gemini === "error"
-                    ? "text-red-500"
-                    : "text-blue-400"
+                  : engineStatus.gemini === "analyzing"
+                    ? "text-blue-500 animate-pulse"
+                    : engineStatus.gemini === "error"
+                      ? "text-red-500"
+                      : "text-blue-400"
               }`} />
             </div>
-            <div className="flex flex-col">
-              <span className={`text-xs font-semibold ${
+            <div className="text-center">
+              <span className={`text-xs font-bold block ${
                 engineStatus.gemini === "complete" 
                   ? "text-blue-600" 
                   : engineStatus.gemini === "error"
                     ? "text-red-600"
-                    : "text-slate-600"
+                    : "text-slate-700"
               }`}>
-                Gemini
+                Gemini Pro
               </span>
-              <span className={`text-[10px] ${
+              <span className={`text-[11px] ${
                 engineStatus.gemini === "analyzing" 
-                  ? "text-blue-500 animate-pulse" 
+                  ? "text-blue-500 animate-pulse font-medium" 
                   : "text-muted-foreground"
               }`}>
                 {engineStatus.gemini === "analyzing" && "Analyzing..."}
@@ -316,20 +411,25 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
             </div>
           </div>
 
-          {/* Connecting line */}
+          {/* Connecting animated line */}
           {isAnalyzing && (
-            <div className="flex-1 flex items-center gap-1 max-w-[60px]">
-              <div className="h-0.5 flex-1 bg-gradient-to-r from-blue-400 to-emerald-400 opacity-30 rounded-full overflow-hidden">
-                <div className="h-full w-1/3 bg-gradient-to-r from-blue-500 to-emerald-500 animate-pulse rounded-full" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-16 h-1 bg-gradient-to-r from-blue-400/30 to-emerald-400/30 rounded-full overflow-hidden">
+                <div className="h-full w-1/2 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full animate-[shimmer_1s_ease-in-out_infinite]" 
+                  style={{ 
+                    animation: 'pulse 1s ease-in-out infinite, translateX 1s ease-in-out infinite alternate'
+                  }} 
+                />
               </div>
+              <span className="text-[10px] text-slate-400 font-medium">Syncing</span>
             </div>
           )}
 
-          {/* OpenAI Status */}
-          <div className="flex items-center gap-2">
-            <div className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+          {/* OpenAI Status - Enhanced */}
+          <div className="flex flex-col items-center gap-2">
+            <div className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all ${
               engineStatus.openai === "complete" 
-                ? "bg-emerald-500/20 ring-2 ring-emerald-500" 
+                ? "bg-emerald-500/20 ring-2 ring-emerald-500 ring-offset-2" 
                 : engineStatus.openai === "verifying"
                   ? "bg-emerald-500/10"
                   : engineStatus.openai === "error"
@@ -337,29 +437,34 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                     : "bg-gray-200"
             }`}>
               {engineStatus.openai === "verifying" && (
-                <div className="absolute inset-0 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+                <>
+                  <div className="absolute inset-0 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+                  <div className="absolute inset-[-4px] rounded-full border-2 border-emerald-400/20 border-t-emerald-400/50 animate-spin" style={{ animationDuration: '1.5s' }} />
+                </>
               )}
-              <OpenAIIcon className={`w-4 h-4 ${
+              <OpenAIIcon className={`w-6 h-6 ${
                 engineStatus.openai === "complete" 
                   ? "text-emerald-500" 
-                  : engineStatus.openai === "error"
-                    ? "text-red-500"
-                    : "text-emerald-400"
+                  : engineStatus.openai === "verifying"
+                    ? "text-emerald-500 animate-pulse"
+                    : engineStatus.openai === "error"
+                      ? "text-red-500"
+                      : "text-emerald-400"
               }`} />
             </div>
-            <div className="flex flex-col">
-              <span className={`text-xs font-semibold ${
+            <div className="text-center">
+              <span className={`text-xs font-bold block ${
                 engineStatus.openai === "complete" 
                   ? "text-emerald-600" 
                   : engineStatus.openai === "error"
                     ? "text-red-600"
-                    : "text-slate-600"
+                    : "text-slate-700"
               }`}>
-                OpenAI
+                GPT-5
               </span>
-              <span className={`text-[10px] ${
+              <span className={`text-[11px] ${
                 engineStatus.openai === "verifying" 
-                  ? "text-emerald-500 animate-pulse" 
+                  ? "text-emerald-500 animate-pulse font-medium" 
                   : "text-muted-foreground"
               }`}>
                 {engineStatus.openai === "verifying" && "Verifying..."}
@@ -369,15 +474,17 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
               </span>
             </div>
           </div>
-
-          {/* Consensus indicator */}
-          {engineStatus.gemini === "complete" && engineStatus.openai === "complete" && (
-            <Badge className="ml-auto bg-gradient-to-r from-green-500 to-emerald-500 text-white gap-1 shadow-sm">
-              <Sparkles className="h-3 w-3" />
-              Consensus
-            </Badge>
-          )}
         </div>
+
+        {/* Consensus indicator */}
+        {engineStatus.gemini === "complete" && engineStatus.openai === "complete" && (
+          <div className="mt-4 flex justify-center">
+            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white gap-2 px-4 py-1.5 shadow-md">
+              <Sparkles className="h-4 w-4" />
+              Consensus Reached
+            </Badge>
+          </div>
+        )}
       </div>
     );
   };
@@ -619,7 +726,10 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                     }`}
                   >
                     {message.role === "assistant" && message.isLoading && (
-                      renderAnalysisSteps(message.analysisSteps)
+                      <>
+                        {renderEngineStatus(message.engineStatus, message.isLoading)}
+                        {renderAnalysisSteps(message.analysisSteps)}
+                      </>
                     )}
 
                     {message.role === "assistant" && !message.isLoading && (
@@ -638,6 +748,7 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                       <>
                         {renderSources(message.sources)}
                         {renderEngineDetails(message.engineResponses, message.verification)}
+                        {renderSaveButton(message)}
                       </>
                     )}
                   </div>

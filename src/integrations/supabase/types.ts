@@ -172,6 +172,53 @@ export type Database = {
           },
         ]
       }
+      project_syntheses: {
+        Row: {
+          answer: string
+          created_at: string
+          gemini_response: string | null
+          id: string
+          openai_response: string | null
+          project_id: string
+          question: string
+          sources: Json | null
+          user_id: string
+          verification_status: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          gemini_response?: string | null
+          id?: string
+          openai_response?: string | null
+          project_id: string
+          question: string
+          sources?: Json | null
+          user_id: string
+          verification_status?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          gemini_response?: string | null
+          id?: string
+          openai_response?: string | null
+          project_id?: string
+          question?: string
+          sources?: Json | null
+          user_id?: string
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_syntheses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           address: string | null
