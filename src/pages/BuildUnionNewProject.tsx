@@ -124,6 +124,7 @@ const BuildUnionNewProject = () => {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<AppUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,22 +259,46 @@ const BuildUnionNewProject = () => {
     return () => clearTimeout(timer);
   }, [userSearchQuery, searchAppUsers]);
 
-  // Team handling
+  // Team handling - supports multiple emails (comma, space, or newline separated)
   const addTeamMember = () => {
-    const email = newMemberEmail.trim().toLowerCase();
-    if (!email) return;
+    const input = newMemberEmail.trim();
+    if (!input) return;
     
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter a valid email address");
+    // Split by comma, space, semicolon, or newline
+    const emails = input.split(/[,;\s\n]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
+    
+    const validEmails: string[] = [];
+    const invalidEmails: string[] = [];
+    
+    for (const email of emails) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        invalidEmails.push(email);
+      } else if (teamMembers.some(m => m.email === email)) {
+        // Already added, skip silently
+      } else {
+        validEmails.push(email);
+      }
+    }
+    
+    if (invalidEmails.length > 0 && validEmails.length === 0) {
+      toast.error(`Invalid email${invalidEmails.length > 1 ? 's' : ''}: ${invalidEmails.join(', ')}`);
       return;
     }
-
-    if (teamMembers.some(m => m.email === email)) {
-      toast.error("This email is already added");
-      return;
+    
+    if (validEmails.length > 0) {
+      const newMembers = validEmails.map(email => ({
+        email,
+        id: crypto.randomUUID(),
+        isAppUser: false,
+      }));
+      setTeamMembers(prev => [...prev, ...newMembers]);
+      toast.success(`Added ${validEmails.length} team member${validEmails.length > 1 ? 's' : ''}`);
+    }
+    
+    if (invalidEmails.length > 0 && validEmails.length > 0) {
+      toast.warning(`Skipped invalid: ${invalidEmails.join(', ')}`);
     }
 
-    setTeamMembers(prev => [...prev, { email, id: crypto.randomUUID(), isAppUser: false }]);
     setNewMemberEmail("");
   };
 
@@ -295,8 +320,55 @@ const BuildUnionNewProject = () => {
         isAppUser: true,
       }
     ]);
+  };
+
+  const addSelectedUsers = () => {
+    const usersToAdd = searchResults.filter(u => 
+      selectedUsers.has(u.userId) && !teamMembers.some(m => m.userId === u.userId)
+    );
+    
+    if (usersToAdd.length === 0) {
+      toast.error("No new users to add");
+      return;
+    }
+
+    const newMembers = usersToAdd.map(appUser => ({
+      email: "",
+      id: crypto.randomUUID(),
+      userId: appUser.userId,
+      name: appUser.name,
+      avatarUrl: appUser.avatarUrl,
+      trade: appUser.trade,
+      isAppUser: true,
+    }));
+
+    setTeamMembers(prev => [...prev, ...newMembers]);
+    setSelectedUsers(new Set());
     setUserSearchQuery("");
     setSearchResults([]);
+    toast.success(`Added ${usersToAdd.length} team member${usersToAdd.length > 1 ? 's' : ''}`);
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllSearchResults = () => {
+    const newSelected = new Set(selectedUsers);
+    searchResults.forEach(u => {
+      if (!teamMembers.some(m => m.userId === u.userId)) {
+        newSelected.add(u.userId);
+      }
+    });
+    setSelectedUsers(newSelected);
   };
 
   const removeTeamMember = (id: string) => {
@@ -918,38 +990,86 @@ const BuildUnionNewProject = () => {
                     )}
 
                     {!isSearching && searchResults.length > 0 && (
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {searchResults.map((appUser) => (
-                          <div
-                            key={appUser.id}
-                            className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-3 hover:bg-slate-50 transition-colors"
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={selectAllSearchResults}
+                            className="text-sm text-amber-600 hover:underline"
                           >
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={appUser.avatarUrl || undefined} />
-                                <AvatarFallback className="bg-amber-100 text-amber-700">
-                                  {appUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="text-sm font-medium text-slate-700">{appUser.name}</p>
-                                {appUser.trade && (
-                                  <p className="text-xs text-slate-400">
-                                    {TRADE_LABELS[appUser.trade as ConstructionTrade] || appUser.trade}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                            Select All
+                          </button>
+                          {selectedUsers.size > 0 && (
                             <Button
                               type="button"
                               size="sm"
-                              onClick={() => addAppUser(appUser)}
-                              className="bg-amber-600 hover:bg-amber-700"
+                              onClick={addSelectedUsers}
+                              className="bg-amber-600 hover:bg-amber-700 gap-2"
                             >
                               <Plus className="h-4 w-4" />
+                              Add {selectedUsers.size} Selected
                             </Button>
-                          </div>
-                        ))}
+                          )}
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {searchResults.map((appUser) => {
+                            const isAlreadyAdded = teamMembers.some(m => m.userId === appUser.userId);
+                            const isSelected = selectedUsers.has(appUser.userId);
+                            
+                            return (
+                              <div
+                                key={appUser.id}
+                                onClick={() => !isAlreadyAdded && toggleUserSelection(appUser.userId)}
+                                className={`flex items-center justify-between rounded-lg px-4 py-3 transition-colors cursor-pointer ${
+                                  isAlreadyAdded 
+                                    ? "bg-slate-100 opacity-50 cursor-not-allowed"
+                                    : isSelected
+                                      ? "bg-amber-50 border-2 border-amber-400"
+                                      : "bg-white border border-slate-200 hover:bg-slate-50"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Checkbox
+                                    checked={isSelected || isAlreadyAdded}
+                                    disabled={isAlreadyAdded}
+                                    onCheckedChange={() => !isAlreadyAdded && toggleUserSelection(appUser.userId)}
+                                  />
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage src={appUser.avatarUrl || undefined} />
+                                    <AvatarFallback className="bg-amber-100 text-amber-700">
+                                      {appUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-700">
+                                      {appUser.name}
+                                      {isAlreadyAdded && <span className="text-slate-400 ml-2">(already added)</span>}
+                                    </p>
+                                    {appUser.trade && (
+                                      <p className="text-xs text-slate-400">
+                                        {TRADE_LABELS[appUser.trade as ConstructionTrade] || appUser.trade}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                {!isAlreadyAdded && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      addAppUser(appUser);
+                                    }}
+                                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
@@ -968,32 +1088,31 @@ const BuildUnionNewProject = () => {
 
                   {/* Email Invite Tab */}
                   <TabsContent value="email" className="space-y-4 mt-4">
-                    <div className="flex gap-2">
-                      <div className="flex-1 space-y-2">
-                        <Label htmlFor="memberEmail" className="text-slate-700 font-medium flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          Team Member Email
-                        </Label>
-                        <Input
-                          id="memberEmail"
-                          type="email"
-                          placeholder="colleague@company.com"
-                          value={newMemberEmail}
-                          onChange={(e) => setNewMemberEmail(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && addTeamMember()}
-                          className="border-slate-200"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={addTeamMember}
-                        className="mt-7 bg-amber-600 hover:bg-amber-700"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="memberEmail" className="text-slate-700 font-medium flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Team Member Emails
+                      </Label>
+                      <Textarea
+                        id="memberEmail"
+                        placeholder="Enter multiple emails separated by comma, space, or new line:&#10;john@company.com, jane@company.com&#10;mike@company.com"
+                        value={newMemberEmail}
+                        onChange={(e) => setNewMemberEmail(e.target.value)}
+                        className="border-slate-200 resize-none"
+                        rows={3}
+                      />
                     </div>
+                    <Button
+                      type="button"
+                      onClick={addTeamMember}
+                      disabled={!newMemberEmail.trim()}
+                      className="bg-amber-600 hover:bg-amber-700 gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Email{newMemberEmail.includes(',') || newMemberEmail.includes(' ') || newMemberEmail.includes('\n') ? 's' : ''}
+                    </Button>
                     <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-lg">
-                      Invite someone who isn't on BuildUnion yet by their email address.
+                      Paste multiple emails at once - they'll be separated automatically.
                     </p>
                   </TabsContent>
                 </Tabs>
