@@ -3,6 +3,9 @@ project_id = "dfsuptqouzhhcnwhrukg"
 [functions.ask-messa]
 verify_jwt = false
 
+[functions.extract-pdf-text]
+verify_jwt = false
+
 [functions.create-checkout]
 verify_jwt = false
 
