@@ -25,7 +25,10 @@ import {
   ChevronDown,
   ChevronUp,
   Save,
-  BookmarkCheck
+  BookmarkCheck,
+  ImagePlus,
+  Camera,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -77,20 +80,117 @@ interface Message {
 interface DualEngineChatProps {
   projectId: string;
   projectName?: string;
+  onImageUploaded?: (imagePath: string) => void;
+  siteImages?: string[];
 }
 
-const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
+const DualEngineChat = ({ projectId, projectName, onImageUploaded, siteImages = [] }: DualEngineChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [savingMessageId, setSavingMessageId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Cleanup pending image previews on unmount
+  useEffect(() => {
+    return () => {
+      pendingImages.forEach(img => URL.revokeObjectURL(img.preview));
+    };
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const imageFiles = Array.from(files).filter(file => 
+      file.type.startsWith('image/')
+    );
+
+    if (imageFiles.length === 0) {
+      toast.error("Please select image files (JPG, PNG, etc.)");
+      return;
+    }
+
+    const newImages = imageFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setPendingImages(prev => [...prev, ...newImages]);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removePendingImage = (index: number) => {
+    setPendingImages(prev => {
+      const removed = prev[index];
+      URL.revokeObjectURL(removed.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const uploadAndAnalyze = async () => {
+    if (!user || pendingImages.length === 0) return;
+
+    setIsUploading(true);
+    const uploadedPaths: string[] = [];
+
+    try {
+      // Upload all pending images
+      for (const img of pendingImages) {
+        const fileId = crypto.randomUUID();
+        const ext = img.file.name.split('.').pop() || 'jpg';
+        const path = `${user.id}/site-images/${fileId}.${ext}`;
+
+        const { error } = await supabase.storage
+          .from('project-documents')
+          .upload(path, img.file);
+
+        if (error) {
+          console.error("Upload error:", error);
+          toast.error(`Failed to upload ${img.file.name}`);
+          continue;
+        }
+
+        uploadedPaths.push(path);
+        
+        // Notify parent component
+        if (onImageUploaded) {
+          onImageUploaded(path);
+        }
+      }
+
+      // Clear pending images
+      pendingImages.forEach(img => URL.revokeObjectURL(img.preview));
+      setPendingImages([]);
+
+      if (uploadedPaths.length > 0) {
+        toast.success(`${uploadedPaths.length} image${uploadedPaths.length > 1 ? 's' : ''} uploaded!`);
+        
+        // Auto-start analysis with the uploaded images
+        if (!input.trim()) {
+          setInput("Analyze the uploaded site photos and describe what you see");
+        }
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Failed to upload images");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const createInitialSteps = (): AnalysisStep[] => [
     { id: "extract", label: "Document Extraction", status: "pending" },
@@ -707,9 +807,18 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <Sparkles className="h-12 w-12 mb-4 text-amber-500/50" />
               <p className="font-medium">Ask M.E.S.S.A. about your project</p>
-              <p className="text-sm mt-1">
+              <p className="text-sm mt-1 mb-4">
                 Analyze documents and site photos with dual AI engines
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="border-amber-300 hover:bg-amber-50 gap-2"
+              >
+                <ImagePlus className="h-4 w-4 text-amber-600" />
+                Upload Site Photos
+              </Button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -758,14 +867,77 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
           )}
         </ScrollArea>
 
+        {/* Pending Images Preview */}
+        {pendingImages.length > 0 && (
+          <div className="px-4 py-2 border-t bg-slate-50">
+            <div className="flex items-center gap-2 mb-2">
+              <Camera className="h-4 w-4 text-amber-600" />
+              <span className="text-xs font-medium text-slate-600">
+                {pendingImages.length} image{pendingImages.length > 1 ? 's' : ''} ready to upload
+              </span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {pendingImages.map((img, idx) => (
+                <div key={idx} className="relative group">
+                  <img 
+                    src={img.preview} 
+                    alt={`Preview ${idx + 1}`}
+                    className="w-16 h-16 object-cover rounded-lg border border-slate-200"
+                  />
+                  <button
+                    onClick={() => removePendingImage(idx)}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <Button
+                size="sm"
+                onClick={uploadAndAnalyze}
+                disabled={isUploading}
+                className="bg-amber-600 hover:bg-amber-700 h-16"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="text-xs">Upload & Analyze</span>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-4 border-t">
           <div className="flex gap-2">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {/* Upload button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || isUploading}
+              className="shrink-0 border-amber-300 hover:bg-amber-50 hover:border-amber-400"
+              title="Upload site photos"
+            >
+              <ImagePlus className="h-4 w-4 text-amber-600" />
+            </Button>
+            
             <Input
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
-              placeholder="Ask about your project documents..."
+              placeholder={siteImages.length > 0 ? "Ask about your project or photos..." : "Ask about your project..."}
               disabled={isLoading}
               className="flex-1"
             />
