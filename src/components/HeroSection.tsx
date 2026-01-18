@@ -1,31 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import constructionVideo from "@/assets/construction-hero.mp4";
-import { ArrowLeft, ChevronDown, Globe } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-const languages = [
-  { code: "en", name: "English" },
-  { code: "es", name: "Español" },
-  { code: "fr", name: "Français" },
-  { code: "de", name: "Deutsch" },
-  { code: "zh", name: "中文" },
-  { code: "ja", name: "日本語" },
-  { code: "ar", name: "العربية" },
-  { code: "pt", name: "Português" },
-  { code: "hu", name: "Magyar" },
-];
 
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const navigate = useNavigate();
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   useEffect(() => {
     if (videoRef.current) {
@@ -35,10 +14,8 @@ const HeroSection = () => {
     }
   }, []);
 
-  const currentLang = languages.find((l) => l.code === selectedLanguage);
-
   return (
-    <section className="relative h-screen w-full overflow-hidden">
+    <section className="relative h-[calc(100vh-4rem)] w-full overflow-hidden">
       {/* Video Background */}
       <video
         ref={videoRef}
@@ -54,46 +31,6 @@ const HeroSection = () => {
 
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-hero-overlay/60" />
-
-      {/* Back Button */}
-      <div className="absolute top-6 left-6 z-20">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/")}
-          className="text-hero-text/80 hover:text-hero-text hover:bg-white/10 backdrop-blur-sm border border-white/20 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Back to Dock</span>
-        </Button>
-      </div>
-
-      {/* Language Selector */}
-      <div className="absolute top-6 right-6 z-20">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-hero-text/80 hover:text-hero-text hover:bg-white/10 backdrop-blur-sm border border-white/20 gap-2"
-            >
-              <Globe className="h-4 w-4" />
-              <span className="text-sm">{currentLang?.name}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[140px]">
-            {languages.map((lang) => (
-              <DropdownMenuItem
-                key={lang.code}
-                onClick={() => setSelectedLanguage(lang.code)}
-                className={selectedLanguage === lang.code ? "bg-accent" : ""}
-              >
-                {lang.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
 
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 pt-0 md:-mt-32">
