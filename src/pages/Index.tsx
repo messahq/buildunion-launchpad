@@ -4,7 +4,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <main className="relative min-h-screen w-full bg-slate-950 flex items-center justify-center overflow-hidden">
+    <main className="relative min-h-screen w-full bg-slate-950 flex flex-col items-center overflow-hidden">
       {/* Deep space background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
       
@@ -27,19 +27,47 @@ const Index = () => {
         ))}
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6">
+      {/* Top Section - BuildUnion Capsule */}
+      <div className="relative z-10 flex flex-col items-center pt-16 md:pt-24">
         {/* MessaDock Title */}
-        <h1 className="font-display text-2xl font-light tracking-[0.3em] text-slate-400/80 mb-16 uppercase animate-pulse">
+        <h1 className="font-display text-2xl font-light tracking-[0.3em] text-slate-400/80 mb-12 uppercase animate-pulse">
           MessaDock
         </h1>
 
-        {/* Interactive CSS Orb Container */}
+        {/* BuildUnion Capsule Button */}
         <button
           onClick={() => navigate("/buildunion")}
-          className="relative group cursor-pointer focus:outline-none rounded-full"
-          aria-label="Enter BuildUnion"
+          className="group relative px-8 py-4 rounded-full cursor-pointer focus:outline-none transition-all duration-500 hover:scale-105"
+          style={{
+            background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(6, 182, 212, 0.2))',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 0 30px rgba(251, 146, 60, 0.2), 0 0 60px rgba(6, 182, 212, 0.1)'
+          }}
         >
+          {/* Glow effect on hover */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500/30 to-cyan-500/30 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          
+          {/* Capsule content */}
+          <div className="relative flex items-center gap-3">
+            {/* Mini orb indicator */}
+            <div 
+              className="w-3 h-3 rounded-full animate-pulse"
+              style={{
+                background: 'radial-gradient(circle, rgba(251, 146, 60, 0.9), rgba(6, 182, 212, 0.9))',
+                boxShadow: '0 0 10px rgba(251, 146, 60, 0.5)'
+              }}
+            />
+            <span className="text-white/90 font-light tracking-widest uppercase text-sm">
+              BuildUnion
+            </span>
+          </div>
+        </button>
+      </div>
+
+      {/* Center Section - Decorative Orb */}
+      <div className="relative z-10 flex-1 flex items-center justify-center px-6">
+        {/* Decorative CSS Orb (no click action) */}
+        <div className="relative">
           {/* Outer glow rings - breathing animation */}
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500/30 to-cyan-500/30 blur-3xl scale-150 animate-[pulse_4s_ease-in-out_infinite]" />
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500/20 to-orange-500/20 blur-2xl scale-125 animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
@@ -61,7 +89,7 @@ const Index = () => {
           />
 
           <div 
-            className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full transition-all duration-700 group-hover:scale-110"
+            className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full"
             style={{
               animation: 'float 6s ease-in-out infinite',
               background: 'radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.8), rgba(251, 146, 60, 0.4) 30%, rgba(6, 182, 212, 0.4) 60%, rgba(6, 182, 212, 0.8))',
@@ -108,12 +136,7 @@ const Index = () => {
               }}
             />
           ))}
-        </button>
-
-        {/* Hint text with fade */}
-        <p className="mt-16 text-sm text-slate-500 font-light tracking-widest uppercase animate-pulse">
-          Click to enter
-        </p>
+        </div>
       </div>
 
       {/* Custom keyframes */}
