@@ -2,7 +2,7 @@ import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare } from "lucide-react";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const newsItems = [
@@ -478,6 +478,259 @@ const BuildUnionWorkspace = () => {
                   Need specific help? Chat with our AI assistant.
                 </p>
               </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Industry Standards & OBC Section */}
+      <section className="py-20 px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left - Content */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Scale className="h-5 w-5 text-amber-400" />
+                <span className="text-amber-400 font-semibold text-sm uppercase tracking-wider">
+                  Industry Standards
+                </span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
+                Ontario Building Code
+                <span className="block text-amber-400">2024 Updates</span>
+              </h2>
+              <p className="text-slate-300 leading-relaxed mb-6">
+                Stay compliant with the latest OBC amendments. Our platform automatically cross-references 
+                your documents against current building codes, ensuring your projects meet all regulatory requirements.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white">Fire Safety Updates</h4>
+                    <p className="text-slate-400 text-sm">New requirements for high-rise residential buildings effective March 2024</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Building2 className="h-4 w-4 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white">Accessibility Standards</h4>
+                    <p className="text-slate-400 text-sm">Enhanced AODA compliance for commercial structures</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <TrendingUp className="h-4 w-4 text-green-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white">Energy Efficiency</h4>
+                    <p className="text-slate-400 text-sm">Updated insulation and HVAC requirements for net-zero targets</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right - Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div className="text-4xl font-bold text-amber-400 mb-2">2,847</div>
+                <div className="text-slate-300 text-sm">Code sections analyzed</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div className="text-4xl font-bold text-cyan-400 mb-2">99.2%</div>
+                <div className="text-slate-300 text-sm">Compliance accuracy</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div className="text-4xl font-bold text-green-400 mb-2">24h</div>
+                <div className="text-slate-300 text-sm">Update cycle</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div className="text-4xl font-bold text-purple-400 mb-2">156</div>
+                <div className="text-slate-300 text-sm">Amendments tracked</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Union & Community Section */}
+      <section className="py-20 px-6 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Users className="h-5 w-5 text-orange-600" />
+              <span className="text-orange-600 font-semibold text-sm uppercase tracking-wider">
+                Stronger Together
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
+              Union & Community
+            </h2>
+            <p className="text-slate-600 max-w-2xl mx-auto">
+              Join 4.6 million skilled professionals building a stronger future. Union membership means 
+              better wages, comprehensive benefits, and a voice in the industry.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {/* Higher Wages */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-orange-100 text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+                <DollarSign className="h-8 w-8 text-green-600" />
+              </div>
+              <div className="text-4xl font-bold text-slate-900 mb-2">+27%</div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Higher Wages</h3>
+              <p className="text-slate-500 text-sm">
+                Union workers earn on average 27% more than non-union counterparts in the same trade.
+              </p>
+            </div>
+
+            {/* Health Coverage */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-orange-100 text-center">
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+                <Heart className="h-8 w-8 text-red-500" />
+              </div>
+              <div className="text-4xl font-bold text-slate-900 mb-2">94%</div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Health Coverage</h3>
+              <p className="text-slate-500 text-sm">
+                Union members with employer-sponsored health insurance coverage for families.
+              </p>
+            </div>
+
+            {/* Job Security */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-orange-100 text-center">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6">
+                <Briefcase className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="text-4xl font-bold text-slate-900 mb-2">3.2x</div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Job Security</h3>
+              <p className="text-slate-500 text-sm">
+                Union workers are 3.2x more likely to have pension plans and retirement benefits.
+              </p>
+            </div>
+          </div>
+
+          {/* CTA Banner */}
+          <div className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-2xl p-8 md:p-12 text-center text-white">
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">
+              Ready to Join the Movement?
+            </h3>
+            <p className="text-orange-100 mb-6 max-w-xl mx-auto">
+              Connect with local unions, access exclusive training programs, and build your career with the support of a strong community.
+            </p>
+            <Button className="bg-white text-orange-600 hover:bg-orange-50 font-semibold px-8 py-6 text-lg">
+              Find Your Local Union
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Latest News Feed Section */}
+      <section className="py-20 px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <BookOpen className="h-5 w-5 text-slate-600" />
+                <span className="text-slate-600 font-medium text-sm uppercase tracking-wider">
+                  Stay Informed
+                </span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900">
+                Latest News Feed
+              </h2>
+            </div>
+            <a href="#" className="text-amber-600 hover:text-amber-700 font-medium hidden sm:flex items-center gap-1">
+              View all news <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* News Card 1 */}
+            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="h-32 bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                <Building2 className="h-12 w-12 text-white/80" />
+              </div>
+              <div className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">Investment</span>
+                  <span className="text-xs text-slate-400">Jan 18, 2026</span>
+                </div>
+                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
+                  $2.4B Federal Infrastructure Package Approved
+                </h3>
+                <p className="text-slate-500 text-sm line-clamp-2">
+                  Major funding for transit, bridges, and public facilities across Ontario.
+                </p>
+              </div>
+            </div>
+
+            {/* News Card 2 */}
+            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="h-32 bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                <TrendingUp className="h-12 w-12 text-white/80" />
+              </div>
+              <div className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded">Wages</span>
+                  <span className="text-xs text-slate-400">Jan 15, 2026</span>
+                </div>
+                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
+                  Construction Wages Rise 8.3% Year-Over-Year
+                </h3>
+                <p className="text-slate-500 text-sm line-clamp-2">
+                  Skilled trades see highest wage growth in decade amid labor shortage.
+                </p>
+              </div>
+            </div>
+
+            {/* News Card 3 */}
+            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="h-32 bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                <Award className="h-12 w-12 text-white/80" />
+              </div>
+              <div className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">Training</span>
+                  <span className="text-xs text-slate-400">Jan 12, 2026</span>
+                </div>
+                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
+                  New Apprenticeship Programs Launch Province-Wide
+                </h3>
+                <p className="text-slate-500 text-sm line-clamp-2">
+                  Government invests $180M in skilled trades training initiatives.
+                </p>
+              </div>
+            </div>
+
+            {/* News Card 4 */}
+            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+              <div className="h-32 bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                <Clock className="h-12 w-12 text-white/80" />
+              </div>
+              <div className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-0.5 rounded">Safety</span>
+                  <span className="text-xs text-slate-400">Jan 10, 2026</span>
+                </div>
+                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
+                  New Worksite Safety Standards Take Effect
+                </h3>
+                <p className="text-slate-500 text-sm line-clamp-2">
+                  Enhanced PPE requirements and mandatory rest periods now enforced.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8 sm:hidden">
+            <a href="#" className="text-amber-600 hover:text-amber-700 font-medium inline-flex items-center gap-1">
+              View all news <ArrowRight className="h-4 w-4" />
             </a>
           </div>
         </div>
