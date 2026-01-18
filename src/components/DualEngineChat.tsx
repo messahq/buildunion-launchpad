@@ -11,7 +11,11 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   FileText,
-  Sparkles
+  Sparkles,
+  FileSearch,
+  Brain,
+  ShieldCheck,
+  Scale
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +32,12 @@ const OpenAIIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+interface AnalysisStep {
+  id: string;
+  label: string;
+  status: "pending" | "active" | "complete" | "error";
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -39,6 +49,7 @@ interface Message {
   };
   sources?: Array<{ document: string; page?: number }>;
   isLoading?: boolean;
+  analysisSteps?: AnalysisStep[];
   engineStatus?: {
     gemini: "idle" | "analyzing" | "complete" | "error";
     openai: "idle" | "verifying" | "complete" | "error";
@@ -62,6 +73,28 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
     }
   }, [messages]);
 
+  const createInitialSteps = (): AnalysisStep[] => [
+    { id: "extract", label: "Document Extraction", status: "pending" },
+    { id: "gemini", label: "Gemini Analysis", status: "pending" },
+    { id: "openai", label: "OpenAI Verification", status: "pending" },
+    { id: "consensus", label: "Consensus Check", status: "pending" },
+  ];
+
+  const updateStep = (messageId: string, stepId: string, status: AnalysisStep["status"]) => {
+    setMessages(prev =>
+      prev.map(m =>
+        m.id === messageId
+          ? {
+              ...m,
+              analysisSteps: m.analysisSteps?.map(s =>
+                s.id === stepId ? { ...s, status } : s
+              ),
+            }
+          : m
+      )
+    );
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -76,15 +109,34 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
       role: "assistant",
       content: "",
       isLoading: true,
+      analysisSteps: createInitialSteps(),
       engineStatus: {
-        gemini: "analyzing",
-        openai: "verifying",
+        gemini: "idle",
+        openai: "idle",
       },
     };
 
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setInput("");
     setIsLoading(true);
+
+    // Step 1: Document Extraction
+    updateStep(assistantMessage.id, "extract", "active");
+    
+    // Simulate brief extraction delay then move to analysis
+    await new Promise(resolve => setTimeout(resolve, 300));
+    updateStep(assistantMessage.id, "extract", "complete");
+    
+    // Step 2 & 3: Start both AI engines
+    updateStep(assistantMessage.id, "gemini", "active");
+    updateStep(assistantMessage.id, "openai", "active");
+    setMessages(prev =>
+      prev.map(m =>
+        m.id === assistantMessage.id
+          ? { ...m, engineStatus: { gemini: "analyzing", openai: "verifying" } }
+          : m
+      )
+    );
 
     try {
       const { data, error } = await supabase.functions.invoke("ask-messa", {
@@ -102,6 +154,16 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
       });
 
       if (error) throw error;
+
+      // Mark analysis steps complete
+      updateStep(assistantMessage.id, "gemini", data.verification?.engines?.gemini ? "complete" : "error");
+      updateStep(assistantMessage.id, "openai", data.verification?.engines?.openai ? "complete" : "error");
+      
+      // Step 4: Consensus check
+      updateStep(assistantMessage.id, "consensus", "active");
+      await new Promise(resolve => setTimeout(resolve, 200));
+      updateStep(assistantMessage.id, "consensus", data.verification?.verified ? "complete" : 
+        (data.verification?.engines?.gemini && data.verification?.engines?.openai) ? "error" : "complete");
 
       // Update the assistant message with the response
       setMessages(prev =>
@@ -125,6 +187,10 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
       console.error("Chat error:", err);
       toast.error("Failed to get response. Please try again.");
       
+      updateStep(assistantMessage.id, "gemini", "error");
+      updateStep(assistantMessage.id, "openai", "error");
+      updateStep(assistantMessage.id, "consensus", "error");
+      
       setMessages(prev =>
         prev.map(m =>
           m.id === assistantMessage.id
@@ -132,6 +198,7 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                 ...m,
                 content: "An error occurred. Please try again.",
                 isLoading: false,
+                analysisSteps: m.analysisSteps?.map(s => ({ ...s, status: "error" as const })),
                 engineStatus: { gemini: "error", openai: "error" },
               }
             : m
@@ -301,6 +368,94 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
     );
   };
 
+  const getStepIcon = (stepId: string) => {
+    switch (stepId) {
+      case "extract": return FileSearch;
+      case "gemini": return Brain;
+      case "openai": return ShieldCheck;
+      case "consensus": return Scale;
+      default: return FileText;
+    }
+  };
+
+  const renderAnalysisSteps = (steps?: AnalysisStep[]) => {
+    if (!steps) return null;
+
+    return (
+      <div className="mb-4 p-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+        <div className="text-xs font-semibold text-slate-600 mb-3">Analysis Progress</div>
+        <div className="space-y-2">
+          {steps.map((step, index) => {
+            const Icon = getStepIcon(step.id);
+            const isActive = step.status === "active";
+            const isComplete = step.status === "complete";
+            const isError = step.status === "error";
+            const isPending = step.status === "pending";
+            
+            return (
+              <div key={step.id} className="flex items-center gap-3">
+                {/* Step number / status indicator */}
+                <div className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  isComplete
+                    ? "bg-green-500 text-white"
+                    : isActive
+                      ? "bg-amber-500 text-white"
+                      : isError
+                        ? "bg-red-500 text-white"
+                        : "bg-slate-200 text-slate-500"
+                }`}>
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-full border-2 border-amber-300 animate-ping opacity-50" />
+                  )}
+                  {isComplete ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : isError ? (
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                  ) : isActive ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </div>
+
+                {/* Step icon */}
+                <Icon className={`w-4 h-4 ${
+                  isComplete ? "text-green-600" :
+                  isActive ? "text-amber-600" :
+                  isError ? "text-red-600" :
+                  "text-slate-400"
+                }`} />
+
+                {/* Step label */}
+                <span className={`text-sm font-medium ${
+                  isComplete ? "text-green-700" :
+                  isActive ? "text-amber-700" :
+                  isError ? "text-red-700" :
+                  "text-slate-500"
+                }`}>
+                  {step.label}
+                </span>
+
+                {/* Status text */}
+                <span className={`text-xs ml-auto ${
+                  isComplete ? "text-green-600" :
+                  isActive ? "text-amber-600 animate-pulse" :
+                  isError ? "text-red-600" :
+                  "text-slate-400"
+                }`}>
+                  {isComplete && "Done"}
+                  {isActive && "Processing..."}
+                  {isError && "Failed"}
+                  {isPending && "Waiting"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderSources = (sources?: Array<{ document: string; page?: number }>) => {
     if (!sources || sources.length === 0) return null;
 
@@ -364,13 +519,12 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                     }`}
                   >
                     {message.role === "assistant" && message.isLoading && (
-                      renderEngineStatus(message.engineStatus, true)
+                      renderAnalysisSteps(message.analysisSteps)
                     )}
 
                     {message.role === "assistant" && !message.isLoading && (
                       <>
                         {getVerificationBadge(message.verification)}
-                        {renderEngineStatus(message.engineStatus, false)}
                       </>
                     )}
 
