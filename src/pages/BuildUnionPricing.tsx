@@ -20,10 +20,10 @@ const BuildUnionPricing = () => {
   useEffect(() => {
     const checkoutStatus = searchParams.get("checkout");
     if (checkoutStatus === "success") {
-      toast.success("Előfizetés sikeres! Köszönjük a vásárlást.");
+      toast.success("Subscription successful! Thank you for your purchase.");
       checkSubscription();
     } else if (checkoutStatus === "cancelled") {
-      toast.info("A fizetés megszakítva.");
+      toast.info("Payment cancelled.");
     }
   }, [searchParams, checkSubscription]);
 
@@ -37,7 +37,7 @@ const BuildUnionPricing = () => {
       await createCheckout(SUBSCRIPTION_TIERS[tier].price_id);
     } catch (error) {
       console.error("Checkout error:", error);
-      toast.error("Hiba történt a fizetés indításakor");
+      toast.error("An error occurred while initiating payment");
     }
   };
 
@@ -46,7 +46,7 @@ const BuildUnionPricing = () => {
       await openCustomerPortal();
     } catch (error) {
       console.error("Portal error:", error);
-      toast.error("Hiba történt az előfizetés kezelésekor");
+      toast.error("An error occurred while managing subscription");
     }
   };
 
@@ -57,17 +57,17 @@ const BuildUnionPricing = () => {
   const plans = [
     {
       id: "free" as const,
-      name: "Ingyenes",
+      name: "Free",
       price: "0",
-      description: "Kezdd el ingyen, fedezd fel a platformot",
+      description: "Get started for free, explore the platform",
       icon: <Zap className="w-6 h-6" />,
       features: [
-        "1 aktív projekt",
-        "Alapvető dokumentum feltöltés",
-        "Közösségi támogatás",
-        "BuildUnion hírek",
+        "1 active project",
+        "Basic document upload",
+        "Community support",
+        "BuildUnion news",
       ],
-      buttonText: "Jelenlegi csomag",
+      buttonText: "Current Plan",
       disabled: true,
       highlight: false,
     },
@@ -75,17 +75,17 @@ const BuildUnionPricing = () => {
       id: "pro" as const,
       name: "Pro",
       price: "19.99",
-      description: "Professzionális eszközök építőipari szakembereknek",
+      description: "Professional tools for construction experts",
       icon: <Zap className="w-6 h-6 text-blue-500" />,
       features: [
-        "10 aktív projekt",
-        "AI asszisztens (Messa)",
-        "Dokumentum elemzés",
-        "Költségbecslés",
-        "Email támogatás",
-        "Szerződés sablonok",
+        "10 active projects",
+        "AI Assistant (Messa)",
+        "Document analysis",
+        "Cost estimation",
+        "Email support",
+        "Contract templates",
       ],
-      buttonText: isCurrentPlan("pro") ? "Jelenlegi csomag" : "Pro előfizetés",
+      buttonText: isCurrentPlan("pro") ? "Current Plan" : "Subscribe to Pro",
       disabled: isCurrentPlan("pro"),
       highlight: true,
     },
@@ -93,19 +93,19 @@ const BuildUnionPricing = () => {
       id: "premium" as const,
       name: "Premium",
       price: "49.99",
-      description: "Teljes hozzáférés nagyobb csapatoknak",
+      description: "Full access for larger teams",
       icon: <Crown className="w-6 h-6 text-amber-500" />,
       features: [
-        "Korlátlan projekt",
-        "Minden Pro funkció",
-        "Prioritásos AI válaszok",
-        "Csapat együttműködés",
-        "Dedikált támogatás",
-        "Egyedi integrációk",
-        "API hozzáférés",
-        "Analitika dashboard",
+        "Unlimited projects",
+        "All Pro features",
+        "Priority AI responses",
+        "Team collaboration",
+        "Dedicated support",
+        "Custom integrations",
+        "API access",
+        "Analytics dashboard",
       ],
-      buttonText: isCurrentPlan("premium") ? "Jelenlegi csomag" : "Premium előfizetés",
+      buttonText: isCurrentPlan("premium") ? "Current Plan" : "Subscribe to Premium",
       disabled: isCurrentPlan("premium"),
       highlight: false,
     },
@@ -119,13 +119,13 @@ const BuildUnionPricing = () => {
       <section className="py-16 md:py-24 bg-gradient-to-b from-slate-900 to-slate-800">
         <div className="container mx-auto px-4 text-center">
           <Badge variant="secondary" className="mb-4 bg-amber-500/20 text-amber-400 border-amber-500/30">
-            Árazás
+            Pricing
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Válaszd ki a számodra megfelelő csomagot
+            Choose the Right Plan for You
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            Építsd fel a jövőt a BuildUnion segítségével. Minden csomag tartalmazza az alapvető funkciókat.
+            Build the future with BuildUnion. Every plan includes essential features to get you started.
           </p>
         </div>
       </section>
@@ -145,7 +145,7 @@ const BuildUnionPricing = () => {
               >
                 {plan.highlight && (
                   <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center py-1 text-sm font-medium">
-                    Legnépszerűbb
+                    Most Popular
                   </div>
                 )}
                 <CardHeader className={plan.highlight ? "pt-10" : ""}>
@@ -156,7 +156,7 @@ const BuildUnionPricing = () => {
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="mt-4">
                     <span className="text-4xl font-bold text-slate-900">${plan.price}</span>
-                    {plan.id !== "free" && <span className="text-slate-500">/hó</span>}
+                    {plan.id !== "free" && <span className="text-slate-500">/mo</span>}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -174,7 +174,7 @@ const BuildUnionPricing = () => {
                       className="w-full" 
                       disabled={!subscription.subscribed}
                     >
-                      {subscription.subscribed ? "Váltás ingyenesre" : "Jelenlegi csomag"}
+                      {subscription.subscribed ? "Switch to Free" : "Current Plan"}
                     </Button>
                   ) : (
                     <Button
@@ -201,15 +201,15 @@ const BuildUnionPricing = () => {
           {subscription.subscribed && (
             <div className="text-center mt-12">
               <p className="text-slate-600 mb-4">
-                Jelenlegi előfizetésed: <strong className="text-slate-900 capitalize">{subscription.tier}</strong>
+                Current subscription: <strong className="text-slate-900 capitalize">{subscription.tier}</strong>
                 {subscription.subscriptionEnd && (
                   <span className="text-slate-500">
-                    {" "}(érvényes: {new Date(subscription.subscriptionEnd).toLocaleDateString("hu-HU")})
+                    {" "}(valid until: {new Date(subscription.subscriptionEnd).toLocaleDateString("en-US")})
                   </span>
                 )}
               </p>
               <Button variant="outline" onClick={handleManageSubscription}>
-                Előfizetés kezelése
+                Manage Subscription
               </Button>
             </div>
           )}
@@ -219,19 +219,19 @@ const BuildUnionPricing = () => {
       {/* FAQ Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl font-bold text-center mb-12">Gyakran Ismételt Kérdések</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
           <div className="space-y-6">
             <div>
-              <h3 className="font-semibold text-lg mb-2">Mikor történik a számlázás?</h3>
-              <p className="text-slate-600">Az előfizetés megvásárlásakor azonnal megtörténik az első havi díj levonása, majd minden hónapban ugyanazon a napon.</p>
+              <h3 className="font-semibold text-lg mb-2">When will I be billed?</h3>
+              <p className="text-slate-600">The first monthly fee is charged immediately upon purchase, then on the same date each month.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Bármikor lemondhatom?</h3>
-              <p className="text-slate-600">Igen, az előfizetésedet bármikor lemondhatod az "Előfizetés kezelése" gombbal. A lemondás után a hónap végéig még használhatod a szolgáltatást.</p>
+              <h3 className="font-semibold text-lg mb-2">Can I cancel anytime?</h3>
+              <p className="text-slate-600">Yes, you can cancel your subscription at any time using the "Manage Subscription" button. After cancellation, you can still use the service until the end of the billing period.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Válthatok csomagot?</h3>
-              <p className="text-slate-600">Természetesen! Az "Előfizetés kezelése" menüben bármikor upgrade-elhetsz vagy downgrade-elhetsz másik csomagra.</p>
+              <h3 className="font-semibold text-lg mb-2">Can I switch plans?</h3>
+              <p className="text-slate-600">Absolutely! You can upgrade or downgrade to a different plan at any time through the "Manage Subscription" menu.</p>
             </div>
           </div>
         </div>
