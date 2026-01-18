@@ -32,8 +32,8 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-hero-overlay/60" />
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-6">
-        <div className="text-center">
+      <div className="relative z-10 flex h-full flex-col items-start justify-center px-6 pt-0 md:-mt-32">
+        <div className="max-w-4xl">
           <h1 
             className="font-display text-4xl font-light tracking-tight text-hero-text sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl animate-fade-in-up"
             style={{ animationDelay: "0.2s" }}
@@ -41,10 +41,10 @@ const HeroSection = () => {
             BuildUnion
           </h1>
           <p 
-            className="mt-4 font-display text-lg font-light tracking-[0.3em] uppercase text-hero-text-muted sm:text-xl md:text-2xl animate-fade-in-up opacity-0"
-            style={{ animationDelay: "0.6s" }}
+            className="mt-6 font-display text-lg font-semibold leading-relaxed text-hero-text sm:text-xl md:text-2xl animate-fade-in-up opacity-0 max-w-2xl"
+            style={{ animationDelay: "0.6s", animationFillMode: "forwards" }}
           >
-            Operational Truth
+            Construction grade project management platform for teams who build the real world
           </p>
         </div>
       </div>
