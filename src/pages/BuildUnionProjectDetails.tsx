@@ -11,8 +11,10 @@ import {
   ArrowLeft, FileText, Calendar, Loader2, Download, Trash2, 
   Brain, AlertCircle, Clock, Sparkles,
   Pencil, X, Check, ShieldCheck, Send, Zap, BookOpen,
-  Users, Mail, Image, FileCheck, Briefcase
+  Users, Mail, Image, FileCheck, Briefcase, Plus, MapPin
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -142,6 +144,11 @@ const BuildUnionProjectDetails = () => {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editTrades, setEditTrades] = useState<string[]>([]);
+  const [editManpower, setEditManpower] = useState<{ trade: string; count: number }[]>([]);
+  const [editCertifications, setEditCertifications] = useState<string[]>([]);
+  const [newCertification, setNewCertification] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Chat state
@@ -176,6 +183,10 @@ const BuildUnionProjectDetails = () => {
         setEditName(projectData.name);
         setEditDescription(projectData.description || "");
         setEditStatus(projectData.status);
+        setEditAddress(projectData.address || "");
+        setEditTrades(projectData.trades || []);
+        setEditManpower((projectData.manpower_requirements as { trade: string; count: number }[]) || []);
+        setEditCertifications(projectData.required_certifications || []);
 
         // Fetch site images URLs
         const siteImages = (projectData as any).site_images || [];
@@ -267,6 +278,10 @@ const BuildUnionProjectDetails = () => {
           name: editName.trim(),
           description: editDescription.trim() || null,
           status: editStatus,
+          address: editAddress.trim() || null,
+          trades: editTrades,
+          manpower_requirements: editManpower as any,
+          required_certifications: editCertifications,
         })
         .eq("id", project.id);
 
@@ -277,6 +292,10 @@ const BuildUnionProjectDetails = () => {
         name: editName.trim(),
         description: editDescription.trim() || null,
         status: editStatus,
+        address: editAddress.trim() || null,
+        trades: editTrades,
+        manpower_requirements: editManpower,
+        required_certifications: editCertifications,
       });
       setIsEditing(false);
       toast.success("Project updated");
@@ -293,6 +312,10 @@ const BuildUnionProjectDetails = () => {
       setEditName(project.name);
       setEditDescription(project.description || "");
       setEditStatus(project.status);
+      setEditAddress(project.address || "");
+      setEditTrades(project.trades || []);
+      setEditManpower(project.manpower_requirements || []);
+      setEditCertifications(project.required_certifications || []);
     }
     setIsEditing(false);
   };
@@ -385,7 +408,13 @@ const BuildUnionProjectDetails = () => {
     setIsLoading(true);
 
     try {
+      // Include both documents and site images for AI analysis
       const documentNames = documents.map(d => d.file_name);
+      const imageNames = (project?.site_images || []).map((path, idx) => {
+        const fileName = path.split('/').pop() || `site-image-${idx + 1}`;
+        return `[Image] ${fileName}`;
+      });
+      const allFileNames = [...documentNames, ...imageNames];
       
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -399,7 +428,8 @@ const BuildUnionProjectDetails = () => {
           projectContext: {
             projectId,
             projectName: project?.name,
-            documents: documentNames,
+            documents: allFileNames,
+            siteImages: project?.site_images || [],
           },
         }),
       });
@@ -505,43 +535,199 @@ const BuildUnionProjectDetails = () => {
         <Card className="mb-8 border-slate-200 bg-white">
           <CardContent className="pt-6">
             {isEditing ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Basic Info */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-slate-700 font-medium">Project Name *</Label>
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Project name"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-700 font-medium">Status</Label>
+                    <Select value={editStatus} onValueChange={setEditStatus}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Project Name</label>
+                  <Label className="text-slate-700 font-medium flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Address
+                  </Label>
                   <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Project name"
-                    className="max-w-md"
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    placeholder="Project address"
+                    className="mt-1 max-w-lg"
                   />
                 </div>
+
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Description</label>
+                  <Label className="text-slate-700 font-medium">Description</Label>
                   <Textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     placeholder="Project description"
-                    className="max-w-lg"
+                    className="mt-1"
                     rows={3}
                   />
                 </div>
+
+                {/* Trades */}
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Status</label>
-                  <Select value={editStatus} onValueChange={setEditStatus}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-slate-700 font-medium flex items-center gap-2 mb-2">
+                    <Briefcase className="h-4 w-4" />
+                    Required Trades
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {Object.entries(TRADE_LABELS).map(([key, label]) => (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`trade-${key}`}
+                          checked={editTrades.includes(key)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setEditTrades([...editTrades, key]);
+                            } else {
+                              setEditTrades(editTrades.filter(t => t !== key));
+                            }
+                          }}
+                        />
+                        <label htmlFor={`trade-${key}`} className="text-sm text-slate-600 cursor-pointer">
+                          {label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex gap-2 pt-2">
+
+                {/* Manpower Requirements */}
+                <div>
+                  <Label className="text-slate-700 font-medium flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4" />
+                    Manpower Requirements
+                  </Label>
+                  <div className="space-y-2">
+                    {editManpower.map((req, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Select
+                          value={req.trade}
+                          onValueChange={(value) => {
+                            const updated = [...editManpower];
+                            updated[idx].trade = value;
+                            setEditManpower(updated);
+                          }}
+                        >
+                          <SelectTrigger className="w-48">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(TRADE_LABELS).map(([key, label]) => (
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={req.count}
+                          onChange={(e) => {
+                            const updated = [...editManpower];
+                            updated[idx].count = parseInt(e.target.value) || 1;
+                            setEditManpower(updated);
+                          }}
+                          className="w-20"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditManpower(editManpower.filter((_, i) => i !== idx))}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditManpower([...editManpower, { trade: "general_contractor", count: 1 }])}
+                      className="gap-1"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Requirement
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Required Certifications */}
+                <div>
+                  <Label className="text-slate-700 font-medium flex items-center gap-2 mb-2">
+                    <FileCheck className="h-4 w-4" />
+                    Required Certifications
+                  </Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {editCertifications.map((cert, idx) => (
+                      <Badge key={idx} variant="outline" className="border-emerald-200 text-emerald-700 gap-1">
+                        {cert}
+                        <button
+                          onClick={() => setEditCertifications(editCertifications.filter((_, i) => i !== idx))}
+                          className="ml-1 hover:text-red-500"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newCertification}
+                      onChange={(e) => setNewCertification(e.target.value)}
+                      placeholder="Add certification..."
+                      className="max-w-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newCertification.trim()) {
+                          e.preventDefault();
+                          if (!editCertifications.includes(newCertification.trim())) {
+                            setEditCertifications([...editCertifications, newCertification.trim()]);
+                          }
+                          setNewCertification("");
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (newCertification.trim() && !editCertifications.includes(newCertification.trim())) {
+                          setEditCertifications([...editCertifications, newCertification.trim()]);
+                          setNewCertification("");
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Save/Cancel buttons */}
+                <div className="flex gap-2 pt-4 border-t border-slate-200">
                   <Button onClick={handleSaveProject} disabled={saving} className="bg-amber-500 hover:bg-amber-600">
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    <span className="ml-2">Save</span>
+                    <span className="ml-2">Save Changes</span>
                   </Button>
                   <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
                     <X className="h-4 w-4" />
@@ -783,7 +969,15 @@ const BuildUnionProjectDetails = () => {
                   <span className="text-sm font-medium text-slate-900">{documents.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Total Size</span>
+                  <span className="text-sm text-slate-500">Site Photos</span>
+                  <span className="text-sm font-medium text-slate-900">{siteImageUrls.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Total Files</span>
+                  <span className="text-sm font-medium text-slate-900">{documents.length + siteImageUrls.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Doc Size</span>
                   <span className="text-sm font-medium text-slate-900">
                     {formatFileSize(documents.reduce((acc, d) => acc + (d.file_size || 0), 0))}
                   </span>
