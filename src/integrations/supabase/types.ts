@@ -178,9 +178,13 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          manpower_requirements: Json | null
           name: string
+          required_certifications: string[] | null
+          site_images: string[] | null
           status: string
           trade: string | null
+          trades: string[] | null
           updated_at: string
           user_id: string
         }
@@ -189,9 +193,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          manpower_requirements?: Json | null
           name: string
+          required_certifications?: string[] | null
+          site_images?: string[] | null
           status?: string
           trade?: string | null
+          trades?: string[] | null
           updated_at?: string
           user_id: string
         }
@@ -200,9 +208,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          manpower_requirements?: Json | null
           name?: string
+          required_certifications?: string[] | null
+          site_images?: string[] | null
           status?: string
           trade?: string | null
+          trades?: string[] | null
           updated_at?: string
           user_id?: string
         }
