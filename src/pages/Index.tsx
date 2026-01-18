@@ -60,9 +60,8 @@ const Index = () => {
             }}
           />
 
-          {/* Pure CSS Orb with floating animation */}
           <div 
-            className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full transition-all duration-700 group-hover:scale-110"
+            className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full transition-all duration-700 group-hover:scale-110"
             style={{
               animation: 'float 6s ease-in-out infinite',
               background: 'radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.8), rgba(251, 146, 60, 0.4) 30%, rgba(6, 182, 212, 0.4) 60%, rgba(6, 182, 212, 0.8))',
