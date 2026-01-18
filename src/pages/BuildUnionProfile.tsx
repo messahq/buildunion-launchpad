@@ -26,7 +26,8 @@ import {
   Loader2,
   X,
   Plus,
-  CheckCircle
+  CheckCircle,
+  Users
 } from "lucide-react";
 
 const BuildUnionProfile = () => {
@@ -49,6 +50,8 @@ const BuildUnionProfile = () => {
   const [availability, setAvailability] = useState("available");
   const [serviceArea, setServiceArea] = useState("");
   const [isContractor, setIsContractor] = useState(false);
+  const [isUnionMember, setIsUnionMember] = useState(false);
+  const [unionName, setUnionName] = useState("");
 
   // Load profile data into form
   useEffect(() => {
@@ -66,6 +69,8 @@ const BuildUnionProfile = () => {
       setAvailability(profile.availability || "available");
       setServiceArea(profile.service_area || "");
       setIsContractor(profile.is_contractor || false);
+      setIsUnionMember(profile.is_union_member || false);
+      setUnionName(profile.union_name || "");
     }
   }, [profile]);
 
@@ -98,6 +103,8 @@ const BuildUnionProfile = () => {
       availability,
       service_area: serviceArea || null,
       is_contractor: isContractor,
+      is_union_member: isUnionMember,
+      union_name: isUnionMember ? (unionName || null) : null,
       profile_completed: Boolean(primaryTrade && experienceLevel && phone)
     };
     
@@ -432,6 +439,42 @@ const BuildUnionProfile = () => {
                 onChange={(e) => setBio(e.target.value)}
                 rows={4}
               />
+            </CardContent>
+          </Card>
+
+          {/* Union Membership */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Union Membership
+              </CardTitle>
+              <CardDescription>Your trade union affiliation</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Switch 
+                  checked={isUnionMember} 
+                  onCheckedChange={setIsUnionMember}
+                  id="isUnionMember"
+                />
+                <Label htmlFor="isUnionMember">I am a union member</Label>
+              </div>
+
+              {isUnionMember && (
+                <div className="space-y-2 pl-6 border-l-2 border-primary/20">
+                  <Label htmlFor="unionName">Union Name</Label>
+                  <Input 
+                    id="unionName"
+                    placeholder="e.g., IBEW Local 353, Carpenters Union Local 27"
+                    value={unionName}
+                    onChange={(e) => setUnionName(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter the name of your trade union or local chapter
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

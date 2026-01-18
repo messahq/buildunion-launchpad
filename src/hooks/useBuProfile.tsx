@@ -49,6 +49,8 @@ export interface BuProfile {
   is_contractor: boolean;
   is_verified: boolean;
   profile_completed: boolean;
+  is_union_member: boolean;
+  union_name: string | null;
   created_at: string;
   updated_at: string;
 }
