@@ -64,10 +64,14 @@ const Index = () => {
         </button>
       </div>
 
-      {/* Center Section - Decorative Orb */}
+      {/* Center Section - Clickable Orb */}
       <div className="relative z-10 flex-1 flex items-center justify-center px-6">
-        {/* Decorative CSS Orb (no click action) */}
-        <div className="relative">
+        {/* Interactive CSS Orb */}
+        <button
+          onClick={() => navigate("/orb")}
+          className="relative group cursor-pointer focus:outline-none"
+          aria-label="Enter Orb Module"
+        >
           {/* Outer glow rings - breathing animation */}
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500/30 to-cyan-500/30 blur-3xl scale-150 animate-[pulse_4s_ease-in-out_infinite]" />
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500/20 to-orange-500/20 blur-2xl scale-125 animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
@@ -89,7 +93,7 @@ const Index = () => {
           />
 
           <div 
-            className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full"
+            className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full transition-transform duration-500 group-hover:scale-110"
             style={{
               animation: 'float 6s ease-in-out infinite',
               background: 'radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.8), rgba(251, 146, 60, 0.4) 30%, rgba(6, 182, 212, 0.4) 60%, rgba(6, 182, 212, 0.8))',
@@ -136,7 +140,7 @@ const Index = () => {
               }}
             />
           ))}
-        </div>
+        </button>
       </div>
 
       {/* Custom keyframes */}
