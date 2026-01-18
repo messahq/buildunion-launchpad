@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile, TRADE_LABELS, EXPERIENCE_LABELS } from "@/hooks/useBuProfile";
 import { useSubscription } from "@/hooks/useSubscription";
+import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
@@ -28,14 +29,26 @@ import {
   Calendar,
   Star,
   Crown,
-  Zap
+  Zap,
+  Camera
 } from "lucide-react";
+import { toast } from "sonner";
 
 const BuildUnionProfileView = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useBuProfile();
+  const { profile, loading: profileLoading, updateProfile } = useBuProfile();
   const { subscription } = useSubscription();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Sync avatar URL from profile
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarUrl(profile.avatar_url);
+    }
+  }, [profile]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -74,6 +87,57 @@ const BuildUnionProfileView = () => {
 
   const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'BU';
 
+  // Handle avatar upload
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+
+      // Create unique file path
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Add cache-busting timestamp
+      const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+
+      // Update profile with new avatar URL
+      await updateProfile({ avatar_url: urlWithTimestamp });
+      setAvatarUrl(urlWithTimestamp);
+      toast.success('Profile picture updated!');
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      toast.error('Failed to upload profile picture');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const getTierBadge = () => {
     if (subscription.tier === 'premium') {
       return (
@@ -108,14 +172,34 @@ const BuildUnionProfileView = () => {
           <div className="h-24 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
           
           <CardContent className="pt-0 pb-6">
-            {/* Avatar overlapping cover */}
+            {/* Avatar overlapping cover with upload */}
             <div className="flex flex-col items-center -mt-12">
-              <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
-                <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-amber-400 to-orange-500 text-white">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative group">
+                <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                  <AvatarImage src={avatarUrl || profile?.avatar_url || undefined} alt="Profile" />
+                  <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-amber-400 to-orange-500 text-white">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                  ) : (
+                    <Camera className="h-6 w-6 text-white" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </div>
               
               <div className="mt-4 text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
