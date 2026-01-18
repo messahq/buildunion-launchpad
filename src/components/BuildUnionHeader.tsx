@@ -1,13 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Globe } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
 
 const languages = [
@@ -24,9 +27,15 @@ const languages = [
 
 const BuildUnionHeader = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
@@ -78,22 +87,53 @@ const BuildUnionHeader = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Login Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-gray-700 hover:text-gray-900 font-medium"
-          >
-            Log In
-          </Button>
+          {user ? (
+            /* Logged in - User Menu */
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-700 hover:text-gray-900 gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="text-sm hidden md:inline">
+                    {user.email?.split("@")[0]}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[160px]">
+                <DropdownMenuItem className="text-gray-500 text-xs">
+                  {user.email}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            /* Not logged in - Login/Register Buttons */
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/buildunion/login")}
+                className="text-gray-700 hover:text-gray-900 font-medium"
+              >
+                Log In
+              </Button>
 
-          {/* Register Button */}
-          <Button
-            size="sm"
-            className="bg-orange-500 hover:bg-orange-600 text-white font-medium"
-          >
-            Register
-          </Button>
+              <Button
+                size="sm"
+                onClick={() => navigate("/buildunion/register")}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-medium"
+              >
+                Register
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>
