@@ -17,6 +17,7 @@ export type Database = {
       bu_profiles: {
         Row: {
           availability: string | null
+          avatar_url: string | null
           bio: string | null
           certifications: string[] | null
           company_name: string | null
@@ -46,6 +47,7 @@ export type Database = {
         }
         Insert: {
           availability?: string | null
+          avatar_url?: string | null
           bio?: string | null
           certifications?: string[] | null
           company_name?: string | null
@@ -75,6 +77,7 @@ export type Database = {
         }
         Update: {
           availability?: string | null
+          avatar_url?: string | null
           bio?: string | null
           certifications?: string[] | null
           company_name?: string | null

@@ -2,12 +2,13 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile, TRADE_LABELS, EXPERIENCE_LABELS } from "@/hooks/useBuProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { 
   User, 
@@ -25,13 +26,16 @@ import {
   Mail,
   Edit,
   Calendar,
-  Star
+  Star,
+  Crown,
+  Zap
 } from "lucide-react";
 
 const BuildUnionProfileView = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useBuProfile();
+  const { subscription } = useSubscription();
 
   // Redirect if not logged in
   useEffect(() => {
@@ -70,6 +74,29 @@ const BuildUnionProfileView = () => {
 
   const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'BU';
 
+  const getTierBadge = () => {
+    if (subscription.tier === 'premium') {
+      return (
+        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white gap-1">
+          <Crown className="h-3 w-3" />
+          Premium
+        </Badge>
+      );
+    } else if (subscription.tier === 'pro') {
+      return (
+        <Badge className="bg-blue-500 text-white gap-1">
+          <Zap className="h-3 w-3" />
+          Pro
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="gap-1">
+        Free
+      </Badge>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex flex-col">
       <BuildUnionHeader />
@@ -84,15 +111,19 @@ const BuildUnionProfileView = () => {
             {/* Avatar overlapping cover */}
             <div className="flex flex-col items-center -mt-12">
               <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
                 <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-amber-400 to-orange-500 text-white">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
               
               <div className="mt-4 text-center">
-                <h1 className="text-2xl font-bold text-foreground">
-                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'BuildUnion User'}
-                </h1>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'BuildUnion User'}
+                  </h1>
+                  {getTierBadge()}
+                </div>
                 
                 {profile?.primary_trade && (
                   <p className="text-lg text-muted-foreground mt-1">
