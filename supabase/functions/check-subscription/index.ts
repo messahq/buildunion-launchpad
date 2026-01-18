@@ -12,10 +12,10 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs mapping
+// Product IDs mapping (CAD products)
 const PRODUCT_TIERS: Record<string, string> = {
-  "prod_TofoY84ylvNqKh": "pro",
-  "prod_TofpsY4EZWUtVl": "premium",
+  "prod_Tog02cwkocBGA0": "pro",
+  "prod_Tog0mYcKDEXUfl": "premium",
 };
 
 serve(async (req) => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Plus } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,7 +9,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
 import AskMessaChat from "@/components/AskMessaChat";
@@ -29,6 +31,7 @@ const languages = [
 const BuildUnionHeader = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { subscription } = useSubscription();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -37,6 +40,36 @@ const BuildUnionHeader = () => {
   const handleSignOut = async () => {
     await signOut();
     toast.success("Signed out successfully");
+  };
+
+  const getTierIcon = () => {
+    if (subscription.tier === "premium") {
+      return <Crown className="h-3 w-3 text-amber-500" />;
+    } else if (subscription.tier === "pro") {
+      return <Zap className="h-3 w-3 text-blue-500" />;
+    }
+    return null;
+  };
+
+  const getTierBadge = () => {
+    if (subscription.tier === "premium") {
+      return (
+        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-2 py-0.5">
+          Premium
+        </Badge>
+      );
+    } else if (subscription.tier === "pro") {
+      return (
+        <Badge className="bg-blue-500 text-white text-xs px-2 py-0.5">
+          Pro
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+        Free
+      </Badge>
+    );
   };
 
   return (
@@ -127,17 +160,46 @@ const BuildUnionHeader = () => {
                   size="sm"
                   className="text-gray-700 hover:text-gray-900 gap-2"
                 >
-                  <User className="h-4 w-4" />
+                  <div className="flex items-center gap-1.5">
+                    {getTierIcon()}
+                    <User className="h-4 w-4" />
+                  </div>
                   <span className="text-sm hidden md:inline">
                     {user.email?.split("@")[0]}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[160px]">
-                <DropdownMenuItem className="text-gray-500 text-xs">
-                  {user.email}
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="min-w-[200px]">
+                <div className="px-2 py-2">
+                  <p className="text-sm font-medium text-gray-900">{user.email?.split("@")[0]}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    {getTierBadge()}
+                    {subscription.subscriptionEnd && (
+                      <span className="text-xs text-gray-400">
+                        until {new Date(subscription.subscriptionEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <DropdownMenuSeparator />
+                {subscription.subscribed && (
+                  <>
+                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")}>
+                      Manage Subscription
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {!subscription.subscribed && (
+                  <>
+                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="text-amber-600">
+                      <Zap className="h-4 w-4 mr-2" />
+                      Upgrade to Pro
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out

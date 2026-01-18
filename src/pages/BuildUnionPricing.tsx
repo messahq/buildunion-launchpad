@@ -155,7 +155,7 @@ const BuildUnionPricing = () => {
                   </div>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold text-slate-900">${plan.price}</span>
+                    <span className="text-4xl font-bold text-slate-900">C${plan.price}</span>
                     {plan.id !== "free" && <span className="text-slate-500">/mo</span>}
                   </div>
                 </CardHeader>
