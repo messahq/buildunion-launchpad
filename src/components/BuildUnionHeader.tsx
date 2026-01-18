@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -60,8 +60,18 @@ const BuildUnionHeader = () => {
           />
         </div>
 
-        {/* Right - Auth Buttons & Language */}
-        <div className="flex items-center gap-3">
+        {/* Right - Start New Project, Auth Buttons & Language */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Start New Project Button */}
+          <Button
+            size="sm"
+            onClick={() => navigate("/buildunion/workspace/new")}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1.5 hidden sm:flex"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden md:inline">Start New Project</span>
+            <span className="md:hidden">New</span>
+          </Button>
           {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
