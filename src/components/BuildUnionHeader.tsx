@@ -74,36 +74,36 @@ const BuildUnionHeader = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
-      <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="container mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
         {/* Left - Back to Dock */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/")}
-          className="text-gray-600 hover:text-gray-900 gap-2"
+          className="text-gray-600 hover:text-gray-900 gap-1 sm:gap-2 px-1 sm:px-3"
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="text-sm hidden sm:inline">Back to Dock</span>
         </Button>
 
-        {/* Center - Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2">
+        {/* Center - Logo (hidden on very small screens) */}
+        <div className="hidden xs:block absolute left-1/2 -translate-x-1/2">
           <img
             src={buildUnionLogo}
             alt="BuildUnion Logo"
-            className="h-12 w-auto object-contain"
+            className="h-8 sm:h-12 w-auto object-contain"
           />
         </div>
 
-        {/* Right - Ask Messa, Start New Project, Auth Buttons & Language */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right - Ask Messa, Pricing, Auth Buttons & Language */}
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
           {/* Ask Messa Orb Button */}
           <button
             onClick={() => setIsChatOpen(true)}
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 hover:scale-110 transition-transform shadow-md flex items-center justify-center"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 hover:scale-110 transition-transform shadow-md flex items-center justify-center flex-shrink-0"
             title="Ask Messa AI"
           >
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
           </button>
 
           {/* Pricing Link */}
@@ -111,7 +111,7 @@ const BuildUnionHeader = () => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/buildunion/pricing")}
-            className="text-gray-600 hover:text-gray-900 font-medium px-2 sm:px-3"
+            className="text-gray-600 hover:text-gray-900 font-medium px-1.5 sm:px-3 text-xs sm:text-sm"
           >
             Pricing
           </Button>
@@ -120,19 +120,19 @@ const BuildUnionHeader = () => {
           <Button
             size="sm"
             onClick={() => navigate("/buildunion/workspace/new")}
-            className="bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1.5 hidden sm:flex"
+            className="bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1.5 hidden md:flex"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden md:inline">Start New Project</span>
-            <span className="md:hidden">New</span>
+            <span>New Project</span>
           </Button>
-          {/* Language Selector */}
+
+          {/* Language Selector - hidden on mobile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-gray-600 hover:text-gray-900 gap-1"
+                className="text-gray-600 hover:text-gray-900 gap-1 px-1.5 sm:px-3 hidden sm:flex"
               >
                 <Globe className="h-4 w-4" />
                 <span className="text-sm hidden md:inline">{currentLang?.name}</span>
