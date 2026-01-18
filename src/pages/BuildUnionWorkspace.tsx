@@ -484,52 +484,52 @@ const BuildUnionWorkspace = () => {
       </section>
 
       {/* Industry Standards & OBC Section */}
-      <section className="py-20 px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      <section className="py-20 px-6 bg-white border-y border-slate-100">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left - Content */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Scale className="h-5 w-5 text-amber-400" />
-                <span className="text-amber-400 font-semibold text-sm uppercase tracking-wider">
+                <Scale className="h-5 w-5 text-amber-600" />
+                <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">
                   Industry Standards
                 </span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-6">
                 Ontario Building Code
-                <span className="block text-amber-400">2024 Updates</span>
+                <span className="block text-amber-600">2024 Updates</span>
               </h2>
-              <p className="text-slate-300 leading-relaxed mb-6">
+              <p className="text-slate-600 leading-relaxed mb-6">
                 Stay compliant with the latest OBC amendments. Our platform automatically cross-references 
                 your documents against current building codes, ensuring your projects meet all regulatory requirements.
               </p>
               
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <AlertTriangle className="h-4 w-4 text-amber-400" />
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-white">Fire Safety Updates</h4>
-                    <p className="text-slate-400 text-sm">New requirements for high-rise residential buildings effective March 2024</p>
+                    <h4 className="font-semibold text-slate-900">Fire Safety Updates</h4>
+                    <p className="text-slate-500 text-sm">New requirements for high-rise residential buildings effective March 2024</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Building2 className="h-4 w-4 text-cyan-400" />
+                  <div className="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Building2 className="h-4 w-4 text-cyan-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-white">Accessibility Standards</h4>
-                    <p className="text-slate-400 text-sm">Enhanced AODA compliance for commercial structures</p>
+                    <h4 className="font-semibold text-slate-900">Accessibility Standards</h4>
+                    <p className="text-slate-500 text-sm">Enhanced AODA compliance for commercial structures</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <TrendingUp className="h-4 w-4 text-green-400" />
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-white">Energy Efficiency</h4>
-                    <p className="text-slate-400 text-sm">Updated insulation and HVAC requirements for net-zero targets</p>
+                    <h4 className="font-semibold text-slate-900">Energy Efficiency</h4>
+                    <p className="text-slate-500 text-sm">Updated insulation and HVAC requirements for net-zero targets</p>
                   </div>
                 </div>
               </div>
@@ -537,21 +537,21 @@ const BuildUnionWorkspace = () => {
 
             {/* Right - Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div className="text-4xl font-bold text-amber-400 mb-2">2,847</div>
-                <div className="text-slate-300 text-sm">Code sections analyzed</div>
+              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                <div className="text-3xl font-bold text-amber-600 mb-1">2,847</div>
+                <div className="text-slate-500 text-sm">Code sections analyzed</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div className="text-4xl font-bold text-cyan-400 mb-2">99.2%</div>
-                <div className="text-slate-300 text-sm">Compliance accuracy</div>
+              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                <div className="text-3xl font-bold text-cyan-600 mb-1">99.2%</div>
+                <div className="text-slate-500 text-sm">Compliance accuracy</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div className="text-4xl font-bold text-green-400 mb-2">24h</div>
-                <div className="text-slate-300 text-sm">Update cycle</div>
+              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                <div className="text-3xl font-bold text-green-600 mb-1">24h</div>
+                <div className="text-slate-500 text-sm">Update cycle</div>
               </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                <div className="text-4xl font-bold text-purple-400 mb-2">156</div>
-                <div className="text-slate-300 text-sm">Amendments tracked</div>
+              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                <div className="text-3xl font-bold text-purple-600 mb-1">156</div>
+                <div className="text-slate-500 text-sm">Amendments tracked</div>
               </div>
             </div>
           </div>
@@ -559,12 +559,12 @@ const BuildUnionWorkspace = () => {
       </section>
 
       {/* Union & Community Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50">
+      <section className="py-20 px-6 bg-slate-50">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <Users className="h-5 w-5 text-orange-600" />
-              <span className="text-orange-600 font-semibold text-sm uppercase tracking-wider">
+              <Users className="h-5 w-5 text-amber-600" />
+              <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">
                 Stronger Together
               </span>
             </div>
@@ -577,53 +577,67 @@ const BuildUnionWorkspace = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             {/* Higher Wages */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-orange-100 text-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                <DollarSign className="h-8 w-8 text-green-600" />
-              </div>
-              <div className="text-4xl font-bold text-slate-900 mb-2">+27%</div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">Higher Wages</h3>
-              <p className="text-slate-500 text-sm">
-                Union workers earn on average 27% more than non-union counterparts in the same trade.
-              </p>
-            </div>
+            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300">
+              <CardHeader className="text-center pb-2">
+                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mx-auto mb-3">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900">+27%</div>
+                <CardTitle className="text-lg font-semibold text-slate-900">Higher Wages</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-slate-600 text-center">
+                  Union workers earn on average 27% more than non-union counterparts in the same trade.
+                </CardDescription>
+              </CardContent>
+            </Card>
 
             {/* Health Coverage */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-orange-100 text-center">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
-                <Heart className="h-8 w-8 text-red-500" />
-              </div>
-              <div className="text-4xl font-bold text-slate-900 mb-2">94%</div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">Health Coverage</h3>
-              <p className="text-slate-500 text-sm">
-                Union members with employer-sponsored health insurance coverage for families.
-              </p>
-            </div>
+            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300">
+              <CardHeader className="text-center pb-2">
+                <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center mx-auto mb-3">
+                  <Heart className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900">94%</div>
+                <CardTitle className="text-lg font-semibold text-slate-900">Health Coverage</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-slate-600 text-center">
+                  Union members with employer-sponsored health insurance coverage for families.
+                </CardDescription>
+              </CardContent>
+            </Card>
 
             {/* Job Security */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-orange-100 text-center">
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6">
-                <Briefcase className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="text-4xl font-bold text-slate-900 mb-2">3.2x</div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">Job Security</h3>
-              <p className="text-slate-500 text-sm">
-                Union workers are 3.2x more likely to have pension plans and retirement benefits.
-              </p>
-            </div>
+            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300">
+              <CardHeader className="text-center pb-2">
+                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                  <Briefcase className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900">3.2x</div>
+                <CardTitle className="text-lg font-semibold text-slate-900">Job Security</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-slate-600 text-center">
+                  Union workers are 3.2x more likely to have pension plans and retirement benefits.
+                </CardDescription>
+              </CardContent>
+            </Card>
           </div>
 
           {/* CTA Banner */}
-          <div className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-2xl p-8 md:p-12 text-center text-white">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Ready to Join the Movement?
-            </h3>
-            <p className="text-orange-100 mb-6 max-w-xl mx-auto">
-              Connect with local unions, access exclusive training programs, and build your career with the support of a strong community.
-            </p>
-            <Button className="bg-white text-orange-600 hover:bg-orange-50 font-semibold px-8 py-6 text-lg">
+          <div className="bg-slate-800 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-center md:text-left">
+              <h3 className="text-xl font-semibold text-white mb-1">
+                Ready to Join the Movement?
+              </h3>
+              <p className="text-slate-400 text-sm">
+                Connect with local unions and access exclusive training programs.
+              </p>
+            </div>
+            <Button className="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 whitespace-nowrap">
               Find Your Local Union
             </Button>
           </div>
@@ -636,8 +650,8 @@ const BuildUnionWorkspace = () => {
           <div className="flex items-center justify-between mb-12">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-5 w-5 text-slate-600" />
-                <span className="text-slate-600 font-medium text-sm uppercase tracking-wider">
+                <BookOpen className="h-5 w-5 text-amber-600" />
+                <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">
                   Stay Informed
                 </span>
               </div>
@@ -652,80 +666,100 @@ const BuildUnionWorkspace = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* News Card 1 */}
-            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
-              <div className="h-32 bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                <Building2 className="h-12 w-12 text-white/80" />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">Investment</span>
-                  <span className="text-xs text-slate-400">Jan 18, 2026</span>
+            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">Investment</span>
+                  <div className="flex items-center gap-1 text-slate-400 text-xs">
+                    <Calendar className="h-3 w-3" />
+                    Jan 18, 2026
+                  </div>
                 </div>
-                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
-                  $2.4B Federal Infrastructure Package Approved
-                </h3>
-                <p className="text-slate-500 text-sm line-clamp-2">
-                  Major funding for transit, bridges, and public facilities across Ontario.
-                </p>
-              </div>
-            </div>
+                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
+                  Ontario Announces $3.2B Transit Expansion for GTA
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-slate-600 text-sm leading-relaxed">
+                  Provincial government commits to building 15 new transit stations across Toronto, Mississauga, and Brampton by 2030. Project expected to create 45,000 construction jobs.
+                </CardDescription>
+                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Read more <ArrowRight className="h-4 w-4 ml-1" />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* News Card 2 */}
-            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
-              <div className="h-32 bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                <TrendingUp className="h-12 w-12 text-white/80" />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded">Wages</span>
-                  <span className="text-xs text-slate-400">Jan 15, 2026</span>
+            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">Wages</span>
+                  <div className="flex items-center gap-1 text-slate-400 text-xs">
+                    <Calendar className="h-3 w-3" />
+                    Jan 15, 2026
+                  </div>
                 </div>
-                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
-                  Construction Wages Rise 8.3% Year-Over-Year
-                </h3>
-                <p className="text-slate-500 text-sm line-clamp-2">
-                  Skilled trades see highest wage growth in decade amid labor shortage.
-                </p>
-              </div>
-            </div>
+                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
+                  Electricians See 12% Wage Increase in New Collective Agreement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-slate-600 text-sm leading-relaxed">
+                  IBEW Local 353 secures historic contract with 12% wage increase over 3 years, plus enhanced pension contributions and improved safety standards on job sites.
+                </CardDescription>
+                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Read more <ArrowRight className="h-4 w-4 ml-1" />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* News Card 3 */}
-            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
-              <div className="h-32 bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
-                <Award className="h-12 w-12 text-white/80" />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">Training</span>
-                  <span className="text-xs text-slate-400">Jan 12, 2026</span>
+            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded">Training</span>
+                  <div className="flex items-center gap-1 text-slate-400 text-xs">
+                    <Calendar className="h-3 w-3" />
+                    Jan 12, 2026
+                  </div>
                 </div>
-                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
-                  New Apprenticeship Programs Launch Province-Wide
-                </h3>
-                <p className="text-slate-500 text-sm line-clamp-2">
-                  Government invests $180M in skilled trades training initiatives.
-                </p>
-              </div>
-            </div>
+                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
+                  Skilled Trades Colleges Report Record Enrollment Numbers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-slate-600 text-sm leading-relaxed">
+                  George Brown and Mohawk Colleges report 34% increase in trades program applications. Plumbing, HVAC, and electrical programs see highest demand.
+                </CardDescription>
+                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Read more <ArrowRight className="h-4 w-4 ml-1" />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* News Card 4 */}
-            <div className="bg-slate-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
-              <div className="h-32 bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                <Clock className="h-12 w-12 text-white/80" />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-0.5 rounded">Safety</span>
-                  <span className="text-xs text-slate-400">Jan 10, 2026</span>
+            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">Safety</span>
+                  <div className="flex items-center gap-1 text-slate-400 text-xs">
+                    <Calendar className="h-3 w-3" />
+                    Jan 10, 2026
+                  </div>
                 </div>
-                <h3 className="font-bold text-slate-900 mb-2 group-hover:text-amber-700 transition-colors">
-                  New Worksite Safety Standards Take Effect
-                </h3>
-                <p className="text-slate-500 text-sm line-clamp-2">
-                  Enhanced PPE requirements and mandatory rest periods now enforced.
-                </p>
-              </div>
-            </div>
+                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
+                  Ministry of Labour Introduces Enhanced Worksite Safety Protocols
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-slate-600 text-sm leading-relaxed">
+                  New regulations require mandatory heat stress breaks during summer months and updated fall protection equipment for all high-rise construction projects.
+                </CardDescription>
+                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Read more <ArrowRight className="h-4 w-4 ml-1" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="text-center mt-8 sm:hidden">
