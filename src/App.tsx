@@ -10,6 +10,7 @@ import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
 import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ConfirmEmail from "./pages/ConfirmEmail";
 import DockLogin from "./pages/DockLogin";
 import DockRegister from "./pages/DockRegister";
 import OrbPage from "./pages/OrbPage";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
             <Route path="/buildunion/login" element={<Login />} />
             <Route path="/buildunion/register" element={<Register />} />
+            <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />
             <Route path="/dock/login" element={<DockLogin />} />
             <Route path="/dock/register" element={<DockRegister />} />
             <Route path="/orb" element={<OrbPage />} />

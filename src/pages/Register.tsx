@@ -36,12 +36,11 @@ const Register = () => {
 
     if (error) {
       toast.error(error.message);
+      setLoading(false);
     } else {
-      toast.success("Account created successfully!");
-      navigate("/buildunion/workspace");
+      toast.success("Please check your email to confirm your account!");
+      navigate(`/buildunion/confirm-email?email=${encodeURIComponent(email)}`);
     }
-
-    setLoading(false);
   };
 
   return (
