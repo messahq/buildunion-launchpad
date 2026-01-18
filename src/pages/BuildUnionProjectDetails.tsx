@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   ArrowLeft, FileText, Calendar, Loader2, Download, Trash2, 
   Brain, AlertCircle, Clock, Sparkles,
-  Pencil, X, Check, ShieldCheck, Send, Zap, BookOpen
+  Pencil, X, Check, ShieldCheck, Send, Zap, BookOpen,
+  Users, Mail, Image, FileCheck, Briefcase
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TRADE_LABELS, ConstructionTrade } from "@/hooks/useBuProfile";
 
 interface Project {
   id: string;
@@ -24,6 +26,19 @@ interface Project {
   status: string;
   created_at: string;
   updated_at: string;
+  address?: string | null;
+  trade?: string | null;
+  trades?: string[];
+  manpower_requirements?: { trade: string; count: number }[];
+  required_certifications?: string[];
+  site_images?: string[];
+}
+
+interface TeamInvitation {
+  id: string;
+  email: string;
+  status: string;
+  created_at: string;
 }
 
 interface ProjectDocument {
@@ -118,6 +133,8 @@ const BuildUnionProjectDetails = () => {
   const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+  const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([]);
+  const [siteImageUrls, setSiteImageUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Edit mode
@@ -155,11 +172,24 @@ const BuildUnionProjectDetails = () => {
           return;
         }
 
-        setProject(projectData);
+        setProject(projectData as unknown as Project);
         setEditName(projectData.name);
         setEditDescription(projectData.description || "");
         setEditStatus(projectData.status);
 
+        // Fetch site images URLs
+        const siteImages = (projectData as any).site_images || [];
+        if (siteImages.length > 0) {
+          const urls = await Promise.all(
+            siteImages.map(async (path: string) => {
+              const { data } = supabase.storage.from("project-documents").getPublicUrl(path);
+              return data.publicUrl;
+            })
+          );
+          setSiteImageUrls(urls);
+        }
+
+        // Fetch documents
         const { data: docsData, error: docsError } = await supabase
           .from("project_documents")
           .select("*")
@@ -168,6 +198,17 @@ const BuildUnionProjectDetails = () => {
 
         if (docsError) throw docsError;
         setDocuments(docsData || []);
+
+        // Fetch team invitations
+        const { data: inviteData, error: inviteError } = await supabase
+          .from("team_invitations")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false });
+
+        if (!inviteError) {
+          setTeamInvitations(inviteData || []);
+        }
       } catch (error) {
         console.error("Error fetching project:", error);
         toast.error("Failed to load project");
@@ -498,6 +539,124 @@ const BuildUnionProjectDetails = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Project Requirements Section */}
+        {(project.trades?.length || project.manpower_requirements?.length || project.required_certifications?.length || siteImageUrls.length > 0 || teamInvitations.length > 0) && (
+          <Card className="mb-6 border-slate-200 bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-slate-900">
+                Project Requirements & Team
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Trades */}
+              {project.trades && project.trades.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Briefcase className="h-4 w-4" />
+                    Required Trades
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {project.trades.map((trade) => (
+                      <Badge key={trade} variant="secondary">
+                        {TRADE_LABELS[trade as ConstructionTrade] || trade}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Manpower Requirements */}
+              {project.manpower_requirements && project.manpower_requirements.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Users className="h-4 w-4" />
+                    Manpower Requirements
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {project.manpower_requirements.map((req, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
+                        <span className="text-sm text-slate-600">
+                          {TRADE_LABELS[req.trade as ConstructionTrade] || req.trade}
+                        </span>
+                        <Badge className="bg-amber-100 text-amber-700">{req.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Required Certifications */}
+              {project.required_certifications && project.required_certifications.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <FileCheck className="h-4 w-4" />
+                    Required Certifications
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {project.required_certifications.map((cert, idx) => (
+                      <Badge key={idx} variant="outline" className="border-emerald-200 text-emerald-700">
+                        {cert}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Site Images */}
+              {siteImageUrls.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Image className="h-4 w-4" />
+                    Site Photos
+                  </div>
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                    {siteImageUrls.map((url, idx) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        alt={`Site ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => window.open(url, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Team Invitations */}
+              {teamInvitations.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Mail className="h-4 w-4" />
+                    Team Invitations ({teamInvitations.length})
+                  </div>
+                  <div className="space-y-2">
+                    {teamInvitations.map((invite) => (
+                      <div key={invite.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-slate-400" />
+                          <span className="text-sm text-slate-700">{invite.email}</span>
+                        </div>
+                        <Badge 
+                          className={
+                            invite.status === 'pending' 
+                              ? 'bg-amber-100 text-amber-700' 
+                              : invite.status === 'accepted'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
+                          }
+                        >
+                          {invite.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Documents Column */}
