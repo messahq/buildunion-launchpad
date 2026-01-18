@@ -266,6 +266,12 @@ async function callAIModel(
   try {
     console.log(`Calling ${model} with ${messages.length} messages`);
     
+    // Use max_completion_tokens for OpenAI models, max_tokens for others
+    const isOpenAI = model.startsWith("openai/");
+    const tokenParam = isOpenAI 
+      ? { max_completion_tokens: 4096 }
+      : { max_tokens: 4096 };
+    
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -276,7 +282,7 @@ async function callAIModel(
         model,
         messages,
         stream: false,
-        max_tokens: 4096,
+        ...tokenParam,
       }),
     });
 
