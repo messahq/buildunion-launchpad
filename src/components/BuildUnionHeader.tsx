@@ -169,7 +169,7 @@ const BuildUnionHeader = () => {
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[200px]">
+              <DropdownMenuContent align="end" className="min-w-[200px] bg-white">
                 <div className="px-2 py-2">
                   <p className="text-sm font-medium text-gray-900">{user.email?.split("@")[0]}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
@@ -200,6 +200,23 @@ const BuildUnionHeader = () => {
                     <DropdownMenuSeparator />
                   </>
                 )}
+                {/* Language selector - visible in dropdown on mobile */}
+                <div className="sm:hidden">
+                  <DropdownMenuItem disabled className="text-xs text-gray-400 py-1">
+                    <Globe className="h-3 w-3 mr-2" />
+                    Language
+                  </DropdownMenuItem>
+                  {languages.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang.code}
+                      onClick={() => setSelectedLanguage(lang.code)}
+                      className={`pl-7 ${selectedLanguage === lang.code ? "bg-accent font-medium" : ""}`}
+                    >
+                      {lang.name}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                </div>
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
