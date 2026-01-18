@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Globe, LogOut, User, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
+import AskMessaChat from "@/components/AskMessaChat";
 
 const languages = [
   { code: "en", name: "English" },
@@ -29,6 +30,7 @@ const BuildUnionHeader = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
 
@@ -60,8 +62,17 @@ const BuildUnionHeader = () => {
           />
         </div>
 
-        {/* Right - Start New Project, Auth Buttons & Language */}
+        {/* Right - Ask Messa, Start New Project, Auth Buttons & Language */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Ask Messa Orb Button */}
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 hover:scale-110 transition-transform shadow-md flex items-center justify-center"
+            title="Ask Messa AI"
+          >
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
+          </button>
+
           {/* Start New Project Button */}
           <Button
             size="sm"
@@ -146,6 +157,9 @@ const BuildUnionHeader = () => {
           )}
         </div>
       </div>
+
+      {/* Ask Messa Chat */}
+      <AskMessaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </header>
   );
 };
