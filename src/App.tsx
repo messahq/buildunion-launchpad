@@ -9,6 +9,8 @@ import BuildUnion from "./pages/BuildUnion";
 import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import DockLogin from "./pages/DockLogin";
+import DockRegister from "./pages/DockRegister";
 import OrbPage from "./pages/OrbPage";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +29,8 @@ const App = () => (
             <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
             <Route path="/buildunion/login" element={<Login />} />
             <Route path="/buildunion/register" element={<Register />} />
+            <Route path="/dock/login" element={<DockLogin />} />
+            <Route path="/dock/register" element={<DockRegister />} />
             <Route path="/orb" element={<OrbPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
