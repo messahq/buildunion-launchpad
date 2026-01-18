@@ -124,9 +124,10 @@ export const useBuProfile = () => {
 
     try {
       setSaving(true);
+      // Use upsert to handle case where profile already exists
       const { data, error } = await supabase
         .from('bu_profiles')
-        .insert({ user_id: user.id })
+        .upsert({ user_id: user.id }, { onConflict: 'user_id' })
         .select()
         .single();
 
