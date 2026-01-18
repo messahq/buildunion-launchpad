@@ -149,6 +149,8 @@ const BuildUnionProjectDetails = () => {
   const [editManpower, setEditManpower] = useState<{ trade: string; count: number }[]>([]);
   const [editCertifications, setEditCertifications] = useState<string[]>([]);
   const [newCertification, setNewCertification] = useState("");
+  const [editSiteImages, setEditSiteImages] = useState<string[]>([]);
+  const [newSiteImages, setNewSiteImages] = useState<{ file: File; id: string; preview: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Chat state
@@ -187,6 +189,8 @@ const BuildUnionProjectDetails = () => {
         setEditTrades(projectData.trades || []);
         setEditManpower((projectData.manpower_requirements as { trade: string; count: number }[]) || []);
         setEditCertifications(projectData.required_certifications || []);
+        setEditSiteImages(projectData.site_images || []);
+        setNewSiteImages([]);
 
         // Fetch site images URLs
         const siteImages = (projectData as any).site_images || [];
@@ -268,10 +272,35 @@ const BuildUnionProjectDetails = () => {
   };
 
   const handleSaveProject = async () => {
-    if (!project || !editName.trim()) return;
+    if (!project || !editName.trim() || !user) return;
 
     setSaving(true);
     try {
+      // Upload new site images
+      const uploadedPaths: string[] = [];
+      for (const img of newSiteImages) {
+        const imgPath = `${user.id}/site-images/${img.id}-${img.file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("project-documents")
+          .upload(imgPath, img.file);
+        if (!uploadError) {
+          uploadedPaths.push(imgPath);
+        } else {
+          console.error("Image upload error:", uploadError);
+        }
+      }
+
+      // Delete removed images from storage
+      const removedImages = (project.site_images || []).filter(
+        path => !editSiteImages.includes(path)
+      );
+      if (removedImages.length > 0) {
+        await supabase.storage.from("project-documents").remove(removedImages);
+      }
+
+      // Combine existing and new images
+      const allSiteImages = [...editSiteImages, ...uploadedPaths];
+
       const { error } = await supabase
         .from("projects")
         .update({
@@ -282,11 +311,13 @@ const BuildUnionProjectDetails = () => {
           trades: editTrades,
           manpower_requirements: editManpower as any,
           required_certifications: editCertifications,
+          site_images: allSiteImages,
         })
         .eq("id", project.id);
 
       if (error) throw error;
 
+      // Update local state
       setProject({
         ...project,
         name: editName.trim(),
@@ -296,7 +327,23 @@ const BuildUnionProjectDetails = () => {
         trades: editTrades,
         manpower_requirements: editManpower,
         required_certifications: editCertifications,
+        site_images: allSiteImages,
       });
+
+      // Refresh site image URLs
+      const urls = await Promise.all(
+        allSiteImages.map(async (path: string) => {
+          const { data } = supabase.storage.from("project-documents").getPublicUrl(path);
+          return data.publicUrl;
+        })
+      );
+      setSiteImageUrls(urls);
+
+      // Cleanup preview URLs
+      newSiteImages.forEach(img => URL.revokeObjectURL(img.preview));
+      setNewSiteImages([]);
+      setEditSiteImages(allSiteImages);
+
       setIsEditing(false);
       toast.success("Project updated");
     } catch (error) {
@@ -316,6 +363,10 @@ const BuildUnionProjectDetails = () => {
       setEditTrades(project.trades || []);
       setEditManpower(project.manpower_requirements || []);
       setEditCertifications(project.required_certifications || []);
+      setEditSiteImages(project.site_images || []);
+      // Clean up preview URLs
+      newSiteImages.forEach(img => URL.revokeObjectURL(img.preview));
+      setNewSiteImages([]);
     }
     setIsEditing(false);
   };
@@ -720,6 +771,91 @@ const BuildUnionProjectDetails = () => {
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
+                  </div>
+                </div>
+
+                {/* Site Images */}
+                <div>
+                  <Label className="text-slate-700 font-medium flex items-center gap-2 mb-2">
+                    <Image className="h-4 w-4" />
+                    Site Photos
+                  </Label>
+                  
+                  {/* Existing images */}
+                  {editSiteImages.length > 0 && (
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mb-3">
+                      {editSiteImages.map((path, idx) => {
+                        const url = supabase.storage.from("project-documents").getPublicUrl(path).data.publicUrl;
+                        return (
+                          <div key={path} className="relative group">
+                            <img
+                              src={url}
+                              alt={`Site ${idx + 1}`}
+                              className="w-full h-24 object-cover rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setEditSiteImages(editSiteImages.filter(p => p !== path))}
+                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* New images to upload */}
+                  {newSiteImages.length > 0 && (
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mb-3">
+                      {newSiteImages.map((img) => (
+                        <div key={img.id} className="relative group">
+                          <img
+                            src={img.preview}
+                            alt="New site"
+                            className="w-full h-24 object-cover rounded-lg border-2 border-amber-400"
+                          />
+                          <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs rounded">
+                            New
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              URL.revokeObjectURL(img.preview);
+                              setNewSiteImages(newSiteImages.filter(i => i.id !== img.id));
+                            }}
+                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload new images */}
+                  <div className="relative border-2 border-dashed rounded-xl p-4 text-center border-slate-300 hover:border-amber-400 bg-slate-50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        if (!e.target.files) return;
+                        const files = Array.from(e.target.files).map(file => ({
+                          file,
+                          id: crypto.randomUUID(),
+                          preview: URL.createObjectURL(file),
+                        }));
+                        setNewSiteImages(prev => [...prev, ...files]);
+                        e.target.value = '';
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="flex items-center justify-center gap-2">
+                      <Plus className="h-5 w-5 text-slate-400" />
+                      <span className="text-sm text-slate-500">Add site photos</span>
+                    </div>
                   </div>
                 </div>
 
