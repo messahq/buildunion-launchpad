@@ -417,10 +417,15 @@ const BuildUnionNewProject = () => {
         const { error: imgError } = await supabase.storage
           .from("project-documents")
           .upload(imgPath, siteImg.file);
-        if (!imgError) {
+        if (imgError) {
+          console.error("Site image upload error:", imgError);
+          toast.error(`Failed to upload image: ${siteImg.file.name}`);
+        } else {
           siteImagePaths.push(imgPath);
         }
       }
+      
+      console.log("Uploaded site images:", siteImagePaths);
 
       // 2. Create project
       const { data: project, error: projectError } = await supabase
