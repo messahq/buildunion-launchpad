@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import messaOrb from "@/assets/messa-orb.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,7 +34,7 @@ const Index = () => {
           MessaDock
         </h1>
 
-        {/* Interactive Orb Container */}
+        {/* Interactive CSS Orb Container */}
         <button
           onClick={() => navigate("/buildunion")}
           className="relative group cursor-pointer focus:outline-none rounded-full"
@@ -61,19 +60,36 @@ const Index = () => {
             }}
           />
 
-          {/* Orb container with breathing effect */}
-          <div className="relative animate-[pulse_4s_cubic-bezier(0.4,0,0.6,1)_infinite]">
-            {/* Inner glow */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400/40 to-cyan-400/40 blur-xl scale-90" />
-            
-            {/* Orb image with floating animation */}
-            <img
-              src={messaOrb}
-              alt="MESSA Orb"
-              className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 object-contain transition-all duration-700 group-hover:scale-110"
+          {/* Pure CSS Orb with floating animation */}
+          <div 
+            className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full transition-all duration-700 group-hover:scale-110"
+            style={{
+              animation: 'float 6s ease-in-out infinite',
+              background: 'radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.8), rgba(251, 146, 60, 0.4) 30%, rgba(6, 182, 212, 0.4) 60%, rgba(6, 182, 212, 0.8))',
+              boxShadow: '0 0 60px rgba(251, 146, 60, 0.5), 0 0 120px rgba(6, 182, 212, 0.4), inset 0 0 80px rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            {/* Inner glow layers */}
+            <div 
+              className="absolute inset-4 rounded-full animate-[spin_10s_linear_infinite]"
               style={{
-                animation: 'float 6s ease-in-out infinite',
-                filter: 'drop-shadow(0 0 40px rgba(251, 146, 60, 0.4)) drop-shadow(0 0 80px rgba(6, 182, 212, 0.3))'
+                background: 'conic-gradient(from 0deg, rgba(251, 146, 60, 0.6), transparent, rgba(6, 182, 212, 0.6), transparent, rgba(251, 146, 60, 0.6))',
+                filter: 'blur(20px)'
+              }}
+            />
+            <div 
+              className="absolute inset-8 rounded-full animate-[spin_15s_linear_infinite_reverse]"
+              style={{
+                background: 'conic-gradient(from 90deg, rgba(6, 182, 212, 0.5), transparent, rgba(251, 146, 60, 0.5), transparent, rgba(6, 182, 212, 0.5))',
+                filter: 'blur(15px)'
+              }}
+            />
+            {/* Core glow */}
+            <div 
+              className="absolute inset-16 rounded-full animate-[pulse_2s_ease-in-out_infinite]"
+              style={{
+                background: 'radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2) 50%, transparent)',
+                filter: 'blur(10px)'
               }}
             />
           </div>
