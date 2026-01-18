@@ -15,13 +15,6 @@ const newsItems = [
   },
   {
     id: 2,
-    title: "Multi-Engine Smart Synthesis Agents",
-    description: "Our system leverages industry-leading AI reasoning engines, like OpenAI and Google Gemini, orchestrated through the MESSA synthesis layer to support complex, construction-grade decision making.",
-    date: "Jan 10, 2026",
-    category: "Core Intelligence: M.E.S.S.A.",
-  },
-  {
-    id: 3,
     title: "Partnership with Leading Construction Firms",
     description: "BuildUnion partners with top construction companies to bring enterprise-grade solutions to teams of all sizes.",
     date: "Jan 5, 2026",
