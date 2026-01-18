@@ -1,1 +1,4 @@
 project_id = "dfsuptqouzhhcnwhrukg"
+
+[functions.ask-messa]
+verify_jwt = false
