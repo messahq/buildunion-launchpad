@@ -1,5 +1,6 @@
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
+import ProjectList from "@/components/ProjectList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle } from "lucide-react";
@@ -49,6 +50,13 @@ const BuildUnionWorkspace = () => {
   return (
     <main className="bg-slate-50 min-h-screen">
       <BuildUnionHeader />
+      
+      {/* My Projects Section */}
+      <section className="py-12 px-6 bg-white border-b border-slate-100">
+        <div className="max-w-6xl mx-auto">
+          <ProjectList />
+        </div>
+      </section>
       
       {/* News & Updates Section */}
       <section className="py-20 px-6">

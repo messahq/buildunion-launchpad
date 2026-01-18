@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -105,6 +105,17 @@ const BuildUnionHeader = () => {
           >
             <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
           </button>
+
+          {/* My Projects Link */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion/workspace")}
+            className="text-gray-600 hover:text-gray-900 font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
+          >
+            <Folder className="h-4 w-4" />
+            <span className="hidden sm:inline">Projects</span>
+          </Button>
 
           {/* Pricing Link */}
           <Button
