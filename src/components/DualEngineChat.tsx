@@ -176,62 +176,127 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
     return null;
   };
 
-  const renderEngineStatus = (engineStatus?: Message["engineStatus"]) => {
+  const renderEngineStatus = (engineStatus?: Message["engineStatus"], isLoading?: boolean) => {
     if (!engineStatus) return null;
 
+    const isAnalyzing = engineStatus.gemini === "analyzing" || engineStatus.openai === "verifying";
+
     return (
-      <div className="flex items-center gap-4 mb-4">
-        {/* Gemini Status */}
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-            engineStatus.gemini === "complete" 
-              ? "bg-blue-500/20 ring-2 ring-blue-500" 
-              : engineStatus.gemini === "analyzing"
-                ? "bg-blue-500/10 animate-pulse"
-                : "bg-gray-200"
-          }`}>
-            <GeminiIcon className={`w-4 h-4 ${
-              engineStatus.gemini === "complete" ? "text-blue-500" : "text-blue-400"
-            }`} />
+      <div className={`mb-4 ${isLoading ? 'p-3 rounded-lg bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-emerald-500/5 border border-slate-200' : ''}`}>
+        {isLoading && (
+          <div className="text-xs font-medium text-slate-600 mb-3 flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Querying dual AI engines...
           </div>
-          <span className={`text-xs font-medium ${
-            engineStatus.gemini === "complete" ? "text-blue-600" : "text-muted-foreground"
-          }`}>
-            {engineStatus.gemini === "analyzing" && "Gemini: Analyzing..."}
-            {engineStatus.gemini === "complete" && "Gemini: Complete"}
-            {engineStatus.gemini === "error" && "Gemini: Error"}
-          </span>
-        </div>
-
-        {/* OpenAI Status */}
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-            engineStatus.openai === "complete" 
-              ? "bg-emerald-500/20 ring-2 ring-emerald-500" 
-              : engineStatus.openai === "verifying"
-                ? "bg-emerald-500/10 animate-pulse"
-                : "bg-gray-200"
-          }`}>
-            <OpenAIIcon className={`w-4 h-4 ${
-              engineStatus.openai === "complete" ? "text-emerald-500" : "text-emerald-400"
-            }`} />
-          </div>
-          <span className={`text-xs font-medium ${
-            engineStatus.openai === "complete" ? "text-emerald-600" : "text-muted-foreground"
-          }`}>
-            {engineStatus.openai === "verifying" && "OpenAI: Verifying..."}
-            {engineStatus.openai === "complete" && "OpenAI: Verified"}
-            {engineStatus.openai === "error" && "OpenAI: Error"}
-          </span>
-        </div>
-
-        {/* Consensus indicator */}
-        {engineStatus.gemini === "complete" && engineStatus.openai === "complete" && (
-          <Badge className="ml-auto bg-green-500 text-white gap-1">
-            <Sparkles className="h-3 w-3" />
-            Consensus Reached
-          </Badge>
         )}
+        <div className="flex items-center gap-4">
+          {/* Gemini Status */}
+          <div className="flex items-center gap-2">
+            <div className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              engineStatus.gemini === "complete" 
+                ? "bg-blue-500/20 ring-2 ring-blue-500" 
+                : engineStatus.gemini === "analyzing"
+                  ? "bg-blue-500/10"
+                  : engineStatus.gemini === "error"
+                    ? "bg-red-500/10 ring-2 ring-red-500/50"
+                    : "bg-gray-200"
+            }`}>
+              {engineStatus.gemini === "analyzing" && (
+                <div className="absolute inset-0 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+              )}
+              <GeminiIcon className={`w-4 h-4 ${
+                engineStatus.gemini === "complete" 
+                  ? "text-blue-500" 
+                  : engineStatus.gemini === "error"
+                    ? "text-red-500"
+                    : "text-blue-400"
+              }`} />
+            </div>
+            <div className="flex flex-col">
+              <span className={`text-xs font-semibold ${
+                engineStatus.gemini === "complete" 
+                  ? "text-blue-600" 
+                  : engineStatus.gemini === "error"
+                    ? "text-red-600"
+                    : "text-slate-600"
+              }`}>
+                Gemini
+              </span>
+              <span className={`text-[10px] ${
+                engineStatus.gemini === "analyzing" 
+                  ? "text-blue-500 animate-pulse" 
+                  : "text-muted-foreground"
+              }`}>
+                {engineStatus.gemini === "analyzing" && "Analyzing..."}
+                {engineStatus.gemini === "complete" && "✓ Complete"}
+                {engineStatus.gemini === "error" && "✗ Error"}
+                {engineStatus.gemini === "idle" && "Waiting..."}
+              </span>
+            </div>
+          </div>
+
+          {/* Connecting line */}
+          {isAnalyzing && (
+            <div className="flex-1 flex items-center gap-1 max-w-[60px]">
+              <div className="h-0.5 flex-1 bg-gradient-to-r from-blue-400 to-emerald-400 opacity-30 rounded-full overflow-hidden">
+                <div className="h-full w-1/3 bg-gradient-to-r from-blue-500 to-emerald-500 animate-pulse rounded-full" />
+              </div>
+            </div>
+          )}
+
+          {/* OpenAI Status */}
+          <div className="flex items-center gap-2">
+            <div className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              engineStatus.openai === "complete" 
+                ? "bg-emerald-500/20 ring-2 ring-emerald-500" 
+                : engineStatus.openai === "verifying"
+                  ? "bg-emerald-500/10"
+                  : engineStatus.openai === "error"
+                    ? "bg-red-500/10 ring-2 ring-red-500/50"
+                    : "bg-gray-200"
+            }`}>
+              {engineStatus.openai === "verifying" && (
+                <div className="absolute inset-0 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+              )}
+              <OpenAIIcon className={`w-4 h-4 ${
+                engineStatus.openai === "complete" 
+                  ? "text-emerald-500" 
+                  : engineStatus.openai === "error"
+                    ? "text-red-500"
+                    : "text-emerald-400"
+              }`} />
+            </div>
+            <div className="flex flex-col">
+              <span className={`text-xs font-semibold ${
+                engineStatus.openai === "complete" 
+                  ? "text-emerald-600" 
+                  : engineStatus.openai === "error"
+                    ? "text-red-600"
+                    : "text-slate-600"
+              }`}>
+                OpenAI
+              </span>
+              <span className={`text-[10px] ${
+                engineStatus.openai === "verifying" 
+                  ? "text-emerald-500 animate-pulse" 
+                  : "text-muted-foreground"
+              }`}>
+                {engineStatus.openai === "verifying" && "Verifying..."}
+                {engineStatus.openai === "complete" && "✓ Verified"}
+                {engineStatus.openai === "error" && "✗ Error"}
+                {engineStatus.openai === "idle" && "Waiting..."}
+              </span>
+            </div>
+          </div>
+
+          {/* Consensus indicator */}
+          {engineStatus.gemini === "complete" && engineStatus.openai === "complete" && (
+            <Badge className="ml-auto bg-gradient-to-r from-green-500 to-emerald-500 text-white gap-1 shadow-sm">
+              <Sparkles className="h-3 w-3" />
+              Consensus
+            </Badge>
+          )}
+        </div>
       </div>
     );
   };
@@ -299,19 +364,13 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                     }`}
                   >
                     {message.role === "assistant" && message.isLoading && (
-                      <>
-                        {renderEngineStatus(message.engineStatus)}
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">Processing with dual engines...</span>
-                        </div>
-                      </>
+                      renderEngineStatus(message.engineStatus, true)
                     )}
 
                     {message.role === "assistant" && !message.isLoading && (
                       <>
                         {getVerificationBadge(message.verification)}
-                        {renderEngineStatus(message.engineStatus)}
+                        {renderEngineStatus(message.engineStatus, false)}
                       </>
                     )}
 
