@@ -34,26 +34,44 @@ Important disclaimers:
 
 You are part of the BuildUnion platform, helping construction professionals make informed decisions.`;
 
-function buildRAGPrompt(documentContent: string, documentNames: string[]): string {
+// Truncate content to fit within model context limits
+function truncateContent(content: string, maxChars: number = 50000): string {
+  if (content.length <= maxChars) return content;
+  
+  // Truncate and add notice
+  return content.substring(0, maxChars) + 
+    "\n\n[... Document content truncated due to length. Focus on the content above for your analysis. ...]";
+}
+
+function buildRAGPrompt(documentContent: string, documentNames: string[], hasImages: boolean, forOpenAI: boolean = false): string {
+  const imageNote = hasImages 
+    ? "\n\nNOTE: Site images have been provided. You can analyze and reference visual information from these images when answering questions."
+    : "";
+
+  // OpenAI has smaller context, so truncate more aggressively
+  const maxChars = forOpenAI ? 30000 : 100000;
+  const truncatedContent = truncateContent(documentContent, maxChars);
+
   return `You are Messa, analyzing project documents for a construction project.
 
 CRITICAL RULES:
-1. ONLY answer based on information found in the provided documents below
-2. If information is not in the documents, clearly state: "This information is not found in the uploaded documents."
+1. ONLY answer based on information found in the provided documents and images below
+2. If information is not in the documents or images, clearly state: "This information is not found in the uploaded materials."
 3. Always cite your sources with document names and page numbers
-4. Format citations as: [Source: DocumentName, Page X]
+4. Format citations as: [Source: DocumentName, Page X] or [Source: Site Image X]
 5. Be precise and accurate - this is for construction work where errors cost money
 6. If documents are empty or unreadable, inform the user
+7. When analyzing images, describe what you see and how it relates to the project
 
-PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}
+PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}
 
 === DOCUMENT CONTENTS START ===
-${documentContent}
+${truncatedContent}
 === DOCUMENT CONTENTS END ===
 
 When responding:
-1. Answer based ONLY on the document content above
-2. Include source citations with page numbers
+1. Answer based ONLY on the document content and images above
+2. Include source citations with page numbers or image references
 3. If you cannot find relevant information, say so clearly`;
 }
 
@@ -67,10 +85,16 @@ interface ProjectContext {
   projectId?: string;
   projectName?: string;
   documents?: string[];
-  documentContent?: string;
+  siteImages?: string[];
 }
 
-async function extractDocumentContent(projectId: string): Promise<{ content: string; documents: string[] }> {
+interface ExtractedContent {
+  textContent: string;
+  imageUrls: string[];
+  documents: string[];
+}
+
+async function extractDocumentContent(projectId: string, siteImagePaths: string[] = []): Promise<ExtractedContent> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -82,74 +106,85 @@ async function extractDocumentContent(projectId: string): Promise<{ content: str
       .select("*")
       .eq("project_id", projectId);
 
-    if (docsError || !documents || documents.length === 0) {
-      console.log("No documents found for project:", projectId);
-      return { content: "", documents: [] };
-    }
-
     const documentNames: string[] = [];
     let allContent = "";
+    const imageUrls: string[] = [];
 
-    for (const doc of documents) {
-      documentNames.push(doc.file_name);
+    // Process PDF documents
+    if (!docsError && documents && documents.length > 0) {
+      for (const doc of documents) {
+        documentNames.push(doc.file_name);
 
-      // Only process PDF files
-      if (!doc.file_name.toLowerCase().endsWith(".pdf")) {
-        allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Non-PDF file - content not extracted]\n`;
-        continue;
-      }
-
-      try {
-        // Download the file from storage
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from("project-documents")
-          .download(doc.file_path);
-
-        if (downloadError) {
-          console.error(`Error downloading ${doc.file_name}:`, downloadError);
-          allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Error: Could not download file]\n`;
+        // Only process PDF files
+        if (!doc.file_name.toLowerCase().endsWith(".pdf")) {
+          allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Non-PDF file - content not extracted]\n`;
           continue;
         }
 
-        // Extract text using simple text extraction
-        const arrayBuffer = await fileData.arrayBuffer();
-        const text = await extractPDFText(arrayBuffer);
-        
-        if (text) {
-          allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n${text}\n`;
-          console.log(`Extracted ${text.length} chars from ${doc.file_name}`);
-        } else {
-          allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Could not extract text from PDF]\n`;
+        try {
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from("project-documents")
+            .download(doc.file_path);
+
+          if (downloadError) {
+            console.error(`Error downloading ${doc.file_name}:`, downloadError);
+            allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Error: Could not download file]\n`;
+            continue;
+          }
+
+          const arrayBuffer = await fileData.arrayBuffer();
+          const text = await extractPDFText(arrayBuffer);
+          
+          if (text) {
+            allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n${text}\n`;
+            console.log(`Extracted ${text.length} chars from ${doc.file_name}`);
+          } else {
+            allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Could not extract text from PDF]\n`;
+          }
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : "Unknown error";
+          console.error(`Error processing ${doc.file_name}:`, err);
+          allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Error: ${errorMsg}]\n`;
         }
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : "Unknown error";
-        console.error(`Error processing ${doc.file_name}:`, err);
-        allContent += `\n=== DOCUMENT: ${doc.file_name} ===\n[Error: ${errorMsg}]\n`;
       }
     }
 
-    return { content: allContent, documents: documentNames };
+    // Process site images - get public URLs for vision analysis
+    if (siteImagePaths && siteImagePaths.length > 0) {
+      console.log(`Processing ${siteImagePaths.length} site images`);
+      for (let i = 0; i < siteImagePaths.length; i++) {
+        const path = siteImagePaths[i];
+        const { data: urlData } = supabase.storage.from("project-documents").getPublicUrl(path);
+        if (urlData?.publicUrl) {
+          imageUrls.push(urlData.publicUrl);
+          documentNames.push(`[Site Image ${i + 1}]`);
+        }
+      }
+      
+      if (imageUrls.length > 0) {
+        allContent += `\n=== SITE IMAGES ===\n${imageUrls.length} site images are attached for visual analysis.\n`;
+      }
+    }
+
+    return { textContent: allContent, imageUrls, documents: documentNames };
   } catch (error) {
     console.error("Error extracting document content:", error);
-    return { content: "", documents: [] };
+    return { textContent: "", imageUrls: [], documents: [] };
   }
 }
 
-// Simple PDF text extraction - extracts raw text from PDF
+// Simple PDF text extraction
 async function extractPDFText(pdfData: ArrayBuffer): Promise<string> {
   try {
     const bytes = new Uint8Array(pdfData);
     const text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
     
-    // Extract text between stream markers (simplified extraction)
     const textContent: string[] = [];
     
-    // Look for text in parentheses (PDF text operators)
     const textMatches = text.match(/\(([^)]+)\)/g);
     if (textMatches) {
       for (const match of textMatches) {
         const inner = match.slice(1, -1);
-        // Filter out binary/control characters
         const cleaned = inner.replace(/[\x00-\x1F\x7F-\xFF]/g, " ").trim();
         if (cleaned.length > 2 && !/^[\d\s.]+$/.test(cleaned)) {
           textContent.push(cleaned);
@@ -157,7 +192,6 @@ async function extractPDFText(pdfData: ArrayBuffer): Promise<string> {
       }
     }
 
-    // Also try to find Tj/TJ text operators
     const tjMatches = text.match(/\[([^\]]+)\]\s*TJ/g);
     if (tjMatches) {
       for (const match of tjMatches) {
@@ -181,13 +215,57 @@ async function extractPDFText(pdfData: ArrayBuffer): Promise<string> {
   }
 }
 
+interface MessageContent {
+  type: string;
+  text?: string;
+  image_url?: { url: string };
+}
+
+function buildMessagesWithImages(
+  messages: Array<{ role: string; content: string }>,
+  systemPrompt: string,
+  imageUrls: string[]
+): Array<{ role: string; content: string | MessageContent[] }> {
+  const result: Array<{ role: string; content: string | MessageContent[] }> = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  // Add messages, but for the last user message, include images if available
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    
+    if (i === messages.length - 1 && msg.role === "user" && imageUrls.length > 0) {
+      // Build multimodal content for the last user message
+      const content: MessageContent[] = [
+        { type: "text", text: msg.content }
+      ];
+      
+      // Add up to 4 images to avoid token limits
+      const imagesToAdd = imageUrls.slice(0, 4);
+      for (const url of imagesToAdd) {
+        content.push({
+          type: "image_url",
+          image_url: { url }
+        });
+      }
+      
+      result.push({ role: "user", content });
+    } else {
+      result.push(msg);
+    }
+  }
+
+  return result;
+}
+
 async function callAIModel(
   apiKey: string,
   model: string,
-  messages: Array<{ role: string; content: string }>,
-  systemPrompt: string
+  messages: Array<{ role: string; content: string | MessageContent[] }>,
 ): Promise<AIResponse> {
   try {
+    console.log(`Calling ${model} with ${messages.length} messages`);
+    
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -196,22 +274,21 @@ async function callAIModel(
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
+        messages,
         stream: false,
         max_tokens: 4096,
       }),
     });
 
     if (!response.ok) {
-      console.error(`${model} error:`, response.status);
+      const errorText = await response.text();
+      console.error(`${model} error:`, response.status, errorText);
       return { content: "", model, success: false };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
+    console.log(`${model} responded with ${content.length} chars`);
     return { content, model, success: true };
   } catch (error) {
     console.error(`${model} exception:`, error);
@@ -265,18 +342,30 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Extract document content if projectId is provided
     let systemPrompt = SYSTEM_PROMPT;
     let documentNames: string[] = [];
+    let imageUrls: string[] = [];
 
+    // Extract document content and site images if projectId is provided
     if (projectContext?.projectId) {
       console.log("Extracting documents for project:", projectContext.projectId);
-      const { content, documents } = await extractDocumentContent(projectContext.projectId);
-      documentNames = documents;
+      console.log("Site images provided:", projectContext.siteImages?.length || 0);
       
-      if (content && content.length > 100) {
-        systemPrompt = buildRAGPrompt(content, documents);
-        console.log(`Built RAG prompt with ${content.length} characters from ${documents.length} documents`);
+      const extracted = await extractDocumentContent(
+        projectContext.projectId,
+        projectContext.siteImages || []
+      );
+      
+      documentNames = extracted.documents;
+      imageUrls = extracted.imageUrls;
+      
+      if (extracted.textContent && extracted.textContent.length > 100) {
+        // Store raw content for building model-specific prompts
+        systemPrompt = extracted.textContent;
+        console.log(`Extracted ${extracted.textContent.length} chars, ${imageUrls.length} images`);
+      } else if (imageUrls.length > 0) {
+        systemPrompt = "[No text documents uploaded]";
+        console.log("Using image-only analysis mode");
       } else {
         console.log("No substantial document content found, using standard prompt");
       }
@@ -285,11 +374,28 @@ serve(async (req) => {
     const geminiModel = "google/gemini-2.5-pro";
     const openaiModel = "openai/gpt-5";
 
+    // Build prompts - use different truncation limits for each model
+    const hasDocContent = projectContext?.projectId && systemPrompt !== SYSTEM_PROMPT;
+    const geminiPrompt = hasDocContent 
+      ? buildRAGPrompt(systemPrompt, documentNames, imageUrls.length > 0, false)
+      : SYSTEM_PROMPT;
+    const openaiPrompt = hasDocContent
+      ? buildRAGPrompt(systemPrompt, documentNames, imageUrls.length > 0, true)
+      : SYSTEM_PROMPT;
+
     if (dualEngine) {
+      // Build messages with images for vision-capable models, using model-specific prompts
+      const geminiMessages = buildMessagesWithImages(messages, geminiPrompt, imageUrls);
+      const openaiMessages = buildMessagesWithImages(messages, openaiPrompt, imageUrls);
+
+      console.log(`Starting dual engine analysis... Gemini prompt: ${geminiPrompt.length} chars, OpenAI prompt: ${openaiPrompt.length} chars`);
+      
       const [geminiResponse, openaiResponse] = await Promise.all([
-        callAIModel(LOVABLE_API_KEY, geminiModel, messages, systemPrompt),
-        callAIModel(LOVABLE_API_KEY, openaiModel, messages, systemPrompt),
+        callAIModel(LOVABLE_API_KEY, geminiModel, geminiMessages),
+        callAIModel(LOVABLE_API_KEY, openaiModel, openaiMessages),
       ]);
+
+      console.log(`Gemini success: ${geminiResponse.success}, OpenAI success: ${openaiResponse.success}`);
 
       const bothSucceeded = geminiResponse.success && openaiResponse.success;
       const verified = bothSucceeded && compareResponses(geminiResponse.content, openaiResponse.content);
@@ -307,6 +413,8 @@ serve(async (req) => {
             ? "openai-only"
             : "error";
 
+      console.log(`Verification status: ${verificationStatus}`);
+
       return new Response(
         JSON.stringify({
           content: primaryContent,
@@ -320,6 +428,7 @@ serve(async (req) => {
           },
           sources,
           documentsAnalyzed: documentNames,
+          imagesAnalyzed: imageUrls.length,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -327,7 +436,7 @@ serve(async (req) => {
       );
     }
 
-    // Single engine mode (streaming)
+    // Single engine mode (streaming) - text only
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
