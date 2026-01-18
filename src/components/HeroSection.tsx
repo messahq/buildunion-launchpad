@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import constructionVideo from "@/assets/construction-hero.mp4";
-import { ChevronDown, Globe } from "lucide-react";
+import { ArrowLeft, ChevronDown, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ const languages = [
 
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const navigate = useNavigate();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   useEffect(() => {
@@ -52,6 +54,19 @@ const HeroSection = () => {
 
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-hero-overlay/60" />
+
+      {/* Back Button */}
+      <div className="absolute top-6 left-6 z-20">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/")}
+          className="text-hero-text/80 hover:text-hero-text hover:bg-white/10 backdrop-blur-sm border border-white/20 gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Back to Dock</span>
+        </Button>
+      </div>
 
       {/* Language Selector */}
       <div className="absolute top-6 right-6 z-20">
