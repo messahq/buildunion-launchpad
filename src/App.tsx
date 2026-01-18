@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
 import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
+import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import DockLogin from "./pages/DockLogin";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/buildunion" element={<BuildUnion />} />
             <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
+            <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
             <Route path="/buildunion/login" element={<Login />} />
             <Route path="/buildunion/register" element={<Register />} />
             <Route path="/dock/login" element={<DockLogin />} />
