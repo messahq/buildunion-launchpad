@@ -24,8 +24,12 @@ import {
   Users,
   Mail,
   Plus,
-  Sparkles
+  Sparkles,
+  Search,
+  UserPlus
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -37,6 +41,19 @@ interface UploadedFile {
 interface TeamMember {
   email: string;
   id: string;
+  userId?: string;
+  name?: string;
+  avatarUrl?: string | null;
+  trade?: string | null;
+  isAppUser?: boolean;
+}
+
+interface AppUser {
+  id: string;
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  trade: string | null;
 }
 
 const WIZARD_STEPS = [
@@ -65,6 +82,11 @@ const BuildUnionNewProject = () => {
   // Step 3: Team
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [newMemberEmail, setNewMemberEmail] = useState("");
+  
+  // App user search
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<AppUser[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,6 +163,64 @@ const BuildUnionNewProject = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
+  // Search users in app
+  const searchAppUsers = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      // Search in profiles table joined with bu_profiles
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, user_id, full_name, avatar_url, username")
+        .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
+        .limit(10);
+      
+      if (error) throw error;
+
+      // Get bu_profiles for trade info
+      const userIds = profiles?.map(p => p.user_id) || [];
+      let buProfiles: any[] = [];
+      if (userIds.length > 0) {
+        const { data } = await supabase
+          .from("bu_profiles")
+          .select("user_id, primary_trade")
+          .in("user_id", userIds);
+        buProfiles = data || [];
+      }
+
+      const results: AppUser[] = (profiles || [])
+        .filter(p => p.user_id !== user?.id) // Exclude current user
+        .map(p => {
+          const buProfile = buProfiles.find(bp => bp.user_id === p.user_id);
+          return {
+            id: p.id,
+            userId: p.user_id,
+            name: p.full_name || p.username || "Unknown",
+            avatarUrl: p.avatar_url,
+            trade: buProfile?.primary_trade || null,
+          };
+        });
+      
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Error searching users:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [user?.id]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchAppUsers(userSearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [userSearchQuery, searchAppUsers]);
+
   // Team handling
   const addTeamMember = () => {
     const email = newMemberEmail.trim().toLowerCase();
@@ -156,8 +236,30 @@ const BuildUnionNewProject = () => {
       return;
     }
 
-    setTeamMembers(prev => [...prev, { email, id: crypto.randomUUID() }]);
+    setTeamMembers(prev => [...prev, { email, id: crypto.randomUUID(), isAppUser: false }]);
     setNewMemberEmail("");
+  };
+
+  const addAppUser = (appUser: AppUser) => {
+    if (teamMembers.some(m => m.userId === appUser.userId)) {
+      toast.error("This user is already added");
+      return;
+    }
+
+    setTeamMembers(prev => [
+      ...prev, 
+      { 
+        email: "", 
+        id: crypto.randomUUID(), 
+        userId: appUser.userId,
+        name: appUser.name,
+        avatarUrl: appUser.avatarUrl,
+        trade: appUser.trade,
+        isAppUser: true,
+      }
+    ]);
+    setUserSearchQuery("");
+    setSearchResults([]);
   };
 
   const removeTeamMember = (id: string) => {
@@ -512,58 +614,179 @@ const BuildUnionNewProject = () => {
             {/* Step 3: Team */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <div className="flex gap-2">
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor="memberEmail" className="text-slate-700 font-medium flex items-center gap-2">
+                <Tabs defaultValue="search" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="search" className="flex items-center gap-2">
+                      <Search className="h-4 w-4" />
+                      Find Users
+                    </TabsTrigger>
+                    <TabsTrigger value="email" className="flex items-center gap-2">
                       <Mail className="h-4 w-4" />
-                      Team Member Email
-                    </Label>
-                    <Input
-                      id="memberEmail"
-                      type="email"
-                      placeholder="colleague@company.com"
-                      value={newMemberEmail}
-                      onChange={(e) => setNewMemberEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && addTeamMember()}
-                      className="border-slate-200"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={addTeamMember}
-                    className="mt-7 bg-amber-600 hover:bg-amber-700"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                      Invite by Email
+                    </TabsTrigger>
+                  </TabsList>
 
+                  {/* Search App Users Tab */}
+                  <TabsContent value="search" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="userSearch" className="text-slate-700 font-medium flex items-center gap-2">
+                        <UserPlus className="h-4 w-4" />
+                        Search BuildUnion Users
+                      </Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="userSearch"
+                          placeholder="Search by name or username..."
+                          value={userSearchQuery}
+                          onChange={(e) => setUserSearchQuery(e.target.value)}
+                          className="border-slate-200 pl-10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Search Results */}
+                    {isSearching && (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                      </div>
+                    )}
+
+                    {!isSearching && searchResults.length > 0 && (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {searchResults.map((appUser) => (
+                          <div
+                            key={appUser.id}
+                            className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-3 hover:bg-slate-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage src={appUser.avatarUrl || undefined} />
+                                <AvatarFallback className="bg-amber-100 text-amber-700">
+                                  {appUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="text-sm font-medium text-slate-700">{appUser.name}</p>
+                                {appUser.trade && (
+                                  <p className="text-xs text-slate-400">
+                                    {TRADE_LABELS[appUser.trade as ConstructionTrade] || appUser.trade}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => addAppUser(appUser)}
+                              className="bg-amber-600 hover:bg-amber-700"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {!isSearching && userSearchQuery.length >= 2 && searchResults.length === 0 && (
+                      <p className="text-sm text-slate-500 text-center py-4">
+                        No users found. Try a different search or invite by email.
+                      </p>
+                    )}
+
+                    {userSearchQuery.length < 2 && userSearchQuery.length > 0 && (
+                      <p className="text-sm text-slate-400 text-center py-2">
+                        Type at least 2 characters to search...
+                      </p>
+                    )}
+                  </TabsContent>
+
+                  {/* Email Invite Tab */}
+                  <TabsContent value="email" className="space-y-4 mt-4">
+                    <div className="flex gap-2">
+                      <div className="flex-1 space-y-2">
+                        <Label htmlFor="memberEmail" className="text-slate-700 font-medium flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Team Member Email
+                        </Label>
+                        <Input
+                          id="memberEmail"
+                          type="email"
+                          placeholder="colleague@company.com"
+                          value={newMemberEmail}
+                          onChange={(e) => setNewMemberEmail(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && addTeamMember()}
+                          className="border-slate-200"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={addTeamMember}
+                        className="mt-7 bg-amber-600 hover:bg-amber-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-lg">
+                      Invite someone who isn't on BuildUnion yet by their email address.
+                    </p>
+                  </TabsContent>
+                </Tabs>
+
+                {/* Invited Members List */}
                 {teamMembers.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 pt-4 border-t">
                     <Label className="text-slate-700 font-medium">
                       Invited Members ({teamMembers.length})
                     </Label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-2">
                       {teamMembers.map((member) => (
-                        <Badge
+                        <div
                           key={member.id}
-                          variant="secondary"
-                          className="gap-1 py-1.5 px-3"
+                          className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-4 py-2"
                         >
-                          <Mail className="h-3 w-3" />
-                          {member.email}
-                          <X
-                            className="h-3 w-3 cursor-pointer hover:text-destructive ml-1"
+                          <div className="flex items-center gap-3">
+                            {member.isAppUser ? (
+                              <>
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={member.avatarUrl || undefined} />
+                                  <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">
+                                    {member.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-700">{member.name}</p>
+                                  {member.trade && (
+                                    <p className="text-xs text-slate-400">
+                                      {TRADE_LABELS[member.trade as ConstructionTrade] || member.trade}
+                                    </p>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
+                                  <Mail className="h-4 w-4 text-slate-500" />
+                                </div>
+                                <p className="text-sm text-slate-700">{member.email}</p>
+                              </>
+                            )}
+                          </div>
+                          <button
+                            type="button"
                             onClick={() => removeTeamMember(member.id)}
-                          />
-                        </Badge>
+                            className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                          >
+                            <X className="h-4 w-4 text-slate-400" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
                 )}
 
                 <p className="text-sm text-slate-500 bg-slate-100 p-4 rounded-lg">
-                  Team members will receive an email invitation to join this project. 
-                  They'll be able to view documents and chat with M.E.S.S.A.
+                  Team members will be added to this project and can view documents and chat with M.E.S.S.A.
                 </p>
               </div>
             )}
