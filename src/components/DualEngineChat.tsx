@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { 
   Send, 
   Loader2, 
@@ -15,7 +20,9 @@ import {
   FileSearch,
   Brain,
   ShieldCheck,
-  Scale
+  Scale,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +45,11 @@ interface AnalysisStep {
   status: "pending" | "active" | "complete" | "error";
 }
 
+interface EngineResponses {
+  gemini: string | null;
+  openai: string | null;
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -50,6 +62,7 @@ interface Message {
   sources?: Array<{ document: string; page?: number }>;
   isLoading?: boolean;
   analysisSteps?: AnalysisStep[];
+  engineResponses?: EngineResponses;
   engineStatus?: {
     gemini: "idle" | "analyzing" | "complete" | "error";
     openai: "idle" | "verifying" | "complete" | "error";
@@ -174,6 +187,7 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                 content: data.content,
                 verification: data.verification,
                 sources: data.sources,
+                engineResponses: data.engineResponses,
                 isLoading: false,
                 engineStatus: {
                   gemini: data.verification?.engines?.gemini ? "complete" : "error",
@@ -478,6 +492,92 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
     );
   };
 
+  const renderEngineDetails = (engineResponses?: EngineResponses, verification?: Message["verification"]) => {
+    if (!engineResponses || (!engineResponses.gemini && !engineResponses.openai)) return null;
+
+    return (
+      <Collapsible className="mt-3">
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full flex items-center justify-between p-2 h-auto text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          >
+            <span className="flex items-center gap-2">
+              <Brain className="h-3.5 w-3.5" />
+              View Individual Engine Responses
+            </span>
+            <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2 space-y-3">
+          {/* Gemini Response */}
+          {engineResponses.gemini && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <GeminiIcon className="w-3.5 h-3.5 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-blue-700">Gemini Pro</span>
+                {verification?.engines?.gemini && (
+                  <Badge variant="outline" className="ml-auto text-[10px] border-blue-300 text-blue-600">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Responded
+                  </Badge>
+                )}
+              </div>
+              <div className="text-sm text-slate-700 leading-relaxed max-h-[200px] overflow-y-auto prose prose-sm">
+                {engineResponses.gemini}
+              </div>
+            </div>
+          )}
+
+          {/* OpenAI Response */}
+          {engineResponses.openai && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <OpenAIIcon className="w-3.5 h-3.5 text-emerald-600" />
+                </div>
+                <span className="text-sm font-medium text-emerald-700">GPT-5</span>
+                {verification?.engines?.openai && (
+                  <Badge variant="outline" className="ml-auto text-[10px] border-emerald-300 text-emerald-600">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
+              </div>
+              <div className="text-sm text-slate-700 leading-relaxed max-h-[200px] overflow-y-auto prose prose-sm">
+                {engineResponses.openai}
+              </div>
+            </div>
+          )}
+
+          {/* Comparison note */}
+          {engineResponses.gemini && engineResponses.openai && (
+            <div className={`text-xs p-2 rounded-md flex items-center gap-2 ${
+              verification?.verified 
+                ? "bg-green-100 text-green-700" 
+                : "bg-amber-100 text-amber-700"
+            }`}>
+              {verification?.verified ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Both engines reached similar conclusions
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Responses differ - review both for accuracy
+                </>
+              )}
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
   return (
     <Card className="flex flex-col h-[600px]">
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
@@ -535,7 +635,10 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
                     )}
 
                     {message.role === "assistant" && !message.isLoading && (
-                      renderSources(message.sources)
+                      <>
+                        {renderSources(message.sources)}
+                        {renderEngineDetails(message.engineResponses, message.verification)}
+                      </>
                     )}
                   </div>
                 </div>
