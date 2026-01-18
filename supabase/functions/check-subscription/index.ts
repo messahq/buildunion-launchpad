@@ -12,10 +12,14 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product IDs mapping (CAD products)
-const PRODUCT_TIERS: Record<string, string> = {
-  "prod_Tog02cwkocBGA0": "pro",
-  "prod_Tog0mYcKDEXUfl": "premium",
+// Product IDs mapping (CAD products - monthly and yearly)
+const PRODUCT_TIERS: Record<string, { tier: string; interval: string }> = {
+  // Monthly
+  "prod_Tog02cwkocBGA0": { tier: "pro", interval: "monthly" },
+  "prod_Tog0mYcKDEXUfl": { tier: "premium", interval: "monthly" },
+  // Annual
+  "prod_Tog7TlfoWskDXG": { tier: "pro", interval: "yearly" },
+  "prod_Tog8IdlcfqOduT": { tier: "premium", interval: "yearly" },
 };
 
 serve(async (req) => {
@@ -55,6 +59,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false,
         tier: null,
+        interval: null,
         subscription_end: null
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -73,6 +78,7 @@ serve(async (req) => {
 
     const hasActiveSub = subscriptions.data.length > 0;
     let tier: string | null = null;
+    let interval: string | null = null;
     let subscriptionEnd: string | null = null;
     let productId: string | null = null;
 
@@ -80,12 +86,15 @@ serve(async (req) => {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       productId = subscription.items.data[0].price.product as string;
-      tier = PRODUCT_TIERS[productId] || null;
+      const productInfo = PRODUCT_TIERS[productId];
+      tier = productInfo?.tier || null;
+      interval = productInfo?.interval || null;
       logStep("Active subscription found", { 
         subscriptionId: subscription.id, 
         endDate: subscriptionEnd,
         productId,
-        tier
+        tier,
+        interval
       });
     } else {
       logStep("No active subscription found");
@@ -94,6 +103,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       tier,
+      interval,
       product_id: productId,
       subscription_end: subscriptionEnd
     }), {
