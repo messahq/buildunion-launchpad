@@ -1,4 +1,5 @@
 import BuildUnionHeader from "@/components/BuildUnionHeader";
+import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper } from "lucide-react";
@@ -165,6 +166,8 @@ const BuildUnionWorkspace = () => {
           </Button>
         </div>
       </section>
+
+      <BuildUnionFooter />
     </main>
   );
 };
