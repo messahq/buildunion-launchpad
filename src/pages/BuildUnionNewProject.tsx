@@ -26,10 +26,15 @@ import {
   Plus,
   Sparkles,
   Search,
-  UserPlus
+  UserPlus,
+  Image,
+  FileCheck,
+  Trash2,
+  Minus
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -56,10 +61,37 @@ interface AppUser {
   trade: string | null;
 }
 
+interface ManpowerRequirement {
+  trade: ConstructionTrade;
+  count: number;
+}
+
+interface SiteImage {
+  file: File;
+  id: string;
+  preview: string;
+}
+
+const COMMON_CERTIFICATIONS = [
+  "OSHA 10-Hour",
+  "OSHA 30-Hour",
+  "First Aid/CPR",
+  "Scaffolding Certification",
+  "Fall Protection",
+  "Confined Space Entry",
+  "Forklift Operator",
+  "Welding Certification",
+  "Electrical License",
+  "Plumbing License",
+  "Working at Heights",
+  "WHMIS",
+];
+
 const WIZARD_STEPS = [
   { id: 1, title: "Basic Info", icon: Briefcase },
-  { id: 2, title: "Documents", icon: FileUp },
-  { id: 3, title: "Team", icon: Users },
+  { id: 2, title: "Requirements", icon: Users },
+  { id: 3, title: "Documents", icon: FileUp },
+  { id: 4, title: "Team", icon: Users },
 ];
 
 const BuildUnionNewProject = () => {
@@ -73,13 +105,18 @@ const BuildUnionNewProject = () => {
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [address, setAddress] = useState("");
-  const [selectedTrade, setSelectedTrade] = useState<ConstructionTrade | "">("");
+  const [selectedTrades, setSelectedTrades] = useState<ConstructionTrade[]>([]);
   
-  // Step 2: Documents
+  // Step 2: Requirements
+  const [manpowerRequirements, setManpowerRequirements] = useState<ManpowerRequirement[]>([]);
+  const [requiredCertifications, setRequiredCertifications] = useState<string[]>([]);
+  const [siteImages, setSiteImages] = useState<SiteImage[]>([]);
+  
+  // Step 3: Documents
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   
-  // Step 3: Team
+  // Step 4: Team
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   
@@ -270,10 +307,12 @@ const BuildUnionNewProject = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return projectName.trim() && address.trim() && selectedTrade;
+        return projectName.trim() && address.trim() && selectedTrades.length > 0;
       case 2:
-        return files.length > 0;
+        return true; // Requirements are optional
       case 3:
+        return true; // Documents now optional, can add later
+      case 4:
         return true; // Team is optional
       default:
         return false;
@@ -281,7 +320,7 @@ const BuildUnionNewProject = () => {
   };
 
   const nextStep = () => {
-    if (currentStep < 3 && canProceed()) {
+    if (currentStep < 4 && canProceed()) {
       setCurrentStep(prev => prev + 1);
     }
   };
@@ -299,17 +338,33 @@ const BuildUnionNewProject = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Create project
+      // 1. Upload site images first
+      const siteImagePaths: string[] = [];
+      for (const siteImg of siteImages) {
+        const imgPath = `${user.id}/site-images/${siteImg.id}-${siteImg.file.name}`;
+        const { error: imgError } = await supabase.storage
+          .from("project-documents")
+          .upload(imgPath, siteImg.file);
+        if (!imgError) {
+          siteImagePaths.push(imgPath);
+        }
+      }
+
+      // 2. Create project
       const { data: project, error: projectError } = await supabase
         .from("projects")
         .insert({
           name: projectName.trim(),
           description: projectDescription.trim() || null,
           address: address.trim(),
-          trade: selectedTrade,
+          trade: selectedTrades[0] || null,
+          trades: selectedTrades,
+          manpower_requirements: manpowerRequirements as unknown as Record<string, unknown>,
+          required_certifications: requiredCertifications,
+          site_images: siteImagePaths,
           user_id: user.id,
           status: "active",
-        })
+        } as any)
         .select()
         .single();
 
@@ -463,13 +518,15 @@ const BuildUnionNewProject = () => {
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold text-slate-900">
               {currentStep === 1 && "Project Details"}
-              {currentStep === 2 && "Upload Documents"}
-              {currentStep === 3 && "Invite Team Members"}
+              {currentStep === 2 && "Manpower & Requirements"}
+              {currentStep === 3 && "Upload Documents"}
+              {currentStep === 4 && "Invite Team Members"}
             </CardTitle>
             <CardDescription className="text-slate-500">
               {currentStep === 1 && "Enter the basic information about your construction project"}
-              {currentStep === 2 && "Upload PDF plans and specifications for M.E.S.S.A. analysis"}
-              {currentStep === 3 && "Invite team members to collaborate on this project"}
+              {currentStep === 2 && "Specify required workers, certifications, and upload site photos"}
+              {currentStep === 3 && "Upload PDF plans and specifications for M.E.S.S.A. analysis"}
+              {currentStep === 4 && "Invite team members to collaborate on this project"}
             </CardDescription>
           </CardHeader>
 
@@ -507,18 +564,46 @@ const BuildUnionNewProject = () => {
                 <div className="space-y-2">
                   <Label className="text-slate-700 font-medium flex items-center gap-2">
                     <Briefcase className="h-4 w-4" />
-                    Primary Trade *
+                    Trades Required *
                   </Label>
-                  <Select value={selectedTrade} onValueChange={(v) => setSelectedTrade(v as ConstructionTrade)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select the main trade for this project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(TRADE_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                  <p className="text-sm text-slate-500">Select all trades needed for this project</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
+                    {Object.entries(TRADE_LABELS).map(([value, label]) => (
+                      <label
+                        key={value}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                          selectedTrades.includes(value as ConstructionTrade)
+                            ? "bg-amber-100 border-amber-300 border"
+                            : "bg-slate-50 hover:bg-slate-100 border border-transparent"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedTrades.includes(value as ConstructionTrade)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedTrades(prev => [...prev, value as ConstructionTrade]);
+                            } else {
+                              setSelectedTrades(prev => prev.filter(t => t !== value));
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedTrades.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {selectedTrades.map(trade => (
+                        <Badge key={trade} variant="secondary" className="gap-1">
+                          {TRADE_LABELS[trade]}
+                          <X
+                            className="h-3 w-3 cursor-pointer"
+                            onClick={() => setSelectedTrades(prev => prev.filter(t => t !== trade))}
+                          />
+                        </Badge>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -537,8 +622,184 @@ const BuildUnionNewProject = () => {
               </div>
             )}
 
-            {/* Step 2: Documents */}
+            {/* Step 2: Requirements */}
             {currentStep === 2 && (
+              <div className="space-y-6">
+                {/* Manpower Requirements */}
+                <div className="space-y-3">
+                  <Label className="text-slate-700 font-medium flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Manpower Requirements
+                  </Label>
+                  <p className="text-sm text-slate-500">Specify how many workers you need per trade</p>
+                  
+                  {manpowerRequirements.map((req, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <Select
+                        value={req.trade}
+                        onValueChange={(v) => {
+                          const updated = [...manpowerRequirements];
+                          updated[idx].trade = v as ConstructionTrade;
+                          setManpowerRequirements(updated);
+                        }}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(TRADE_LABELS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            const updated = [...manpowerRequirements];
+                            updated[idx].count = Math.max(1, updated[idx].count - 1);
+                            setManpowerRequirements(updated);
+                          }}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-12 text-center font-medium">{req.count}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            const updated = [...manpowerRequirements];
+                            updated[idx].count += 1;
+                            setManpowerRequirements(updated);
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setManpowerRequirements(prev => prev.filter((_, i) => i !== idx));
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const availableTrade = selectedTrades.find(t => 
+                        !manpowerRequirements.some(r => r.trade === t)
+                      ) || selectedTrades[0] || "general_contractor";
+                      setManpowerRequirements(prev => [...prev, { trade: availableTrade as ConstructionTrade, count: 1 }]);
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Trade Requirement
+                  </Button>
+                </div>
+
+                {/* Required Certifications */}
+                <div className="space-y-3">
+                  <Label className="text-slate-700 font-medium flex items-center gap-2">
+                    <FileCheck className="h-4 w-4" />
+                    Required Certifications
+                  </Label>
+                  <p className="text-sm text-slate-500">Select certifications workers must have</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
+                    {COMMON_CERTIFICATIONS.map((cert) => (
+                      <label
+                        key={cert}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                          requiredCertifications.includes(cert)
+                            ? "bg-amber-100 border-amber-300 border"
+                            : "bg-slate-50 hover:bg-slate-100 border border-transparent"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={requiredCertifications.includes(cert)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setRequiredCertifications(prev => [...prev, cert]);
+                            } else {
+                              setRequiredCertifications(prev => prev.filter(c => c !== cert));
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{cert}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Site Photos */}
+                <div className="space-y-3">
+                  <Label className="text-slate-700 font-medium flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Site Photos
+                  </Label>
+                  <p className="text-sm text-slate-500">Upload photos of the job site (optional)</p>
+                  
+                  <div className="relative border-2 border-dashed rounded-xl p-6 text-center border-slate-300 hover:border-slate-400 bg-slate-50">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        if (!e.target.files) return;
+                        const newImages = Array.from(e.target.files).map(file => ({
+                          file,
+                          id: crypto.randomUUID(),
+                          preview: URL.createObjectURL(file),
+                        }));
+                        setSiteImages(prev => [...prev, ...newImages]);
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="flex flex-col items-center gap-2">
+                      <Image className="h-8 w-8 text-slate-400" />
+                      <p className="text-sm text-slate-500">Click to upload site images</p>
+                    </div>
+                  </div>
+
+                  {siteImages.length > 0 && (
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                      {siteImages.map((img) => (
+                        <div key={img.id} className="relative group">
+                          <img
+                            src={img.preview}
+                            alt="Site"
+                            className="w-full h-24 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              URL.revokeObjectURL(img.preview);
+                              setSiteImages(prev => prev.filter(i => i.id !== img.id));
+                            }}
+                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Documents */}
+            {currentStep === 3 && (
               <div className="space-y-6">
                 <div
                   onDragOver={handleDragOver}
@@ -566,7 +827,7 @@ const BuildUnionNewProject = () => {
                         Drag & drop PDF files here
                       </p>
                       <p className="text-slate-500 text-sm mt-1">
-                        or click to browse (max 50MB per file)
+                        Upload multiple plans & specs (max 50MB per file)
                       </p>
                     </div>
                   </div>
@@ -608,11 +869,15 @@ const BuildUnionNewProject = () => {
                     </div>
                   </div>
                 )}
+
+                <p className="text-sm text-slate-500 bg-slate-100 p-4 rounded-lg">
+                  You can upload multiple documents now or add more later from the project page.
+                </p>
               </div>
             )}
 
-            {/* Step 3: Team */}
-            {currentStep === 3 && (
+            {/* Step 4: Team */}
+            {currentStep === 4 && (
               <div className="space-y-6">
                 <Tabs defaultValue="search" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
@@ -804,7 +1069,7 @@ const BuildUnionNewProject = () => {
                 Back
               </Button>
 
-              {currentStep < 3 ? (
+              {currentStep < 4 ? (
                 <Button
                   type="button"
                   onClick={nextStep}
