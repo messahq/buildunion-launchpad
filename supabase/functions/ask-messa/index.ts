@@ -33,16 +33,46 @@ Important disclaimers:
 
 You are part of the BuildUnion platform, helping construction professionals make informed decisions.`;
 
+const RAG_SYSTEM_PROMPT = `You are Messa, analyzing project documents for a construction project.
+
+CRITICAL RULES:
+1. ONLY answer based on information found in the provided documents
+2. If information is not in the documents, say "This information is not found in the uploaded documents"
+3. Always cite your sources with document names and page numbers when possible
+4. Format source references as: [Source: DocumentName, Page X]
+5. Be precise and accurate - this is for construction work where errors cost money
+
+When responding, structure your answer as:
+- Main answer based on documents
+- Source citations at the end
+
+Project Documents Available: {DOCUMENTS}`;
+
 interface AIResponse {
   content: string;
   model: string;
   success: boolean;
 }
 
+interface ProjectContext {
+  projectId?: string;
+  projectName?: string;
+  documents?: string[];
+}
+
+function buildSystemPrompt(projectContext?: ProjectContext): string {
+  if (projectContext?.documents && projectContext.documents.length > 0) {
+    const docList = projectContext.documents.join(", ");
+    return RAG_SYSTEM_PROMPT.replace("{DOCUMENTS}", docList);
+  }
+  return SYSTEM_PROMPT;
+}
+
 async function callAIModel(
   apiKey: string,
   model: string,
-  messages: Array<{ role: string; content: string }>
+  messages: Array<{ role: string; content: string }>,
+  systemPrompt: string
 ): Promise<AIResponse> {
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -54,7 +84,7 @@ async function callAIModel(
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: false,
@@ -83,7 +113,7 @@ function compareResponses(response1: string, response2: string): boolean {
   const norm1 = normalize(response1);
   const norm2 = normalize(response2);
   
-  // Check if responses share significant common content (at least 60% overlap)
+  // Check if responses share significant common content (at least 50% overlap for stricter verification)
   const words1 = new Set(norm1.split(/\s+/).filter(w => w.length > 3));
   const words2 = new Set(norm2.split(/\s+/).filter(w => w.length > 3));
   
@@ -92,7 +122,25 @@ function compareResponses(response1: string, response2: string): boolean {
   const intersection = [...words1].filter(w => words2.has(w));
   const overlapRatio = intersection.length / Math.min(words1.size, words2.size);
   
-  return overlapRatio > 0.4; // 40% word overlap threshold
+  // 50% word overlap threshold for construction accuracy
+  return overlapRatio > 0.5;
+}
+
+function extractSources(content: string): Array<{ document: string; page?: number; excerpt?: string }> {
+  const sources: Array<{ document: string; page?: number; excerpt?: string }> = [];
+  
+  // Match patterns like [Source: DocumentName, Page X] or [Source: DocumentName]
+  const sourcePattern = /\[Source:\s*([^,\]]+)(?:,\s*Page\s*(\d+))?\]/gi;
+  let match;
+  
+  while ((match = sourcePattern.exec(content)) !== null) {
+    sources.push({
+      document: match[1].trim(),
+      page: match[2] ? parseInt(match[2], 10) : undefined,
+    });
+  }
+  
+  return sources;
 }
 
 serve(async (req) => {
@@ -101,36 +149,37 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, dualEngine = true } = await req.json();
+    const { messages, dualEngine = true, projectContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Dual-Engine: Call both Gemini and OpenAI in parallel
-    const geminiModel = "google/gemini-3-flash-preview";
-    const openaiModel = "openai/gpt-5-mini";
+    const systemPrompt = buildSystemPrompt(projectContext);
+
+    // Dual-Engine: Call both Gemini Pro and GPT-5 in parallel
+    const geminiModel = "google/gemini-2.5-pro";
+    const openaiModel = "openai/gpt-5";
 
     if (dualEngine) {
       // Call both models in parallel
       const [geminiResponse, openaiResponse] = await Promise.all([
-        callAIModel(LOVABLE_API_KEY, geminiModel, messages),
-        callAIModel(LOVABLE_API_KEY, openaiModel, messages),
+        callAIModel(LOVABLE_API_KEY, geminiModel, messages, systemPrompt),
+        callAIModel(LOVABLE_API_KEY, openaiModel, messages, systemPrompt),
       ]);
 
       const bothSucceeded = geminiResponse.success && openaiResponse.success;
       const verified = bothSucceeded && compareResponses(geminiResponse.content, openaiResponse.content);
       
-      // Use Gemini as primary, fallback to OpenAI
-      const primaryResponse = geminiResponse.success 
-        ? geminiResponse.content 
-        : openaiResponse.content;
+      // Extract sources from the primary response
+      const primaryContent = geminiResponse.success ? geminiResponse.content : openaiResponse.content;
+      const sources = extractSources(primaryContent);
 
       const verificationStatus = bothSucceeded
         ? verified
           ? "verified"
-          : "dual-processed"
+          : "not-verified"
         : geminiResponse.success
           ? "gemini-only"
           : openaiResponse.success
@@ -139,7 +188,7 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          content: primaryResponse,
+          content: primaryContent,
           verification: {
             status: verificationStatus,
             engines: {
@@ -148,6 +197,7 @@ serve(async (req) => {
             },
             verified,
           },
+          sources,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -165,7 +215,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: geminiModel,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
