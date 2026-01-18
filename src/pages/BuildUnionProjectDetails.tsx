@@ -297,6 +297,41 @@ const BuildUnionProjectDetails = () => {
     setIsEditing(false);
   };
 
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    if (!confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) return;
+
+    try {
+      // Delete associated documents from storage
+      if (documents.length > 0) {
+        const paths = documents.map(d => d.file_path);
+        await supabase.storage.from("project-documents").remove(paths);
+      }
+
+      // Delete site images from storage
+      if (project.site_images && project.site_images.length > 0) {
+        await supabase.storage.from("project-documents").remove(project.site_images);
+      }
+
+      // Delete team invitations
+      await supabase.from("team_invitations").delete().eq("project_id", project.id);
+
+      // Delete project documents records
+      await supabase.from("project_documents").delete().eq("project_id", project.id);
+
+      // Delete project
+      const { error } = await supabase.from("projects").delete().eq("id", project.id);
+
+      if (error) throw error;
+
+      toast.success("Project deleted");
+      navigate("/buildunion/workspace");
+    } catch (error) {
+      console.error("Delete project error:", error);
+      toast.error("Failed to delete project");
+    }
+  };
+
   const handleDownload = async (doc: ProjectDocument) => {
     try {
       const { data, error } = await supabase.storage
@@ -531,10 +566,20 @@ const BuildUnionProjectDetails = () => {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Edit Project
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Edit Project
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDeleteProject} 
+                    className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
