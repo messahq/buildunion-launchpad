@@ -1,10 +1,18 @@
 import { useNavigate } from "react-router-dom";
+import DockHeader from "@/components/DockHeader";
 
 const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <main className="relative min-h-screen w-full bg-slate-950 flex flex-col items-center overflow-hidden">
+    <main className="relative min-h-screen w-full bg-slate-950 flex flex-col overflow-hidden">
+      {/* Header */}
+      <DockHeader 
+        title="MessaDock" 
+        showBackButton={false}
+        accentColor="bg-cyan-500 hover:bg-cyan-600"
+      />
+
       {/* Deep space background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
       
@@ -28,11 +36,7 @@ const Index = () => {
       </div>
 
       {/* Top Section - BuildUnion Capsule */}
-      <div className="relative z-10 flex flex-col items-center pt-16 md:pt-24">
-        {/* MessaDock Title */}
-        <h1 className="font-display text-2xl font-light tracking-[0.3em] text-slate-400/80 mb-12 uppercase animate-pulse">
-          MessaDock
-        </h1>
+      <div className="relative z-10 flex flex-col items-center pt-8 md:pt-16 flex-1">
 
         {/* BuildUnion Capsule Button */}
         <button
@@ -65,7 +69,7 @@ const Index = () => {
       </div>
 
       {/* Center Section - Clickable Orb */}
-      <div className="relative z-10 flex-1 flex items-center justify-center px-6">
+      <div className="relative z-10 flex items-center justify-center px-6 py-8">
         {/* Interactive CSS Orb */}
         <button
           onClick={() => navigate("/orb")}
