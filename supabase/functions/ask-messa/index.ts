@@ -432,6 +432,10 @@ serve(async (req) => {
             },
             verified,
           },
+          engineResponses: {
+            gemini: geminiResponse.success ? geminiResponse.content : null,
+            openai: openaiResponse.success ? openaiResponse.content : null,
+          },
           sources,
           documentsAnalyzed: documentNames,
           imagesAnalyzed: imageUrls.length,
