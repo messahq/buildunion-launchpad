@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Folder, Plus, Calendar, FileText, Loader2 } from "lucide-react";
+import { Folder, Plus, Calendar, FileText, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface Project {
   id: string;
@@ -66,6 +67,39 @@ const ProjectList = () => {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const handleDeleteProject = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) return;
+
+    try {
+      // Delete associated documents from storage and DB
+      const { data: docs } = await supabase
+        .from("project_documents")
+        .select("file_path")
+        .eq("project_id", project.id);
+
+      if (docs && docs.length > 0) {
+        const paths = docs.map(d => d.file_path);
+        await supabase.storage.from("project-documents").remove(paths);
+        await supabase.from("project_documents").delete().eq("project_id", project.id);
+      }
+
+      // Delete team invitations
+      await supabase.from("team_invitations").delete().eq("project_id", project.id);
+
+      // Delete project
+      const { error } = await supabase.from("projects").delete().eq("id", project.id);
+
+      if (error) throw error;
+
+      setProjects(prev => prev.filter(p => p.id !== project.id));
+      toast.success("Project deleted");
+    } catch (error) {
+      console.error("Delete project error:", error);
+      toast.error("Failed to delete project");
+    }
   };
 
   if (!user) {
@@ -141,9 +175,19 @@ const ProjectList = () => {
                 <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
                   <Folder className="h-5 w-5 text-amber-600" />
                 </div>
-                <Badge className={`text-xs ${getStatusColor(project.status)}`}>
-                  {project.status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className={`text-xs ${getStatusColor(project.status)}`}>
+                    {project.status}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => handleDeleteProject(e, project)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <CardTitle className="text-lg font-semibold text-slate-900 mt-3 group-hover:text-amber-700 transition-colors">
                 {project.name}
