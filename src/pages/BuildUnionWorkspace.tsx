@@ -97,6 +97,82 @@ const BuildUnionWorkspace = () => {
         </div>
       </section>
 
+      {/* Industry Headlines Section */}
+      <section className="py-16 px-6 bg-slate-100/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl md:text-3xl font-display font-semibold text-slate-900">
+              Industry Headlines
+            </h2>
+            <a href="#" className="text-cyan-600 hover:text-cyan-700 text-sm font-medium transition-colors">
+              View all updates →
+            </a>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-semibold text-slate-600 border border-slate-300 px-2 py-1 rounded">
+                  TORONTO
+                </span>
+                <span className="text-xs text-slate-400">January 23, 2025</span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-3 leading-tight">
+                Toronto Announces $500M Infrastructure Investment
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                City-wide upgrades across transit, roads and public facilities through 2025.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs text-slate-400">#infrastructure</span>
+                <span className="text-xs text-slate-400">#investment</span>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-semibold text-slate-600 border border-slate-300 px-2 py-1 rounded">
+                  ONTARIO
+                </span>
+                <span className="text-xs text-slate-400">January 23, 2025</span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-3 leading-tight">
+                Ontario Skilled Trades Shortage Reaches Critical Levels
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                Province reports 80,000 vacancies amid sustained construction boom.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs text-slate-400">#skilled-trades</span>
+                <span className="text-xs text-slate-400">#labor</span>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-semibold text-slate-600 border border-slate-300 px-2 py-1 rounded">
+                  CANADA
+                </span>
+                <span className="text-xs text-slate-400">January 23, 2025</span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-3 leading-tight">
+                New Safety Regulations Take Effect in 2025
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                Mandatory PPE standards and refresher training introduced across worksites.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs text-slate-400">#safety</span>
+                <span className="text-xs text-slate-400">#regulation</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* M.E.S.S.A. Section */}
       <section className="py-20 px-6 bg-gradient-to-br from-slate-50 via-white to-amber-50/30">
         <div className="max-w-5xl mx-auto">
