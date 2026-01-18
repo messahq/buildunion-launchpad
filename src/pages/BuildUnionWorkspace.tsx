@@ -2,7 +2,7 @@ import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper } from "lucide-react";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const newsItems = [
@@ -373,6 +373,112 @@ const BuildUnionWorkspace = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Resources Hub Section */}
+      <section className="py-20 px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
+              Resources Hub
+            </h2>
+            <p className="text-slate-500 max-w-xl mx-auto">
+              Everything you need to navigate the construction industry, from certifications to union benefits.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Construction FAQ */}
+            <a href="#" className="bg-slate-50 hover:bg-slate-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+              <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                <HelpCircle className="h-6 w-6 text-cyan-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-cyan-700 transition-colors">
+                  Construction FAQ
+                </h3>
+                <p className="text-slate-500 text-sm">
+                  Common questions about permits, safety, and contracts.
+                </p>
+              </div>
+            </a>
+
+            {/* Union Benefits */}
+            <a href="#" className="bg-orange-50 hover:bg-orange-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <Shield className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-700 transition-colors">
+                  Union Benefits
+                </h3>
+                <p className="text-slate-500 text-sm">
+                  Guide to wages, health coverage, and job security.
+                </p>
+              </div>
+            </a>
+
+            {/* Ontario Certifications */}
+            <a href="#" className="bg-slate-50 hover:bg-slate-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+              <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                <FileText className="h-6 w-6 text-cyan-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-cyan-700 transition-colors">
+                  Ontario Certifications
+                </h3>
+                <p className="text-slate-500 text-sm">
+                  Mandatory and recommended certifications guide.
+                </p>
+              </div>
+            </a>
+
+            {/* Quick Start Guide */}
+            <a href="#" className="bg-orange-50 hover:bg-orange-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <Link2 className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-700 transition-colors">
+                  Quick Start Guide
+                </h3>
+                <p className="text-slate-500 text-sm">
+                  Get your profile and portfolio ready in minutes.
+                </p>
+              </div>
+            </a>
+
+            {/* Join the Community */}
+            <a href="#" className="bg-slate-50 hover:bg-slate-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+              <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                <Users className="h-6 w-6 text-cyan-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-cyan-700 transition-colors">
+                  Join the Community
+                </h3>
+                <p className="text-slate-500 text-sm">
+                  Connect with other professionals in our Facebook Group.
+                </p>
+              </div>
+            </a>
+
+            {/* Ask Messa */}
+            <a href="#" className="bg-orange-50 hover:bg-orange-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-700 transition-colors">
+                  Ask Messa
+                </h3>
+                <p className="text-slate-500 text-sm">
+                  Need specific help? Chat with our AI assistant.
+                </p>
+              </div>
+            </a>
           </div>
         </div>
       </section>
