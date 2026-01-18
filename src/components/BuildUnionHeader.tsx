@@ -73,6 +73,16 @@ const BuildUnionHeader = () => {
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
           </button>
 
+          {/* Pricing Link */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion/pricing")}
+            className="text-gray-600 hover:text-gray-900 font-medium hidden sm:flex"
+          >
+            Pricing
+          </Button>
+
           {/* Start New Project Button */}
           <Button
             size="sm"
