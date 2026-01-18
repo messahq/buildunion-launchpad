@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      bu_profiles: {
+        Row: {
+          availability: string | null
+          bio: string | null
+          certifications: string[] | null
+          company_name: string | null
+          company_website: string | null
+          created_at: string
+          experience_level:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years: number | null
+          hourly_rate: number | null
+          id: string
+          is_contractor: boolean | null
+          is_verified: boolean | null
+          phone: string | null
+          primary_trade:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          profile_completed: boolean | null
+          secondary_trades:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          availability?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          company_name?: string | null
+          company_website?: string | null
+          created_at?: string
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_contractor?: boolean | null
+          is_verified?: boolean | null
+          phone?: string | null
+          primary_trade?:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          profile_completed?: boolean | null
+          secondary_trades?:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          availability?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          company_name?: string | null
+          company_website?: string | null
+          created_at?: string
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_contractor?: boolean | null
+          is_verified?: boolean | null
+          phone?: string | null
+          primary_trade?:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          profile_completed?: boolean | null
+          secondary_trades?:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -117,7 +201,32 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      construction_trade:
+        | "general_contractor"
+        | "electrician"
+        | "plumber"
+        | "carpenter"
+        | "mason"
+        | "roofer"
+        | "hvac_technician"
+        | "painter"
+        | "welder"
+        | "heavy_equipment_operator"
+        | "concrete_worker"
+        | "drywall_installer"
+        | "flooring_specialist"
+        | "landscaper"
+        | "project_manager"
+        | "architect"
+        | "engineer"
+        | "inspector"
+        | "other"
+      experience_level:
+        | "apprentice"
+        | "journeyman"
+        | "master"
+        | "supervisor"
+        | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -244,6 +353,35 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      construction_trade: [
+        "general_contractor",
+        "electrician",
+        "plumber",
+        "carpenter",
+        "mason",
+        "roofer",
+        "hvac_technician",
+        "painter",
+        "welder",
+        "heavy_equipment_operator",
+        "concrete_worker",
+        "drywall_installer",
+        "flooring_specialist",
+        "landscaper",
+        "project_manager",
+        "architect",
+        "engineer",
+        "inspector",
+        "other",
+      ],
+      experience_level: [
+        "apprentice",
+        "journeyman",
+        "master",
+        "supervisor",
+        "manager",
+      ],
+    },
   },
 } as const
