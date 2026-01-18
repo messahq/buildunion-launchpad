@@ -9,6 +9,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const languages = [
   { code: "en", name: "English" },
@@ -111,7 +117,7 @@ const HeroSection = () => {
             Construction grade project management platform for teams who build the real world
           </p>
           <div
-            className="mt-10 animate-fade-in-up opacity-0"
+            className="mt-10 flex flex-col items-center gap-6 animate-fade-in-up opacity-0"
             style={{ animationDelay: "1s", animationFillMode: "forwards" }}
           >
             <Button
@@ -121,6 +127,44 @@ const HeroSection = () => {
             >
               Enter Workspace
             </Button>
+            
+            {/* Our Vision Accordion */}
+            <Accordion type="single" collapsible className="w-full max-w-2xl">
+              <AccordionItem value="vision" className="border-none">
+                <AccordionTrigger className="text-hero-text/60 hover:text-hero-text/80 text-sm font-normal hover:no-underline justify-center gap-2 py-2 [&[data-state=open]>svg]:rotate-180">
+                  Our Vision
+                </AccordionTrigger>
+                <AccordionContent className="bg-zinc-800/90 backdrop-blur-sm rounded-lg p-6 mt-2 text-left">
+                  <h3 className="text-amber-500 font-display text-xl mb-1">Vision</h3>
+                  <p className="text-zinc-400 text-sm italic mb-4">Michelangelo – David – 1503</p>
+                  
+                  <div className="space-y-4 text-zinc-300 text-sm leading-relaxed">
+                    <p>
+                      More than five hundred years ago in Florence, a twelve-ton block of marble stood — cracked, shapeless, and forgotten by the masters for forty years.
+                    </p>
+                    <p>
+                      But a young sculptor saw something others could not.
+                    </p>
+                    <p>
+                      For three years, and with more than a million strikes of his hammer, he worked until the hidden figure within was finally free. When asked how he created it, he simply said:
+                    </p>
+                    
+                    {/* Quote with amber accent */}
+                    <blockquote className="border-l-2 border-amber-500 pl-4 py-1 italic text-amber-400">
+                      "The sculpture was already in the stone. I just removed everything that was not David."
+                    </blockquote>
+                    
+                    <p>
+                      BuildUnion sees the same hidden potential within today's construction world — in 4.6 million skilled professionals, in thousands of growing companies, and in the human hands that build the future every single day.
+                    </p>
+                    
+                    <p className="font-semibold text-white text-center pt-2">
+                      Because sometimes, the masterpiece isn't built. It's uncovered.
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </div>
       </div>
