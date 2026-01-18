@@ -708,7 +708,7 @@ const DualEngineChat = ({ projectId, projectName }: DualEngineChatProps) => {
               <Sparkles className="h-12 w-12 mb-4 text-amber-500/50" />
               <p className="font-medium">Ask M.E.S.S.A. about your project</p>
               <p className="text-sm mt-1">
-                Questions are verified by dual AI engines for accuracy
+                Analyze documents and site photos with dual AI engines
               </p>
             </div>
           ) : (
