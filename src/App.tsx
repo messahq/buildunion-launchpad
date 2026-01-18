@@ -11,6 +11,7 @@ import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
 import BuildUnionPricing from "./pages/BuildUnionPricing";
 import BuildUnionProfile from "./pages/BuildUnionProfile";
+import BuildUnionProfileView from "./pages/BuildUnionProfileView";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ConfirmEmail from "./pages/ConfirmEmail";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/buildunion/project/:projectId" element={<BuildUnionProjectDetails />} />
             <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
             <Route path="/buildunion/profile" element={<BuildUnionProfile />} />
+            <Route path="/buildunion/profile/view" element={<BuildUnionProfileView />} />
             <Route path="/buildunion/login" element={<Login />} />
             <Route path="/buildunion/register" element={<Register />} />
             <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />

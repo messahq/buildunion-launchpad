@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap, Folder, Briefcase } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap, Folder, Briefcase, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -194,9 +194,13 @@ const BuildUnionHeader = () => {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/buildunion/profile/view")}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Profile
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/buildunion/profile")}>
                   <Briefcase className="h-4 w-4 mr-2" />
-                  BU Profile
+                  Edit Profile
                 </DropdownMenuItem>
                 {subscription.subscribed && (
                   <>
