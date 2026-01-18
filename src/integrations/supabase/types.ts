@@ -29,6 +29,7 @@ export type Database = {
           hourly_rate: number | null
           id: string
           is_contractor: boolean | null
+          is_union_member: boolean | null
           is_verified: boolean | null
           phone: string | null
           primary_trade:
@@ -39,6 +40,7 @@ export type Database = {
             | Database["public"]["Enums"]["construction_trade"][]
             | null
           service_area: string | null
+          union_name: string | null
           updated_at: string
           user_id: string
         }
@@ -56,6 +58,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_contractor?: boolean | null
+          is_union_member?: boolean | null
           is_verified?: boolean | null
           phone?: string | null
           primary_trade?:
@@ -66,6 +69,7 @@ export type Database = {
             | Database["public"]["Enums"]["construction_trade"][]
             | null
           service_area?: string | null
+          union_name?: string | null
           updated_at?: string
           user_id: string
         }
@@ -83,6 +87,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_contractor?: boolean | null
+          is_union_member?: boolean | null
           is_verified?: boolean | null
           phone?: string | null
           primary_trade?:
@@ -93,6 +98,7 @@ export type Database = {
             | Database["public"]["Enums"]["construction_trade"][]
             | null
           service_area?: string | null
+          union_name?: string | null
           updated_at?: string
           user_id?: string
         }
