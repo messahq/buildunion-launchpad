@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile, TRADE_LABELS, EXPERIENCE_LABELS, ConstructionTrade, ExperienceLevel } from "@/hooks/useBuProfile";
+import { useSubscription } from "@/hooks/useSubscription";
+import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   User, 
   Briefcase, 
@@ -27,13 +30,21 @@ import {
   X,
   Plus,
   CheckCircle,
-  Users
+  Users,
+  Camera,
+  Crown,
+  Zap
 } from "lucide-react";
+import { toast } from "sonner";
 
 const BuildUnionProfile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, saving, updateProfile, ensureProfile } = useBuProfile();
+  const { subscription } = useSubscription();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Form state
   const [primaryTrade, setPrimaryTrade] = useState<ConstructionTrade | "">("");
@@ -71,8 +82,82 @@ const BuildUnionProfile = () => {
       setIsContractor(profile.is_contractor || false);
       setIsUnionMember(profile.is_union_member || false);
       setUnionName(profile.union_name || "");
+      setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile]);
+
+  // Handle avatar upload
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+
+      // Create unique file path
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      await updateProfile({ avatar_url: publicUrl });
+      setAvatarUrl(publicUrl);
+      toast.success('Profile picture updated!');
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      toast.error('Failed to upload profile picture');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const getTierBadge = () => {
+    if (subscription.tier === 'premium') {
+      return (
+        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white gap-1">
+          <Crown className="h-3 w-3" />
+          Premium
+        </Badge>
+      );
+    } else if (subscription.tier === 'pro') {
+      return (
+        <Badge className="bg-blue-500 text-white gap-1">
+          <Zap className="h-3 w-3" />
+          Pro
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="gap-1">
+        Free
+      </Badge>
+    );
+  };
+
+  const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'BU';
 
   // Ensure profile exists when page loads
   useEffect(() => {
@@ -147,12 +232,54 @@ const BuildUnionProfile = () => {
       <BuildUnionHeader />
       
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">BuildUnion Profile</h1>
-          <p className="text-muted-foreground">
-            Complete your professional profile to access the construction marketplace
-          </p>
-        </div>
+        {/* Profile Header with Avatar and Tier */}
+        <Card className="mb-6 overflow-hidden">
+          <div className="h-16 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
+          <CardContent className="pt-0 pb-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4 -mt-10">
+              {/* Avatar with upload */}
+              <div className="relative group">
+                <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+                  <AvatarImage src={avatarUrl || undefined} alt="Profile" />
+                  <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-amber-400 to-orange-500 text-white">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                  ) : (
+                    <Camera className="h-6 w-6 text-white" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </div>
+
+              {/* User info */}
+              <div className="flex-1 text-center sm:text-left mt-2 sm:mt-6">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'BuildUnion User'}
+                  </h1>
+                  {getTierBadge()}
+                </div>
+                <p className="text-muted-foreground">
+                  Complete your professional profile to access the construction marketplace
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {!isProfileComplete && (
           <Card className="mb-6 border-amber-500/50 bg-amber-500/10">

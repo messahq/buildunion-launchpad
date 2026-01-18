@@ -51,6 +51,7 @@ export interface BuProfile {
   profile_completed: boolean;
   is_union_member: boolean;
   union_name: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
