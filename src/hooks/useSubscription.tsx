@@ -12,15 +12,17 @@ export interface SubscriptionData {
 export const SUBSCRIPTION_TIERS = {
   pro: {
     name: "Pro",
-    price_id: "price_1Sr2TB1Vyb1rmc7ThE0bS3SG",
-    product_id: "prod_TofoY84ylvNqKh",
+    price_id: "price_1Sr2e51Vyb1rmc7TrmRauDEo",
+    product_id: "prod_Tog02cwkocBGA0",
     price: 19.99,
+    currency: "CAD",
   },
   premium: {
     name: "Premium",
-    price_id: "price_1Sr2TN1Vyb1rmc7TEwjjxX4f",
-    product_id: "prod_TofpsY4EZWUtVl",
+    price_id: "price_1Sr2eI1Vyb1rmc7TOD7OzXWa",
+    product_id: "prod_Tog0mYcKDEXUfl",
     price: 49.99,
+    currency: "CAD",
   },
 } as const;
 
