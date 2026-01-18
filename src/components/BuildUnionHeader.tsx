@@ -111,7 +111,7 @@ const BuildUnionHeader = () => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/buildunion/pricing")}
-            className="text-gray-600 hover:text-gray-900 font-medium hidden sm:flex"
+            className="text-gray-600 hover:text-gray-900 font-medium px-2 sm:px-3"
           >
             Pricing
           </Button>
