@@ -1,17 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, FileText, Calendar, Loader2, Download, Trash2, 
-  Brain, MessageSquare, CheckCircle, AlertCircle, Clock, Sparkles 
+  Brain, AlertCircle, Clock, Sparkles,
+  Pencil, X, Check, ShieldCheck, Send, Zap, BookOpen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import AskMessaChat from "@/components/AskMessaChat";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Project {
   id: string;
@@ -30,6 +34,84 @@ interface ProjectDocument {
   uploaded_at: string;
 }
 
+type VerificationStatus = "verified" | "not-verified" | "gemini-only" | "openai-only" | "error";
+
+interface SourceReference {
+  document: string;
+  page?: number;
+  excerpt?: string;
+}
+
+interface MessaMessage {
+  role: "user" | "assistant";
+  content: string;
+  verification?: {
+    status: VerificationStatus;
+    engines: { gemini: boolean; openai: boolean };
+    verified: boolean;
+  };
+  sources?: SourceReference[];
+}
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-messa`;
+
+const VerificationBadge = ({ verification }: { verification?: MessaMessage["verification"] }) => {
+  if (!verification) return null;
+
+  const badges: Record<VerificationStatus, { icon: React.ReactNode; text: string; className: string }> = {
+    verified: {
+      icon: <ShieldCheck className="h-3.5 w-3.5" />,
+      text: "Operational Truth Verified",
+      className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    },
+    "not-verified": {
+      icon: <AlertCircle className="h-3.5 w-3.5" />,
+      text: "Could not be verified",
+      className: "bg-amber-100 text-amber-700 border-amber-200",
+    },
+    "gemini-only": {
+      icon: <Zap className="h-3.5 w-3.5" />,
+      text: "Gemini Response",
+      className: "bg-blue-100 text-blue-700 border-blue-200",
+    },
+    "openai-only": {
+      icon: <Zap className="h-3.5 w-3.5" />,
+      text: "OpenAI Response",
+      className: "bg-purple-100 text-purple-700 border-purple-200",
+    },
+    error: {
+      icon: <AlertCircle className="h-3.5 w-3.5" />,
+      text: "Processing Error",
+      className: "bg-red-100 text-red-700 border-red-200",
+    },
+  };
+
+  const badge = badges[verification.status];
+
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${badge.className}`}>
+      {badge.icon}
+      <span>{badge.text}</span>
+    </div>
+  );
+};
+
+const SourceTags = ({ sources }: { sources?: SourceReference[] }) => {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {sources.map((source, i) => (
+        <div key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-xs text-slate-600">
+          <BookOpen className="h-3 w-3" />
+          <span>{source.document}</span>
+          {source.page && <span className="text-slate-400">• p.{source.page}</span>}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const BuildUnionProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -37,7 +119,20 @@ const BuildUnionProjectDetails = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  
+  // Edit mode
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Chat state
+  const [messages, setMessages] = useState<MessaMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user || !projectId) {
@@ -47,7 +142,6 @@ const BuildUnionProjectDetails = () => {
 
     const fetchProjectData = async () => {
       try {
-        // Fetch project details
         const { data: projectData, error: projectError } = await supabase
           .from("projects")
           .select("*")
@@ -62,8 +156,10 @@ const BuildUnionProjectDetails = () => {
         }
 
         setProject(projectData);
+        setEditName(projectData.name);
+        setEditDescription(projectData.description || "");
+        setEditStatus(projectData.status);
 
-        // Fetch documents
         const { data: docsData, error: docsError } = await supabase
           .from("project_documents")
           .select("*")
@@ -82,6 +178,12 @@ const BuildUnionProjectDetails = () => {
 
     fetchProjectData();
   }, [user, projectId, navigate]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -113,6 +215,47 @@ const BuildUnionProjectDetails = () => {
     }
   };
 
+  const handleSaveProject = async () => {
+    if (!project || !editName.trim()) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({
+          name: editName.trim(),
+          description: editDescription.trim() || null,
+          status: editStatus,
+        })
+        .eq("id", project.id);
+
+      if (error) throw error;
+
+      setProject({
+        ...project,
+        name: editName.trim(),
+        description: editDescription.trim() || null,
+        status: editStatus,
+      });
+      setIsEditing(false);
+      toast.success("Project updated");
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Failed to update project");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (project) {
+      setEditName(project.name);
+      setEditDescription(project.description || "");
+      setEditStatus(project.status);
+    }
+    setIsEditing(false);
+  };
+
   const handleDownload = async (doc: ProjectDocument) => {
     try {
       const { data, error } = await supabase.storage
@@ -139,10 +282,8 @@ const BuildUnionProjectDetails = () => {
     if (!confirm(`Delete "${doc.file_name}"?`)) return;
 
     try {
-      // Delete from storage
       await supabase.storage.from("project-documents").remove([doc.file_path]);
 
-      // Delete from database
       const { error } = await supabase
         .from("project_documents")
         .delete()
@@ -156,6 +297,92 @@ const BuildUnionProjectDetails = () => {
       console.error("Delete error:", error);
       toast.error("Failed to delete document");
     }
+  };
+
+  // M.E.S.S.A. Chat functions
+  const handleSendMessage = async () => {
+    if (!input.trim() || isLoading || !user) return;
+
+    const userMessage: MessaMessage = { role: "user", content: input.trim() };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const documentNames = documents.map(d => d.file_name);
+      
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: "user", content: userMessage.content }],
+          dualEngine: true,
+          projectContext: {
+            projectId,
+            projectName: project?.name,
+            documents: documentNames,
+          },
+        }),
+      });
+
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to connect to Messa");
+      }
+
+      const data = await resp.json();
+      
+      // Determine verification status based on consensus
+      let status: VerificationStatus = "error";
+      if (data.verification?.verified) {
+        status = "verified";
+      } else if (data.verification?.engines?.gemini && data.verification?.engines?.openai) {
+        status = "not-verified";
+      } else if (data.verification?.engines?.gemini) {
+        status = "gemini-only";
+      } else if (data.verification?.engines?.openai) {
+        status = "openai-only";
+      }
+
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: data.verification?.verified 
+          ? data.content 
+          : status === "not-verified"
+            ? "Information could not be verified by both engines. Please check the source documents manually."
+            : data.content,
+        verification: {
+          ...data.verification,
+          status,
+        },
+        sources: data.sources,
+      }]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      toast.error(error instanceof Error ? error.message : "Connection error");
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        verification: { status: "error", engines: { gemini: false, openai: false }, verified: false },
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleQuickQuestion = (question: string) => {
+    setInput(question);
+    inputRef.current?.focus();
   };
 
   if (loading) {
@@ -188,7 +415,7 @@ const BuildUnionProjectDetails = () => {
     <main className="bg-slate-50 min-h-screen">
       <BuildUnionHeader />
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Back Link */}
         <button
           onClick={() => navigate("/buildunion/workspace")}
@@ -199,37 +426,82 @@ const BuildUnionProjectDetails = () => {
         </button>
 
         {/* Project Header */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{project.name}</h1>
-              <Badge className={`${getStatusColor(project.status)}`}>{project.status}</Badge>
-            </div>
-            {project.description && (
-              <p className="text-slate-600 mb-2">{project.description}</p>
-            )}
-            <div className="flex items-center gap-4 text-sm text-slate-400">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Created {formatDate(project.created_at)}
+        <Card className="mb-8 border-slate-200 bg-white">
+          <CardContent className="pt-6">
+            {isEditing ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Project Name</label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Project name"
+                    className="max-w-md"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Description</label>
+                  <Textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Project description"
+                    className="max-w-lg"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Status</label>
+                  <Select value={editStatus} onValueChange={setEditStatus}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={handleSaveProject} disabled={saving} className="bg-amber-500 hover:bg-amber-600">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    <span className="ml-2">Save</span>
+                  </Button>
+                  <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
+                    <X className="h-4 w-4" />
+                    <span className="ml-2">Cancel</span>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
+            ) : (
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">{project.name}</h1>
+                    <Badge className={`${getStatusColor(project.status)}`}>{project.status}</Badge>
+                  </div>
+                  {project.description && (
+                    <p className="text-slate-600 mb-2">{project.description}</p>
+                  )}
+                  <div className="flex items-center gap-4 text-sm text-slate-400">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      Created {formatDate(project.created_at)}
+                    </div>
+                  </div>
+                </div>
+                <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+                  <Pencil className="h-4 w-4" />
+                  Edit Project
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Ask M.E.S.S.A. Button */}
-          <Button
-            onClick={() => setIsChatOpen(true)}
-            className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white gap-2"
-          >
-            <Sparkles className="h-4 w-4" />
-            Ask M.E.S.S.A.
-          </Button>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* Documents Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Documents Card */}
+          <div className="space-y-6">
             <Card className="border-slate-200 bg-white">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
@@ -293,74 +565,8 @@ const BuildUnionProjectDetails = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
 
-          {/* M.E.S.S.A. Analysis Column */}
-          <div className="space-y-6">
-            {/* M.E.S.S.A. Analysis Card */}
-            <Card className="border-slate-200 bg-gradient-to-br from-white to-cyan-50/30">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 flex items-center justify-center">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
-                  </div>
-                  <CardTitle className="text-lg font-semibold text-slate-900">
-                    M.E.S.S.A. Analysis
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {documents.length === 0 ? (
-                  <div className="text-center py-6">
-                    <Brain className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">
-                      Upload documents to enable AI analysis
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Analysis Status */}
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100">
-                      <Clock className="h-4 w-4 text-amber-600" />
-                      <span className="text-sm text-amber-700">Analysis pending</span>
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Quick Questions
-                      </p>
-                      <button
-                        onClick={() => setIsChatOpen(true)}
-                        className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                      >
-                        📋 Summarize key project details
-                      </button>
-                      <button
-                        onClick={() => setIsChatOpen(true)}
-                        className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                      >
-                        ⚠️ Identify potential risks
-                      </button>
-                      <button
-                        onClick={() => setIsChatOpen(true)}
-                        className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                      >
-                        📅 Extract timeline & milestones
-                      </button>
-                      <button
-                        onClick={() => setIsChatOpen(true)}
-                        className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                      >
-                        💰 Review budget & costs
-                      </button>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Project Stats Card */}
+            {/* Project Stats */}
             <Card className="border-slate-200 bg-white">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-slate-700">
@@ -387,11 +593,154 @@ const BuildUnionProjectDetails = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* M.E.S.S.A. Analysis Column - Embedded Chat */}
+          <Card className="border-slate-200 bg-white flex flex-col h-[700px]">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-3 rounded-t-lg flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">M.E.S.S.A. Analysis</h3>
+                <p className="text-white/80 text-xs">Dual-Engine AI • Document Analysis</p>
+              </div>
+            </div>
+
+            {/* Dual-Engine Indicator */}
+            <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-center gap-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                <span className="text-slate-600">Gemini Pro</span>
+              </div>
+              <div className="text-slate-300">+</div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                <span className="text-slate-600">GPT-5</span>
+              </div>
+              <div className="text-slate-300">=</div>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-slate-600 font-medium">Verified</span>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+              {documents.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                  <Brain className="h-12 w-12 text-slate-300 mb-4" />
+                  <h4 className="text-lg font-semibold text-slate-900 mb-2">
+                    Upload Documents First
+                  </h4>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Upload project documents to enable AI analysis with dual-engine verification.
+                  </p>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 mb-4 flex items-center justify-center">
+                    <Brain className="h-8 w-8 text-white" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-slate-900 mb-2">
+                    Ask About Your Documents
+                  </h4>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                    I analyze your project documents using dual AI engines. Only verified information is shown.
+                  </p>
+                  {/* Quick Questions */}
+                  <div className="space-y-2 w-full max-w-xs">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Quick Questions
+                    </p>
+                    <button
+                      onClick={() => handleQuickQuestion("Summarize key project details from the documents")}
+                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      📋 Summarize key project details
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Identify potential risks mentioned in documents")}
+                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      ⚠️ Identify potential risks
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Extract timeline and milestones from the documents")}
+                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      📅 Extract timeline & milestones
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Review budget and cost information")}
+                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
+                    >
+                      💰 Review budget & costs
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg, i) => (
+                    <div
+                      key={i}
+                      className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+                    >
+                      <div
+                        className={`max-w-[90%] rounded-2xl px-4 py-2.5 ${
+                          msg.role === "user"
+                            ? "bg-cyan-500 text-white rounded-br-md"
+                            : "bg-slate-100 text-slate-900 rounded-bl-md"
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      </div>
+                      {msg.role === "assistant" && (
+                        <div className="mt-1.5 ml-1 space-y-1">
+                          <VerificationBadge verification={msg.verification} />
+                          <SourceTags sources={msg.sources} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-slate-100 rounded-2xl rounded-bl-md px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                          <span className="text-xs text-slate-500">Verifying with dual engines...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+
+            {/* Input */}
+            <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
+              <div className="flex gap-2">
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={documents.length === 0 ? "Upload documents first..." : "Ask about your documents..."}
+                  className="flex-1"
+                  disabled={isLoading || documents.length === 0 || !user}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || isLoading || documents.length === 0 || !user}
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
-
-      {/* M.E.S.S.A. Chat */}
-      <AskMessaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </main>
   );
 };
