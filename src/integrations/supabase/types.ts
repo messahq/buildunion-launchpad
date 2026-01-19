@@ -486,6 +486,33 @@ export type Database = {
           },
         ]
       }
+      user_draft_data: {
+        Row: {
+          created_at: string
+          data: Json
+          draft_type: string
+          id: string
+          last_updated: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          draft_type?: string
+          id?: string
+          last_updated?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          draft_type?: string
+          id?: string
+          last_updated?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_templates: {
         Row: {
           area_unit: string | null
@@ -539,6 +566,39 @@ export type Database = {
           name?: string
           updated_at?: string
           use_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_trials: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          last_used: string | null
+          max_allowed: number
+          updated_at: string
+          used_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature?: string
+          id?: string
+          last_used?: string | null
+          max_allowed?: number
+          updated_at?: string
+          used_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          last_used?: string | null
+          max_allowed?: number
+          updated_at?: string
+          used_count?: number
           user_id?: string
         }
         Relationships: []

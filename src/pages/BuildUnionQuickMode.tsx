@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
@@ -8,14 +8,17 @@ import QuickModeCalculator from "@/components/quick-mode/QuickModeCalculator";
 import QuickModeQuoteGenerator from "@/components/quick-mode/QuickModeQuoteGenerator";
 import QuickModeOnboarding from "@/components/quick-mode/QuickModeOnboarding";
 import DataMergeDialog from "@/components/DataMergeDialog";
+import AuthGateModal from "@/components/AuthGateModal";
+import GuestProgressBar from "@/components/GuestProgressBar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight, ArrowLeft, FileSpreadsheet, Sparkles, FileUp, Crown } from "lucide-react";
+import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowLeft, FileSpreadsheet, Sparkles, FileUp, Crown, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
-import { useTrialUsage } from "@/hooks/useTrialUsage";
+import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useDraftData } from "@/hooks/useDraftData";
 import { toast } from "sonner";
 
 // Template data type for passing between tabs
@@ -45,7 +48,10 @@ const BuildUnionQuickMode = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { subscription } = useSubscription();
-  const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials } = useTrialUsage();
+  const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials, isAuthenticated } = useDbTrialUsage("blueprint_analysis");
+  
+  // Draft data for returning users
+  const { draftData, hasDraft, saveDraft, clearDraft } = useDraftData<CollectedData>("quick_mode");
   
   const isCreateFlow = searchParams.get("flow") === "create";
   const isPremium = subscription?.subscribed === true;
@@ -53,6 +59,9 @@ const BuildUnionQuickMode = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "photo");
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [showAuthGate, setShowAuthGate] = useState(false);
+  const [authGateFeature, setAuthGateFeature] = useState<"blueprints" | "templates" | "quote" | "summary">("blueprints");
+  const [showDraftResume, setShowDraftResume] = useState(false);
   
   // Collected data from all tabs
   const [collectedData, setCollectedData] = useState<CollectedData>({
@@ -66,6 +75,34 @@ const BuildUnionQuickMode = () => {
   
   // Photo estimate pre-fill data for calculator
   const [photoEstimatePreFill, setPhotoEstimatePreFill] = useState<PhotoEstimatePreFill | null>(null);
+
+  // Check for draft data on mount (for returning users)
+  useEffect(() => {
+    if (user && hasDraft && draftData) {
+      setShowDraftResume(true);
+    }
+  }, [user, hasDraft, draftData]);
+
+  // Auto-save draft for authenticated users
+  useEffect(() => {
+    if (user && (collectedData.photoEstimate || collectedData.calculatorResults.length > 0 || collectedData.templateItems.length > 0)) {
+      saveDraft(collectedData);
+    }
+  }, [user, collectedData, saveDraft]);
+
+  // Handle resuming from draft
+  const handleResumeDraft = () => {
+    if (draftData) {
+      setCollectedData(draftData);
+      toast.success("Welcome back! Your progress has been restored.");
+    }
+    setShowDraftResume(false);
+  };
+
+  const handleStartFresh = () => {
+    clearDraft();
+    setShowDraftResume(false);
+  };
 
   // Callbacks to collect data from child components
   const handlePhotoEstimateComplete = useCallback((estimate: any) => {
@@ -101,8 +138,8 @@ const BuildUnionQuickMode = () => {
   // Navigate to summary with collected data
   const goToSummary = () => {
     if (!user) {
-      toast.error("Please sign in to access the summary");
-      navigate("/buildunion/login");
+      setAuthGateFeature("summary");
+      setShowAuthGate(true);
       return;
     }
 
@@ -114,6 +151,9 @@ const BuildUnionQuickMode = () => {
       toast.info("Add some data (photo, calculator, template) to create a summary");
       return;
     }
+
+    // Clear draft when going to summary
+    clearDraft();
 
     // Encode data as URL params for the summary page
     const params = new URLSearchParams();
@@ -131,10 +171,11 @@ const BuildUnionQuickMode = () => {
   };
 
   // Handle Skip to Blueprints click
-  const handleSkipToBlueprints = () => {
+  const handleSkipToBlueprints = async () => {
+    // Guests must sign in first
     if (!user) {
-      toast.error("Please sign in to access blueprint analysis");
-      navigate("/buildunion/login");
+      setAuthGateFeature("blueprints");
+      setShowAuthGate(true);
       return;
     }
 
@@ -149,11 +190,11 @@ const BuildUnionQuickMode = () => {
     }
 
     // Otherwise go directly to blueprints
-    navigateToBlueprints(false);
+    await navigateToBlueprints(false);
   };
 
   // Navigate to blueprint upload (PRO Mode)
-  const navigateToBlueprints = (mergeData: boolean) => {
+  const navigateToBlueprints = async (mergeData: boolean) => {
     // Check if premium or has trials
     if (!isPremium && !hasTrialsRemaining) {
       toast.error("You've used all free trials. Upgrade to Premium for unlimited blueprint analysis.");
@@ -163,9 +204,14 @@ const BuildUnionQuickMode = () => {
 
     // Use one trial if not premium
     if (!isPremium) {
-      useOneTrial();
-      toast.success(`Blueprint analysis trial used. ${remainingTrials - 1} remaining.`);
+      const success = await useOneTrial();
+      if (success) {
+        toast.success(`Blueprint analysis trial used. ${remainingTrials - 1} remaining.`);
+      }
     }
+
+    // Clear draft when navigating away
+    clearDraft();
 
     // Build navigation params
     const params = new URLSearchParams();
@@ -183,6 +229,17 @@ const BuildUnionQuickMode = () => {
     }
 
     navigate(`/buildunion/workspace/new?${params.toString()}`);
+  };
+
+  // Handle tab change with auth gates
+  const handleTabChange = (tab: string) => {
+    // Quote tab requires auth
+    if (tab === "quote" && !user) {
+      setAuthGateFeature("quote");
+      setShowAuthGate(true);
+      return;
+    }
+    setActiveTab(tab);
   };
 
   // Count collected items for badge
@@ -239,7 +296,9 @@ const BuildUnionQuickMode = () => {
                       <FileUp className="w-4 h-4" />
                       <span className="hidden sm:inline">Skip to Blueprints</span>
                       <span className="sm:hidden">Blueprints</span>
-                      {isPremium ? (
+                      {!user ? (
+                        <Lock className="w-3 h-3 text-muted-foreground" />
+                      ) : isPremium ? (
                         <Crown className="w-3 h-3 text-amber-500" />
                       ) : (
                         <Badge variant="secondary" className="ml-1 text-xs">
@@ -249,9 +308,11 @@ const BuildUnionQuickMode = () => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {isPremium 
-                      ? "Upload blueprints for M.E.S.S.A. analysis (Premium)" 
-                      : `${remainingTrials} free trial${remainingTrials !== 1 ? 's' : ''} remaining`
+                    {!user 
+                      ? "Sign in to access Blueprint Analysis" 
+                      : isPremium 
+                        ? "Upload blueprints for M.E.S.S.A. analysis (Premium)" 
+                        : `${remainingTrials} free trial${remainingTrials !== 1 ? 's' : ''} remaining`
                     }
                   </TooltipContent>
                 </Tooltip>
@@ -268,11 +329,18 @@ const BuildUnionQuickMode = () => {
                       {collectedItemsCount}
                     </Badge>
                   )}
+                  {!user && <Lock className="w-3 h-3 ml-1" />}
                 </Button>
               </div>
             </div>
           </div>
         </section>
+
+        {/* Guest Progress Bar */}
+        <GuestProgressBar 
+          hasPhotoEstimate={!!collectedData.photoEstimate} 
+          className="container mx-auto px-4 sm:px-6 mt-4"
+        />
 
         {/* Collected Data Indicator */}
         {collectedItemsCount > 0 && (
@@ -296,7 +364,7 @@ const BuildUnionQuickMode = () => {
 
         {/* Main Content with Tabs */}
         <section className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-2 h-auto p-1 bg-muted/50 mb-6">
               <TabsTrigger 
                 value="photo" 
@@ -338,6 +406,7 @@ const BuildUnionQuickMode = () => {
                 <FileText className="w-4 h-4" />
                 <span className="hidden sm:inline">Quote Generator</span>
                 <span className="sm:hidden">Quote</span>
+                {!user && <Lock className="w-3 h-3 text-muted-foreground" />}
               </TabsTrigger>
             </TabsList>
 
@@ -359,7 +428,7 @@ const BuildUnionQuickMode = () => {
             <TabsContent value="calculator" className="mt-0">
               <QuickModeCalculator 
                 onCalculatorComplete={handleCalculatorComplete}
-                onContinue={() => setActiveTab("quote")}
+                onContinue={() => handleTabChange("quote")}
                 templateData={currentTemplateData}
                 prefillArea={photoEstimatePreFill?.area}
                 prefillAreaUnit={photoEstimatePreFill?.areaUnit}
@@ -383,10 +452,12 @@ const BuildUnionQuickMode = () => {
                     params.set("templateItems", encodeURIComponent(JSON.stringify(collectedData.templateItems)));
                   }
                   params.set("quote", encodeURIComponent(JSON.stringify(quote)));
+                  clearDraft();
                   navigate(`/buildunion/summary?${params.toString()}`);
                 }}
                 onSaveToProjects={(data) => {
                   // Navigate to project details after saving
+                  clearDraft();
                   toast.success("Project created! Redirecting...");
                   setTimeout(() => {
                     navigate(`/buildunion/project/${data.projectId}`);
@@ -422,6 +493,50 @@ const BuildUnionQuickMode = () => {
           navigateToBlueprints(false);
         }}
       />
+
+      {/* Auth Gate Modal */}
+      <AuthGateModal
+        open={showAuthGate}
+        onOpenChange={setShowAuthGate}
+        feature={authGateFeature}
+        incentiveMessage={
+          authGateFeature === "blueprints" 
+            ? "Register now and get 3 FREE blueprint analyses!"
+            : undefined
+        }
+      />
+
+      {/* Draft Resume Dialog */}
+      {showDraftResume && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-3">
+                <Sparkles className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold">Welcome Back!</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                You have an unfinished project. Would you like to continue where you left off?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleStartFresh}
+                className="flex-1"
+              >
+                Start Fresh
+              </Button>
+              <Button
+                onClick={handleResumeDraft}
+                className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
