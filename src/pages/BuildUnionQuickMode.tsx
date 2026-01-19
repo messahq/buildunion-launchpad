@@ -430,8 +430,8 @@ const BuildUnionQuickMode = () => {
                 onCalculatorComplete={handleCalculatorComplete}
                 onContinue={() => handleTabChange("quote")}
                 templateData={currentTemplateData}
-                prefillArea={photoEstimatePreFill?.area}
-                prefillAreaUnit={photoEstimatePreFill?.areaUnit}
+                prefillArea={photoEstimatePreFill?.area || collectedData.photoEstimate?.detectedArea}
+                prefillAreaUnit={photoEstimatePreFill?.areaUnit || collectedData.photoEstimate?.areaUnit || "sq ft"}
               />
             </TabsContent>
 
