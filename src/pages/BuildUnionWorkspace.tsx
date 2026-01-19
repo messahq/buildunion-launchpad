@@ -342,9 +342,9 @@ const BuildUnionWorkspace = () => {
       </section>
 
       {/* Roadmap Section */}
-      <section className="py-20 px-6 bg-slate-50">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
+      <section className="py-16 px-6 bg-slate-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
               Roadmap
             </h2>
@@ -353,86 +353,85 @@ const BuildUnionWorkspace = () => {
             </p>
           </div>
 
-          {/* Timeline */}
+          {/* Horizontal Timeline */}
           <div className="relative">
-            {/* Vertical line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 -translate-x-1/2 hidden md:block" />
+            {/* Horizontal line */}
+            <div className="absolute left-0 right-0 top-6 h-px bg-slate-200 hidden md:block" />
 
-            {/* Phase 1 - Left */}
-            <div className="flex flex-col md:flex-row items-center gap-6 mb-12">
-              <div className="md:w-1/2 md:pr-12 md:text-right">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-                  <div className="flex items-center justify-between mb-3 md:flex-row-reverse">
-                    <span className="text-sm text-slate-500">Phase 1</span>
-                    <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded">
-                      IN PROGRESS (~65%)
+            {/* Phases Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Phase 1 */}
+              <div className="relative">
+                <div className="hidden md:flex justify-center mb-4">
+                  <div className="w-3 h-3 rounded-full bg-amber-500 border-4 border-white shadow z-10" />
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-slate-500">Phase 1</span>
+                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                      ~65%
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Public MVP</h3>
-                  <p className="text-slate-500 text-sm">
-                    Core platform features are live, enabling collaboration between professionals and businesses across projects.
+                  <h3 className="text-sm font-bold text-slate-900 mb-1">Public MVP</h3>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Core platform features enabling collaboration between professionals.
                   </p>
                 </div>
               </div>
-              <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10 hidden md:block" />
-              <div className="md:w-1/2" />
-            </div>
 
-            {/* Phase 2 - Right */}
-            <div className="flex flex-col md:flex-row items-center gap-6 mb-12">
-              <div className="md:w-1/2" />
-              <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10 hidden md:block" />
-              <div className="md:w-1/2 md:pl-12">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-slate-500">Phase 2</span>
-                    <span className="text-xs font-semibold text-cyan-700 bg-cyan-100 px-2 py-1 rounded">
-                      COMING SOON
+              {/* Phase 2 */}
+              <div className="relative">
+                <div className="hidden md:flex justify-center mb-4">
+                  <div className="w-3 h-3 rounded-full bg-cyan-500 border-4 border-white shadow z-10" />
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-slate-500">Phase 2</span>
+                    <span className="text-[10px] font-semibold text-cyan-700 bg-cyan-100 px-1.5 py-0.5 rounded">
+                      SOON
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Verified Professionals</h3>
-                  <p className="text-slate-500 text-sm">
-                    Introduction of professional verification, including credential checks and trade certifications to strengthen trust and accountability.
+                  <h3 className="text-sm font-bold text-slate-900 mb-1">Verified Professionals</h3>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Professional verification with credential and certification checks.
                   </p>
                 </div>
               </div>
-            </div>
 
-            {/* Phase 3 - Left */}
-            <div className="flex flex-col md:flex-row items-center gap-6 mb-12">
-              <div className="md:w-1/2 md:pr-12 md:text-right">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-                  <div className="flex items-center justify-between mb-3 md:flex-row-reverse">
-                    <span className="text-sm text-slate-500">Phase 3</span>
-                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+              {/* Phase 3 */}
+              <div className="relative">
+                <div className="hidden md:flex justify-center mb-4">
+                  <div className="w-3 h-3 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-slate-500">Phase 3</span>
+                    <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
                       PLANNED
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Union Collaborations</h3>
-                  <p className="text-slate-500 text-sm">
-                    Strategic partnerships with major unions, enabling coordinated workflows and access to exclusive collaboration benefits.
+                  <h3 className="text-sm font-bold text-slate-900 mb-1">Union Collaborations</h3>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Strategic partnerships with major unions for coordinated workflows.
                   </p>
                 </div>
               </div>
-              <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10 hidden md:block" />
-              <div className="md:w-1/2" />
-            </div>
 
-            {/* Phase 4 - Right */}
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="md:w-1/2" />
-              <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10 hidden md:block" />
-              <div className="md:w-1/2 md:pl-12">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-slate-500">Phase 4</span>
-                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+              {/* Phase 4 */}
+              <div className="relative">
+                <div className="hidden md:flex justify-center mb-4">
+                  <div className="w-3 h-3 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-slate-500">Phase 4</span>
+                    <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
                       PLANNED
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">City-by-City Expansion</h3>
-                  <p className="text-slate-500 text-sm">
-                    Phased rollout across key metropolitan areas, supported by local partnerships and region-specific operational alignment.
+                  <h3 className="text-sm font-bold text-slate-900 mb-1">City-by-City Expansion</h3>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Phased rollout across key metropolitan areas with local partnerships.
                   </p>
                 </div>
               </div>
