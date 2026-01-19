@@ -156,7 +156,7 @@ const HeroSection = () => {
       <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-24 md:pb-32">
         <div className="max-w-4xl text-center">
           <h1
-            className="font-display text-4xl font-light tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl animate-fade-in-up"
+            className="font-display text-3xl font-light tracking-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl animate-fade-in-up"
             style={{ animationDelay: "0.2s" }}
           >
             <span className="text-white">Build</span>

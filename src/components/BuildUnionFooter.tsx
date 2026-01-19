@@ -43,8 +43,9 @@ const BuildUnionFooter = () => {
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-1">
             <Link to="/buildunion" className="inline-block mb-4">
-              <span className="text-2xl font-display font-light text-white">
-                Build<span className="text-amber-500">Union</span>
+              <span className="text-2xl font-display font-light tracking-tight">
+                <span className="text-white">Build</span>
+                <span className="text-amber-400">Union</span>
               </span>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed mb-6">
