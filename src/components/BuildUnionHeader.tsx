@@ -10,8 +10,10 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useBuProfile } from "@/hooks/useBuProfile";
 import { toast } from "sonner";
 
 import NewProjectModal from "@/components/NewProjectModal";
@@ -32,10 +34,22 @@ const BuildUnionHeader = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { subscription } = useSubscription();
+  const { profile } = useBuProfile();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
+  
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (profile?.company_name) {
+      return profile.company_name.slice(0, 2).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+    return "U";
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -158,10 +172,15 @@ const BuildUnionHeader = () => {
                 >
                   <div className="flex items-center gap-1.5">
                     {getTierIcon()}
-                    <User className="h-4 w-4" />
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
+                      <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   <span className="text-sm hidden md:inline">
-                    {user.email?.split("@")[0]}
+                    {profile?.company_name || user.email?.split("@")[0]}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
