@@ -22,7 +22,9 @@ interface NewProjectModalProps {
 export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { remainingTrials, maxTrials } = useDbTrialUsage("blueprint_analysis");
+  const { remainingTrials: blueprintTrials, maxTrials: blueprintMaxTrials } = useDbTrialUsage("blueprint_analysis");
+  const { remainingTrials: projectTrials, maxTrials: projectMaxTrials } = useDbTrialUsage("project_creation");
+  const { remainingTrials: estimateTrials, maxTrials: estimateMaxTrials } = useDbTrialUsage("quick_estimate");
   const { subscription } = useSubscription();
   const isPremium = subscription?.subscribed === true;
 
@@ -35,6 +37,8 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
     onOpenChange(false);
     if (!user) {
       navigate("/buildunion/login", { state: { returnTo: "/buildunion/workspace/new" } });
+    } else if (!isPremium && projectTrials === 0) {
+      navigate("/buildunion/pricing");
     } else {
       navigate("/buildunion/workspace/new");
     }
@@ -49,6 +53,27 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
             Choose the right method for your project
           </DialogDescription>
         </DialogHeader>
+
+        {/* Free Trial Info Banner */}
+        {user && !isPremium && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm font-medium text-amber-800 mb-2">Your Free Trial Limits:</p>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="text-center p-2 bg-white rounded border">
+                <div className="font-bold text-amber-600">{estimateTrials}/{estimateMaxTrials}</div>
+                <div className="text-muted-foreground">AI Estimates</div>
+              </div>
+              <div className="text-center p-2 bg-white rounded border">
+                <div className="font-bold text-cyan-600">{blueprintTrials}/{blueprintMaxTrials}</div>
+                <div className="text-muted-foreground">Blueprint AI</div>
+              </div>
+              <div className="text-center p-2 bg-white rounded border">
+                <div className="font-bold text-purple-600">{projectTrials}/{projectMaxTrials}</div>
+                <div className="text-muted-foreground">Projects</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 py-4">
           {/* Quick Mode Option */}
@@ -67,6 +92,12 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                     <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
                       Fast
                     </Badge>
+                    {isPremium && (
+                      <Badge className="text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-white gap-1">
+                        <Crown className="w-3 h-3" />
+                        Unlimited
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
                     For small jobs without blueprints. Photo-based estimates, templates, calculator.
@@ -75,6 +106,9 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                     <span className="flex items-center gap-1">
                       <Camera className="w-3 h-3 text-amber-500" />
                       Photo Estimate
+                      {!isPremium && user && (
+                        <Badge variant="outline" className="text-xs ml-1">{estimateTrials} left</Badge>
+                      )}
                     </span>
                     <span className="flex items-center gap-1">
                       <Calculator className="w-3 h-3 text-amber-500" />
@@ -92,7 +126,7 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
 
           {/* Blueprint/M.E.S.S.A. Mode Option */}
           <Card 
-            className="cursor-pointer hover:border-cyan-400 hover:shadow-md transition-all group"
+            className={`cursor-pointer hover:border-cyan-400 hover:shadow-md transition-all group ${!isPremium && user && projectTrials === 0 ? 'opacity-60' : ''}`}
             onClick={handleBlueprintMode}
           >
             <CardContent className="p-5">
@@ -113,9 +147,14 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                         <Crown className="w-3 h-3" />
                         Premium
                       </Badge>
+                    ) : projectTrials === 0 ? (
+                      <Badge variant="destructive" className="text-xs gap-1">
+                        <Lock className="w-3 h-3" />
+                        Upgrade
+                      </Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs">
-                        {remainingTrials}/{maxTrials} trials
+                        {projectTrials}/{projectMaxTrials} project
                       </Badge>
                     )}
                   </div>
@@ -130,6 +169,9 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                     <span className="flex items-center gap-1">
                       <Brain className="w-3 h-3 text-cyan-500" />
                       AI Analysis
+                      {!isPremium && user && (
+                        <Badge variant="outline" className="text-xs ml-1">{blueprintTrials} left</Badge>
+                      )}
                     </span>
                     <span className="flex items-center gap-1">
                       <FileText className="w-3 h-3 text-cyan-500" />
@@ -143,7 +185,11 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          Results from both methods can be combined in one project summary
+          {isPremium ? (
+            "Unlimited access to all features with your Premium subscription"
+          ) : (
+            "Results from both methods can be combined in one project summary"
+          )}
         </p>
       </DialogContent>
     </Dialog>

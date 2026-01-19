@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain, ArrowRight, Calculator } from "lucide-react";
+import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain, ArrowRight, Calculator, Lock, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
 interface Material {
   item: string;
   quantity: number | string;
@@ -72,6 +74,11 @@ interface QuickModePhotoEstimateProps {
 }
 
 const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onContinueToCalculator }: QuickModePhotoEstimateProps) => {
+  const { user } = useAuth();
+  const { subscription } = useSubscription();
+  const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials, isAuthenticated } = useDbTrialUsage("quick_estimate");
+  const isPremium = subscription?.subscribed === true;
+  
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
@@ -113,6 +120,14 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
       return;
     }
 
+    // Check trial limits for non-premium users
+    if (!isPremium && isAuthenticated) {
+      if (!hasTrialsRemaining) {
+        toast.error("You've used all your free AI estimates. Upgrade to Pro for unlimited access!");
+        return;
+      }
+    }
+
     setIsAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke("quick-estimate", {
@@ -124,6 +139,11 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
       });
 
       if (error) throw error;
+
+      // Use one trial for non-premium authenticated users
+      if (!isPremium && isAuthenticated) {
+        await useOneTrial();
+      }
 
       setResult(data.estimate);
       onEstimateComplete?.(data.estimate);
@@ -249,16 +269,38 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
             />
           </div>
 
+          {/* Trial indicator for non-premium users */}
+          {isAuthenticated && !isPremium && (
+            <div className="p-3 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">AI Estimates remaining:</span>
+                <Badge variant={hasTrialsRemaining ? "secondary" : "destructive"} className="text-xs">
+                  {remainingTrials}/{maxTrials}
+                </Badge>
+              </div>
+              {!hasTrialsRemaining && (
+                <p className="text-xs text-destructive mt-2">
+                  Upgrade to Pro for unlimited AI estimates
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Analyze Button */}
           <Button
             onClick={analyzePhoto}
-            disabled={!selectedImage || isAnalyzing}
+            disabled={!selectedImage || isAnalyzing || (!isPremium && isAuthenticated && !hasTrialsRemaining)}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white"
           >
             {isAnalyzing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Dual-Engine Analysis...
+              </>
+            ) : !isPremium && isAuthenticated && !hasTrialsRemaining ? (
+              <>
+                <Lock className="w-4 h-4 mr-2" />
+                Upgrade to Continue
               </>
             ) : (
               <>
@@ -269,12 +311,20 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
           </Button>
 
           {/* Dual Engine Info */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Eye className="w-3 h-3" />
-            <span>Gemini Pro (Visual)</span>
-            <span>+</span>
-            <Brain className="w-3 h-3" />
-            <span>GPT-5 (Estimation)</span>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Eye className="w-3 h-3" />
+              <span>Gemini Pro (Visual)</span>
+              <span>+</span>
+              <Brain className="w-3 h-3" />
+              <span>GPT-5 (Estimation)</span>
+            </div>
+            {isPremium && (
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs gap-1">
+                <Crown className="w-3 h-3" />
+                Unlimited
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
+import { useSubscription } from "@/hooks/useSubscription";
 import { TRADE_LABELS, ConstructionTrade } from "@/hooks/useBuProfile";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import { Button } from "@/components/ui/button";
@@ -30,7 +32,9 @@ import {
   Image,
   FileCheck,
   Trash2,
-  Minus
+  Minus,
+  Lock,
+  Crown
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -97,6 +101,9 @@ const WIZARD_STEPS = [
 const BuildUnionNewProject = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { subscription } = useSubscription();
+  const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials } = useDbTrialUsage("project_creation");
+  const isPremium = subscription?.subscribed === true;
   
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -130,6 +137,14 @@ const BuildUnionNewProject = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIndexing, setIsIndexing] = useState(false);
   const [indexingProgress, setIndexingProgress] = useState(0);
+
+  // Check project creation limit for non-premium users
+  useEffect(() => {
+    if (user && !isPremium && !hasTrialsRemaining) {
+      toast.error("You've reached your free project limit. Upgrade to Pro for unlimited projects!");
+      navigate("/buildunion/workspace");
+    }
+  }, [user, isPremium, hasTrialsRemaining, navigate]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -407,9 +422,19 @@ const BuildUnionNewProject = () => {
   const handleSubmit = async () => {
     if (!user) return;
 
+    // Check project creation limit for non-premium users
+    if (!isPremium && !hasTrialsRemaining) {
+      toast.error("You've reached your free project limit. Upgrade to Pro for unlimited projects!");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      // Use one trial for non-premium users
+      if (!isPremium) {
+        await useOneTrial();
+      }
       // 1. Upload site images first
       const siteImagePaths: string[] = [];
       for (const siteImg of siteImages) {
