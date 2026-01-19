@@ -68,37 +68,6 @@ const BuildUnionWorkspace = () => {
         </Button>
       </div>
 
-      {/* Quick Mode Banner */}
-      <section className="px-6 pt-6">
-        <div className="max-w-6xl mx-auto">
-          <div 
-            onClick={() => navigate("/buildunion/quick")}
-            className="group cursor-pointer bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 rounded-xl px-6 py-4 hover:border-amber-300 hover:shadow-md transition-all duration-300"
-          >
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg p-2.5 shadow-lg shadow-amber-500/20">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-amber-600 font-semibold text-sm">NEW</span>
-                  <span className="text-slate-900 font-semibold">Quick Mode</span>
-                </div>
-                <p className="text-slate-600 text-sm mt-0.5">
-                  AI photo estimates • Project templates • Material calculators • PDF quote generator
-                </p>
-              </div>
-              <div className="flex-shrink-0 flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                <Camera className="h-5 w-5 text-amber-500" />
-                <Calculator className="h-5 w-5 text-amber-500" />
-                <Zap className="h-5 w-5 text-amber-500" />
-              </div>
-              <ArrowRight className="h-5 w-5 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </div>
-        </div>
-      </section>
-      
       {/* Pending Invitations */}
       <section className="px-6 pt-4">
         <div className="max-w-6xl mx-auto">
