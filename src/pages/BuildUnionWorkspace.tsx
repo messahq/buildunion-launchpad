@@ -441,103 +441,103 @@ const BuildUnionWorkspace = () => {
       </section>
 
       {/* Resources Hub Section */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+      <section className="py-16 px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
               Resources Hub
             </h2>
-            <p className="text-slate-500 max-w-xl mx-auto">
-              Everything you need to navigate the construction industry, from certifications to union benefits.
+            <p className="text-slate-500">
+              Everything you need to navigate the construction industry.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Construction FAQ */}
-            <a href="#" className="bg-slate-50 hover:bg-slate-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
               <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
                 <HelpCircle className="h-6 w-6 text-cyan-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-cyan-700 transition-colors">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
                   Construction FAQ
                 </h3>
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-500 text-sm leading-relaxed">
                   Common questions about permits, safety, and contracts.
                 </p>
               </div>
             </a>
 
             {/* Union Benefits */}
-            <a href="#" className="bg-orange-50 hover:bg-orange-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
               <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
                 <Shield className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-700 transition-colors">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
                   Union Benefits
                 </h3>
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-500 text-sm leading-relaxed">
                   Guide to wages, health coverage, and job security.
                 </p>
               </div>
             </a>
 
             {/* Ontario Certifications */}
-            <a href="#" className="bg-slate-50 hover:bg-slate-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
               <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
                 <FileText className="h-6 w-6 text-cyan-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-cyan-700 transition-colors">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
                   Ontario Certifications
                 </h3>
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-500 text-sm leading-relaxed">
                   Mandatory and recommended certifications guide.
                 </p>
               </div>
             </a>
 
             {/* Quick Start Guide */}
-            <a href="#" className="bg-orange-50 hover:bg-orange-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
               <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
                 <Link2 className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-700 transition-colors">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
                   Quick Start Guide
                 </h3>
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-500 text-sm leading-relaxed">
                   Get your profile and portfolio ready in minutes.
                 </p>
               </div>
             </a>
 
             {/* Join the Community */}
-            <a href="#" className="bg-slate-50 hover:bg-slate-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
               <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
                 <Users className="h-6 w-6 text-cyan-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-cyan-700 transition-colors">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
                   Join the Community
                 </h3>
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-500 text-sm leading-relaxed">
                   Connect with other professionals in our Facebook Group.
                 </p>
               </div>
             </a>
 
             {/* Ask Messa */}
-            <a href="#" className="bg-orange-50 hover:bg-orange-100 rounded-xl p-6 flex items-start gap-4 transition-colors group">
+            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
               <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
                 <MessageSquare className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-700 transition-colors">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
                   Ask Messa
                 </h3>
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-500 text-sm leading-relaxed">
                   Need specific help? Chat with our AI assistant.
                 </p>
               </div>
