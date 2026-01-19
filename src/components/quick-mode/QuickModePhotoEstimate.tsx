@@ -242,7 +242,7 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
             <Label htmlFor="description">Describe the work (optional)</Label>
             <Textarea
               id="description"
-              placeholder="e.g., I want to lay tile here, need ceramic tiles for the bathroom floor..."
+              placeholder="e.g., I want to paint this room, approx. 150 sq ft (or 14 m²)..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
