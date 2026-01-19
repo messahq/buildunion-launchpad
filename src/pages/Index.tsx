@@ -36,9 +36,9 @@ const Index = () => {
       </div>
 
       {/* Virgo Constellation - Woman Clothed with the Sun */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: '-40px' }}>
         <svg 
-          className="w-[500px] h-[500px] md:w-[600px] md:h-[600px] opacity-[0.04]"
+          className="w-[550px] h-[550px] md:w-[700px] md:h-[700px] opacity-[0.12]"
           viewBox="0 0 400 400"
           preserveAspectRatio="xMidYMid meet"
         >
@@ -117,7 +117,7 @@ const Index = () => {
       </div>
 
       {/* Center Section - Clickable Orb */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" style={{ top: '-60px' }}>
+      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" style={{ top: '30px' }}>
         {/* Interactive CSS Orb */}
         <button
           onClick={() => navigate("/orb")}
