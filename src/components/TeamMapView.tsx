@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +14,18 @@ import {
   Loader2,
   Navigation,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Maximize2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface TeamMemberLocation {
   id: string;
@@ -29,6 +38,350 @@ interface TeamMemberLocation {
   locationUpdatedAt: string | null;
 }
 
+const mapContainerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+const defaultCenter = {
+  lat: 43.6532,
+  lng: -79.3832,
+};
+
+const mapOptions: google.maps.MapOptions = {
+  disableDefaultUI: false,
+  zoomControl: true,
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
+  styles: [
+    {
+      featureType: "poi",
+      elementType: "labels",
+      stylers: [{ visibility: "off" }],
+    },
+  ],
+};
+
+// Wrapper component that loads Google Maps
+const TeamMapViewContent = ({ 
+  apiKey,
+  teamMembers,
+  userLocation,
+  mapCenter,
+  setMapCenter,
+  selectedMember,
+  setSelectedMember,
+  isUpdatingLocation,
+  updateMyLocation,
+  fetchTeamMembers,
+  navigate,
+}: {
+  apiKey: string;
+  teamMembers: TeamMemberLocation[];
+  userLocation: { lat: number; lng: number } | null;
+  mapCenter: { lat: number; lng: number };
+  setMapCenter: (center: { lat: number; lng: number }) => void;
+  selectedMember: TeamMemberLocation | null;
+  setSelectedMember: (member: TeamMemberLocation | null) => void;
+  isUpdatingLocation: boolean;
+  updateMyLocation: () => void;
+  fetchTeamMembers: () => void;
+  navigate: (path: string) => void;
+}) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: apiKey,
+  });
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const membersWithLocation = teamMembers.filter(m => m.latitude && m.longitude);
+  const membersNearby = userLocation
+    ? membersWithLocation
+        .map(m => ({
+          ...m,
+          distance: calculateDistance(userLocation.lat, userLocation.lng, m.latitude!, m.longitude!)
+        }))
+        .sort((a, b) => a.distance - b.distance)
+    : membersWithLocation.map(m => ({ ...m, distance: 0 }));
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    if (membersWithLocation.length > 0 || userLocation) {
+      const bounds = new google.maps.LatLngBounds();
+      
+      if (userLocation) {
+        bounds.extend(userLocation);
+      }
+      
+      membersWithLocation.forEach(member => {
+        if (member.latitude && member.longitude) {
+          bounds.extend({ lat: member.latitude, lng: member.longitude });
+        }
+      });
+      
+      if (membersWithLocation.length > 0 || userLocation) {
+        map.fitBounds(bounds);
+        const listener = google.maps.event.addListener(map, "idle", () => {
+          if (map.getZoom()! > 15) map.setZoom(15);
+          google.maps.event.removeListener(listener);
+        });
+      }
+    }
+  }, [membersWithLocation, userLocation]);
+
+  const MapContent = ({ height = "h-48", showList = true }: { height?: string; showList?: boolean }) => (
+    <>
+      <div className={`relative ${height} rounded-lg overflow-hidden border border-purple-200`}>
+        {loadError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-purple-50">
+            <div className="text-center">
+              <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+              <p className="text-sm text-red-600">Failed to load Google Maps</p>
+            </div>
+          </div>
+        )}
+
+        {!isLoaded && !loadError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-purple-50">
+            <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+          </div>
+        )}
+
+        {isLoaded && !loadError && (
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={mapCenter}
+            zoom={12}
+            options={mapOptions}
+            onLoad={onMapLoad}
+          >
+            {userLocation && (
+              <Marker
+                position={userLocation}
+                icon={{
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 10,
+                  fillColor: "#7c3aed",
+                  fillOpacity: 1,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 3,
+                }}
+                title="You are here"
+              />
+            )}
+
+            {membersWithLocation.map(member => (
+              <Marker
+                key={member.id}
+                position={{ lat: member.latitude!, lng: member.longitude! }}
+                onClick={() => setSelectedMember(member)}
+                icon={{
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 8,
+                  fillColor: "#6366f1",
+                  fillOpacity: 1,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 2,
+                }}
+              />
+            ))}
+
+            {selectedMember && selectedMember.latitude && selectedMember.longitude && (
+              <InfoWindow
+                position={{ lat: selectedMember.latitude, lng: selectedMember.longitude }}
+                onCloseClick={() => setSelectedMember(null)}
+              >
+                <div className="p-2 min-w-[150px]">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={selectedMember.avatarUrl || undefined} />
+                      <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                        {getInitials(selectedMember.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm text-slate-800">{selectedMember.fullName}</p>
+                      <p className="text-xs text-slate-500">
+                        {selectedMember.companyName || selectedMember.primaryTrade}
+                      </p>
+                    </div>
+                  </div>
+                  {userLocation && (
+                    <p className="text-xs text-purple-600 mt-2">
+                      {calculateDistance(
+                        userLocation.lat,
+                        userLocation.lng,
+                        selectedMember.latitude!,
+                        selectedMember.longitude!
+                      ).toFixed(1)} km away
+                    </p>
+                  )}
+                </div>
+              </InfoWindow>
+            )}
+          </GoogleMap>
+        )}
+
+        {!userLocation && isLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-purple-900/20 pointer-events-none">
+            <div className="text-center bg-white/90 rounded-lg p-4 shadow-lg">
+              <AlertCircle className="h-6 w-6 text-purple-400 mx-auto mb-2" />
+              <p className="text-sm text-purple-600">Share your location for better experience</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showList && (
+        <>
+          {membersNearby.length > 0 ? (
+            <div className="space-y-2 mt-4">
+              <h4 className="text-sm font-medium text-slate-700 mb-2">Nearby Team Members</h4>
+              {membersNearby.slice(0, 5).map(member => (
+                <div
+                  key={member.id}
+                  className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (member.latitude && member.longitude) {
+                      setMapCenter({ lat: member.latitude, lng: member.longitude });
+                      setSelectedMember(member);
+                    }
+                  }}
+                >
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={member.avatarUrl || undefined} />
+                    <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                      {getInitials(member.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">
+                      {member.fullName}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">
+                      {member.companyName || member.primaryTrade}
+                    </p>
+                  </div>
+                  {userLocation && (
+                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                      {member.distance < 1 
+                        ? `${Math.round(member.distance * 1000)}m`
+                        : `${member.distance.toFixed(1)}km`
+                      }
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 mt-4">
+              <MapPin className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">No team members with shared locations</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Ask your team to update their locations
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <Card className="bg-white border-slate-200 overflow-hidden">
+      <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Map className="h-5 w-5 text-purple-600" />
+            <CardTitle className="text-lg font-semibold text-slate-800">
+              Team Map
+            </CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs">
+                  <Maximize2 className="h-3 w-3" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Map className="h-5 w-5 text-purple-600" />
+                    Team Location Map
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex-1 h-full min-h-[500px]">
+                  <MapContent height="h-[500px]" showList={false} />
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={updateMyLocation}
+              disabled={isUpdatingLocation}
+              className="text-xs"
+            >
+              {isUpdatingLocation ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <Navigation className="h-3 w-3 mr-1" />
+              )}
+              Update Location
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4">
+        <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-purple-600" />
+              <span className="text-sm text-slate-600">
+                <span className="font-semibold text-purple-600">{membersWithLocation.length}</span>
+                {" "}of {teamMembers.length} members have shared location
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchTeamMembers}
+              className="text-xs"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        <MapContent />
+      </CardContent>
+    </Card>
+  );
+};
+
 const TeamMapView = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -37,9 +390,33 @@ const TeamMapView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMemberLocation | null>(null);
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKeyError, setApiKeyError] = useState(false);
 
-  // Only Premium and Enterprise can access
   const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
+
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("get-maps-key");
+        if (error) throw error;
+        if (data?.key) {
+          setApiKey(data.key);
+        } else {
+          setApiKeyError(true);
+        }
+      } catch (err) {
+        console.error("Error fetching maps key:", err);
+        setApiKeyError(true);
+      }
+    };
+
+    if (hasPremiumAccess) {
+      fetchApiKey();
+    }
+  }, [hasPremiumAccess]);
 
   useEffect(() => {
     if (user && hasPremiumAccess) {
@@ -54,10 +431,12 @@ const TeamMapView = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const loc = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          });
+          };
+          setUserLocation(loc);
+          setMapCenter(loc);
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -88,10 +467,12 @@ const TeamMapView = () => {
 
           if (error) throw error;
 
-          setUserLocation({
+          const loc = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          });
+          };
+          setUserLocation(loc);
+          setMapCenter(loc);
 
           toast.success("Location updated!");
           fetchTeamMembers();
@@ -114,7 +495,6 @@ const TeamMapView = () => {
     if (!user) return;
 
     try {
-      // Get projects where user is owner
       const { data: ownedProjects } = await supabase
         .from("projects")
         .select("id")
@@ -128,7 +508,6 @@ const TeamMapView = () => {
 
       const projectIds = ownedProjects.map(p => p.id);
 
-      // Get team members from those projects
       const { data: members } = await supabase
         .from("project_members")
         .select("user_id")
@@ -142,7 +521,6 @@ const TeamMapView = () => {
 
       const memberUserIds = [...new Set(members.map(m => m.user_id))];
 
-      // Fetch their profiles with location
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name, avatar_url")
@@ -153,7 +531,6 @@ const TeamMapView = () => {
         .select("user_id, company_name, primary_trade, avatar_url, latitude, longitude, location_updated_at")
         .in("user_id", memberUserIds);
 
-      // Combine data
       const teamData: TeamMemberLocation[] = memberUserIds.map(userId => {
         const profile = profiles?.find(p => p.user_id === userId);
         const buProfile = buProfiles?.find(bp => bp.user_id === userId);
@@ -177,37 +554,6 @@ const TeamMapView = () => {
       setIsLoading(false);
     }
   };
-
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Radius of the Earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map(n => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const membersWithLocation = teamMembers.filter(m => m.latitude && m.longitude);
-  const membersNearby = userLocation
-    ? membersWithLocation
-        .map(m => ({
-          ...m,
-          distance: calculateDistance(userLocation.lat, userLocation.lng, m.latitude!, m.longitude!)
-        }))
-        .sort((a, b) => a.distance - b.distance)
-    : [];
 
   // Locked state for non-premium users
   if (!hasPremiumAccess) {
@@ -248,7 +594,7 @@ const TeamMapView = () => {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || (!apiKey && !apiKeyError)) {
     return (
       <Card className="bg-white border-slate-200">
         <CardContent className="flex items-center justify-center py-12">
@@ -258,160 +604,44 @@ const TeamMapView = () => {
     );
   }
 
-  return (
-    <Card className="bg-white border-slate-200 overflow-hidden">
-      {/* Header */}
-      <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-100">
-        <div className="flex items-center justify-between">
+  if (apiKeyError) {
+    return (
+      <Card className="bg-white border-slate-200 overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-100">
           <div className="flex items-center gap-2">
             <Map className="h-5 w-5 text-purple-600" />
             <CardTitle className="text-lg font-semibold text-slate-800">
               Team Map
             </CardTitle>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={updateMyLocation}
-            disabled={isUpdatingLocation}
-            className="text-xs"
-          >
-            {isUpdatingLocation ? (
-              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-            ) : (
-              <Navigation className="h-3 w-3 mr-1" />
-            )}
-            Update My Location
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="p-4">
-        {/* Location Status */}
-        <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-purple-600" />
-              <span className="text-sm text-slate-600">
-                <span className="font-semibold text-purple-600">{membersWithLocation.length}</span>
-                {" "}of {teamMembers.length} members have shared location
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchTeamMembers}
-              className="text-xs"
-            >
-              <RefreshCw className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Map Placeholder with Visual Representation */}
-        <div className="relative h-48 rounded-lg bg-gradient-to-br from-purple-100 via-indigo-50 to-blue-100 border border-purple-200 overflow-hidden mb-4">
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-30">
-            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#a855f7" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-          </div>
-
-          {/* Center marker (user) */}
-          {userLocation && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-              <div className="w-4 h-4 bg-purple-600 rounded-full border-2 border-white shadow-lg animate-pulse" />
-              <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-purple-700 whitespace-nowrap">
-                You
-              </div>
-            </div>
-          )}
-
-          {/* Team member markers (scattered around center) */}
-          {membersNearby.slice(0, 6).map((member, idx) => {
-            const angle = (idx / 6) * 2 * Math.PI;
-            const radius = 30 + Math.min(member.distance, 50);
-            const x = 50 + radius * Math.cos(angle);
-            const y = 50 + radius * Math.sin(angle);
-
-            return (
-              <div
-                key={member.id}
-                className="absolute z-5"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                <Avatar className="w-8 h-8 border-2 border-white shadow-md">
-                  <AvatarImage src={member.avatarUrl || undefined} />
-                  <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs">
-                    {getInitials(member.fullName)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            );
-          })}
-
-          {!userLocation && (
-            <div className="absolute inset-0 flex items-center justify-center bg-purple-900/10">
-              <div className="text-center">
-                <AlertCircle className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                <p className="text-sm text-purple-600">Share your location to see the map</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Nearby Members List */}
-        {membersNearby.length > 0 ? (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-slate-700 mb-2">Nearby Team Members</h4>
-            {membersNearby.slice(0, 5).map(member => (
-              <div
-                key={member.id}
-                className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
-              >
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={member.avatarUrl || undefined} />
-                  <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
-                    {getInitials(member.fullName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">
-                    {member.fullName}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">
-                    {member.companyName || member.primaryTrade}
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                  {member.distance < 1 
-                    ? `${Math.round(member.distance * 1000)}m`
-                    : `${member.distance.toFixed(1)}km`
-                  }
-                </Badge>
-              </div>
-            ))}
-          </div>
-        ) : (
+        </CardHeader>
+        <CardContent className="p-6">
           <div className="text-center py-4">
-            <MapPin className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm text-slate-500">No team members with shared locations</p>
-            <p className="text-xs text-slate-400 mt-1">
-              Ask your team to update their locations
+            <AlertCircle className="h-10 w-10 text-amber-500 mx-auto mb-3" />
+            <h3 className="font-semibold text-slate-700 mb-2">Maps Not Configured</h3>
+            <p className="text-sm text-slate-500">
+              Google Maps API key is not configured. Please contact support.
             </p>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <TeamMapViewContent
+      apiKey={apiKey!}
+      teamMembers={teamMembers}
+      userLocation={userLocation}
+      mapCenter={mapCenter}
+      setMapCenter={setMapCenter}
+      selectedMember={selectedMember}
+      setSelectedMember={setSelectedMember}
+      isUpdatingLocation={isUpdatingLocation}
+      updateMyLocation={updateMyLocation}
+      fetchTeamMembers={fetchTeamMembers}
+      navigate={navigate}
+    />
   );
 };
 
