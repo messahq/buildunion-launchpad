@@ -5,57 +5,74 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Professional dual-engine photo analysis with full material estimation
-async function dualEngineAnalysis(image: string, description: string, apiKey: string) {
-  // STEP 1: Gemini Pro for visual extraction AND professional estimation
-  const geminiPrompt = `You are an expert construction estimator with 20+ years experience. Analyze this floor plan/photo.
+interface GeminiVisualData {
+  total_area: number | null;
+  unit: string;
+  surface_type: string;
+  surface_condition: string;
+  visible_features: string[];
+  room_type: string;
+  confidence: "high" | "medium" | "low";
+  raw_response?: string;
+}
 
-CRITICAL TASK:
-1. READ the TOTAL AREA measurement EXACTLY as shown on the image (e.g., "Total Area = 1350 sq ft")
-2. Based on the area and the user's project description, provide a COMPLETE material estimate
+interface GPTEstimateData {
+  materials: Array<{
+    item: string;
+    quantity: number;
+    unit: string;
+    notes: string;
+  }>;
+  labor: {
+    hours: number;
+    days: number;
+    rate: number;
+    total: number;
+  };
+  total_material_area: number;
+  summary: string;
+  recommendations: string[];
+  raw_response?: string;
+}
 
-${description ? `USER PROJECT: "${description}"` : "Analyze what work is needed based on the image."}
+interface ConflictItem {
+  field: string;
+  geminiValue: string;
+  gptValue: string;
+  verified: boolean;
+  severity: "high" | "medium" | "low";
+}
 
-ESTIMATION RULES:
-- Labor rate: $17.50/hour, 8-hour work days
-- Add 10-15% waste factor for tiles/flooring
-- Standard tile box covers ~10-12 sq ft
-- Tile adhesive: 1 bag per 40 sq ft
-- Grout: 1 bag per 80 sq ft
+// STEP 1: Gemini Pro - The Visual Specialist
+async function geminiVisualAnalysis(image: string, description: string, apiKey: string): Promise<GeminiVisualData> {
+  const geminiPrompt = `You are a VISUAL ANALYSIS specialist for construction. Your job is to LOOK at the image and extract what you SEE.
+
+ANALYZE THE IMAGE AND EXTRACT:
+1. TOTAL AREA - Read the exact measurement shown (e.g., "1350 sq ft")
+2. SURFACE TYPE - What material is visible? (tile, hardwood, concrete, carpet, etc.)
+3. SURFACE CONDITION - Current state (new, worn, damaged, subfloor exposed, etc.)
+4. VISIBLE FEATURES - What rooms/areas are shown? Any obstacles?
+5. ROOM TYPE - Kitchen, bathroom, living room, basement, etc.
+
+${description ? `User notes: "${description}"` : ""}
 
 RESPOND IN THIS EXACT JSON FORMAT:
 {
-  "total_area": NUMBER_FROM_IMAGE,
+  "total_area": NUMBER_FROM_IMAGE_OR_NULL,
   "unit": "sq ft",
-  "materials": [
-    {
-      "item": "Material name (e.g., Ceramic Tile 12x12)",
-      "quantity": CALCULATED_NUMBER,
-      "unit": "boxes/bags/sq ft",
-      "notes": "Calculation explanation"
-    }
-  ],
-  "labor": {
-    "hours": NUMBER,
-    "rate": 17.5,
-    "total": NUMBER,
-    "days": NUMBER
-  },
-  "summary": "Brief project summary including the EXACT area from the image",
-  "recommendations": ["Professional tip 1", "Professional tip 2", "Professional tip 3"]
+  "surface_type": "detected surface material",
+  "surface_condition": "current condition assessment",
+  "visible_features": ["feature1", "feature2"],
+  "room_type": "room type",
+  "confidence": "high/medium/low"
 }
 
-EXAMPLE for 1350 sq ft tile job:
-- Tiles: 1350 + 10% waste = 1485 sq ft = ~124 boxes (12 sq ft/box)
-- Adhesive: 1350 / 40 = ~34 bags
-- Grout: 1350 / 80 = ~17 bags
-- Labor: 1350 sq ft / 100 sq ft per day = 13.5 days = 108 hours
+CRITICAL: Read ANY visible measurements EXACTLY as written. If you see "Total Area = 1350 sq ft", return 1350.
+If no area measurement is visible, estimate based on room proportions and set confidence to "low".`;
 
-READ THE AREA FROM THE IMAGE FIRST, THEN CALCULATE.`;
-
-  console.log("Calling Gemini Pro for full estimation...");
+  console.log("GEMINI: Starting visual analysis...");
   
-  const geminiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
@@ -63,110 +80,128 @@ READ THE AREA FROM THE IMAGE FIRST, THEN CALCULATE.`;
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-pro",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: geminiPrompt },
-            { type: "image_url", image_url: { url: image } }
-          ]
-        }
-      ],
-      max_tokens: 2000,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: geminiPrompt },
+          { type: "image_url", image_url: { url: image } }
+        ]
+      }],
+      max_tokens: 1000,
     }),
   });
 
-  let geminiData: any = null;
-  let rawGeminiResponse = "";
-  
-  if (geminiResponse.ok) {
-    const geminiResult = await geminiResponse.json();
-    rawGeminiResponse = geminiResult.choices?.[0]?.message?.content || "";
-    console.log("Gemini raw response:", rawGeminiResponse);
+  const defaultResult: GeminiVisualData = {
+    total_area: null,
+    unit: "sq ft",
+    surface_type: "unknown",
+    surface_condition: "unknown",
+    visible_features: [],
+    room_type: "unknown",
+    confidence: "low"
+  };
+
+  if (!response.ok) {
+    console.error("GEMINI: API error", response.status);
+    return defaultResult;
+  }
+
+  const result = await response.json();
+  const rawContent = result.choices?.[0]?.message?.content || "";
+  console.log("GEMINI raw response:", rawContent);
+
+  try {
+    let cleanContent = rawContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const jsonStart = cleanContent.indexOf("{");
+    const jsonEnd = cleanContent.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+    }
+    const parsed = JSON.parse(cleanContent);
+    console.log("GEMINI parsed:", parsed);
+    return { ...parsed, raw_response: rawContent.substring(0, 500) };
+  } catch (e) {
+    console.error("GEMINI: JSON parse failed, trying regex extraction");
     
-    // Try JSON parse
-    try {
-      let cleanContent = rawGeminiResponse;
-      cleanContent = cleanContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-      const jsonStart = cleanContent.indexOf("{");
-      const jsonEnd = cleanContent.lastIndexOf("}");
-      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+    // Fallback regex for area
+    const areaPatterns = [
+      /total_area["\s:]+(\d+(?:\.\d+)?)/i,
+      /(\d{3,5})\s*(?:sq\.?\s*ft|square\s*feet)/i,
+    ];
+    
+    for (const pattern of areaPatterns) {
+      const match = rawContent.match(pattern);
+      if (match?.[1]) {
+        defaultResult.total_area = parseFloat(match[1]);
+        defaultResult.confidence = "medium";
+        console.log("GEMINI: Extracted area via regex:", defaultResult.total_area);
+        break;
       }
-      geminiData = JSON.parse(cleanContent);
-      console.log("Gemini parsed data:", geminiData);
-    } catch (e) {
-      console.error("Gemini JSON parse error, using fallback:", e);
     }
-  } else {
-    console.error("Gemini API error:", await geminiResponse.text());
+    
+    defaultResult.raw_response = rawContent.substring(0, 500);
+    return defaultResult;
   }
+}
 
-  // STEP 2: If Gemini provided full data, use it. Otherwise, call OpenAI as backup
-  if (geminiData?.materials && geminiData.materials.length > 0) {
-    console.log("Using Gemini's full estimation");
-    return {
-      estimate: {
-        materials: geminiData.materials,
-        laborHours: geminiData.labor?.hours ? `${geminiData.labor.hours} hours (${geminiData.labor.days || Math.ceil(geminiData.labor.hours / 8)} days at $17.50/hr)` : "16-24 hours",
-        laborCost: geminiData.labor?.total || (geminiData.labor?.hours ? geminiData.labor.hours * 17.5 : null),
-        summary: geminiData.summary || `Project covers ${geminiData.total_area} ${geminiData.unit}`,
-        recommendations: geminiData.recommendations || [],
-        area: geminiData.total_area,
-        areaUnit: geminiData.unit || "sq ft",
-        source: "gemini_pro"
-      }
-    };
-  }
-
-  // FALLBACK: Extract area from raw response and call OpenAI
-  console.log("Gemini didn't return full data, using OpenAI backup...");
+// STEP 2: GPT-5 - The Estimation Specialist
+async function gptEstimationAnalysis(
+  image: string, 
+  description: string, 
+  geminiData: GeminiVisualData, 
+  apiKey: string
+): Promise<GPTEstimateData> {
+  const areaValue = geminiData.total_area;
   
-  let extractedArea: number | null = null;
-  
-  // Try to extract area from Gemini response
-  const areaPatterns = [
-    /total_area["\s:]+(\d+(?:\.\d+)?)/i,
-    /(\d{3,5})\s*(?:sq\.?\s*ft|square\s*feet)/i,
-    /"?total[_\s]?area"?\s*[:=]\s*"?(\d+)/i,
-    /(\d{3,5})\s*sqft/i,
-  ];
-  
-  for (const pattern of areaPatterns) {
-    const match = rawGeminiResponse.match(pattern);
-    if (match && match[1]) {
-      extractedArea = parseFloat(match[1]);
-      console.log("Extracted area via regex:", extractedArea);
-      break;
-    }
-  }
+  const gptPrompt = `You are a PROFESSIONAL CONSTRUCTION ESTIMATOR. You will receive visual data from a floor plan analyzer and must calculate materials and labor.
 
-  const openaiPrompt = `You are an expert construction estimator.
+=== VISUAL DATA FROM ANALYZER ===
+- Total Area: ${areaValue ? `${areaValue} sq ft (VERIFIED)` : "Unknown - estimate from image"}
+- Surface Type: ${geminiData.surface_type}
+- Surface Condition: ${geminiData.surface_condition}
+- Room Type: ${geminiData.room_type}
+- Visible Features: ${geminiData.visible_features.join(", ") || "None noted"}
 
-${extractedArea ? `CRITICAL: The floor plan shows EXACTLY ${extractedArea} sq ft. USE THIS NUMBER.` : "Estimate the area from the context."}
+=== PROJECT DESCRIPTION ===
+${description || "General flooring/tile work"}
 
-${description ? `Project: "${description}"` : "Provide a general tile/flooring estimate."}
+=== YOUR TASK ===
+Calculate a professional material and labor estimate.
 
 ESTIMATION RULES:
-- Labor rate: $17.50/hour, 8-hour work days
-- Tiles: Add 10-15% waste, ~12 sq ft per box
-- Adhesive: 1 bag per 40 sq ft
+- Labor rate: $17.50/hour
+- Work day: 8 hours
+- Tile productivity: ~100 sq ft per day
+- Tile box: ~12 sq ft per box
+- Tile adhesive: 1 bag per 40 sq ft
 - Grout: 1 bag per 80 sq ft
-- Productivity: ~100 sq ft per day for tile work
+- ALWAYS add 10-15% waste factor for tiles
 
 RESPOND IN THIS EXACT JSON FORMAT:
 {
   "materials": [
-    {"item": "Material", "quantity": NUMBER, "unit": "unit", "notes": "calculation"}
+    {"item": "Ceramic Tile 12x12", "quantity": NUMBER, "unit": "boxes", "notes": "calculation details"},
+    {"item": "Tile Adhesive", "quantity": NUMBER, "unit": "bags", "notes": "1 bag/40 sq ft"},
+    {"item": "Grout", "quantity": NUMBER, "unit": "bags", "notes": "1 bag/80 sq ft"},
+    {"item": "Tile Spacers", "quantity": NUMBER, "unit": "packs", "notes": ""},
+    {"item": "Backer Board", "quantity": NUMBER, "unit": "sheets", "notes": "if needed"}
   ],
-  "laborHours": "X hours (Y days)",
-  "laborCost": NUMBER,
-  "summary": "Summary with exact area",
-  "recommendations": ["tip1", "tip2"],
-  "area": ${extractedArea || "null"}
-}`;
+  "labor": {
+    "hours": NUMBER,
+    "days": NUMBER,
+    "rate": 17.5,
+    "total": NUMBER
+  },
+  "total_material_area": NUMBER_USED_FOR_CALCULATION,
+  "summary": "Professional summary of the job",
+  "recommendations": ["tip1", "tip2", "tip3"]
+}
 
-  const openaiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+${areaValue ? `CRITICAL: You MUST use ${areaValue} sq ft for calculations. Show your math in notes.` : "Estimate area from the image context."}`;
+
+  console.log("GPT-5: Starting estimation with area:", areaValue);
+  
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
@@ -174,127 +209,196 @@ RESPOND IN THIS EXACT JSON FORMAT:
     },
     body: JSON.stringify({
       model: "openai/gpt-5-mini",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: openaiPrompt },
-            { type: "image_url", image_url: { url: image } }
-          ]
-        }
-      ],
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: gptPrompt },
+          { type: "image_url", image_url: { url: image } }
+        ]
+      }],
       max_tokens: 2000,
     }),
   });
 
-  let openaiData: any = null;
-  let rawOpenaiResponse = "";
-  
-  if (openaiResponse.ok) {
-    const openaiResult = await openaiResponse.json();
-    rawOpenaiResponse = openaiResult.choices?.[0]?.message?.content || "";
-    console.log("OpenAI raw response:", rawOpenaiResponse);
+  const defaultResult: GPTEstimateData = {
+    materials: [],
+    labor: { hours: 16, days: 2, rate: 17.5, total: 280 },
+    total_material_area: areaValue || 1000,
+    summary: "Estimation pending",
+    recommendations: [],
+  };
+
+  if (!response.ok) {
+    console.error("GPT-5: API error", response.status);
+    return defaultResult;
+  }
+
+  const result = await response.json();
+  const rawContent = result.choices?.[0]?.message?.content || "";
+  console.log("GPT-5 raw response:", rawContent);
+
+  try {
+    let cleanContent = rawContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const jsonStart = cleanContent.indexOf("{");
+    const jsonEnd = cleanContent.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+    }
+    const parsed = JSON.parse(cleanContent);
+    console.log("GPT-5 parsed:", parsed);
+    return { ...parsed, raw_response: rawContent.substring(0, 500) };
+  } catch (e) {
+    console.error("GPT-5: JSON parse failed");
+    defaultResult.raw_response = rawContent.substring(0, 500);
     
-    try {
-      let cleanContent = rawOpenaiResponse;
-      cleanContent = cleanContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-      const jsonStart = cleanContent.indexOf("{");
-      const jsonEnd = cleanContent.lastIndexOf("}");
-      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
-      }
-      openaiData = JSON.parse(cleanContent);
-      console.log("OpenAI parsed data:", openaiData);
-    } catch (e) {
-      console.error("OpenAI JSON parse error:", e);
+    // Calculate fallback if we have area
+    if (areaValue) {
+      const wasteArea = Math.ceil(areaValue * 1.15);
+      defaultResult.materials = [
+        { item: "Tile/Flooring", quantity: wasteArea, unit: "sq ft", notes: `${areaValue} + 15% waste` },
+        { item: "Tile Boxes (12 sq ft/box)", quantity: Math.ceil(wasteArea / 12), unit: "boxes", notes: "" },
+        { item: "Tile Adhesive", quantity: Math.ceil(areaValue / 40), unit: "bags", notes: "1 bag/40 sq ft" },
+        { item: "Grout", quantity: Math.ceil(areaValue / 80), unit: "bags", notes: "1 bag/80 sq ft" },
+      ];
+      const days = Math.ceil(areaValue / 100);
+      defaultResult.labor = { hours: days * 8, days, rate: 17.5, total: days * 8 * 17.5 };
+      defaultResult.summary = `Calculated estimate for ${areaValue} sq ft flooring project.`;
+    }
+    
+    return defaultResult;
+  }
+}
+
+// STEP 3: Cross-verify and detect conflicts
+function detectConflicts(gemini: GeminiVisualData, gpt: GPTEstimateData): ConflictItem[] {
+  const conflicts: ConflictItem[] = [];
+  
+  // Check area consistency
+  if (gemini.total_area && gpt.total_material_area) {
+    const areaDiff = Math.abs(gemini.total_area - gpt.total_material_area);
+    const areaPercent = (areaDiff / gemini.total_area) * 100;
+    
+    if (areaPercent > 10) {
+      conflicts.push({
+        field: "Total Area",
+        geminiValue: `${gemini.total_area} sq ft (measured)`,
+        gptValue: `${gpt.total_material_area} sq ft (used for calc)`,
+        verified: false,
+        severity: areaPercent > 25 ? "high" : "medium"
+      });
     }
   }
-
-  // FINAL FALLBACK: Return raw text if all parsing fails
-  if (!openaiData?.materials && !geminiData?.materials) {
-    console.log("All parsing failed, returning raw text fallback");
+  
+  // Check if flooring quantity matches area
+  const flooringMaterial = gpt.materials.find(m => 
+    m.item.toLowerCase().includes("tile") || 
+    m.item.toLowerCase().includes("floor")
+  );
+  
+  if (flooringMaterial && gemini.total_area) {
+    const expectedMin = gemini.total_area * 1.10;
+    const expectedMax = gemini.total_area * 1.20;
     
-    // Create a basic estimate from the area if we have it
-    const area = extractedArea || geminiData?.total_area || 1000;
-    const wasteArea = Math.ceil(area * 1.15);
-    
-    return {
-      estimate: {
-        materials: [
-          { 
-            item: "Tile/Flooring Material", 
-            quantity: wasteArea, 
-            unit: "sq ft", 
-            notes: `${area} sq ft + 15% waste` 
-          },
-          { 
-            item: "Tile Boxes (12 sq ft/box)", 
-            quantity: Math.ceil(wasteArea / 12), 
-            unit: "boxes", 
-            notes: `${wasteArea} / 12 sq ft per box` 
-          },
-          { 
-            item: "Tile Adhesive", 
-            quantity: Math.ceil(area / 40), 
-            unit: "bags", 
-            notes: "1 bag per 40 sq ft" 
-          },
-          { 
-            item: "Grout", 
-            quantity: Math.ceil(area / 80), 
-            unit: "bags", 
-            notes: "1 bag per 80 sq ft" 
-          }
-        ],
-        laborHours: `${Math.ceil(area / 100) * 8} hours (${Math.ceil(area / 100)} days)`,
-        laborCost: Math.ceil(area / 100) * 8 * 17.5,
-        summary: `Flooring project for ${area} sq ft area. AI response was not fully parsed - this is a calculated estimate.`,
-        recommendations: [
-          "Verify measurements on-site before ordering materials",
-          "Consider ordering 15-20% extra for cuts and waste",
-          "Check subfloor condition before installation"
-        ],
-        area: area,
-        areaUnit: "sq ft",
-        source: "calculated_fallback",
-        rawGeminiResponse: rawGeminiResponse.substring(0, 500),
-        rawOpenaiResponse: rawOpenaiResponse.substring(0, 500)
+    // Check boxes calculation (12 sq ft per box standard)
+    if (flooringMaterial.unit === "boxes") {
+      const boxArea = flooringMaterial.quantity * 12;
+      if (boxArea < expectedMin || boxArea > expectedMax * 1.5) {
+        conflicts.push({
+          field: "Tile Quantity",
+          geminiValue: `${gemini.total_area} sq ft = ~${Math.ceil(gemini.total_area * 1.15 / 12)} boxes expected`,
+          gptValue: `${flooringMaterial.quantity} boxes (${boxArea} sq ft)`,
+          verified: false,
+          severity: "medium"
+        });
       }
-    };
+    }
   }
+  
+  return conflicts;
+}
 
+// Main dual-engine analysis
+async function dualEngineAnalysis(image: string, description: string, apiKey: string) {
+  console.log("=== DUAL ENGINE ANALYSIS START ===");
+  
+  // Step 1: Gemini visual analysis
+  const geminiData = await geminiVisualAnalysis(image, description, apiKey);
+  console.log("Gemini complete:", { area: geminiData.total_area, confidence: geminiData.confidence });
+  
+  // Step 2: GPT estimation based on Gemini data
+  const gptData = await gptEstimationAnalysis(image, description, geminiData, apiKey);
+  console.log("GPT complete:", { materials: gptData.materials.length, laborHours: gptData.labor.hours });
+  
+  // Step 3: Conflict detection
+  const conflicts = detectConflicts(geminiData, gptData);
+  console.log("Conflicts detected:", conflicts.length);
+  
+  // Build final response
   return {
     estimate: {
-      materials: openaiData?.materials || [],
-      laborHours: openaiData?.laborHours || "16-24 hours",
-      laborCost: openaiData?.laborCost || null,
-      summary: openaiData?.summary || `Estimate for ${extractedArea || "unknown"} sq ft`,
-      recommendations: openaiData?.recommendations || [],
-      area: openaiData?.area || extractedArea,
-      areaUnit: "sq ft",
-      source: "openai_gpt5"
+      // Core estimate data
+      materials: gptData.materials,
+      laborHours: `${gptData.labor.hours} hours (${gptData.labor.days} days at $${gptData.labor.rate}/hr)`,
+      laborCost: gptData.labor.total,
+      summary: gptData.summary,
+      recommendations: gptData.recommendations,
+      
+      // Area information
+      area: geminiData.total_area,
+      areaUnit: geminiData.unit,
+      areaConfidence: geminiData.confidence,
+      
+      // Surface analysis from Gemini
+      surfaceType: geminiData.surface_type,
+      surfaceCondition: geminiData.surface_condition,
+      roomType: geminiData.room_type,
+      
+      // Dual-engine transparency
+      dualEngine: {
+        gemini: {
+          role: "Visual Specialist",
+          model: "gemini-2.5-pro",
+          findings: {
+            area: geminiData.total_area,
+            surface: geminiData.surface_type,
+            condition: geminiData.surface_condition,
+            confidence: geminiData.confidence
+          },
+          rawExcerpt: geminiData.raw_response
+        },
+        gpt: {
+          role: "Estimation Specialist", 
+          model: "gpt-5-mini",
+          findings: {
+            materialsCount: gptData.materials.length,
+            laborHours: gptData.labor.hours,
+            totalLaborCost: gptData.labor.total,
+            areaUsed: gptData.total_material_area
+          },
+          rawExcerpt: gptData.raw_response
+        },
+        conflicts: conflicts,
+        verified: conflicts.length === 0,
+        verificationStatus: conflicts.length === 0 ? "verified" : "conflicts_detected"
+      }
     }
   };
 }
 
-// Standard single-engine analysis for non-photo estimates
+// Standard single-engine for non-floor-plan images
 async function standardAnalysis(image: string, description: string, apiKey: string) {
-  const prompt = `You are an expert construction estimator analyzing a construction project.
+  const prompt = `You are an expert construction estimator. Analyze this image and provide a material/labor estimate.
 
-Analyze the provided image and give a detailed material and labor estimate.
-Consider: ${description || "general construction requirements"}
+${description ? `Project: "${description}"` : "General construction analysis"}
 
-Use Canadian construction standards and pricing.
-Labor rate: $17.50/hour, 8-hour work days.
+Labor rate: $17.50/hour, 8-hour days.
 
-RESPOND IN THIS EXACT JSON FORMAT:
+RESPOND IN JSON:
 {
-  "materials": [
-    {"item": "Material name", "quantity": NUMBER, "unit": "unit", "notes": "details"}
-  ],
+  "materials": [{"item": "Material", "quantity": NUMBER, "unit": "unit", "notes": ""}],
   "laborHours": "X-Y hours",
-  "summary": "Brief project summary",
-  "recommendations": ["tip 1", "tip 2"]
+  "summary": "Brief summary",
+  "recommendations": ["tip1", "tip2"]
 }`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -305,41 +409,35 @@ RESPOND IN THIS EXACT JSON FORMAT:
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: image } }
-          ]
-        }
-      ],
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: image } }
+        ]
+      }],
       max_tokens: 2000,
     }),
   });
 
-  if (!response.ok) {
-    throw new Error(`AI API error: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`AI API error: ${response.status}`);
 
   const result = await response.json();
   const content = result.choices?.[0]?.message?.content || "";
   
   try {
-    let cleanContent = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-    const jsonStart = cleanContent.indexOf("{");
-    const jsonEnd = cleanContent.lastIndexOf("}");
-    if (jsonStart !== -1 && jsonEnd !== -1) {
-      cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
-    }
-    return { estimate: JSON.parse(cleanContent) };
+    let clean = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const start = clean.indexOf("{");
+    const end = clean.lastIndexOf("}");
+    if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1);
+    return { estimate: JSON.parse(clean) };
   } catch {
     return {
       estimate: {
-        materials: [{ item: "See AI Analysis", quantity: 1, unit: "lot", notes: content.substring(0, 300) }],
+        materials: [{ item: "See analysis", quantity: 1, unit: "lot", notes: content.substring(0, 300) }],
         laborHours: "8-16 hours",
         summary: content.substring(0, 200),
-        recommendations: ["Review AI analysis for details"]
+        recommendations: []
       }
     };
   }
@@ -354,30 +452,20 @@ serve(async (req) => {
     const { image, description, type } = await req.json();
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!apiKey) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+    if (!image) throw new Error("No image provided");
 
-    if (!image) {
-      throw new Error("No image provided");
-    }
+    console.log(`Processing ${type} request...`);
 
-    console.log(`Processing ${type} request with description: ${description}`);
-
-    let result;
-    if (type === "photo_estimate") {
-      // Use dual-engine for photo estimates (floor plans)
-      result = await dualEngineAnalysis(image, description, apiKey);
-    } else {
-      // Standard analysis for other types
-      result = await standardAnalysis(image, description, apiKey);
-    }
+    const result = type === "photo_estimate" 
+      ? await dualEngineAnalysis(image, description, apiKey)
+      : await standardAnalysis(image, description, apiKey);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Quick estimate error:", error);
+    console.error("Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
