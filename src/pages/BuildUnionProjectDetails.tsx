@@ -1,8 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import TeamManagement from "@/components/TeamManagement";
 import TaskAssignment from "@/components/TaskAssignment";
+import ProjectDocuments from "@/components/ProjectDocuments";
+import ProjectAIPanel from "@/components/ProjectAIPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,18 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  ArrowLeft, FileText, Calendar, Loader2, Download, Trash2, 
-  Brain, AlertCircle, Clock, Sparkles,
-  Pencil, X, Check, ShieldCheck, Send, Zap, BookOpen,
-  Users, Mail, Image, FileCheck, Briefcase, Plus, MapPin,
-  Camera, Calculator, LayoutTemplate, DollarSign, Package
+  ArrowLeft, FileText, Calendar, Loader2, Plus, Trash2,
+  AlertCircle, Sparkles,
+  Pencil, X, Check,
+  Users, Image, FileCheck, Briefcase, MapPin,
+  Camera, DollarSign, Package
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { TRADE_LABELS, ConstructionTrade } from "@/hooks/useBuProfile";
 
 interface Project {
@@ -55,84 +56,6 @@ interface ProjectDocument {
   uploaded_at: string;
 }
 
-type VerificationStatus = "verified" | "not-verified" | "gemini-only" | "openai-only" | "error";
-
-interface SourceReference {
-  document: string;
-  page?: number;
-  excerpt?: string;
-}
-
-interface MessaMessage {
-  role: "user" | "assistant";
-  content: string;
-  verification?: {
-    status: VerificationStatus;
-    engines: { gemini: boolean; openai: boolean };
-    verified: boolean;
-  };
-  sources?: SourceReference[];
-}
-
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-messa`;
-
-const VerificationBadge = ({ verification }: { verification?: MessaMessage["verification"] }) => {
-  if (!verification) return null;
-
-  const badges: Record<VerificationStatus, { icon: React.ReactNode; text: string; className: string }> = {
-    verified: {
-      icon: <ShieldCheck className="h-3.5 w-3.5" />,
-      text: "Operational Truth Verified",
-      className: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    },
-    "not-verified": {
-      icon: <AlertCircle className="h-3.5 w-3.5" />,
-      text: "Could not be verified",
-      className: "bg-amber-100 text-amber-700 border-amber-200",
-    },
-    "gemini-only": {
-      icon: <Zap className="h-3.5 w-3.5" />,
-      text: "Gemini Response",
-      className: "bg-blue-100 text-blue-700 border-blue-200",
-    },
-    "openai-only": {
-      icon: <Zap className="h-3.5 w-3.5" />,
-      text: "OpenAI Response",
-      className: "bg-purple-100 text-purple-700 border-purple-200",
-    },
-    error: {
-      icon: <AlertCircle className="h-3.5 w-3.5" />,
-      text: "Processing Error",
-      className: "bg-red-100 text-red-700 border-red-200",
-    },
-  };
-
-  const badge = badges[verification.status];
-
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${badge.className}`}>
-      {badge.icon}
-      <span>{badge.text}</span>
-    </div>
-  );
-};
-
-const SourceTags = ({ sources }: { sources?: SourceReference[] }) => {
-  if (!sources || sources.length === 0) return null;
-
-  return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {sources.map((source, i) => (
-        <div key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-xs text-slate-600">
-          <BookOpen className="h-3 w-3" />
-          <span>{source.document}</span>
-          {source.page && <span className="text-slate-400">• p.{source.page}</span>}
-        </div>
-      ))}
-    </div>
-  );
-};
-
 const BuildUnionProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -158,12 +81,6 @@ const BuildUnionProjectDetails = () => {
   const [newSiteImages, setNewSiteImages] = useState<{ file: File; id: string; preview: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Chat state
-  const [messages, setMessages] = useState<MessaMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user || !projectId) {
@@ -251,11 +168,6 @@ const BuildUnionProjectDetails = () => {
     fetchProjectData();
   }, [user, projectId, navigate]);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -292,7 +204,6 @@ const BuildUnionProjectDetails = () => {
 
     setSaving(true);
     try {
-      // Upload new site images
       const uploadedPaths: string[] = [];
       for (const img of newSiteImages) {
         const imgPath = `${user.id}/site-images/${img.id}-${img.file.name}`;
@@ -301,12 +212,9 @@ const BuildUnionProjectDetails = () => {
           .upload(imgPath, img.file);
         if (!uploadError) {
           uploadedPaths.push(imgPath);
-        } else {
-          console.error("Image upload error:", uploadError);
         }
       }
 
-      // Delete removed images from storage
       const removedImages = (project.site_images || []).filter(
         path => !editSiteImages.includes(path)
       );
@@ -314,7 +222,6 @@ const BuildUnionProjectDetails = () => {
         await supabase.storage.from("project-documents").remove(removedImages);
       }
 
-      // Combine existing and new images
       const allSiteImages = [...editSiteImages, ...uploadedPaths];
 
       const { error } = await supabase
@@ -333,7 +240,6 @@ const BuildUnionProjectDetails = () => {
 
       if (error) throw error;
 
-      // Update local state
       setProject({
         ...project,
         name: editName.trim(),
@@ -346,7 +252,6 @@ const BuildUnionProjectDetails = () => {
         site_images: allSiteImages,
       });
 
-      // Refresh site image URLs
       const urls = await Promise.all(
         allSiteImages.map(async (path: string) => {
           const { data } = supabase.storage.from("project-documents").getPublicUrl(path);
@@ -354,12 +259,9 @@ const BuildUnionProjectDetails = () => {
         })
       );
       setSiteImageUrls(urls);
-
-      // Cleanup preview URLs
       newSiteImages.forEach(img => URL.revokeObjectURL(img.preview));
       setNewSiteImages([]);
       setEditSiteImages(allSiteImages);
-
       setIsEditing(false);
       toast.success("Project updated");
     } catch (error) {
@@ -380,7 +282,6 @@ const BuildUnionProjectDetails = () => {
       setEditManpower(project.manpower_requirements || []);
       setEditCertifications(project.required_certifications || []);
       setEditSiteImages(project.site_images || []);
-      // Clean up preview URLs
       newSiteImages.forEach(img => URL.revokeObjectURL(img.preview));
       setNewSiteImages([]);
     }
@@ -392,170 +293,23 @@ const BuildUnionProjectDetails = () => {
     if (!confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) return;
 
     try {
-      // Delete associated documents from storage
       if (documents.length > 0) {
         const paths = documents.map(d => d.file_path);
         await supabase.storage.from("project-documents").remove(paths);
       }
-
-      // Delete site images from storage
       if (project.site_images && project.site_images.length > 0) {
         await supabase.storage.from("project-documents").remove(project.site_images);
       }
-
-      // Delete team invitations
       await supabase.from("team_invitations").delete().eq("project_id", project.id);
-
-      // Delete project documents records
       await supabase.from("project_documents").delete().eq("project_id", project.id);
-
-      // Delete project
       const { error } = await supabase.from("projects").delete().eq("id", project.id);
-
       if (error) throw error;
-
       toast.success("Project deleted");
       navigate("/buildunion/workspace");
     } catch (error) {
       console.error("Delete project error:", error);
       toast.error("Failed to delete project");
     }
-  };
-
-  const handleDownload = async (doc: ProjectDocument) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from("project-documents")
-        .download(doc.file_path);
-
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = doc.file_name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Failed to download file");
-    }
-  };
-
-  const handleDeleteDocument = async (doc: ProjectDocument) => {
-    if (!confirm(`Delete "${doc.file_name}"?`)) return;
-
-    try {
-      await supabase.storage.from("project-documents").remove([doc.file_path]);
-
-      const { error } = await supabase
-        .from("project_documents")
-        .delete()
-        .eq("id", doc.id);
-
-      if (error) throw error;
-
-      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-      toast.success("Document deleted");
-    } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("Failed to delete document");
-    }
-  };
-
-  // M.E.S.S.A. Chat functions
-  const handleSendMessage = async () => {
-    if (!input.trim() || isLoading || !user) return;
-
-    const userMessage: MessaMessage = { role: "user", content: input.trim() };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      // Include both documents and site images for AI analysis
-      const documentNames = documents.map(d => d.file_name);
-      const imageNames = (project?.site_images || []).map((path, idx) => {
-        const fileName = path.split('/').pop() || `site-image-${idx + 1}`;
-        return `[Image] ${fileName}`;
-      });
-      const allFileNames = [...documentNames, ...imageNames];
-      
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: "user", content: userMessage.content }],
-          dualEngine: true,
-          projectContext: {
-            projectId,
-            projectName: project?.name,
-            documents: allFileNames,
-            siteImages: project?.site_images || [],
-          },
-        }),
-      });
-
-      if (!resp.ok) {
-        const errorData = await resp.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to connect to Messa");
-      }
-
-      const data = await resp.json();
-      
-      // Determine verification status based on consensus
-      let status: VerificationStatus = "error";
-      if (data.verification?.verified) {
-        status = "verified";
-      } else if (data.verification?.engines?.gemini && data.verification?.engines?.openai) {
-        status = "not-verified";
-      } else if (data.verification?.engines?.gemini) {
-        status = "gemini-only";
-      } else if (data.verification?.engines?.openai) {
-        status = "openai-only";
-      }
-
-      setMessages((prev) => [...prev, {
-        role: "assistant",
-        content: data.verification?.verified 
-          ? data.content 
-          : status === "not-verified"
-            ? "Information could not be verified by both engines. Please check the source documents manually."
-            : data.content,
-        verification: {
-          ...data.verification,
-          status,
-        },
-        sources: data.sources,
-      }]);
-    } catch (error) {
-      console.error("Chat error:", error);
-      toast.error(error instanceof Error ? error.message : "Connection error");
-      setMessages((prev) => [...prev, {
-        role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
-        verification: { status: "error", engines: { gemini: false, openai: false }, verified: false },
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const handleQuickQuestion = (question: string) => {
-    setInput(question);
-    inputRef.current?.focus();
   };
 
   if (loading) {
@@ -1191,69 +945,13 @@ const BuildUnionProjectDetails = () => {
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Documents Column */}
           <div className="space-y-6">
-            <Card className="border-slate-200 bg-white">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-semibold text-slate-900">
-                      Documents
-                    </CardTitle>
-                    <CardDescription>
-                      {documents.length} file{documents.length !== 1 ? "s" : ""} uploaded
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {documents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileText className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">No documents uploaded yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {documents.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3 border border-slate-100 hover:border-slate-200 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                            <FileText className="h-5 w-5 text-red-500" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-700 truncate">
-                              {doc.file_name}
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              {formatFileSize(doc.file_size)} • {formatDate(doc.uploaded_at)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownload(doc)}
-                            className="text-slate-500 hover:text-slate-700"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteDocument(doc)}
-                            className="text-slate-400 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ProjectDocuments
+              projectId={project.id}
+              userId={user.id}
+              documents={documents}
+              onDocumentsChange={setDocuments}
+              isOwner={project.user_id === user.id}
+            />
 
             {/* Project Stats */}
             <Card className="border-slate-200 bg-white">
@@ -1295,168 +993,17 @@ const BuildUnionProjectDetails = () => {
             </Card>
           </div>
 
-          {/* M.E.S.S.A. Analysis Column - Embedded Chat */}
-          <Card className="border-slate-200 bg-white flex flex-col h-[700px]">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-3 rounded-t-lg flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold">M.E.S.S.A. Analysis</h3>
-                <p className="text-white/80 text-xs">Dual-Engine AI • Document Analysis</p>
-              </div>
-            </div>
-
-            {/* Dual-Engine Indicator */}
-            <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-center gap-4 text-xs">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                <span className="text-slate-600">Gemini Pro</span>
-              </div>
-              <div className="text-slate-300">+</div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                <span className="text-slate-600">GPT-5</span>
-              </div>
-              <div className="text-slate-300">=</div>
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="text-slate-600 font-medium">Verified</span>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-              {documents.length === 0 && siteImageUrls.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                  <Brain className="h-12 w-12 text-slate-300 mb-4" />
-                  <h4 className="text-lg font-semibold text-slate-900 mb-2">
-                    Upload Files First
-                  </h4>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Upload project documents or site photos to enable AI analysis with dual-engine verification.
-                  </p>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 mb-4 flex items-center justify-center">
-                    <Brain className="h-8 w-8 text-white" />
-                  </div>
-                  <h4 className="text-lg font-semibold text-slate-900 mb-2">
-                    Ask About Your Project
-                  </h4>
-                  <p className="text-slate-500 text-sm leading-relaxed mb-4">
-                    I analyze your {documents.length > 0 ? 'documents' : ''}{documents.length > 0 && siteImageUrls.length > 0 ? ' and ' : ''}{siteImageUrls.length > 0 ? 'site photos' : ''} using dual AI engines. Only verified information is shown.
-                  </p>
-                  {/* Quick Questions */}
-                  <div className="space-y-2 w-full max-w-xs">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Quick Questions
-                    </p>
-                    {siteImageUrls.length > 0 && (
-                      <button
-                        onClick={() => handleQuickQuestion("Analyze the site photos and describe what you see")}
-                        className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                      >
-                        📷 Analyze site photos
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleQuickQuestion("Summarize key project details")}
-                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                    >
-                      📋 Summarize key project details
-                    </button>
-                    <button
-                      onClick={() => handleQuickQuestion("Identify potential risks or issues")}
-                      className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                    >
-                      ⚠️ Identify potential risks
-                    </button>
-                    {documents.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => handleQuickQuestion("Extract timeline and milestones from the documents")}
-                          className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                        >
-                          📅 Extract timeline & milestones
-                        </button>
-                        <button
-                          onClick={() => handleQuickQuestion("Review budget and cost information")}
-                          className="w-full text-left text-sm text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-colors"
-                        >
-                          💰 Review budget & costs
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {messages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
-                    >
-                      <div
-                        className={`max-w-[90%] rounded-2xl px-4 py-2.5 ${
-                          msg.role === "user"
-                            ? "bg-cyan-500 text-white rounded-br-md"
-                            : "bg-slate-100 text-slate-900 rounded-bl-md"
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                      </div>
-                      {msg.role === "assistant" && (
-                        <div className="mt-1.5 ml-1 space-y-1">
-                          <VerificationBadge verification={msg.verification} />
-                          <SourceTags sources={msg.sources} />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-slate-100 rounded-2xl rounded-bl-md px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-                          <span className="text-xs text-slate-500">Verifying with dual engines...</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </ScrollArea>
-
-            <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
-              <div className="flex gap-2">
-                <Input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={
-                    documents.length === 0 && siteImageUrls.length === 0 
-                      ? "Upload files first..." 
-                      : siteImageUrls.length > 0 && documents.length === 0
-                        ? "Ask about your site photos..."
-                        : "Ask about your documents..."
-                  }
-                  className="flex-1"
-                  disabled={isLoading || (documents.length === 0 && siteImageUrls.length === 0) || !user}
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || isLoading || (documents.length === 0 && siteImageUrls.length === 0) || !user}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </Card>
+          {/* M.E.S.S.A. Analysis Column */}
+          <ProjectAIPanel
+            projectId={project.id}
+            projectName={project.name}
+            userId={user.id}
+            documents={documents}
+            siteImages={project.site_images || []}
+            projectSummary={projectSummary}
+            isOwner={project.user_id === user.id}
+            isPremium={false}
+          />
         </div>
       </div>
     </main>
