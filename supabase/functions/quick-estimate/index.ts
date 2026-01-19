@@ -144,7 +144,7 @@ If no area measurement is visible, estimate based on room proportions and set co
   }
 }
 
-// STEP 2: GPT-5 - The Estimation Specialist
+// STEP 2: GPT-5 - The Estimation Specialist (Materials Only - no labor calc)
 async function gptEstimationAnalysis(
   image: string, 
   description: string, 
@@ -153,51 +153,33 @@ async function gptEstimationAnalysis(
 ): Promise<GPTEstimateData> {
   const areaValue = geminiData.total_area;
   
-  const gptPrompt = `You are a PROFESSIONAL CONSTRUCTION ESTIMATOR. You will receive visual data from a floor plan analyzer and must calculate materials and labor.
+  const gptPrompt = `You are a PROFESSIONAL CONSTRUCTION ESTIMATOR. Calculate materials needed based on the area.
 
-=== VISUAL DATA FROM ANALYZER ===
-- Total Area: ${areaValue ? `${areaValue} sq ft (VERIFIED)` : "Unknown - estimate from image"}
+=== VISUAL DATA ===
+- Total Area: ${areaValue ? `${areaValue} sq ft` : "Estimate from image"}
 - Surface Type: ${geminiData.surface_type}
-- Surface Condition: ${geminiData.surface_condition}
 - Room Type: ${geminiData.room_type}
-- Visible Features: ${geminiData.visible_features.join(", ") || "None noted"}
 
-=== PROJECT DESCRIPTION ===
+=== PROJECT ===
 ${description || "General flooring/tile work"}
 
-=== YOUR TASK ===
-Calculate a professional material and labor estimate.
-
-ESTIMATION RULES:
-- Labor rate: $17.50/hour
-- Work day: 8 hours
-- Tile productivity: ~100 sq ft per day
+=== ESTIMATION RULES ===
 - Tile box: ~12 sq ft per box
 - Tile adhesive: 1 bag per 40 sq ft
 - Grout: 1 bag per 80 sq ft
-- ALWAYS add 10-15% waste factor for tiles
+- Add 10-15% waste factor
 
-RESPOND IN THIS EXACT JSON FORMAT:
+RESPOND IN JSON:
 {
   "materials": [
-    {"item": "Ceramic Tile 12x12", "quantity": NUMBER, "unit": "boxes", "notes": "calculation details"},
-    {"item": "Tile Adhesive", "quantity": NUMBER, "unit": "bags", "notes": "1 bag/40 sq ft"},
-    {"item": "Grout", "quantity": NUMBER, "unit": "bags", "notes": "1 bag/80 sq ft"},
-    {"item": "Tile Spacers", "quantity": NUMBER, "unit": "packs", "notes": ""},
-    {"item": "Backer Board", "quantity": NUMBER, "unit": "sheets", "notes": "if needed"}
+    {"item": "Ceramic Tile", "quantity": NUMBER, "unit": "boxes", "notes": "calc details"},
+    {"item": "Tile Adhesive", "quantity": NUMBER, "unit": "bags", "notes": ""},
+    {"item": "Grout", "quantity": NUMBER, "unit": "bags", "notes": ""}
   ],
-  "labor": {
-    "hours": NUMBER,
-    "days": NUMBER,
-    "rate": 17.5,
-    "total": NUMBER
-  },
-  "total_material_area": NUMBER_USED_FOR_CALCULATION,
-  "summary": "Professional summary of the job",
-  "recommendations": ["tip1", "tip2", "tip3"]
-}
-
-${areaValue ? `CRITICAL: You MUST use ${areaValue} sq ft for calculations. Show your math in notes.` : "Estimate area from the image context."}`;
+  "total_material_area": ${areaValue || "ESTIMATED_AREA"},
+  "summary": "Brief summary",
+  "recommendations": ["tip1", "tip2"]
+}`;
 
   console.log("GPT-5: Starting estimation with area:", areaValue);
   
@@ -208,28 +190,36 @@ ${areaValue ? `CRITICAL: You MUST use ${areaValue} sq ft for calculations. Show 
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: [{
         role: "user",
-        content: [
-          { type: "text", text: gptPrompt },
-          { type: "image_url", image_url: { url: image } }
-        ]
+        content: gptPrompt
       }],
-      max_tokens: 2000,
+      max_tokens: 1500,
     }),
   });
 
   const defaultResult: GPTEstimateData = {
     materials: [],
-    labor: { hours: 16, days: 2, rate: 17.5, total: 280 },
+    labor: { hours: 0, days: 0, rate: 0, total: 0 },
     total_material_area: areaValue || 1000,
-    summary: "Estimation pending",
+    summary: "Material estimation",
     recommendations: [],
   };
 
   if (!response.ok) {
     console.error("GPT-5: API error", response.status);
+    // Calculate fallback materials if we have area
+    if (areaValue) {
+      const wasteArea = Math.ceil(areaValue * 1.15);
+      defaultResult.materials = [
+        { item: "Tile/Flooring", quantity: wasteArea, unit: "sq ft", notes: `${areaValue} + 15% waste` },
+        { item: "Tile Boxes (12 sq ft/box)", quantity: Math.ceil(wasteArea / 12), unit: "boxes", notes: "" },
+        { item: "Tile Adhesive", quantity: Math.ceil(areaValue / 40), unit: "bags", notes: "1 bag/40 sq ft" },
+        { item: "Grout", quantity: Math.ceil(areaValue / 80), unit: "bags", notes: "1 bag/80 sq ft" },
+      ];
+      defaultResult.summary = `Material estimate for ${areaValue} sq ft flooring project.`;
+    }
     return defaultResult;
   }
 
@@ -246,6 +236,8 @@ ${areaValue ? `CRITICAL: You MUST use ${areaValue} sq ft for calculations. Show 
     }
     const parsed = JSON.parse(cleanContent);
     console.log("GPT-5 parsed:", parsed);
+    // Set empty labor since we removed it from prompt
+    parsed.labor = { hours: 0, days: 0, rate: 0, total: 0 };
     return { ...parsed, raw_response: rawContent.substring(0, 500) };
   } catch (e) {
     console.error("GPT-5: JSON parse failed");
@@ -260,9 +252,7 @@ ${areaValue ? `CRITICAL: You MUST use ${areaValue} sq ft for calculations. Show 
         { item: "Tile Adhesive", quantity: Math.ceil(areaValue / 40), unit: "bags", notes: "1 bag/40 sq ft" },
         { item: "Grout", quantity: Math.ceil(areaValue / 80), unit: "bags", notes: "1 bag/80 sq ft" },
       ];
-      const days = Math.ceil(areaValue / 100);
-      defaultResult.labor = { hours: days * 8, days, rate: 17.5, total: days * 8 * 17.5 };
-      defaultResult.summary = `Calculated estimate for ${areaValue} sq ft flooring project.`;
+      defaultResult.summary = `Material estimate for ${areaValue} sq ft flooring project.`;
     }
     
     return defaultResult;
@@ -338,8 +328,6 @@ async function dualEngineAnalysis(image: string, description: string, apiKey: st
     estimate: {
       // Core estimate data
       materials: gptData.materials,
-      laborHours: `${gptData.labor.hours} hours (${gptData.labor.days} days at $${gptData.labor.rate}/hr)`,
-      laborCost: gptData.labor.total,
       summary: gptData.summary,
       recommendations: gptData.recommendations,
       

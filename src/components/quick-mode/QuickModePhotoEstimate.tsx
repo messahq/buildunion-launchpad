@@ -344,16 +344,6 @@ const QuickModePhotoEstimate = ({ onEstimateComplete }: QuickModePhotoEstimatePr
                 </div>
               </div>
 
-              {/* Labor Estimate */}
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-semibold text-foreground mb-1">Estimated Labor</h4>
-                <p className="text-2xl font-bold text-amber-600">{result.laborHours}</p>
-                {result.laborCost && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Total Labor Cost: ${result.laborCost.toFixed(2)}
-                  </p>
-                )}
-              </div>
 
               {/* Recommendations */}
               {result.recommendations && result.recommendations.length > 0 && (
@@ -435,14 +425,6 @@ const QuickModePhotoEstimate = ({ onEstimateComplete }: QuickModePhotoEstimatePr
                         <div>
                           <span className="text-green-600">Materials:</span>
                           <span className="ml-2 font-medium">{result.dualEngine.gpt.findings.materialsCount} items</span>
-                        </div>
-                        <div>
-                          <span className="text-green-600">Labor Hours:</span>
-                          <span className="ml-2 font-medium">{result.dualEngine.gpt.findings.laborHours} hrs</span>
-                        </div>
-                        <div>
-                          <span className="text-green-600">Labor Cost:</span>
-                          <span className="ml-2 font-medium">${result.dualEngine.gpt.findings.totalLaborCost}</span>
                         </div>
                         <div>
                           <span className="text-green-600">Area Used:</span>
