@@ -679,12 +679,12 @@ const BuildUnionWorkspace = () => {
           </div>
 
           {/* CTA Banner */}
-          <div className="bg-slate-800 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-200">
             <div className="text-center md:text-left">
-              <h3 className="text-xl font-semibold text-white mb-1">
+              <h3 className="text-xl font-semibold text-slate-900 mb-1">
                 Ready to Join the Movement?
               </h3>
-              <p className="text-slate-400 text-sm">
+              <p className="text-slate-600 text-sm">
                 Connect with local unions and access exclusive training programs.
               </p>
             </div>
