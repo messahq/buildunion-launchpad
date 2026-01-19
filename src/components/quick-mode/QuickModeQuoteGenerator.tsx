@@ -100,17 +100,39 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
     if (collectedData) {
       const newLineItems: LineItem[] = [];
       
+      // Add materials from photo estimate (AI detected materials)
+      if (collectedData.photoEstimate?.materials) {
+        collectedData.photoEstimate.materials.forEach((mat: any, idx: number) => {
+          const quantity = typeof mat.quantity === 'string' 
+            ? parseFloat(mat.quantity) || 1 
+            : mat.quantity || 1;
+          newLineItems.push({
+            id: `photo-${idx}-${mat.item}`,
+            description: mat.item,
+            quantity: quantity,
+            unit: mat.unit || "unit",
+            unitPrice: 0,
+          });
+        });
+      }
+      
       // Add from calculator results
       collectedData.calculatorResults.forEach((calc, idx) => {
         if (calc.result?.materials) {
           calc.result.materials.forEach((mat: any) => {
-            newLineItems.push({
-              id: `calc-${idx}-${mat.item}`,
-              description: mat.item,
-              quantity: mat.quantity,
-              unit: mat.unit || "unit",
-              unitPrice: 0,
-            });
+            // Avoid duplicates from photo estimate
+            const isDuplicate = newLineItems.some(
+              item => item.description.toLowerCase() === mat.item?.toLowerCase()
+            );
+            if (!isDuplicate) {
+              newLineItems.push({
+                id: `calc-${idx}-${mat.item}`,
+                description: mat.item,
+                quantity: mat.quantity,
+                unit: mat.unit || "unit",
+                unitPrice: 0,
+              });
+            }
           });
         }
       });
@@ -132,13 +154,20 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
       collectedData.templateItems.forEach((template, idx) => {
         if (template.materials) {
           template.materials.forEach((mat: any) => {
-            newLineItems.push({
-              id: `template-${idx}-${mat.name}`,
-              description: mat.name || mat,
-              quantity: mat.quantity || 1,
-              unit: mat.unit || "unit",
-              unitPrice: mat.price || 0,
-            });
+            // Avoid duplicates
+            const matName = mat.name || mat;
+            const isDuplicate = newLineItems.some(
+              item => item.description.toLowerCase() === matName.toLowerCase()
+            );
+            if (!isDuplicate) {
+              newLineItems.push({
+                id: `template-${idx}-${matName}`,
+                description: matName,
+                quantity: mat.quantity || 1,
+                unit: mat.unit || "unit",
+                unitPrice: mat.price || 0,
+              });
+            }
           });
         }
       });
@@ -146,7 +175,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
       if (newLineItems.length > 0) {
         setQuote(prev => ({
           ...prev,
-          lineItems: newLineItems.length > 0 ? newLineItems : prev.lineItems,
+          lineItems: newLineItems,
         }));
       }
     }
