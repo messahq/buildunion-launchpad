@@ -40,10 +40,20 @@ const BuildUnionHeader = () => {
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
   
+  // Get user display name from registration
+  const getDisplayName = () => {
+    return user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
+  };
+  
   // Get user initials for avatar fallback
   const getUserInitials = () => {
-    if (profile?.company_name) {
-      return profile.company_name.slice(0, 2).toUpperCase();
+    const name = user?.user_metadata?.full_name;
+    if (name) {
+      const parts = name.split(" ");
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return name.slice(0, 2).toUpperCase();
     }
     if (user?.email) {
       return user.email.slice(0, 2).toUpperCase();
@@ -180,13 +190,13 @@ const BuildUnionHeader = () => {
                     </Avatar>
                   </div>
                   <span className="text-sm hidden md:inline">
-                    {profile?.company_name || user.email?.split("@")[0]}
+                    {getDisplayName()}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[200px] bg-white">
                 <div className="px-2 py-2">
-                  <p className="text-sm font-medium text-gray-900">{user.email?.split("@")[0]}</p>
+                  <p className="text-sm font-medium text-gray-900">{getDisplayName()}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                   <div className="mt-2 flex items-center gap-2">
                     {getTierBadge()}
