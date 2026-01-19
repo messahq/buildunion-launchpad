@@ -317,11 +317,32 @@ const BuildUnionQuickMode = () => {
             </TabsContent>
 
             <TabsContent value="calculator" className="mt-0">
-              <QuickModeCalculator />
+              <QuickModeCalculator 
+                onCalculatorComplete={handleCalculatorComplete}
+                onContinue={() => setActiveTab("quote")}
+              />
             </TabsContent>
 
             <TabsContent value="quote" className="mt-0">
-              <QuickModeQuoteGenerator />
+              <QuickModeQuoteGenerator 
+                collectedData={collectedData}
+                onSkipToSummary={goToSummary}
+                onQuoteGenerated={(quote) => {
+                  // Navigate to summary with quote data
+                  const params = new URLSearchParams();
+                  if (collectedData.photoEstimate) {
+                    params.set("photoEstimate", encodeURIComponent(JSON.stringify(collectedData.photoEstimate)));
+                  }
+                  if (collectedData.calculatorResults.length > 0) {
+                    params.set("calculatorResults", encodeURIComponent(JSON.stringify(collectedData.calculatorResults)));
+                  }
+                  if (collectedData.templateItems.length > 0) {
+                    params.set("templateItems", encodeURIComponent(JSON.stringify(collectedData.templateItems)));
+                  }
+                  params.set("quote", encodeURIComponent(JSON.stringify(quote)));
+                  navigate(`/buildunion/summary?${params.toString()}`);
+                }}
+              />
             </TabsContent>
           </Tabs>
         </section>
