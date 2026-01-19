@@ -71,15 +71,38 @@ const Index = () => {
             <path d="M195,160 L190,210 L198,260 L200,300 L200,340" />
             <path d="M190,210 L320,180 L355,205" />
           </g>
-          {/* Crown of 12 stars around head */}
-          <g fill="rgba(255,215,0,0.3)">
+          {/* Crown of 12 stars around head with golden glow */}
+          <g filter="url(#goldenGlow)">
             {[...Array(12)].map((_, i) => {
               const angle = (i * 30 - 90) * (Math.PI / 180);
               const x = 190 + Math.cos(angle) * 50;
               const y = 50 + Math.sin(angle) * 30;
-              return <circle key={i} cx={x} cy={y} r="1.5" />;
+              return (
+                <circle 
+                  key={i} 
+                  cx={x} 
+                  cy={y} 
+                  r="2" 
+                  fill="rgba(255,215,0,0.8)"
+                  style={{ 
+                    animation: `twinkleGold ${2.5 + (i % 4) * 0.5}s ease-in-out infinite ${i * 0.2}s` 
+                  }}
+                />
+              );
             })}
           </g>
+          {/* Filter for golden glow effect */}
+          <defs>
+            <filter id="goldenGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feFlood floodColor="rgba(255,215,0,0.6)" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
         </svg>
       </div>
 
@@ -212,6 +235,11 @@ const Index = () => {
         @keyframes twinkle {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.3; }
+        }
+        
+        @keyframes twinkleGold {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.8); }
         }
       `}</style>
     </main>
