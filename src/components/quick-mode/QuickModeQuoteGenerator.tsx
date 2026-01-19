@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useRegionSettings } from "@/hooks/useRegionSettings";
+import { RegionSelector } from "@/components/RegionSelector";
 
 interface LineItem {
   id: string;
@@ -73,6 +75,7 @@ const units = ["unit", "sq ft", "lin ft", "hour", "day", "each", "lot", "job"];
 const QuickModeQuoteGenerator = () => {
   const [quote, setQuote] = useState<QuoteData>(defaultQuote);
   const [activeSection, setActiveSection] = useState<"company" | "client" | "items" | "preview">("company");
+  const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
 
   const updateQuote = (field: keyof QuoteData, value: any) => {
     setQuote((prev) => ({ ...prev, [field]: value }));
@@ -116,8 +119,8 @@ const QuickModeQuoteGenerator = () => {
     (sum, item) => sum + item.quantity * item.unitPrice,
     0
   );
-  const tax = subtotal * 0.13; // 13% HST for Ontario
-  const total = subtotal + tax;
+  const taxResult = calculateTax(subtotal);
+  const total = taxResult.total;
 
   const generatePDF = () => {
     // Create a printable version
@@ -415,10 +418,12 @@ const QuickModeQuoteGenerator = () => {
                   <span class="label">Subtotal</span>
                   <span class="value">$${subtotal.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
                 </div>
+                ${taxResult.breakdown.map((t, i) => `
                 <div class="totals-row">
-                  <span class="label">HST (13%) <span class="hst-badge">Ontario</span></span>
-                  <span class="value">$${tax.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
+                  <span class="label">${t.name} (${(config.tax.components[i]?.rate * 100).toFixed(t.name === "QST" ? 3 : 0)}%) <span class="hst-badge">${config.shortName}</span></span>
+                  <span class="value">$${t.amount.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
                 </div>
+                `).join("")}
                 <div class="totals-row total">
                   <span>Total</span>
                   <span>$${total.toLocaleString('en-CA', { minimumFractionDigits: 2 })} CAD</span>
@@ -447,7 +452,7 @@ const QuickModeQuoteGenerator = () => {
 
           <div class="footer">
             <p>Thank you for your business. This quote was generated using BuildUnion.</p>
-            <p>Licensed & Insured • WSIB Covered • Serving the Greater Toronto Area</p>
+            <p>${config.legalNote} • ${config.footer}</p>
           </div>
         </div>
       </body>
@@ -463,23 +468,26 @@ const QuickModeQuoteGenerator = () => {
     <div className="grid lg:grid-cols-3 gap-6">
       {/* Form Section */}
       <div className="lg:col-span-2 space-y-4">
-        {/* Section Tabs */}
-        <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
-          {[
-            { id: "company", label: "Your Info", icon: Building2 },
-            { id: "client", label: "Client", icon: User },
-            { id: "items", label: "Line Items", icon: DollarSign },
-          ].map((section) => (
-            <Button
-              key={section.id}
-              variant={activeSection === section.id ? "default" : "ghost"}
-              className="flex-1"
-              onClick={() => setActiveSection(section.id as any)}
-            >
-              <section.icon className="w-4 h-4 mr-2" />
-              {section.label}
-            </Button>
-          ))}
+        {/* Region Selector + Section Tabs */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex gap-2 p-1 bg-muted/50 rounded-lg flex-1">
+            {[
+              { id: "company", label: "Your Info", icon: Building2 },
+              { id: "client", label: "Client", icon: User },
+              { id: "items", label: "Line Items", icon: DollarSign },
+            ].map((section) => (
+              <Button
+                key={section.id}
+                variant={activeSection === section.id ? "default" : "ghost"}
+                className="flex-1"
+                onClick={() => setActiveSection(section.id as any)}
+              >
+                <section.icon className="w-4 h-4 mr-2" />
+                {section.label}
+              </Button>
+            ))}
+          </div>
+          <RegionSelector />
         </div>
 
         {/* Company Info */}
@@ -751,10 +759,12 @@ const QuickModeQuoteGenerator = () => {
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">HST (13%)</span>
-                <span>${tax.toFixed(2)}</span>
-              </div>
+              {taxResult.breakdown.map((t, idx) => (
+                <div key={idx} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t.name} ({(config.tax.components[idx]?.rate * 100).toFixed(t.name === "QST" ? 3 : 0)}%)</span>
+                  <span>${t.amount.toFixed(2)}</span>
+                </div>
+              ))}
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRegionSettings } from "@/hooks/useRegionSettings";
+import { RegionSelector } from "@/components/RegionSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,6 +95,7 @@ export function ProjectSummary({
 }: ProjectSummaryProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatCurrency, formatDate, calculateTax, config } = useRegionSettings();
   const [summary, setSummary] = useState<ProjectSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -279,13 +282,7 @@ export function ProjectSummary({
     navigate("/buildunion/quick?tab=quote");
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-CA", {
-      style: "currency",
-      currency: "CAD",
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+  // formatCurrency and formatDate now come from useRegionSettings hook
 
   const getSourceBadge = (source: string) => {
     const configs: Record<string, { icon: any; color: string; label: string }> = {
@@ -328,8 +325,8 @@ export function ProjectSummary({
 
   const totalItems = editedItems.length;
   const materialTotal = editedItems.reduce((sum, item) => sum + item.total, 0);
-  const taxAmount = materialTotal * 0.13; // 13% HST for Ontario
-  const grandTotal = materialTotal + taxAmount;
+  const taxResult = calculateTax(materialTotal);
+  const grandTotal = taxResult.total;
 
   // ===== CONFLICT DETECTION =====
   // Check for conflicts between Quick Mode (photo estimate) and M.E.S.S.A. (blueprint analysis)
@@ -425,12 +422,13 @@ export function ProjectSummary({
               Project Summary
             </h1>
             <p className="text-muted-foreground text-sm">
-              Created: {new Date(summary.created_at).toLocaleDateString("en-CA")}
+              Created: {formatDate(summary.created_at)}
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
+          <RegionSelector compact />
           <Button
             variant="outline"
             onClick={() => runAIAnalysis(summary.id)}
@@ -751,15 +749,20 @@ export function ProjectSummary({
           {/* Totals */}
           <Separator className="my-4" />
           <div className="flex justify-end">
-            <div className="w-64 space-y-2">
+            <div className="w-72 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal:</span>
                 <span className="font-medium">{formatCurrency(materialTotal)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">HST (13%):</span>
-                <span>{formatCurrency(taxAmount)}</span>
-              </div>
+              {taxResult.breakdown.map((tax, idx) => (
+                <div key={idx} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    {tax.name} ({(config.tax.components[idx]?.rate * 100).toFixed(tax.name === "QST" ? 3 : 0)}%)
+                    <Badge variant="outline" className="text-xs">{config.shortName}</Badge>
+                  </span>
+                  <span>{formatCurrency(tax.amount)}</span>
+                </div>
+              ))}
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Total:</span>
