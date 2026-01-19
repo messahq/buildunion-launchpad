@@ -2,17 +2,28 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+export type SubscriptionTier = "free" | "pro" | "premium" | "enterprise";
+
 export interface SubscriptionData {
   subscribed: boolean;
-  tier: "pro" | "premium" | null;
+  tier: SubscriptionTier;
   productId: string | null;
   subscriptionEnd: string | null;
   billingInterval: "monthly" | "yearly" | null;
 }
 
+// Team member limits per tier
+export const TEAM_LIMITS: Record<SubscriptionTier, number> = {
+  free: 0,
+  pro: 10,
+  premium: 50,
+  enterprise: Infinity, // Unlimited
+};
+
 export const SUBSCRIPTION_TIERS = {
   pro: {
     name: "Pro",
+    teamLimit: 10,
     monthly: {
       price_id: "price_1Sr2e51Vyb1rmc7TrmRauDEo",
       product_id: "prod_Tog02cwkocBGA0",
@@ -28,6 +39,7 @@ export const SUBSCRIPTION_TIERS = {
   },
   premium: {
     name: "Premium",
+    teamLimit: 50,
     monthly: {
       price_id: "price_1Sr2eI1Vyb1rmc7TOD7OzXWa",
       product_id: "prod_Tog0mYcKDEXUfl",
@@ -51,11 +63,26 @@ export const PRODUCT_TO_TIER: Record<string, { tier: "pro" | "premium"; interval
   "prod_Tog8IdlcfqOduT": { tier: "premium", interval: "yearly" },
 };
 
+// Helper to get team limit for a tier
+export const getTeamLimit = (tier: SubscriptionTier): number => {
+  return TEAM_LIMITS[tier];
+};
+
+// Helper to get the next tier for upgrade
+export const getNextTier = (currentTier: SubscriptionTier): SubscriptionTier | null => {
+  const upgradeMap: Partial<Record<SubscriptionTier, SubscriptionTier>> = {
+    free: "pro",
+    pro: "premium",
+    premium: "enterprise",
+  };
+  return upgradeMap[currentTier] || null;
+};
+
 export const useSubscription = () => {
   const { user, session } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionData>({
     subscribed: false,
-    tier: null,
+    tier: "free",
     productId: null,
     subscriptionEnd: null,
     billingInterval: null,
@@ -67,7 +94,7 @@ export const useSubscription = () => {
     if (!session?.access_token) {
       setSubscription({
         subscribed: false,
-        tier: null,
+        tier: "free",
         productId: null,
         subscriptionEnd: null,
         billingInterval: null,
@@ -91,7 +118,7 @@ export const useSubscription = () => {
 
       setSubscription({
         subscribed: data.subscribed,
-        tier: productInfo?.tier || null,
+        tier: productInfo?.tier || "free",
         productId: data.product_id,
         subscriptionEnd: data.subscription_end,
         billingInterval: productInfo?.interval || null,
