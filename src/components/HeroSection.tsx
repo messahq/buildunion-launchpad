@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import davidVideo from "@/assets/david-hero.mp4";
+import davidVideo from "@/assets/david-video.mp4";
 import { ArrowLeft, ChevronDown, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
