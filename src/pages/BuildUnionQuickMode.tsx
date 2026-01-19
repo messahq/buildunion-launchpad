@@ -7,11 +7,15 @@ import QuickModeTemplates from "@/components/quick-mode/QuickModeTemplates";
 import QuickModeCalculator from "@/components/quick-mode/QuickModeCalculator";
 import QuickModeQuoteGenerator from "@/components/quick-mode/QuickModeQuoteGenerator";
 import QuickModeOnboarding from "@/components/quick-mode/QuickModeOnboarding";
+import DataMergeDialog from "@/components/DataMergeDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight, ArrowLeft, FileSpreadsheet, Sparkles } from "lucide-react";
+import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight, ArrowLeft, FileSpreadsheet, Sparkles, FileUp, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrialUsage } from "@/hooks/useTrialUsage";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 // Collected data state type
@@ -25,8 +29,15 @@ const BuildUnionQuickMode = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { subscription } = useSubscription();
+  const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials } = useTrialUsage();
+  
+  const isCreateFlow = searchParams.get("flow") === "create";
+  const isPremium = subscription?.subscribed === true;
+  
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "photo");
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
   
   // Collected data from all tabs
   const [collectedData, setCollectedData] = useState<CollectedData>({
@@ -86,6 +97,61 @@ const BuildUnionQuickMode = () => {
     navigate(`/buildunion/summary?${params.toString()}`);
   };
 
+  // Handle Skip to Blueprints click
+  const handleSkipToBlueprints = () => {
+    if (!user) {
+      toast.error("Please sign in to access blueprint analysis");
+      navigate("/buildunion/login");
+      return;
+    }
+
+    const hasData = collectedData.photoEstimate || 
+                    collectedData.calculatorResults.length > 0 || 
+                    collectedData.templateItems.length > 0;
+
+    // If user has collected data, show merge dialog
+    if (hasData) {
+      setShowMergeDialog(true);
+      return;
+    }
+
+    // Otherwise go directly to blueprints
+    navigateToBlueprints(false);
+  };
+
+  // Navigate to blueprint upload (PRO Mode)
+  const navigateToBlueprints = (mergeData: boolean) => {
+    // Check if premium or has trials
+    if (!isPremium && !hasTrialsRemaining) {
+      toast.error("You've used all free trials. Upgrade to Premium for unlimited blueprint analysis.");
+      navigate("/buildunion/pricing");
+      return;
+    }
+
+    // Use one trial if not premium
+    if (!isPremium) {
+      useOneTrial();
+      toast.success(`Blueprint analysis trial used. ${remainingTrials - 1} remaining.`);
+    }
+
+    // Build navigation params
+    const params = new URLSearchParams();
+    if (mergeData) {
+      params.set("mergeQuickMode", "true");
+      if (collectedData.photoEstimate) {
+        params.set("photoEstimate", encodeURIComponent(JSON.stringify(collectedData.photoEstimate)));
+      }
+      if (collectedData.calculatorResults.length > 0) {
+        params.set("calculatorResults", encodeURIComponent(JSON.stringify(collectedData.calculatorResults)));
+      }
+      if (collectedData.templateItems.length > 0) {
+        params.set("templateItems", encodeURIComponent(JSON.stringify(collectedData.templateItems)));
+      }
+    }
+
+    navigate(`/buildunion/workspace/new?${params.toString()}`);
+  };
+
   // Count collected items for badge
   const collectedItemsCount = 
     (collectedData.photoEstimate ? 1 : 0) +
@@ -128,15 +194,34 @@ const BuildUnionQuickMode = () => {
                 </p>
               </div>
               
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/buildunion/workspace/new")}
-                  className="gap-2"
-                >
-                  <span>PRO Mode</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Skip to Blueprints - PRO */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={handleSkipToBlueprints}
+                      className="gap-2 border-cyan-200 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-300"
+                    >
+                      <FileUp className="w-4 h-4" />
+                      <span className="hidden sm:inline">Skip to Blueprints</span>
+                      <span className="sm:hidden">Blueprints</span>
+                      {isPremium ? (
+                        <Crown className="w-3 h-3 text-amber-500" />
+                      ) : (
+                        <Badge variant="secondary" className="ml-1 text-xs">
+                          {remainingTrials}/{maxTrials}
+                        </Badge>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isPremium 
+                      ? "Upload blueprints for M.E.S.S.A. analysis (Premium)" 
+                      : `${remainingTrials} free trial${remainingTrials !== 1 ? 's' : ''} remaining`
+                    }
+                  </TooltipContent>
+                </Tooltip>
                 
                 {/* Summary Button */}
                 <Button
@@ -251,6 +336,21 @@ const BuildUnionQuickMode = () => {
           onNavigateToTab={(tab) => setActiveTab(tab)}
         />
       )}
+
+      {/* Data Merge Dialog */}
+      <DataMergeDialog
+        open={showMergeDialog}
+        onOpenChange={setShowMergeDialog}
+        collectedData={collectedData}
+        onMerge={() => {
+          setShowMergeDialog(false);
+          navigateToBlueprints(true);
+        }}
+        onReplace={() => {
+          setShowMergeDialog(false);
+          navigateToBlueprints(false);
+        }}
+      />
     </div>
   );
 };
