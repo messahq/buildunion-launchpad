@@ -238,20 +238,20 @@ const BuildUnionWorkspace = () => {
       </section>
 
       {/* M.E.S.S.A. Section */}
-      <section className="py-20 px-6 bg-gradient-to-br from-slate-50 via-white to-amber-50/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-8 md:p-12 flex flex-col md:flex-row gap-8 items-start">
+      <section className="py-16 px-6 bg-slate-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex flex-col md:flex-row gap-6 items-start transition-all duration-300 hover:shadow-lg hover:border-amber-200">
             {/* Gradient Orb Icon */}
             <div className="flex-shrink-0">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 shadow-lg flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 shadow-md flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
               </div>
             </div>
 
             {/* Content */}
             <div className="flex-1">
               {/* Label */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-3">
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                 <span className="text-amber-600 font-semibold text-xs uppercase tracking-widest">
                   Core Intelligence: M.E.S.S.A.
@@ -259,18 +259,18 @@ const BuildUnionWorkspace = () => {
               </div>
 
               {/* Title */}
-              <h2 className="text-2xl md:text-3xl font-display font-semibold text-slate-900 mb-4">
+              <h2 className="text-xl md:text-2xl font-display font-bold text-slate-900 mb-3">
                 Multi-Engine Smart Synthesis Agents
               </h2>
 
               {/* Description */}
-              <p className="text-slate-600 leading-relaxed mb-4">
+              <p className="text-slate-500 text-sm leading-relaxed mb-3">
                 Our system leverages industry-leading AI reasoning engines, like{" "}
                 <span className="text-cyan-600 font-medium">OpenAI</span> and{" "}
                 <span className="text-amber-600 font-medium">Google Gemini</span>, orchestrated through
                 the MESSA synthesis layer to support complex, construction-grade decision making.
               </p>
-              <p className="text-slate-600 leading-relaxed mb-6">
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">
                 Rather than relying on a single model, MESSA operates a dual-engine reasoning and
                 verification workflow, designed to reduce uncertainty, surface discrepancies, and
                 prioritize grounded, source-linked outputs. MESSA is designed to support real-world
