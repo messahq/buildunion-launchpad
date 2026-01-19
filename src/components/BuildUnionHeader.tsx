@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
-import buildUnionLogo from "@/assets/buildunion-logo.png";
+
 import AskMessaChat from "@/components/AskMessaChat";
 
 const languages = [
@@ -87,12 +87,14 @@ const BuildUnionHeader = () => {
         </Button>
 
         {/* Center - Logo (hidden on very small screens) */}
-        <div className="hidden xs:block absolute left-1/2 -translate-x-1/2">
-          <img
-            src={buildUnionLogo}
-            alt="BuildUnion Logo"
-            className="h-8 sm:h-12 w-auto object-contain"
-          />
+        <div 
+          className="hidden xs:flex absolute left-1/2 -translate-x-1/2 cursor-pointer"
+          onClick={() => navigate("/buildunion")}
+        >
+          <span className="text-lg sm:text-xl font-bold tracking-tight">
+            <span className="text-slate-800">Build</span>
+            <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">Union</span>
+          </span>
         </div>
 
         {/* Right - Ask Messa, Pricing, Auth Buttons & Language */}
