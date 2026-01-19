@@ -1,6 +1,7 @@
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import ProjectList from "@/components/ProjectList";
+import ProjectFacts from "@/components/ProjectFacts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle } from "lucide-react";
@@ -54,7 +55,14 @@ const BuildUnionWorkspace = () => {
       {/* My Projects Section */}
       <section className="py-12 px-6 bg-white border-b border-slate-100">
         <div className="max-w-6xl mx-auto">
-          <ProjectList />
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <ProjectList />
+            </div>
+            <div className="lg:col-span-1">
+              <ProjectFacts />
+            </div>
+          </div>
         </div>
       </section>
       

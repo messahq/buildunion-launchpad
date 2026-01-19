@@ -374,10 +374,10 @@ const DualEngineChat = ({ projectId, projectName, onImageUploaded, siteImages = 
 
     if (message.isSaved) {
       return (
-        <div className="mt-3 flex items-center gap-2 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-          <BookmarkCheck className="h-4 w-4 text-green-600" />
-          <span className="text-sm font-medium text-green-600">
-            Saved to Project
+        <div className="mt-3 flex items-center gap-2 p-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20 shadow-sm">
+          <BookmarkCheck className="h-5 w-5 text-green-600" />
+          <span className="text-sm font-semibold text-green-600">
+            Saved to Project Facts
           </span>
         </div>
       );
@@ -387,39 +387,67 @@ const DualEngineChat = ({ projectId, projectName, onImageUploaded, siteImages = 
       <Button
         variant="outline"
         size="sm"
-        className="mt-3 w-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-300 hover:border-amber-400 hover:bg-amber-500/20 text-amber-700"
+        className="mt-3 w-full bg-gradient-to-r from-cyan-500/10 via-teal-500/10 to-amber-500/10 border-cyan-400 hover:border-teal-400 hover:bg-teal-500/20 text-teal-700 font-medium gap-2 shadow-sm"
         onClick={() => saveSynthesis(message)}
         disabled={savingMessageId === message.id}
       >
         {savingMessageId === message.id ? (
           <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Saving...
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Saving to Project Facts...
           </>
         ) : (
           <>
-            <Save className="h-4 w-4 mr-2" />
-            Save to Project
+            <BookmarkCheck className="h-4 w-4" />
+            Save to Project Facts
           </>
         )}
       </Button>
     );
   };
 
-  const getVerificationBadge = (verification?: Message["verification"]) => {
+  const notifyManagerOfConflict = async (message: Message) => {
+    if (!user) {
+      toast.error("Please log in to notify manager");
+      return;
+    }
+    
+    try {
+      // For now, we save the conflict to project_syntheses with a special verification_status
+      const { error } = await supabase.from("project_syntheses").insert({
+        project_id: projectId,
+        user_id: user.id,
+        question: message.question || "Unknown question",
+        answer: message.content,
+        gemini_response: message.engineResponses?.gemini || null,
+        openai_response: message.engineResponses?.openai || null,
+        verification_status: "conflict_notified",
+        sources: message.sources || [],
+      });
+
+      if (error) throw error;
+
+      toast.success("Manager notified of conflict! The discrepancy has been logged for review.");
+    } catch (err) {
+      console.error("Notify manager error:", err);
+      toast.error("Failed to notify manager");
+    }
+  };
+
+  const getVerificationBadge = (verification?: Message["verification"], message?: Message) => {
     if (!verification) return null;
 
     if (verification.verified) {
       return (
-        <div className="flex items-center gap-2 mb-3 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
-          <span className="text-sm font-medium text-green-600">Verified by Dual-Engine</span>
-          <div className="flex gap-1 ml-auto">
-            <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse">
-              <GeminiIcon className="w-3 h-3 text-blue-500" />
+        <div className="flex items-center gap-2 mb-3 p-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20 shadow-sm">
+          <CheckCircle2 className="h-5 w-5 text-green-500" />
+          <span className="text-sm font-semibold text-green-600">Verified by Dual-Engine</span>
+          <div className="flex gap-2 ml-auto">
+            <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center ring-2 ring-blue-400/50 animate-pulse">
+              <GeminiIcon className="w-4 h-4 text-blue-500" />
             </div>
-            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
-              <OpenAIIcon className="w-3 h-3 text-emerald-500" />
+            <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center ring-2 ring-emerald-400/50 animate-pulse">
+              <OpenAIIcon className="w-4 h-4 text-emerald-500" />
             </div>
           </div>
         </div>
@@ -428,11 +456,27 @@ const DualEngineChat = ({ projectId, projectName, onImageUploaded, siteImages = 
 
     if (verification.status === "not-verified") {
       return (
-        <div className="flex items-center gap-2 mb-3 p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-medium text-amber-600">
-            Conflict detected between engines. Manual verification required.
-          </span>
+        <div className="mb-3 p-3 bg-amber-500/10 rounded-lg border border-amber-500/30 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <span className="text-sm font-semibold text-amber-700">
+              Could not be verified
+            </span>
+          </div>
+          <p className="text-xs text-amber-600 mb-3">
+            The two AI engines produced conflicting responses. Manual review is recommended.
+          </p>
+          {message && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full bg-amber-500/10 border-amber-400 hover:bg-amber-500/20 text-amber-700 font-medium gap-2"
+              onClick={() => notifyManagerOfConflict(message)}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Notify Manager of Conflict
+            </Button>
+          )}
         </div>
       );
     }
@@ -843,7 +887,7 @@ const DualEngineChat = ({ projectId, projectName, onImageUploaded, siteImages = 
 
                     {message.role === "assistant" && !message.isLoading && (
                       <>
-                        {getVerificationBadge(message.verification)}
+                        {getVerificationBadge(message.verification, message)}
                       </>
                     )}
 
