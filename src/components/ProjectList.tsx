@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import PendingInvitations from "./PendingInvitations";
+import NewProjectModal from "./NewProjectModal";
 
 interface Project {
   id: string;
@@ -25,6 +26,7 @@ const ProjectList = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -196,7 +198,7 @@ const ProjectList = () => {
           <Folder className="h-12 w-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No projects yet</h3>
           <p className="text-slate-500 mb-6">Start your first project and let M.E.S.S.A. analyze your documents.</p>
-          <Button onClick={() => navigate("/buildunion/quick?flow=create")} className="bg-amber-600 hover:bg-amber-700 gap-2">
+          <Button onClick={() => setShowNewProjectModal(true)} className="bg-amber-600 hover:bg-amber-700 gap-2">
             <Plus className="h-4 w-4" />
             Create Your First Project
           </Button>
@@ -222,11 +224,14 @@ const ProjectList = () => {
             {sharedProjects.length > 0 && ` • ${sharedProjects.length} shared`}
           </p>
         </div>
-        <Button onClick={() => navigate("/buildunion/quick?flow=create")} className="bg-amber-600 hover:bg-amber-700 gap-2">
+        <Button onClick={() => setShowNewProjectModal(true)} className="bg-amber-600 hover:bg-amber-700 gap-2">
           <Plus className="h-4 w-4" />
           New Project
         </Button>
       </div>
+
+      {/* New Project Modal */}
+      <NewProjectModal open={showNewProjectModal} onOpenChange={setShowNewProjectModal} />
 
       {/* Own Projects Grid */}
       {ownProjects.length > 0 && (
@@ -343,11 +348,14 @@ const ProjectList = () => {
           <CardContent className="py-8 text-center">
             <Folder className="h-10 w-10 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">You haven't created any projects yet</p>
-            <Button onClick={() => navigate("/buildunion/quick?flow=create")} className="mt-4 bg-amber-600 hover:bg-amber-700 gap-2" size="sm">
+            <Button onClick={() => setShowNewProjectModal(true)} className="mt-4 bg-amber-600 hover:bg-amber-700 gap-2" size="sm">
               <Plus className="h-4 w-4" />
               Create Project
             </Button>
           </CardContent>
+
+          {/* New Project Modal for empty state */}
+          <NewProjectModal open={showNewProjectModal} onOpenChange={setShowNewProjectModal} />
         </Card>
       )}
     </div>
