@@ -14,7 +14,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
-import AskMessaChat from "@/components/AskMessaChat";
 import NewProjectModal from "@/components/NewProjectModal";
 
 const languages = [
@@ -34,7 +33,6 @@ const BuildUnionHeader = () => {
   const { user, signOut } = useAuth();
   const { subscription } = useSubscription();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
@@ -99,16 +97,8 @@ const BuildUnionHeader = () => {
           </span>
         </div>
 
-        {/* Right - Ask Messa, Pricing, Auth Buttons & Language */}
+        {/* Right - Auth Buttons & Language */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-          {/* Ask Messa Orb Button */}
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 hover:scale-110 transition-transform shadow-md flex items-center justify-center flex-shrink-0"
-            title="Ask Messa AI"
-          >
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
-          </button>
 
           {/* My Projects Link */}
           <Button
@@ -257,8 +247,7 @@ const BuildUnionHeader = () => {
         </div>
       </div>
 
-      {/* Ask Messa Chat */}
-      <AskMessaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      {/* New Project Modal */}
 
       {/* New Project Modal */}
       <NewProjectModal open={showNewProjectModal} onOpenChange={setShowNewProjectModal} />
