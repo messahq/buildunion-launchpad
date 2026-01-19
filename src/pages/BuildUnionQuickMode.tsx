@@ -506,37 +506,7 @@ const BuildUnionQuickMode = () => {
         }
       />
 
-      {/* Draft Resume Dialog */}
-      {showDraftResume && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
-            <div className="text-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-3">
-                <Sparkles className="w-6 h-6 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-semibold">Welcome Back!</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                You have an unfinished project. Would you like to continue where you left off?
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleStartFresh}
-                className="flex-1"
-              >
-                Start Fresh
-              </Button>
-              <Button
-                onClick={handleResumeDraft}
-                className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-              >
-                Continue
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Draft Resume Dialog - removed as per user request */}
     </div>
   );
 };
