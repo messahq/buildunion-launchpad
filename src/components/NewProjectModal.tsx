@@ -44,9 +44,9 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="text-center">
-          <DialogTitle className="text-xl">Új Projekt Indítása</DialogTitle>
+          <DialogTitle className="text-xl">Start New Project</DialogTitle>
           <DialogDescription>
-            Válaszd ki a projekthez illő módszert
+            Choose the right method for your project
           </DialogDescription>
         </DialogHeader>
 
@@ -65,24 +65,24 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-foreground">Quick Mode</h3>
                     <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
-                      Gyors
+                      Fast
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Kis munkákhoz, tervrajz nélkül. Fotó alapú becslés, sablonok, kalkulátor.
+                    For small jobs without blueprints. Photo-based estimates, templates, calculator.
                   </p>
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Camera className="w-3 h-3 text-amber-500" />
-                      Fotó becslés
+                      Photo Estimate
                     </span>
                     <span className="flex items-center gap-1">
                       <Calculator className="w-3 h-3 text-amber-500" />
-                      Kalkulátor
+                      Calculator
                     </span>
                     <span className="flex items-center gap-1">
                       <FileText className="w-3 h-3 text-amber-500" />
-                      PDF ajánlat
+                      PDF Quote
                     </span>
                   </div>
                 </div>
@@ -106,7 +106,7 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                     {!user ? (
                       <Badge variant="outline" className="text-xs gap-1">
                         <Lock className="w-3 h-3" />
-                        Bejelentkezés
+                        Sign In
                       </Badge>
                     ) : isPremium ? (
                       <Badge className="text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-white gap-1">
@@ -115,21 +115,21 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs">
-                        {remainingTrials}/{maxTrials} próba
+                        {remainingTrials}/{maxTrials} trials
                       </Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    M.E.S.S.A. dual-engine AI elemzés. Tervrajzok, dokumentumok feltöltése.
+                    M.E.S.S.A. dual-engine AI analysis. Upload blueprints and documents.
                   </p>
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <FileUp className="w-3 h-3 text-cyan-500" />
-                      PDF tervrajzok
+                      PDF Blueprints
                     </span>
                     <span className="flex items-center gap-1">
                       <Brain className="w-3 h-3 text-cyan-500" />
-                      AI elemzés
+                      AI Analysis
                     </span>
                     <span className="flex items-center gap-1">
                       <FileText className="w-3 h-3 text-cyan-500" />
@@ -143,7 +143,7 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          Mindkét módszer eredményei összefűzhetők egy projekt summaryban
+          Results from both methods can be combined in one project summary
         </p>
       </DialogContent>
     </Dialog>
