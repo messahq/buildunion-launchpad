@@ -38,7 +38,7 @@ const Index = () => {
       {/* Virgo Constellation - Woman Clothed with the Sun */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: '-40px' }}>
         <svg 
-          className="w-[550px] h-[550px] md:w-[700px] md:h-[700px] opacity-[0.12]"
+          className="w-[550px] h-[550px] md:w-[700px] md:h-[700px] opacity-[0.22]"
           viewBox="0 0 400 400"
           preserveAspectRatio="xMidYMid meet"
         >
