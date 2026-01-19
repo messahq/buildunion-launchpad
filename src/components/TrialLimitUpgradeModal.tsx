@@ -115,7 +115,7 @@ export const TrialLimitUpgradeModal = ({
                 <span className="font-bold text-foreground">Pro Plan</span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-foreground">$29</span>
+                <span className="text-2xl font-bold text-foreground">$19.99</span>
                 <span className="text-muted-foreground text-sm">/month</span>
               </div>
             </div>
