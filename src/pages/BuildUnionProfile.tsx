@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile, TRADE_LABELS, EXPERIENCE_LABELS, ConstructionTrade, ExperienceLevel } from "@/hooks/useBuProfile";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription, SubscriptionTier, TEAM_LIMITS } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   User, 
   Briefcase, 
@@ -35,9 +36,19 @@ import {
   Camera,
   Crown,
   Zap,
-  ArrowLeft
+  ArrowLeft,
+  Settings2,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
+
+// Dev tier options
+const DEV_TIERS: { tier: SubscriptionTier; label: string; color: string }[] = [
+  { tier: "free", label: "Free", color: "bg-slate-500" },
+  { tier: "pro", label: "Pro", color: "bg-blue-500" },
+  { tier: "premium", label: "Premium", color: "bg-purple-500" },
+  { tier: "enterprise", label: "Enterprise", color: "bg-amber-500" },
+];
 
 const BuildUnionProfile = () => {
   const navigate = useNavigate();
@@ -47,6 +58,45 @@ const BuildUnionProfile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  
+  // Secret dev mode state
+  const [secretClickCount, setSecretClickCount] = useState(0);
+  const [devPanelOpen, setDevPanelOpen] = useState(false);
+  const [currentDevTier, setCurrentDevTier] = useState<SubscriptionTier | null>(null);
+  const isDev = import.meta.env.DEV;
+
+  // Load dev tier override on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("dev_tier_override");
+    if (stored && DEV_TIERS.some(t => t.tier === stored)) {
+      setCurrentDevTier(stored as SubscriptionTier);
+    }
+  }, []);
+
+  const handleSecretClick = () => {
+    const newCount = secretClickCount + 1;
+    setSecretClickCount(newCount);
+    if (newCount >= 7) {
+      setDevPanelOpen(true);
+      toast.success("🔧 Dev Mode Unlocked!", { duration: 2000 });
+    } else if (newCount >= 4) {
+      toast.info(`${7 - newCount} more clicks...`, { duration: 1000 });
+    }
+  };
+
+  const handleSetDevTier = (tier: SubscriptionTier) => {
+    localStorage.setItem("dev_tier_override", tier);
+    setCurrentDevTier(tier);
+    toast.success(`Dev tier set to ${tier}`);
+    setTimeout(() => window.location.reload(), 500);
+  };
+
+  const handleClearDevTier = () => {
+    localStorage.removeItem("dev_tier_override");
+    setCurrentDevTier(null);
+    toast.success("Dev tier cleared");
+    setTimeout(() => window.location.reload(), 500);
+  };
 
   // Form state
   const [primaryTrade, setPrimaryTrade] = useState<ConstructionTrade | "">("");
@@ -642,6 +692,84 @@ const BuildUnionProfile = () => {
               )}
             </Button>
           </div>
+
+          {/* Secret Dev Mode Panel - Hidden at the very bottom */}
+          {isDev && (
+            <div className="mt-12 pt-8 border-t border-dashed border-slate-200">
+              <Collapsible open={devPanelOpen} onOpenChange={setDevPanelOpen}>
+                <CollapsibleTrigger asChild>
+                  <div 
+                    className="flex items-center justify-center cursor-pointer select-none"
+                    onClick={(e) => {
+                      if (!devPanelOpen) {
+                        e.preventDefault();
+                        handleSecretClick();
+                      }
+                    }}
+                  >
+                    <span className="text-[10px] text-slate-300 hover:text-slate-400 transition-colors">
+                      {devPanelOpen ? "🔧 Dev Mode Active" : "・・・"}
+                    </span>
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  <Card className="bg-slate-900 text-white border-slate-700">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <Settings2 className="h-4 w-4 text-amber-400" />
+                        Secret Dev Tier Tester
+                      </CardTitle>
+                      <CardDescription className="text-slate-400 text-xs">
+                        Override subscription tier for testing. Page will reload.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2">
+                        {DEV_TIERS.map(({ tier, label, color }) => (
+                          <button
+                            key={tier}
+                            onClick={() => handleSetDevTier(tier)}
+                            className={`
+                              px-3 py-2 rounded-lg text-sm font-medium transition-all
+                              ${currentDevTier === tier 
+                                ? `${color} text-white ring-2 ring-white/30` 
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                              }
+                            `}
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <span>{label}</span>
+                              {tier !== "free" && <Sparkles className="h-3 w-3" />}
+                            </div>
+                            <div className="text-xs opacity-70 mt-0.5">
+                              <Users className="h-3 w-3 inline mr-1" />
+                              {TEAM_LIMITS[tier] === Infinity ? "∞" : TEAM_LIMITS[tier]} members
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {currentDevTier && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleClearDevTier}
+                          className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
+                        >
+                          <X className="h-3 w-3 mr-2" />
+                          Clear Override (Use Real Tier)
+                        </Button>
+                      )}
+
+                      <p className="text-[10px] text-slate-500 text-center">
+                        🤫 This panel is only visible in development mode
+                      </p>
+                    </CardContent>
+                  </Card>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          )}
         </div>
       </main>
 
