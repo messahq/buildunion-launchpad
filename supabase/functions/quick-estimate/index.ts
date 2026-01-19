@@ -7,31 +7,15 @@ const corsHeaders = {
 
 // Dual-engine photo analysis for accurate measurements
 async function dualEngineAnalysis(image: string, description: string, apiKey: string) {
-  // STEP 1: Gemini Pro for visual extraction (area, dimensions, room counts)
-  const geminiPrompt = `You are analyzing a floor plan or construction photo. 
-CRITICALLY IMPORTANT: Read ANY visible text on the image EXACTLY as written.
+  // STEP 1: Gemini Pro for visual extraction - FOCUSED on just the area
+  const geminiPrompt = `Analyze this floor plan image. Find the TOTAL AREA measurement shown.
 
-Look for:
-1. Total area measurements (e.g., "Total Area = 1350 sq ft" - read this EXACTLY)
-2. Individual room dimensions (e.g., "23'6 x 23'" or "138 SQ. FT.")
-3. Room labels and counts
-4. Scale indicators
+RESPOND ONLY with this simple JSON (nothing else):
+{"total_area": NUMBER, "unit": "sq ft"}
 
-RESPOND IN THIS EXACT JSON FORMAT:
-{
-  "visible_total_area": "The EXACT number shown for total area (e.g., 1350)",
-  "visible_area_unit": "sq ft or sq m",
-  "room_dimensions": [
-    {"room": "room name", "dimensions": "as written", "area_sqft": number}
-  ],
-  "calculated_total": "sum of all room areas if no total shown",
-  "image_type": "floor_plan" | "photo" | "blueprint",
-  "confidence": "high" | "medium" | "low"
-}
+Example: If image shows "Total Area = 1350 sq ft", respond: {"total_area": 1350, "unit": "sq ft"}
 
-${description ? `Context: ${description}` : ""}
-
-READ THE NUMBERS EXACTLY AS SHOWN ON THE IMAGE. Do not round or estimate.`;
+READ THE EXACT NUMBER FROM THE IMAGE.`;
 
   const geminiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -40,7 +24,7 @@ READ THE NUMBERS EXACTLY AS SHOWN ON THE IMAGE. Do not round or estimate.`;
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-pro",
+      model: "google/gemini-2.5-flash",
       messages: [
         {
           role: "user",
@@ -50,41 +34,66 @@ READ THE NUMBERS EXACTLY AS SHOWN ON THE IMAGE. Do not round or estimate.`;
           ]
         }
       ],
-      max_tokens: 1500,
+      max_tokens: 200,
     }),
   });
 
   let geminiData = null;
+  let extractedAreaFromGemini: number | null = null;
+  
   if (geminiResponse.ok) {
     const geminiResult = await geminiResponse.json();
     const geminiContent = geminiResult.choices?.[0]?.message?.content || "";
     console.log("Gemini raw response:", geminiContent);
+    
+    // Try JSON parse first
     try {
-      // Clean markdown code blocks first
       let cleanContent = geminiContent;
-      // Remove ```json and ``` markers
-      cleanContent = cleanContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
-      // Try to find JSON object
+      cleanContent = cleanContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonStart = cleanContent.indexOf("{");
       const jsonEnd = cleanContent.lastIndexOf("}");
       if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
         cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
       }
       geminiData = JSON.parse(cleanContent);
+      extractedAreaFromGemini = geminiData?.total_area || null;
       console.log("Gemini parsed data:", geminiData);
     } catch (e) {
-      console.error("Gemini parse error:", e, "Content was:", geminiContent);
+      console.error("Gemini JSON parse error:", e);
+    }
+    
+    // Fallback: regex extraction if JSON failed
+    if (!extractedAreaFromGemini) {
+      // Try to find area patterns in raw response
+      const areaPatterns = [
+        /total_area["\s:]+(\d+(?:\.\d+)?)/i,
+        /(\d{3,5})\s*(?:sq\.?\s*ft|square\s*feet)/i,
+        /"?total[_\s]?area"?\s*[:=]\s*"?(\d+)/i,
+      ];
+      
+      for (const pattern of areaPatterns) {
+        const match = geminiContent.match(pattern);
+        if (match && match[1]) {
+          extractedAreaFromGemini = parseFloat(match[1]);
+          console.log("Extracted area via regex:", extractedAreaFromGemini);
+          break;
+        }
+      }
     }
   }
 
   // STEP 2: OpenAI for material estimation using the extracted area
-  const extractedArea = geminiData?.visible_total_area || geminiData?.calculated_total || null;
-  const areaValue = extractedArea ? parseFloat(extractedArea.toString().replace(/[^0-9.]/g, "")) : null;
+  const areaValue = extractedAreaFromGemini;
+  console.log("Using extracted area for OpenAI:", areaValue);
 
   const openaiPrompt = `You are an expert construction estimator with 20+ years of experience.
 
-${areaValue ? `IMPORTANT: The floor plan shows a TOTAL AREA of ${areaValue} sq ft. Use this EXACT number for calculations.` : "Estimate the area from the image."}
-${geminiData?.room_dimensions?.length ? `Room breakdown: ${JSON.stringify(geminiData.room_dimensions)}` : ""}
+${areaValue ? `CRITICAL: The floor plan shows a TOTAL AREA of exactly ${areaValue} sq ft. You MUST use this EXACT number for all calculations.` : "Estimate the area from the image."}
+
+Analyze the provided photo/floor plan and provide a detailed material estimate.
+Use Canadian construction standards.
+
+${description ? `Contractor notes: "${description}"` : ""}
 
 Analyze the provided photo/floor plan and provide a detailed material estimate.
 Use Canadian construction standards.
