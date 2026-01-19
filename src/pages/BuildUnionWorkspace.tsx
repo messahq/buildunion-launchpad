@@ -55,7 +55,7 @@ const BuildUnionWorkspace = () => {
   const navigate = useNavigate();
 
   return (
-    <main className="bg-slate-50 min-h-screen">
+    <main className="bg-background min-h-screen transition-colors">
       <BuildUnionHeader />
       
       {/* Back Button */}
@@ -79,7 +79,7 @@ const BuildUnionWorkspace = () => {
       </section>
       
       {/* My Projects Section */}
-      <section className="py-12 px-6 bg-white border-b border-slate-100">
+      <section className="py-12 px-6 bg-card border-b border-border">
         <div className="max-w-6xl mx-auto">
           <Tabs defaultValue="my-projects" className="w-full">
             <TabsList className="mb-6">
