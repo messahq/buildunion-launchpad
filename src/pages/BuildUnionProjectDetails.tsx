@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import TeamManagement from "@/components/TeamManagement";
+import TaskAssignment from "@/components/TaskAssignment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1012,12 +1013,18 @@ const BuildUnionProjectDetails = () => {
 
         {/* Team Management Card - Only visible to owner */}
         {project && user && project.user_id === user.id && (
-          <TeamManagement projectId={project.id} isOwner={true} />
+          <div className="space-y-6">
+            <TeamManagement projectId={project.id} isOwner={true} />
+            <TaskAssignment projectId={project.id} isOwner={true} />
+          </div>
         )}
 
         {/* Team Members Card - Visible to non-owners */}
         {project && user && project.user_id !== user.id && (
-          <TeamManagement projectId={project.id} isOwner={false} />
+          <div className="space-y-6">
+            <TeamManagement projectId={project.id} isOwner={false} />
+            <TaskAssignment projectId={project.id} isOwner={false} />
+          </div>
         )}
 
         {/* Quick Mode Summary - Shows data from Quick Mode flow */}

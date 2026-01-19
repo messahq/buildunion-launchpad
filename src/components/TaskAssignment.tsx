@@ -1,0 +1,622 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
+  ListTodo, 
+  Plus, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle,
+  Loader2,
+  Calendar,
+  Flag,
+  User,
+  Pencil,
+  Trash2,
+  PlayCircle,
+  Circle
+} from "lucide-react";
+import { toast } from "sonner";
+
+interface TaskAssignmentProps {
+  projectId: string;
+  isOwner: boolean;
+}
+
+interface TeamMember {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string;
+}
+
+interface Task {
+  id: string;
+  project_id: string;
+  assigned_to: string;
+  assigned_by: string;
+  title: string;
+  description: string | null;
+  priority: string;
+  status: string;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  assignee_name?: string;
+  assignee_avatar?: string;
+}
+
+const PRIORITIES = [
+  { value: "low", label: "Low", color: "text-slate-600 bg-slate-100 border-slate-200" },
+  { value: "medium", label: "Medium", color: "text-amber-600 bg-amber-100 border-amber-200" },
+  { value: "high", label: "High", color: "text-orange-600 bg-orange-100 border-orange-200" },
+  { value: "urgent", label: "Urgent", color: "text-red-600 bg-red-100 border-red-200" },
+];
+
+const STATUSES = [
+  { value: "pending", label: "Pending", icon: Circle, color: "text-slate-600" },
+  { value: "in_progress", label: "In Progress", icon: PlayCircle, color: "text-blue-600" },
+  { value: "completed", label: "Completed", icon: CheckCircle2, color: "text-green-600" },
+];
+
+const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [dueDate, setDueDate] = useState("");
+
+  // Fetch tasks and members
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!projectId) return;
+
+      setLoading(true);
+      try {
+        // Fetch tasks
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("project_tasks")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false });
+
+        if (tasksError) throw tasksError;
+
+        // Fetch team members
+        const { data: membersData, error: membersError } = await supabase
+          .from("project_members")
+          .select("id, user_id, role")
+          .eq("project_id", projectId);
+
+        if (membersError) throw membersError;
+
+        // Get profile info for each member
+        const membersWithProfiles = await Promise.all(
+          (membersData || []).map(async (member) => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name, avatar_url")
+              .eq("user_id", member.user_id)
+              .maybeSingle();
+
+            return {
+              ...member,
+              full_name: profile?.full_name || "Team Member",
+              avatar_url: profile?.avatar_url,
+            };
+          })
+        );
+
+        setMembers(membersWithProfiles);
+
+        // Enrich tasks with assignee info
+        const enrichedTasks = (tasksData || []).map((task) => {
+          const assignee = membersWithProfiles.find((m) => m.user_id === task.assigned_to);
+          return {
+            ...task,
+            assignee_name: assignee?.full_name || "Unknown",
+            assignee_avatar: assignee?.avatar_url,
+          };
+        });
+
+        setTasks(enrichedTasks);
+      } catch (err) {
+        console.error("Error fetching task data:", err);
+        toast.error("Failed to load tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel(`project_tasks_${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_tasks",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId]);
+
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setAssignedTo("");
+    setPriority("medium");
+    setDueDate("");
+    setEditingTask(null);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (task: Task) => {
+    setEditingTask(task);
+    setTitle(task.title);
+    setDescription(task.description || "");
+    setAssignedTo(task.assigned_to);
+    setPriority(task.priority);
+    setDueDate(task.due_date ? task.due_date.split("T")[0] : "");
+    setDialogOpen(true);
+  };
+
+  const handleSaveTask = async () => {
+    if (!title.trim() || !assignedTo) {
+      toast.error("Please fill in title and assign to a member");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const taskData = {
+        project_id: projectId,
+        title: title.trim(),
+        description: description.trim() || null,
+        assigned_to: assignedTo,
+        assigned_by: user?.id || "",
+        priority,
+        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+      };
+
+      if (editingTask) {
+        const { error } = await supabase
+          .from("project_tasks")
+          .update(taskData)
+          .eq("id", editingTask.id);
+
+        if (error) throw error;
+        toast.success("Task updated");
+      } else {
+        const { error } = await supabase
+          .from("project_tasks")
+          .insert(taskData);
+
+        if (error) throw error;
+        toast.success("Task created");
+      }
+
+      setDialogOpen(false);
+      resetForm();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save task");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm("Delete this task?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("project_tasks")
+        .delete()
+        .eq("id", taskId);
+
+      if (error) throw error;
+      toast.success("Task deleted");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete task");
+    }
+  };
+
+  const handleUpdateStatus = async (taskId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("project_tasks")
+        .update({ status: newStatus })
+        .eq("id", taskId);
+
+      if (error) throw error;
+      toast.success("Status updated");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update status");
+    }
+  };
+
+  const getPriorityBadge = (priorityValue: string) => {
+    const p = PRIORITIES.find((pr) => pr.value === priorityValue) || PRIORITIES[1];
+    return (
+      <Badge variant="outline" className={`text-xs ${p.color}`}>
+        <Flag className="h-3 w-3 mr-1" />
+        {p.label}
+      </Badge>
+    );
+  };
+
+  const getStatusInfo = (statusValue: string) => {
+    return STATUSES.find((s) => s.value === statusValue) || STATUSES[0];
+  };
+
+  if (loading) {
+    return (
+      <Card className="border-slate-200">
+        <CardContent className="py-8 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const pendingTasks = tasks.filter((t) => t.status === "pending");
+  const inProgressTasks = tasks.filter((t) => t.status === "in_progress");
+  const completedTasks = tasks.filter((t) => t.status === "completed");
+
+  return (
+    <>
+      <Card className="border-slate-200 bg-white">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <ListTodo className="h-5 w-5 text-amber-600" />
+                Tasks
+              </CardTitle>
+              <CardDescription>
+                {tasks.length} task{tasks.length !== 1 ? "s" : ""} 
+                {inProgressTasks.length > 0 && ` • ${inProgressTasks.length} in progress`}
+              </CardDescription>
+            </div>
+            {isOwner && members.length > 0 && (
+              <Button
+                size="sm"
+                className="gap-1 bg-amber-600 hover:bg-amber-700"
+                onClick={openCreateDialog}
+              >
+                <Plus className="h-4 w-4" />
+                Add Task
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {members.length === 0 ? (
+            <div className="text-center py-6 text-slate-500 text-sm">
+              <User className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              <p>Add team members first</p>
+              <p className="text-xs mt-1">You can assign tasks after adding members</p>
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="text-center py-6 text-slate-500 text-sm">
+              <ListTodo className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+              <p>No tasks yet</p>
+              {isOwner && <p className="text-xs mt-1">Create tasks for your team</p>}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* In Progress */}
+              {inProgressTasks.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <PlayCircle className="h-3 w-3" />
+                    In Progress ({inProgressTasks.length})
+                  </p>
+                  <div className="space-y-2">
+                    {inProgressTasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        isOwner={isOwner}
+                        onEdit={() => openEditDialog(task)}
+                        onDelete={() => handleDeleteTask(task.id)}
+                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        getPriorityBadge={getPriorityBadge}
+                        getStatusInfo={getStatusInfo}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pending */}
+              {pendingTasks.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <Circle className="h-3 w-3" />
+                    Pending ({pendingTasks.length})
+                  </p>
+                  <div className="space-y-2">
+                    {pendingTasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        isOwner={isOwner}
+                        onEdit={() => openEditDialog(task)}
+                        onDelete={() => handleDeleteTask(task.id)}
+                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        getPriorityBadge={getPriorityBadge}
+                        getStatusInfo={getStatusInfo}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Completed */}
+              {completedTasks.length > 0 && (
+                <details>
+                  <summary className="text-xs font-medium text-green-600 uppercase tracking-wider mb-2 cursor-pointer hover:text-green-700 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Completed ({completedTasks.length})
+                  </summary>
+                  <div className="space-y-2 mt-2">
+                    {completedTasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        isOwner={isOwner}
+                        onEdit={() => openEditDialog(task)}
+                        onDelete={() => handleDeleteTask(task.id)}
+                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        getPriorityBadge={getPriorityBadge}
+                        getStatusInfo={getStatusInfo}
+                      />
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingTask ? "Edit Task" : "Create Task"}</DialogTitle>
+            <DialogDescription>
+              Assign a task to a team member with priority and deadline.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Title *</label>
+              <Input
+                placeholder="Task title..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                placeholder="Task details..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Assign To *</label>
+                <Select value={assignedTo} onValueChange={setAssignedTo}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={member.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {(member.full_name || "?").slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{member.full_name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Priority</label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        <div className="flex items-center gap-2">
+                          <Flag className={`h-3 w-3 ${p.color.split(" ")[0]}`} />
+                          <span>{p.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Due Date</label>
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+
+            <Button
+              onClick={handleSaveTask}
+              disabled={saving || !title.trim() || !assignedTo}
+              className="w-full bg-amber-600 hover:bg-amber-700"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : editingTask ? (
+                <Pencil className="h-4 w-4 mr-2" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              {editingTask ? "Update Task" : "Create Task"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+// Task Item Component
+interface TaskItemProps {
+  task: Task;
+  isOwner: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onStatusChange: (status: string) => void;
+  getPriorityBadge: (priority: string) => JSX.Element;
+  getStatusInfo: (status: string) => { value: string; label: string; icon: any; color: string };
+}
+
+const TaskItem = ({ task, isOwner, onEdit, onDelete, onStatusChange, getPriorityBadge, getStatusInfo }: TaskItemProps) => {
+  const statusInfo = getStatusInfo(task.status);
+  const StatusIcon = statusInfo.icon;
+  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "completed";
+
+  return (
+    <div className={`
+      flex items-start gap-3 p-3 rounded-lg border transition-colors
+      ${task.status === "completed" ? "bg-slate-50 opacity-75" : "bg-white hover:bg-slate-50"}
+      ${isOverdue ? "border-red-200" : "border-slate-200"}
+    `}>
+      <div className="flex-shrink-0 pt-0.5">
+        <Select value={task.status} onValueChange={onStatusChange}>
+          <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent">
+            <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUSES.map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                <div className="flex items-center gap-2">
+                  <s.icon className={`h-4 w-4 ${s.color}`} />
+                  <span>{s.label}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${task.status === "completed" ? "line-through text-slate-500" : "text-slate-900"}`}>
+          {task.title}
+        </p>
+        {task.description && (
+          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{task.description}</p>
+        )}
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          {getPriorityBadge(task.priority)}
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <Avatar className="h-4 w-4">
+              <AvatarImage src={task.assignee_avatar || undefined} />
+              <AvatarFallback className="text-[8px]">
+                {(task.assignee_name || "?").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span>{task.assignee_name}</span>
+          </div>
+          {task.due_date && (
+            <div className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-600" : "text-slate-500"}`}>
+              {isOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
+              <span>{new Date(task.due_date).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isOwner && (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-slate-400 hover:text-amber-600"
+            onClick={onEdit}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-slate-400 hover:text-red-600"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TaskAssignment;
