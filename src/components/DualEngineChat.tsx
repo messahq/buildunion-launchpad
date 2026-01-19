@@ -28,9 +28,11 @@ import {
   BookmarkCheck,
   ImagePlus,
   Camera,
-  X
+  X,
+  Eye
 } from "lucide-react";
 import { toast } from "sonner";
+import DecisionLogModal from "./DecisionLogModal";
 
 // Custom icons for the engines
 const GeminiIcon = ({ className }: { className?: string }) => (
@@ -56,13 +58,34 @@ interface EngineResponses {
   openai: string | null;
 }
 
+interface DataPoint {
+  type: "visual" | "text";
+  description: string;
+  value: string;
+  source: string;
+}
+
+interface Conflict {
+  topic: string;
+  geminiValue: string;
+  openaiValue: string;
+  source: string;
+}
+
+interface Comparison {
+  matchingPoints?: Array<{ gemini: DataPoint; openai: DataPoint; match: boolean }>;
+  conflicts?: Conflict[];
+  geminiOnlyPoints?: DataPoint[];
+  openaiOnlyPoints?: DataPoint[];
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   question?: string; // The user's question that triggered this response
   verification?: {
-    status: "verified" | "not-verified" | "gemini-only" | "openai-only" | "error";
+    status: "verified" | "not-verified" | "conflict" | "gemini-only" | "openai-only" | "error";
     engines: { gemini: boolean; openai: boolean };
     verified: boolean;
   };
@@ -75,6 +98,7 @@ interface Message {
     openai: "idle" | "verifying" | "complete" | "error";
   };
   isSaved?: boolean;
+  comparison?: Comparison;
 }
 
 interface DualEngineChatProps {
@@ -298,6 +322,7 @@ const DualEngineChat = ({ projectId, projectName, onImageUploaded, siteImages = 
                 verification: data.verification,
                 sources: data.sources,
                 engineResponses: data.engineResponses,
+                comparison: data.comparison,
                 isLoading: false,
                 engineStatus: {
                   gemini: data.verification?.engines?.gemini ? "complete" : "error",
@@ -900,6 +925,17 @@ const DualEngineChat = ({ projectId, projectName, onImageUploaded, siteImages = 
                     {message.role === "assistant" && !message.isLoading && (
                       <>
                         {renderSources(message.sources)}
+                        {/* Decision Log Button */}
+                        <div className="mt-2 flex items-center gap-2">
+                          <DecisionLogModal
+                            data={{
+                              geminiResponse: message.engineResponses?.gemini || null,
+                              openaiResponse: message.engineResponses?.openai || null,
+                              verification: message.verification || null,
+                              comparison: message.comparison,
+                            }}
+                          />
+                        </div>
                         {renderEngineDetails(message.engineResponses, message.verification)}
                         {renderSaveButton(message)}
                       </>
