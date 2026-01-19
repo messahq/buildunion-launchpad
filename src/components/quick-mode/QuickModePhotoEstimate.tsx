@@ -438,30 +438,15 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
                 </Collapsible>
               )}
 
-              {/* Continue Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => result?.area && onContinueToCalculator?.(result.area, result.areaUnit || "sq ft")}
-                  disabled={!result?.area}
-                  className="flex-1 gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
-                >
-                  <Calculator className="w-4 h-4" />
-                  Continue to Calculator
-                  {result?.area && (
-                    <Badge variant="secondary" className="ml-1 bg-white/20 text-white text-xs">
-                      {result.area} {result.areaUnit || "sq ft"}
-                    </Badge>
-                  )}
-                </Button>
-                <Button
-                  onClick={onContinueToTemplates}
-                  variant="outline"
-                  className="flex-1 gap-2"
-                >
-                  Continue to Templates
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
+              {/* Continue Button */}
+              <Button
+                onClick={onContinueToTemplates}
+                variant="outline"
+                className="w-full gap-2"
+              >
+                Continue to Templates
+                <ArrowRight className="w-4 h-4" />
+              </Button>
             </div>
           ) : (
             <div className="h-64 flex flex-col items-center justify-center text-center">
