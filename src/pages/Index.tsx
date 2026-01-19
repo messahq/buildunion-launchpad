@@ -42,26 +42,26 @@ const Index = () => {
           viewBox="0 0 400 400"
           preserveAspectRatio="xMidYMid meet"
         >
-          {/* Virgo constellation stars */}
-          <g fill="white">
+          {/* Virgo constellation stars with twinkling */}
+          <g fill="white" className="constellation-stars">
             {/* Spica - brightest star */}
-            <circle cx="200" cy="340" r="4" />
+            <circle cx="200" cy="340" r="4" style={{ animation: 'twinkle 3s ease-in-out infinite' }} />
             {/* Head region */}
-            <circle cx="180" cy="60" r="2.5" />
-            <circle cx="200" cy="80" r="2" />
+            <circle cx="180" cy="60" r="2.5" style={{ animation: 'twinkle 4s ease-in-out infinite 0.5s' }} />
+            <circle cx="200" cy="80" r="2" style={{ animation: 'twinkle 3.5s ease-in-out infinite 1s' }} />
             {/* Shoulder/arm region */}
-            <circle cx="130" cy="120" r="2.2" />
-            <circle cx="240" cy="110" r="2" />
-            <circle cx="280" cy="130" r="1.8" />
+            <circle cx="130" cy="120" r="2.2" style={{ animation: 'twinkle 4.5s ease-in-out infinite 0.3s' }} />
+            <circle cx="240" cy="110" r="2" style={{ animation: 'twinkle 3.8s ease-in-out infinite 0.7s' }} />
+            <circle cx="280" cy="130" r="1.8" style={{ animation: 'twinkle 4.2s ease-in-out infinite 1.2s' }} />
             {/* Torso */}
-            <circle cx="195" cy="160" r="2.5" />
-            <circle cx="190" cy="210" r="2.2" />
-            <circle cx="198" cy="260" r="2.8" />
+            <circle cx="195" cy="160" r="2.5" style={{ animation: 'twinkle 3.3s ease-in-out infinite 0.4s' }} />
+            <circle cx="190" cy="210" r="2.2" style={{ animation: 'twinkle 4.1s ease-in-out infinite 0.9s' }} />
+            <circle cx="198" cy="260" r="2.8" style={{ animation: 'twinkle 3.7s ease-in-out infinite 1.5s' }} />
             {/* Extended arm with wheat */}
-            <circle cx="320" cy="180" r="2" />
-            <circle cx="355" cy="205" r="1.5" />
+            <circle cx="320" cy="180" r="2" style={{ animation: 'twinkle 4.4s ease-in-out infinite 0.2s' }} />
+            <circle cx="355" cy="205" r="1.5" style={{ animation: 'twinkle 3.9s ease-in-out infinite 1.1s' }} />
             {/* Lower body */}
-            <circle cx="200" cy="300" r="2.2" />
+            <circle cx="200" cy="300" r="2.2" style={{ animation: 'twinkle 4.3s ease-in-out infinite 0.6s' }} />
           </g>
           {/* Connecting lines */}
           <g stroke="white" strokeWidth="0.5" fill="none" opacity="0.2">
@@ -207,6 +207,11 @@ const Index = () => {
         @keyframes orbit {
           from { transform: rotate(0deg) translateX(150px) rotate(0deg); }
           to { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+        }
+        
+        @keyframes twinkle {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
         }
       `}</style>
     </main>
