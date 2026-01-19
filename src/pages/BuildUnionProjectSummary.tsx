@@ -41,7 +41,7 @@ export default function BuildUnionProjectSummary() {
             className="gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Vissza
+            Back
           </Button>
         </div>
 
