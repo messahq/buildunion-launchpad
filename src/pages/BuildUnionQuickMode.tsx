@@ -35,6 +35,11 @@ interface CollectedData {
   templateItems: any[];
 }
 
+interface PhotoEstimatePreFill {
+  area: number;
+  areaUnit: string;
+}
+
 const BuildUnionQuickMode = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -58,6 +63,9 @@ const BuildUnionQuickMode = () => {
   
   // Template data to pass to calculator
   const [currentTemplateData, setCurrentTemplateData] = useState<TemplateData | null>(null);
+  
+  // Photo estimate pre-fill data for calculator
+  const [photoEstimatePreFill, setPhotoEstimatePreFill] = useState<PhotoEstimatePreFill | null>(null);
 
   // Callbacks to collect data from child components
   const handlePhotoEstimateComplete = useCallback((estimate: any) => {
@@ -81,6 +89,12 @@ const BuildUnionQuickMode = () => {
   // Handle template continue - go to calculator with template data
   const handleTemplateContinueToCalculator = useCallback((template: TemplateData) => {
     setCurrentTemplateData(template);
+    setActiveTab("calculator");
+  }, []);
+
+  // Handle photo estimate continue - go to calculator with area data
+  const handlePhotoEstimateContinueToCalculator = useCallback((area: number, areaUnit: string) => {
+    setPhotoEstimatePreFill({ area, areaUnit });
     setActiveTab("calculator");
   }, []);
 
@@ -331,6 +345,7 @@ const BuildUnionQuickMode = () => {
               <QuickModePhotoEstimate 
                 onEstimateComplete={handlePhotoEstimateComplete}
                 onContinueToTemplates={() => setActiveTab("templates")}
+                onContinueToCalculator={handlePhotoEstimateContinueToCalculator}
               />
             </TabsContent>
 
@@ -346,6 +361,8 @@ const BuildUnionQuickMode = () => {
                 onCalculatorComplete={handleCalculatorComplete}
                 onContinue={() => setActiveTab("quote")}
                 templateData={currentTemplateData}
+                prefillArea={photoEstimatePreFill?.area}
+                prefillAreaUnit={photoEstimatePreFill?.areaUnit}
               />
             </TabsContent>
 

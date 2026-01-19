@@ -359,15 +359,26 @@ interface QuickModeCalculatorProps {
   onCalculatorComplete?: (result: any) => void;
   onContinue?: () => void;
   templateData?: TemplateData | null;
+  prefillArea?: number | null;
+  prefillAreaUnit?: string;
 }
 
-const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData }: QuickModeCalculatorProps) => {
+const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, prefillArea, prefillAreaUnit }: QuickModeCalculatorProps) => {
   const [selectedCalc, setSelectedCalc] = useState(calculators[0]);
   const [inputs, setInputs] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     calculators[0].inputs.forEach((input) => {
       initial[input.id] = input.defaultValue || 0;
     });
+    
+    // Pre-fill with area from photo estimate if available
+    if (prefillArea) {
+      // For tile calculator: calculate length and width from area (assume square-ish room)
+      const sqRoot = Math.sqrt(prefillArea);
+      initial["length"] = Math.round(sqRoot);
+      initial["width"] = Math.round(prefillArea / Math.round(sqRoot));
+    }
+    
     return initial;
   });
   const [results, setResults] = useState<ReturnType<CalculatorType["calculate"]> | null>(null);
@@ -439,6 +450,22 @@ Estimated Labor: ${results.laborHours} hours
 
   return (
     <div className="space-y-6">
+      {/* Pre-filled Area Banner */}
+      {prefillArea && (
+        <Alert className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+          <Sparkles className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="font-semibold text-blue-800">Pre-filled from Photo Estimate:</span>
+              <Badge className="ml-2 bg-blue-100 text-blue-700 border-blue-200">
+                {prefillArea} {prefillAreaUnit || "sq ft"}
+              </Badge>
+              <span className="text-blue-600 ml-2 text-sm">• Dimensions are editable below</span>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Template Data Banner */}
       {templateData && (
         <Alert className="bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200">

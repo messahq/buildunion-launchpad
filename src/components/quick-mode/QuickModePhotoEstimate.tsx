@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain, ArrowRight } from "lucide-react";
+import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain, ArrowRight, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -68,9 +68,10 @@ interface EstimateResult {
 interface QuickModePhotoEstimateProps {
   onEstimateComplete?: (estimate: EstimateResult) => void;
   onContinueToTemplates?: () => void;
+  onContinueToCalculator?: (area: number, areaUnit: string) => void;
 }
 
-const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates }: QuickModePhotoEstimateProps) => {
+const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onContinueToCalculator }: QuickModePhotoEstimateProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
@@ -437,14 +438,30 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates }: Q
                 </Collapsible>
               )}
 
-              {/* Continue Button */}
-              <Button
-                onClick={onContinueToTemplates}
-                className="w-full gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-              >
-                Continue to Templates
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+              {/* Continue Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => result?.area && onContinueToCalculator?.(result.area, result.areaUnit || "sq ft")}
+                  disabled={!result?.area}
+                  className="flex-1 gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                >
+                  <Calculator className="w-4 h-4" />
+                  Continue to Calculator
+                  {result?.area && (
+                    <Badge variant="secondary" className="ml-1 bg-white/20 text-white text-xs">
+                      {result.area} {result.areaUnit || "sq ft"}
+                    </Badge>
+                  )}
+                </Button>
+                <Button
+                  onClick={onContinueToTemplates}
+                  variant="outline"
+                  className="flex-1 gap-2"
+                >
+                  Continue to Templates
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="h-64 flex flex-col items-center justify-center text-center">
