@@ -69,11 +69,11 @@ const Index = () => {
       </div>
 
       {/* Center Section - Clickable Orb */}
-      <div className="relative z-10 flex items-center justify-center px-6 py-8">
+      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" style={{ top: '-60px' }}>
         {/* Interactive CSS Orb */}
         <button
           onClick={() => navigate("/orb")}
-          className="relative group cursor-pointer focus:outline-none"
+          className="relative group cursor-pointer focus:outline-none pointer-events-auto"
           aria-label="Enter Orb Module"
         >
           {/* Outer glow rings - breathing animation */}
