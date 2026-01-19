@@ -90,6 +90,16 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check for dev tier override (development only)
+  const getDevOverride = (): SubscriptionTier | null => {
+    if (typeof window === 'undefined') return null;
+    const override = localStorage.getItem("dev_tier_override");
+    if (override && ["free", "pro", "premium", "enterprise"].includes(override)) {
+      return override as SubscriptionTier;
+    }
+    return null;
+  };
+
   const checkSubscription = useCallback(async () => {
     if (!session?.access_token) {
       setSubscription({
@@ -184,12 +194,23 @@ export const useSubscription = () => {
     return () => clearInterval(interval);
   }, [user, checkSubscription]);
 
+  // Apply dev override if present
+  const devOverride = getDevOverride();
+  const effectiveSubscription: SubscriptionData = devOverride
+    ? {
+        ...subscription,
+        subscribed: devOverride !== "free",
+        tier: devOverride,
+      }
+    : subscription;
+
   return {
-    subscription,
+    subscription: effectiveSubscription,
     loading,
     error,
     checkSubscription,
     createCheckout,
     openCustomerPortal,
+    isDevOverride: !!devOverride,
   };
 };
