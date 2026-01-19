@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { Bath, UtensilsCrossed, PaintBucket, Home, Wrench, Zap, Droplets, TreePine, Check, ChevronRight } from "lucide-react";
+import { Bath, UtensilsCrossed, PaintBucket, Home, Wrench, Zap, Droplets, TreePine, Check, ChevronRight, Plus, Pencil, Trash2, X, Save, ClipboardList } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+interface ChecklistItem {
+  id: string;
+  task: string;
+  category: string;
+}
 
 interface ProjectTemplate {
   id: string;
@@ -14,15 +21,23 @@ interface ProjectTemplate {
   color: string;
   description: string;
   avgDuration: string;
-  checklist: Array<{
-    id: string;
-    task: string;
-    category: string;
-  }>;
+  checklist: ChecklistItem[];
   materials: string[];
+  isCustom?: boolean;
 }
 
-const templates: ProjectTemplate[] = [
+interface QuickModeTemplatesProps {
+  onTemplateSelect?: (data: {
+    templateId: string;
+    templateName: string;
+    projectName: string;
+    checklist: ChecklistItem[];
+    completedTasks: string[];
+    materials: string[];
+  }) => void;
+}
+
+const defaultTemplates: ProjectTemplate[] = [
   {
     id: "bathroom",
     name: "Bathroom Renovation",
@@ -198,12 +213,123 @@ const templates: ProjectTemplate[] = [
     ],
     materials: ["Plants", "Mulch", "Landscape fabric", "Edging", "Irrigation supplies", "Soil amendments"],
   },
+  {
+    id: "flooring",
+    name: "Flooring Installation",
+    icon: <Home className="w-6 h-6" />,
+    color: "bg-amber-600",
+    description: "Hardwood, laminate, tile, or vinyl flooring installation",
+    avgDuration: "2-5 days",
+    checklist: [
+      { id: "f1", task: "Remove existing flooring", category: "Demolition" },
+      { id: "f2", task: "Inspect subfloor condition", category: "Inspection" },
+      { id: "f3", task: "Repair/level subfloor", category: "Prep" },
+      { id: "f4", task: "Acclimate new flooring", category: "Prep" },
+      { id: "f5", task: "Install moisture barrier", category: "Underlayment" },
+      { id: "f6", task: "Install underlayment", category: "Underlayment" },
+      { id: "f7", task: "Begin flooring installation", category: "Installation" },
+      { id: "f8", task: "Cut around obstacles", category: "Installation" },
+      { id: "f9", task: "Install transitions", category: "Finishing" },
+      { id: "f10", task: "Install baseboards/trim", category: "Finishing" },
+      { id: "f11", task: "Final cleaning", category: "Finishing" },
+    ],
+    materials: ["Flooring", "Underlayment", "Moisture barrier", "Adhesive", "Transitions", "Baseboards", "Trim nails"],
+  },
+  {
+    id: "deck",
+    name: "Deck Building",
+    icon: <Home className="w-6 h-6" />,
+    color: "bg-orange-700",
+    description: "New deck construction or deck replacement",
+    avgDuration: "3-7 days",
+    checklist: [
+      { id: "d1", task: "Obtain permits", category: "Permits" },
+      { id: "d2", task: "Mark & dig post holes", category: "Foundation" },
+      { id: "d3", task: "Set posts in concrete", category: "Foundation" },
+      { id: "d4", task: "Install ledger board", category: "Framing" },
+      { id: "d5", task: "Install beams", category: "Framing" },
+      { id: "d6", task: "Install joists", category: "Framing" },
+      { id: "d7", task: "Framing inspection", category: "Inspection" },
+      { id: "d8", task: "Install decking boards", category: "Decking" },
+      { id: "d9", task: "Install railing posts", category: "Railing" },
+      { id: "d10", task: "Install balusters & top rail", category: "Railing" },
+      { id: "d11", task: "Install stairs (if needed)", category: "Stairs" },
+      { id: "d12", task: "Final inspection", category: "Inspection" },
+    ],
+    materials: ["Deck boards", "Joists", "Beams", "Posts", "Concrete", "Joist hangers", "Deck screws", "Railing"],
+  },
+  {
+    id: "drywall",
+    name: "Drywall Installation",
+    icon: <Home className="w-6 h-6" />,
+    color: "bg-gray-500",
+    description: "New drywall hanging, taping, and finishing",
+    avgDuration: "3-7 days",
+    checklist: [
+      { id: "dw1", task: "Measure & cut drywall sheets", category: "Prep" },
+      { id: "dw2", task: "Hang ceiling drywall", category: "Installation" },
+      { id: "dw3", task: "Hang wall drywall", category: "Installation" },
+      { id: "dw4", task: "Cut outlet/switch openings", category: "Installation" },
+      { id: "dw5", task: "Apply first coat of mud", category: "Taping" },
+      { id: "dw6", task: "Apply tape to joints", category: "Taping" },
+      { id: "dw7", task: "Second coat - joints", category: "Mudding" },
+      { id: "dw8", task: "Third coat - feathering", category: "Mudding" },
+      { id: "dw9", task: "Sand between coats", category: "Sanding" },
+      { id: "dw10", task: "Final sanding", category: "Sanding" },
+      { id: "dw11", task: "Prime drywall", category: "Finishing" },
+    ],
+    materials: ["Drywall sheets", "Drywall screws", "Joint compound", "Paper tape", "Corner bead", "Sandpaper", "Primer"],
+  },
+  {
+    id: "window",
+    name: "Window Replacement",
+    icon: <Home className="w-6 h-6" />,
+    color: "bg-sky-500",
+    description: "Replace old windows with energy-efficient models",
+    avgDuration: "1-2 days per window",
+    checklist: [
+      { id: "w1", task: "Measure existing windows", category: "Prep" },
+      { id: "w2", task: "Order replacement windows", category: "Prep" },
+      { id: "w3", task: "Remove interior trim", category: "Demolition" },
+      { id: "w4", task: "Remove old window", category: "Demolition" },
+      { id: "w5", task: "Inspect frame for damage", category: "Inspection" },
+      { id: "w6", task: "Apply flashing tape", category: "Waterproofing" },
+      { id: "w7", task: "Set new window in opening", category: "Installation" },
+      { id: "w8", task: "Shim & level window", category: "Installation" },
+      { id: "w9", task: "Secure window to frame", category: "Installation" },
+      { id: "w10", task: "Insulate around window", category: "Insulation" },
+      { id: "w11", task: "Reinstall interior trim", category: "Finishing" },
+      { id: "w12", task: "Caulk exterior", category: "Finishing" },
+    ],
+    materials: ["Windows", "Shims", "Screws", "Flashing tape", "Foam insulation", "Caulk", "Trim"],
+  },
+  // Custom/Other template at the end
+  {
+    id: "other",
+    name: "Custom Project",
+    icon: <ClipboardList className="w-6 h-6" />,
+    color: "bg-violet-500",
+    description: "Create your own project with custom tasks and materials",
+    avgDuration: "Varies",
+    checklist: [],
+    materials: [],
+    isCustom: true,
+  },
 ];
 
-const QuickModeTemplates = () => {
+const QuickModeTemplates = ({ onTemplateSelect }: QuickModeTemplatesProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
   const [projectName, setProjectName] = useState("");
+  
+  // Custom checklist state for "Other" template
+  const [customChecklist, setCustomChecklist] = useState<ChecklistItem[]>([]);
+  const [customMaterials, setCustomMaterials] = useState<string[]>([]);
+  const [newTaskName, setNewTaskName] = useState("");
+  const [newTaskCategory, setNewTaskCategory] = useState("General");
+  const [newMaterial, setNewMaterial] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskValue, setEditingTaskValue] = useState("");
 
   const toggleTask = (taskId: string) => {
     const newCompleted = new Set(completedTasks);
@@ -215,17 +341,97 @@ const QuickModeTemplates = () => {
     setCompletedTasks(newCompleted);
   };
 
-  const progress = selectedTemplate
-    ? Math.round((completedTasks.size / selectedTemplate.checklist.length) * 100)
+  const addCustomTask = () => {
+    if (!newTaskName.trim()) return;
+    const newTask: ChecklistItem = {
+      id: `custom_${Date.now()}`,
+      task: newTaskName.trim(),
+      category: newTaskCategory.trim() || "General"
+    };
+    setCustomChecklist(prev => [...prev, newTask]);
+    setNewTaskName("");
+    setNewTaskCategory("General");
+  };
+
+  const deleteTask = (taskId: string) => {
+    setCustomChecklist(prev => prev.filter(t => t.id !== taskId));
+    setCompletedTasks(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(taskId);
+      return newSet;
+    });
+  };
+
+  const startEditTask = (task: ChecklistItem) => {
+    setEditingTaskId(task.id);
+    setEditingTaskValue(task.task);
+  };
+
+  const saveEditTask = () => {
+    if (!editingTaskId || !editingTaskValue.trim()) return;
+    setCustomChecklist(prev => 
+      prev.map(t => t.id === editingTaskId ? { ...t, task: editingTaskValue.trim() } : t)
+    );
+    setEditingTaskId(null);
+    setEditingTaskValue("");
+  };
+
+  const addMaterial = () => {
+    if (!newMaterial.trim()) return;
+    setCustomMaterials(prev => [...prev, newMaterial.trim()]);
+    setNewMaterial("");
+  };
+
+  const deleteMaterial = (index: number) => {
+    setCustomMaterials(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Get the current checklist (either from template or custom)
+  const currentChecklist = selectedTemplate?.isCustom ? customChecklist : (selectedTemplate?.checklist || []);
+  const currentMaterials = selectedTemplate?.isCustom ? customMaterials : (selectedTemplate?.materials || []);
+
+  const progress = currentChecklist.length > 0
+    ? Math.round((completedTasks.size / currentChecklist.length) * 100)
     : 0;
+
+  // Handle continue to next step
+  const handleContinue = () => {
+    if (!projectName.trim()) {
+      toast.error("Please enter a project name");
+      return;
+    }
+
+    if (currentChecklist.length === 0) {
+      toast.error("Please add at least one task to the checklist");
+      return;
+    }
+
+    if (onTemplateSelect) {
+      onTemplateSelect({
+        templateId: selectedTemplate!.id,
+        templateName: selectedTemplate!.name,
+        projectName: projectName.trim(),
+        checklist: currentChecklist,
+        completedTasks: Array.from(completedTasks),
+        materials: currentMaterials
+      });
+      toast.success("Template added to your project");
+    }
+  };
 
   if (selectedTemplate) {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => setSelectedTemplate(null)}>
+            <Button variant="ghost" onClick={() => {
+              setSelectedTemplate(null);
+              setCompletedTasks(new Set());
+              setProjectName("");
+              setCustomChecklist([]);
+              setCustomMaterials([]);
+            }}>
               ← Back
             </Button>
             <div className={`w-10 h-10 rounded-lg ${selectedTemplate.color} flex items-center justify-center text-white`}>
@@ -236,9 +442,18 @@ const QuickModeTemplates = () => {
               <p className="text-sm text-muted-foreground">{selectedTemplate.avgDuration}</p>
             </div>
           </div>
-          <Badge variant="secondary" className="text-lg px-4 py-1">
-            {progress}% Complete
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="text-lg px-4 py-1">
+              {progress}% Complete
+            </Badge>
+            <Button 
+              onClick={handleContinue}
+              className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+            >
+              <ChevronRight className="w-4 h-4" />
+              Continue
+            </Button>
+          </div>
         </div>
 
         {/* Progress Bar */}
@@ -251,7 +466,7 @@ const QuickModeTemplates = () => {
 
         {/* Project Name */}
         <div className="space-y-2">
-          <Label htmlFor="projectName">Project Name</Label>
+          <Label htmlFor="projectName">Project Name *</Label>
           <Input
             id="projectName"
             placeholder="e.g., Johnson Bathroom Reno"
@@ -264,14 +479,53 @@ const QuickModeTemplates = () => {
           {/* Checklist */}
           <Card>
             <CardHeader>
-              <CardTitle>Task Checklist</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Task Checklist
+                {selectedTemplate.isCustom && (
+                  <Badge variant="outline" className="text-violet-600 border-violet-300">
+                    Editable
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription>
-                {completedTasks.size} of {selectedTemplate.checklist.length} tasks completed
+                {currentChecklist.length > 0 
+                  ? `${completedTasks.size} of ${currentChecklist.length} tasks completed`
+                  : "Add tasks to get started"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Add Task Form for Custom Template */}
+              {selectedTemplate.isCustom && (
+                <div className="mb-4 p-4 bg-violet-50 rounded-lg border border-violet-200 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Task name..."
+                      value={newTaskName}
+                      onChange={(e) => setNewTaskName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addCustomTask()}
+                    />
+                    <Input
+                      placeholder="Category (e.g., Prep)"
+                      value={newTaskCategory}
+                      onChange={(e) => setNewTaskCategory(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addCustomTask()}
+                    />
+                  </div>
+                  <Button 
+                    size="sm" 
+                    onClick={addCustomTask}
+                    className="w-full gap-2 bg-violet-600 hover:bg-violet-700"
+                    disabled={!newTaskName.trim()}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Task
+                  </Button>
+                </div>
+              )}
+
               <div className="space-y-3">
-                {selectedTemplate.checklist.map((item) => (
+                {currentChecklist.map((item) => (
                   <div
                     key={item.id}
                     className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
@@ -285,26 +539,72 @@ const QuickModeTemplates = () => {
                       checked={completedTasks.has(item.id)}
                       onCheckedChange={() => toggleTask(item.id)}
                     />
-                    <div className="flex-1">
-                      <label
-                        htmlFor={item.id}
-                        className={`font-medium cursor-pointer ${
-                          completedTasks.has(item.id)
-                            ? "line-through text-muted-foreground"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {item.task}
-                      </label>
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        {item.category}
-                      </Badge>
+                    <div className="flex-1 min-w-0">
+                      {editingTaskId === item.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editingTaskValue}
+                            onChange={(e) => setEditingTaskValue(e.target.value)}
+                            className="h-8"
+                            autoFocus
+                            onKeyDown={(e) => e.key === "Enter" && saveEditTask()}
+                          />
+                          <Button size="sm" variant="ghost" onClick={saveEditTask}>
+                            <Save className="w-4 h-4 text-green-600" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingTaskId(null)}>
+                            <X className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <label
+                            htmlFor={item.id}
+                            className={`font-medium cursor-pointer ${
+                              completedTasks.has(item.id)
+                                ? "line-through text-muted-foreground"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {item.task}
+                          </label>
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            {item.category}
+                          </Badge>
+                        </>
+                      )}
                     </div>
-                    {completedTasks.has(item.id) && (
-                      <Check className="w-5 h-5 text-green-500" />
+                    {completedTasks.has(item.id) && !editingTaskId && (
+                      <Check className="w-5 h-5 text-green-500 shrink-0" />
+                    )}
+                    {selectedTemplate.isCustom && !editingTaskId && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => startEditTask(item)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => deleteTask(item.id)}
+                          className="h-8 w-8 p-0 hover:text-destructive"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}
+                {currentChecklist.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No tasks yet. Add your first task above!</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -312,22 +612,68 @@ const QuickModeTemplates = () => {
           {/* Materials List */}
           <Card>
             <CardHeader>
-              <CardTitle>Typical Materials</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Materials
+                {selectedTemplate.isCustom && (
+                  <Badge variant="outline" className="text-violet-600 border-violet-300">
+                    Editable
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription>
-                Common materials needed for this project type
+                {selectedTemplate.isCustom 
+                  ? "Add materials needed for your project"
+                  : "Common materials needed for this project type"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Add Material Form for Custom Template */}
+              {selectedTemplate.isCustom && (
+                <div className="mb-4 flex gap-2">
+                  <Input
+                    placeholder="Material name..."
+                    value={newMaterial}
+                    onChange={(e) => setNewMaterial(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addMaterial()}
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={addMaterial}
+                    className="gap-2 bg-violet-600 hover:bg-violet-700 shrink-0"
+                    disabled={!newMaterial.trim()}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
-                {selectedTemplate.materials.map((material, index) => (
+                {currentMaterials.map((material, index) => (
                   <Badge
                     key={index}
                     variant="outline"
-                    className="py-2 px-3 text-sm"
+                    className="py-2 px-3 text-sm group"
                   >
                     {material}
+                    {selectedTemplate.isCustom && (
+                      <button
+                        onClick={() => deleteMaterial(index)}
+                        className="ml-2 text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </Badge>
                 ))}
+                {currentMaterials.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTemplate.isCustom 
+                      ? "No materials added yet"
+                      : "No materials listed"
+                    }
+                  </p>
+                )}
               </div>
 
               <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
@@ -352,10 +698,14 @@ const QuickModeTemplates = () => {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {templates.map((template) => (
+        {defaultTemplates.map((template) => (
           <Card
             key={template.id}
-            className="cursor-pointer hover:shadow-lg transition-all hover:border-amber-400 group"
+            className={`cursor-pointer hover:shadow-lg transition-all group ${
+              template.isCustom 
+                ? "hover:border-violet-400 border-dashed" 
+                : "hover:border-amber-400"
+            }`}
             onClick={() => setSelectedTemplate(template)}
           >
             <CardContent className="p-6">
@@ -366,7 +716,11 @@ const QuickModeTemplates = () => {
               <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
               <div className="flex items-center justify-between">
                 <Badge variant="secondary">{template.avgDuration}</Badge>
-                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
+                {template.isCustom ? (
+                  <Plus className="w-4 h-4 text-violet-500 group-hover:text-violet-600 transition-colors" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
+                )}
               </div>
             </CardContent>
           </Card>
