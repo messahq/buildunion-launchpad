@@ -486,6 +486,63 @@ export type Database = {
           },
         ]
       }
+      user_templates: {
+        Row: {
+          area_unit: string | null
+          calculator_type: string | null
+          category: string | null
+          checklist: Json | null
+          created_at: string
+          description: string | null
+          estimated_area: number | null
+          icon: string | null
+          id: string
+          is_public: boolean | null
+          line_items: Json | null
+          materials: Json | null
+          name: string
+          updated_at: string
+          use_count: number | null
+          user_id: string
+        }
+        Insert: {
+          area_unit?: string | null
+          calculator_type?: string | null
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_area?: number | null
+          icon?: string | null
+          id?: string
+          is_public?: boolean | null
+          line_items?: Json | null
+          materials?: Json | null
+          name: string
+          updated_at?: string
+          use_count?: number | null
+          user_id: string
+        }
+        Update: {
+          area_unit?: string | null
+          calculator_type?: string | null
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_area?: number | null
+          icon?: string | null
+          id?: string
+          is_public?: boolean | null
+          line_items?: Json | null
+          materials?: Json | null
+          name?: string
+          updated_at?: string
+          use_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
