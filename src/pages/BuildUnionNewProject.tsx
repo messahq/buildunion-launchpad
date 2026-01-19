@@ -413,10 +413,13 @@ const BuildUnionNewProject = () => {
       // 1. Upload site images first
       const siteImagePaths: string[] = [];
       for (const siteImg of siteImages) {
-        const imgPath = `${user.id}/site-images/${siteImg.id}-${siteImg.file.name}`;
+        // Use timestamp + random UUID to ensure unique filename
+        const uniqueId = `${Date.now()}-${crypto.randomUUID()}`;
+        const safeFileName = siteImg.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const imgPath = `${user.id}/site-images/${uniqueId}-${safeFileName}`;
         const { error: imgError } = await supabase.storage
           .from("project-documents")
-          .upload(imgPath, siteImg.file);
+          .upload(imgPath, siteImg.file, { upsert: true });
         if (imgError) {
           console.error("Site image upload error:", imgError);
           toast.error(`Failed to upload image: ${siteImg.file.name}`);
@@ -452,11 +455,12 @@ const BuildUnionNewProject = () => {
       let uploadedCount = 0;
 
       for (const uploadedFile of files) {
-        const filePath = `${user.id}/${project.id}/${uploadedFile.id}-${uploadedFile.file.name}`;
+        const safeFileName = uploadedFile.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filePath = `${user.id}/${project.id}/${uploadedFile.id}-${safeFileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from("project-documents")
-          .upload(filePath, uploadedFile.file);
+          .upload(filePath, uploadedFile.file, { upsert: true });
 
         if (uploadError) {
           console.error("Upload error:", uploadError);
