@@ -84,7 +84,7 @@ const VerificationBadge = ({ verification }: { verification?: Message["verificat
     "openai-only": {
       icon: <Zap className="h-3.5 w-3.5" />,
       text: "OpenAI Response",
-      className: "bg-purple-100 text-purple-700 border-purple-200",
+      className: "bg-cyan-100 text-cyan-700 border-cyan-200",
     },
     error: {
       icon: <AlertCircle className="h-3.5 w-3.5" />,
@@ -193,7 +193,7 @@ const AskMessaChat = ({ isOpen, onClose }: AskMessaChatProps) => {
         </div>
         <div className="text-slate-300">+</div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
           <span className="text-slate-600">OpenAI</span>
         </div>
         <div className="text-slate-300">=</div>

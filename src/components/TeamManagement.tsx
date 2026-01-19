@@ -823,7 +823,7 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
                 )}
               </ul>
               <Button 
-                className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 hover:from-cyan-600 hover:via-blue-600 hover:to-purple-600"
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                 onClick={() => {
                   setUpgradeDialogOpen(false);
                   navigate('/buildunion/pricing');

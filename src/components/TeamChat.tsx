@@ -330,7 +330,7 @@ const TeamChat = () => {
                 Team Chat
               </CardTitle>
             </div>
-            <Badge variant="outline" className="text-purple-600 border-purple-300 bg-purple-50">
+            <Badge variant="outline" className="text-cyan-600 border-cyan-300 bg-cyan-50">
               <Crown className="h-3 w-3 mr-1" />
               Premium+
             </Badge>
@@ -338,8 +338,8 @@ const TeamChat = () => {
         </CardHeader>
         <CardContent className="p-6">
           <div className="text-center py-4">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-indigo-200 flex items-center justify-center">
-              <MessageSquare className="h-8 w-8 text-purple-500" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-100 to-blue-200 flex items-center justify-center">
+              <MessageSquare className="h-8 w-8 text-cyan-500" />
             </div>
             <h3 className="font-semibold text-slate-700 mb-2">Direct Messaging</h3>
             <p className="text-sm text-slate-500 mb-4">
@@ -347,7 +347,7 @@ const TeamChat = () => {
             </p>
             <Button 
               onClick={() => navigate("/buildunion/pricing")}
-              className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 hover:from-cyan-600 hover:via-blue-600 hover:to-purple-600"
+              className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
             >
               Upgrade to Premium
             </Button>
@@ -361,7 +361,7 @@ const TeamChat = () => {
     return (
       <Card className="bg-white border-slate-200">
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-cyan-600" />
         </CardContent>
       </Card>
     );

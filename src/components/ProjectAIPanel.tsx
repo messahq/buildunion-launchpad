@@ -101,7 +101,7 @@ const VerificationBadge = ({ verification }: { verification?: MessaMessage["veri
     "openai-only": {
       icon: <Zap className="h-3.5 w-3.5" />,
       text: "GPT-5",
-      className: "bg-purple-100 text-purple-700 border-purple-200",
+      className: "bg-cyan-100 text-cyan-700 border-cyan-200",
     },
     error: {
       icon: <AlertCircle className="h-3.5 w-3.5" />,
@@ -349,7 +349,7 @@ const ProjectAIPanel = ({
           <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
           <span className="text-slate-500">Gemini</span>
           <span className="text-slate-300">+</span>
-          <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
           <span className="text-slate-500">GPT-5</span>
         </div>
       </div>

@@ -445,26 +445,26 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
                     )}
 
                     {/* Gemini Findings */}
-                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                      <h5 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                    <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
+                      <h5 className="font-semibold text-cyan-800 mb-2 flex items-center gap-2">
                         <Eye className="w-4 h-4" />
                         {result.dualEngine.gemini.role} ({result.dualEngine.gemini.model})
                       </h5>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-purple-600">Area:</span>
+                          <span className="text-cyan-600">Area:</span>
                           <span className="ml-2 font-medium">{result.dualEngine.gemini.findings.area || "N/A"} sq ft</span>
                         </div>
                         <div>
-                          <span className="text-purple-600">Surface:</span>
+                          <span className="text-cyan-600">Surface:</span>
                           <span className="ml-2 font-medium">{result.dualEngine.gemini.findings.surface}</span>
                         </div>
                         <div>
-                          <span className="text-purple-600">Condition:</span>
+                          <span className="text-cyan-600">Condition:</span>
                           <span className="ml-2 font-medium">{result.dualEngine.gemini.findings.condition}</span>
                         </div>
                         <div>
-                          <span className="text-purple-600">Confidence:</span>
+                          <span className="text-cyan-600">Confidence:</span>
                           <span className="ml-2 font-medium">{result.dualEngine.gemini.findings.confidence}</span>
                         </div>
                       </div>

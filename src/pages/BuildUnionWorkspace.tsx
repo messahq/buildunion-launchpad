@@ -613,7 +613,7 @@ const BuildUnionWorkspace = () => {
                 <div className="text-slate-500 text-sm">Update cycle</div>
               </div>
               <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                <div className="text-3xl font-bold text-purple-600 mb-1">156</div>
+                <div className="text-3xl font-bold text-cyan-600 mb-1">156</div>
                 <div className="text-slate-500 text-sm">Amendments tracked</div>
               </div>
             </div>
@@ -768,7 +768,7 @@ const BuildUnionWorkspace = () => {
             <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded">Training</span>
+                  <span className="text-xs font-medium text-cyan-600 bg-cyan-50 px-2 py-1 rounded">Training</span>
                   <div className="flex items-center gap-1 text-slate-400 text-xs">
                     <Calendar className="h-3 w-3" />
                     Jan 12, 2026

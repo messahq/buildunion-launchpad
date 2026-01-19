@@ -874,7 +874,7 @@ const BuildUnionProjectDetails = () => {
               {(projectSummary.client_name || projectSummary.client_email) && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <Users className="h-4 w-4 text-purple-600" />
+                    <Users className="h-4 w-4 text-cyan-600" />
                     Client Information
                   </div>
                   <div className="bg-white rounded-lg border border-green-100 p-4">
