@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useProjectTeam } from "@/hooks/useProjectTeam";
+import { useProjectTeam, TEAM_ROLES, TeamRole } from "@/hooks/useProjectTeam";
 import { useSubscription, getTeamLimit, getNextTier, SUBSCRIPTION_TIERS, SubscriptionTier } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,8 @@ import {
   Crown,
   UserMinus,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Lock
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,6 +42,7 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
   const { members, invitations, loading, sendInvitation, cancelInvitation, removeMember } = useProjectTeam(projectId);
   const { subscription } = useSubscription();
   const [inviteEmail, setInviteEmail] = useState("");
+  const [selectedRole, setSelectedRole] = useState<TeamRole>("member");
   const [sending, setSending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
@@ -53,6 +56,9 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
   const canInviteMore = teamLimit === Infinity || totalPotentialSize < teamLimit;
   const spotsRemaining = teamLimit === Infinity ? Infinity : Math.max(0, teamLimit - totalPotentialSize);
   const nextTier = getNextTier(currentTier);
+  
+  // Role selection is Premium+ feature
+  const canSelectRoles = currentTier === "premium" || currentTier === "enterprise";
 
   const handleSendInvitation = async () => {
     if (!inviteEmail.trim()) return;
@@ -64,12 +70,15 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
     }
 
     setSending(true);
-    const result = await sendInvitation(inviteEmail);
+    const roleToSend = canSelectRoles ? selectedRole : "member";
+    const result = await sendInvitation(inviteEmail, roleToSend);
     setSending(false);
 
     if (result.success) {
-      toast.success(`Invitation sent to ${inviteEmail}`);
+      const roleLabel = canSelectRoles ? ` as ${TEAM_ROLES[roleToSend].label}` : "";
+      toast.success(`Invitation sent to ${inviteEmail}${roleLabel}`);
       setInviteEmail("");
+      setSelectedRole("member");
       setDialogOpen(false);
     } else {
       toast.error(result.error || "Failed to send invitation");
@@ -239,36 +248,39 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
           </div>
 
           {/* Members */}
-          {members.map((member) => (
-            <div key={member.id} className="flex items-center justify-between py-2 border-t border-slate-100">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-slate-100 text-slate-700 font-medium">
-                    {member.full_name?.slice(0, 2).toUpperCase() || "??"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{member.full_name}</p>
-                  <p className="text-xs text-slate-500 capitalize">{member.role}</p>
+          {members.map((member) => {
+            const roleInfo = TEAM_ROLES[member.role as TeamRole] || TEAM_ROLES.member;
+            return (
+              <div key={member.id} className="flex items-center justify-between py-2 border-t border-slate-100">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-slate-100 text-slate-700 font-medium">
+                      {roleInfo.icon}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{member.full_name}</p>
+                    <p className="text-xs text-slate-500">{roleInfo.label}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-slate-600 capitalize">
+                    {roleInfo.label}
+                  </Badge>
+                  {isOwner && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => handleRemoveMember(member.id, member.full_name || "Member")}
+                    >
+                      <UserMinus className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-slate-600">
-                  Member
-                </Badge>
-                {isOwner && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => handleRemoveMember(member.id, member.full_name || "Member")}
-                  >
-                    <UserMinus className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Pending Invitations */}
           {pendingInvitations.length > 0 && (
@@ -362,28 +374,66 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
               <label htmlFor="email" className="text-sm font-medium">
                 Email Address
               </label>
-              <div className="flex gap-2">
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="colleague@company.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendInvitation()}
-                />
-                <Button
-                  onClick={handleSendInvitation}
-                  disabled={!inviteEmail.trim() || sending}
-                  className="bg-amber-600 hover:bg-amber-700"
-                >
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Mail className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+              <Input
+                id="email"
+                type="email"
+                placeholder="colleague@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
             </div>
+
+            {/* Role Selection - Premium Feature */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Role</label>
+                {!canSelectRoles && (
+                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
+                    <Lock className="h-3 w-3 mr-1" />
+                    Premium
+                  </Badge>
+                )}
+              </div>
+              {canSelectRoles ? (
+                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as TeamRole)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(TEAM_ROLES).map(([key, role]) => (
+                      <SelectItem key={key} value={key}>
+                        <div className="flex items-center gap-2">
+                          <span>{role.icon}</span>
+                          <div>
+                            <span className="font-medium">{role.label}</span>
+                            <span className="text-xs text-slate-500 ml-2">{role.description}</span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed border-slate-200 bg-slate-50">
+                  <span className="text-slate-500 text-sm">
+                    Upgrade to Premium to assign specific roles like Foreman, Inspector, or Subcontractor
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <Button
+              onClick={handleSendInvitation}
+              disabled={!inviteEmail.trim() || sending}
+              className="w-full bg-amber-600 hover:bg-amber-700"
+            >
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Mail className="h-4 w-4 mr-2" />
+              )}
+              Send Invitation
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
