@@ -115,99 +115,120 @@ const Index = () => {
           className="relative group cursor-pointer focus:outline-none pointer-events-auto"
           aria-label="Enter Orb Module"
         >
-          {/* Outer glow rings - breathing animation */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500/30 to-cyan-500/30 blur-3xl scale-150 animate-[pulse_4s_ease-in-out_infinite]" />
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500/20 to-orange-500/20 blur-2xl scale-125 animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
-          
-          {/* Rotating energy ring */}
+          {/* Outer glow */}
           <div 
-            className="absolute inset-[-20px] rounded-full border border-cyan-500/30 animate-[spin_20s_linear_infinite]"
+            className="absolute inset-0 rounded-full"
             style={{
-              background: 'conic-gradient(from 0deg, transparent, rgba(6, 182, 212, 0.3), transparent, rgba(251, 146, 60, 0.3), transparent)'
-            }}
-          />
-          
-          {/* Second rotating ring - opposite direction */}
-          <div 
-            className="absolute inset-[-40px] rounded-full border border-orange-500/20 animate-[spin_30s_linear_infinite_reverse]"
-            style={{
-              background: 'conic-gradient(from 180deg, transparent, rgba(251, 146, 60, 0.2), transparent, rgba(6, 182, 212, 0.2), transparent)'
+              background: 'radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.3), rgba(6, 182, 212, 0.2) 60%, transparent 80%)',
+              filter: 'blur(40px)',
+              transform: 'scale(1.4)',
             }}
           />
 
+          {/* Globe with slow rotation */}
           <div 
-            className="relative w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full transition-transform duration-500 group-hover:scale-110"
+            className="relative w-40 h-40 md:w-52 md:h-52 lg:w-60 lg:h-60 rounded-full overflow-hidden transition-transform duration-500 group-hover:scale-105"
             style={{
-              animation: 'float 6s ease-in-out infinite',
-              background: 'radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.8), rgba(251, 146, 60, 0.4) 30%, rgba(6, 182, 212, 0.4) 60%, rgba(6, 182, 212, 0.8))',
-              boxShadow: '0 0 60px rgba(251, 146, 60, 0.5), 0 0 120px rgba(6, 182, 212, 0.4), inset 0 0 80px rgba(255, 255, 255, 0.1)'
+              animation: 'spinGlobe 80s linear infinite',
+              background: 'radial-gradient(circle at 35% 35%, rgba(251, 146, 60, 0.7), rgba(6, 182, 212, 0.5) 50%, rgba(6, 182, 212, 0.9))',
+              boxShadow: `
+                inset -30px -30px 80px rgba(0, 0, 0, 0.5),
+                inset 15px 15px 50px rgba(251, 146, 60, 0.3),
+                0 0 80px rgba(251, 146, 60, 0.4),
+                0 0 120px rgba(6, 182, 212, 0.3)
+              `,
             }}
           >
-            {/* Inner glow layers */}
+            {/* Continent-like landmasses */}
+            <svg 
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="xMidYMid slice"
+              style={{ animation: 'spinGlobe 80s linear infinite' }}
+            >
+              <defs>
+                <linearGradient id="landGradIndex" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(251, 146, 60, 0.7)" />
+                  <stop offset="100%" stopColor="rgba(180, 100, 50, 0.5)" />
+                </linearGradient>
+              </defs>
+              {/* North America-like */}
+              <path d="M15,20 Q25,15 35,22 Q40,30 35,40 Q25,45 18,38 Q12,30 15,20" fill="url(#landGradIndex)" opacity="0.6" />
+              {/* Europe/Asia-like */}
+              <path d="M55,18 Q70,15 85,25 Q88,35 80,45 Q65,50 55,42 Q50,30 55,18" fill="url(#landGradIndex)" opacity="0.55" />
+              {/* Africa-like */}
+              <path d="M45,45 Q55,42 60,52 Q58,68 50,75 Q42,70 40,58 Q42,48 45,45" fill="url(#landGradIndex)" opacity="0.6" />
+              {/* South America-like */}
+              <path d="M25,55 Q32,52 35,60 Q33,75 28,82 Q22,78 20,65 Q22,58 25,55" fill="url(#landGradIndex)" opacity="0.55" />
+              {/* Australia-like */}
+              <path d="M75,60 Q85,58 88,65 Q86,75 78,78 Q72,74 73,65 Q74,62 75,60" fill="url(#landGradIndex)" opacity="0.5" />
+            </svg>
+            
+            {/* Ocean depth layers */}
             <div 
-              className="absolute inset-4 rounded-full animate-[spin_10s_linear_infinite]"
+              className="absolute inset-0 rounded-full"
               style={{
-                background: 'conic-gradient(from 0deg, rgba(251, 146, 60, 0.6), transparent, rgba(6, 182, 212, 0.6), transparent, rgba(251, 146, 60, 0.6))',
-                filter: 'blur(20px)'
+                background: 'radial-gradient(ellipse at 60% 70%, rgba(6, 182, 212, 0.3), transparent 50%)',
               }}
             />
-            <div 
-              className="absolute inset-8 rounded-full animate-[spin_15s_linear_infinite_reverse]"
-              style={{
-                background: 'conic-gradient(from 90deg, rgba(6, 182, 212, 0.5), transparent, rgba(251, 146, 60, 0.5), transparent, rgba(6, 182, 212, 0.5))',
-                filter: 'blur(15px)'
-              }}
-            />
-            {/* Core glow */}
-            <div 
-              className="absolute inset-16 rounded-full animate-[pulse_2s_ease-in-out_infinite]"
-              style={{
-                background: 'radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2) 50%, transparent)',
-                filter: 'blur(10px)'
-              }}
-            />
+            
+            {/* Grid lines for globe effect */}
+            <svg 
+              className="absolute inset-0 w-full h-full opacity-20"
+              viewBox="0 0 100 100"
+            >
+              {/* Latitude lines */}
+              {[20, 35, 50, 65, 80].map((y) => (
+                <ellipse 
+                  key={`lat-${y}`}
+                  cx="50" 
+                  cy={y} 
+                  rx={Math.sin((y / 100) * Math.PI) * 48} 
+                  ry="1.5" 
+                  fill="none" 
+                  stroke="rgba(255, 255, 255, 0.4)" 
+                  strokeWidth="0.3"
+                />
+              ))}
+              {/* Longitude curves */}
+              <path d="M50,2 Q30,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="0.3" />
+              <path d="M50,2 Q70,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="0.3" />
+              <path d="M50,2 L50,98" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="0.3" />
+              <path d="M50,2 Q15,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="0.2" />
+              <path d="M50,2 Q85,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="0.2" />
+            </svg>
           </div>
           
-          {/* Particle effects */}
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 rounded-full"
-              style={{
-                background: i % 2 === 0 ? 'rgba(251, 146, 60, 0.6)' : 'rgba(6, 182, 212, 0.6)',
-                left: '50%',
-                top: '50%',
-                animation: `orbit ${8 + i * 2}s linear infinite`,
-                animationDelay: `${i * 0.5}s`,
-                transformOrigin: `${120 + i * 20}px 0`
-              }}
-            />
-          ))}
+          {/* Specular highlight */}
+          <div 
+            className="absolute top-4 left-6 w-1/3 h-1/4 rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.35), transparent 70%)',
+              transform: 'rotate(-25deg)',
+            }}
+          />
+          
+          {/* Atmospheric rim */}
+          <div 
+            className="absolute inset-[-2px] rounded-full pointer-events-none"
+            style={{
+              background: 'transparent',
+              boxShadow: 'inset 0 0 20px rgba(6, 182, 212, 0.4), inset 0 0 40px rgba(251, 146, 60, 0.2)',
+            }}
+          />
         </button>
       </div>
 
       {/* Custom keyframes */}
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(-10px) rotate(1deg); }
-          50% { transform: translateY(0px) rotate(0deg); }
-          75% { transform: translateY(-5px) rotate(-1deg); }
-        }
-        
-        @keyframes orbit {
-          from { transform: rotate(0deg) translateX(150px) rotate(0deg); }
-          to { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+        @keyframes spinGlobe {
+          from { transform: rotateY(0deg); }
+          to { transform: rotateY(360deg); }
         }
         
         @keyframes twinkle {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.3; }
-        }
-        
-        @keyframes twinkleGold {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(0.8); }
         }
       `}</style>
     </main>
