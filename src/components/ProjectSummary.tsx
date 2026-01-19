@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
@@ -449,12 +450,43 @@ export function ProjectSummary({
         // Silently ignore draft deletion errors
       }
 
-      toast.success("Project saved successfully! Redirecting...");
+      // 🎉 Trigger confetti celebration!
+      const fireConfetti = () => {
+        // First burst - left side
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { x: 0.2, y: 0.6 },
+          colors: ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899']
+        });
+        
+        // Second burst - right side
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { x: 0.8, y: 0.6 },
+          colors: ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899']
+        });
+
+        // Center burst with more particles
+        setTimeout(() => {
+          confetti({
+            particleCount: 150,
+            spread: 100,
+            origin: { x: 0.5, y: 0.5 },
+            colors: ['#22c55e', '#16a34a', '#f59e0b', '#fbbf24']
+          });
+        }, 200);
+      };
+      
+      fireConfetti();
+
+      toast.success("🎉 Project saved successfully! Redirecting...");
       
       // Navigate to the project details page
       setTimeout(() => {
         navigate(`/buildunion/project/${project.id}`);
-      }, 1000);
+      }, 1500);
 
     } catch (error: any) {
       console.error("Error saving to projects:", error);
