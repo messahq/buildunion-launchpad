@@ -15,6 +15,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 import AskMessaChat from "@/components/AskMessaChat";
+import NewProjectModal from "@/components/NewProjectModal";
 
 const languages = [
   { code: "en", name: "English" },
@@ -34,6 +35,7 @@ const BuildUnionHeader = () => {
   const { subscription } = useSubscription();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
 
@@ -143,7 +145,7 @@ const BuildUnionHeader = () => {
           {/* Start New Project Button */}
           <Button
             size="sm"
-            onClick={() => navigate("/buildunion/workspace/new")}
+            onClick={() => setShowNewProjectModal(true)}
             className="bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1.5 hidden md:flex"
           >
             <Plus className="h-4 w-4" />
@@ -285,6 +287,9 @@ const BuildUnionHeader = () => {
 
       {/* Ask Messa Chat */}
       <AskMessaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+
+      {/* New Project Modal */}
+      <NewProjectModal open={showNewProjectModal} onOpenChange={setShowNewProjectModal} />
     </header>
   );
 };
