@@ -48,18 +48,49 @@ const HeroSection = () => {
       {/* Video Background */}
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover object-center scale-110"
         autoPlay
         muted
         loop
         playsInline
         preload="auto"
+        style={{
+          animation: 'videoFade 5s ease-in-out infinite',
+        }}
       >
         <source src={davidVideo} type="video/mp4" />
       </video>
 
       {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-hero-overlay/60" />
+      <div className="absolute inset-0 bg-hero-overlay/50" />
+      
+      {/* Amber Light Effect - Top Left */}
+      <div 
+        className="absolute top-0 left-1/4 w-[600px] h-[800px] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at 30% 20%, rgba(251, 146, 60, 0.25), rgba(217, 119, 6, 0.15) 30%, transparent 70%)',
+          filter: 'blur(60px)',
+          animation: 'amberPulse 8s ease-in-out infinite',
+        }}
+      />
+      
+      {/* Secondary Amber Glow */}
+      <div 
+        className="absolute top-1/4 left-1/3 w-[400px] h-[600px] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 30%, rgba(245, 158, 11, 0.2), transparent 60%)',
+          filter: 'blur(80px)',
+          animation: 'amberPulse 6s ease-in-out infinite 2s',
+        }}
+      />
+      
+      {/* Warm light rays effect */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-30"
+        style={{
+          background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.15) 0%, transparent 40%, transparent 100%)',
+        }}
+      />
 
       {/* Back Button */}
       <div className="absolute top-6 left-6 z-20">
@@ -173,6 +204,21 @@ const HeroSection = () => {
       <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 animate-scroll-hint">
         <ChevronDown className="h-6 w-6 text-hero-text-muted" strokeWidth={1} />
       </div>
+      
+      {/* Custom animations */}
+      <style>{`
+        @keyframes videoFade {
+          0%, 100% { opacity: 1; }
+          95% { opacity: 1; }
+          97% { opacity: 0.7; }
+          99% { opacity: 0.9; }
+        }
+        
+        @keyframes amberPulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.05); }
+        }
+      `}</style>
     </section>
   );
 };
