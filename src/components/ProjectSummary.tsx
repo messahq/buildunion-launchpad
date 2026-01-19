@@ -32,8 +32,15 @@ import {
   Mail,
   ArrowLeft,
   RefreshCw,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertOctagon,
+  ShieldAlert
 } from "lucide-react";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 
 interface LineItem {
   name: string;
@@ -324,6 +331,84 @@ export function ProjectSummary({
   const vatAmount = materialTotal * 0.27;
   const grandTotal = materialTotal + vatAmount;
 
+  // ===== CONFLICT DETECTION =====
+  // Check for conflicts between Quick Mode (photo estimate) and M.E.S.S.A. (blueprint analysis)
+  const detectConflicts = () => {
+    const conflicts: { field: string; quickValue: string; messaValue: string; severity: "high" | "medium" | "low" }[] = [];
+    
+    if (!summary) return conflicts;
+
+    const photoData = summary.photo_estimate || {};
+    const blueprintData = summary.blueprint_analysis || {};
+    const facts = (summary.verified_facts as any[]) || [];
+
+    // Compare total estimates if both exist
+    if (photoData.total && blueprintData.total) {
+      const photoTotal = parseFloat(photoData.total) || 0;
+      const blueprintTotal = parseFloat(blueprintData.total) || 0;
+      const difference = Math.abs(photoTotal - blueprintTotal);
+      const percentDiff = photoTotal > 0 ? (difference / photoTotal) * 100 : 0;
+
+      if (percentDiff > 20) {
+        conflicts.push({
+          field: "Összköltség becslés",
+          quickValue: `${photoTotal.toLocaleString()} Ft`,
+          messaValue: `${blueprintTotal.toLocaleString()} Ft`,
+          severity: percentDiff > 40 ? "high" : "medium"
+        });
+      }
+    }
+
+    // Compare area measurements
+    if (photoData.area && blueprintData.area) {
+      const photoArea = parseFloat(photoData.area) || 0;
+      const blueprintArea = parseFloat(blueprintData.area) || 0;
+      const difference = Math.abs(photoArea - blueprintArea);
+      const percentDiff = photoArea > 0 ? (difference / photoArea) * 100 : 0;
+
+      if (percentDiff > 15) {
+        conflicts.push({
+          field: "Területméret",
+          quickValue: `${photoArea} m²`,
+          messaValue: `${blueprintArea} m²`,
+          severity: percentDiff > 30 ? "high" : "medium"
+        });
+      }
+    }
+
+    // Check for material count discrepancies
+    if (photoData.materials?.length && blueprintData.materials?.length) {
+      const photoMaterialCount = photoData.materials.length;
+      const blueprintMaterialCount = blueprintData.materials.length;
+      
+      if (Math.abs(photoMaterialCount - blueprintMaterialCount) > 3) {
+        conflicts.push({
+          field: "Anyagtételek száma",
+          quickValue: `${photoMaterialCount} tétel`,
+          messaValue: `${blueprintMaterialCount} tétel`,
+          severity: "low"
+        });
+      }
+    }
+
+    // Check verified facts for conflicts
+    facts.forEach((fact: any) => {
+      if (fact.verification_status === "conflict" || fact.verification_status === "disputed") {
+        conflicts.push({
+          field: fact.question?.slice(0, 50) || "Ellenőrzött adat",
+          quickValue: "Fotó becslés",
+          messaValue: "Tervrajz elemzés",
+          severity: "medium"
+        });
+      }
+    });
+
+    return conflicts;
+  };
+
+  const conflicts = detectConflicts();
+  const hasHighSeverityConflict = conflicts.some(c => c.severity === "high");
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-6">
       {/* Header */}
@@ -373,6 +458,50 @@ export function ProjectSummary({
           )}
         </div>
       </div>
+
+      {/* CONFLICT DETECTION ALERT */}
+      {conflicts.length > 0 && (
+        <Alert variant={hasHighSeverityConflict ? "destructive" : "default"} className={hasHighSeverityConflict ? "border-red-500 bg-red-50" : "border-amber-500 bg-amber-50"}>
+          <ShieldAlert className="h-5 w-5" />
+          <AlertTitle className="flex items-center gap-2">
+            <span>⚠️ Conflict Detected</span>
+            <Badge variant={hasHighSeverityConflict ? "destructive" : "secondary"}>
+              {conflicts.length} eltérés
+            </Badge>
+          </AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="text-sm mb-3">
+              A Quick Mode (fotó becslés) és a M.E.S.S.A. (tervrajz elemzés) adatai között eltérések vannak. 
+              <strong className="text-red-700"> Kérjük, ellenőrizd az adatokat mielőtt árajánlatot küldesz!</strong>
+            </p>
+            <div className="space-y-2">
+              {conflicts.map((conflict, idx) => (
+                <div 
+                  key={idx} 
+                  className={`flex items-center justify-between p-2 rounded text-sm ${
+                    conflict.severity === "high" ? "bg-red-100" : 
+                    conflict.severity === "medium" ? "bg-amber-100" : "bg-gray-100"
+                  }`}
+                >
+                  <span className="font-medium">{conflict.field}</span>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1">
+                      <Camera className="h-3 w-3" /> {conflict.quickValue}
+                    </span>
+                    <span className="text-muted-foreground">vs</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> {conflict.messaValue}
+                    </span>
+                    {conflict.severity === "high" && (
+                      <Badge variant="destructive" className="text-xs">Kritikus</Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Source Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
