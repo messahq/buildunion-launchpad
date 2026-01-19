@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -14,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { 
   BookOpen, 
   CheckCircle2, 
@@ -26,11 +34,26 @@ import {
   FileText,
   ChevronRight,
   ArrowUpDown,
-  X
+  X,
+  ExternalLink,
+  Brain
 } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+// Custom icons for the engines
+const GeminiIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+  </svg>
+);
+
+const OpenAIIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.8956zm16.0993 3.8558L12.6 8.3829l2.02-1.1638a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.1408 1.6465 4.4708 4.4708 0 0 1 .5765 3.0137zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.5056-2.6067-1.4998z" />
+  </svg>
+);
 
 interface Project {
   id: string;
@@ -57,6 +80,8 @@ const BuildUnionProjectFacts = () => {
   const [filteredFacts, setFilteredFacts] = useState<ProjectSynthesis[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFact, setSelectedFact] = useState<ProjectSynthesis | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -223,28 +248,189 @@ const BuildUnionProjectFacts = () => {
     toast.success(`Exported ${filteredFacts.length} facts to JSON`);
   };
 
-  const getStatusBadge = (status: string) => {
+  const openFactDetail = (fact: ProjectSynthesis, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedFact(fact);
+    setIsDetailOpen(true);
+  };
+
+  const getStatusBadge = (status: string, size: "sm" | "lg" = "sm") => {
+    const iconSize = size === "lg" ? "h-4 w-4" : "h-3 w-3";
+    const badgeClass = size === "lg" ? "text-sm py-1.5 px-3" : "";
+    
     if (status === "verified") {
       return (
-        <Badge className="bg-green-500/10 text-green-700 border-green-300 gap-1">
-          <CheckCircle2 className="h-3 w-3" />
+        <Badge className={`bg-green-500/10 text-green-700 border-green-300 gap-1 ${badgeClass}`}>
+          <CheckCircle2 className={iconSize} />
           Verified
         </Badge>
       );
     }
     if (status === "conflict_notified") {
       return (
-        <Badge className="bg-amber-500/10 text-amber-700 border-amber-300 gap-1">
-          <AlertTriangle className="h-3 w-3" />
+        <Badge className={`bg-amber-500/10 text-amber-700 border-amber-300 gap-1 ${badgeClass}`}>
+          <AlertTriangle className={iconSize} />
           Conflict
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="gap-1">
-        <FileText className="h-3 w-3" />
+      <Badge variant="outline" className={`gap-1 ${badgeClass}`}>
+        <FileText className={iconSize} />
         Saved
       </Badge>
+    );
+  };
+
+  const renderFactDetailSheet = () => {
+    if (!selectedFact) return null;
+
+    return (
+      <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-hidden flex flex-col">
+          <SheetHeader className="flex-shrink-0">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Badge variant="outline" className="text-xs text-cyan-700 border-cyan-300 bg-cyan-50">
+                {selectedFact.project?.name || "Unknown Project"}
+              </Badge>
+              {getStatusBadge(selectedFact.verification_status, "lg")}
+            </div>
+            <SheetTitle className="text-left text-xl">
+              {selectedFact.question}
+            </SheetTitle>
+            <SheetDescription className="text-left flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              {format(new Date(selectedFact.created_at), "MMMM d, yyyy 'at' h:mm a")}
+            </SheetDescription>
+          </SheetHeader>
+
+          <ScrollArea className="flex-1 mt-6 -mx-6 px-6">
+            <div className="space-y-6 pb-6">
+              {/* Synthesized Answer */}
+              <div className="rounded-lg border bg-gradient-to-br from-slate-50 to-white p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 flex items-center justify-center">
+                    <Brain className="h-4 w-4 text-white" />
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Synthesized Answer</h4>
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {selectedFact.answer}
+                </p>
+              </div>
+
+              {/* Engine Responses */}
+              {(selectedFact.gemini_response || selectedFact.openai_response) && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                    <span>Individual Engine Responses</span>
+                    {selectedFact.verification_status === "verified" && (
+                      <span className="text-xs font-normal text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Consensus reached
+                      </span>
+                    )}
+                  </h4>
+
+                  {/* Gemini Response */}
+                  {selectedFact.gemini_response && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center ring-2 ring-blue-400/50">
+                          <GeminiIcon className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <span className="font-medium text-blue-700">Gemini Pro</span>
+                          <span className="text-xs text-blue-500 block">Primary Analysis</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        {selectedFact.gemini_response}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* OpenAI Response */}
+                  {selectedFact.openai_response && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center ring-2 ring-emerald-400/50">
+                          <OpenAIIcon className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div>
+                          <span className="font-medium text-emerald-700">GPT-5</span>
+                          <span className="text-xs text-emerald-500 block">Verification Engine</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        {selectedFact.openai_response}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Comparison indicator */}
+                  {selectedFact.gemini_response && selectedFact.openai_response && (
+                    <div className={`rounded-lg p-3 flex items-center gap-3 ${
+                      selectedFact.verification_status === "verified"
+                        ? "bg-green-100 border border-green-200"
+                        : "bg-amber-100 border border-amber-200"
+                    }`}>
+                      {selectedFact.verification_status === "verified" ? (
+                        <>
+                          <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-green-800">Both engines reached similar conclusions</p>
+                            <p className="text-xs text-green-600">This fact has been verified through dual-engine consensus</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-amber-800">Responses differ between engines</p>
+                            <p className="text-xs text-amber-600">Manual review may be required for accuracy</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sources */}
+              {selectedFact.sources && Array.isArray(selectedFact.sources) && selectedFact.sources.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-3">Sources</h4>
+                  <div className="space-y-2">
+                    {selectedFact.sources.map((source: any, index: number) => (
+                      <div key={index} className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 rounded px-3 py-2">
+                        <FileText className="h-4 w-4 text-slate-400" />
+                        <span>{source.document || source}</span>
+                        {source.page && <span className="text-xs text-muted-foreground">(Page {source.page})</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          {/* Footer Actions */}
+          <div className="flex-shrink-0 pt-4 border-t mt-auto">
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => {
+                setIsDetailOpen(false);
+                navigate(`/buildunion/project/${selectedFact.project_id}`);
+              }}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open in Project
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     );
   };
 
@@ -401,7 +587,7 @@ const BuildUnionProjectFacts = () => {
                 <Card
                   key={fact.id}
                   className="hover:shadow-md transition-shadow cursor-pointer group"
-                  onClick={() => navigate(`/buildunion/project/${fact.project_id}`)}
+                  onClick={(e) => openFactDetail(fact, e)}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4 mb-3">
@@ -431,19 +617,19 @@ const BuildUnionProjectFacts = () => {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         {fact.gemini_response && (
                           <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            <GeminiIcon className="w-3 h-3 text-blue-500" />
                             Gemini
                           </span>
                         )}
                         {fact.openai_response && (
                           <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <OpenAIIcon className="w-3 h-3 text-emerald-500" />
                             GPT-5
                           </span>
                         )}
                       </div>
                       <span className="text-xs text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                        View in project <ChevronRight className="h-3 w-3 ml-1" />
+                        View details <ChevronRight className="h-3 w-3 ml-1" />
                       </span>
                     </div>
                   </CardContent>
@@ -453,6 +639,9 @@ const BuildUnionProjectFacts = () => {
           )}
         </div>
       </section>
+
+      {/* Fact Detail Sheet */}
+      {renderFactDetailSheet()}
 
       <BuildUnionFooter />
     </main>
