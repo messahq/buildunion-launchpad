@@ -51,31 +51,31 @@ serve(async (req) => {
 
       // Build comprehensive analysis prompt
       const analysisPrompt = `
-Te egy építőipari szakértő AI vagy. Elemezd az alábbi projekt adatokat és készíts komprehenzív összesítést.
+You are a construction expert AI. Analyze the following project data and create a comprehensive summary.
 
-## Fotó alapú becslés:
+## Photo-based Estimate:
 ${JSON.stringify(summary.photo_estimate, null, 2)}
 
-## Kalkulátor eredmények:
+## Calculator Results:
 ${JSON.stringify(summary.calculator_results, null, 2)}
 
-## Sablon tételek:
+## Template Items:
 ${JSON.stringify(summary.template_items, null, 2)}
 
-## Tervrajz elemzés:
+## Blueprint Analysis:
 ${JSON.stringify(summary.blueprint_analysis, null, 2)}
 
-## Ellenőrzött tények (M.E.S.S.A.):
+## Verified Facts (M.E.S.S.A.):
 ${JSON.stringify(projectFacts.map(f => ({ question: f.question, answer: f.answer, status: f.verification_status })), null, 2)}
 
-Készíts egy részletes összesítést magyar nyelven, amely tartalmazza:
-1. Anyagköltség becslés (Ft)
-2. Munkadíj becslés (Ft)  
-3. Főbb tételek listája árakkal
-4. Kockázatok és figyelmeztetések
-5. Ajánlások
+Create a detailed summary in English that includes:
+1. Material cost estimate (in CAD)
+2. Labor cost estimate (in CAD)
+3. Main line items list with prices
+4. Risks and warnings
+5. Recommendations
 
-Válaszolj JSON formátumban:
+Respond in JSON format:
 {
   "material_cost": number,
   "labor_cost": number,
@@ -98,7 +98,7 @@ Válaszolj JSON formátumban:
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "Te egy építőipari költségbecslő szakértő vagy. Mindig pontos JSON-t adj vissza." },
+            { role: "system", content: "You are a construction cost estimation expert. Always return precise JSON." },
             { role: "user", content: analysisPrompt }
           ],
         }),
@@ -128,7 +128,7 @@ Válaszolj JSON formátumban:
           labor_cost: 0,
           total_cost: 0,
           line_items: [],
-          risks: ["AI elemzés nem sikerült teljesen"],
+          risks: ["AI analysis could not be completed"],
           recommendations: [],
           confidence_score: 0
         };

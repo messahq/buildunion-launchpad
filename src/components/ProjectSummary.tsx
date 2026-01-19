@@ -431,9 +431,9 @@ export function ProjectSummary({
 
       if (percentDiff > 20) {
         conflicts.push({
-          field: "Összköltség becslés",
-          quickValue: `${photoTotal.toLocaleString()} Ft`,
-          messaValue: `${blueprintTotal.toLocaleString()} Ft`,
+          field: "Total Cost Estimate",
+          quickValue: formatCurrency(photoTotal),
+          messaValue: formatCurrency(blueprintTotal),
           severity: percentDiff > 40 ? "high" : "medium"
         });
       }
@@ -448,9 +448,9 @@ export function ProjectSummary({
 
       if (percentDiff > 15) {
         conflicts.push({
-          field: "Területméret",
-          quickValue: `${photoArea} m²`,
-          messaValue: `${blueprintArea} m²`,
+          field: "Area Measurement",
+          quickValue: `${photoArea} sq ft`,
+          messaValue: `${blueprintArea} sq ft`,
           severity: percentDiff > 30 ? "high" : "medium"
         });
       }
@@ -463,9 +463,9 @@ export function ProjectSummary({
       
       if (Math.abs(photoMaterialCount - blueprintMaterialCount) > 3) {
         conflicts.push({
-          field: "Anyagtételek száma",
-          quickValue: `${photoMaterialCount} tétel`,
-          messaValue: `${blueprintMaterialCount} tétel`,
+          field: "Material Item Count",
+          quickValue: `${photoMaterialCount} items`,
+          messaValue: `${blueprintMaterialCount} items`,
           severity: "low"
         });
       }
