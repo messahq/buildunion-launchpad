@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FileText, Plus, Trash2, Download, Building2, User, DollarSign } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,18 @@ interface QuoteData {
   warranty: string;
 }
 
+interface CollectedData {
+  photoEstimate: any | null;
+  calculatorResults: any[];
+  templateItems: any[];
+}
+
+interface QuickModeQuoteGeneratorProps {
+  collectedData?: CollectedData;
+  onSkipToSummary?: () => void;
+  onQuoteGenerated?: (quote: QuoteData) => void;
+}
+
 const defaultQuote: QuoteData = {
   companyName: "",
   companyAddress: "",
@@ -72,10 +84,67 @@ const defaultQuote: QuoteData = {
 
 const units = ["unit", "sq ft", "lin ft", "hour", "day", "each", "lot", "job"];
 
-const QuickModeQuoteGenerator = () => {
+const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenerated }: QuickModeQuoteGeneratorProps) => {
   const [quote, setQuote] = useState<QuoteData>(defaultQuote);
   const [activeSection, setActiveSection] = useState<"company" | "client" | "items" | "preview">("company");
   const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
+
+  // Pre-fill line items from collected data
+  useEffect(() => {
+    if (collectedData) {
+      const newLineItems: LineItem[] = [];
+      
+      // Add from calculator results
+      collectedData.calculatorResults.forEach((calc, idx) => {
+        if (calc.result?.materials) {
+          calc.result.materials.forEach((mat: any) => {
+            newLineItems.push({
+              id: `calc-${idx}-${mat.item}`,
+              description: mat.item,
+              quantity: mat.quantity,
+              unit: mat.unit || "unit",
+              unitPrice: 0,
+            });
+          });
+        }
+      });
+
+      // Add labor from calculator
+      collectedData.calculatorResults.forEach((calc, idx) => {
+        if (calc.result?.laborHours) {
+          newLineItems.push({
+            id: `labor-${idx}`,
+            description: `Labor - ${calc.calcType}`,
+            quantity: calc.result.laborHours,
+            unit: "hour",
+            unitPrice: 0,
+          });
+        }
+      });
+
+      // Add from template items
+      collectedData.templateItems.forEach((template, idx) => {
+        if (template.materials) {
+          template.materials.forEach((mat: any) => {
+            newLineItems.push({
+              id: `template-${idx}-${mat.name}`,
+              description: mat.name || mat,
+              quantity: mat.quantity || 1,
+              unit: mat.unit || "unit",
+              unitPrice: mat.price || 0,
+            });
+          });
+        }
+      });
+
+      if (newLineItems.length > 0) {
+        setQuote(prev => ({
+          ...prev,
+          lineItems: newLineItems.length > 0 ? newLineItems : prev.lineItems,
+        }));
+      }
+    }
+  }, [collectedData]);
 
   const updateQuote = (field: keyof QuoteData, value: any) => {
     setQuote((prev) => ({ ...prev, [field]: value }));
@@ -789,6 +858,27 @@ const QuickModeQuoteGenerator = () => {
             <p className="text-xs text-center text-muted-foreground">
               Opens a print dialog to save as PDF
             </p>
+
+            <Separator />
+
+            {/* Continue to Summary */}
+            <Button
+              onClick={() => onQuoteGenerated?.(quote)}
+              className="w-full gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+            >
+              Continue with Quote
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+
+            {/* Skip to Summary */}
+            <Button
+              variant="outline"
+              onClick={onSkipToSummary}
+              className="w-full gap-2"
+            >
+              <SkipForward className="w-4 h-4" />
+              Skip to Summary (No Quote)
+            </Button>
           </CardContent>
         </Card>
       </div>

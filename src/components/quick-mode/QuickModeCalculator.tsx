@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator, Plus, Trash2, Copy, Check } from "lucide-react";
+import { Calculator, Plus, Trash2, Copy, Check, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -214,7 +214,12 @@ const calculators: CalculatorType[] = [
   },
 ];
 
-const QuickModeCalculator = () => {
+interface QuickModeCalculatorProps {
+  onCalculatorComplete?: (result: any) => void;
+  onContinue?: () => void;
+}
+
+const QuickModeCalculator = ({ onCalculatorComplete, onContinue }: QuickModeCalculatorProps) => {
   const [selectedCalc, setSelectedCalc] = useState(calculators[0]);
   const [inputs, setInputs] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
@@ -225,6 +230,10 @@ const QuickModeCalculator = () => {
   });
   const [results, setResults] = useState<ReturnType<CalculatorType["calculate"]> | null>(null);
   const [copied, setCopied] = useState(false);
+  const [savedResults, setSavedResults] = useState<Array<{
+    calcType: string;
+    result: ReturnType<CalculatorType["calculate"]>;
+  }>>([]);
 
   const handleCalcChange = (calcId: string) => {
     const calc = calculators.find((c) => c.id === calcId);
@@ -249,6 +258,19 @@ const QuickModeCalculator = () => {
     setResults(result);
   };
 
+  const saveResult = () => {
+    if (!results) return;
+    
+    const savedItem = {
+      calcType: selectedCalc.name,
+      result: results,
+    };
+    
+    setSavedResults(prev => [...prev, savedItem]);
+    onCalculatorComplete?.(savedItem);
+    toast.success(`${selectedCalc.name} saved to summary!`);
+  };
+
   const copyResults = async () => {
     if (!results) return;
     
@@ -269,146 +291,193 @@ Estimated Labor: ${results.laborHours} hours
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleContinue = () => {
+    onContinue?.();
+  };
+
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      {/* Calculator Input */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-amber-500" />
-            Material Calculator
-          </CardTitle>
-          <CardDescription>
-            Enter dimensions to calculate materials and labor
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Calculator Type Selector */}
-          <div className="space-y-2">
-            <Label>Calculator Type</Label>
-            <Select value={selectedCalc.id} onValueChange={handleCalcChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {calculators.map((calc) => (
-                  <SelectItem key={calc.id} value={calc.id}>
-                    {calc.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Formula: {selectedCalc.formula}
-            </p>
-          </div>
-
-          {/* Dynamic Inputs */}
-          <div className="grid grid-cols-2 gap-4">
-            {selectedCalc.inputs.map((input) => (
-              <div key={input.id} className="space-y-2">
-                <Label htmlFor={input.id}>
-                  {input.label} {input.unit && `(${input.unit})`}
-                </Label>
-                <Input
-                  id={input.id}
-                  type="number"
-                  value={inputs[input.id] || ""}
-                  onChange={(e) => handleInputChange(input.id, e.target.value)}
-                  className="text-lg"
-                />
-              </div>
-            ))}
-          </div>
-
-          <Button
-            onClick={calculate}
-            className="w-full bg-amber-500 hover:bg-amber-600"
-          >
-            <Calculator className="w-4 h-4 mr-2" />
-            Calculate
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Results */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Results</CardTitle>
-              <CardDescription>Material quantities and labor estimate</CardDescription>
-            </div>
-            {results && (
-              <Button variant="outline" size="sm" onClick={copyResults}>
-                {copied ? (
-                  <Check className="w-4 h-4 mr-2 text-green-500" />
-                ) : (
-                  <Copy className="w-4 h-4 mr-2" />
-                )}
-                {copied ? "Copied!" : "Copy"}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {results ? (
-            <div className="space-y-6">
-              {/* Main Result */}
-              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <p className="text-sm text-amber-800 mb-2">Calculation:</p>
-                <p className="text-foreground font-medium">{results.breakdown}</p>
-              </div>
-
-              {/* Total Area/Quantity */}
-              <div className="text-center p-6 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground mb-1">Total Required</p>
-                <p className="text-4xl font-bold text-amber-600">
-                  {results.result.toFixed(1)} <span className="text-lg">{selectedCalc.unit}</span>
-                </p>
-              </div>
-
-              {/* Materials List */}
-              <div>
-                <h4 className="font-semibold text-foreground mb-3">Materials Needed</h4>
-                <div className="space-y-2">
-                  {results.materials.map((material, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-background rounded-lg border border-border"
-                    >
-                      <span className="text-foreground">{material.item}</span>
-                      <Badge variant="secondary" className="font-mono">
-                        {material.quantity} {material.unit}
-                      </Badge>
-                    </div>
+    <div className="space-y-6">
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Calculator Input */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5 text-amber-500" />
+              Material Calculator
+            </CardTitle>
+            <CardDescription>
+              Enter dimensions to calculate materials and labor
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Calculator Type Selector */}
+            <div className="space-y-2">
+              <Label>Calculator Type</Label>
+              <Select value={selectedCalc.id} onValueChange={handleCalcChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {calculators.map((calc) => (
+                    <SelectItem key={calc.id} value={calc.id}>
+                      {calc.name}
+                    </SelectItem>
                   ))}
-                </div>
-              </div>
-
-              {/* Labor Estimate */}
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-semibold text-foreground mb-1">Estimated Labor</h4>
-                <p className="text-2xl font-bold text-amber-600">
-                  {results.laborHours} hours
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  (~{Math.ceil(results.laborHours / 8)} work days)
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Calculator className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">
-                Enter dimensions and click "Calculate" to see material estimates
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Formula: {selectedCalc.formula}
               </p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {/* Dynamic Inputs */}
+            <div className="grid grid-cols-2 gap-4">
+              {selectedCalc.inputs.map((input) => (
+                <div key={input.id} className="space-y-2">
+                  <Label htmlFor={input.id}>
+                    {input.label} {input.unit && `(${input.unit})`}
+                  </Label>
+                  <Input
+                    id={input.id}
+                    type="number"
+                    value={inputs[input.id] || ""}
+                    onChange={(e) => handleInputChange(input.id, e.target.value)}
+                    className="text-lg"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={calculate}
+                className="flex-1 bg-amber-500 hover:bg-amber-600"
+              >
+                <Calculator className="w-4 h-4 mr-2" />
+                Calculate
+              </Button>
+              {results && (
+                <Button
+                  onClick={saveResult}
+                  variant="outline"
+                  className="border-green-300 text-green-700 hover:bg-green-50"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add to Summary
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Results</CardTitle>
+                <CardDescription>Material quantities and labor estimate</CardDescription>
+              </div>
+              {results && (
+                <Button variant="outline" size="sm" onClick={copyResults}>
+                  {copied ? (
+                    <Check className="w-4 h-4 mr-2 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-2" />
+                  )}
+                  {copied ? "Copied!" : "Copy"}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {results ? (
+              <div className="space-y-6">
+                {/* Main Result */}
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm text-amber-800 mb-2">Calculation:</p>
+                  <p className="text-foreground font-medium">{results.breakdown}</p>
+                </div>
+
+                {/* Total Area/Quantity */}
+                <div className="text-center p-6 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Total Required</p>
+                  <p className="text-4xl font-bold text-amber-600">
+                    {results.result.toFixed(1)} <span className="text-lg">{selectedCalc.unit}</span>
+                  </p>
+                </div>
+
+                {/* Materials List */}
+                <div>
+                  <h4 className="font-semibold text-foreground mb-3">Materials Needed</h4>
+                  <div className="space-y-2">
+                    {results.materials.map((material, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-background rounded-lg border border-border"
+                      >
+                        <span className="text-foreground">{material.item}</span>
+                        <Badge variant="secondary" className="font-mono">
+                          {material.quantity} {material.unit}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Labor Estimate */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold text-foreground mb-1">Estimated Labor</h4>
+                  <p className="text-2xl font-bold text-amber-600">
+                    {results.laborHours} hours
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    (~{Math.ceil(results.laborHours / 8)} work days)
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Calculator className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground">
+                  Enter dimensions and click "Calculate" to see material estimates
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Saved Calculations */}
+      {savedResults.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Saved Calculations ({savedResults.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {savedResults.map((saved, index) => (
+                <Badge key={index} variant="outline" className="py-1.5 px-3">
+                  {saved.calcType} - {saved.result.result.toFixed(1)} {calculators.find(c => c.name === saved.calcType)?.unit || 'units'}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Continue Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleContinue}
+          className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+        >
+          Continue to Next Step
+          <ArrowRight className="w-4 h-4" />
+        </Button>
+      </div>
     </div>
   );
 };
