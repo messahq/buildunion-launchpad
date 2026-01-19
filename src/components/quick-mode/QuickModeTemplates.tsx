@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { Bath, UtensilsCrossed, PaintBucket, Home, Wrench, Zap, Droplets, TreePine, Check, ChevronRight, Plus, Pencil, Trash2, X, Save, ClipboardList } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bath, UtensilsCrossed, PaintBucket, Home, Wrench, Zap, Droplets, TreePine, Check, ChevronRight, Plus, Pencil, Trash2, X, Save, ClipboardList, Star, User } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ChecklistItem {
   id: string;
@@ -24,6 +27,8 @@ interface ProjectTemplate {
   checklist: ChecklistItem[];
   materials: string[];
   isCustom?: boolean;
+  isSaved?: boolean;
+  savedTemplateId?: string;
 }
 
 interface QuickModeTemplatesProps {
@@ -326,9 +331,13 @@ const defaultTemplates: ProjectTemplate[] = [
 ];
 
 const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickModeTemplatesProps) => {
+  const { user } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
   const [projectName, setProjectName] = useState("");
+  const [templateTab, setTemplateTab] = useState<"default" | "saved">("default");
+  const [userTemplates, setUserTemplates] = useState<ProjectTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   
   // Custom checklist state for "Other" template
   const [customChecklist, setCustomChecklist] = useState<ChecklistItem[]>([]);
@@ -338,6 +347,64 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
   const [newMaterial, setNewMaterial] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskValue, setEditingTaskValue] = useState("");
+
+  // Fetch user saved templates
+  useEffect(() => {
+    const fetchUserTemplates = async () => {
+      if (!user) return;
+      setLoadingTemplates(true);
+      try {
+        const { data, error } = await supabase
+          .from("user_templates")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        // Convert to ProjectTemplate format
+        const converted: ProjectTemplate[] = (data || []).map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          icon: <span className="text-2xl">{t.icon || "📋"}</span>,
+          color: "bg-gradient-to-br from-amber-500 to-orange-500",
+          description: t.description || "Custom saved template",
+          avgDuration: t.estimated_area ? `${t.estimated_area} ${t.area_unit}` : "Custom",
+          checklist: (t.checklist as ChecklistItem[]) || [],
+          materials: ((t.materials as any[]) || []).map((m: any) => 
+            typeof m === "string" ? m : m.name
+          ),
+          isCustom: false,
+          isSaved: true,
+          savedTemplateId: t.id,
+        }));
+
+        setUserTemplates(converted);
+      } catch (error) {
+        console.error("Error fetching templates:", error);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchUserTemplates();
+  }, [user]);
+
+  const deleteUserTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from("user_templates")
+        .delete()
+        .eq("id", templateId);
+
+      if (error) throw error;
+
+      setUserTemplates(prev => prev.filter(t => t.id !== templateId));
+      toast.success("Template deleted");
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      toast.error("Failed to delete template");
+    }
+  };
 
   const toggleTask = (taskId: string) => {
     const newCompleted = new Set(completedTasks);
@@ -713,35 +780,122 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {defaultTemplates.map((template) => (
-          <Card
-            key={template.id}
-            className={`cursor-pointer hover:shadow-lg transition-all group ${
-              template.isCustom 
-                ? "hover:border-violet-400 border-dashed" 
-                : "hover:border-amber-400"
-            }`}
-            onClick={() => setSelectedTemplate(template)}
-          >
-            <CardContent className="p-6">
-              <div className={`w-12 h-12 rounded-xl ${template.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
-                {template.icon}
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">{template.name}</h3>
-              <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary">{template.avgDuration}</Badge>
-                {template.isCustom ? (
-                  <Plus className="w-4 h-4 text-violet-500 group-hover:text-violet-600 transition-colors" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Template Tabs */}
+      <Tabs value={templateTab} onValueChange={(v) => setTemplateTab(v as "default" | "saved")} className="w-full">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+          <TabsTrigger value="default" className="gap-2">
+            <Star className="h-4 w-4" />
+            Default Templates
+          </TabsTrigger>
+          <TabsTrigger value="saved" className="gap-2">
+            <User className="h-4 w-4" />
+            My Templates {userTemplates.length > 0 && `(${userTemplates.length})`}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="default" className="mt-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {defaultTemplates.map((template) => (
+              <Card
+                key={template.id}
+                className={`cursor-pointer hover:shadow-lg transition-all group ${
+                  template.isCustom 
+                    ? "hover:border-violet-400 border-dashed" 
+                    : "hover:border-amber-400"
+                }`}
+                onClick={() => setSelectedTemplate(template)}
+              >
+                <CardContent className="p-6">
+                  <div className={`w-12 h-12 rounded-xl ${template.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+                    {template.icon}
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">{template.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary">{template.avgDuration}</Badge>
+                    {template.isCustom ? (
+                      <Plus className="w-4 h-4 text-violet-500 group-hover:text-violet-600 transition-colors" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="saved" className="mt-6">
+          {!user ? (
+            <div className="text-center py-12 bg-muted/30 rounded-lg">
+              <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-semibold text-lg mb-2">Sign in to view your templates</h3>
+              <p className="text-muted-foreground text-sm">
+                Save project configurations as reusable templates
+              </p>
+            </div>
+          ) : loadingTemplates ? (
+            <div className="text-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading your templates...</p>
+            </div>
+          ) : userTemplates.length === 0 ? (
+            <div className="text-center py-12 bg-muted/30 rounded-lg">
+              <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-semibold text-lg mb-2">No saved templates yet</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Create a project and save it as a template to reuse later
+              </p>
+              <Badge variant="outline" className="gap-1">
+                <Star className="h-3 w-3" />
+                Tip: Use "Save as Template" from any Project Summary
+              </Badge>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {userTemplates.map((template) => (
+                <Card
+                  key={template.id}
+                  className="cursor-pointer hover:shadow-lg transition-all group hover:border-amber-400 relative"
+                  onClick={() => setSelectedTemplate(template)}
+                >
+                  <CardContent className="p-6">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (template.savedTemplateId) {
+                            deleteUserTemplate(template.savedTemplateId);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className={`w-12 h-12 rounded-xl ${template.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+                      {template.icon}
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-1">{template.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{template.description}</p>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary" className="text-xs">
+                        {template.checklist.length} tasks
+                      </Badge>
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Star className="h-3 w-3 text-amber-500" />
+                        Saved
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

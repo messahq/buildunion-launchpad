@@ -36,13 +36,15 @@ import {
   RefreshCw,
   FileSpreadsheet,
   AlertOctagon,
-  ShieldAlert
+  ShieldAlert,
+  LayoutTemplate
 } from "lucide-react";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
 
 interface LineItem {
   name: string;
@@ -1573,6 +1575,16 @@ export function ProjectSummary({
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 justify-end">
+        <SaveAsTemplateDialog
+          lineItems={editedItems}
+          photoEstimate={photoEstimate || summary?.photo_estimate}
+          calculatorType={(summary?.calculator_results as any[])?.[0]?.calcType}
+        >
+          <Button variant="outline" className="gap-2">
+            <LayoutTemplate className="h-4 w-4" />
+            Save as Template
+          </Button>
+        </SaveAsTemplateDialog>
         <Button variant="outline" onClick={generatePDF} className="gap-2">
           <Download className="h-4 w-4" />
           PDF Quote
