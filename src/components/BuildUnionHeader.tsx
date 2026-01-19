@@ -157,7 +157,7 @@ const BuildUnionHeader = () => {
           <Button
             size="sm"
             onClick={() => setShowNewProjectModal(true)}
-            className="bg-amber-600 hover:bg-amber-700 text-white font-medium gap-1.5 hidden md:flex"
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium gap-1.5 hidden md:flex"
           >
             <Plus className="h-4 w-4" />
             <span>New Project</span>
