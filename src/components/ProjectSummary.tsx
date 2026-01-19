@@ -390,9 +390,541 @@ export function ProjectSummary({
   };
 
   const generatePDF = () => {
-    toast.info("Generating PDF...");
-    // This would integrate with the existing PDF quote generator
-    navigate("/buildunion/quick?tab=quote");
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow popups to generate PDF");
+      return;
+    }
+
+    const photoData = photoEstimate || summary?.photo_estimate || {};
+    const currentDate = new Date().toLocaleDateString('en-CA');
+    const quoteNumber = `BU-${Date.now().toString().slice(-8)}`;
+
+    // Build materials table rows
+    const materialsRows = editedItems.map(item => `
+      <tr>
+        <td class="item-desc">${item.name}</td>
+        <td class="text-center">${item.quantity}</td>
+        <td class="text-center">${item.unit}</td>
+        <td class="text-right">${formatCurrency(item.unit_price)}</td>
+        <td class="text-right font-semibold">${formatCurrency(item.quantity * item.unit_price)}</td>
+        <td class="text-center"><span class="source-badge source-${item.source}">${item.source}</span></td>
+      </tr>
+    `).join('');
+
+    // Build photo estimate materials if available
+    const photoMaterialsSection = photoData?.materials?.length > 0 ? `
+      <div class="photo-estimate-section">
+        <h3>📸 AI Photo Analysis - Detected Materials</h3>
+        <div class="photo-grid">
+          <div class="photo-stat">
+            <span class="stat-label">Total Area</span>
+            <span class="stat-value">${photoData.area || 'N/A'} ${photoData.areaUnit || 'sq ft'}</span>
+          </div>
+          <div class="photo-stat">
+            <span class="stat-label">Confidence</span>
+            <span class="stat-value confidence-${photoData.areaConfidence || 'unknown'}">${(photoData.areaConfidence || 'Unknown').toUpperCase()}</span>
+          </div>
+          <div class="photo-stat">
+            <span class="stat-label">Surface Type</span>
+            <span class="stat-value">${photoData.surfaceType || 'Unknown'}</span>
+          </div>
+        </div>
+        <table class="photo-materials-table">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th class="text-center">Quantity</th>
+              <th class="text-center">Unit</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${photoData.materials.map((mat: any) => `
+              <tr>
+                <td class="font-semibold">${mat.item || mat.name}</td>
+                <td class="text-center">${mat.quantity}</td>
+                <td class="text-center">${mat.unit}</td>
+                <td class="notes-cell">${mat.notes || '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        ${photoData.summary ? `<div class="ai-summary"><strong>AI Summary:</strong> ${photoData.summary}</div>` : ''}
+      </div>
+    ` : '';
+
+    // Build recommendations section
+    const recommendationsSection = photoData?.recommendations?.length > 0 ? `
+      <div class="recommendations-section">
+        <h3>💡 AI Recommendations</h3>
+        <ul>
+          ${photoData.recommendations.map((rec: string) => `<li>${rec}</li>`).join('')}
+        </ul>
+      </div>
+    ` : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Project Summary - ${quoteNumber}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            padding: 0; 
+            color: #1a1a1a; 
+            background: #fff;
+            line-height: 1.5;
+            font-size: 13px;
+          }
+          
+          /* Professional Header */
+          .header-bar {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 28px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .header-left h1 { 
+            font-size: 28px; 
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          .header-left p {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 4px;
+          }
+          .quote-info {
+            text-align: right;
+            background: rgba(255,255,255,0.2);
+            padding: 16px 24px;
+            border-radius: 12px;
+          }
+          .quote-info .number {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+          }
+          .quote-info .date {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+          }
+
+          /* Content */
+          .content { padding: 32px 40px; }
+          
+          /* Client Info */
+          .client-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+          }
+          .info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+          }
+          .info-card h4 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+          }
+          .info-card .name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+          }
+          .info-card .details {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+          }
+
+          /* Photo Estimate Section */
+          .photo-estimate-section {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+          }
+          .photo-estimate-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 16px;
+          }
+          .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+          }
+          .photo-stat {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 16px;
+            text-align: center;
+          }
+          .stat-label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 4px;
+          }
+          .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e40af;
+          }
+          .confidence-high { color: #16a34a; }
+          .confidence-medium { color: #ca8a04; }
+          .confidence-low { color: #dc2626; }
+          
+          .photo-materials-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 16px;
+          }
+          .photo-materials-table th {
+            background: #1e40af;
+            color: white;
+            padding: 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: left;
+          }
+          .photo-materials-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .notes-cell {
+            font-size: 11px;
+            color: #64748b;
+            max-width: 300px;
+          }
+          .ai-summary {
+            margin-top: 16px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #475569;
+          }
+
+          /* Recommendations */
+          .recommendations-section {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+          }
+          .recommendations-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #166534;
+            margin-bottom: 12px;
+          }
+          .recommendations-section ul {
+            margin-left: 20px;
+          }
+          .recommendations-section li {
+            font-size: 12px;
+            color: #15803d;
+            margin-bottom: 6px;
+          }
+
+          /* Line Items Table */
+          .items-section { margin-bottom: 32px; }
+          .items-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #f59e0b;
+          }
+          table.main-table { 
+            width: 100%; 
+            border-collapse: collapse;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+          }
+          .main-table thead tr {
+            background: #1e293b;
+            color: white;
+          }
+          .main-table th { 
+            padding: 14px 12px; 
+            text-align: left; 
+            font-weight: 600; 
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .main-table td { 
+            padding: 14px 12px; 
+            border-bottom: 1px solid #f1f5f9;
+          }
+          .main-table tbody tr:nth-child(even) { background: #f8fafc; }
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .font-semibold { font-weight: 600; }
+          .item-desc { font-weight: 500; color: #1e293b; }
+
+          /* Source Badges */
+          .source-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+          }
+          .source-photo { background: #dbeafe; color: #1e40af; }
+          .source-calculator { background: #dcfce7; color: #166534; }
+          .source-template { background: #f3e8ff; color: #7e22ce; }
+          .source-blueprint { background: #ffedd5; color: #c2410c; }
+          .source-manual { background: #f1f5f9; color: #475569; }
+
+          /* Totals */
+          .totals-wrapper {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 24px;
+          }
+          .totals-box {
+            width: 340px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+          }
+          .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+          }
+          .totals-row.grand-total {
+            border: none;
+            padding-top: 16px;
+            margin-top: 8px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #92400e;
+          }
+          .totals-row .label { color: #78350f; }
+          .totals-row .value { font-weight: 600; color: #92400e; }
+          .tax-badge {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
+          }
+
+          /* Notes & Terms */
+          .terms-section {
+            margin-top: 40px;
+            padding: 24px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #f59e0b;
+          }
+          .terms-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+          }
+          .terms-section p {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+          }
+
+          /* Signature */
+          .signature-section {
+            margin-top: 60px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+          }
+          .sig-box {
+            padding-top: 16px;
+            border-top: 2px solid #1e293b;
+          }
+          .sig-box p {
+            font-size: 12px;
+            color: #64748b;
+          }
+
+          /* Footer */
+          .footer {
+            margin-top: 48px;
+            padding: 24px;
+            background: #1e293b;
+            color: white;
+            text-align: center;
+          }
+          .footer p {
+            font-size: 11px;
+            opacity: 0.8;
+          }
+          .footer .brand {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+          }
+
+          @media print { 
+            body { padding: 0; }
+            .header-bar, .totals-box, .photo-estimate-section, .footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header-bar">
+          <div class="header-left">
+            <h1>🏗️ BuildUnion</h1>
+            <p>Professional Construction Project Summary</p>
+          </div>
+          <div class="quote-info">
+            <div class="number">${quoteNumber}</div>
+            <div class="date">Generated: ${currentDate}</div>
+          </div>
+        </div>
+
+        <div class="content">
+          <!-- Client Info -->
+          <div class="client-section">
+            <div class="info-card">
+              <h4>👤 Client Information</h4>
+              <div class="name">${clientInfo.name || 'Client Name'}</div>
+              <div class="details">${clientInfo.address || 'Address not specified'}</div>
+              <div class="details">${clientInfo.phone || ''} ${clientInfo.email ? '• ' + clientInfo.email : ''}</div>
+            </div>
+            <div class="info-card">
+              <h4>📍 Project Details</h4>
+              <div class="name">Project Summary</div>
+              <div class="details">Created: ${formatDate(summary?.created_at || new Date().toISOString())}</div>
+              <div class="details">Status: ${summary?.status?.toUpperCase() || 'DRAFT'}</div>
+            </div>
+          </div>
+
+          <!-- Photo Estimate Section -->
+          ${photoMaterialsSection}
+
+          <!-- Recommendations -->
+          ${recommendationsSection}
+
+          <!-- Line Items -->
+          <div class="items-section">
+            <h3>📋 Project Line Items (${editedItems.length} items)</h3>
+            <table class="main-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th class="text-center">Qty</th>
+                  <th class="text-center">Unit</th>
+                  <th class="text-right">Unit Price</th>
+                  <th class="text-right">Total</th>
+                  <th class="text-center">Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${materialsRows || '<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No items added yet</td></tr>'}
+              </tbody>
+            </table>
+
+            <div class="totals-wrapper">
+              <div class="totals-box">
+                <div class="totals-row">
+                  <span class="label">Subtotal</span>
+                  <span class="value">${formatCurrency(materialTotal)}</span>
+                </div>
+                ${taxResult.breakdown.map((tax, idx) => `
+                  <div class="totals-row">
+                    <span class="label">${tax.name} (${(config.tax.components[idx]?.rate * 100).toFixed(tax.name === 'QST' ? 3 : 0)}%)<span class="tax-badge">${config.shortName}</span></span>
+                    <span class="value">${formatCurrency(tax.amount)}</span>
+                  </div>
+                `).join('')}
+                <div class="totals-row grand-total">
+                  <span class="label">GRAND TOTAL</span>
+                  <span class="value">${formatCurrency(grandTotal)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          ${notes ? `
+            <div class="terms-section">
+              <h3>📝 Notes & Terms</h3>
+              <p>${notes}</p>
+            </div>
+          ` : ''}
+
+          <!-- Signatures -->
+          <div class="signature-section">
+            <div class="sig-box">
+              <p><strong>Client Signature</strong></p>
+              <p style="margin-top:40px;">Date: _______________</p>
+            </div>
+            <div class="sig-box">
+              <p><strong>Contractor Signature</strong></p>
+              <p style="margin-top:40px;">Date: _______________</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p class="brand">BuildUnion - Professional Construction Management</p>
+          <p>Licensed & Insured • WSIB Covered • Greater Toronto Area</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+
+    toast.success("PDF generated! Print dialog opened.");
   };
 
   // formatCurrency and formatDate now come from useRegionSettings hook
