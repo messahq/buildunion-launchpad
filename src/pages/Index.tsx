@@ -74,36 +74,18 @@ const Index = () => {
         </svg>
       </div>
 
-      {/* Top Section - BuildUnion Capsule */}
+      {/* Top Section - BuildUnion Text */}
       <div className="relative z-10 flex flex-col items-center pt-8 md:pt-16 flex-1">
 
-        {/* BuildUnion Capsule Button */}
+        {/* BuildUnion Text Button */}
         <button
           onClick={() => navigate("/buildunion")}
-          className="group relative px-8 py-4 rounded-full cursor-pointer focus:outline-none transition-all duration-500 hover:scale-105"
-          style={{
-            background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(6, 182, 212, 0.2))',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: '0 0 30px rgba(251, 146, 60, 0.2), 0 0 60px rgba(6, 182, 212, 0.1)'
-          }}
+          className="group cursor-pointer focus:outline-none transition-all duration-300 hover:opacity-80"
         >
-          {/* Glow effect on hover */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500/30 to-cyan-500/30 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          
-          {/* Capsule content */}
-          <div className="relative flex items-center gap-3">
-            {/* Mini orb indicator */}
-            <div 
-              className="w-3 h-3 rounded-full animate-pulse"
-              style={{
-                background: 'radial-gradient(circle, rgba(251, 146, 60, 0.9), rgba(6, 182, 212, 0.9))',
-                boxShadow: '0 0 10px rgba(251, 146, 60, 0.5)'
-              }}
-            />
-            <span className="text-white/90 font-light tracking-widest uppercase text-sm">
-              BuildUnion
-            </span>
-          </div>
+          <span className="text-lg md:text-xl font-medium tracking-wide">
+            <span className="text-white">Build</span>
+            <span className="text-yellow-400">Union</span>
+          </span>
         </button>
       </div>
 
