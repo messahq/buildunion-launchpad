@@ -642,7 +642,7 @@ const BuildUnionWorkspace = () => {
 
           <div className="grid md:grid-cols-3 gap-5 mb-8">
             {/* Higher Wages */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center">
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
               <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mx-auto mb-3">
                 <DollarSign className="h-6 w-6 text-green-600" />
               </div>
@@ -654,7 +654,7 @@ const BuildUnionWorkspace = () => {
             </div>
 
             {/* Health Coverage */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center">
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
               <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center mx-auto mb-3">
                 <Heart className="h-6 w-6 text-red-500" />
               </div>
@@ -666,7 +666,7 @@ const BuildUnionWorkspace = () => {
             </div>
 
             {/* Job Security */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center">
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
               <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-3">
                 <Briefcase className="h-6 w-6 text-blue-600" />
               </div>
