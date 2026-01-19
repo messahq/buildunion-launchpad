@@ -640,54 +640,42 @@ const BuildUnionWorkspace = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-5 mb-8">
             {/* Higher Wages */}
-            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300">
-              <CardHeader className="text-center pb-2">
-                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mx-auto mb-3">
-                  <DollarSign className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="text-2xl font-bold text-slate-900">+27%</div>
-                <CardTitle className="text-lg font-semibold text-slate-900">Higher Wages</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-slate-600 text-center">
-                  Union workers earn on average 27% more than non-union counterparts in the same trade.
-                </CardDescription>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center">
+              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mx-auto mb-3">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">+27%</div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">Higher Wages</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Union workers earn on average 27% more than non-union counterparts in the same trade.
+              </p>
+            </div>
 
             {/* Health Coverage */}
-            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300">
-              <CardHeader className="text-center pb-2">
-                <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center mx-auto mb-3">
-                  <Heart className="h-6 w-6 text-red-500" />
-                </div>
-                <div className="text-2xl font-bold text-slate-900">94%</div>
-                <CardTitle className="text-lg font-semibold text-slate-900">Health Coverage</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-slate-600 text-center">
-                  Union members with employer-sponsored health insurance coverage for families.
-                </CardDescription>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center">
+              <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center mx-auto mb-3">
+                <Heart className="h-6 w-6 text-red-500" />
+              </div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">94%</div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">Health Coverage</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Union members with employer-sponsored health insurance coverage for families.
+              </p>
+            </div>
 
             {/* Job Security */}
-            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300">
-              <CardHeader className="text-center pb-2">
-                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-3">
-                  <Briefcase className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="text-2xl font-bold text-slate-900">3.2x</div>
-                <CardTitle className="text-lg font-semibold text-slate-900">Job Security</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-slate-600 text-center">
-                  Union workers are 3.2x more likely to have pension plans and retirement benefits.
-                </CardDescription>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center">
+              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                <Briefcase className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">3.2x</div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">Job Security</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Union workers are 3.2x more likely to have pension plans and retirement benefits.
+              </p>
+            </div>
           </div>
 
           {/* CTA Banner */}
