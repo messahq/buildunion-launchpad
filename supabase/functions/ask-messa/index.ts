@@ -43,25 +43,33 @@ function truncateContent(content: string, maxChars: number = 50000): string {
     "\n\n[... Document content truncated due to length. Focus on the content above for your analysis. ...]";
 }
 
-function buildRAGPrompt(documentContent: string, documentNames: string[], hasImages: boolean, forOpenAI: boolean = false): string {
+// Specialized prompt for Gemini - focuses on VISUAL data, measurements, dimensions
+function buildGeminiPrompt(documentContent: string, documentNames: string[], hasImages: boolean): string {
   const imageNote = hasImages 
-    ? "\n\nNOTE: Site images have been provided. You can analyze and reference visual information from these images when answering questions."
+    ? "\n\nCRITICAL: Site images have been provided. You MUST analyze these images for visual information, measurements, dimensions, and spatial data."
     : "";
 
-  // OpenAI has smaller context, so truncate more aggressively
-  const maxChars = forOpenAI ? 30000 : 100000;
-  const truncatedContent = truncateContent(documentContent, maxChars);
+  const truncatedContent = truncateContent(documentContent, 100000);
 
-  return `You are Messa, analyzing project documents for a construction project.
+  return `You are Messa's VISUAL ANALYSIS ENGINE, specialized in extracting visual data from construction documents and site images.
 
-CRITICAL RULES:
-1. ONLY answer based on information found in the provided documents and images below
-2. If information is not in the documents or images, clearly state: "This information is not found in the uploaded materials."
-3. Always cite your sources with document names and page numbers
-4. Format citations as: [Source: DocumentName, Page X] or [Source: Site Image X]
-5. Be precise and accurate - this is for construction work where errors cost money
-6. If documents are empty or unreadable, inform the user
-7. When analyzing images, describe what you see and how it relates to the project
+YOUR PRIMARY FOCUS:
+- Analyze DRAWINGS, BLUEPRINTS, and TECHNICAL DIAGRAMS
+- Extract MEASUREMENTS, DIMENSIONS, and SCALES
+- Identify SPATIAL RELATIONSHIPS and LAYOUTS
+- Examine SITE PHOTOS for physical conditions
+- Read VISUAL ANNOTATIONS on drawings
+
+CRITICAL EXTRACTION RULES:
+1. Look for dimensions like: 12'-6", 3.8m, 2400mm, etc.
+2. Identify scale indicators and apply them
+3. Note room sizes, clearances, and setbacks
+4. Extract material quantities shown visually
+5. Identify structural elements and their positions
+
+OUTPUT FORMAT:
+For each data point you extract, format as:
+[VISUAL_DATA: {description}] [VALUE: {exact value}] [SOURCE: {document}, Page {X} or Site Image {N}]
 
 PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}
 
@@ -70,9 +78,52 @@ ${truncatedContent}
 === DOCUMENT CONTENTS END ===
 
 When responding:
-1. Answer based ONLY on the document content and images above
-2. Include source citations with page numbers or image references
-3. If you cannot find relevant information, say so clearly`;
+1. PRIORITIZE visual and dimensional data
+2. Be PRECISE with all measurements - include units
+3. Cite exact source locations for verification
+4. If a measurement is unclear, state the uncertainty`;
+}
+
+// Specialized prompt for OpenAI - focuses on TEXT, notes, regulations
+function buildOpenAIPrompt(documentContent: string, documentNames: string[], hasImages: boolean): string {
+  const imageNote = hasImages 
+    ? "\n\nNOTE: Site images are available. Focus on any visible text, signage, or written annotations in these images."
+    : "";
+
+  const truncatedContent = truncateContent(documentContent, 30000);
+
+  return `You are Messa's TEXT & REGULATIONS ENGINE, specialized in extracting written information from construction documents.
+
+YOUR PRIMARY FOCUS:
+- Extract SPECIFICATIONS and REQUIREMENTS
+- Identify CODE REFERENCES and COMPLIANCE notes
+- Read WRITTEN ANNOTATIONS and COMMENTS
+- Find MATERIAL SPECIFICATIONS and standards
+- Extract PERMIT CONDITIONS and restrictions
+- Identify SAFETY REQUIREMENTS and warnings
+
+CRITICAL EXTRACTION RULES:
+1. Look for building code references (OBC, NBCC, etc.)
+2. Extract material specs like "Type X Gypsum Board" or "Grade 400R Rebar"
+3. Identify notes starting with "Note:", "NTS:", "Typ.", etc.
+4. Find inspection requirements and hold points
+5. Extract contractor/engineer comments and RFIs
+
+OUTPUT FORMAT:
+For each data point you extract, format as:
+[TEXT_DATA: {description}] [VALUE: {exact text/requirement}] [SOURCE: {document}, Page {X}]
+
+PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}
+
+=== DOCUMENT CONTENTS START ===
+${truncatedContent}
+=== DOCUMENT CONTENTS END ===
+
+When responding:
+1. PRIORITIZE written specifications and regulations
+2. Quote exact text when citing requirements
+3. Include code section numbers when referenced
+4. If a requirement is ambiguous, note the ambiguity`;
 }
 
 interface AIResponse {
@@ -302,27 +353,124 @@ async function callAIModel(
   }
 }
 
-function compareResponses(response1: string, response2: string): boolean {
+// Extract data points from specialized engine outputs
+interface DataPoint {
+  type: "visual" | "text";
+  description: string;
+  value: string;
+  source: string;
+}
+
+function extractDataPoints(content: string, type: "visual" | "text"): DataPoint[] {
+  const dataPoints: DataPoint[] = [];
+  
+  // Pattern for VISUAL_DATA or TEXT_DATA markers
+  const pattern = type === "visual" 
+    ? /\[VISUAL_DATA:\s*([^\]]+)\]\s*\[VALUE:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi
+    : /\[TEXT_DATA:\s*([^\]]+)\]\s*\[VALUE:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi;
+  
+  let match;
+  while ((match = pattern.exec(content)) !== null) {
+    dataPoints.push({
+      type,
+      description: match[1].trim(),
+      value: match[2].trim(),
+      source: match[3].trim(),
+    });
+  }
+  
+  return dataPoints;
+}
+
+// Compare data points between Gemini (visual) and OpenAI (text) responses
+interface ComparisonResult {
+  verified: boolean;
+  matchingPoints: Array<{ gemini: DataPoint; openai: DataPoint; match: boolean }>;
+  conflicts: Array<{ topic: string; geminiValue: string; openaiValue: string; source: string }>;
+  geminiOnlyPoints: DataPoint[];
+  openaiOnlyPoints: DataPoint[];
+}
+
+function compareDataPoints(geminiContent: string, openaiContent: string): ComparisonResult {
+  const geminiPoints = extractDataPoints(geminiContent, "visual");
+  const openaiPoints = extractDataPoints(openaiContent, "text");
+  
+  const matchingPoints: ComparisonResult["matchingPoints"] = [];
+  const conflicts: ComparisonResult["conflicts"] = [];
+  const geminiOnlyPoints: DataPoint[] = [...geminiPoints];
+  const openaiOnlyPoints: DataPoint[] = [...openaiPoints];
+  
+  // Try to find matching topics between visual and text data
+  for (const gp of geminiPoints) {
+    for (const op of openaiPoints) {
+      // Check if they're talking about the same thing (fuzzy match on description)
+      const gpDesc = gp.description.toLowerCase();
+      const opDesc = op.description.toLowerCase();
+      
+      // Find common keywords
+      const gpWords = new Set(gpDesc.split(/\s+/).filter(w => w.length > 3));
+      const opWords = new Set(opDesc.split(/\s+/).filter(w => w.length > 3));
+      const commonWords = [...gpWords].filter(w => opWords.has(w));
+      
+      if (commonWords.length >= 2 || gpDesc.includes(opDesc) || opDesc.includes(gpDesc)) {
+        // Found matching topic - check if values match
+        const valuesMatch = gp.value.toLowerCase().includes(op.value.toLowerCase()) ||
+                           op.value.toLowerCase().includes(gp.value.toLowerCase()) ||
+                           gp.value.toLowerCase() === op.value.toLowerCase();
+        
+        matchingPoints.push({ gemini: gp, openai: op, match: valuesMatch });
+        
+        if (!valuesMatch) {
+          conflicts.push({
+            topic: gp.description,
+            geminiValue: gp.value,
+            openaiValue: op.value,
+            source: gp.source || op.source,
+          });
+        }
+        
+        // Remove from "only" lists
+        const gpIdx = geminiOnlyPoints.findIndex(p => p === gp);
+        if (gpIdx > -1) geminiOnlyPoints.splice(gpIdx, 1);
+        const opIdx = openaiOnlyPoints.findIndex(p => p === op);
+        if (opIdx > -1) openaiOnlyPoints.splice(opIdx, 1);
+      }
+    }
+  }
+  
+  // Also do simple word overlap for general verification
   const normalize = (text: string) =>
     text.toLowerCase().replace(/[^\w\s]/g, "").trim();
   
-  const norm1 = normalize(response1);
-  const norm2 = normalize(response2);
+  const norm1 = normalize(geminiContent);
+  const norm2 = normalize(openaiContent);
   
   const words1 = new Set(norm1.split(/\s+/).filter(w => w.length > 3));
   const words2 = new Set(norm2.split(/\s+/).filter(w => w.length > 3));
   
-  if (words1.size === 0 || words2.size === 0) return false;
-  
   const intersection = [...words1].filter(w => words2.has(w));
-  const overlapRatio = intersection.length / Math.min(words1.size, words2.size);
+  const overlapRatio = words1.size > 0 && words2.size > 0 
+    ? intersection.length / Math.min(words1.size, words2.size)
+    : 0;
   
-  return overlapRatio > 0.5;
+  // Verified if: no conflicts AND (have matching points with matches OR high word overlap)
+  const hasConflicts = conflicts.length > 0;
+  const hasValidMatches = matchingPoints.filter(m => m.match).length > 0;
+  const verified = !hasConflicts && (hasValidMatches || overlapRatio > 0.5);
+  
+  return {
+    verified,
+    matchingPoints,
+    conflicts,
+    geminiOnlyPoints,
+    openaiOnlyPoints,
+  };
 }
 
 function extractSources(content: string): Array<{ document: string; page?: number }> {
   const sources: Array<{ document: string; page?: number }> = [];
-  const sourcePattern = /\[Source:\s*([^,\]]+)(?:,\s*Page\s*(\d+))?\]/gi;
+  // Match both old format and new specialized format
+  const sourcePattern = /\[(?:Source|SOURCE):\s*([^,\]]+)(?:,?\s*Page\s*(\d+))?\]/gi;
   let match;
   
   while ((match = sourcePattern.exec(content)) !== null) {
@@ -380,13 +528,13 @@ serve(async (req) => {
     const geminiModel = "google/gemini-2.5-pro";
     const openaiModel = "openai/gpt-5";
 
-    // Build prompts - use different truncation limits for each model
+    // Build SPECIALIZED prompts for each engine
     const hasDocContent = projectContext?.projectId && systemPrompt !== SYSTEM_PROMPT;
     const geminiPrompt = hasDocContent 
-      ? buildRAGPrompt(systemPrompt, documentNames, imageUrls.length > 0, false)
+      ? buildGeminiPrompt(systemPrompt, documentNames, imageUrls.length > 0)
       : SYSTEM_PROMPT;
     const openaiPrompt = hasDocContent
-      ? buildRAGPrompt(systemPrompt, documentNames, imageUrls.length > 0, true)
+      ? buildOpenAIPrompt(systemPrompt, documentNames, imageUrls.length > 0)
       : SYSTEM_PROMPT;
 
     if (dualEngine) {
@@ -404,22 +552,60 @@ serve(async (req) => {
       console.log(`Gemini success: ${geminiResponse.success}, OpenAI success: ${openaiResponse.success}`);
 
       const bothSucceeded = geminiResponse.success && openaiResponse.success;
-      const verified = bothSucceeded && compareResponses(geminiResponse.content, openaiResponse.content);
       
-      const primaryContent = geminiResponse.success ? geminiResponse.content : openaiResponse.content;
+      // Use the new data-point comparison for dual-engine verification
+      const comparison = bothSucceeded 
+        ? compareDataPoints(geminiResponse.content, openaiResponse.content)
+        : null;
+      
+      const verified = comparison?.verified ?? false;
+      const hasConflicts = comparison?.conflicts && comparison.conflicts.length > 0;
+      
+      // Build synthesized response - prioritize Gemini for visual, combine with OpenAI text insights
+      let primaryContent = "";
+      if (bothSucceeded) {
+        if (hasConflicts) {
+          // Conflict detected - send special response
+          primaryContent = `⚠️ **CONFLICT DETECTED**
+
+The dual-engine analysis found discrepancies between visual data and text specifications. Please verify manually with the source documents.
+
+**Conflicting Data Points:**
+${comparison.conflicts.map(c => `• **${c.topic}**
+  - Gemini (Visual): ${c.geminiValue}
+  - OpenAI (Text): ${c.openaiValue}
+  - Source: ${c.source}`).join('\n\n')}
+
+---
+
+**For Reference - Gemini Analysis (Visual):**
+${geminiResponse.content.substring(0, 1500)}${geminiResponse.content.length > 1500 ? '...' : ''}
+
+**For Reference - OpenAI Analysis (Text):**
+${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 1500 ? '...' : ''}`;
+        } else {
+          // No conflicts - combine the insights
+          primaryContent = geminiResponse.content;
+        }
+      } else {
+        primaryContent = geminiResponse.success ? geminiResponse.content : openaiResponse.content;
+      }
+      
       const sources = extractSources(primaryContent);
 
       const verificationStatus = bothSucceeded
-        ? verified
-          ? "verified"
-          : "not-verified"
+        ? hasConflicts
+          ? "conflict"
+          : verified
+            ? "verified"
+            : "not-verified"
         : geminiResponse.success
           ? "gemini-only"
           : openaiResponse.success
             ? "openai-only"
             : "error";
 
-      console.log(`Verification status: ${verificationStatus}`);
+      console.log(`Verification status: ${verificationStatus}, Conflicts: ${hasConflicts ? comparison.conflicts.length : 0}`);
 
       return new Response(
         JSON.stringify({
@@ -436,6 +622,12 @@ serve(async (req) => {
             gemini: geminiResponse.success ? geminiResponse.content : null,
             openai: openaiResponse.success ? openaiResponse.content : null,
           },
+          comparison: comparison ? {
+            matchingPoints: comparison.matchingPoints,
+            conflicts: comparison.conflicts,
+            geminiOnlyPoints: comparison.geminiOnlyPoints,
+            openaiOnlyPoints: comparison.openaiOnlyPoints,
+          } : null,
           sources,
           documentsAnalyzed: documentNames,
           imagesAnalyzed: imageUrls.length,
