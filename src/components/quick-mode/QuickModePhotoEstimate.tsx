@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import { TrialLimitUpgradeModal } from "@/components/TrialLimitUpgradeModal";
 interface Material {
   item: string;
   quantity: number | string;
@@ -85,6 +86,7 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<EstimateResult | null>(null);
   const [showDecisionLog, setShowDecisionLog] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +125,7 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
     // Check trial limits for non-premium users
     if (!isPremium && isAuthenticated) {
       if (!hasTrialsRemaining) {
-        toast.error("You've used all your free AI estimates. Upgrade to Pro for unlimited access!");
+        setShowUpgradeModal(true);
         return;
       }
     }
@@ -181,6 +183,7 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
   };
 
   return (
+    <>
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Upload Section */}
       <Card className="border-border">
@@ -511,6 +514,14 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
         </CardContent>
       </Card>
     </div>
+
+      {/* Upgrade Modal */}
+      <TrialLimitUpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        feature="quick_estimate"
+      />
+    </>
   );
 };
 

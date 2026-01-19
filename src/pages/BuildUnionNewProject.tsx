@@ -41,6 +41,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { TrialLimitUpgradeModal } from "@/components/TrialLimitUpgradeModal";
 
 interface UploadedFile {
   file: File;
@@ -137,14 +138,14 @@ const BuildUnionNewProject = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIndexing, setIsIndexing] = useState(false);
   const [indexingProgress, setIndexingProgress] = useState(0);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Check project creation limit for non-premium users
   useEffect(() => {
     if (user && !isPremium && !hasTrialsRemaining) {
-      toast.error("You've reached your free project limit. Upgrade to Pro for unlimited projects!");
-      navigate("/buildunion/workspace");
+      setShowUpgradeModal(true);
     }
-  }, [user, isPremium, hasTrialsRemaining, navigate]);
+  }, [user, isPremium, hasTrialsRemaining]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -1256,6 +1257,18 @@ const BuildUnionNewProject = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Upgrade Modal */}
+      <TrialLimitUpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={(open) => {
+          setShowUpgradeModal(open);
+          if (!open && !hasTrialsRemaining) {
+            navigate("/buildunion/workspace");
+          }
+        }}
+        feature="project_creation"
+      />
     </main>
   );
 };
