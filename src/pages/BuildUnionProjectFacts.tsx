@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
@@ -297,6 +297,38 @@ const BuildUnionProjectFacts = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isDetailOpen, navigateToFact]);
 
+  // Swipe gesture support for mobile
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const deltaX = touchEndX - touchStartX.current;
+    const deltaY = touchEndY - touchStartY.current;
+    
+    // Only trigger swipe if horizontal movement is greater than vertical (to not interfere with scrolling)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0) {
+        navigateToFact('prev'); // Swipe right = previous
+      } else {
+        navigateToFact('next'); // Swipe left = next
+      }
+    }
+    
+    touchStartX.current = null;
+    touchStartY.current = null;
+  }, [navigateToFact]);
+
   const getStatusBadge = (status: string, size: "sm" | "lg" = "sm") => {
     const iconSize = size === "lg" ? "h-4 w-4" : "h-3 w-3";
     const badgeClass = size === "lg" ? "text-sm py-1.5 px-3" : "";
@@ -330,7 +362,11 @@ const BuildUnionProjectFacts = () => {
 
     return (
       <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-hidden flex flex-col">
+        <SheetContent 
+          className="w-full sm:max-w-2xl overflow-hidden flex flex-col"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <SheetHeader className="flex-shrink-0">
             <div className="flex items-center justify-between gap-2 mb-2">
               <Badge variant="outline" className="text-xs text-cyan-700 border-cyan-300 bg-cyan-50">
@@ -462,12 +498,15 @@ const BuildUnionProjectFacts = () => {
           <div className="flex-shrink-0 pt-4 border-t mt-auto space-y-3">
             {/* Navigation hint */}
             <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 hidden sm:flex">
                 <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-[10px] font-mono">←</kbd>
                 <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-[10px] font-mono">→</kbd>
                 <span>Navigate</span>
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 sm:hidden">
+                <span>👆 Swipe to navigate</span>
+              </span>
+              <span className="flex items-center gap-1 hidden sm:flex">
                 <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-[10px] font-mono">Esc</kbd>
                 <span>Close</span>
               </span>
