@@ -35,10 +35,12 @@ const OpenAIIcon = ({ className }: { className?: string }) => (
 );
 
 interface DataPoint {
-  type: "visual" | "text";
+  type: "visual" | "text" | "cross-verified";
   description: string;
   value: string;
   source: string;
+  confidence?: "high" | "medium" | "low";
+  verificationSource?: string;
 }
 
 interface Conflict {
@@ -46,21 +48,32 @@ interface Conflict {
   geminiValue: string;
   openaiValue: string;
   source: string;
+  isContradiction?: boolean;
+}
+
+interface CrossVerifyResult {
+  visualElement: string;
+  found: "yes" | "no" | "partial";
+  textRef: string;
+  source: string;
 }
 
 interface DecisionLogData {
   geminiResponse: string | null;
   openaiResponse: string | null;
   verification: {
-    status: "verified" | "not-verified" | "conflict" | "gemini-only" | "openai-only" | "error";
+    status: "verified" | "not-verified" | "conflict" | "gemini-only" | "openai-only" | "operational-truth" | "error";
     verified: boolean;
     engines: { gemini: boolean; openai: boolean };
+    summary?: string;
   } | null;
   comparison?: {
     matchingPoints?: Array<{ gemini: DataPoint; openai: DataPoint; match: boolean }>;
     conflicts?: Conflict[];
     geminiOnlyPoints?: DataPoint[];
     openaiOnlyPoints?: DataPoint[];
+    operationalTruths?: DataPoint[];
+    crossVerified?: CrossVerifyResult[];
   };
 }
 
@@ -84,11 +97,29 @@ const DecisionLogModal = ({ data, trigger }: DecisionLogModalProps) => {
       );
     }
 
-    if (data.verification.status === "not-verified" || data.verification.status === "conflict") {
+    if (data.verification.status === "conflict") {
       return (
         <Badge variant="destructive" className="gap-1.5">
           <AlertTriangle className="h-3.5 w-3.5" />
-          CONFLICT Detected
+          TRUE CONFLICT
+        </Badge>
+      );
+    }
+
+    if (data.verification.status === "operational-truth") {
+      return (
+        <Badge className="bg-amber-500 text-white gap-1.5">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Operational Truth
+        </Badge>
+      );
+    }
+
+    if (data.verification.status === "gemini-only" || data.verification.status === "openai-only") {
+      return (
+        <Badge variant="secondary" className="gap-1.5">
+          <Info className="h-3.5 w-3.5" />
+          Single Engine
         </Badge>
       );
     }
@@ -96,59 +127,157 @@ const DecisionLogModal = ({ data, trigger }: DecisionLogModalProps) => {
     return (
       <Badge variant="secondary" className="gap-1.5">
         <Info className="h-3.5 w-3.5" />
-        Partial Analysis
+        Analysis Complete
       </Badge>
     );
   };
 
-  const renderDataPoint = (point: DataPoint, index: number) => (
+  const renderDataPoint = (point: DataPoint, index: number) => {
+    const getIcon = () => {
+      if (point.type === "cross-verified") {
+        return <CheckCircle2 className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />;
+      }
+      if (point.type === "visual") {
+        return <Ruler className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />;
+      }
+      return <FileText className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />;
+    };
+
+    const getConfidenceBadge = () => {
+      if (!point.confidence) return null;
+      const colors = {
+        high: "bg-green-100 text-green-700 border-green-300",
+        medium: "bg-amber-100 text-amber-700 border-amber-300",
+        low: "bg-red-100 text-red-700 border-red-300",
+      };
+      return (
+        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${colors[point.confidence]}`}>
+          {point.confidence.toUpperCase()}
+        </span>
+      );
+    };
+
+    return (
+      <div 
+        key={index}
+        className="p-2 rounded-md bg-white/50 border border-slate-200 text-xs"
+      >
+        <div className="flex items-start gap-2">
+          {getIcon()}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-medium text-slate-700 break-words">{point.description}</p>
+              {getConfidenceBadge()}
+            </div>
+            <p className="text-slate-900 font-semibold mt-0.5 break-words">{point.value}</p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <p className="text-slate-500 text-[10px]">{point.source}</p>
+              {point.verificationSource && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                  {point.verificationSource}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderConflict = (conflict: Conflict, index: number) => {
+    const isTrueConflict = conflict.isContradiction;
+    const bgColor = isTrueConflict ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200";
+    const iconColor = isTrueConflict ? "text-red-500" : "text-amber-500";
+    const textColor = isTrueConflict ? "text-red-700" : "text-amber-700";
+    const sourceColor = isTrueConflict ? "text-red-600" : "text-amber-600";
+
+    return (
+      <div 
+        key={index}
+        className={`p-3 rounded-lg ${bgColor}`}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          {isTrueConflict ? (
+            <XCircle className={`h-4 w-4 ${iconColor}`} />
+          ) : (
+            <Info className={`h-4 w-4 ${iconColor}`} />
+          )}
+          <span className={`text-sm font-semibold ${textColor} break-words`}>
+            {conflict.topic}
+            {!isTrueConflict && <span className="font-normal text-xs ml-2">(different perspectives)</span>}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div className="p-2 rounded bg-blue-50 border border-blue-200">
+            <div className="flex items-center gap-1 mb-1">
+              <GeminiIcon className="h-3 w-3 text-blue-600" />
+              <span className="font-medium text-blue-700">Gemini (Visual)</span>
+            </div>
+            <p className="text-blue-900 break-words">{conflict.geminiValue}</p>
+          </div>
+          <div className="p-2 rounded bg-emerald-50 border border-emerald-200">
+            <div className="flex items-center gap-1 mb-1">
+              <OpenAIIcon className="h-3 w-3 text-emerald-600" />
+              <span className="font-medium text-emerald-700">OpenAI (Text)</span>
+            </div>
+            <p className="text-emerald-900 break-words">{conflict.openaiValue}</p>
+          </div>
+        </div>
+        <p className={`text-[10px] ${sourceColor} mt-2`}>Source: {conflict.source}</p>
+      </div>
+    );
+  };
+
+  const renderOperationalTruth = (point: DataPoint, index: number) => (
     <div 
       key={index}
-      className="p-2 rounded-md bg-white/50 border border-slate-200 text-xs"
+      className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs"
     >
       <div className="flex items-start gap-2">
-        {point.type === "visual" ? (
-          <Ruler className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
-        ) : (
-          <FileText className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
-        )}
+        <CheckCircle2 className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-700 break-words">{point.description}</p>
-          <p className="text-slate-900 font-semibold mt-0.5 break-words">{point.value}</p>
-          <p className="text-slate-500 text-[10px] mt-1">{point.source}</p>
+          <p className="font-medium text-amber-800 break-words">{point.description}</p>
+          <p className="text-amber-900 font-semibold mt-0.5 break-words">{point.value}</p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <p className="text-amber-600 text-[10px]">{point.source}</p>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300">
+              {point.verificationSource || "Operational Truth"}
+            </span>
+          </div>
         </div>
       </div>
     </div>
   );
 
-  const renderConflict = (conflict: Conflict, index: number) => (
-    <div 
-      key={index}
-      className="p-3 rounded-lg bg-red-50 border border-red-200"
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <XCircle className="h-4 w-4 text-red-500" />
-        <span className="text-sm font-semibold text-red-700 break-words">{conflict.topic}</span>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-        <div className="p-2 rounded bg-blue-50 border border-blue-200">
-          <div className="flex items-center gap-1 mb-1">
-            <GeminiIcon className="h-3 w-3 text-blue-600" />
-            <span className="font-medium text-blue-700">Gemini (Visual)</span>
+  const renderCrossVerified = (cv: CrossVerifyResult, index: number) => {
+    const statusColors = {
+      yes: "bg-purple-50 border-purple-200",
+      partial: "bg-amber-50 border-amber-200",
+      no: "bg-slate-50 border-slate-200",
+    };
+    const statusIcons = {
+      yes: <CheckCircle2 className="h-3.5 w-3.5 text-purple-600" />,
+      partial: <Info className="h-3.5 w-3.5 text-amber-600" />,
+      no: <XCircle className="h-3.5 w-3.5 text-slate-400" />,
+    };
+
+    return (
+      <div key={index} className={`p-2 rounded-lg ${statusColors[cv.found]} text-xs`}>
+        <div className="flex items-start gap-2">
+          {statusIcons[cv.found]}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-slate-700 break-words">{cv.visualElement}</p>
+            <p className="text-slate-600 mt-0.5 break-words">
+              {cv.found === "yes" ? `Confirmed: "${cv.textRef}"` : 
+               cv.found === "partial" ? `Partial match: "${cv.textRef}"` :
+               "No text reference found"}
+            </p>
+            <p className="text-slate-500 text-[10px] mt-1">{cv.source}</p>
           </div>
-          <p className="text-blue-900 break-words">{conflict.geminiValue}</p>
-        </div>
-        <div className="p-2 rounded bg-emerald-50 border border-emerald-200">
-          <div className="flex items-center gap-1 mb-1">
-            <OpenAIIcon className="h-3 w-3 text-emerald-600" />
-            <span className="font-medium text-emerald-700">OpenAI (Text)</span>
-          </div>
-          <p className="text-emerald-900 break-words">{conflict.openaiValue}</p>
         </div>
       </div>
-      <p className="text-[10px] text-red-600 mt-2">Source: {conflict.source}</p>
-    </div>
-  );
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -245,6 +374,38 @@ const DecisionLogModal = ({ data, trigger }: DecisionLogModalProps) => {
                         <p className="text-[10px] text-green-600 mt-0.5">Both engines agree • {match.gemini.source}</p>
                       </div>
                     ))}
+                </div>
+              </div>
+            )}
+
+            {/* Operational Truths Section */}
+            {data.comparison?.operationalTruths && data.comparison.operationalTruths.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-amber-700 mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Operational Truths ({data.comparison.operationalTruths.length})
+                </h4>
+                <p className="text-xs text-amber-600 mb-2">
+                  Data verified by one engine with high confidence, accepted as truth.
+                </p>
+                <div className="space-y-2">
+                  {data.comparison.operationalTruths.map((truth, idx) => renderOperationalTruth(truth, idx))}
+                </div>
+              </div>
+            )}
+
+            {/* Cross-Verified Section */}
+            {data.comparison?.crossVerified && data.comparison.crossVerified.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-purple-700 mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Cross-Verification Results ({data.comparison.crossVerified.length})
+                </h4>
+                <p className="text-xs text-purple-600 mb-2">
+                  Visual elements checked against text references.
+                </p>
+                <div className="space-y-2">
+                  {data.comparison.crossVerified.map((cv, idx) => renderCrossVerified(cv, idx))}
                 </div>
               </div>
             )}
