@@ -359,21 +359,21 @@ const BuildUnionWorkspace = () => {
             <div className="absolute left-0 right-0 top-6 h-px bg-slate-200 hidden md:block" />
 
             {/* Phases Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
               {/* Phase 1 */}
               <div className="relative">
                 <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-3 h-3 rounded-full bg-amber-500 border-4 border-white shadow z-10" />
+                  <div className="w-4 h-4 rounded-full bg-amber-500 border-4 border-white shadow z-10" />
                 </div>
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-500">Phase 1</span>
-                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-slate-500">Phase 1</span>
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded">
                       ~65%
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-1">Public MVP</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">
+                  <h3 className="text-base font-bold text-slate-900 mb-2">Public MVP</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">
                     Core platform features enabling collaboration between professionals.
                   </p>
                 </div>
@@ -382,17 +382,17 @@ const BuildUnionWorkspace = () => {
               {/* Phase 2 */}
               <div className="relative">
                 <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-3 h-3 rounded-full bg-cyan-500 border-4 border-white shadow z-10" />
+                  <div className="w-4 h-4 rounded-full bg-cyan-500 border-4 border-white shadow z-10" />
                 </div>
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-500">Phase 2</span>
-                    <span className="text-[10px] font-semibold text-cyan-700 bg-cyan-100 px-1.5 py-0.5 rounded">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-slate-500">Phase 2</span>
+                    <span className="text-xs font-semibold text-cyan-700 bg-cyan-100 px-2 py-1 rounded">
                       SOON
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-1">Verified Professionals</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">
+                  <h3 className="text-base font-bold text-slate-900 mb-2">Verified Professionals</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">
                     Professional verification with credential and certification checks.
                   </p>
                 </div>
@@ -401,17 +401,17 @@ const BuildUnionWorkspace = () => {
               {/* Phase 3 */}
               <div className="relative">
                 <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-3 h-3 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
+                  <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
                 </div>
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-500">Phase 3</span>
-                    <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-slate-500">Phase 3</span>
+                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
                       PLANNED
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-1">Union Collaborations</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">
+                  <h3 className="text-base font-bold text-slate-900 mb-2">Union Collaborations</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">
                     Strategic partnerships with major unions for coordinated workflows.
                   </p>
                 </div>
@@ -420,17 +420,17 @@ const BuildUnionWorkspace = () => {
               {/* Phase 4 */}
               <div className="relative">
                 <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-3 h-3 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
+                  <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
                 </div>
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-500">Phase 4</span>
-                    <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-slate-500">Phase 4</span>
+                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
                       PLANNED
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 mb-1">City-by-City Expansion</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">
+                  <h3 className="text-base font-bold text-slate-900 mb-2">City-by-City Expansion</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">
                     Phased rollout across key metropolitan areas with local partnerships.
                   </p>
                 </div>
