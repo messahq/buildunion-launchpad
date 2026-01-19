@@ -48,7 +48,7 @@ const HeroSection = () => {
       {/* Video Background */}
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover object-center scale-110"
+        className="absolute inset-0 h-full w-full object-cover object-center scale-75"
         autoPlay
         muted
         loop
@@ -92,26 +92,6 @@ const HeroSection = () => {
         }}
       />
       
-      {/* Floating Dust Particles */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(30)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-              left: `${Math.random() * 60 + 10}%`,
-              top: `${Math.random() * 80 + 10}%`,
-              background: `rgba(251, 191, 36, ${Math.random() * 0.4 + 0.2})`,
-              boxShadow: `0 0 ${Math.random() * 4 + 2}px rgba(251, 146, 60, 0.5)`,
-              animation: `floatDust ${Math.random() * 8 + 6}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 5}s`,
-            }}
-          />
-        ))}
-      </div>
-
       {/* Back Button */}
       <div className="absolute top-6 left-6 z-20">
         <Button
