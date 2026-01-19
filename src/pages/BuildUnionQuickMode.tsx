@@ -57,7 +57,7 @@ const BuildUnionQuickMode = () => {
   // Navigate to summary with collected data
   const goToSummary = () => {
     if (!user) {
-      toast.error("Kérlek jelentkezz be az összesítőhöz!");
+      toast.error("Please sign in to access the summary");
       navigate("/buildunion/login");
       return;
     }
@@ -67,7 +67,7 @@ const BuildUnionQuickMode = () => {
                     collectedData.templateItems.length > 0;
 
     if (!hasData) {
-      toast.info("Adj hozzá adatokat (fotó, kalkulátor, sablon) az összesítőhöz!");
+      toast.info("Add some data (photo, calculator, template) to create a summary");
       return;
     }
 
@@ -144,7 +144,7 @@ const BuildUnionQuickMode = () => {
                   className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
-                  <span>Összesítő</span>
+                  <span>Summary</span>
                   {collectedItemsCount > 0 && (
                     <Badge variant="secondary" className="ml-1 bg-white/20 text-white">
                       {collectedItemsCount}
@@ -162,7 +162,7 @@ const BuildUnionQuickMode = () => {
             <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span className="text-sm text-amber-700">
-                <strong>{collectedItemsCount}</strong> adat összegyűjtve az összesítőhöz
+                <strong>{collectedItemsCount}</strong> items collected for summary
               </span>
               <Button
                 size="sm"
@@ -170,7 +170,7 @@ const BuildUnionQuickMode = () => {
                 onClick={goToSummary}
                 className="ml-auto text-amber-600 hover:text-amber-700"
               >
-                Megtekintés →
+                View →
               </Button>
             </div>
           </div>

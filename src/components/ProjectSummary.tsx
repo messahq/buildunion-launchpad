@@ -140,7 +140,7 @@ export function ProjectSummary({
       setNotes(summaryData.notes || "");
     } catch (error) {
       console.error("Error fetching summary:", error);
-      toast.error("Nem sikerült betölteni az összesítőt");
+      toast.error("Failed to load summary");
     } finally {
       setLoading(false);
     }
@@ -175,7 +175,7 @@ export function ProjectSummary({
       }
     } catch (error) {
       console.error("Error creating summary:", error);
-      toast.error("Nem sikerült létrehozni az összesítőt");
+      toast.error("Failed to create summary");
     } finally {
       setLoading(false);
     }
@@ -193,11 +193,11 @@ export function ProjectSummary({
 
       if (response.error) throw response.error;
 
-      toast.success("AI elemzés kész!");
+      toast.success("AI analysis complete!");
       await fetchSummary();
     } catch (error) {
       console.error("Analysis error:", error);
-      toast.error("AI elemzés sikertelen");
+      toast.error("AI analysis failed");
     } finally {
       setAnalyzing(false);
     }
@@ -232,12 +232,12 @@ export function ProjectSummary({
 
       if (error) throw error;
 
-      toast.success("Összesítő mentve!");
+      toast.success("Summary saved!");
       setEditMode(false);
       await fetchSummary();
     } catch (error) {
       console.error("Save error:", error);
-      toast.error("Mentés sikertelen");
+      toast.error("Failed to save");
     } finally {
       setSaving(false);
     }
@@ -247,9 +247,9 @@ export function ProjectSummary({
     setEditedItems([
       ...editedItems,
       {
-        name: "Új tétel",
+        name: "New item",
         quantity: 1,
-        unit: "db",
+        unit: "unit",
         unit_price: 0,
         total: 0,
         source: "manual"
@@ -274,26 +274,26 @@ export function ProjectSummary({
   };
 
   const generatePDF = () => {
-    toast.info("PDF generálás folyamatban...");
+    toast.info("Generating PDF...");
     // This would integrate with the existing PDF quote generator
     navigate("/buildunion/quick?tab=quote");
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("hu-HU", {
+    return new Intl.NumberFormat("en-CA", {
       style: "currency",
-      currency: "HUF",
+      currency: "CAD",
       maximumFractionDigits: 0
     }).format(amount);
   };
 
   const getSourceBadge = (source: string) => {
     const configs: Record<string, { icon: any; color: string; label: string }> = {
-      photo: { icon: Camera, color: "bg-blue-100 text-blue-700", label: "Fotó" },
-      calculator: { icon: Calculator, color: "bg-green-100 text-green-700", label: "Kalkulátor" },
-      template: { icon: FileText, color: "bg-purple-100 text-purple-700", label: "Sablon" },
-      blueprint: { icon: MapPin, color: "bg-orange-100 text-orange-700", label: "Tervrajz" },
-      manual: { icon: Edit3, color: "bg-gray-100 text-gray-700", label: "Kézi" }
+      photo: { icon: Camera, color: "bg-blue-100 text-blue-700", label: "Photo" },
+      calculator: { icon: Calculator, color: "bg-green-100 text-green-700", label: "Calculator" },
+      template: { icon: FileText, color: "bg-purple-100 text-purple-700", label: "Template" },
+      blueprint: { icon: MapPin, color: "bg-orange-100 text-orange-700", label: "Blueprint" },
+      manual: { icon: Edit3, color: "bg-gray-100 text-gray-700", label: "Manual" }
     };
     const config = configs[source] || configs.manual;
     const Icon = config.icon;
@@ -311,7 +311,7 @@ export function ProjectSummary({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-amber-500 mx-auto" />
-          <p className="text-muted-foreground">Összesítő betöltése...</p>
+          <p className="text-muted-foreground">Loading summary...</p>
         </div>
       </div>
     );
@@ -321,15 +321,15 @@ export function ProjectSummary({
     return (
       <div className="text-center py-12">
         <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-        <p className="text-muted-foreground">Nem található összesítő</p>
+        <p className="text-muted-foreground">Summary not found</p>
       </div>
     );
   }
 
   const totalItems = editedItems.length;
   const materialTotal = editedItems.reduce((sum, item) => sum + item.total, 0);
-  const vatAmount = materialTotal * 0.27;
-  const grandTotal = materialTotal + vatAmount;
+  const taxAmount = materialTotal * 0.13; // 13% HST for Ontario
+  const grandTotal = materialTotal + taxAmount;
 
   // ===== CONFLICT DETECTION =====
   // Check for conflicts between Quick Mode (photo estimate) and M.E.S.S.A. (blueprint analysis)
@@ -395,9 +395,9 @@ export function ProjectSummary({
     facts.forEach((fact: any) => {
       if (fact.verification_status === "conflict" || fact.verification_status === "disputed") {
         conflicts.push({
-          field: fact.question?.slice(0, 50) || "Ellenőrzött adat",
-          quickValue: "Fotó becslés",
-          messaValue: "Tervrajz elemzés",
+          field: fact.question?.slice(0, 50) || "Verified data",
+          quickValue: "Photo estimate",
+          messaValue: "Blueprint analysis",
           severity: "medium"
         });
       }
@@ -422,10 +422,10 @@ export function ProjectSummary({
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <FileSpreadsheet className="h-6 w-6 text-amber-500" />
-              Projekt Összesítő
+              Project Summary
             </h1>
             <p className="text-muted-foreground text-sm">
-              Létrehozva: {new Date(summary.created_at).toLocaleDateString("hu-HU")}
+              Created: {new Date(summary.created_at).toLocaleDateString("en-CA")}
             </p>
           </div>
         </div>
@@ -442,18 +442,18 @@ export function ProjectSummary({
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            AI Újraelemzés
+            AI Re-analyze
           </Button>
           
           {editMode ? (
             <Button onClick={saveSummary} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Mentés
+              Save
             </Button>
           ) : (
             <Button variant="outline" onClick={() => setEditMode(true)} className="gap-2">
               <Edit3 className="h-4 w-4" />
-              Szerkesztés
+              Edit
             </Button>
           )}
         </div>
@@ -466,13 +466,13 @@ export function ProjectSummary({
           <AlertTitle className="flex items-center gap-2">
             <span>⚠️ Conflict Detected</span>
             <Badge variant={hasHighSeverityConflict ? "destructive" : "secondary"}>
-              {conflicts.length} eltérés
+              {conflicts.length} discrepancies
             </Badge>
           </AlertTitle>
           <AlertDescription className="mt-2">
             <p className="text-sm mb-3">
-              A Quick Mode (fotó becslés) és a M.E.S.S.A. (tervrajz elemzés) adatai között eltérések vannak. 
-              <strong className="text-red-700"> Kérjük, ellenőrizd az adatokat mielőtt árajánlatot küldesz!</strong>
+              Discrepancies found between Quick Mode (photo estimate) and M.E.S.S.A. (blueprint analysis). 
+              <strong className="text-red-700"> Please verify the data before sending a quote!</strong>
             </p>
             <div className="space-y-2">
               {conflicts.map((conflict, idx) => (
@@ -493,7 +493,7 @@ export function ProjectSummary({
                       <MapPin className="h-3 w-3" /> {conflict.messaValue}
                     </span>
                     {conflict.severity === "high" && (
-                      <Badge variant="destructive" className="text-xs">Kritikus</Badge>
+                      <Badge variant="destructive" className="text-xs">Critical</Badge>
                     )}
                   </div>
                 </div>
@@ -511,7 +511,7 @@ export function ProjectSummary({
               <Camera className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs text-blue-600 font-medium">Fotó becslés</p>
+              <p className="text-xs text-blue-600 font-medium">Photo Estimate</p>
               <p className="font-bold text-blue-800">
                 {summary.photo_estimate?.total ? formatCurrency(summary.photo_estimate.total) : "—"}
               </p>
@@ -525,9 +525,9 @@ export function ProjectSummary({
               <Calculator className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-xs text-green-600 font-medium">Kalkulátor</p>
+              <p className="text-xs text-green-600 font-medium">Calculator</p>
               <p className="font-bold text-green-800">
-                {(summary.calculator_results as any[])?.length || 0} számítás
+                {(summary.calculator_results as any[])?.length || 0} calculations
               </p>
             </div>
           </CardContent>
@@ -539,9 +539,9 @@ export function ProjectSummary({
               <FileText className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-xs text-purple-600 font-medium">Sablon tételek</p>
+              <p className="text-xs text-purple-600 font-medium">Template Items</p>
               <p className="font-bold text-purple-800">
-                {(summary.template_items as any[])?.length || 0} tétel
+                {(summary.template_items as any[])?.length || 0} items
               </p>
             </div>
           </CardContent>
@@ -553,9 +553,9 @@ export function ProjectSummary({
               <CheckCircle2 className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-xs text-orange-600 font-medium">M.E.S.S.A. tények</p>
+              <p className="text-xs text-orange-600 font-medium">M.E.S.S.A. Facts</p>
               <p className="font-bold text-orange-800">
-                {(summary.verified_facts as any[])?.length || 0} ellenőrzött
+                {(summary.verified_facts as any[])?.length || 0} verified
               </p>
             </div>
           </CardContent>
@@ -573,8 +573,8 @@ export function ProjectSummary({
               </div>
             </div>
             <div>
-              <p className="font-semibold text-amber-800">AI Elemzés folyamatban...</p>
-              <p className="text-sm text-amber-600">Az összes forrás adatainak szintetizálása</p>
+              <p className="font-semibold text-amber-800">AI Analysis in progress...</p>
+              <p className="text-sm text-amber-600">Synthesizing data from all sources</p>
             </div>
           </CardContent>
         </Card>
@@ -585,20 +585,20 @@ export function ProjectSummary({
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="h-5 w-5 text-slate-500" />
-            Ügyfél adatok
+            Client Information
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
-                <User className="h-4 w-4" /> Név
+                <User className="h-4 w-4" /> Name
               </label>
               <Input
                 value={clientInfo.name}
                 onChange={(e) => setClientInfo({ ...clientInfo, name: e.target.value })}
                 disabled={!editMode}
-                placeholder="Ügyfél neve"
+                placeholder="Client name"
               />
             </div>
             <div className="space-y-2">
@@ -615,24 +615,24 @@ export function ProjectSummary({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
-                <Phone className="h-4 w-4" /> Telefon
+                <Phone className="h-4 w-4" /> Phone
               </label>
               <Input
                 value={clientInfo.phone}
                 onChange={(e) => setClientInfo({ ...clientInfo, phone: e.target.value })}
                 disabled={!editMode}
-                placeholder="+36 XX XXX XXXX"
+                placeholder="+1 (XXX) XXX-XXXX"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
-                <Building2 className="h-4 w-4" /> Cím
+                <Building2 className="h-4 w-4" /> Address
               </label>
               <Input
                 value={clientInfo.address}
                 onChange={(e) => setClientInfo({ ...clientInfo, address: e.target.value })}
                 disabled={!editMode}
-                placeholder="Munkavégzés helye"
+                placeholder="Project location"
               />
             </div>
           </div>
@@ -645,11 +645,11 @@ export function ProjectSummary({
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Receipt className="h-5 w-5 text-slate-500" />
-              Tételek ({totalItems} db)
+              Line Items ({totalItems})
             </CardTitle>
             {editMode && (
               <Button size="sm" variant="outline" onClick={addLineItem} className="gap-2">
-                <Plus className="h-4 w-4" /> Új tétel
+                <Plus className="h-4 w-4" /> Add Item
               </Button>
             )}
           </div>
@@ -659,12 +659,12 @@ export function ProjectSummary({
             <table className="w-full">
               <thead>
                 <tr className="border-b text-left text-sm text-muted-foreground">
-                  <th className="pb-3 font-medium">Megnevezés</th>
-                  <th className="pb-3 font-medium text-center">Menny.</th>
-                  <th className="pb-3 font-medium text-center">Egység</th>
-                  <th className="pb-3 font-medium text-right">Egységár</th>
-                  <th className="pb-3 font-medium text-right">Összesen</th>
-                  <th className="pb-3 font-medium text-center">Forrás</th>
+                  <th className="pb-3 font-medium">Description</th>
+                  <th className="pb-3 font-medium text-center">Qty</th>
+                  <th className="pb-3 font-medium text-center">Unit</th>
+                  <th className="pb-3 font-medium text-right">Unit Price</th>
+                  <th className="pb-3 font-medium text-right">Total</th>
+                  <th className="pb-3 font-medium text-center">Source</th>
                   {editMode && <th className="pb-3 font-medium"></th>}
                 </tr>
               </thead>
@@ -740,7 +740,7 @@ export function ProjectSummary({
                 {editedItems.length === 0 && (
                   <tr>
                     <td colSpan={editMode ? 7 : 6} className="py-8 text-center text-muted-foreground">
-                      Nincsenek tételek. {editMode ? "Adj hozzá új tételt!" : "Futtass AI elemzést!"}
+                      No items yet. {editMode ? "Add a new item!" : "Run AI analysis!"}
                     </td>
                   </tr>
                 )}
@@ -753,16 +753,16 @@ export function ProjectSummary({
           <div className="flex justify-end">
             <div className="w-64 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Nettó összesen:</span>
+                <span className="text-muted-foreground">Subtotal:</span>
                 <span className="font-medium">{formatCurrency(materialTotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">ÁFA (27%):</span>
-                <span>{formatCurrency(vatAmount)}</span>
+                <span className="text-muted-foreground">HST (13%):</span>
+                <span>{formatCurrency(taxAmount)}</span>
               </div>
               <Separator />
               <div className="flex justify-between text-lg font-bold">
-                <span>Bruttó összesen:</span>
+                <span>Total:</span>
                 <span className="text-amber-600">{formatCurrency(grandTotal)}</span>
               </div>
             </div>
@@ -773,14 +773,14 @@ export function ProjectSummary({
       {/* Notes */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Megjegyzések</CardTitle>
+          <CardTitle className="text-lg">Notes</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={!editMode}
-            placeholder="További megjegyzések, feltételek, garancia információk..."
+            placeholder="Additional notes, terms, warranty information..."
             className="min-h-[100px]"
           />
         </CardContent>
@@ -790,14 +790,14 @@ export function ProjectSummary({
       <div className="flex flex-col sm:flex-row gap-3 justify-end">
         <Button variant="outline" onClick={generatePDF} className="gap-2">
           <Download className="h-4 w-4" />
-          PDF Árajánlat
+          PDF Quote
         </Button>
         <Button 
           className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-          onClick={() => toast.info("Számla generálás hamarosan...")}
+          onClick={() => toast.info("Invoice generation coming soon...")}
         >
           <Send className="h-4 w-4" />
-          Számla küldése
+          Send Invoice
         </Button>
       </div>
     </div>
