@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain } from "lucide-react";
+import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -67,9 +67,10 @@ interface EstimateResult {
 
 interface QuickModePhotoEstimateProps {
   onEstimateComplete?: (estimate: EstimateResult) => void;
+  onContinueToTemplates?: () => void;
 }
 
-const QuickModePhotoEstimate = ({ onEstimateComplete }: QuickModePhotoEstimateProps) => {
+const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates }: QuickModePhotoEstimateProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
@@ -435,6 +436,15 @@ const QuickModePhotoEstimate = ({ onEstimateComplete }: QuickModePhotoEstimatePr
                   </CollapsibleContent>
                 </Collapsible>
               )}
+
+              {/* Continue Button */}
+              <Button
+                onClick={onContinueToTemplates}
+                className="w-full gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              >
+                Continue to Templates
+                <ArrowRight className="w-4 h-4" />
+              </Button>
             </div>
           ) : (
             <div className="h-64 flex flex-col items-center justify-center text-center">

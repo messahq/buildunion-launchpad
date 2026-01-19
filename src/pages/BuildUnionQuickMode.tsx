@@ -328,7 +328,10 @@ const BuildUnionQuickMode = () => {
             </TabsList>
 
             <TabsContent value="photo" className="mt-0">
-              <QuickModePhotoEstimate onEstimateComplete={handlePhotoEstimateComplete} />
+              <QuickModePhotoEstimate 
+                onEstimateComplete={handlePhotoEstimateComplete}
+                onContinueToTemplates={() => setActiveTab("templates")}
+              />
             </TabsContent>
 
             <TabsContent value="templates" className="mt-0">
