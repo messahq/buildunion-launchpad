@@ -134,19 +134,19 @@ const ProjectDashboardWidget = () => {
   return (
     <Card className="bg-white border-slate-200 overflow-hidden">
       {/* Header with Clock */}
-      <CardHeader className="pb-3 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+      <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 via-amber-100 to-orange-50 border-b border-amber-200">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-amber-400" />
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800">
+              <Briefcase className="h-5 w-5 text-amber-600" />
               Project Overview
             </CardTitle>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="text-slate-500 text-xs mt-1">
               {format(currentTime, "EEEE, MMMM d, yyyy")}
             </p>
           </div>
           <div className="text-right">
-            <div className="flex items-center gap-2 text-2xl font-mono font-bold text-amber-400">
+            <div className="flex items-center gap-2 text-2xl font-mono font-bold text-amber-600">
               <Clock className="h-5 w-5" />
               {format(currentTime, "HH:mm")}
             </div>
