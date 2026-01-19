@@ -12,7 +12,8 @@ import {
   ArrowLeft, FileText, Calendar, Loader2, Download, Trash2, 
   Brain, AlertCircle, Clock, Sparkles,
   Pencil, X, Check, ShieldCheck, Send, Zap, BookOpen,
-  Users, Mail, Image, FileCheck, Briefcase, Plus, MapPin
+  Users, Mail, Image, FileCheck, Briefcase, Plus, MapPin,
+  Camera, Calculator, LayoutTemplate, DollarSign, Package
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -139,6 +140,7 @@ const BuildUnionProjectDetails = () => {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([]);
   const [siteImageUrls, setSiteImageUrls] = useState<string[]>([]);
+  const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
   // Edit mode
@@ -215,6 +217,17 @@ const BuildUnionProjectDetails = () => {
 
         if (docsError) throw docsError;
         setDocuments(docsData || []);
+
+        // Fetch project summary (Quick Mode data)
+        const { data: summaryData } = await supabase
+          .from("project_summaries")
+          .select("*")
+          .eq("project_id", projectId)
+          .maybeSingle();
+
+        if (summaryData) {
+          setProjectSummary(summaryData);
+        }
 
         // Fetch team invitations
         const { data: inviteData, error: inviteError } = await supabase
@@ -1005,6 +1018,167 @@ const BuildUnionProjectDetails = () => {
         {/* Team Members Card - Visible to non-owners */}
         {project && user && project.user_id !== user.id && (
           <TeamManagement projectId={project.id} isOwner={false} />
+        )}
+
+        {/* Quick Mode Summary - Shows data from Quick Mode flow */}
+        {projectSummary && (
+          <Card className="mb-6 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-100">
+                  <Sparkles className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-semibold text-slate-900">
+                    Quick Mode Estimate
+                  </CardTitle>
+                  <CardDescription>
+                    Created from Quick Mode flow
+                  </CardDescription>
+                </div>
+                <Badge className="ml-auto bg-green-100 text-green-700 border-green-200">
+                  ✓ Saved
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Photo Estimate Results */}
+              {projectSummary.photo_estimate?.materials?.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Camera className="h-4 w-4 text-amber-600" />
+                    AI Photo Analysis
+                    {projectSummary.photo_estimate?.areaConfidence && (
+                      <Badge variant="outline" className="text-xs ml-2">
+                        {projectSummary.photo_estimate.areaConfidence} confidence
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="bg-white rounded-lg border border-green-100 p-4">
+                    {projectSummary.photo_estimate.summary && (
+                      <p className="text-sm text-slate-600 mb-3">{projectSummary.photo_estimate.summary}</p>
+                    )}
+                    <div className="grid gap-2">
+                      {projectSummary.photo_estimate.materials.map((mat: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between bg-slate-50 rounded px-3 py-2">
+                          <span className="text-sm font-medium">{mat.item}</span>
+                          <Badge variant="secondary">{mat.quantity} {mat.unit}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Line Items from Quote */}
+              {projectSummary.line_items?.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Package className="h-4 w-4 text-blue-600" />
+                    Line Items ({projectSummary.line_items.length})
+                  </div>
+                  <div className="bg-white rounded-lg border border-green-100 overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 border-b">
+                        <tr>
+                          <th className="text-left py-2 px-3 font-medium text-slate-600">Item</th>
+                          <th className="text-center py-2 px-3 font-medium text-slate-600">Qty</th>
+                          <th className="text-center py-2 px-3 font-medium text-slate-600">Unit</th>
+                          <th className="text-right py-2 px-3 font-medium text-slate-600">Price</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {projectSummary.line_items.slice(0, 5).map((item: any, idx: number) => (
+                          <tr key={idx} className="border-b border-slate-50">
+                            <td className="py-2 px-3">{item.name || item.description}</td>
+                            <td className="py-2 px-3 text-center">{item.quantity}</td>
+                            <td className="py-2 px-3 text-center">{item.unit}</td>
+                            <td className="py-2 px-3 text-right">${(item.unit_price || item.unitPrice || 0).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {projectSummary.line_items.length > 5 && (
+                      <div className="text-center py-2 text-xs text-slate-500">
+                        +{projectSummary.line_items.length - 5} more items
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Client Info */}
+              {(projectSummary.client_name || projectSummary.client_email) && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Users className="h-4 w-4 text-purple-600" />
+                    Client Information
+                  </div>
+                  <div className="bg-white rounded-lg border border-green-100 p-4">
+                    <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                      {projectSummary.client_name && (
+                        <div>
+                          <span className="text-slate-500">Name:</span>{" "}
+                          <span className="font-medium">{projectSummary.client_name}</span>
+                        </div>
+                      )}
+                      {projectSummary.client_email && (
+                        <div>
+                          <span className="text-slate-500">Email:</span>{" "}
+                          <span className="font-medium">{projectSummary.client_email}</span>
+                        </div>
+                      )}
+                      {projectSummary.client_phone && (
+                        <div>
+                          <span className="text-slate-500">Phone:</span>{" "}
+                          <span className="font-medium">{projectSummary.client_phone}</span>
+                        </div>
+                      )}
+                      {projectSummary.client_address && (
+                        <div>
+                          <span className="text-slate-500">Address:</span>{" "}
+                          <span className="font-medium">{projectSummary.client_address}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Totals */}
+              {(projectSummary.total_cost > 0 || projectSummary.material_cost > 0) && (
+                <div className="bg-white rounded-lg border border-green-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                      <span className="font-medium">Total Estimate</span>
+                    </div>
+                    <span className="text-2xl font-bold text-green-600">
+                      ${(projectSummary.total_cost || 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {projectSummary.notes && (
+                <div className="text-sm text-slate-600 bg-white rounded-lg border border-green-100 p-3">
+                  <span className="font-medium">Notes: </span>
+                  {projectSummary.notes}
+                </div>
+              )}
+
+              {/* View Full Summary Button */}
+              <Button 
+                variant="outline" 
+                className="w-full gap-2 border-green-200 hover:bg-green-50"
+                onClick={() => navigate(`/buildunion/summary?summaryId=${projectSummary.id}`)}
+              >
+                <FileText className="h-4 w-4" />
+                View Full Summary & Edit
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         <div className="grid lg:grid-cols-2 gap-6">
