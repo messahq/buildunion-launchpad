@@ -34,7 +34,8 @@ import {
   Users,
   Camera,
   Crown,
-  Zap
+  Zap,
+  ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -233,6 +234,17 @@ const BuildUnionProfile = () => {
       <BuildUnionHeader />
       
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/buildunion/workspace")}
+          className="gap-2 text-muted-foreground hover:text-foreground mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Workspace
+        </Button>
+
         {/* Profile Header with Avatar and Tier */}
         <Card className="mb-6 overflow-hidden">
           <div className="h-16 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
