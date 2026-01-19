@@ -1,11 +1,11 @@
+import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import ProjectList from "@/components/ProjectList";
 import ProjectFacts from "@/components/ProjectFacts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle, ArrowLeft } from "lucide-react";
 
 const newsItems = [
   {
@@ -51,6 +51,19 @@ const BuildUnionWorkspace = () => {
   return (
     <main className="bg-slate-50 min-h-screen">
       <BuildUnionHeader />
+      
+      {/* Back Button */}
+      <div className="container mx-auto px-6 pt-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/buildunion")}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Button>
+      </div>
       
       {/* My Projects Section */}
       <section className="py-12 px-6 bg-white border-b border-slate-100">

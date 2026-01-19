@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Check, Zap, Crown, Loader2 } from "lucide-react";
+import { Check, Zap, Crown, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +138,19 @@ const BuildUnionPricing = () => {
   return (
     <main className="bg-slate-50 min-h-screen">
       <BuildUnionHeader />
+
+      {/* Back Button */}
+      <div className="container mx-auto px-4 pt-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/buildunion/workspace")}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Workspace
+        </Button>
+      </div>
 
       {/* Hero Section */}
       <section className="py-16 md:py-24 bg-gradient-to-b from-slate-900 to-slate-800">

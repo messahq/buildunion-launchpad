@@ -8,7 +8,7 @@ import QuickModeCalculator from "@/components/quick-mode/QuickModeCalculator";
 import QuickModeQuoteGenerator from "@/components/quick-mode/QuickModeQuoteGenerator";
 import QuickModeOnboarding from "@/components/quick-mode/QuickModeOnboarding";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight } from "lucide-react";
+import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BuildUnionQuickMode = () => {
@@ -24,6 +24,17 @@ const BuildUnionQuickMode = () => {
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-amber-50 via-orange-50 to-background py-8 sm:py-12 border-b border-border">
           <div className="container mx-auto px-4 sm:px-6">
+            {/* Back Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/buildunion")}
+              className="gap-2 text-muted-foreground hover:text-foreground mb-4"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Button>
+
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
