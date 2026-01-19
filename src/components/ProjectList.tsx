@@ -190,16 +190,16 @@ const ProjectList = () => {
 
   if (!user) {
     return (
-      <Card className="border-slate-200 bg-white">
+      <Card className="border-border bg-card">
         <CardContent className="py-12 text-center">
-          <Folder className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Sign in to view your projects</h3>
-          <p className="text-slate-500 mb-6">Create an account to start managing your construction projects.</p>
+          <Folder className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Sign in to view your projects</h3>
+          <p className="text-muted-foreground mb-6">Create an account to start managing your construction projects.</p>
           <div className="flex gap-3 justify-center">
             <Button variant="outline" onClick={() => navigate("/buildunion/login")}>
               Log In
             </Button>
-            <Button onClick={() => navigate("/buildunion/register")} className="bg-amber-600 hover:bg-amber-700">
+            <Button onClick={() => navigate("/buildunion/register")} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
               Register
             </Button>
           </div>
@@ -210,7 +210,7 @@ const ProjectList = () => {
 
   if (loading) {
     return (
-      <Card className="border-slate-200 bg-white">
+      <Card className="border-border bg-card">
         <CardContent className="py-12 flex items-center justify-center">
           <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
         </CardContent>
@@ -220,12 +220,12 @@ const ProjectList = () => {
 
   if (projects.length === 0) {
     return (
-      <Card className="border-slate-200 bg-white">
+      <Card className="border-border bg-card">
         <CardContent className="py-12 text-center">
-          <Folder className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">No projects yet</h3>
-          <p className="text-slate-500 mb-6">Start your first project and let M.E.S.S.A. analyze your documents.</p>
-          <Button onClick={() => setShowNewProjectModal(true)} className="bg-amber-600 hover:bg-amber-700 gap-2">
+          <Folder className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No projects yet</h3>
+          <p className="text-muted-foreground mb-6">Start your first project and let M.E.S.S.A. analyze your documents.</p>
+          <Button onClick={() => setShowNewProjectModal(true)} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 gap-2">
             <Plus className="h-4 w-4" />
             Create Your First Project
           </Button>
@@ -245,13 +245,13 @@ const ProjectList = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">My Projects</h2>
-          <p className="text-slate-500 text-sm">
+          <h2 className="text-2xl font-bold text-foreground">My Projects</h2>
+          <p className="text-muted-foreground text-sm">
             {ownProjects.length} project{ownProjects.length !== 1 ? "s" : ""}
             {sharedProjects.length > 0 && ` • ${sharedProjects.length} shared`}
           </p>
         </div>
-        <Button onClick={() => setShowNewProjectModal(true)} className="bg-amber-600 hover:bg-amber-700 gap-2">
+        <Button onClick={() => setShowNewProjectModal(true)} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 gap-2">
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -286,7 +286,7 @@ const ProjectList = () => {
                   </p>
                 </div>
               </div>
-              <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+              <Button className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 Continue
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -301,12 +301,12 @@ const ProjectList = () => {
           {ownProjects.map((project) => (
             <Card 
               key={project.id} 
-              className="border-slate-200 bg-white hover:border-amber-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
+              className="border-border bg-card hover:border-amber-400 hover:shadow-md transition-all duration-200 cursor-pointer group"
               onClick={() => navigate(`/buildunion/project/${project.id}`)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/20 dark:group-hover:bg-amber-500/30 transition-colors">
                     <Folder className="h-5 w-5 text-amber-600" />
                   </div>
                   <div className="flex items-center gap-2">
@@ -316,24 +316,24 @@ const ProjectList = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-7 w-7 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => handleDeleteProject(e, project)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                <CardTitle className="text-lg font-semibold text-slate-900 mt-3 group-hover:text-amber-700 transition-colors">
+                <CardTitle className="text-lg font-semibold text-foreground mt-3 group-hover:text-amber-600 transition-colors">
                   {project.name}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {project.description && (
-                  <CardDescription className="text-slate-500 text-sm mb-3 line-clamp-2">
+                  <CardDescription className="text-muted-foreground text-sm mb-3 line-clamp-2">
                     {project.description}
                   </CardDescription>
                 )}
-                <div className="flex items-center gap-4 text-xs text-slate-400">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {formatDate(project.created_at)}
@@ -353,41 +353,41 @@ const ProjectList = () => {
       {sharedProjects.length > 0 && (
         <>
           <div className="flex items-center gap-2 mt-6">
-            <Users className="h-5 w-5 text-slate-400" />
-            <h3 className="text-lg font-semibold text-slate-700">Shared With Me</h3>
+            <Users className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-foreground">Shared With Me</h3>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sharedProjects.map((project) => (
               <Card 
                 key={project.id} 
-                className="border-slate-200 bg-white hover:border-cyan-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                className="border-border bg-card hover:border-cyan-400 hover:shadow-md transition-all duration-200 cursor-pointer group"
                 onClick={() => navigate(`/buildunion/project/${project.id}`)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 rounded-lg bg-cyan-50 flex items-center justify-center group-hover:bg-cyan-100 transition-colors">
+                    <div className="w-10 h-10 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-500/20 dark:group-hover:bg-cyan-500/30 transition-colors">
                       <Users className="h-5 w-5 text-cyan-600" />
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge className={`text-xs ${getStatusColor(project.status)}`}>
                         {project.status}
                       </Badge>
-                      <Badge variant="outline" className="text-xs text-cyan-600 border-cyan-200">
+                      <Badge variant="outline" className="text-xs text-cyan-600 border-cyan-400">
                         Shared
                       </Badge>
                     </div>
                   </div>
-                  <CardTitle className="text-lg font-semibold text-slate-900 mt-3 group-hover:text-cyan-700 transition-colors">
+                  <CardTitle className="text-lg font-semibold text-foreground mt-3 group-hover:text-cyan-600 transition-colors">
                     {project.name}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {project.description && (
-                    <CardDescription className="text-slate-500 text-sm mb-3 line-clamp-2">
+                    <CardDescription className="text-muted-foreground text-sm mb-3 line-clamp-2">
                       {project.description}
                     </CardDescription>
                   )}
-                  <div className="flex items-center gap-4 text-xs text-slate-400">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {formatDate(project.created_at)}
@@ -406,11 +406,11 @@ const ProjectList = () => {
 
       {/* Empty state for own projects */}
       {ownProjects.length === 0 && sharedProjects.length > 0 && (
-        <Card className="border-slate-200 bg-white">
+        <Card className="border-border bg-card">
           <CardContent className="py-8 text-center">
-            <Folder className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">You haven't created any projects yet</p>
-            <Button onClick={() => setShowNewProjectModal(true)} className="mt-4 bg-amber-600 hover:bg-amber-700 gap-2" size="sm">
+            <Folder className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+            <p className="text-muted-foreground">You haven't created any projects yet</p>
+            <Button onClick={() => setShowNewProjectModal(true)} className="mt-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 gap-2" size="sm">
               <Plus className="h-4 w-4" />
               Create Project
             </Button>

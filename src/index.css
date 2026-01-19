@@ -103,6 +103,31 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground transition-colors duration-200;
+    @apply bg-background text-foreground;
+  }
+
+  /* Smooth theme transition */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+
+  /* Disable transitions for animations that should be instant */
+  [data-radix-popper-content-wrapper] *,
+  .animate-spin,
+  .animate-pulse {
+    transition: none !important;
+  }
+}
+
+/* Gradient button utility */
+@layer components {
+  .btn-gradient {
+    @apply bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium;
+  }
+  
+  .btn-gradient-outline {
+    @apply bg-transparent border-2 border-amber-500 text-amber-600 hover:border-amber-600 hover:text-amber-700;
   }
 }

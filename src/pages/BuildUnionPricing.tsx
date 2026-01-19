@@ -136,7 +136,7 @@ const BuildUnionPricing = () => {
   ];
 
   return (
-    <main className="bg-slate-50 min-h-screen">
+    <main className="bg-background min-h-screen transition-colors">
       <BuildUnionHeader />
 
       {/* Back Button */}
@@ -153,30 +153,30 @@ const BuildUnionPricing = () => {
       </div>
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24 bg-gradient-to-b from-slate-900 to-slate-800">
+      <section className="py-16 md:py-24 bg-gradient-to-b from-amber-500 via-orange-500 to-amber-600">
         <div className="container mx-auto px-4 text-center">
-          <Badge variant="secondary" className="mb-4 bg-amber-500/20 text-amber-400 border-amber-500/30">
+          <Badge variant="secondary" className="mb-4 bg-white/20 text-white border-white/30">
             Pricing
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Choose the Right Plan for You
           </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-8">
+          <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8">
             Build the future with BuildUnion. Every plan includes essential features to get you started.
           </p>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4">
-            <Label htmlFor="billing-toggle" className={`text-lg ${!isAnnual ? "text-white font-semibold" : "text-slate-400"}`}>
+            <Label htmlFor="billing-toggle" className={`text-lg ${!isAnnual ? "text-white font-semibold" : "text-white/70"}`}>
               Monthly
             </Label>
             <Switch
               id="billing-toggle"
               checked={isAnnual}
               onCheckedChange={setIsAnnual}
-              className="data-[state=checked]:bg-amber-500"
+              className="data-[state=checked]:bg-white data-[state=checked]:text-amber-600"
             />
-            <Label htmlFor="billing-toggle" className={`text-lg ${isAnnual ? "text-white font-semibold" : "text-slate-400"}`}>
+            <Label htmlFor="billing-toggle" className={`text-lg ${isAnnual ? "text-white font-semibold" : "text-white/70"}`}>
               Annual
             </Label>
             {isAnnual && (
@@ -195,10 +195,10 @@ const BuildUnionPricing = () => {
             {plans.map((plan) => (
               <Card 
                 key={plan.id} 
-                className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
+                className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl bg-card ${
                   plan.highlight 
                     ? "border-2 border-amber-500 shadow-lg shadow-amber-500/20 scale-105" 
-                    : "border border-slate-200"
+                    : "border border-border"
                 }`}
               >
                 {plan.highlight && (
@@ -214,15 +214,15 @@ const BuildUnionPricing = () => {
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="mt-4">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-slate-900">C${plan.price}</span>
-                      <span className="text-slate-500">/mo</span>
+                      <span className="text-4xl font-bold text-foreground">C${plan.price}</span>
+                      <span className="text-muted-foreground">/mo</span>
                     </div>
                     {plan.id !== "free" && isAnnual && (
                       <div className="mt-1 space-y-1">
-                        <p className="text-sm text-slate-500 line-through">
+                        <p className="text-sm text-muted-foreground line-through">
                           C${plan.originalMonthly}/mo
                         </p>
-                        <p className="text-sm text-green-600 font-medium">
+                        <p className="text-sm text-green-600 dark:text-green-400 font-medium">
                           C${plan.fullPrice} billed annually
                         </p>
                       </div>
@@ -232,7 +232,7 @@ const BuildUnionPricing = () => {
                 <CardContent>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-slate-600">
+                      <li key={idx} className="flex items-center gap-2 text-muted-foreground">
                         <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
@@ -270,13 +270,13 @@ const BuildUnionPricing = () => {
           {/* Manage Subscription */}
           {subscription.subscribed && (
             <div className="text-center mt-12">
-              <p className="text-slate-600 mb-4">
-                Current subscription: <strong className="text-slate-900 capitalize">{subscription.tier}</strong>
+              <p className="text-muted-foreground mb-4">
+                Current subscription: <strong className="text-foreground capitalize">{subscription.tier}</strong>
                 {subscription.billingInterval && (
-                  <span className="text-slate-500"> ({subscription.billingInterval})</span>
+                  <span className="text-muted-foreground"> ({subscription.billingInterval})</span>
                 )}
                 {subscription.subscriptionEnd && (
-                  <span className="text-slate-500">
+                  <span className="text-muted-foreground">
                     {" "}· valid until: {new Date(subscription.subscriptionEnd).toLocaleDateString("en-US")}
                   </span>
                 )}
@@ -290,21 +290,21 @@ const BuildUnionPricing = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-card border-t border-border">
         <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+          <h2 className="text-3xl font-bold text-center text-foreground mb-12">Frequently Asked Questions</h2>
           <div className="space-y-6">
             <div>
-              <h3 className="font-semibold text-lg mb-2">When will I be billed?</h3>
-              <p className="text-slate-600">The first fee is charged immediately upon purchase. For monthly plans, you're billed each month. For annual plans, you're billed once per year.</p>
+              <h3 className="font-semibold text-lg text-foreground mb-2">When will I be billed?</h3>
+              <p className="text-muted-foreground">The first fee is charged immediately upon purchase. For monthly plans, you're billed each month. For annual plans, you're billed once per year.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Can I cancel anytime?</h3>
-              <p className="text-slate-600">Yes, you can cancel your subscription at any time using the "Manage Subscription" button. After cancellation, you can still use the service until the end of the billing period.</p>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Can I cancel anytime?</h3>
+              <p className="text-muted-foreground">Yes, you can cancel your subscription at any time using the "Manage Subscription" button. After cancellation, you can still use the service until the end of the billing period.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Can I switch between monthly and annual?</h3>
-              <p className="text-slate-600">Absolutely! You can switch billing periods at any time through the "Manage Subscription" menu. Switching to annual saves you 2 months!</p>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Can I switch between monthly and annual?</h3>
+              <p className="text-muted-foreground">Absolutely! You can switch billing periods at any time through the "Manage Subscription" menu. Switching to annual saves you 2 months!</p>
             </div>
           </div>
         </div>
