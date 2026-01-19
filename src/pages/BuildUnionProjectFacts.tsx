@@ -82,6 +82,8 @@ const BuildUnionProjectFacts = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFact, setSelectedFact] = useState<ProjectSynthesis | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [transitionDirection, setTransitionDirection] = useState<'next' | 'prev' | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -254,9 +256,9 @@ const BuildUnionProjectFacts = () => {
     setIsDetailOpen(true);
   };
 
-  // Navigate to next/previous fact
+  // Navigate to next/previous fact with animation
   const navigateToFact = useCallback((direction: 'next' | 'prev') => {
-    if (!selectedFact || filteredFacts.length === 0) return;
+    if (!selectedFact || filteredFacts.length === 0 || isTransitioning) return;
     
     const currentIndex = filteredFacts.findIndex(f => f.id === selectedFact.id);
     if (currentIndex === -1) return;
@@ -268,8 +270,21 @@ const BuildUnionProjectFacts = () => {
       newIndex = currentIndex > 0 ? currentIndex - 1 : filteredFacts.length - 1;
     }
     
-    setSelectedFact(filteredFacts[newIndex]);
-  }, [selectedFact, filteredFacts]);
+    // Start transition animation
+    setTransitionDirection(direction);
+    setIsTransitioning(true);
+    
+    // After exit animation, update the fact and trigger enter animation
+    setTimeout(() => {
+      setSelectedFact(filteredFacts[newIndex]);
+      setTransitionDirection(null);
+      
+      // Reset transitioning state after enter animation
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 200);
+    }, 150);
+  }, [selectedFact, filteredFacts, isTransitioning]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -384,7 +399,15 @@ const BuildUnionProjectFacts = () => {
           </SheetHeader>
 
           <ScrollArea className="flex-1 mt-6 -mx-6 px-6">
-            <div className="space-y-6 pb-6">
+            <div 
+              className={`space-y-6 pb-6 transition-all duration-200 ease-out ${
+                transitionDirection === 'next' 
+                  ? 'opacity-0 -translate-x-4' 
+                  : transitionDirection === 'prev'
+                  ? 'opacity-0 translate-x-4'
+                  : 'opacity-100 translate-x-0'
+              }`}
+            >
               {/* Synthesized Answer */}
               <div className="rounded-lg border bg-gradient-to-br from-slate-50 to-white p-4">
                 <div className="flex items-center gap-2 mb-3">
