@@ -64,7 +64,7 @@ const Index = () => {
             <circle cx="200" cy="300" r="2.2" />
           </g>
           {/* Connecting lines */}
-          <g stroke="white" strokeWidth="0.8" fill="none" opacity="0.5">
+          <g stroke="white" strokeWidth="0.5" fill="none" opacity="0.2">
             <path d="M180,60 L200,80 L195,160" />
             <path d="M200,80 L130,120" />
             <path d="M200,80 L240,110 L280,130" />
