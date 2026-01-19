@@ -197,6 +197,9 @@ const BuildUnionHeader = () => {
               <DropdownMenuContent align="end" className="min-w-[200px] bg-white">
                 <div className="px-2 py-2">
                   <p className="text-sm font-medium text-gray-900">{getDisplayName()}</p>
+                  {profile?.company_name && (
+                    <p className="text-xs text-amber-600 font-medium">{profile.company_name}</p>
+                  )}
                   <p className="text-xs text-gray-500">{user.email}</p>
                   <div className="mt-2 flex items-center gap-2">
                     {getTierBadge()}
