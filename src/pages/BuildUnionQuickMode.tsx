@@ -313,7 +313,7 @@ const BuildUnionQuickMode = () => {
             </TabsContent>
 
             <TabsContent value="templates" className="mt-0">
-              <QuickModeTemplates />
+              <QuickModeTemplates onTemplateSelect={handleTemplateSelect} />
             </TabsContent>
 
             <TabsContent value="calculator" className="mt-0">
