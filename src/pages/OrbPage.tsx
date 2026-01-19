@@ -6,10 +6,10 @@ const OrbPage = () => {
       <DockHeader title="Orb Module" accentColor="bg-cyan-500 hover:bg-cyan-600" />
       
       {/* Centered Globe Section */}
-      <section className="relative flex flex-col items-center justify-start min-h-[calc(100vh-80px)] overflow-hidden pt-8 md:pt-12">
+      <section className="relative flex flex-col items-center justify-center min-h-[calc(100vh-80px)] overflow-hidden">
         
-        {/* Rotating Globe - positioned higher */}
-        <div className="relative w-72 h-72 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] z-10">
+        {/* Rotating Globe - smaller and centered */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 z-10">
           {/* Outer glow */}
           <div 
             className="absolute inset-0 rounded-full"
@@ -102,9 +102,9 @@ const OrbPage = () => {
         </div>
         
         {/* Virgo Constellation - Woman Clothed with the Sun (below the globe) */}
-        <div className="relative w-full flex justify-center mt-4">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <svg 
-            className="w-64 h-64 md:w-80 md:h-80 opacity-[0.08]"
+            className="w-[500px] h-[500px] md:w-[600px] md:h-[600px] opacity-[0.06]"
             viewBox="0 0 400 400"
             preserveAspectRatio="xMidYMid meet"
           >
