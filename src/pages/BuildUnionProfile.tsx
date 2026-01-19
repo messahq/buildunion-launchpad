@@ -6,6 +6,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
+import NotificationSettings from "@/components/NotificationSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -604,6 +605,9 @@ const BuildUnionProfile = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Notification Settings */}
+          <NotificationSettings />
 
           <Separator />
 
