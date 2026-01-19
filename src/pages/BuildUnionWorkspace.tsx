@@ -5,7 +5,7 @@ import ProjectList from "@/components/ProjectList";
 import ProjectFacts from "@/components/ProjectFacts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle, ArrowLeft } from "lucide-react";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle, ArrowLeft, Sparkles, Camera, Calculator, Zap } from "lucide-react";
 
 const newsItems = [
   {
@@ -64,6 +64,37 @@ const BuildUnionWorkspace = () => {
           Back to Home
         </Button>
       </div>
+
+      {/* Quick Mode Banner */}
+      <section className="px-6 pt-6">
+        <div className="max-w-6xl mx-auto">
+          <div 
+            onClick={() => navigate("/buildunion/quick")}
+            className="group cursor-pointer bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 rounded-xl px-6 py-4 hover:border-amber-300 hover:shadow-md transition-all duration-300"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg p-2.5 shadow-lg shadow-amber-500/20">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-600 font-semibold text-sm">NEW</span>
+                  <span className="text-slate-900 font-semibold">Quick Mode</span>
+                </div>
+                <p className="text-slate-600 text-sm mt-0.5">
+                  AI photo estimates • Project templates • Material calculators • PDF quote generator
+                </p>
+              </div>
+              <div className="flex-shrink-0 flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                <Camera className="h-5 w-5 text-amber-500" />
+                <Calculator className="h-5 w-5 text-amber-500" />
+                <Zap className="h-5 w-5 text-amber-500" />
+              </div>
+              <ArrowRight className="h-5 w-5 text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </div>
+        </div>
+      </section>
       
       {/* My Projects Section */}
       <section className="py-12 px-6 bg-white border-b border-slate-100">
