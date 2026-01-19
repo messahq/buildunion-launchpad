@@ -4,7 +4,7 @@ import { Linkedin, Twitter, Youtube, Mail } from "lucide-react";
 const footerLinks = {
   product: [
     { label: "Features", href: "#" },
-    { label: "Pricing", href: "#" },
+    { label: "Pricing", href: "/buildunion/pricing" },
     { label: "Integrations", href: "#" },
     { label: "Changelog", href: "#" },
   ],
@@ -73,12 +73,21 @@ const BuildUnionFooter = () => {
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-slate-400 hover:text-amber-400 transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {link.href.startsWith('/') ? (
+                    <Link
+                      to={link.href}
+                      className="text-sm text-slate-400 hover:text-amber-400 transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-sm text-slate-400 hover:text-amber-400 transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

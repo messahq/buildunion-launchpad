@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap, Folder, Eye, Sparkles } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap, Folder, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -121,26 +121,6 @@ const BuildUnionHeader = () => {
             <span className="hidden sm:inline">Projects</span>
           </Button>
 
-          {/* Quick Mode Link - desktop only */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/buildunion/quick")}
-            className="text-amber-600 hover:text-amber-700 font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1 hidden sm:flex"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span className="hidden md:inline">Quick Mode</span>
-          </Button>
-
-          {/* Pricing Link */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/buildunion/pricing")}
-            className="text-gray-600 hover:text-gray-900 font-medium px-1.5 sm:px-3 text-xs sm:text-sm"
-          >
-            Pricing
-          </Button>
 
           {/* Start New Project Button */}
           <Button
@@ -209,14 +189,6 @@ const BuildUnionHeader = () => {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                {/* Quick Mode - visible on mobile */}
-                <DropdownMenuItem 
-                  onClick={() => navigate("/buildunion/quick")}
-                  className="sm:hidden text-amber-600 font-medium"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Quick Mode
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/buildunion/profile/view")}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Profile
