@@ -6,10 +6,10 @@ const OrbPage = () => {
       <DockHeader title="Orb Module" accentColor="bg-cyan-500 hover:bg-cyan-600" />
       
       {/* Centered Globe Section */}
-      <section className="relative flex flex-col items-center justify-center min-h-[calc(100vh-80px)] overflow-hidden">
+      <section className="relative flex flex-col items-center justify-center h-[calc(100vh-80px)] overflow-hidden -mt-10">
         
         {/* Rotating Globe - smaller and centered */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 z-10">
+        <div className="relative w-56 h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 z-10 -mt-20">
           {/* Outer glow */}
           <div 
             className="absolute inset-0 rounded-full"
