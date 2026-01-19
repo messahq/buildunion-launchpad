@@ -621,7 +621,7 @@ export function ProjectSummary({
     const configs: Record<string, { icon: any; color: string; label: string }> = {
       photo: { icon: Camera, color: "bg-blue-100 text-blue-700", label: "Photo" },
       calculator: { icon: Calculator, color: "bg-green-100 text-green-700", label: "Calculator" },
-      template: { icon: FileText, color: "bg-purple-100 text-purple-700", label: "Template" },
+      template: { icon: FileText, color: "bg-cyan-100 text-cyan-700", label: "Template" },
       blueprint: { icon: MapPin, color: "bg-orange-100 text-orange-700", label: "Blueprint" },
       manual: { icon: Edit3, color: "bg-gray-100 text-gray-700", label: "Manual" }
     };
@@ -864,14 +864,14 @@ export function ProjectSummary({
           </CardContent>
         </Card>
 
-        <Card className="border-purple-200 bg-purple-50/50">
+        <Card className="border-cyan-200 bg-cyan-50/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <FileText className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-cyan-100 rounded-lg">
+              <FileText className="h-5 w-5 text-cyan-600" />
             </div>
             <div>
-              <p className="text-xs text-purple-600 font-medium">Template Items</p>
-              <p className="font-bold text-purple-800">
+              <p className="text-xs text-cyan-600 font-medium">Template Items</p>
+              <p className="font-bold text-cyan-800">
                 {(summary.template_items as any[])?.length || 0} items
               </p>
             </div>

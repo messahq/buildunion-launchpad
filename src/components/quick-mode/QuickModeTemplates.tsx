@@ -102,7 +102,7 @@ const defaultTemplates: ProjectTemplate[] = [
     id: "painting",
     name: "Interior Painting",
     icon: <PaintBucket className="w-6 h-6" />,
-    color: "bg-purple-500",
+    color: "bg-cyan-500",
     description: "Full room or house interior painting with prep work",
     avgDuration: "2-5 days",
     checklist: [

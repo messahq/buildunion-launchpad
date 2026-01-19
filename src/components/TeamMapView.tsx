@@ -171,8 +171,8 @@ const TeamMapViewContent = ({
         )}
 
         {!isLoaded && !loadError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-purple-50">
-            <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+          <div className="absolute inset-0 flex items-center justify-center bg-cyan-50">
+            <Loader2 className="h-6 w-6 animate-spin text-cyan-600" />
           </div>
         )}
 
@@ -246,7 +246,7 @@ const TeamMapViewContent = ({
                   <div className="flex items-center gap-2">
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={selectedMember.avatarUrl || undefined} />
-                      <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                      <AvatarFallback className="bg-cyan-100 text-cyan-700 text-xs">
                         {getInitials(selectedMember.fullName)}
                       </AvatarFallback>
                     </Avatar>
@@ -310,10 +310,10 @@ const TeamMapViewContent = ({
         )}
 
         {!userLocation && isLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-purple-900/20 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center bg-cyan-900/20 pointer-events-none">
             <div className="text-center bg-white/90 rounded-lg p-4 shadow-lg">
-              <AlertCircle className="h-6 w-6 text-purple-400 mx-auto mb-2" />
-              <p className="text-sm text-purple-600">Share your location for better experience</p>
+              <AlertCircle className="h-6 w-6 text-cyan-400 mx-auto mb-2" />
+              <p className="text-sm text-cyan-600">Share your location for better experience</p>
             </div>
           </div>
         )}
@@ -337,7 +337,7 @@ const TeamMapViewContent = ({
                 >
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={member.avatarUrl || undefined} />
-                    <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                    <AvatarFallback className="bg-cyan-100 text-cyan-700 text-xs">
                       {getInitials(member.fullName)}
                     </AvatarFallback>
                   </Avatar>
@@ -637,7 +637,7 @@ const TeamMapView = () => {
                 Team Map
               </CardTitle>
             </div>
-            <Badge variant="outline" className="text-purple-600 border-purple-300 bg-purple-50">
+            <Badge variant="outline" className="text-cyan-600 border-cyan-300 bg-cyan-50">
               <Crown className="h-3 w-3 mr-1" />
               Pro+
             </Badge>
@@ -645,8 +645,8 @@ const TeamMapView = () => {
         </CardHeader>
         <CardContent className="p-6">
           <div className="text-center py-4">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
-              <Map className="h-8 w-8 text-purple-500" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-100 to-blue-200 flex items-center justify-center">
+              <Map className="h-8 w-8 text-cyan-500" />
             </div>
             <h3 className="font-semibold text-slate-700 mb-2">Team Location Map</h3>
             <p className="text-sm text-slate-500 mb-4">
@@ -654,7 +654,7 @@ const TeamMapView = () => {
             </p>
             <Button 
               onClick={() => navigate("/buildunion/pricing")}
-              className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 hover:from-cyan-600 hover:via-blue-600 hover:to-purple-600"
+              className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
             >
               Upgrade to Pro
             </Button>

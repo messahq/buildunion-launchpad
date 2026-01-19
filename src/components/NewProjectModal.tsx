@@ -68,7 +68,7 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                 <div className="text-muted-foreground">Blueprint AI</div>
               </div>
               <div className="text-center p-2 bg-white rounded border">
-                <div className="font-bold text-purple-600">{projectTrials}/{projectMaxTrials}</div>
+                <div className="font-bold text-cyan-600">{projectTrials}/{projectMaxTrials}</div>
                 <div className="text-muted-foreground">Projects</div>
               </div>
             </div>

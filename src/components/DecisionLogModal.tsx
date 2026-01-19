@@ -135,7 +135,7 @@ const DecisionLogModal = ({ data, trigger }: DecisionLogModalProps) => {
   const renderDataPoint = (point: DataPoint, index: number) => {
     const getIcon = () => {
       if (point.type === "cross-verified") {
-        return <CheckCircle2 className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />;
+        return <CheckCircle2 className="h-3.5 w-3.5 text-cyan-500 shrink-0 mt-0.5" />;
       }
       if (point.type === "visual") {
         return <Ruler className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />;
@@ -251,12 +251,12 @@ const DecisionLogModal = ({ data, trigger }: DecisionLogModalProps) => {
 
   const renderCrossVerified = (cv: CrossVerifyResult, index: number) => {
     const statusColors = {
-      yes: "bg-purple-50 border-purple-200",
+      yes: "bg-cyan-50 border-cyan-200",
       partial: "bg-amber-50 border-amber-200",
       no: "bg-slate-50 border-slate-200",
     };
     const statusIcons = {
-      yes: <CheckCircle2 className="h-3.5 w-3.5 text-purple-600" />,
+      yes: <CheckCircle2 className="h-3.5 w-3.5 text-cyan-600" />,
       partial: <Info className="h-3.5 w-3.5 text-amber-600" />,
       no: <XCircle className="h-3.5 w-3.5 text-slate-400" />,
     };
@@ -397,11 +397,11 @@ const DecisionLogModal = ({ data, trigger }: DecisionLogModalProps) => {
             {/* Cross-Verified Section */}
             {data.comparison?.crossVerified && data.comparison.crossVerified.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-purple-700 mb-2 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-cyan-700 mb-2 flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" />
                   Cross-Verification Results ({data.comparison.crossVerified.length})
                 </h4>
-                <p className="text-xs text-purple-600 mb-2">
+                <p className="text-xs text-cyan-600 mb-2">
                   Visual elements checked against text references.
                 </p>
                 <div className="space-y-2">

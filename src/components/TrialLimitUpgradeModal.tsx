@@ -80,9 +80,9 @@ export const TrialLimitUpgradeModal = ({
       border: "border-amber-200",
     },
     purple: {
-      bg: "bg-purple-100", 
-      icon: "text-purple-600",
-      border: "border-purple-200",
+      bg: "bg-cyan-100", 
+      icon: "text-cyan-600",
+      border: "border-cyan-200",
     },
     cyan: {
       bg: "bg-cyan-100",
@@ -155,7 +155,7 @@ export const TrialLimitUpgradeModal = ({
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           <Button 
             onClick={handleUpgrade}
-            className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 hover:from-cyan-600 hover:via-blue-600 hover:to-purple-600 text-white gap-2"
+            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white gap-2"
           >
             <Crown className="w-4 h-4" />
             Upgrade to Pro
