@@ -2,7 +2,16 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-const DEFAULT_MAX_TRIALS = 3;
+// Feature-specific trial limits
+const TRIAL_LIMITS: Record<string, number> = {
+  blueprint_analysis: 3,
+  quick_estimate: 3,
+  project_creation: 1,
+};
+
+const getDefaultMaxTrials = (feature: string): number => {
+  return TRIAL_LIMITS[feature] ?? 3;
+};
 
 interface TrialData {
   usedCount: number;
@@ -12,9 +21,10 @@ interface TrialData {
 
 export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
   const { user } = useAuth();
+  const defaultMax = getDefaultMaxTrials(feature);
   const [trialData, setTrialData] = useState<TrialData>({
     usedCount: 0,
-    maxAllowed: DEFAULT_MAX_TRIALS,
+    maxAllowed: defaultMax,
     lastUsed: null,
   });
   const [loading, setLoading] = useState(true);
@@ -22,7 +32,7 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
   // Fetch trial data from database
   const fetchTrialData = useCallback(async () => {
     if (!user) {
-      setTrialData({ usedCount: 0, maxAllowed: DEFAULT_MAX_TRIALS, lastUsed: null });
+      setTrialData({ usedCount: 0, maxAllowed: defaultMax, lastUsed: null });
       setLoading(false);
       return;
     }
@@ -47,7 +57,7 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
         // No record yet - user has full trials available
         setTrialData({
           usedCount: 0,
-          maxAllowed: DEFAULT_MAX_TRIALS,
+          maxAllowed: defaultMax,
           lastUsed: null,
         });
       }
@@ -56,7 +66,7 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
     } finally {
       setLoading(false);
     }
-  }, [user, feature]);
+  }, [user, feature, defaultMax]);
 
   useEffect(() => {
     fetchTrialData();
@@ -110,7 +120,7 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
           user_id: user.id,
           feature,
           used_count: 0,
-          max_allowed: DEFAULT_MAX_TRIALS,
+          max_allowed: defaultMax,
           last_used: null,
         }, {
           onConflict: "user_id,feature",
@@ -120,7 +130,7 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
 
       setTrialData({
         usedCount: 0,
-        maxAllowed: DEFAULT_MAX_TRIALS,
+        maxAllowed: defaultMax,
         lastUsed: null,
       });
 
@@ -129,7 +139,7 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
       console.error("Error resetting trials:", error);
       return false;
     }
-  }, [user, feature]);
+  }, [user, feature, defaultMax]);
 
   return {
     usedCount: trialData.usedCount,
