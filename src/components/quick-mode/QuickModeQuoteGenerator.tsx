@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward } from "lucide-react";
+import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
 import { RegionSelector } from "@/components/RegionSelector";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LineItem {
   id: string;
@@ -58,6 +61,7 @@ interface QuickModeQuoteGeneratorProps {
   collectedData?: CollectedData;
   onSkipToSummary?: () => void;
   onQuoteGenerated?: (quote: QuoteData) => void;
+  onSaveToProjects?: (projectData: any) => void;
 }
 
 const defaultQuote: QuoteData = {
@@ -84,10 +88,12 @@ const defaultQuote: QuoteData = {
 
 const units = ["unit", "sq ft", "lin ft", "hour", "day", "each", "lot", "job"];
 
-const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenerated }: QuickModeQuoteGeneratorProps) => {
+const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenerated, onSaveToProjects }: QuickModeQuoteGeneratorProps) => {
   const [quote, setQuote] = useState<QuoteData>(defaultQuote);
   const [activeSection, setActiveSection] = useState<"company" | "client" | "items" | "preview">("company");
+  const [isSaving, setIsSaving] = useState(false);
   const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
+  const { user } = useAuth();
 
   // Pre-fill line items from collected data
   useEffect(() => {
@@ -190,6 +196,70 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   );
   const taxResult = calculateTax(subtotal);
   const total = taxResult.total;
+
+  // Save to projects function
+  const handleSaveToProjects = async () => {
+    if (!user) {
+      toast.error("Please sign in to save projects");
+      return;
+    }
+
+    if (!quote.projectName.trim()) {
+      toast.error("Please enter a project name");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Create project
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          name: quote.projectName || `Quick Mode Project - ${new Date().toLocaleDateString()}`,
+          description: `Generated from Quick Mode. Client: ${quote.clientName || 'Not specified'}`,
+          status: 'draft',
+          address: quote.projectAddress || quote.clientAddress || null,
+        })
+        .select()
+        .single();
+
+      if (projectError) throw projectError;
+
+      // Create project summary with all collected data
+      const { error: summaryError } = await supabase
+        .from('project_summaries')
+        .insert([{
+          user_id: user.id,
+          project_id: project.id,
+          status: 'draft',
+          client_name: quote.clientName || null,
+          client_email: quote.clientEmail || null,
+          client_phone: quote.clientPhone || null,
+          client_address: quote.clientAddress || null,
+          line_items: quote.lineItems as any,
+          material_cost: subtotal,
+          total_cost: total,
+          notes: quote.notes || null,
+          photo_estimate: collectedData?.photoEstimate || null,
+          calculator_results: collectedData?.calculatorResults || null,
+          template_items: collectedData?.templateItems || null,
+        }]);
+
+      if (summaryError) throw summaryError;
+
+      toast.success("Project saved successfully!");
+      
+      if (onSaveToProjects) {
+        onSaveToProjects({ projectId: project.id, quote, collectedData });
+      }
+    } catch (error: any) {
+      console.error("Error saving project:", error);
+      toast.error(error.message || "Failed to save project");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const generatePDF = () => {
     // Create a printable version
@@ -534,9 +604,40 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   };
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      {/* Form Section */}
-      <div className="lg:col-span-2 space-y-4">
+    <div className="space-y-6">
+      {/* Collected Data Summary Banner */}
+      {collectedData && (collectedData.photoEstimate || collectedData.calculatorResults.length > 0 || collectedData.templateItems.length > 0) && (
+        <div className="p-4 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 rounded-xl border border-amber-200">
+          <div className="flex items-center gap-2 mb-3">
+            <LayoutTemplate className="w-5 h-5 text-amber-600" />
+            <span className="font-semibold text-amber-800">Collected Data Summary</span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {collectedData.photoEstimate && (
+              <Badge className="bg-cyan-100 text-cyan-800 hover:bg-cyan-100">
+                📸 Photo Estimate: {collectedData.photoEstimate.area || '?'} {collectedData.photoEstimate.areaUnit || 'sq ft'}
+              </Badge>
+            )}
+            {collectedData.templateItems.map((template: any, idx: number) => (
+              <Badge key={idx} className="bg-violet-100 text-violet-800 hover:bg-violet-100">
+                📋 {template.templateName}: {template.projectName}
+              </Badge>
+            ))}
+            {collectedData.calculatorResults.map((calc: any, idx: number) => (
+              <Badge key={idx} className="bg-green-100 text-green-800 hover:bg-green-100">
+                🧮 {calc.calcType}: {calc.result?.result?.toFixed(1)} {calc.result?.materials?.length || 0} materials
+              </Badge>
+            ))}
+          </div>
+          <p className="text-sm text-amber-700 mt-3">
+            Line items have been pre-filled from your collected data. Edit quantities and add prices below.
+          </p>
+        </div>
+      )}
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Form Section */}
+        <div className="lg:col-span-2 space-y-4">
         {/* Region Selector + Section Tabs */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex gap-2 p-1 bg-muted/50 rounded-lg flex-1">
@@ -861,27 +962,47 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
             <Separator />
 
+            {/* Save to Projects - Primary Action */}
+            <Button
+              onClick={handleSaveToProjects}
+              disabled={isSaving || !user}
+              className="w-full gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+            >
+              <FolderPlus className="w-4 h-4" />
+              {isSaving ? "Saving..." : "Save to Projects"}
+            </Button>
+
+            {!user && (
+              <p className="text-xs text-center text-amber-600">
+                Sign in to save projects
+              </p>
+            )}
+
+            <Separator />
+
             {/* Continue to Summary */}
             <Button
               onClick={() => onQuoteGenerated?.(quote)}
-              className="w-full gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              variant="outline"
+              className="w-full gap-2"
             >
-              Continue with Quote
+              View Full Summary
               <ArrowRight className="w-4 h-4" />
             </Button>
 
             {/* Skip to Summary */}
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={onSkipToSummary}
-              className="w-full gap-2"
+              className="w-full gap-2 text-muted-foreground"
             >
               <SkipForward className="w-4 h-4" />
-              Skip to Summary (No Quote)
+              Skip (No Quote)
             </Button>
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   );
 };

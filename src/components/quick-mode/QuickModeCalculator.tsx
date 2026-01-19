@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Calculator, Plus, Trash2, Copy, Check, ArrowRight } from "lucide-react";
+import { Calculator, Plus, Trash2, Copy, Check, ArrowRight, LayoutTemplate, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 
 interface CalculatorType {
@@ -214,12 +215,20 @@ const calculators: CalculatorType[] = [
   },
 ];
 
+interface TemplateData {
+  templateId: string;
+  templateName: string;
+  projectName: string;
+  materials: string[];
+}
+
 interface QuickModeCalculatorProps {
   onCalculatorComplete?: (result: any) => void;
   onContinue?: () => void;
+  templateData?: TemplateData | null;
 }
 
-const QuickModeCalculator = ({ onCalculatorComplete, onContinue }: QuickModeCalculatorProps) => {
+const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData }: QuickModeCalculatorProps) => {
   const [selectedCalc, setSelectedCalc] = useState(calculators[0]);
   const [inputs, setInputs] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
@@ -297,6 +306,37 @@ Estimated Labor: ${results.laborHours} hours
 
   return (
     <div className="space-y-6">
+      {/* Template Data Banner */}
+      {templateData && (
+        <Alert className="bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200">
+          <LayoutTemplate className="h-4 w-4 text-violet-600" />
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="font-semibold text-violet-800">Template: {templateData.templateName}</span>
+              <span className="text-violet-600 ml-2">• {templateData.projectName}</span>
+              {templateData.materials.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {templateData.materials.slice(0, 5).map((mat, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs bg-violet-100 text-violet-700">
+                      {mat}
+                    </Badge>
+                  ))}
+                  {templateData.materials.length > 5 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{templateData.materials.length - 5} more
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-violet-600">
+              <Sparkles className="w-4 h-4" />
+              Calculate exact quantities below
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Calculator Input */}
         <Card>

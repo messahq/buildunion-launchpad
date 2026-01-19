@@ -18,6 +18,16 @@ import { useTrialUsage } from "@/hooks/useTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
+// Template data type for passing between tabs
+interface TemplateData {
+  templateId: string;
+  templateName: string;
+  projectName: string;
+  checklist: any[];
+  completedTasks: string[];
+  materials: string[];
+}
+
 // Collected data state type
 interface CollectedData {
   photoEstimate: any | null;
@@ -45,6 +55,9 @@ const BuildUnionQuickMode = () => {
     calculatorResults: [],
     templateItems: []
   });
+  
+  // Template data to pass to calculator
+  const [currentTemplateData, setCurrentTemplateData] = useState<TemplateData | null>(null);
 
   // Callbacks to collect data from child components
   const handlePhotoEstimateComplete = useCallback((estimate: any) => {
@@ -63,6 +76,12 @@ const BuildUnionQuickMode = () => {
       ...prev,
       templateItems: [...prev.templateItems, template]
     }));
+  }, []);
+
+  // Handle template continue - go to calculator with template data
+  const handleTemplateContinueToCalculator = useCallback((template: TemplateData) => {
+    setCurrentTemplateData(template);
+    setActiveTab("calculator");
   }, []);
 
   // Navigate to summary with collected data
@@ -313,13 +332,17 @@ const BuildUnionQuickMode = () => {
             </TabsContent>
 
             <TabsContent value="templates" className="mt-0">
-              <QuickModeTemplates onTemplateSelect={handleTemplateSelect} />
+              <QuickModeTemplates 
+                onTemplateSelect={handleTemplateSelect}
+                onContinueToCalculator={handleTemplateContinueToCalculator}
+              />
             </TabsContent>
 
             <TabsContent value="calculator" className="mt-0">
               <QuickModeCalculator 
                 onCalculatorComplete={handleCalculatorComplete}
                 onContinue={() => setActiveTab("quote")}
+                templateData={currentTemplateData}
               />
             </TabsContent>
 
@@ -341,6 +364,13 @@ const BuildUnionQuickMode = () => {
                   }
                   params.set("quote", encodeURIComponent(JSON.stringify(quote)));
                   navigate(`/buildunion/summary?${params.toString()}`);
+                }}
+                onSaveToProjects={(data) => {
+                  // Navigate to project details after saving
+                  toast.success("Project created! Redirecting...");
+                  setTimeout(() => {
+                    navigate(`/buildunion/project/${data.projectId}`);
+                  }, 1000);
                 }}
               />
             </TabsContent>
