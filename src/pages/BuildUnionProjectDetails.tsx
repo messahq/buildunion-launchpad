@@ -323,15 +323,17 @@ const BuildUnionProjectDetails = () => {
     );
   }
 
-  if (!project) {
+  if (!project || !user) {
     return (
       <main className="bg-slate-50 min-h-screen">
         <BuildUnionHeader />
         <div className="max-w-4xl mx-auto px-6 py-12 text-center">
           <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Project not found</h2>
-          <Button onClick={() => navigate("/buildunion/workspace")} variant="outline">
-            Back to Workspace
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">
+            {!user ? "Please log in to view this project" : "Project not found"}
+          </h2>
+          <Button onClick={() => navigate(!user ? "/buildunion" : "/buildunion/workspace")} variant="outline">
+            {!user ? "Go to Home" : "Back to Workspace"}
           </Button>
         </div>
       </main>
