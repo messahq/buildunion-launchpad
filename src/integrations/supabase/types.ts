@@ -107,6 +107,36 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_logs: {
+        Row: {
+          body: string | null
+          data: Json | null
+          id: string
+          sent_at: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          data?: Json | null
+          id?: string
+          sent_at?: string
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          data?: Json | null
+          id?: string
+          sent_at?: string
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -262,6 +292,36 @@ export type Database = {
           status?: string
           trade?: string | null
           trades?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
           updated_at?: string
           user_id?: string
         }
