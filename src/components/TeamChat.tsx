@@ -347,7 +347,7 @@ const TeamChat = () => {
             </p>
             <Button 
               onClick={() => navigate("/buildunion/pricing")}
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+              className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 hover:from-cyan-600 hover:via-blue-600 hover:to-purple-600"
             >
               Upgrade to Premium
             </Button>
