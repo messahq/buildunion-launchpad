@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import QuickModePhotoEstimate from "@/components/quick-mode/QuickModePhotoEstimate";
@@ -8,13 +8,89 @@ import QuickModeCalculator from "@/components/quick-mode/QuickModeCalculator";
 import QuickModeQuoteGenerator from "@/components/quick-mode/QuickModeQuoteGenerator";
 import QuickModeOnboarding from "@/components/quick-mode/QuickModeOnboarding";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight, ArrowLeft } from "lucide-react";
+import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight, ArrowLeft, FileSpreadsheet, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+
+// Collected data state type
+interface CollectedData {
+  photoEstimate: any | null;
+  calculatorResults: any[];
+  templateItems: any[];
+}
 
 const BuildUnionQuickMode = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("photo");
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "photo");
   const [showOnboarding, setShowOnboarding] = useState(true);
+  
+  // Collected data from all tabs
+  const [collectedData, setCollectedData] = useState<CollectedData>({
+    photoEstimate: null,
+    calculatorResults: [],
+    templateItems: []
+  });
+
+  // Callbacks to collect data from child components
+  const handlePhotoEstimateComplete = useCallback((estimate: any) => {
+    setCollectedData(prev => ({ ...prev, photoEstimate: estimate }));
+  }, []);
+
+  const handleCalculatorComplete = useCallback((result: any) => {
+    setCollectedData(prev => ({
+      ...prev,
+      calculatorResults: [...prev.calculatorResults, result]
+    }));
+  }, []);
+
+  const handleTemplateSelect = useCallback((template: any) => {
+    setCollectedData(prev => ({
+      ...prev,
+      templateItems: [...prev.templateItems, template]
+    }));
+  }, []);
+
+  // Navigate to summary with collected data
+  const goToSummary = () => {
+    if (!user) {
+      toast.error("Kérlek jelentkezz be az összesítőhöz!");
+      navigate("/buildunion/login");
+      return;
+    }
+
+    const hasData = collectedData.photoEstimate || 
+                    collectedData.calculatorResults.length > 0 || 
+                    collectedData.templateItems.length > 0;
+
+    if (!hasData) {
+      toast.info("Adj hozzá adatokat (fotó, kalkulátor, sablon) az összesítőhöz!");
+      return;
+    }
+
+    // Encode data as URL params for the summary page
+    const params = new URLSearchParams();
+    if (collectedData.photoEstimate) {
+      params.set("photoEstimate", encodeURIComponent(JSON.stringify(collectedData.photoEstimate)));
+    }
+    if (collectedData.calculatorResults.length > 0) {
+      params.set("calculatorResults", encodeURIComponent(JSON.stringify(collectedData.calculatorResults)));
+    }
+    if (collectedData.templateItems.length > 0) {
+      params.set("templateItems", encodeURIComponent(JSON.stringify(collectedData.templateItems)));
+    }
+
+    navigate(`/buildunion/summary?${params.toString()}`);
+  };
+
+  // Count collected items for badge
+  const collectedItemsCount = 
+    (collectedData.photoEstimate ? 1 : 0) +
+    collectedData.calculatorResults.length +
+    collectedData.templateItems.length;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -61,10 +137,44 @@ const BuildUnionQuickMode = () => {
                   <span>PRO Mode</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
+                
+                {/* Summary Button */}
+                <Button
+                  onClick={goToSummary}
+                  className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Összesítő</span>
+                  {collectedItemsCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-white/20 text-white">
+                      {collectedItemsCount}
+                    </Badge>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
         </section>
+
+        {/* Collected Data Indicator */}
+        {collectedItemsCount > 0 && (
+          <div className="container mx-auto px-4 sm:px-6 pt-4">
+            <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span className="text-sm text-amber-700">
+                <strong>{collectedItemsCount}</strong> adat összegyűjtve az összesítőhöz
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={goToSummary}
+                className="ml-auto text-amber-600 hover:text-amber-700"
+              >
+                Megtekintés →
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Main Content with Tabs */}
         <section className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -77,6 +187,9 @@ const BuildUnionQuickMode = () => {
                 <Camera className="w-4 h-4" />
                 <span className="hidden sm:inline">Photo Estimate</span>
                 <span className="sm:hidden">Photo</span>
+                {collectedData.photoEstimate && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">✓</Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="templates" 
@@ -85,6 +198,9 @@ const BuildUnionQuickMode = () => {
                 <LayoutTemplate className="w-4 h-4" />
                 <span className="hidden sm:inline">Templates</span>
                 <span className="sm:hidden">Templates</span>
+                {collectedData.templateItems.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{collectedData.templateItems.length}</Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="calculator" 
@@ -93,6 +209,9 @@ const BuildUnionQuickMode = () => {
                 <Calculator className="w-4 h-4" />
                 <span className="hidden sm:inline">Calculator</span>
                 <span className="sm:hidden">Calc</span>
+                {collectedData.calculatorResults.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{collectedData.calculatorResults.length}</Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="quote" 
@@ -105,7 +224,7 @@ const BuildUnionQuickMode = () => {
             </TabsList>
 
             <TabsContent value="photo" className="mt-0">
-              <QuickModePhotoEstimate />
+              <QuickModePhotoEstimate onEstimateComplete={handlePhotoEstimateComplete} />
             </TabsContent>
 
             <TabsContent value="templates" className="mt-0">

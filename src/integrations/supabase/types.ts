@@ -234,6 +234,92 @@ export type Database = {
           },
         ]
       }
+      project_summaries: {
+        Row: {
+          blueprint_analysis: Json | null
+          calculator_results: Json | null
+          client_address: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          id: string
+          invoice_id: string | null
+          invoice_sent_at: string | null
+          invoice_status: string | null
+          labor_cost: number | null
+          line_items: Json | null
+          material_cost: number | null
+          notes: string | null
+          photo_estimate: Json | null
+          project_id: string | null
+          status: string
+          template_items: Json | null
+          total_cost: number | null
+          updated_at: string
+          user_id: string
+          verified_facts: Json | null
+        }
+        Insert: {
+          blueprint_analysis?: Json | null
+          calculator_results?: Json | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_sent_at?: string | null
+          invoice_status?: string | null
+          labor_cost?: number | null
+          line_items?: Json | null
+          material_cost?: number | null
+          notes?: string | null
+          photo_estimate?: Json | null
+          project_id?: string | null
+          status?: string
+          template_items?: Json | null
+          total_cost?: number | null
+          updated_at?: string
+          user_id: string
+          verified_facts?: Json | null
+        }
+        Update: {
+          blueprint_analysis?: Json | null
+          calculator_results?: Json | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_sent_at?: string | null
+          invoice_status?: string | null
+          labor_cost?: number | null
+          line_items?: Json | null
+          material_cost?: number | null
+          notes?: string | null
+          photo_estimate?: Json | null
+          project_id?: string | null
+          status?: string
+          template_items?: Json | null
+          total_cost?: number | null
+          updated_at?: string
+          user_id?: string
+          verified_facts?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_summaries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_syntheses: {
         Row: {
           answer: string

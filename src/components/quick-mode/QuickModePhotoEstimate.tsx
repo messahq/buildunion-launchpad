@@ -19,7 +19,11 @@ interface EstimateResult {
   recommendations: string[];
 }
 
-const QuickModePhotoEstimate = () => {
+interface QuickModePhotoEstimateProps {
+  onEstimateComplete?: (estimate: EstimateResult) => void;
+}
+
+const QuickModePhotoEstimate = ({ onEstimateComplete }: QuickModePhotoEstimateProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
@@ -73,6 +77,7 @@ const QuickModePhotoEstimate = () => {
       if (error) throw error;
 
       setResult(data.estimate);
+      onEstimateComplete?.(data.estimate);
       toast.success("Analysis complete!");
     } catch (error) {
       console.error("Analysis error:", error);
