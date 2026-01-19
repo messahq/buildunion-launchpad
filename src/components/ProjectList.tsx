@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Folder, Plus, Calendar, FileText, Loader2, Trash2, Users } from "lucide-react";
+import { Folder, Plus, Calendar, FileText, Loader2, Trash2, Users, Zap, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -21,18 +21,45 @@ interface Project {
   isShared?: boolean;
 }
 
+interface DraftData {
+  id: string;
+  last_updated: string;
+  data: any;
+}
+
 const ProjectList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [draftData, setDraftData] = useState<DraftData | null>(null);
 
   useEffect(() => {
     if (!user) {
       setLoading(false);
       return;
     }
+
+    // Fetch draft data for Quick Mode
+    const fetchDraftData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_draft_data")
+          .select("id, last_updated, data")
+          .eq("user_id", user.id)
+          .eq("draft_type", "quick_mode")
+          .maybeSingle();
+
+        if (!error && data) {
+          setDraftData(data);
+        }
+      } catch (err) {
+        console.error("Error fetching draft:", err);
+      }
+    };
+
+    fetchDraftData();
 
     const fetchProjects = async () => {
       try {
@@ -232,6 +259,41 @@ const ProjectList = () => {
 
       {/* New Project Modal */}
       <NewProjectModal open={showNewProjectModal} onOpenChange={setShowNewProjectModal} />
+
+      {/* Draft in Progress Card */}
+      {draftData && (
+        <Card className="border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 hover:shadow-md transition-all duration-200 cursor-pointer"
+          onClick={() => navigate("/buildunion/quick")}
+        >
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-amber-900">Quick Mode Draft</h3>
+                    <Badge className="bg-amber-200 text-amber-800 text-xs">In Progress</Badge>
+                  </div>
+                  <p className="text-sm text-amber-700">
+                    Last updated: {new Date(draftData.last_updated).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </p>
+                </div>
+              </div>
+              <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Own Projects Grid */}
       {ownProjects.length > 0 && (
