@@ -30,8 +30,8 @@ interface CalculatorType {
 
 const calculators: CalculatorType[] = [
   {
-    id: "flooring",
-    name: "Flooring / Tile",
+    id: "tile",
+    name: "Tile / Ceramic",
     unit: "sq ft",
     formula: "Length × Width + 10% waste",
     inputs: [
@@ -55,6 +55,61 @@ const calculators: CalculatorType[] = [
           { item: "Tile spacers", quantity: Math.ceil(tilesNeeded / 50), unit: "packs" },
         ],
         laborHours: Math.ceil(area / 20) * 2, // ~20 sq ft per hour for tile
+      };
+    },
+  },
+  {
+    id: "flooring",
+    name: "Flooring (Hardwood/Laminate)",
+    unit: "sq ft",
+    formula: "Length × Width + 10% waste",
+    inputs: [
+      { id: "length", label: "Length", unit: "ft", defaultValue: 12 },
+      { id: "width", label: "Width", unit: "ft", defaultValue: 15 },
+      { id: "boxCoverage", label: "Box Coverage", unit: "sq ft/box", defaultValue: 20 },
+    ],
+    calculate: (inputs) => {
+      const area = inputs.length * inputs.width;
+      const withWaste = area * 1.1;
+      const boxesNeeded = Math.ceil(withWaste / inputs.boxCoverage);
+      
+      return {
+        result: withWaste,
+        breakdown: `${inputs.length}ft × ${inputs.width}ft = ${area} sq ft + 10% waste = ${withWaste.toFixed(1)} sq ft`,
+        materials: [
+          { item: "Flooring boxes", quantity: boxesNeeded, unit: "boxes" },
+          { item: "Underlayment", quantity: Math.ceil(withWaste / 100), unit: "rolls" },
+          { item: "Transition strips", quantity: Math.ceil(inputs.length / 8), unit: "pcs" },
+          { item: "Spacers", quantity: 2, unit: "packs" },
+        ],
+        laborHours: Math.ceil(area / 50) * 2, // ~50 sq ft per hour for flooring
+      };
+    },
+  },
+  {
+    id: "carpet",
+    name: "Carpet",
+    unit: "sq ft",
+    formula: "Length × Width + 5% waste",
+    inputs: [
+      { id: "length", label: "Length", unit: "ft", defaultValue: 15 },
+      { id: "width", label: "Width", unit: "ft", defaultValue: 12 },
+    ],
+    calculate: (inputs) => {
+      const area = inputs.length * inputs.width;
+      const withWaste = area * 1.05;
+      const sqYards = Math.ceil(withWaste / 9);
+      
+      return {
+        result: withWaste,
+        breakdown: `${inputs.length}ft × ${inputs.width}ft = ${area} sq ft + 5% waste = ${withWaste.toFixed(1)} sq ft (${sqYards} sq yd)`,
+        materials: [
+          { item: "Carpet", quantity: sqYards, unit: "sq yd" },
+          { item: "Carpet pad", quantity: sqYards, unit: "sq yd" },
+          { item: "Tack strips", quantity: Math.ceil((inputs.length + inputs.width) * 2 / 4), unit: "4ft strips" },
+          { item: "Seam tape", quantity: Math.ceil(inputs.length / 15), unit: "rolls" },
+        ],
+        laborHours: Math.ceil(area / 100), // ~100 sq ft per hour for carpet
       };
     },
   },
@@ -210,6 +265,84 @@ const calculators: CalculatorType[] = [
           { item: "Staples", quantity: 1, unit: "box" },
         ],
         laborHours: Math.ceil(area / 200), // ~200 sq ft per hour
+      };
+    },
+  },
+  {
+    id: "deck",
+    name: "Deck / Decking",
+    unit: "sq ft",
+    formula: "Length × Width + 10% waste",
+    inputs: [
+      { id: "length", label: "Deck Length", unit: "ft", defaultValue: 16 },
+      { id: "width", label: "Deck Width", unit: "ft", defaultValue: 12 },
+      { id: "boardWidth", label: "Board Width", unit: "in", defaultValue: 6 },
+    ],
+    calculate: (inputs) => {
+      const area = inputs.length * inputs.width;
+      const withWaste = area * 1.1;
+      const boardsPerRow = Math.ceil(inputs.width / (inputs.boardWidth / 12));
+      const totalBoards = boardsPerRow * Math.ceil(inputs.length);
+      
+      return {
+        result: withWaste,
+        breakdown: `${inputs.length}ft × ${inputs.width}ft = ${area} sq ft + 10% waste = ${withWaste.toFixed(1)} sq ft`,
+        materials: [
+          { item: "Deck boards (16ft)", quantity: Math.ceil(totalBoards * 1.1), unit: "pcs" },
+          { item: "Deck screws", quantity: Math.ceil(area / 10), unit: "lb" },
+          { item: "Joist hangers", quantity: Math.ceil(inputs.length / 2), unit: "pcs" },
+          { item: "Posts (4x4)", quantity: Math.ceil((inputs.length + inputs.width) / 6), unit: "pcs" },
+        ],
+        laborHours: Math.ceil(area / 25), // ~25 sq ft per hour
+      };
+    },
+  },
+  {
+    id: "fencing",
+    name: "Fencing",
+    unit: "lin ft",
+    formula: "Perimeter length",
+    inputs: [
+      { id: "length", label: "Total Length", unit: "ft", defaultValue: 100 },
+      { id: "height", label: "Fence Height", unit: "ft", defaultValue: 6 },
+    ],
+    calculate: (inputs) => {
+      const panels = Math.ceil(inputs.length / 8); // 8ft panels
+      const posts = panels + 1;
+      
+      return {
+        result: inputs.length,
+        breakdown: `${inputs.length} linear ft at ${inputs.height}ft height`,
+        materials: [
+          { item: "Fence panels (8ft)", quantity: panels, unit: "pcs" },
+          { item: "Posts (4x4)", quantity: posts, unit: "pcs" },
+          { item: "Post caps", quantity: posts, unit: "pcs" },
+          { item: "Concrete bags", quantity: posts * 2, unit: "bags" },
+          { item: "Gate hardware", quantity: 1, unit: "set" },
+        ],
+        laborHours: Math.ceil(inputs.length / 10), // ~10 lin ft per hour
+      };
+    },
+  },
+  {
+    id: "other",
+    name: "Other (Custom)",
+    unit: "unit",
+    formula: "Custom calculation",
+    inputs: [
+      { id: "quantity", label: "Quantity", unit: "units", defaultValue: 1 },
+      { id: "multiplier", label: "Multiplier", unit: "×", defaultValue: 1 },
+    ],
+    calculate: (inputs) => {
+      const result = inputs.quantity * inputs.multiplier;
+      
+      return {
+        result: result,
+        breakdown: `${inputs.quantity} units × ${inputs.multiplier} = ${result} total`,
+        materials: [
+          { item: "Custom material", quantity: result, unit: "units" },
+        ],
+        laborHours: Math.ceil(result / 2), // estimate
       };
     },
   },
