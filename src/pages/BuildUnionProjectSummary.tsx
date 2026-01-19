@@ -15,15 +15,18 @@ export default function BuildUnionProjectSummary() {
   const photoEstimateRaw = searchParams.get("photoEstimate");
   const calculatorResultsRaw = searchParams.get("calculatorResults");
   const templateItemsRaw = searchParams.get("templateItems");
+  const quoteRaw = searchParams.get("quote");
 
   let photoEstimate = null;
   let calculatorResults: any[] = [];
   let templateItems: any[] = [];
+  let quoteData = null;
 
   try {
     if (photoEstimateRaw) photoEstimate = JSON.parse(decodeURIComponent(photoEstimateRaw));
     if (calculatorResultsRaw) calculatorResults = JSON.parse(decodeURIComponent(calculatorResultsRaw));
     if (templateItemsRaw) templateItems = JSON.parse(decodeURIComponent(templateItemsRaw));
+    if (quoteRaw) quoteData = JSON.parse(decodeURIComponent(quoteRaw));
   } catch (e) {
     console.error("Error parsing URL params:", e);
   }
@@ -51,6 +54,7 @@ export default function BuildUnionProjectSummary() {
           photoEstimate={photoEstimate}
           calculatorResults={calculatorResults}
           templateItems={templateItems}
+          quoteData={quoteData}
           onClose={() => navigate("/buildunion/workspace")}
         />
       </main>

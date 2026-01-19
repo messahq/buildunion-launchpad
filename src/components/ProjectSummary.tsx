@@ -81,6 +81,7 @@ interface ProjectSummaryProps {
   photoEstimate?: any;
   calculatorResults?: any[];
   templateItems?: any[];
+  quoteData?: any;
   projectId?: string;
   onClose?: () => void;
 }
@@ -90,6 +91,7 @@ export function ProjectSummary({
   photoEstimate,
   calculatorResults = [],
   templateItems = [],
+  quoteData,
   projectId,
   onClose
 }: ProjectSummaryProps) {
@@ -170,6 +172,20 @@ export function ProjectSummary({
         });
       }
       
+      // Process quote line items (from Quote Generator)
+      if (quoteData?.lineItems && Array.isArray(quoteData.lineItems)) {
+        quoteData.lineItems.forEach((item: any) => {
+          initialLineItems.push({
+            name: item.description || "Item",
+            quantity: item.quantity || 1,
+            unit: item.unit || "unit",
+            unit_price: item.unitPrice || 0,
+            total: (item.quantity || 1) * (item.unitPrice || 0),
+            source: "manual"
+          });
+        });
+      }
+      
       // Process calculator results
       if (calculatorResults && Array.isArray(calculatorResults)) {
         calculatorResults.forEach((calc: any) => {
@@ -232,6 +248,17 @@ export function ProjectSummary({
           }
         });
       }
+
+      // Set client info from quote data
+      if (quoteData) {
+        setClientInfo({
+          name: quoteData.clientName || "",
+          email: quoteData.clientEmail || "",
+          phone: quoteData.clientPhone || "",
+          address: quoteData.clientAddress || quoteData.projectAddress || ""
+        });
+        setNotes(quoteData.notes || quoteData.paymentTerms || "");
+      }
       
       const { data, error } = await supabase
         .from("project_summaries")
@@ -242,6 +269,11 @@ export function ProjectSummary({
           calculator_results: calculatorResults || [],
           template_items: templateItems || [],
           line_items: initialLineItems.length > 0 ? (initialLineItems as unknown as any) : null,
+          client_name: quoteData?.clientName || null,
+          client_email: quoteData?.clientEmail || null,
+          client_phone: quoteData?.clientPhone || null,
+          client_address: quoteData?.clientAddress || quoteData?.projectAddress || null,
+          notes: quoteData?.notes || quoteData?.paymentTerms || null,
           status: "draft"
         } as any)
         .select()
@@ -256,8 +288,6 @@ export function ProjectSummary({
       // Auto-trigger AI analysis for price estimation if we have items
       if (initialLineItems.length > 0) {
         toast.success(`${initialLineItems.length} items loaded from Quick Mode!`);
-        // Optionally run AI for price estimation
-        // await runAIAnalysis(summaryData.id);
       }
     } catch (error) {
       console.error("Error creating summary:", error);
@@ -594,7 +624,7 @@ export function ProjectSummary({
             <div>
               <p className="text-xs text-blue-600 font-medium">Photo Estimate</p>
               <p className="font-bold text-blue-800">
-                {summary.photo_estimate?.total ? formatCurrency(summary.photo_estimate.total) : "—"}
+                {photoEstimate?.area ? `${photoEstimate.area} ${photoEstimate.areaUnit || 'sq ft'}` : (summary.photo_estimate?.area ? `${summary.photo_estimate.area} ${summary.photo_estimate.areaUnit || 'sq ft'}` : "—")}
               </p>
             </div>
           </CardContent>
@@ -642,6 +672,143 @@ export function ProjectSummary({
           </CardContent>
         </Card>
       </div>
+
+      {/* Photo Estimate Details */}
+      {(photoEstimate || summary.photo_estimate) && (
+        <Card className="border-blue-200">
+          <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Camera className="h-5 w-5 text-blue-600" />
+              AI Photo Analysis Results
+              {(photoEstimate?.dualEngine?.verified || summary.photo_estimate?.dualEngine?.verified) && (
+                <Badge className="bg-green-100 text-green-700">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Verified
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            {/* Area & Surface Info */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 rounded-lg p-3">
+                <p className="text-xs text-blue-600 font-medium">Total Area</p>
+                <p className="text-xl font-bold text-blue-800">
+                  {(photoEstimate?.area || summary.photo_estimate?.area) || "—"} {(photoEstimate?.areaUnit || summary.photo_estimate?.areaUnit) || ""}
+                </p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-xs text-slate-600 font-medium">Surface Type</p>
+                <p className="font-semibold text-slate-800 capitalize">
+                  {(photoEstimate?.surfaceType || summary.photo_estimate?.surfaceType) || "Unknown"}
+                </p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-xs text-slate-600 font-medium">Condition</p>
+                <p className="font-semibold text-slate-800 capitalize">
+                  {(photoEstimate?.surfaceCondition || summary.photo_estimate?.surfaceCondition) || "Unknown"}
+                </p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-xs text-slate-600 font-medium">Confidence</p>
+                <Badge className={
+                  (photoEstimate?.areaConfidence || summary.photo_estimate?.areaConfidence) === "high" 
+                    ? "bg-green-100 text-green-700" 
+                    : (photoEstimate?.areaConfidence || summary.photo_estimate?.areaConfidence) === "medium"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-gray-100 text-gray-700"
+                }>
+                  {(photoEstimate?.areaConfidence || summary.photo_estimate?.areaConfidence) || "Unknown"}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Materials from Photo Estimate */}
+            {((photoEstimate?.materials || summary.photo_estimate?.materials)?.length > 0) && (
+              <div>
+                <h4 className="font-medium text-sm text-slate-700 mb-2">Detected Materials</h4>
+                <div className="space-y-2">
+                  {(photoEstimate?.materials || summary.photo_estimate?.materials).map((mat: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between bg-white border rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="font-medium">{mat.item || mat.name}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="text-muted-foreground">
+                          {mat.quantity} {mat.unit}
+                        </span>
+                        {mat.notes && (
+                          <span className="text-xs text-slate-500 max-w-xs truncate" title={mat.notes}>
+                            {mat.notes}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Summary & Recommendations */}
+            {(photoEstimate?.summary || summary.photo_estimate?.summary) && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4">
+                <h4 className="font-medium text-sm text-blue-800 mb-2">AI Summary</h4>
+                <p className="text-sm text-blue-700">{photoEstimate?.summary || summary.photo_estimate?.summary}</p>
+              </div>
+            )}
+
+            {((photoEstimate?.recommendations || summary.photo_estimate?.recommendations)?.length > 0) && (
+              <div>
+                <h4 className="font-medium text-sm text-slate-700 mb-2">Recommendations</h4>
+                <ul className="space-y-1">
+                  {(photoEstimate?.recommendations || summary.photo_estimate?.recommendations).map((rec: string, idx: number) => (
+                    <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      {rec}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Dual Engine Info */}
+            {(photoEstimate?.dualEngine || summary.photo_estimate?.dualEngine) && (
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium text-sm text-slate-700 mb-3">Dual AI Engine Analysis</h4>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {(photoEstimate?.dualEngine?.gemini || summary.photo_estimate?.dualEngine?.gemini) && (
+                    <div className="bg-violet-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="h-4 w-4 text-violet-600" />
+                        <span className="font-medium text-violet-800">
+                          {(photoEstimate?.dualEngine?.gemini?.role || summary.photo_estimate?.dualEngine?.gemini?.role)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-violet-600">
+                        Model: {(photoEstimate?.dualEngine?.gemini?.model || summary.photo_estimate?.dualEngine?.gemini?.model)}
+                      </p>
+                    </div>
+                  )}
+                  {(photoEstimate?.dualEngine?.gpt || summary.photo_estimate?.dualEngine?.gpt) && (
+                    <div className="bg-emerald-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-emerald-600" />
+                        <span className="font-medium text-emerald-800">
+                          {(photoEstimate?.dualEngine?.gpt?.role || summary.photo_estimate?.dualEngine?.gpt?.role)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-emerald-600">
+                        Model: {(photoEstimate?.dualEngine?.gpt?.model || summary.photo_estimate?.dualEngine?.gpt?.model)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* AI Analysis Indicator */}
       {analyzing && (
