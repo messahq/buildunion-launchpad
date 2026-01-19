@@ -4,6 +4,8 @@ import BuildUnionFooter from "@/components/BuildUnionFooter";
 import ProjectList from "@/components/ProjectList";
 import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
 import OnlineTeamWidget from "@/components/OnlineTeamWidget";
+import TeamMapView from "@/components/TeamMapView";
+import TeamChat from "@/components/TeamChat";
 import TeamMemberDashboard from "@/components/TeamMemberDashboard";
 import PendingInvitations from "@/components/PendingInvitations";
 import { Button } from "@/components/ui/button";
@@ -99,6 +101,8 @@ const BuildUnionWorkspace = () => {
                 <div className="lg:col-span-1 space-y-6">
                   <ProjectDashboardWidget />
                   <OnlineTeamWidget />
+                  <TeamMapView />
+                  <TeamChat />
                 </div>
               </div>
             </TabsContent>

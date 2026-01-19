@@ -32,6 +32,9 @@ export type Database = {
           is_contractor: boolean | null
           is_union_member: boolean | null
           is_verified: boolean | null
+          latitude: number | null
+          location_updated_at: string | null
+          longitude: number | null
           phone: string | null
           primary_trade:
             | Database["public"]["Enums"]["construction_trade"]
@@ -62,6 +65,9 @@ export type Database = {
           is_contractor?: boolean | null
           is_union_member?: boolean | null
           is_verified?: boolean | null
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           phone?: string | null
           primary_trade?:
             | Database["public"]["Enums"]["construction_trade"]
@@ -92,6 +98,9 @@ export type Database = {
           is_contractor?: boolean | null
           is_union_member?: boolean | null
           is_verified?: boolean | null
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           phone?: string | null
           primary_trade?:
             | Database["public"]["Enums"]["construction_trade"]
@@ -535,6 +544,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: []
       }
       user_draft_data: {
         Row: {
