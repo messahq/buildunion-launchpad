@@ -37,7 +37,8 @@ import {
   FileSpreadsheet,
   AlertOctagon,
   ShieldAlert,
-  LayoutTemplate
+  LayoutTemplate,
+  FolderPlus
 } from "lucide-react";
 import {
   Alert,
@@ -356,6 +357,108 @@ export function ProjectSummary({
     } catch (error) {
       console.error("Save error:", error);
       toast.error("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save as a new project and link the summary
+  const saveToProjects = async () => {
+    if (!user) {
+      toast.error("Please sign in to save projects");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Get project name from quoteData or generate one
+      const projectName = quoteData?.projectName || 
+        `Quick Mode Project - ${new Date().toLocaleDateString()}`;
+      
+      // Create the project
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          name: projectName,
+          description: `Generated from Quick Mode. Client: ${clientInfo.name || quoteData?.clientName || 'Not specified'}`,
+          status: 'draft',
+          address: clientInfo.address || quoteData?.clientAddress || quoteData?.projectAddress || null,
+        })
+        .select()
+        .single();
+
+      if (projectError) throw projectError;
+
+      // Calculate totals
+      const materialTotal = editedItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+      const taxResult = calculateTax(materialTotal);
+
+      // Update the existing summary with the project_id, or create new one if needed
+      if (summary?.id) {
+        const { error: updateError } = await supabase
+          .from('project_summaries')
+          .update({
+            project_id: project.id,
+            line_items: editedItems as unknown as any,
+            material_cost: materialTotal,
+            total_cost: taxResult.total,
+            client_name: clientInfo.name || quoteData?.clientName || null,
+            client_email: clientInfo.email || quoteData?.clientEmail || null,
+            client_phone: clientInfo.phone || quoteData?.clientPhone || null,
+            client_address: clientInfo.address || quoteData?.clientAddress || null,
+            notes: notes || quoteData?.paymentTerms || null,
+            status: 'saved',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', summary.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Create a new summary linked to the project
+        const { error: summaryError } = await supabase
+          .from('project_summaries')
+          .insert({
+            user_id: user.id,
+            project_id: project.id,
+            photo_estimate: photoEstimate || null,
+            calculator_results: calculatorResults || [],
+            template_items: templateItems || [],
+            line_items: editedItems as unknown as any,
+            material_cost: materialTotal,
+            total_cost: taxResult.total,
+            client_name: clientInfo.name || quoteData?.clientName || null,
+            client_email: clientInfo.email || quoteData?.clientEmail || null,
+            client_phone: clientInfo.phone || quoteData?.clientPhone || null,
+            client_address: clientInfo.address || quoteData?.clientAddress || null,
+            notes: notes || quoteData?.paymentTerms || null,
+            status: 'saved'
+          } as any);
+
+        if (summaryError) throw summaryError;
+      }
+
+      // Clear the draft data since we saved to a project
+      try {
+        await supabase
+          .from('user_draft_data')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('draft_type', 'quick_mode');
+      } catch (e) {
+        // Silently ignore draft deletion errors
+      }
+
+      toast.success("Project saved successfully! Redirecting...");
+      
+      // Navigate to the project details page
+      setTimeout(() => {
+        navigate(`/buildunion/project/${project.id}`);
+      }, 1000);
+
+    } catch (error: any) {
+      console.error("Error saving to projects:", error);
+      toast.error(error.message || "Failed to save project");
     } finally {
       setSaving(false);
     }
@@ -1588,6 +1691,18 @@ export function ProjectSummary({
         <Button variant="outline" onClick={generatePDF} className="gap-2">
           <Download className="h-4 w-4" />
           PDF Quote
+        </Button>
+        <Button 
+          onClick={saveToProjects}
+          disabled={saving}
+          className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FolderPlus className="h-4 w-4" />
+          )}
+          Save to Projects
         </Button>
         <Button 
           className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
