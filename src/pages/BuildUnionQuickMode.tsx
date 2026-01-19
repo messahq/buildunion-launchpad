@@ -6,6 +6,7 @@ import QuickModePhotoEstimate from "@/components/quick-mode/QuickModePhotoEstima
 import QuickModeTemplates from "@/components/quick-mode/QuickModeTemplates";
 import QuickModeCalculator from "@/components/quick-mode/QuickModeCalculator";
 import QuickModeQuoteGenerator from "@/components/quick-mode/QuickModeQuoteGenerator";
+import QuickModeOnboarding from "@/components/quick-mode/QuickModeOnboarding";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 const BuildUnionQuickMode = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("photo");
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -111,6 +113,14 @@ const BuildUnionQuickMode = () => {
       </main>
 
       <BuildUnionFooter />
+
+      {/* Onboarding for first-time users */}
+      {showOnboarding && (
+        <QuickModeOnboarding
+          onComplete={() => setShowOnboarding(false)}
+          onNavigateToTab={(tab) => setActiveTab(tab)}
+        />
+      )}
     </div>
   );
 };
