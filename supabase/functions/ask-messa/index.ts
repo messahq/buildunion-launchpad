@@ -85,12 +85,30 @@ When responding:
 }
 
 // Specialized prompt for OpenAI - focuses on TEXT, notes, regulations
-function buildOpenAIPrompt(documentContent: string, documentNames: string[], hasImages: boolean): string {
+// Also receives Gemini's visual findings for cross-verification
+function buildOpenAIPrompt(documentContent: string, documentNames: string[], hasImages: boolean, geminiFindings?: string): string {
   const imageNote = hasImages 
     ? "\n\nNOTE: Site images are available. Focus on any visible text, signage, or written annotations in these images."
     : "";
 
   const truncatedContent = truncateContent(documentContent, 30000);
+
+  // If Gemini findings are provided, add cross-verification task
+  const crossVerifyTask = geminiFindings ? `
+
+=== CROSS-VERIFICATION TASK ===
+The Visual Analysis Engine (Gemini) has identified the following elements:
+${geminiFindings}
+
+YOUR TASK: For each visual element above, search the document text to find:
+1. Matching textual references, specifications, or stamps
+2. Any written confirmation or contradiction of the visual data
+3. Code references or permit notes related to these elements
+
+Report your findings as:
+[CROSS_VERIFY: {visual element}] [FOUND: yes/no/partial] [TEXT_REF: {exact quote or "not found"}] [SOURCE: {document}, Page {X}]
+=== END CROSS-VERIFICATION TASK ===
+` : "";
 
   return `You are Messa's TEXT & REGULATIONS ENGINE, specialized in extracting written information from construction documents.
 
@@ -113,7 +131,12 @@ OUTPUT FORMAT:
 For each data point you extract, format as:
 [TEXT_DATA: {description}] [VALUE: {exact text/requirement}] [SOURCE: {document}, Page {X}]
 
-PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}
+CONFIDENCE LEVELS - Mark each finding with:
+- [CONFIDENCE: HIGH] - Exact text found, clear reference
+- [CONFIDENCE: MEDIUM] - Partial match or inferred from context  
+- [CONFIDENCE: LOW] - Uncertain, needs manual verification
+
+PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}${crossVerifyTask}
 
 === DOCUMENT CONTENTS START ===
 ${truncatedContent}
@@ -123,7 +146,8 @@ When responding:
 1. PRIORITIZE written specifications and regulations
 2. Quote exact text when citing requirements
 3. Include code section numbers when referenced
-4. If a requirement is ambiguous, note the ambiguity`;
+4. If a requirement is ambiguous, note the ambiguity
+5. Always include CONFIDENCE level for each data point`;
 }
 
 interface AIResponse {
@@ -355,9 +379,18 @@ async function callAIModel(
 
 // Extract data points from specialized engine outputs
 interface DataPoint {
-  type: "visual" | "text";
+  type: "visual" | "text" | "cross-verified";
   description: string;
   value: string;
+  source: string;
+  confidence?: "high" | "medium" | "low";
+  verificationSource?: string; // "Visual Analysis" or "Text Analysis"
+}
+
+interface CrossVerifyResult {
+  visualElement: string;
+  found: "yes" | "no" | "partial";
+  textRef: string;
   source: string;
 }
 
@@ -369,40 +402,98 @@ function extractDataPoints(content: string, type: "visual" | "text"): DataPoint[
     ? /\[VISUAL_DATA:\s*([^\]]+)\]\s*\[VALUE:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi
     : /\[TEXT_DATA:\s*([^\]]+)\]\s*\[VALUE:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi;
   
+  // Also extract confidence levels
+  const confidencePattern = /\[CONFIDENCE:\s*(HIGH|MEDIUM|LOW)\]/gi;
+  
   let match;
   while ((match = pattern.exec(content)) !== null) {
+    // Look for confidence near this match
+    const contextStart = Math.max(0, match.index - 100);
+    const contextEnd = Math.min(content.length, match.index + match[0].length + 100);
+    const context = content.substring(contextStart, contextEnd);
+    
+    let confidence: "high" | "medium" | "low" = "medium";
+    const confMatch = context.match(/\[CONFIDENCE:\s*(HIGH|MEDIUM|LOW)\]/i);
+    if (confMatch) {
+      confidence = confMatch[1].toLowerCase() as "high" | "medium" | "low";
+    }
+    
     dataPoints.push({
       type,
       description: match[1].trim(),
       value: match[2].trim(),
       source: match[3].trim(),
+      confidence,
+      verificationSource: type === "visual" ? "Visual Analysis" : "Text Analysis",
     });
   }
   
   return dataPoints;
 }
 
+// Extract cross-verification results from OpenAI's response
+function extractCrossVerifyResults(content: string): CrossVerifyResult[] {
+  const results: CrossVerifyResult[] = [];
+  const pattern = /\[CROSS_VERIFY:\s*([^\]]+)\]\s*\[FOUND:\s*(yes|no|partial)\]\s*\[TEXT_REF:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi;
+  
+  let match;
+  while ((match = pattern.exec(content)) !== null) {
+    results.push({
+      visualElement: match[1].trim(),
+      found: match[2].toLowerCase() as "yes" | "no" | "partial",
+      textRef: match[3].trim(),
+      source: match[4].trim(),
+    });
+  }
+  
+  return results;
+}
+
+// Extract visual findings summary for cross-verification
+function extractVisualFindings(geminiContent: string): string {
+  const dataPoints = extractDataPoints(geminiContent, "visual");
+  if (dataPoints.length === 0) {
+    // Try to extract key topics from the response
+    const lines = geminiContent.split('\n').filter(l => l.trim().length > 10);
+    const keyLines = lines.slice(0, 10).map((l, i) => `${i + 1}. ${l.trim()}`);
+    return keyLines.join('\n');
+  }
+  
+  return dataPoints.map((dp, i) => 
+    `${i + 1}. ${dp.description}: ${dp.value} (Source: ${dp.source})`
+  ).join('\n');
+}
+
 // Compare data points between Gemini (visual) and OpenAI (text) responses
+// Now with smart conflict detection and Operational Truth handling
 interface ComparisonResult {
   verified: boolean;
+  verificationSummary: string;
   matchingPoints: Array<{ gemini: DataPoint; openai: DataPoint; match: boolean }>;
-  conflicts: Array<{ topic: string; geminiValue: string; openaiValue: string; source: string }>;
+  conflicts: Array<{ topic: string; geminiValue: string; openaiValue: string; source: string; isContradiction: boolean }>;
   geminiOnlyPoints: DataPoint[];
   openaiOnlyPoints: DataPoint[];
+  operationalTruths: DataPoint[]; // Data seen by one engine, accepted as truth
+  crossVerified: CrossVerifyResult[];
 }
 
 function compareDataPoints(geminiContent: string, openaiContent: string): ComparisonResult {
   const geminiPoints = extractDataPoints(geminiContent, "visual");
   const openaiPoints = extractDataPoints(openaiContent, "text");
+  const crossVerified = extractCrossVerifyResults(openaiContent);
   
   const matchingPoints: ComparisonResult["matchingPoints"] = [];
   const conflicts: ComparisonResult["conflicts"] = [];
-  const geminiOnlyPoints: DataPoint[] = [...geminiPoints];
-  const openaiOnlyPoints: DataPoint[] = [...openaiPoints];
+  const usedGeminiIndices = new Set<number>();
+  const usedOpenaiIndices = new Set<number>();
+  const operationalTruths: DataPoint[] = [];
   
   // Try to find matching topics between visual and text data
-  for (const gp of geminiPoints) {
-    for (const op of openaiPoints) {
+  for (let gi = 0; gi < geminiPoints.length; gi++) {
+    const gp = geminiPoints[gi];
+    for (let oi = 0; oi < openaiPoints.length; oi++) {
+      const op = openaiPoints[oi];
+      
       // Check if they're talking about the same thing (fuzzy match on description)
       const gpDesc = gp.description.toLowerCase();
       const opDesc = op.description.toLowerCase();
@@ -413,57 +504,102 @@ function compareDataPoints(geminiContent: string, openaiContent: string): Compar
       const commonWords = [...gpWords].filter(w => opWords.has(w));
       
       if (commonWords.length >= 2 || gpDesc.includes(opDesc) || opDesc.includes(gpDesc)) {
-        // Found matching topic - check if values match
-        const valuesMatch = gp.value.toLowerCase().includes(op.value.toLowerCase()) ||
-                           op.value.toLowerCase().includes(gp.value.toLowerCase()) ||
-                           gp.value.toLowerCase() === op.value.toLowerCase();
+        usedGeminiIndices.add(gi);
+        usedOpenaiIndices.add(oi);
+        
+        // Check if values match
+        const gpVal = gp.value.toLowerCase().replace(/[^\w\d]/g, '');
+        const opVal = op.value.toLowerCase().replace(/[^\w\d]/g, '');
+        
+        const valuesMatch = gpVal.includes(opVal) || opVal.includes(gpVal) || gpVal === opVal;
         
         matchingPoints.push({ gemini: gp, openai: op, match: valuesMatch });
         
         if (!valuesMatch) {
+          // Check if this is a TRUE contradiction or just different info
+          // TRUE contradiction: same metric with different numeric values
+          const gpNumbers = gp.value.match(/\d+\.?\d*/g);
+          const opNumbers = op.value.match(/\d+\.?\d*/g);
+          
+          // It's only a contradiction if both have numbers and they differ significantly
+          const isContradiction = gpNumbers && opNumbers && 
+            gpNumbers.some(gn => opNumbers.every(on => Math.abs(parseFloat(gn) - parseFloat(on)) / parseFloat(gn) > 0.1));
+          
           conflicts.push({
             topic: gp.description,
             geminiValue: gp.value,
             openaiValue: op.value,
             source: gp.source || op.source,
+            isContradiction: !!isContradiction,
           });
         }
-        
-        // Remove from "only" lists
-        const gpIdx = geminiOnlyPoints.findIndex(p => p === gp);
-        if (gpIdx > -1) geminiOnlyPoints.splice(gpIdx, 1);
-        const opIdx = openaiOnlyPoints.findIndex(p => p === op);
-        if (opIdx > -1) openaiOnlyPoints.splice(opIdx, 1);
       }
     }
   }
   
-  // Also do simple word overlap for general verification
-  const normalize = (text: string) =>
-    text.toLowerCase().replace(/[^\w\s]/g, "").trim();
+  // Collect unmatched points as potential Operational Truths
+  const geminiOnlyPoints = geminiPoints.filter((_, i) => !usedGeminiIndices.has(i));
+  const openaiOnlyPoints = openaiPoints.filter((_, i) => !usedOpenaiIndices.has(i));
   
-  const norm1 = normalize(geminiContent);
-  const norm2 = normalize(openaiContent);
+  // Points from one engine with high confidence become Operational Truths
+  for (const gp of geminiOnlyPoints) {
+    if (gp.confidence === "high" || gp.confidence === "medium") {
+      operationalTruths.push({
+        ...gp,
+        verificationSource: "Verified by Visual Analysis",
+      });
+    }
+  }
+  for (const op of openaiOnlyPoints) {
+    if (op.confidence === "high" || op.confidence === "medium") {
+      operationalTruths.push({
+        ...op,
+        verificationSource: "Verified by Text Analysis",
+      });
+    }
+  }
   
-  const words1 = new Set(norm1.split(/\s+/).filter(w => w.length > 3));
-  const words2 = new Set(norm2.split(/\s+/).filter(w => w.length > 3));
+  // Check cross-verification results
+  for (const cv of crossVerified) {
+    if (cv.found === "yes") {
+      // Visual element confirmed by text - high confidence
+      operationalTruths.push({
+        type: "cross-verified",
+        description: cv.visualElement,
+        value: cv.textRef,
+        source: cv.source,
+        confidence: "high",
+        verificationSource: "Cross-Verified (Visual + Text)",
+      });
+    }
+  }
   
-  const intersection = [...words1].filter(w => words2.has(w));
-  const overlapRatio = words1.size > 0 && words2.size > 0 
-    ? intersection.length / Math.min(words1.size, words2.size)
-    : 0;
+  // Verified if: no TRUE contradictions exist
+  // TRUE contradictions = conflicts where isContradiction is true
+  const trueContradictions = conflicts.filter(c => c.isContradiction);
+  const verified = trueContradictions.length === 0;
   
-  // Verified if: no conflicts AND (have matching points with matches OR high word overlap)
-  const hasConflicts = conflicts.length > 0;
-  const hasValidMatches = matchingPoints.filter(m => m.match).length > 0;
-  const verified = !hasConflicts && (hasValidMatches || overlapRatio > 0.5);
+  // Build verification summary
+  let verificationSummary = "";
+  if (trueContradictions.length > 0) {
+    verificationSummary = `⚠️ ${trueContradictions.length} conflicting data point(s) detected`;
+  } else if (matchingPoints.filter(m => m.match).length > 0) {
+    verificationSummary = `✓ Dual-Engine Verified (${matchingPoints.filter(m => m.match).length} matching points)`;
+  } else if (operationalTruths.length > 0) {
+    verificationSummary = `ℹ️ ${operationalTruths.length} data point(s) accepted as Operational Truth`;
+  } else {
+    verificationSummary = "Analysis complete - no structured data points extracted";
+  }
   
   return {
     verified,
+    verificationSummary,
     matchingPoints,
     conflicts,
     geminiOnlyPoints,
     openaiOnlyPoints,
+    operationalTruths,
+    crossVerified,
   };
 }
 
@@ -538,74 +674,122 @@ serve(async (req) => {
       : SYSTEM_PROMPT;
 
     if (dualEngine) {
-      // Build messages with images for vision-capable models, using model-specific prompts
+      // PHASE 1: Run Gemini first for visual analysis
       const geminiMessages = buildMessagesWithImages(messages, geminiPrompt, imageUrls);
-      const openaiMessages = buildMessagesWithImages(messages, openaiPrompt, imageUrls);
-
-      console.log(`Starting dual engine analysis... Gemini prompt: ${geminiPrompt.length} chars, OpenAI prompt: ${openaiPrompt.length} chars`);
       
-      const [geminiResponse, openaiResponse] = await Promise.all([
-        callAIModel(LOVABLE_API_KEY, geminiModel, geminiMessages),
-        callAIModel(LOVABLE_API_KEY, openaiModel, openaiMessages),
-      ]);
+      console.log(`Phase 1: Gemini visual analysis... (${geminiPrompt.length} chars prompt)`);
+      const geminiResponse = await callAIModel(LOVABLE_API_KEY, geminiModel, geminiMessages);
+      
+      // PHASE 2: Run OpenAI with Gemini's findings for cross-verification
+      let openaiPromptWithContext = openaiPrompt;
+      if (geminiResponse.success && hasDocContent) {
+        const geminiFindings = extractVisualFindings(geminiResponse.content);
+        openaiPromptWithContext = buildOpenAIPrompt(systemPrompt, documentNames, imageUrls.length > 0, geminiFindings);
+        console.log(`Phase 2: OpenAI cross-verification with ${geminiFindings.split('\n').length} visual findings`);
+      } else {
+        console.log(`Phase 2: OpenAI analysis (no visual findings to cross-verify)`);
+      }
+      
+      const openaiMessages = buildMessagesWithImages(messages, openaiPromptWithContext, imageUrls);
+      const openaiResponse = await callAIModel(LOVABLE_API_KEY, openaiModel, openaiMessages);
 
       console.log(`Gemini success: ${geminiResponse.success}, OpenAI success: ${openaiResponse.success}`);
 
       const bothSucceeded = geminiResponse.success && openaiResponse.success;
       
-      // Use the new data-point comparison for dual-engine verification
+      // Use the smart data-point comparison for dual-engine verification
       const comparison = bothSucceeded 
         ? compareDataPoints(geminiResponse.content, openaiResponse.content)
         : null;
       
       const verified = comparison?.verified ?? false;
-      const hasConflicts = comparison?.conflicts && comparison.conflicts.length > 0;
+      const trueConflicts = comparison?.conflicts?.filter(c => c.isContradiction) || [];
+      const hasTrueConflicts = trueConflicts.length > 0;
+      const hasOperationalTruths = (comparison?.operationalTruths?.length || 0) > 0;
       
-      // Build synthesized response - prioritize Gemini for visual, combine with OpenAI text insights
+      // Build synthesized response with smarter logic
       let primaryContent = "";
       if (bothSucceeded) {
-        if (hasConflicts) {
-          // Conflict detected - send special response
+        if (hasTrueConflicts) {
+          // TRUE conflict detected - contradictory facts
           primaryContent = `⚠️ **CONFLICT DETECTED**
 
-The dual-engine analysis found discrepancies between visual data and text specifications. Please verify manually with the source documents.
+The dual-engine analysis found **contradictory data** between visual and text sources. Manual verification is required.
 
-**Conflicting Data Points:**
-${comparison.conflicts.map(c => `• **${c.topic}**
-  - Gemini (Visual): ${c.geminiValue}
-  - OpenAI (Text): ${c.openaiValue}
+**Contradicting Data Points:**
+${trueConflicts.map(c => `• **${c.topic}**
+  - Visual Analysis (Gemini): ${c.geminiValue}
+  - Text Analysis (OpenAI): ${c.openaiValue}
   - Source: ${c.source}`).join('\n\n')}
 
 ---
 
-**For Reference - Gemini Analysis (Visual):**
+**For Reference - Visual Analysis:**
 ${geminiResponse.content.substring(0, 1500)}${geminiResponse.content.length > 1500 ? '...' : ''}
 
-**For Reference - OpenAI Analysis (Text):**
+**For Reference - Text Analysis:**
 ${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 1500 ? '...' : ''}`;
         } else {
-          // No conflicts - combine the insights
-          primaryContent = geminiResponse.content;
+          // No true conflicts - synthesize the response
+          let synthesis = geminiResponse.content;
+          
+          // Add Operational Truth markers for single-source validated data
+          if (hasOperationalTruths && comparison) {
+            const truthsSection = comparison.operationalTruths.map(t => 
+              `• **${t.description}**: ${t.value} _(${t.verificationSource})_`
+            ).join('\n');
+            
+            synthesis += `\n\n---\n**📋 Additional Verified Data Points:**\n${truthsSection}`;
+          }
+          
+          // Add cross-verification summary if available
+          if (comparison && comparison.crossVerified && comparison.crossVerified.length > 0) {
+            const crossSection = comparison.crossVerified
+              .filter(cv => cv.found === "yes")
+              .map(cv => `• **${cv.visualElement}**: Confirmed - "${cv.textRef}" (${cv.source})`)
+              .join('\n');
+            
+            if (crossSection) {
+              synthesis += `\n\n**✅ Cross-Verified Data:**\n${crossSection}`;
+            }
+          }
+          
+          // Note any non-critical discrepancies (where engines saw different things but not contradictory)
+          const softConflicts = comparison?.conflicts?.filter(c => !c.isContradiction) || [];
+          if (softConflicts.length > 0) {
+            const softSection = softConflicts.map(c => 
+              `• **${c.topic}**: Visual shows "${c.geminiValue}", Text mentions "${c.openaiValue}"`
+            ).join('\n');
+            synthesis += `\n\n**ℹ️ Additional Context (different perspectives, not conflicts):**\n${softSection}`;
+          }
+          
+          primaryContent = synthesis;
         }
       } else {
-        primaryContent = geminiResponse.success ? geminiResponse.content : openaiResponse.content;
+        // Single engine response - mark as operational truth from that engine
+        const singleContent = geminiResponse.success ? geminiResponse.content : openaiResponse.content;
+        const engineName = geminiResponse.success ? "Visual Analysis" : "Text Analysis";
+        primaryContent = `${singleContent}\n\n---\n_Data verified by ${engineName} only. Cross-verification pending._`;
       }
       
       const sources = extractSources(primaryContent);
 
+      // Improved verification status logic
       const verificationStatus = bothSucceeded
-        ? hasConflicts
+        ? hasTrueConflicts
           ? "conflict"
           : verified
             ? "verified"
-            : "not-verified"
+            : hasOperationalTruths
+              ? "operational-truth"
+              : "not-verified"
         : geminiResponse.success
           ? "gemini-only"
           : openaiResponse.success
             ? "openai-only"
             : "error";
 
-      console.log(`Verification status: ${verificationStatus}, Conflicts: ${hasConflicts ? comparison.conflicts.length : 0}`);
+      console.log(`Verification: ${verificationStatus}, True conflicts: ${trueConflicts.length}, Operational truths: ${comparison?.operationalTruths?.length || 0}`);
 
       return new Response(
         JSON.stringify({
@@ -617,6 +801,7 @@ ${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 15
               openai: openaiResponse.success,
             },
             verified,
+            summary: comparison?.verificationSummary || "",
           },
           engineResponses: {
             gemini: geminiResponse.success ? geminiResponse.content : null,
@@ -627,6 +812,8 @@ ${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 15
             conflicts: comparison.conflicts,
             geminiOnlyPoints: comparison.geminiOnlyPoints,
             openaiOnlyPoints: comparison.openaiOnlyPoints,
+            operationalTruths: comparison.operationalTruths,
+            crossVerified: comparison.crossVerified,
           } : null,
           sources,
           documentsAnalyzed: documentNames,
