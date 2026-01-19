@@ -43,33 +43,192 @@ function truncateContent(content: string, maxChars: number = 50000): string {
     "\n\n[... Document content truncated due to length. Focus on the content above for your analysis. ...]";
 }
 
-// Specialized prompt for Gemini - focuses on VISUAL data, measurements, dimensions
+// ============================================================================
+// CONSTRUCTION INDUSTRY CONSTANTS & UNIT CONVERSION
+// ============================================================================
+
+const UNIT_CONVERSIONS = {
+  // Length
+  ftToM: 0.3048,
+  inToMm: 25.4,
+  mToFt: 3.28084,
+  mmToIn: 0.0393701,
+  // Area
+  sqftToSqm: 0.092903,
+  sqmToSqft: 10.7639,
+  // Volume
+  cuftToCum: 0.0283168,
+  cumToCuft: 35.3147,
+};
+
+// Area calculation tolerance (5% difference is acceptable due to rounding)
+const AREA_MATCH_TOLERANCE = 0.05;
+
+// Common construction abbreviations
+const CONSTRUCTION_ABBREVIATIONS = `
+COMMON ABBREVIATIONS:
+- NTS = Not To Scale
+- TYP. = Typical
+- SIM. = Similar
+- EQ. = Equal
+- CLR. = Clear
+- MIN. = Minimum
+- MAX. = Maximum
+- APPROX. = Approximate
+- REQ'D = Required
+- CONT. = Continuous
+- O.C. = On Center
+- A.F.F. = Above Finished Floor
+- T.O.S. = Top of Steel/Slab
+- B.O.S. = Bottom of Steel/Slab
+- F.F.E. = Finished Floor Elevation
+- T.O.W. = Top of Wall
+- C.J. = Control Joint
+- E.J. = Expansion Joint
+- G.C. = General Contractor
+- G.W.B. = Gypsum Wall Board
+- CMU = Concrete Masonry Unit
+- LVL = Laminated Veneer Lumber
+- GWP = Gypsum Wall Panel
+- ACT = Acoustic Ceiling Tile
+- VCT = Vinyl Composition Tile
+- HVAC = Heating, Ventilation, Air Conditioning
+- MEP = Mechanical, Electrical, Plumbing
+- AHU = Air Handling Unit
+- RTU = Rooftop Unit
+- VAV = Variable Air Volume
+- FHC = Fire Hose Cabinet
+- FEC = Fire Extinguisher Cabinet
+`;
+
+// ============================================================================
+// GEMINI VISUAL ANALYSIS ENGINE - Comprehensive Construction Focus
+// ============================================================================
+
 function buildGeminiPrompt(documentContent: string, documentNames: string[], hasImages: boolean): string {
   const imageNote = hasImages 
-    ? "\n\nCRITICAL: Site images have been provided. You MUST analyze these images for visual information, measurements, dimensions, and spatial data."
+    ? "\n\n🔴 CRITICAL: Site images have been provided. Perform DETAILED visual analysis on these images."
     : "";
 
   const truncatedContent = truncateContent(documentContent, 100000);
 
-  return `You are Messa's VISUAL ANALYSIS ENGINE, specialized in extracting visual data from construction documents and site images.
+  return `You are Messa's VISUAL ANALYSIS ENGINE - a specialized AI for extracting dimensional and spatial data from construction documents, architectural drawings, and site photographs.
 
-YOUR PRIMARY FOCUS:
-- Analyze DRAWINGS, BLUEPRINTS, and TECHNICAL DIAGRAMS
-- Extract MEASUREMENTS, DIMENSIONS, and SCALES
-- Identify SPATIAL RELATIONSHIPS and LAYOUTS
-- Examine SITE PHOTOS for physical conditions
-- Read VISUAL ANNOTATIONS on drawings
+${CONSTRUCTION_ABBREVIATIONS}
 
-CRITICAL EXTRACTION RULES:
-1. Look for dimensions like: 12'-6", 3.8m, 2400mm, etc.
-2. Identify scale indicators and apply them
-3. Note room sizes, clearances, and setbacks
-4. Extract material quantities shown visually
-5. Identify structural elements and their positions
+═══════════════════════════════════════════════════════════════════════════════
+📐 PRIMARY EXTRACTION CATEGORIES
+═══════════════════════════════════════════════════════════════════════════════
 
-OUTPUT FORMAT:
-For each data point you extract, format as:
-[VISUAL_DATA: {description}] [VALUE: {exact value}] [SOURCE: {document}, Page {X} or Site Image {N}]
+1️⃣ LINEAR DIMENSIONS (Extract ALL you find)
+   - Room dimensions (length × width)
+   - Wall lengths and thicknesses
+   - Door/window rough opening sizes
+   - Corridor widths
+   - Stair dimensions (rise, run, width, headroom)
+   - Ceiling heights / clear heights
+   - Structural member sizes (beams, columns, footings)
+   
+   FORMATS TO RECOGNIZE:
+   - Imperial: 12'-6", 12'6", 12 ft 6 in, 12'-6 1/2"
+   - Metric: 3800mm, 3.8m, 3800, 380cm
+   - Mixed: Often on Canadian drawings
+   
+2️⃣ AREA CALCULATIONS (Calculate from dimensions when possible)
+   - Room areas (L × W)
+   - Total floor area
+   - Lot coverage
+   - Gross vs Net areas
+   
+   FORMULA: For a room showing 10'-0" × 12'-0":
+   Area = 10 × 12 = 120 sq ft = 11.15 sq m
+   
+3️⃣ SPATIAL RELATIONSHIPS
+   - Room adjacencies (which rooms connect)
+   - Traffic flow patterns
+   - Egress routes
+   - Accessibility clearances (min 36" for doorways, 60" for wheelchair turning)
+   
+4️⃣ STRUCTURAL ELEMENTS
+   - Foundation type and dimensions
+   - Column grid (A, B, C × 1, 2, 3)
+   - Beam sizes (W10×22, W12×26, etc.)
+   - Joist spacing (typically 16" O.C. or 24" O.C.)
+   - Load-bearing vs non-load-bearing walls
+   
+5️⃣ DRAWING METADATA
+   - Sheet numbers (A1.1, S2.3, M1.0, E1.0)
+   - Scale (1/4" = 1'-0", 1:50, 1:100)
+   - North arrow orientation
+   - Grid lines and coordinates
+   - Revision clouds and dates
+   - Detail callouts and references
+   
+6️⃣ FIRE & LIFE SAFETY (Critical for code compliance)
+   - Fire-rated assemblies (1HR, 2HR ratings)
+   - Exit locations and widths
+   - Travel distances
+   - Fire separation distances
+   - Sprinkler coverage
+   
+7️⃣ SITE CONDITIONS (From photos)
+   - Existing conditions
+   - Material identification
+   - Construction progress
+   - Safety hazards visible
+   - Equipment and staging areas
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 OUTPUT FORMAT - REQUIRED FOR EACH DATA POINT
+═══════════════════════════════════════════════════════════════════════════════
+
+[VISUAL_DATA: {category}: {specific description}]
+[VALUE: {exact value with units}]
+[METRIC: {converted metric value if imperial, or vice versa}]
+[CALCULATED_AREA: {if applicable, show calculation}]
+[LOCATION: Sheet {X}, Grid {Y}, Detail {Z} OR Site Image {N}]
+[CONFIDENCE: HIGH/MEDIUM/LOW]
+
+EXAMPLE:
+[VISUAL_DATA: Room Dimension: Master Bedroom width]
+[VALUE: 12'-0"]
+[METRIC: 3657.6mm / 3.66m]
+[LOCATION: Sheet A2.1, Grid B-3]
+[CONFIDENCE: HIGH]
+
+[VISUAL_DATA: Room Dimension: Master Bedroom length]
+[VALUE: 14'-6"]
+[METRIC: 4419.6mm / 4.42m]
+[LOCATION: Sheet A2.1, Grid B-3]
+[CONFIDENCE: HIGH]
+
+[VISUAL_DATA: Calculated Area: Master Bedroom]
+[VALUE: 174 sq ft]
+[METRIC: 16.17 sq m]
+[CALCULATED_AREA: 12' × 14.5' = 174 sq ft]
+[LOCATION: Sheet A2.1, Grid B-3]
+[CONFIDENCE: HIGH]
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 SPECIAL EXTRACTION TASKS
+═══════════════════════════════════════════════════════════════════════════════
+
+A) ROOM SCHEDULES FROM DRAWINGS
+   - Room name/number
+   - Dimensions visible on plan
+   - Ceiling height (from sections or notes)
+   - Floor finish indicator
+   
+B) DOOR/WINDOW ANNOTATIONS
+   - Size tags (3068 = 3'-0" × 6'-8")
+   - Type indicators (D1, D2, W1, W2)
+   - Swing direction
+   
+C) SECTION CUTS
+   - Foundation depths
+   - Floor-to-floor heights
+   - Parapet heights
+   - Roof slopes (4:12, 6:12)
 
 PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}
 
@@ -77,15 +236,18 @@ PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}
 ${truncatedContent}
 === DOCUMENT CONTENTS END ===
 
-When responding:
-1. PRIORITIZE visual and dimensional data
-2. Be PRECISE with all measurements - include units
-3. Cite exact source locations for verification
-4. If a measurement is unclear, state the uncertainty`;
+Remember:
+✓ ALWAYS include both imperial AND metric equivalents
+✓ CALCULATE areas when you have L × W dimensions
+✓ Include grid coordinates and sheet numbers for verification
+✓ Mark confidence level for each data point
+✓ Note any unclear or conflicting dimensions`;
 }
 
-// Specialized prompt for OpenAI - focuses on TEXT, notes, regulations
-// Also receives Gemini's visual findings for cross-verification
+// ============================================================================
+// OPENAI TEXT & TABULAR EXTRACTION ENGINE - Comprehensive Construction Focus
+// ============================================================================
+
 function buildOpenAIPrompt(documentContent: string, documentNames: string[], hasImages: boolean, geminiFindings?: string): string {
   const imageNote = hasImages 
     ? "\n\nNOTE: Site images are available. Focus on any visible text, signage, or written annotations in these images."
@@ -96,45 +258,178 @@ function buildOpenAIPrompt(documentContent: string, documentNames: string[], has
   // If Gemini findings are provided, add cross-verification task
   const crossVerifyTask = geminiFindings ? `
 
-=== CROSS-VERIFICATION TASK ===
-The Visual Analysis Engine (Gemini) has identified the following elements:
+═══════════════════════════════════════════════════════════════════════════════
+🔄 CROSS-VERIFICATION TASK (CRITICAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+The Visual Analysis Engine has identified these elements from drawings:
 ${geminiFindings}
 
-YOUR TASK: For each visual element above, search the document text to find:
-1. Matching textual references, specifications, or stamps
-2. Any written confirmation or contradiction of the visual data
-3. Code references or permit notes related to these elements
+YOUR TASK: For EACH visual finding above:
+1. Search schedules/tables for matching room names, areas, or specifications
+2. Verify calculated areas match scheduled areas (±5% tolerance for rounding)
+3. Confirm material specs match between drawings and schedules
+4. Note any unit conversions (imperial ↔ metric should match when converted)
 
-Report your findings as:
-[CROSS_VERIFY: {visual element}] [FOUND: yes/no/partial] [TEXT_REF: {exact quote or "not found"}] [SOURCE: {document}, Page {X}]
-=== END CROSS-VERIFICATION TASK ===
+AREA VERIFICATION FORMULA:
+- If Gemini shows 10'-0" × 12'-0" room = 120 sq ft
+- And schedule shows 120 SF or 11.15 m² → MATCH ✓
+- If schedule shows 130 SF → CHECK for bay windows, closets, or measure differences
+
+Report each verification as:
+[CROSS_VERIFY: {visual element from Gemini}]
+[FOUND: yes/no/partial]
+[TABLE_DATA: {exact value from schedule/table}]
+[UNIT_CHECK: {imperial value} = {metric equivalent} ✓/✗]
+[MATCH_STATUS: MATCH/MISMATCH/WITHIN_TOLERANCE]
+[SOURCE: {Schedule Name}, Row {X} or {Document}, Page {X}]
+═══════════════════════════════════════════════════════════════════════════════
 ` : "";
 
-  return `You are Messa's TEXT & REGULATIONS ENGINE, specialized in extracting written information from construction documents.
+  return `You are Messa's TEXT & TABULAR EXTRACTION ENGINE - specialized in extracting written specifications, schedules, and regulatory data from construction documents.
 
-YOUR PRIMARY FOCUS:
-- Extract SPECIFICATIONS and REQUIREMENTS
-- Identify CODE REFERENCES and COMPLIANCE notes
-- Read WRITTEN ANNOTATIONS and COMMENTS
-- Find MATERIAL SPECIFICATIONS and standards
-- Extract PERMIT CONDITIONS and restrictions
-- Identify SAFETY REQUIREMENTS and warnings
+${CONSTRUCTION_ABBREVIATIONS}
 
-CRITICAL EXTRACTION RULES:
-1. Look for building code references (OBC, NBCC, etc.)
-2. Extract material specs like "Type X Gypsum Board" or "Grade 400R Rebar"
-3. Identify notes starting with "Note:", "NTS:", "Typ.", etc.
-4. Find inspection requirements and hold points
-5. Extract contractor/engineer comments and RFIs
+═══════════════════════════════════════════════════════════════════════════════
+📊 PRIMARY EXTRACTION CATEGORIES - SCHEDULES & TABLES
+═══════════════════════════════════════════════════════════════════════════════
 
-OUTPUT FORMAT:
-For each data point you extract, format as:
-[TEXT_DATA: {description}] [VALUE: {exact text/requirement}] [SOURCE: {document}, Page {X}]
+1️⃣ ROOM FINISH SCHEDULE (Critical for verification)
+   Extract ALL columns:
+   - Room Number/Name
+   - Floor Finish (VCT, Carpet, Tile, Hardwood)
+   - Base Type
+   - Wall Finish (GWB, Paint code, Tile)
+   - Ceiling Type (ACT, GWB, Open)
+   - Ceiling Height
+   - AREA (sq ft or m²) ← Key for cross-verification
+   - Remarks/Notes
+   
+   FORMAT:
+   [TABLE_DATA: Room Finish Schedule]
+   [ROW: {Room Number}]
+   [AREA: {value with units}]
+   [CEILING_HT: {value}]
+   [FLOOR: {finish type}]
+   [WALL: {finish type}]
+   [SOURCE: Sheet {X}, Schedule Row {N}]
 
-CONFIDENCE LEVELS - Mark each finding with:
-- [CONFIDENCE: HIGH] - Exact text found, clear reference
-- [CONFIDENCE: MEDIUM] - Partial match or inferred from context  
-- [CONFIDENCE: LOW] - Uncertain, needs manual verification
+2️⃣ DOOR SCHEDULE
+   - Door Mark (D1, D2, D101, etc.)
+   - Size (Width × Height × Thickness)
+   - Material (Wood, HM, AL)
+   - Fire Rating (20 min, 45 min, 90 min)
+   - Hardware Set
+   - Frame Type
+   - Glazing requirements
+   - Louver requirements
+   
+3️⃣ WINDOW SCHEDULE
+   - Window Mark
+   - Size (W × H)
+   - Type (Fixed, Awning, Casement, Slider)
+   - Frame Material
+   - Glazing Type (Double, Triple, Low-E)
+   - U-Value / SHGC (for energy code)
+   
+4️⃣ STRUCTURAL SCHEDULES
+   - Beam Schedule
+   - Column Schedule
+   - Footing Schedule
+   - Lintel Schedule
+   - Rebar schedules
+
+5️⃣ MEP SCHEDULES
+   - Electrical Panel Schedule
+   - Lighting Fixture Schedule
+   - Plumbing Fixture Schedule
+   - HVAC Equipment Schedule
+   - Diffuser/Grille Schedule
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 SPECIFICATIONS & CODE REFERENCES
+═══════════════════════════════════════════════════════════════════════════════
+
+6️⃣ BUILDING CODE REFERENCES (Ontario/Canada)
+   - OBC (Ontario Building Code) sections
+   - NBCC (National Building Code of Canada)
+   - CSA Standards (A23.3, S16, O86)
+   - ASHRAE Standards (90.1, 62.1)
+   - NFPA references
+   - Local municipal bylaws
+   
+7️⃣ MATERIAL SPECIFICATIONS
+   - Concrete strength (25 MPa, 30 MPa, 4000 psi)
+   - Steel grades (Grade 400R, Fy = 400 MPa)
+   - Wood species and grades
+   - Insulation R-values
+   - Glazing specifications
+   
+8️⃣ GENERAL NOTES (Often contain critical requirements)
+   - Structural notes
+   - Architectural notes
+   - Mechanical notes
+   - Electrical notes
+   - Site notes
+   
+9️⃣ PERMIT & INSPECTION REQUIREMENTS
+   - Required inspections
+   - Hold points
+   - Special inspections
+   - Testing requirements (concrete, rebar, welding)
+
+🔟 ENERGY CODE COMPLIANCE
+   - SB-12 requirements (Ontario)
+   - EnerGuide ratings
+   - ENERGY STAR specifications
+   - Envelope requirements
+
+═══════════════════════════════════════════════════════════════════════════════
+🔢 UNIT CONVERSION VERIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+When verifying areas/dimensions between visual data and schedules:
+
+LENGTH:
+- 1 foot = 0.3048 meters = 304.8 mm
+- 1 inch = 25.4 mm
+- 1 meter = 3.28084 feet
+
+AREA:
+- 1 sq ft = 0.092903 sq m
+- 1 sq m = 10.7639 sq ft
+
+EXAMPLES:
+- Room showing 10' × 12' = 120 sq ft = 11.15 m²
+- If schedule shows "11.1 m²" → MATCH ✓ (within tolerance)
+- If schedule shows "120 SF" → EXACT MATCH ✓
+
+TOLERANCE: Accept ±5% difference due to rounding in conversions
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 OUTPUT FORMAT - REQUIRED FOR EACH DATA POINT
+═══════════════════════════════════════════════════════════════════════════════
+
+[TEXT_DATA: {category}: {description}]
+[VALUE: {exact text or value}]
+[IMPERIAL: {imperial equivalent if metric given}]
+[METRIC: {metric equivalent if imperial given}]
+[SOURCE: {Schedule Name}/{Document}, Row/Page {X}]
+[CODE_REF: {if applicable, cite code section}]
+[CONFIDENCE: HIGH/MEDIUM/LOW]
+
+EXAMPLE:
+[TEXT_DATA: Room Finish Schedule: Living Room Area]
+[VALUE: 285 sq ft]
+[METRIC: 26.48 sq m]
+[SOURCE: Room Finish Schedule, Row 102]
+[CONFIDENCE: HIGH]
+
+[TEXT_DATA: Building Code: Fire Separation Requirement]
+[VALUE: 1-hour fire separation required between dwelling units]
+[CODE_REF: OBC 3.2.1.1]
+[SOURCE: Architectural Notes, Sheet A0.1]
+[CONFIDENCE: HIGH]
 
 PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}${crossVerifyTask}
 
@@ -142,12 +437,12 @@ PROJECT DOCUMENTS AVAILABLE: ${documentNames.join(", ")}${imageNote}${crossVerif
 ${truncatedContent}
 === DOCUMENT CONTENTS END ===
 
-When responding:
-1. PRIORITIZE written specifications and regulations
-2. Quote exact text when citing requirements
-3. Include code section numbers when referenced
-4. If a requirement is ambiguous, note the ambiguity
-5. Always include CONFIDENCE level for each data point`;
+Remember:
+✓ Extract COMPLETE schedules when found
+✓ Always provide unit conversions for verification
+✓ Cite exact schedule rows and page numbers
+✓ Include code section references when found
+✓ Mark confidence level for each extraction`;
 }
 
 interface AIResponse {
@@ -394,35 +689,198 @@ interface CrossVerifyResult {
   source: string;
 }
 
+// ============================================================================
+// UNIT-AWARE VALUE PARSING AND COMPARISON
+// ============================================================================
+
+interface ParsedValue {
+  rawValue: string;
+  numericValue: number | null;
+  unit: string | null;
+  imperialEquivalent: number | null;
+  metricEquivalent: number | null;
+  isArea: boolean;
+}
+
+function parseConstructionValue(value: string): ParsedValue {
+  const result: ParsedValue = {
+    rawValue: value,
+    numericValue: null,
+    unit: null,
+    imperialEquivalent: null,
+    metricEquivalent: null,
+    isArea: false,
+  };
+  
+  // Check if it's an area measurement
+  const isArea = /sq\.?\s*(ft|feet|m|meters?)|m²|ft²|sf|square\s*(feet|meters?)/i.test(value);
+  result.isArea = isArea;
+  
+  // Parse imperial feet-inches: 12'-6", 12'6", 12 ft 6 in
+  const feetInchesMatch = value.match(/(\d+)['\s][-]?\s*(\d+(?:\s*\d*\/\d+)?)?["\s]?(?:in)?/);
+  if (feetInchesMatch) {
+    const feet = parseFloat(feetInchesMatch[1]);
+    const inches = feetInchesMatch[2] ? parseFloat(feetInchesMatch[2]) : 0;
+    result.numericValue = feet + (inches / 12);
+    result.unit = "feet";
+    result.imperialEquivalent = result.numericValue;
+    result.metricEquivalent = result.numericValue * UNIT_CONVERSIONS.ftToM;
+    return result;
+  }
+  
+  // Parse simple feet: 12', 12 ft, 12 feet
+  const feetMatch = value.match(/(\d+\.?\d*)\s*(?:'|ft|feet)/i);
+  if (feetMatch) {
+    result.numericValue = parseFloat(feetMatch[1]);
+    result.unit = "feet";
+    result.imperialEquivalent = result.numericValue;
+    result.metricEquivalent = result.numericValue * UNIT_CONVERSIONS.ftToM;
+    return result;
+  }
+  
+  // Parse millimeters: 3800mm, 3800 mm
+  const mmMatch = value.match(/(\d+\.?\d*)\s*mm/i);
+  if (mmMatch) {
+    result.numericValue = parseFloat(mmMatch[1]);
+    result.unit = "mm";
+    result.metricEquivalent = result.numericValue / 1000; // convert to meters
+    result.imperialEquivalent = result.numericValue * UNIT_CONVERSIONS.mmToIn / 12; // convert to feet
+    return result;
+  }
+  
+  // Parse meters: 3.8m, 3.8 m, 3.8 meters
+  const mMatch = value.match(/(\d+\.?\d*)\s*m(?:eters?)?(?!\s*m)/i);
+  if (mMatch) {
+    result.numericValue = parseFloat(mMatch[1]);
+    result.unit = "meters";
+    result.metricEquivalent = result.numericValue;
+    result.imperialEquivalent = result.numericValue * UNIT_CONVERSIONS.mToFt;
+    return result;
+  }
+  
+  // Parse square feet: 120 sq ft, 120 SF, 120 ft²
+  const sqftMatch = value.match(/(\d+\.?\d*)\s*(?:sq\.?\s*(?:ft|feet)|sf|ft²)/i);
+  if (sqftMatch) {
+    result.numericValue = parseFloat(sqftMatch[1]);
+    result.unit = "sqft";
+    result.isArea = true;
+    result.imperialEquivalent = result.numericValue;
+    result.metricEquivalent = result.numericValue * UNIT_CONVERSIONS.sqftToSqm;
+    return result;
+  }
+  
+  // Parse square meters: 11.15 m², 11.15 sq m
+  const sqmMatch = value.match(/(\d+\.?\d*)\s*(?:m²|sq\.?\s*m(?:eters?)?)/i);
+  if (sqmMatch) {
+    result.numericValue = parseFloat(sqmMatch[1]);
+    result.unit = "sqm";
+    result.isArea = true;
+    result.metricEquivalent = result.numericValue;
+    result.imperialEquivalent = result.numericValue * UNIT_CONVERSIONS.sqmToSqft;
+    return result;
+  }
+  
+  // Parse generic number
+  const numMatch = value.match(/(\d+\.?\d*)/);
+  if (numMatch) {
+    result.numericValue = parseFloat(numMatch[1]);
+  }
+  
+  return result;
+}
+
+// Check if two values match within tolerance, considering unit conversions
+function valuesMatchWithConversion(value1: string, value2: string): { match: boolean; reason: string } {
+  const parsed1 = parseConstructionValue(value1);
+  const parsed2 = parseConstructionValue(value2);
+  
+  // If no numeric values, do string comparison
+  if (parsed1.numericValue === null || parsed2.numericValue === null) {
+    const norm1 = value1.toLowerCase().replace(/[^\w\d]/g, '');
+    const norm2 = value2.toLowerCase().replace(/[^\w\d]/g, '');
+    return {
+      match: norm1.includes(norm2) || norm2.includes(norm1) || norm1 === norm2,
+      reason: "String comparison"
+    };
+  }
+  
+  // If both have imperial equivalents, compare in imperial
+  if (parsed1.imperialEquivalent !== null && parsed2.imperialEquivalent !== null) {
+    const diff = Math.abs(parsed1.imperialEquivalent - parsed2.imperialEquivalent);
+    const avgValue = (parsed1.imperialEquivalent + parsed2.imperialEquivalent) / 2;
+    const percentDiff = avgValue > 0 ? diff / avgValue : 0;
+    
+    if (percentDiff <= AREA_MATCH_TOLERANCE) {
+      return {
+        match: true,
+        reason: `Values match within ${(percentDiff * 100).toFixed(1)}% tolerance (${parsed1.imperialEquivalent.toFixed(2)} ≈ ${parsed2.imperialEquivalent.toFixed(2)})`
+      };
+    }
+  }
+  
+  // Direct numeric comparison with tolerance
+  const diff = Math.abs(parsed1.numericValue - parsed2.numericValue);
+  const avgValue = (parsed1.numericValue + parsed2.numericValue) / 2;
+  const percentDiff = avgValue > 0 ? diff / avgValue : 0;
+  
+  if (percentDiff <= AREA_MATCH_TOLERANCE) {
+    return {
+      match: true,
+      reason: `Direct values match within ${(percentDiff * 100).toFixed(1)}% tolerance`
+    };
+  }
+  
+  return {
+    match: false,
+    reason: `Values differ by ${(percentDiff * 100).toFixed(1)}% (${parsed1.numericValue} vs ${parsed2.numericValue})`
+  };
+}
+
 function extractDataPoints(content: string, type: "visual" | "text"): DataPoint[] {
   const dataPoints: DataPoint[] = [];
   
-  // Pattern for VISUAL_DATA or TEXT_DATA markers
+  // Pattern for VISUAL_DATA or TEXT_DATA markers - more flexible now
   const pattern = type === "visual" 
-    ? /\[VISUAL_DATA:\s*([^\]]+)\]\s*\[VALUE:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi
-    : /\[TEXT_DATA:\s*([^\]]+)\]\s*\[VALUE:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi;
-  
-  // Also extract confidence levels
-  const confidencePattern = /\[CONFIDENCE:\s*(HIGH|MEDIUM|LOW)\]/gi;
+    ? /\[VISUAL_DATA:\s*([^\]]+)\][\s\n]*\[VALUE:\s*([^\]]+)\]/gi
+    : /\[TEXT_DATA:\s*([^\]]+)\][\s\n]*\[VALUE:\s*([^\]]+)\]/gi;
   
   let match;
   while ((match = pattern.exec(content)) !== null) {
-    // Look for confidence near this match
-    const contextStart = Math.max(0, match.index - 100);
-    const contextEnd = Math.min(content.length, match.index + match[0].length + 100);
-    const context = content.substring(contextStart, contextEnd);
+    // Look for additional metadata near this match
+    const contextEnd = Math.min(content.length, match.index + match[0].length + 300);
+    const context = content.substring(match.index, contextEnd);
     
+    // Extract confidence
     let confidence: "high" | "medium" | "low" = "medium";
     const confMatch = context.match(/\[CONFIDENCE:\s*(HIGH|MEDIUM|LOW)\]/i);
     if (confMatch) {
       confidence = confMatch[1].toLowerCase() as "high" | "medium" | "low";
     }
     
+    // Extract source/location (more flexible patterns)
+    let source = "";
+    const sourceMatch = context.match(/\[(?:SOURCE|LOCATION):\s*([^\]]+)\]/i);
+    if (sourceMatch) {
+      source = sourceMatch[1].trim();
+    }
+    
+    // Extract metric equivalent if provided
+    const metricMatch = context.match(/\[METRIC:\s*([^\]]+)\]/i);
+    const metricValue = metricMatch ? metricMatch[1].trim() : "";
+    
+    // Extract calculated area if provided
+    const calcMatch = context.match(/\[CALCULATED_AREA:\s*([^\]]+)\]/i);
+    const calculatedArea = calcMatch ? calcMatch[1].trim() : "";
+    
+    const valueWithExtras = calculatedArea 
+      ? `${match[2].trim()} (Calculated: ${calculatedArea})`
+      : match[2].trim();
+    
     dataPoints.push({
       type,
       description: match[1].trim(),
-      value: match[2].trim(),
-      source: match[3].trim(),
+      value: valueWithExtras,
+      source,
       confidence,
       verificationSource: type === "visual" ? "Visual Analysis" : "Text Analysis",
     });
@@ -434,15 +892,24 @@ function extractDataPoints(content: string, type: "visual" | "text"): DataPoint[
 // Extract cross-verification results from OpenAI's response
 function extractCrossVerifyResults(content: string): CrossVerifyResult[] {
   const results: CrossVerifyResult[] = [];
-  const pattern = /\[CROSS_VERIFY:\s*([^\]]+)\]\s*\[FOUND:\s*(yes|no|partial)\]\s*\[TEXT_REF:\s*([^\]]+)\]\s*\[SOURCE:\s*([^\]]+)\]/gi;
+  
+  // More flexible pattern to catch various formats
+  const pattern = /\[CROSS_VERIFY:\s*([^\]]+)\][\s\n]*\[FOUND:\s*(yes|no|partial)\][\s\n]*(?:\[(?:TEXT_REF|TABLE_DATA):\s*([^\]]+)\])?/gi;
   
   let match;
   while ((match = pattern.exec(content)) !== null) {
+    // Look for source and match status
+    const contextEnd = Math.min(content.length, match.index + match[0].length + 200);
+    const context = content.substring(match.index, contextEnd);
+    
+    const sourceMatch = context.match(/\[SOURCE:\s*([^\]]+)\]/i);
+    const matchStatusMatch = context.match(/\[MATCH_STATUS:\s*([^\]]+)\]/i);
+    
     results.push({
       visualElement: match[1].trim(),
       found: match[2].toLowerCase() as "yes" | "no" | "partial",
-      textRef: match[3].trim(),
-      source: match[4].trim(),
+      textRef: match[3]?.trim() || "not found",
+      source: sourceMatch ? sourceMatch[1].trim() : "",
     });
   }
   
@@ -455,12 +922,12 @@ function extractVisualFindings(geminiContent: string): string {
   if (dataPoints.length === 0) {
     // Try to extract key topics from the response
     const lines = geminiContent.split('\n').filter(l => l.trim().length > 10);
-    const keyLines = lines.slice(0, 10).map((l, i) => `${i + 1}. ${l.trim()}`);
+    const keyLines = lines.slice(0, 15).map((l, i) => `${i + 1}. ${l.trim()}`);
     return keyLines.join('\n');
   }
   
   return dataPoints.map((dp, i) => 
-    `${i + 1}. ${dp.description}: ${dp.value} (Source: ${dp.source})`
+    `${i + 1}. [${dp.description}]: ${dp.value} (Confidence: ${dp.confidence?.toUpperCase() || 'MEDIUM'}, Source: ${dp.source || 'Not specified'})`
   ).join('\n');
 }
 
@@ -488,51 +955,85 @@ function compareDataPoints(geminiContent: string, openaiContent: string): Compar
   const usedOpenaiIndices = new Set<number>();
   const operationalTruths: DataPoint[] = [];
   
+  console.log(`Comparing ${geminiPoints.length} visual points with ${openaiPoints.length} text points`);
+  
   // Try to find matching topics between visual and text data
   for (let gi = 0; gi < geminiPoints.length; gi++) {
     const gp = geminiPoints[gi];
     for (let oi = 0; oi < openaiPoints.length; oi++) {
+      if (usedOpenaiIndices.has(oi)) continue; // Already matched
+      
       const op = openaiPoints[oi];
       
       // Check if they're talking about the same thing (fuzzy match on description)
       const gpDesc = gp.description.toLowerCase();
       const opDesc = op.description.toLowerCase();
       
-      // Find common keywords
-      const gpWords = new Set(gpDesc.split(/\s+/).filter(w => w.length > 3));
-      const opWords = new Set(opDesc.split(/\s+/).filter(w => w.length > 3));
+      // Find common keywords (room names, element types)
+      const gpWords = new Set(gpDesc.split(/[\s:,]+/).filter(w => w.length > 2));
+      const opWords = new Set(opDesc.split(/[\s:,]+/).filter(w => w.length > 2));
       const commonWords = [...gpWords].filter(w => opWords.has(w));
       
-      if (commonWords.length >= 2 || gpDesc.includes(opDesc) || opDesc.includes(gpDesc)) {
+      // Match if: 2+ common words, or one description contains the other
+      const descMatch = commonWords.length >= 2 || 
+                       gpDesc.includes(opDesc) || 
+                       opDesc.includes(gpDesc) ||
+                       // Special case: room names like "bedroom", "kitchen", etc.
+                       ['bedroom', 'bathroom', 'kitchen', 'living', 'dining', 'garage', 'office', 'basement', 'attic']
+                         .some(room => gpDesc.includes(room) && opDesc.includes(room));
+      
+      if (descMatch) {
         usedGeminiIndices.add(gi);
         usedOpenaiIndices.add(oi);
         
-        // Check if values match
-        const gpVal = gp.value.toLowerCase().replace(/[^\w\d]/g, '');
-        const opVal = op.value.toLowerCase().replace(/[^\w\d]/g, '');
+        // Use unit-aware comparison for values
+        const valueComparison = valuesMatchWithConversion(gp.value, op.value);
         
-        const valuesMatch = gpVal.includes(opVal) || opVal.includes(gpVal) || gpVal === opVal;
+        matchingPoints.push({ 
+          gemini: gp, 
+          openai: op, 
+          match: valueComparison.match 
+        });
         
-        matchingPoints.push({ gemini: gp, openai: op, match: valuesMatch });
-        
-        if (!valuesMatch) {
-          // Check if this is a TRUE contradiction or just different info
-          // TRUE contradiction: same metric with different numeric values
-          const gpNumbers = gp.value.match(/\d+\.?\d*/g);
-          const opNumbers = op.value.match(/\d+\.?\d*/g);
+        if (!valueComparison.match) {
+          // Check if this is a TRUE contradiction using unit-aware comparison
+          const parsed1 = parseConstructionValue(gp.value);
+          const parsed2 = parseConstructionValue(op.value);
           
-          // It's only a contradiction if both have numbers and they differ significantly
-          const isContradiction = gpNumbers && opNumbers && 
-            gpNumbers.some(gn => opNumbers.every(on => Math.abs(parseFloat(gn) - parseFloat(on)) / parseFloat(gn) > 0.1));
+          // It's only a TRUE contradiction if:
+          // 1. Both have numeric values
+          // 2. They represent the same type of measurement (both area, both length, etc.)
+          // 3. The difference exceeds tolerance EVEN after unit conversion
+          let isContradiction = false;
+          
+          if (parsed1.numericValue !== null && parsed2.numericValue !== null) {
+            // Check if both are area or both are length
+            const sameType = parsed1.isArea === parsed2.isArea;
+            
+            if (sameType && parsed1.imperialEquivalent !== null && parsed2.imperialEquivalent !== null) {
+              const diff = Math.abs(parsed1.imperialEquivalent - parsed2.imperialEquivalent);
+              const avgValue = (parsed1.imperialEquivalent + parsed2.imperialEquivalent) / 2;
+              const percentDiff = avgValue > 0 ? diff / avgValue : 0;
+              
+              // >10% difference after unit conversion = TRUE contradiction
+              isContradiction = percentDiff > 0.1;
+            }
+          }
           
           conflicts.push({
             topic: gp.description,
             geminiValue: gp.value,
             openaiValue: op.value,
             source: gp.source || op.source,
-            isContradiction: !!isContradiction,
+            isContradiction,
           });
+          
+          console.log(`Conflict: ${gp.description} - Gemini: ${gp.value}, OpenAI: ${op.value}, True conflict: ${isContradiction}`);
+        } else {
+          console.log(`Match: ${gp.description} - ${valueComparison.reason}`);
         }
+        
+        break; // Found a match for this Gemini point, move to next
       }
     }
   }
