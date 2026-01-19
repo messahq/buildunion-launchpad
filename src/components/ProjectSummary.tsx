@@ -153,16 +153,97 @@ export function ProjectSummary({
     if (!user) return;
     setLoading(true);
     try {
+      // Build initial line items from collected data
+      const initialLineItems: LineItem[] = [];
+      
+      // Process photo estimate materials
+      if (photoEstimate?.materials && Array.isArray(photoEstimate.materials)) {
+        photoEstimate.materials.forEach((mat: any) => {
+          initialLineItems.push({
+            name: mat.item || mat.name || "Material",
+            quantity: mat.quantity || 1,
+            unit: mat.unit || "unit",
+            unit_price: mat.price || mat.unitPrice || 0,
+            total: (mat.quantity || 1) * (mat.price || mat.unitPrice || 0),
+            source: "photo"
+          });
+        });
+      }
+      
+      // Process calculator results
+      if (calculatorResults && Array.isArray(calculatorResults)) {
+        calculatorResults.forEach((calc: any) => {
+          if (calc.result?.materials && Array.isArray(calc.result.materials)) {
+            calc.result.materials.forEach((mat: any) => {
+              initialLineItems.push({
+                name: mat.item || mat.name || "Material",
+                quantity: mat.quantity || 1,
+                unit: mat.unit || "unit",
+                unit_price: 0,
+                total: 0,
+                source: "calculator"
+              });
+            });
+          }
+          // Add labor from calculator
+          if (calc.result?.laborHours) {
+            initialLineItems.push({
+              name: `Labor - ${calc.calcType || "Work"}`,
+              quantity: calc.result.laborHours,
+              unit: "hour",
+              unit_price: 0,
+              total: 0,
+              source: "calculator"
+            });
+          }
+        });
+      }
+      
+      // Process template items
+      if (templateItems && Array.isArray(templateItems)) {
+        templateItems.forEach((template: any) => {
+          // Add template materials
+          if (template.materials && Array.isArray(template.materials)) {
+            template.materials.forEach((mat: any) => {
+              const matName = typeof mat === "string" ? mat : (mat.name || mat.item || "Material");
+              initialLineItems.push({
+                name: matName,
+                quantity: typeof mat === "object" ? (mat.quantity || 1) : 1,
+                unit: typeof mat === "object" ? (mat.unit || "unit") : "unit",
+                unit_price: typeof mat === "object" ? (mat.price || 0) : 0,
+                total: 0,
+                source: "template"
+              });
+            });
+          }
+          // Add template tasks as labor items
+          if (template.checklist && Array.isArray(template.checklist)) {
+            const completedCount = template.completedTasks?.length || 0;
+            if (completedCount > 0) {
+              initialLineItems.push({
+                name: `${template.templateName || template.projectName || "Template"} - Labor`,
+                quantity: completedCount,
+                unit: "tasks",
+                unit_price: 0,
+                total: 0,
+                source: "template"
+              });
+            }
+          }
+        });
+      }
+      
       const { data, error } = await supabase
         .from("project_summaries")
         .insert({
           user_id: user.id,
           project_id: projectId || null,
-          photo_estimate: photoEstimate || {},
+          photo_estimate: photoEstimate || null,
           calculator_results: calculatorResults || [],
           template_items: templateItems || [],
+          line_items: initialLineItems.length > 0 ? (initialLineItems as unknown as any) : null,
           status: "draft"
-        })
+        } as any)
         .select()
         .single();
 
@@ -170,11 +251,13 @@ export function ProjectSummary({
       
       const summaryData = data as unknown as ProjectSummaryData;
       setSummary(summaryData);
-      setEditedItems([]);
+      setEditedItems(initialLineItems);
       
-      // Auto-trigger analysis if we have data
-      if (photoEstimate || calculatorResults.length > 0 || templateItems.length > 0) {
-        await runAIAnalysis(summaryData.id);
+      // Auto-trigger AI analysis for price estimation if we have items
+      if (initialLineItems.length > 0) {
+        toast.success(`${initialLineItems.length} items loaded from Quick Mode!`);
+        // Optionally run AI for price estimation
+        // await runAIAnalysis(summaryData.id);
       }
     } catch (error) {
       console.error("Error creating summary:", error);
