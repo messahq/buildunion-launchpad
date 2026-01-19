@@ -130,7 +130,7 @@ const Index = () => {
             className="relative w-40 h-40 md:w-52 md:h-52 lg:w-60 lg:h-60 rounded-full overflow-hidden transition-transform duration-500 group-hover:scale-105"
             style={{
               animation: 'spinGlobe 80s linear infinite',
-              background: 'radial-gradient(circle at 35% 35%, rgba(251, 146, 60, 0.7), rgba(6, 182, 212, 0.5) 50%, rgba(6, 182, 212, 0.9))',
+              background: 'radial-gradient(circle at 35% 35%, rgba(251, 146, 60, 0.8), rgba(251, 146, 60, 0.4) 30%, rgba(6, 182, 212, 0.5) 60%, rgba(6, 182, 212, 0.9))',
               boxShadow: `
                 inset -30px -30px 80px rgba(0, 0, 0, 0.5),
                 inset 15px 15px 50px rgba(251, 146, 60, 0.3),
@@ -139,64 +139,19 @@ const Index = () => {
               `,
             }}
           >
-            {/* Continent-like landmasses */}
-            <svg 
-              className="absolute inset-0 w-full h-full"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="xMidYMid slice"
-              style={{ animation: 'spinGlobe 80s linear infinite' }}
-            >
-              <defs>
-                <linearGradient id="landGradIndex" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="rgba(251, 146, 60, 0.7)" />
-                  <stop offset="100%" stopColor="rgba(180, 100, 50, 0.5)" />
-                </linearGradient>
-              </defs>
-              {/* North America-like */}
-              <path d="M15,20 Q25,15 35,22 Q40,30 35,40 Q25,45 18,38 Q12,30 15,20" fill="url(#landGradIndex)" opacity="0.6" />
-              {/* Europe/Asia-like */}
-              <path d="M55,18 Q70,15 85,25 Q88,35 80,45 Q65,50 55,42 Q50,30 55,18" fill="url(#landGradIndex)" opacity="0.55" />
-              {/* Africa-like */}
-              <path d="M45,45 Q55,42 60,52 Q58,68 50,75 Q42,70 40,58 Q42,48 45,45" fill="url(#landGradIndex)" opacity="0.6" />
-              {/* South America-like */}
-              <path d="M25,55 Q32,52 35,60 Q33,75 28,82 Q22,78 20,65 Q22,58 25,55" fill="url(#landGradIndex)" opacity="0.55" />
-              {/* Australia-like */}
-              <path d="M75,60 Q85,58 88,65 Q86,75 78,78 Q72,74 73,65 Q74,62 75,60" fill="url(#landGradIndex)" opacity="0.5" />
-            </svg>
-            
-            {/* Ocean depth layers */}
+            {/* Inner color layers */}
             <div 
-              className="absolute inset-0 rounded-full"
+              className="absolute inset-4 rounded-full"
               style={{
-                background: 'radial-gradient(ellipse at 60% 70%, rgba(6, 182, 212, 0.3), transparent 50%)',
+                background: 'radial-gradient(circle at 40% 40%, rgba(251, 146, 60, 0.5), rgba(6, 182, 212, 0.4) 60%, transparent)',
               }}
             />
-            
-            {/* Grid lines for globe effect */}
-            <svg 
-              className="absolute inset-0 w-full h-full opacity-20"
-              viewBox="0 0 100 100"
-            >
-              {/* Latitude lines */}
-              {[20, 35, 50, 65, 80].map((y) => (
-                <ellipse 
-                  key={`lat-${y}`}
-                  cx="50" 
-                  cy={y} 
-                  rx={Math.sin((y / 100) * Math.PI) * 48} 
-                  ry="1.5" 
-                  fill="none" 
-                  stroke="rgba(255, 255, 255, 0.4)" 
-                  strokeWidth="0.3"
-                />
-              ))}
-              {/* Longitude curves */}
-              <path d="M50,2 Q30,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="0.3" />
-              <path d="M50,2 Q70,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="0.3" />
-              <path d="M50,2 L50,98" fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="0.3" />
-              <path d="M50,2 Q15,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="0.2" />
-              <path d="M50,2 Q85,50 50,98" fill="none" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="0.2" />
-            </svg>
+            <div 
+              className="absolute inset-8 rounded-full"
+              style={{
+                background: 'radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.3), transparent 70%)',
+              }}
+            />
           </div>
           
           {/* Specular highlight */}
