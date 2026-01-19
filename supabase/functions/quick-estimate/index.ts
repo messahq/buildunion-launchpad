@@ -58,11 +58,22 @@ READ THE NUMBERS EXACTLY AS SHOWN ON THE IMAGE. Do not round or estimate.`;
   if (geminiResponse.ok) {
     const geminiResult = await geminiResponse.json();
     const geminiContent = geminiResult.choices?.[0]?.message?.content || "";
+    console.log("Gemini raw response:", geminiContent);
     try {
-      const jsonMatch = geminiContent.match(/```json\n?([\s\S]*?)\n?```/) || geminiContent.match(/\{[\s\S]*\}/);
-      geminiData = JSON.parse(jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : geminiContent);
+      // Clean markdown code blocks first
+      let cleanContent = geminiContent;
+      // Remove ```json and ``` markers
+      cleanContent = cleanContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
+      // Try to find JSON object
+      const jsonStart = cleanContent.indexOf("{");
+      const jsonEnd = cleanContent.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+      }
+      geminiData = JSON.parse(cleanContent);
+      console.log("Gemini parsed data:", geminiData);
     } catch (e) {
-      console.error("Gemini parse error:", e);
+      console.error("Gemini parse error:", e, "Content was:", geminiContent);
     }
   }
 
@@ -126,11 +137,20 @@ Add 10-15% waste factor to flooring materials.`;
   if (openaiResponse.ok) {
     const openaiResult = await openaiResponse.json();
     const openaiContent = openaiResult.choices?.[0]?.message?.content || "";
+    console.log("OpenAI raw response:", openaiContent);
     try {
-      const jsonMatch = openaiContent.match(/```json\n?([\s\S]*?)\n?```/) || openaiContent.match(/\{[\s\S]*\}/);
-      openaiData = JSON.parse(jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : openaiContent);
+      // Clean markdown code blocks first
+      let cleanContent = openaiContent;
+      cleanContent = cleanContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
+      const jsonStart = cleanContent.indexOf("{");
+      const jsonEnd = cleanContent.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+      }
+      openaiData = JSON.parse(cleanContent);
+      console.log("OpenAI parsed data:", openaiData);
     } catch (e) {
-      console.error("OpenAI parse error:", e);
+      console.error("OpenAI parse error:", e, "Content was:", openaiContent);
     }
   }
 
