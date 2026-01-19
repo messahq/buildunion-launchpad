@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useProjectConflicts, ProjectConflict } from "@/hooks/useProjectConflicts";
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,7 +16,8 @@ import {
   Navigation,
   RefreshCw,
   AlertCircle,
-  Maximize2
+  Maximize2,
+  AlertTriangle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -76,6 +78,9 @@ const TeamMapViewContent = ({
   updateMyLocation,
   fetchTeamMembers,
   navigate,
+  conflicts,
+  selectedConflict,
+  setSelectedConflict,
 }: {
   apiKey: string;
   teamMembers: TeamMemberLocation[];
@@ -88,6 +93,9 @@ const TeamMapViewContent = ({
   updateMyLocation: () => void;
   fetchTeamMembers: () => void;
   navigate: (path: string) => void;
+  conflicts: ProjectConflict[];
+  selectedConflict: ProjectConflict | null;
+  setSelectedConflict: (conflict: ProjectConflict | null) => void;
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -207,6 +215,28 @@ const TeamMapViewContent = ({
               />
             ))}
 
+            {/* Conflict markers - Yellow warning icons */}
+            {conflicts.filter(c => c.latitude && c.longitude).map((conflict, index) => (
+              <Marker
+                key={`conflict-${conflict.projectId}-${index}`}
+                position={{ lat: conflict.latitude!, lng: conflict.longitude! }}
+                onClick={() => {
+                  setSelectedMember(null);
+                  setSelectedConflict(conflict);
+                }}
+                icon={{
+                  path: "M12 2L2 22h20L12 2zm0 6l6.9 12H5.1L12 8z",
+                  scale: 1.5,
+                  fillColor: conflict.severity === "high" ? "#dc2626" : "#f59e0b",
+                  fillOpacity: 1,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 2,
+                  anchor: new google.maps.Point(12, 22),
+                }}
+                title={`Conflict: ${conflict.projectName}`}
+              />
+            ))}
+
             {selectedMember && selectedMember.latitude && selectedMember.longitude && (
               <InfoWindow
                 position={{ lat: selectedMember.latitude, lng: selectedMember.longitude }}
@@ -237,6 +267,42 @@ const TeamMapViewContent = ({
                       ).toFixed(1)} km away
                     </p>
                   )}
+                </div>
+              </InfoWindow>
+            )}
+
+            {/* Conflict InfoWindow */}
+            {selectedConflict && selectedConflict.latitude && selectedConflict.longitude && (
+              <InfoWindow
+                position={{ lat: selectedConflict.latitude, lng: selectedConflict.longitude }}
+                onCloseClick={() => setSelectedConflict(null)}
+              >
+                <div className="p-2 min-w-[180px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`p-1 rounded ${selectedConflict.severity === "high" ? "bg-red-100" : "bg-amber-100"}`}>
+                      <AlertTriangle className={`h-4 w-4 ${selectedConflict.severity === "high" ? "text-red-600" : "text-amber-600"}`} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-slate-800">{selectedConflict.projectName}</p>
+                      <p className="text-xs text-slate-500 capitalize">{selectedConflict.conflictType} Conflict</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Photo:</span>
+                      <span className="font-medium">{selectedConflict.photoValue}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Blueprint:</span>
+                      <span className="font-medium">{selectedConflict.blueprintValue}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/buildunion/project/${selectedConflict.projectId}`)}
+                    className="mt-2 w-full text-xs bg-amber-500 hover:bg-amber-600 text-white py-1 px-2 rounded transition-colors"
+                  >
+                    View Project
+                  </button>
                 </div>
               </InfoWindow>
             )}
@@ -386,15 +452,19 @@ const TeamMapView = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { subscription } = useSubscription();
+  const { conflicts } = useProjectConflicts();
   const [teamMembers, setTeamMembers] = useState<TeamMemberLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMemberLocation | null>(null);
+  const [selectedConflict, setSelectedConflict] = useState<ProjectConflict | null>(null);
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [apiKeyError, setApiKeyError] = useState(false);
 
+  // Pro tier now also has access to map (Premium features are still exclusive)
+  const hasMapAccess = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
   const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
 
   useEffect(() => {
@@ -413,19 +483,19 @@ const TeamMapView = () => {
       }
     };
 
-    if (hasPremiumAccess) {
+    if (hasMapAccess) {
       fetchApiKey();
     }
-  }, [hasPremiumAccess]);
+  }, [hasMapAccess]);
 
   useEffect(() => {
-    if (user && hasPremiumAccess) {
+    if (user && hasMapAccess) {
       fetchTeamMembers();
       getCurrentLocation();
     } else {
       setIsLoading(false);
     }
-  }, [user, hasPremiumAccess]);
+  }, [user, hasMapAccess]);
 
   const getCurrentLocation = () => {
     if ("geolocation" in navigator) {
@@ -555,8 +625,8 @@ const TeamMapView = () => {
     }
   };
 
-  // Locked state for non-premium users
-  if (!hasPremiumAccess) {
+  // Locked state for non-Pro/Premium users
+  if (!hasMapAccess) {
     return (
       <Card className="bg-white border-slate-200 overflow-hidden">
         <CardHeader className="pb-3 bg-gradient-to-r from-slate-100 to-slate-50">
@@ -569,7 +639,7 @@ const TeamMapView = () => {
             </div>
             <Badge variant="outline" className="text-purple-600 border-purple-300 bg-purple-50">
               <Crown className="h-3 w-3 mr-1" />
-              Premium+
+              Pro+
             </Badge>
           </div>
         </CardHeader>
@@ -580,13 +650,13 @@ const TeamMapView = () => {
             </div>
             <h3 className="font-semibold text-slate-700 mb-2">Team Location Map</h3>
             <p className="text-sm text-slate-500 mb-4">
-              See team members' locations and find who's nearby
+              See team members' locations, conflicts, and find who's nearby
             </p>
             <Button 
               onClick={() => navigate("/buildunion/pricing")}
               className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
             >
-              Upgrade to Premium
+              Upgrade to Pro
             </Button>
           </div>
         </CardContent>
@@ -641,6 +711,9 @@ const TeamMapView = () => {
       updateMyLocation={updateMyLocation}
       fetchTeamMembers={fetchTeamMembers}
       navigate={navigate}
+      conflicts={conflicts}
+      selectedConflict={selectedConflict}
+      setSelectedConflict={setSelectedConflict}
     />
   );
 };
