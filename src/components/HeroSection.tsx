@@ -156,10 +156,11 @@ const HeroSection = () => {
       <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-24 md:pb-32">
         <div className="max-w-4xl text-center">
           <h1
-            className="font-display text-4xl font-light tracking-tight text-hero-text sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl animate-fade-in-up"
+            className="font-display text-4xl font-light tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl animate-fade-in-up"
             style={{ animationDelay: "0.2s" }}
           >
-            BuildUnion
+            <span className="text-white">Build</span>
+            <span className="text-amber-400">Union</span>
           </h1>
           <p
             className="mt-6 font-display text-lg font-semibold leading-relaxed text-hero-text sm:text-xl md:text-2xl animate-fade-in-up opacity-0 max-w-2xl mx-auto"
