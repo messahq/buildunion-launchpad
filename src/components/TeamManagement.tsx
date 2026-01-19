@@ -84,7 +84,7 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
   // Role selection is Premium+ feature
   const canSelectRoles = currentTier === "premium" || currentTier === "enterprise";
 
-  // Search for BU users
+  // Search for BU users - by company name, full name, or trade
   useEffect(() => {
     const searchUsers = async () => {
       if (!searchQuery.trim() || searchQuery.length < 2) {
@@ -94,39 +94,94 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
 
       setSearching(true);
       try {
-        // Search in bu_profiles by company name
+        const searchTerm = searchQuery.trim().toLowerCase();
+        
+        // Search in bu_profiles by company name and primary_trade
         const { data: buProfiles, error } = await supabase
           .from("bu_profiles")
           .select("id, user_id, company_name, primary_trade, avatar_url")
-          .or(`company_name.ilike.%${searchQuery}%`)
           .neq("user_id", user?.id || "")
-          .limit(10);
+          .limit(20);
 
         if (error) throw error;
 
-        // Get profile names for each result
+        // Also search in profiles by full_name
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .ilike("full_name", `%${searchQuery}%`)
+          .limit(20);
+
+        if (profilesError) throw profilesError;
+
+        // Create a map of user_id -> full_name from profiles
+        const profileMap = new Map<string, string>();
+        (profiles || []).forEach((p) => {
+          profileMap.set(p.user_id, p.full_name || "");
+        });
+
+        // Filter and enrich results
         const resultsWithNames = await Promise.all(
           (buProfiles || []).map(async (bp) => {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name")
-              .eq("user_id", bp.user_id)
-              .maybeSingle();
-
-            // Check if already a member or invited
+            // Check if already a member
             const isMember = members.some(m => m.user_id === bp.user_id);
-            const isInvited = invitations.some(i => i.status === "pending");
-
             if (isMember) return null;
+
+            // Get full_name from profile if not already in map
+            let fullName = profileMap.get(bp.user_id);
+            if (!fullName) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("user_id", bp.user_id)
+                .maybeSingle();
+              fullName = profile?.full_name || "";
+              profileMap.set(bp.user_id, fullName);
+            }
+
+            // Check if matches search term (company name, full name, or trade)
+            const companyMatch = bp.company_name?.toLowerCase().includes(searchTerm);
+            const nameMatch = fullName?.toLowerCase().includes(searchTerm);
+            const tradeMatch = bp.primary_trade?.toLowerCase().replace(/_/g, ' ').includes(searchTerm);
+
+            if (!companyMatch && !nameMatch && !tradeMatch) return null;
 
             return {
               ...bp,
-              full_name: profile?.full_name || bp.company_name || "Unknown",
+              full_name: fullName || bp.company_name || "Unknown",
             };
           })
         );
 
-        setSearchResults(resultsWithNames.filter(Boolean) as SearchedUser[]);
+        // Also add users found by name who have BU profiles
+        const nameMatchedUserIds = (profiles || []).map(p => p.user_id);
+        const additionalResults = await Promise.all(
+          nameMatchedUserIds
+            .filter(uid => !resultsWithNames.some(r => r?.user_id === uid))
+            .map(async (uid) => {
+              const { data: buProfile } = await supabase
+                .from("bu_profiles")
+                .select("id, user_id, company_name, primary_trade, avatar_url")
+                .eq("user_id", uid)
+                .maybeSingle();
+
+              if (!buProfile) return null;
+              
+              const isMember = members.some(m => m.user_id === buProfile.user_id);
+              if (isMember) return null;
+
+              return {
+                ...buProfile,
+                full_name: profileMap.get(uid) || buProfile.company_name || "Unknown",
+              };
+            })
+        );
+
+        const allResults = [...resultsWithNames, ...additionalResults].filter(Boolean) as SearchedUser[];
+        // Remove duplicates by user_id
+        const uniqueResults = Array.from(new Map(allResults.map(r => [r.user_id, r])).values());
+        
+        setSearchResults(uniqueResults.slice(0, 10));
       } catch (err) {
         console.error("Error searching users:", err);
       } finally {
@@ -580,12 +635,12 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
             <TabsContent value="user" className="space-y-4 pt-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Search BU Users
+                  Search by Name, Company or Trade
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search by company name..."
+                    placeholder="Name, company or trade..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
