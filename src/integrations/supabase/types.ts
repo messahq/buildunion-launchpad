@@ -202,6 +202,38 @@ export type Database = {
           },
         ]
       }
+      project_members: {
+        Row: {
+          id: string
+          joined_at: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          project_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_syntheses: {
         Row: {
           answer: string
@@ -332,6 +364,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          invitation_token: string | null
           invited_by: string
           project_id: string
           responded_at: string | null
@@ -341,6 +374,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          invitation_token?: string | null
           invited_by: string
           project_id: string
           responded_at?: string | null
@@ -350,6 +384,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          invitation_token?: string | null
           invited_by?: string
           project_id?: string
           responded_at?: string | null

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
+import TeamManagement from "@/components/TeamManagement";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ interface Project {
   status: string;
   created_at: string;
   updated_at: string;
+  user_id: string;
   address?: string | null;
   trade?: string | null;
   trades?: string[];
@@ -991,38 +993,18 @@ const BuildUnionProjectDetails = () => {
                 </div>
               )}
 
-              {/* Team Invitations */}
-              {teamInvitations.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <Mail className="h-4 w-4" />
-                    Team Invitations ({teamInvitations.length})
-                  </div>
-                  <div className="space-y-2">
-                    {teamInvitations.map((invite) => (
-                      <div key={invite.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-slate-400" />
-                          <span className="text-sm text-slate-700">{invite.email}</span>
-                        </div>
-                        <Badge 
-                          className={
-                            invite.status === 'pending' 
-                              ? 'bg-amber-100 text-amber-700' 
-                              : invite.status === 'accepted'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-red-100 text-red-700'
-                          }
-                        >
-                          {invite.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Team Management Card - Only visible to owner */}
+        {project && user && project.user_id === user.id && (
+          <TeamManagement projectId={project.id} isOwner={true} />
+        )}
+
+        {/* Team Members Card - Visible to non-owners */}
+        {project && user && project.user_id !== user.id && (
+          <TeamManagement projectId={project.id} isOwner={false} />
         )}
 
         <div className="grid lg:grid-cols-2 gap-6">
