@@ -299,39 +299,53 @@ const BuildUnionWorkspace = () => {
       </section>
 
       {/* The Process Section */}
-      <section className="py-20 px-6 bg-white border-y border-slate-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">How It Works</span>
-            <h2 className="text-3xl md:text-4xl font-display font-light text-slate-900 mt-4 mb-4">
+      <section className="py-16 px-6 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        {/* Futuristic grid background */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'linear-gradient(rgba(251, 191, 36, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(251, 191, 36, 0.3) 1px, transparent 1px)',
+            backgroundSize: '50px 50px'
+          }} />
+        </div>
+        
+        {/* Glowing orbs */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl" />
+        
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="text-center mb-12">
+            <span className="text-amber-400 font-medium text-sm uppercase tracking-widest">How It Works</span>
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mt-4 mb-4">
               The Process
             </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
+            <p className="text-slate-400 max-w-2xl mx-auto">
               From document upload to actionable insights — three simple steps to transform your construction workflows.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-5 relative">
+            {/* Connector line for desktop */}
+            <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+            
             {processSteps.map((step, index) => (
-              <div key={step.step} className="relative">
-                {/* Connector line */}
-                {index < processSteps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-amber-300 to-amber-100" />
-                )}
-                
-                <div className="text-center">
-                  {/* Step number */}
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 mb-6 relative">
-                    <step.icon className="h-10 w-10 text-amber-600" />
-                    <span className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                      {step.step}
-                    </span>
+              <div key={step.step} className="relative group">
+                <div className="bg-slate-800/80 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50 h-full transition-all duration-300 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 hover:scale-[1.02]">
+                  {/* Step icon with glow */}
+                  <div className="flex justify-center mb-4">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:shadow-amber-500/50 transition-shadow">
+                        <step.icon className="h-7 w-7 text-white" />
+                      </div>
+                      <span className="absolute -top-1 -right-1 w-6 h-6 bg-slate-900 border-2 border-amber-500 text-amber-400 rounded-full flex items-center justify-center text-xs font-bold">
+                        {step.step}
+                      </span>
+                    </div>
                   </div>
                   
-                  <h3 className="text-xl font-semibold text-slate-900 mb-3">
+                  <h3 className="text-base font-bold text-white text-center mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-slate-600 leading-relaxed">
+                  <p className="text-slate-400 text-sm leading-relaxed text-center">
                     {step.description}
                   </p>
                 </div>
