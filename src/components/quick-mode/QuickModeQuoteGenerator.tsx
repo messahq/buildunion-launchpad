@@ -132,118 +132,322 @@ const QuickModeQuoteGenerator = () => {
       <html>
       <head>
         <title>Quote ${quote.quoteNumber}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
-          .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-          .company-info h1 { font-size: 24px; color: #f59e0b; margin-bottom: 8px; }
-          .quote-info { text-align: right; }
-          .quote-number { font-size: 20px; font-weight: bold; }
-          .section { margin-bottom: 30px; }
-          .section-title { font-size: 14px; font-weight: bold; color: #666; margin-bottom: 8px; text-transform: uppercase; }
-          .client-project { display: flex; gap: 40px; }
-          .client-project > div { flex: 1; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-          th { background: #f3f4f6; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #e5e7eb; }
-          td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+          body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            padding: 0; 
+            color: #1a1a1a; 
+            background: #fff;
+            line-height: 1.5;
+          }
+          
+          /* Professional Header */
+          .header-bar {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 24px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          }
+          .company-brand h1 { 
+            font-size: 26px; 
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+          }
+          .company-brand p {
+            font-size: 13px;
+            opacity: 0.85;
+          }
+          .quote-badge {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 16px 24px;
+            text-align: right;
+          }
+          .quote-badge .number {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+          }
+          .quote-badge .dates {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 4px;
+          }
+
+          /* Main Content */
+          .content { padding: 40px; }
+          
+          /* Info Grid */
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 40px;
+          }
+          .info-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            background: #fafafa;
+          }
+          .info-box h3 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+          }
+          .info-box .name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+          }
+          .info-box .details {
+            font-size: 13px;
+            color: #64748b;
+          }
+
+          /* Table */
+          .items-section { margin-bottom: 32px; }
+          .items-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #1e293b;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+          }
+          thead tr {
+            background: #f8fafc;
+          }
+          th { 
+            padding: 14px 16px; 
+            text-align: left; 
+            font-weight: 600; 
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+          }
+          td { 
+            padding: 16px; 
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+          }
+          tbody tr:hover { background: #fafafa; }
           .text-right { text-align: right; }
-          .totals { width: 300px; margin-left: auto; }
-          .totals tr td { padding: 8px 12px; }
-          .totals .total-row { font-size: 18px; font-weight: bold; background: #fef3c7; }
-          .terms { background: #f9fafb; padding: 20px; border-radius: 8px; margin-top: 30px; }
-          .terms h3 { font-size: 14px; margin-bottom: 10px; }
-          .terms p { font-size: 12px; color: #666; margin-bottom: 8px; }
-          .signature { margin-top: 50px; display: flex; gap: 40px; }
-          .signature-line { flex: 1; border-top: 1px solid #333; padding-top: 8px; }
-          @media print { body { padding: 20px; } }
+          .item-desc { font-weight: 500; }
+
+          /* Totals */
+          .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 24px;
+          }
+          .totals-box {
+            width: 320px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+          }
+          .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .totals-row.total {
+            border: none;
+            padding-top: 16px;
+            margin-top: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+          }
+          .totals-row .label { color: #64748b; }
+          .totals-row .value { font-weight: 600; }
+
+          /* Terms */
+          .terms-section {
+            margin-top: 40px;
+            padding: 24px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #1e293b;
+          }
+          .terms-section h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+          }
+          .terms-section p {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+          }
+
+          /* Signature */
+          .signature-section {
+            margin-top: 60px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+          }
+          .sig-box {
+            padding-top: 16px;
+            border-top: 2px solid #1e293b;
+          }
+          .sig-box p {
+            font-size: 12px;
+            color: #64748b;
+          }
+
+          /* Footer */
+          .footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+          }
+
+          /* Ontario HST Badge */
+          .hst-badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+          }
+
+          @media print { 
+            body { padding: 0; }
+            .header-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="company-info">
+        <div class="header-bar">
+          <div class="company-brand">
             <h1>${quote.companyName || "Your Company Name"}</h1>
             <p>${quote.companyAddress || "Address"}</p>
-            <p>${quote.companyPhone || "Phone"} | ${quote.companyEmail || "Email"}</p>
+            <p>${quote.companyPhone || "Phone"} • ${quote.companyEmail || "Email"}</p>
           </div>
-          <div class="quote-info">
-            <p class="quote-number">QUOTE #${quote.quoteNumber}</p>
-            <p>Date: ${quote.quoteDate}</p>
-            <p>Valid Until: ${quote.validUntil}</p>
-          </div>
-        </div>
-
-        <div class="section client-project">
-          <div>
-            <p class="section-title">Bill To</p>
-            <p><strong>${quote.clientName || "Client Name"}</strong></p>
-            <p>${quote.clientAddress || "Address"}</p>
-            <p>${quote.clientPhone || ""}</p>
-            <p>${quote.clientEmail || ""}</p>
-          </div>
-          <div>
-            <p class="section-title">Project</p>
-            <p><strong>${quote.projectName || "Project Name"}</strong></p>
-            <p>${quote.projectAddress || "Address"}</p>
+          <div class="quote-badge">
+            <div class="number">QUOTE #${quote.quoteNumber}</div>
+            <div class="dates">
+              Issued: ${new Date(quote.quoteDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
+              Valid Until: ${new Date(quote.validUntil).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
           </div>
         </div>
 
-        <div class="section">
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 50%">Description</th>
-                <th class="text-right">Qty</th>
-                <th>Unit</th>
-                <th class="text-right">Unit Price</th>
-                <th class="text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${quote.lineItems
-                .map(
-                  (item) => `
+        <div class="content">
+          <div class="info-grid">
+            <div class="info-box">
+              <h3>Bill To</h3>
+              <p class="name">${quote.clientName || "Client Name"}</p>
+              <p class="details">
+                ${quote.clientAddress || ""}<br/>
+                ${quote.clientPhone || ""}<br/>
+                ${quote.clientEmail || ""}
+              </p>
+            </div>
+            <div class="info-box">
+              <h3>Project Details</h3>
+              <p class="name">${quote.projectName || "Project Name"}</p>
+              <p class="details">${quote.projectAddress || "Same as billing address"}</p>
+            </div>
+          </div>
+
+          <div class="items-section">
+            <h3>Itemized Quote</h3>
+            <table>
+              <thead>
                 <tr>
-                  <td>${item.description || "-"}</td>
-                  <td class="text-right">${item.quantity}</td>
-                  <td>${item.unit}</td>
-                  <td class="text-right">$${item.unitPrice.toFixed(2)}</td>
-                  <td class="text-right">$${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  <th style="width: 45%">Description</th>
+                  <th class="text-right">Qty</th>
+                  <th>Unit</th>
+                  <th class="text-right">Rate</th>
+                  <th class="text-right">Amount</th>
                 </tr>
-              `
-                )
-                .join("")}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${quote.lineItems
+                  .map(
+                    (item) => `
+                  <tr>
+                    <td class="item-desc">${item.description || "—"}</td>
+                    <td class="text-right">${item.quantity}</td>
+                    <td>${item.unit}</td>
+                    <td class="text-right">$${item.unitPrice.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</td>
+                    <td class="text-right"><strong>$${(item.quantity * item.unitPrice).toLocaleString('en-CA', { minimumFractionDigits: 2 })}</strong></td>
+                  </tr>
+                `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
 
-          <table class="totals">
-            <tr>
-              <td>Subtotal</td>
-              <td class="text-right">$${subtotal.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>HST (13%)</td>
-              <td class="text-right">$${tax.toFixed(2)}</td>
-            </tr>
-            <tr class="total-row">
-              <td>Total</td>
-              <td class="text-right">$${total.toFixed(2)}</td>
-            </tr>
-          </table>
-        </div>
-
-        <div class="terms">
-          <h3>Terms & Conditions</h3>
-          <p><strong>Payment Terms:</strong> ${quote.paymentTerms}</p>
-          ${quote.warranty ? `<p><strong>Warranty:</strong> ${quote.warranty}</p>` : ""}
-          ${quote.notes ? `<p><strong>Notes:</strong> ${quote.notes}</p>` : ""}
-        </div>
-
-        <div class="signature">
-          <div class="signature-line">
-            <p>Client Signature</p>
+            <div class="totals-section">
+              <div class="totals-box">
+                <div class="totals-row">
+                  <span class="label">Subtotal</span>
+                  <span class="value">$${subtotal.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div class="totals-row">
+                  <span class="label">HST (13%) <span class="hst-badge">Ontario</span></span>
+                  <span class="value">$${tax.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div class="totals-row total">
+                  <span>Total</span>
+                  <span>$${total.toLocaleString('en-CA', { minimumFractionDigits: 2 })} CAD</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="signature-line">
-            <p>Date</p>
+
+          <div class="terms-section">
+            <h3>Terms & Conditions</h3>
+            <p><strong>Payment:</strong> ${quote.paymentTerms}</p>
+            ${quote.warranty ? `<p><strong>Warranty:</strong> ${quote.warranty}</p>` : ""}
+            ${quote.notes ? `<p><strong>Additional Notes:</strong> ${quote.notes}</p>` : ""}
+          </div>
+
+          <div class="signature-section">
+            <div class="sig-box">
+              <p><strong>Client Acceptance</strong></p>
+              <p>Signature & Date</p>
+            </div>
+            <div class="sig-box">
+              <p><strong>Contractor Authorization</strong></p>
+              <p>Signature & Date</p>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Thank you for your business. This quote was generated using BuildUnion.</p>
+            <p>Licensed & Insured • WSIB Covered • Serving the Greater Toronto Area</p>
           </div>
         </div>
       </body>
