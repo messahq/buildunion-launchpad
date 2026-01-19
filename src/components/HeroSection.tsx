@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import davidVideo from "@/assets/david-video.mp4";
-import { ArrowLeft, ChevronDown, Globe, Sparkles, Zap, Camera, Calculator } from "lucide-react";
+import { ArrowLeft, ChevronDown, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -172,32 +172,6 @@ const HeroSection = () => {
             className="mt-10 flex flex-col items-center gap-6 animate-fade-in-up opacity-0"
             style={{ animationDelay: "1s", animationFillMode: "forwards" }}
           >
-            {/* Quick Mode Banner */}
-            <div 
-              onClick={() => navigate("/buildunion/quick")}
-              className="group cursor-pointer bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 backdrop-blur-md border border-amber-500/40 rounded-xl px-6 py-4 max-w-lg hover:border-amber-400/60 hover:bg-amber-500/25 transition-all duration-300 hover:scale-[1.02]"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg p-2.5 shadow-lg shadow-amber-500/30">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="text-amber-400 font-semibold text-sm">NEW</span>
-                    <span className="text-white font-semibold">Quick Mode</span>
-                  </div>
-                  <p className="text-zinc-300 text-xs mt-0.5">
-                    AI photo estimates • Templates • Calculators • PDF quotes
-                  </p>
-                </div>
-                <div className="flex-shrink-0 flex gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                  <Camera className="h-4 w-4 text-amber-400" />
-                  <Calculator className="h-4 w-4 text-amber-400" />
-                  <Zap className="h-4 w-4 text-amber-400" />
-                </div>
-              </div>
-            </div>
-
             <Button
               size="lg"
               onClick={() => navigate("/buildunion/workspace")}
