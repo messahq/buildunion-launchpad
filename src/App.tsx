@@ -9,6 +9,7 @@ import BuildUnion from "./pages/BuildUnion";
 import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
 import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
+import BuildUnionProjectFacts from "./pages/BuildUnionProjectFacts";
 import BuildUnionPricing from "./pages/BuildUnionPricing";
 import BuildUnionProfile from "./pages/BuildUnionProfile";
 import BuildUnionProfileView from "./pages/BuildUnionProfileView";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
             <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
             <Route path="/buildunion/project/:projectId" element={<BuildUnionProjectDetails />} />
+            <Route path="/buildunion/facts" element={<BuildUnionProjectFacts />} />
             <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
             <Route path="/buildunion/profile" element={<BuildUnionProfile />} />
             <Route path="/buildunion/profile/view" element={<BuildUnionProfileView />} />

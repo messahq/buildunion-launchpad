@@ -153,9 +153,20 @@ const ProjectFacts = () => {
             <BookOpen className="h-5 w-5 text-amber-600" />
             <CardTitle className="text-lg">Project Facts</CardTitle>
           </div>
-          <Badge variant="outline" className="text-xs">
-            {facts.length} saved
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {facts.length} saved
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/buildunion/facts")}
+              className="text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 gap-1 h-7"
+            >
+              View All
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
         <CardDescription>
           Verified insights from M.E.S.S.A. dual-engine analysis
