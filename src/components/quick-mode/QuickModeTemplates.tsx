@@ -35,6 +35,14 @@ interface QuickModeTemplatesProps {
     completedTasks: string[];
     materials: string[];
   }) => void;
+  onContinueToCalculator?: (data: {
+    templateId: string;
+    templateName: string;
+    projectName: string;
+    checklist: ChecklistItem[];
+    completedTasks: string[];
+    materials: string[];
+  }) => void;
 }
 
 const defaultTemplates: ProjectTemplate[] = [
@@ -317,7 +325,7 @@ const defaultTemplates: ProjectTemplate[] = [
   },
 ];
 
-const QuickModeTemplates = ({ onTemplateSelect }: QuickModeTemplatesProps) => {
+const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickModeTemplatesProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
   const [projectName, setProjectName] = useState("");
@@ -394,7 +402,7 @@ const QuickModeTemplates = ({ onTemplateSelect }: QuickModeTemplatesProps) => {
     ? Math.round((completedTasks.size / currentChecklist.length) * 100)
     : 0;
 
-  // Handle continue to next step
+  // Handle continue to next step (now goes to calculator)
   const handleContinue = () => {
     if (!projectName.trim()) {
       toast.error("Please enter a project name");
@@ -406,16 +414,24 @@ const QuickModeTemplates = ({ onTemplateSelect }: QuickModeTemplatesProps) => {
       return;
     }
 
+    const templateData = {
+      templateId: selectedTemplate!.id,
+      templateName: selectedTemplate!.name,
+      projectName: projectName.trim(),
+      checklist: currentChecklist,
+      completedTasks: Array.from(completedTasks),
+      materials: currentMaterials
+    };
+
+    // Also add to collected data
     if (onTemplateSelect) {
-      onTemplateSelect({
-        templateId: selectedTemplate!.id,
-        templateName: selectedTemplate!.name,
-        projectName: projectName.trim(),
-        checklist: currentChecklist,
-        completedTasks: Array.from(completedTasks),
-        materials: currentMaterials
-      });
-      toast.success("Template added to your project");
+      onTemplateSelect(templateData);
+    }
+
+    // Continue to calculator with the template data
+    if (onContinueToCalculator) {
+      onContinueToCalculator(templateData);
+      toast.success("Template saved! Now configure your materials in the Calculator.");
     }
   };
 
