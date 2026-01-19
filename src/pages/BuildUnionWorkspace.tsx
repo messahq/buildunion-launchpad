@@ -2,13 +2,13 @@ import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import ProjectList from "@/components/ProjectList";
-import ProjectFacts from "@/components/ProjectFacts";
+import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
 import TeamMemberDashboard from "@/components/TeamMemberDashboard";
 import PendingInvitations from "@/components/PendingInvitations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle, ArrowLeft, Sparkles, Camera, Calculator, Zap, FolderOpen, UserCheck } from "lucide-react";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle, ArrowLeft, FolderOpen, UserCheck } from "lucide-react";
 
 const newsItems = [
   {
@@ -96,7 +96,7 @@ const BuildUnionWorkspace = () => {
                   <ProjectList />
                 </div>
                 <div className="lg:col-span-1">
-                  <ProjectFacts />
+                  <ProjectDashboardWidget />
                 </div>
               </div>
             </TabsContent>
