@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectTeam, TEAM_ROLES, TeamRole } from "@/hooks/useProjectTeam";
 import { useSubscription, getTeamLimit, getNextTier, SUBSCRIPTION_TIERS, SubscriptionTier } from "@/hooks/useSubscription";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +31,10 @@ import {
   UserMinus,
   Sparkles,
   TrendingUp,
-  Lock
+  Lock,
+  Search,
+  Building2,
+  UserCheck
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,8 +43,19 @@ interface TeamManagementProps {
   isOwner: boolean;
 }
 
+interface SearchedUser {
+  id: string;
+  user_id: string;
+  company_name: string | null;
+  primary_trade: string | null;
+  avatar_url: string | null;
+  full_name?: string;
+  email?: string;
+}
+
 const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { members, invitations, loading, sendInvitation, cancelInvitation, removeMember } = useProjectTeam(projectId);
   const { subscription } = useSubscription();
   const [inviteEmail, setInviteEmail] = useState("");
@@ -46,6 +63,13 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
   const [sending, setSending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [inviteMode, setInviteMode] = useState<"email" | "user">("email");
+  
+  // User search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<SearchedUser | null>(null);
 
   // Calculate team limit info
   const currentTier = subscription.tier;
@@ -59,6 +83,60 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
   
   // Role selection is Premium+ feature
   const canSelectRoles = currentTier === "premium" || currentTier === "enterprise";
+
+  // Search for BU users
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!searchQuery.trim() || searchQuery.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      setSearching(true);
+      try {
+        // Search in bu_profiles by company name
+        const { data: buProfiles, error } = await supabase
+          .from("bu_profiles")
+          .select("id, user_id, company_name, primary_trade, avatar_url")
+          .or(`company_name.ilike.%${searchQuery}%`)
+          .neq("user_id", user?.id || "")
+          .limit(10);
+
+        if (error) throw error;
+
+        // Get profile names for each result
+        const resultsWithNames = await Promise.all(
+          (buProfiles || []).map(async (bp) => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("user_id", bp.user_id)
+              .maybeSingle();
+
+            // Check if already a member or invited
+            const isMember = members.some(m => m.user_id === bp.user_id);
+            const isInvited = invitations.some(i => i.status === "pending");
+
+            if (isMember) return null;
+
+            return {
+              ...bp,
+              full_name: profile?.full_name || bp.company_name || "Unknown",
+            };
+          })
+        );
+
+        setSearchResults(resultsWithNames.filter(Boolean) as SearchedUser[]);
+      } catch (err) {
+        console.error("Error searching users:", err);
+      } finally {
+        setSearching(false);
+      }
+    };
+
+    const debounce = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, user?.id, members, invitations]);
 
   const handleSendInvitation = async () => {
     if (!inviteEmail.trim()) return;
@@ -85,6 +163,47 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
     }
   };
 
+  const handleInviteUser = async (targetUser: SearchedUser) => {
+    if (!canInviteMore) {
+      setDialogOpen(false);
+      setUpgradeDialogOpen(true);
+      return;
+    }
+
+    setSending(true);
+    const roleToSend = canSelectRoles ? selectedRole : "member";
+    
+    // For existing users, we add them directly as project members
+    try {
+      const { error } = await supabase
+        .from("project_members")
+        .insert({
+          project_id: projectId,
+          user_id: targetUser.user_id,
+          role: roleToSend,
+        });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("This user is already a team member");
+        } else {
+          throw error;
+        }
+      } else {
+        const roleLabel = canSelectRoles ? ` as ${TEAM_ROLES[roleToSend].label}` : "";
+        toast.success(`${targetUser.full_name || targetUser.company_name} added to team${roleLabel}`);
+        setSearchQuery("");
+        setSelectedUser(null);
+        setSelectedRole("member");
+        setDialogOpen(false);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add team member");
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleInviteClick = () => {
     if (!canInviteMore && teamLimit > 0) {
       setUpgradeDialogOpen(true);
@@ -93,6 +212,15 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
     } else {
       setDialogOpen(true);
     }
+  };
+
+  const resetInviteDialog = () => {
+    setInviteEmail("");
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedUser(null);
+    setSelectedRole("member");
+    setInviteMode("email");
   };
 
   const handleCancelInvitation = async (invitationId: string, email: string) => {
@@ -356,12 +484,15 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
       </Card>
 
       {/* Invite Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) resetInviteDialog();
+      }}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Invite Team Member</DialogTitle>
             <DialogDescription>
-              Send an invitation to collaborate on this project. They'll get access to all project documents and can participate in analysis.
+              Add someone to collaborate on this project.
               {teamLimit !== Infinity && (
                 <span className="block mt-2 text-amber-600">
                   {spotsRemaining} spot{spotsRemaining !== 1 ? 's' : ''} remaining on your {getTierDisplayName(currentTier)} plan.
@@ -369,72 +500,211 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
               )}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email Address
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="colleague@company.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-            </div>
+          
+          <Tabs value={inviteMode} onValueChange={(v) => setInviteMode(v as "email" | "user")} className="mt-2">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email" className="gap-2">
+                <Mail className="h-4 w-4" />
+                By Email
+              </TabsTrigger>
+              <TabsTrigger value="user" className="gap-2">
+                <UserCheck className="h-4 w-4" />
+                BU User
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Role Selection - Premium Feature */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Role</label>
-                {!canSelectRoles && (
-                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
-                    <Lock className="h-3 w-3 mr-1" />
-                    Premium
-                  </Badge>
+            <TabsContent value="email" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="colleague@company.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+
+              {/* Role Selection - Premium Feature */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">Role</label>
+                  {!canSelectRoles && (
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Premium
+                    </Badge>
+                  )}
+                </div>
+                {canSelectRoles ? (
+                  <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as TeamRole)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TEAM_ROLES).map(([key, role]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <span>{role.icon}</span>
+                            <span className="font-medium">{role.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed border-slate-200 bg-slate-50">
+                    <span className="text-slate-500 text-sm">
+                      Upgrade to Premium to assign roles
+                    </span>
+                  </div>
                 )}
               </div>
-              {canSelectRoles ? (
-                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as TeamRole)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(TEAM_ROLES).map(([key, role]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="flex items-center gap-2">
-                          <span>{role.icon}</span>
-                          <div>
-                            <span className="font-medium">{role.label}</span>
-                            <span className="text-xs text-slate-500 ml-2">{role.description}</span>
-                          </div>
+
+              <Button
+                onClick={handleSendInvitation}
+                disabled={!inviteEmail.trim() || sending}
+                className="w-full bg-amber-600 hover:bg-amber-700"
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Mail className="h-4 w-4 mr-2" />
+                )}
+                Send Invitation
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="user" className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Search BU Users
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search by company name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* Search Results */}
+              {searching ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {searchResults.map((result) => (
+                    <div
+                      key={result.id}
+                      onClick={() => setSelectedUser(selectedUser?.id === result.id ? null : result)}
+                      className={`
+                        flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors
+                        ${selectedUser?.id === result.id 
+                          ? 'bg-amber-50 border-2 border-amber-300' 
+                          : 'bg-slate-50 hover:bg-slate-100 border-2 border-transparent'
+                        }
+                      `}
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={result.avatar_url || undefined} />
+                        <AvatarFallback className="bg-amber-100 text-amber-700">
+                          {(result.full_name || result.company_name || "?").slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {result.full_name || result.company_name}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          {result.company_name && (
+                            <span className="flex items-center gap-1 truncate">
+                              <Building2 className="h-3 w-3" />
+                              {result.company_name}
+                            </span>
+                          )}
+                          {result.primary_trade && (
+                            <Badge variant="outline" className="text-xs">
+                              {result.primary_trade.replace(/_/g, ' ')}
+                            </Badge>
+                          )}
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </div>
+                      {selectedUser?.id === result.id && (
+                        <CheckCircle2 className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : searchQuery.length >= 2 ? (
+                <div className="text-center py-6 text-slate-500 text-sm">
+                  <Users className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                  <p>No users found</p>
+                  <p className="text-xs mt-1">Try a different search or invite by email</p>
+                </div>
               ) : (
-                <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed border-slate-200 bg-slate-50">
-                  <span className="text-slate-500 text-sm">
-                    Upgrade to Premium to assign specific roles like Foreman, Inspector, or Subcontractor
-                  </span>
+                <div className="text-center py-6 text-slate-500 text-sm">
+                  <Search className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                  <p>Type at least 2 characters to search</p>
                 </div>
               )}
-            </div>
 
-            <Button
-              onClick={handleSendInvitation}
-              disabled={!inviteEmail.trim() || sending}
-              className="w-full bg-amber-600 hover:bg-amber-700"
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Mail className="h-4 w-4 mr-2" />
+              {/* Role Selection for BU User */}
+              {selectedUser && (
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Role</label>
+                    {!canSelectRoles && (
+                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Premium
+                      </Badge>
+                    )}
+                  </div>
+                  {canSelectRoles ? (
+                    <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as TeamRole)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(TEAM_ROLES).map(([key, role]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <span>{role.icon}</span>
+                              <span className="font-medium">{role.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      Will be added as Team Member
+                    </p>
+                  )}
+                </div>
               )}
-              Send Invitation
-            </Button>
-          </div>
+
+              <Button
+                onClick={() => selectedUser && handleInviteUser(selectedUser)}
+                disabled={!selectedUser || sending}
+                className="w-full bg-amber-600 hover:bg-amber-700"
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <UserPlus className="h-4 w-4 mr-2" />
+                )}
+                Add to Team
+              </Button>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
