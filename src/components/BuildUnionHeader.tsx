@@ -119,6 +119,17 @@ const BuildUnionHeader = () => {
             <span className="hidden sm:inline">Projects</span>
           </Button>
 
+          {/* Quick Mode Link - desktop only */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion/quick")}
+            className="text-amber-600 hover:text-amber-700 font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1 hidden sm:flex"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden md:inline">Quick Mode</span>
+          </Button>
+
           {/* Pricing Link */}
           <Button
             variant="ghost"
