@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
@@ -248,11 +248,54 @@ const BuildUnionProjectFacts = () => {
     toast.success(`Exported ${filteredFacts.length} facts to JSON`);
   };
 
-  const openFactDetail = (fact: ProjectSynthesis, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const openFactDetail = (fact: ProjectSynthesis, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setSelectedFact(fact);
     setIsDetailOpen(true);
   };
+
+  // Navigate to next/previous fact
+  const navigateToFact = useCallback((direction: 'next' | 'prev') => {
+    if (!selectedFact || filteredFacts.length === 0) return;
+    
+    const currentIndex = filteredFacts.findIndex(f => f.id === selectedFact.id);
+    if (currentIndex === -1) return;
+    
+    let newIndex: number;
+    if (direction === 'next') {
+      newIndex = currentIndex < filteredFacts.length - 1 ? currentIndex + 1 : 0;
+    } else {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : filteredFacts.length - 1;
+    }
+    
+    setSelectedFact(filteredFacts[newIndex]);
+  }, [selectedFact, filteredFacts]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isDetailOpen) return;
+      
+      switch (e.key) {
+        case 'Escape':
+          setIsDetailOpen(false);
+          break;
+        case 'ArrowRight':
+        case 'ArrowDown':
+          e.preventDefault();
+          navigateToFact('next');
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          e.preventDefault();
+          navigateToFact('prev');
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDetailOpen, navigateToFact]);
 
   const getStatusBadge = (status: string, size: "sm" | "lg" = "sm") => {
     const iconSize = size === "lg" ? "h-4 w-4" : "h-3 w-3";
@@ -416,7 +459,19 @@ const BuildUnionProjectFacts = () => {
           </ScrollArea>
 
           {/* Footer Actions */}
-          <div className="flex-shrink-0 pt-4 border-t mt-auto">
+          <div className="flex-shrink-0 pt-4 border-t mt-auto space-y-3">
+            {/* Navigation hint */}
+            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-[10px] font-mono">←</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-[10px] font-mono">→</kbd>
+                <span>Navigate</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-[10px] font-mono">Esc</kbd>
+                <span>Close</span>
+              </span>
+            </div>
             <Button
               variant="outline"
               className="w-full gap-2"
