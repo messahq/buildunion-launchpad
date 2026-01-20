@@ -697,6 +697,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_project_member_validated: {
+        Args: { _project_id: string; _role: string; _user_id: string }
+        Returns: Json
+      }
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
