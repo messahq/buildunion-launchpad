@@ -513,6 +513,7 @@ export type Database = {
           invited_by: string
           project_id: string
           responded_at: string | null
+          role: string | null
           status: string
         }
         Insert: {
@@ -523,6 +524,7 @@ export type Database = {
           invited_by: string
           project_id: string
           responded_at?: string | null
+          role?: string | null
           status?: string
         }
         Update: {
@@ -533,6 +535,7 @@ export type Database = {
           invited_by?: string
           project_id?: string
           responded_at?: string | null
+          role?: string | null
           status?: string
         }
         Relationships: [
