@@ -228,24 +228,42 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
     setSending(true);
     const roleToSend = canSelectRoles ? selectedRole : "member";
     
-    // For existing users, we add them directly as project members
+    // Use server-side function for role validation and member addition
     try {
-      const { error } = await supabase
-        .from("project_members")
-        .insert({
-          project_id: projectId,
-          user_id: targetUser.user_id,
-          role: roleToSend,
+      const { data, error } = await supabase
+        .rpc('add_project_member_validated', {
+          _project_id: projectId,
+          _user_id: targetUser.user_id,
+          _role: roleToSend,
         });
 
       if (error) {
-        if (error.code === "23505") {
+        throw error;
+      }
+
+      if (data && !data.success) {
+        if (data.error === 'User is already a team member') {
           toast.error("This user is already a team member");
         } else {
-          throw error;
+          throw new Error(data.error || 'Failed to add team member');
         }
-      } else {
-        const roleLabel = canSelectRoles ? ` as ${TEAM_ROLES[roleToSend].label}` : "";
+      } else if (data && data.success) {
+        // Send notification to the added user
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              title: 'Added to Project',
+              body: `You've been added to a project team`,
+              userIds: [targetUser.user_id],
+              data: { type: 'project_member_added', projectId }
+            }
+          });
+        } catch (notifErr) {
+          // Don't fail the operation if notification fails
+          console.warn('Failed to send notification:', notifErr);
+        }
+
+        const roleLabel = data.role !== 'member' ? ` as ${TEAM_ROLES[data.role]?.label || data.role}` : "";
         toast.success(`${targetUser.full_name || targetUser.company_name} added to team${roleLabel}`);
         setSearchQuery("");
         setSelectedUser(null);
