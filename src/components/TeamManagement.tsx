@@ -241,13 +241,16 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
         throw error;
       }
 
-      if (data && !data.success) {
-        if (data.error === 'User is already a team member') {
+      // Type assertion for the RPC response
+      const result = data as { success: boolean; error?: string; role?: string } | null;
+
+      if (result && !result.success) {
+        if (result.error === 'User is already a team member') {
           toast.error("This user is already a team member");
         } else {
-          throw new Error(data.error || 'Failed to add team member');
+          throw new Error(result.error || 'Failed to add team member');
         }
-      } else if (data && data.success) {
+      } else if (result && result.success) {
         // Send notification to the added user
         try {
           await supabase.functions.invoke('send-push-notification', {
@@ -263,7 +266,8 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
           console.warn('Failed to send notification:', notifErr);
         }
 
-        const roleLabel = data.role !== 'member' ? ` as ${TEAM_ROLES[data.role]?.label || data.role}` : "";
+        const assignedRole = result.role || 'member';
+        const roleLabel = assignedRole !== 'member' ? ` as ${TEAM_ROLES[assignedRole as TeamRole]?.label || assignedRole}` : "";
         toast.success(`${targetUser.full_name || targetUser.company_name} added to team${roleLabel}`);
         setSearchQuery("");
         setSelectedUser(null);
