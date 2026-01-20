@@ -86,7 +86,12 @@ export function useProjectTeam(projectId?: string) {
         .order("created_at", { ascending: false });
 
       if (!invitationsError) {
-        setInvitations(invitationsData || []);
+        // Map the invitations to ensure role is properly typed
+        const typedInvitations = (invitationsData || []).map((inv) => ({
+          ...inv,
+          role: (inv.role as TeamRole) || undefined,
+        }));
+        setInvitations(typedInvitations);
       }
     } catch (error) {
       console.error("Error fetching team data:", error);
@@ -145,12 +150,13 @@ export function useProjectTeam(projectId?: string) {
     if (!projectId || !user) return { success: false, error: "Not authenticated" };
 
     try {
-      // Store role in team_invitations - we'll need to update the schema
+      // Store role in team_invitations table (server-side storage)
       const { error } = await supabase.from("team_invitations").insert({
         project_id: projectId,
         email: email.toLowerCase().trim(),
         invited_by: user.id,
         status: "pending",
+        role: role, // Store role in database
       });
 
       if (error) {
@@ -159,10 +165,6 @@ export function useProjectTeam(projectId?: string) {
         }
         throw error;
       }
-
-      // Store role preference in localStorage temporarily (until we add role column to DB)
-      const roleKey = `invite_role_${projectId}_${email.toLowerCase().trim()}`;
-      localStorage.setItem(roleKey, role);
 
       await fetchTeamData();
       return { success: true };
@@ -297,19 +299,15 @@ export function usePendingInvitations() {
     if (!user) return { success: false, error: "Not authenticated" };
 
     try {
-      // Get the invitation to find email
+      // Get the invitation to find email and role from database (server-side)
       const { data: invitation } = await supabase
         .from("team_invitations")
-        .select("email")
+        .select("email, role")
         .eq("id", invitationId)
         .maybeSingle();
 
-      // Check for stored role preference
-      const roleKey = invitation?.email 
-        ? `invite_role_${projectId}_${invitation.email.toLowerCase()}`
-        : null;
-      const storedRole = roleKey ? localStorage.getItem(roleKey) as TeamRole : "member";
-      const role = storedRole || "member";
+      // Use role from database - never from client storage
+      const role = (invitation?.role as TeamRole) || "member";
 
       // Update invitation status
       const { error: updateError } = await supabase
@@ -319,7 +317,7 @@ export function usePendingInvitations() {
 
       if (updateError) throw updateError;
 
-      // Add as project member with role
+      // Add as project member with role from database
       const { error: memberError } = await supabase
         .from("project_members")
         .insert({
@@ -331,9 +329,6 @@ export function usePendingInvitations() {
       if (memberError && memberError.code !== "23505") {
         throw memberError;
       }
-
-      // Clean up stored role
-      if (roleKey) localStorage.removeItem(roleKey);
 
       await fetchInvitations();
       return { success: true };
