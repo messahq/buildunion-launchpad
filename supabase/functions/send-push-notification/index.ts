@@ -23,10 +23,38 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY")!;
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
 
+    // Authentication check - require valid Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - missing or invalid authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify the token and get user claims
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getUser(token);
+    
+    if (claimsError || !claimsData?.user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const callerId = claimsData.user.id;
+
+    // Use service role client for data operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { title, body, icon, badge, data, userIds, projectId }: PushPayload = await req.json();
@@ -38,11 +66,109 @@ serve(async (req) => {
       );
     }
 
+    // Validate userIds array size to prevent abuse
+    if (userIds && userIds.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Cannot send notifications to more than 100 users at once" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Authorization check - verify caller has permission to send notifications
+    // If projectId is provided, verify the caller is a project member/owner
+    if (projectId) {
+      const { data: projectData, error: projectError } = await supabase
+        .from("projects")
+        .select("user_id")
+        .eq("id", projectId)
+        .single();
+
+      if (projectError || !projectData) {
+        return new Response(
+          JSON.stringify({ error: "Project not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if caller is project owner
+      const isOwner = projectData.user_id === callerId;
+
+      // Check if caller is a project member
+      const { data: memberData } = await supabase
+        .from("project_members")
+        .select("id")
+        .eq("project_id", projectId)
+        .eq("user_id", callerId)
+        .maybeSingle();
+
+      if (!isOwner && !memberData) {
+        return new Response(
+          JSON.stringify({ error: "You don't have permission to send notifications for this project" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // If sending to specific userIds, verify they are project members
+      if (userIds && userIds.length > 0) {
+        const { data: validMembers } = await supabase
+          .from("project_members")
+          .select("user_id")
+          .eq("project_id", projectId)
+          .in("user_id", userIds);
+
+        const validMemberIds = new Set(validMembers?.map(m => m.user_id) || []);
+        // Also include project owner
+        validMemberIds.add(projectData.user_id);
+
+        const invalidUserIds = userIds.filter(id => !validMemberIds.has(id));
+        if (invalidUserIds.length > 0) {
+          return new Response(
+            JSON.stringify({ error: "Some userIds are not members of this project" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    } else {
+      // No projectId - caller can only send notifications to themselves
+      if (userIds && userIds.length > 0) {
+        const invalidUserIds = userIds.filter(id => id !== callerId);
+        if (invalidUserIds.length > 0) {
+          return new Response(
+            JSON.stringify({ error: "Without a projectId, you can only send notifications to yourself" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     // Build query for subscriptions
     let query = supabase.from("push_subscriptions").select("*");
     
     if (userIds && userIds.length > 0) {
       query = query.in("user_id", userIds);
+    } else if (projectId) {
+      // Get all project members and owner for notifications
+      const { data: projectData } = await supabase
+        .from("projects")
+        .select("user_id")
+        .eq("id", projectId)
+        .single();
+
+      const { data: members } = await supabase
+        .from("project_members")
+        .select("user_id")
+        .eq("project_id", projectId);
+
+      const allUserIds = new Set<string>();
+      if (projectData) allUserIds.add(projectData.user_id);
+      members?.forEach(m => allUserIds.add(m.user_id));
+
+      if (allUserIds.size > 0) {
+        query = query.in("user_id", Array.from(allUserIds));
+      }
+    } else {
+      // No userIds or projectId - only send to caller
+      query = query.eq("user_id", callerId);
     }
 
     const { data: subscriptions, error: fetchError } = await query;
