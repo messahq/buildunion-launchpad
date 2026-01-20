@@ -112,19 +112,6 @@ const HeroSection = () => {
         ))}
       </div>
 
-      {/* Back Button */}
-      <div className="absolute top-6 left-6 z-20">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/")}
-          className="text-hero-text/80 hover:text-hero-text hover:bg-white/10 backdrop-blur-sm border border-white/20 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Back to Dock</span>
-        </Button>
-      </div>
-
       {/* Language Selector */}
       <div className="absolute top-6 right-6 z-20">
         <DropdownMenu>
@@ -195,7 +182,7 @@ const HeroSection = () => {
                       More than five hundred years ago in Florence, a twelve-ton block of marble stood — cracked, shapeless, and forgotten by the masters for forty years.
                     </p>
                     <p>
-                      But a young sculptor saw something others could not.
+                      But a young sculptor somehow saw the value in it.
                     </p>
                     <p>
                       For three years, and with more than a million strikes of his hammer, he worked until the hidden figure within was finally free. When asked how he created it, he simply said:
