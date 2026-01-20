@@ -109,7 +109,7 @@ const BuildUnionHeader = () => {
           className="text-muted-foreground hover:text-foreground gap-1 sm:gap-2 px-1 sm:px-3"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm hidden sm:inline">Back to Dock</span>
+          <span className="text-sm hidden sm:inline">Back to Home</span>
         </Button>
 
         {/* Center - Logo (hidden on very small screens) */}
