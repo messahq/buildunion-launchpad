@@ -97,7 +97,7 @@ const DockHeader = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/buildunion")}
             className="text-gray-600 hover:text-gray-900 gap-1 sm:gap-2 px-1 sm:px-3"
           >
             <ArrowLeft className="h-4 w-4" />
