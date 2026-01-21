@@ -6,6 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// UUID validation regex (RFC 4122)
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUUID(uuid: string): boolean {
+  return typeof uuid === 'string' && UUID_REGEX.test(uuid);
+}
+
+// Valid actions for this function
+const VALID_ACTIONS = ['analyze'];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -28,6 +38,22 @@ serve(async (req) => {
     if (userError || !userData.user) throw new Error("User not authenticated");
 
     const { summaryId, action } = await req.json();
+
+    // Validate summaryId is a valid UUID
+    if (!summaryId || !isValidUUID(summaryId)) {
+      return new Response(JSON.stringify({ error: "summaryId must be a valid UUID" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate action is one of the allowed values
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ error: `action must be one of: ${VALID_ACTIONS.join(', ')}` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (action === "analyze") {
       // Fetch summary data

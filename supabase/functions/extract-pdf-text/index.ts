@@ -6,6 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// UUID validation regex (RFC 4122)
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUUID(uuid: string): boolean {
+  return typeof uuid === 'string' && UUID_REGEX.test(uuid);
+}
+
 // Simple PDF text extraction using pdf.js compatible approach
 async function extractTextFromPDF(pdfData: ArrayBuffer): Promise<string> {
   try {
@@ -43,9 +50,18 @@ serve(async (req) => {
   try {
     const { projectId } = await req.json();
 
+    // Validate projectId is provided
     if (!projectId) {
       return new Response(
         JSON.stringify({ error: "Project ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate projectId is a valid UUID format
+    if (!isValidUUID(projectId)) {
+      return new Response(
+        JSON.stringify({ error: "Project ID must be a valid UUID" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

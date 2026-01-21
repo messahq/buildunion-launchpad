@@ -6,6 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// UUID validation regex (RFC 4122)
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUUID(uuid: string): boolean {
+  return typeof uuid === 'string' && UUID_REGEX.test(uuid);
+}
+
 interface PushPayload {
   title: string;
   body: string;
@@ -59,17 +66,59 @@ serve(async (req) => {
 
     const { title, body, icon, badge, data, userIds, projectId }: PushPayload = await req.json();
 
-    if (!title) {
+    // Validate title - required and reasonable length
+    if (!title || typeof title !== 'string') {
       return new Response(
-        JSON.stringify({ error: "Title is required" }),
+        JSON.stringify({ error: "Title is required and must be a string" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validate userIds array size to prevent abuse
-    if (userIds && userIds.length > 100) {
+    if (title.length > 200) {
       return new Response(
-        JSON.stringify({ error: "Cannot send notifications to more than 100 users at once" }),
+        JSON.stringify({ error: "Title must be 200 characters or less" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate body length if provided
+    if (body && (typeof body !== 'string' || body.length > 1000)) {
+      return new Response(
+        JSON.stringify({ error: "Body must be a string of 1000 characters or less" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate userIds array
+    if (userIds) {
+      if (!Array.isArray(userIds)) {
+        return new Response(
+          JSON.stringify({ error: "userIds must be an array" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (userIds.length > 100) {
+        return new Response(
+          JSON.stringify({ error: "Cannot send notifications to more than 100 users at once" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Validate each userId is a valid UUID
+      const invalidUserIds = userIds.filter(id => !isValidUUID(id));
+      if (invalidUserIds.length > 0) {
+        return new Response(
+          JSON.stringify({ error: "All userIds must be valid UUIDs" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Validate projectId is a valid UUID if provided
+    if (projectId && !isValidUUID(projectId)) {
+      return new Response(
+        JSON.stringify({ error: "projectId must be a valid UUID" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
