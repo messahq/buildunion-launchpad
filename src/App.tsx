@@ -41,6 +41,7 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<BuildUnion />} />
+                  <Route path="/buildunion" element={<BuildUnion />} />
                   <Route path="/dock" element={<Index />} />
                   <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
                   <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
