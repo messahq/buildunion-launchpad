@@ -709,6 +709,10 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      users_share_project: {
+        Args: { _profile_owner_id: string; _viewer_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       construction_trade:
