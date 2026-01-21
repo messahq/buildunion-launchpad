@@ -105,7 +105,7 @@ const BuildUnionHeader = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/buildunion")}
+          onClick={() => navigate("/")}
           className="text-muted-foreground hover:text-foreground gap-1 sm:gap-2 px-1 sm:px-3"
         >
           <ArrowLeft className="h-4 w-4" />
