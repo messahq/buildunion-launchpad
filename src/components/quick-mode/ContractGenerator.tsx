@@ -28,6 +28,7 @@ import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   FileText,
@@ -246,9 +247,38 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
     setSelectedTemplate(templateId);
     toast.success(`${template.name} template applied`);
   };
+
   const [clientSignature, setClientSignature] = useState<SignatureData | null>(null);
   const [contractorSignature, setContractorSignature] = useState<SignatureData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [profileData, setProfileData] = useState<{
+    companyLogoUrl?: string | null;
+    companyName?: string | null;
+    companyWebsite?: string | null;
+    phone?: string | null;
+  } | null>(null);
+
+  // Fetch profile data for branding (logo, etc.)
+  useEffect(() => {
+    const fetchProfileForBranding = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('bu_profiles')
+        .select('company_logo_url, company_name, company_website, phone')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setProfileData({
+          companyLogoUrl: data.company_logo_url,
+          companyName: data.company_name,
+          companyWebsite: data.company_website,
+          phone: data.phone
+        });
+      }
+    };
+    fetchProfileForBranding();
+  }, [user]);
 
   // Load profile data
   useEffect(() => {
@@ -389,22 +419,25 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
             line-height: 1.6;
             font-size: 11px;
           }
-          .header {
+          .header-bar {
             background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
             color: white;
-            padding: 24px 32px;
+            padding: 24px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
           }
-          .header h1 { font-size: 24px; font-weight: 700; }
+          .header-bar h1 { font-size: 20px; font-weight: 700; margin: 0; }
+          .header-bar p { font-size: 12px; opacity: 0.9; margin: 2px 0; }
           .contract-badge {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.15);
             padding: 12px 20px;
             border-radius: 8px;
-            text-align: right;
+            text-align: center;
           }
-          .content { padding: 24px 32px; }
+          .contract-badge .number { font-size: 18px; font-weight: 700; }
+          .contract-badge .label { font-size: 10px; opacity: 0.8; text-transform: uppercase; }
+          .content { padding: 24px 40px; }
           .section { margin-bottom: 24px; }
           .section-title {
             font-size: 14px;
@@ -463,27 +496,32 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
           }
           .info-banner h4 { color: #1e40af; font-size: 12px; margin-bottom: 8px; }
           .info-banner p { color: #1e40af; font-size: 11px; }
-          .footer {
-            background: #1e293b;
-            color: white;
-            padding: 16px 32px;
-            text-align: center;
-            font-size: 10px;
-          }
           @media print {
             body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div>
-            <h1>📋 CONSTRUCTION CONTRACT</h1>
-            <p style="opacity: 0.8; font-size: 12px; margin-top: 4px;">Professional Services Agreement</p>
+        <!-- Branded Header -->
+        <div class="header-bar">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            ${profileData?.companyLogoUrl ? `
+              <img src="${profileData.companyLogoUrl}" alt="Company Logo" style="height: 60px; width: auto; border-radius: 8px; background: white; padding: 4px;" />
+            ` : ''}
+            <div>
+              <h1>${contract.contractorName || profileData?.companyName || "Your Company Name"}</h1>
+              <p>${contract.contractorAddress || "Address"}</p>
+              <p style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                ${contract.contractorPhone || profileData?.phone ? `<span>📞 ${contract.contractorPhone || profileData?.phone}</span>` : ''}
+                ${contract.contractorEmail || user?.email ? `<span>✉️ ${contract.contractorEmail || user?.email}</span>` : ''}
+                ${profileData?.companyWebsite ? `<span>🌐 ${profileData.companyWebsite}</span>` : ''}
+              </p>
+            </div>
           </div>
           <div class="contract-badge">
-            <div style="font-size: 16px; font-weight: 700;">${contract.contractNumber}</div>
-            <div style="font-size: 11px; opacity: 0.9;">Date: ${formatDate(contract.contractDate)}</div>
+            <div class="label">Contract</div>
+            <div class="number">${contract.contractNumber}</div>
+            <div style="font-size: 11px; opacity: 0.9; margin-top: 4px;">${formatDate(contract.contractDate)}</div>
           </div>
         </div>
 
@@ -627,9 +665,25 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
           </div>
         </div>
 
-        <div class="footer">
-          <p>This contract is governed by the laws of ${config.name}, Canada. • Generated with BuildUnion</p>
-          <p style="margin-top: 4px;">Both parties acknowledge receipt of a copy of this signed contract.</p>
+        <!-- Branded Footer -->
+        <div style="margin-top: 48px; padding: 24px 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            ${profileData?.companyLogoUrl ? `
+              <img src="${profileData.companyLogoUrl}" alt="Logo" style="height: 40px; width: auto; border-radius: 6px; background: white; padding: 3px;" />
+            ` : ''}
+            <div>
+              <p style="font-weight: 600; font-size: 14px; margin: 0;">${contract.contractorName || profileData?.companyName || 'Your Company'}</p>
+              <p style="font-size: 11px; opacity: 0.8; margin: 0;">Licensed & Insured • WSIB Covered</p>
+            </div>
+          </div>
+          <div style="text-align: right; font-size: 12px;">
+            <p style="margin: 0; display: flex; gap: 16px; justify-content: flex-end; flex-wrap: wrap;">
+              ${contract.contractorPhone || profileData?.phone ? `<span>📞 ${contract.contractorPhone || profileData?.phone}</span>` : ''}
+              ${contract.contractorEmail || user?.email ? `<span>✉️ ${contract.contractorEmail || user?.email}</span>` : ''}
+            </p>
+            ${profileData?.companyWebsite ? `<p style="margin: 4px 0 0 0; opacity: 0.8;">🌐 ${profileData.companyWebsite}</p>` : ''}
+            <p style="margin: 8px 0 0 0; font-size: 10px; opacity: 0.6;">Governed by the laws of ${config.name}, Canada</p>
+          </div>
         </div>
       </body>
       </html>
