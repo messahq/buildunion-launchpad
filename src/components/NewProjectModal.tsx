@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, FileUp, Camera, Calculator, FileText, Brain, Crown, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
-import { useSubscription } from "@/hooks/useSubscription";
 
 interface NewProjectModalProps {
   open: boolean;
@@ -22,11 +21,28 @@ interface NewProjectModalProps {
 export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { remainingTrials: blueprintTrials, maxTrials: blueprintMaxTrials } = useDbTrialUsage("blueprint_analysis");
-  const { remainingTrials: projectTrials, maxTrials: projectMaxTrials } = useDbTrialUsage("project_creation");
-  const { remainingTrials: estimateTrials, maxTrials: estimateMaxTrials } = useDbTrialUsage("quick_estimate");
-  const { subscription } = useSubscription();
-  const isPremium = subscription?.subscribed === true;
+  
+  // Get trial data with premium status included
+  const { 
+    remainingTrials: blueprintTrials, 
+    maxTrials: blueprintMaxTrials,
+    isPremiumUser: isBlueprintPremium 
+  } = useDbTrialUsage("blueprint_analysis");
+  
+  const { 
+    remainingTrials: projectTrials, 
+    maxTrials: projectMaxTrials,
+    isPremiumUser: isProjectPremium 
+  } = useDbTrialUsage("project_creation");
+  
+  const { 
+    remainingTrials: estimateTrials, 
+    maxTrials: estimateMaxTrials,
+    isPremiumUser: isEstimatePremium 
+  } = useDbTrialUsage("quick_estimate");
+  
+  // User is premium if any of the hooks detect it (they all check the same source)
+  const isPremium = isBlueprintPremium || isProjectPremium || isEstimatePremium;
 
   const handleQuickMode = () => {
     onOpenChange(false);
