@@ -48,7 +48,9 @@ import {
   Home,
   Building,
   Wrench,
-  FileCheck
+  FileCheck,
+  Save,
+  Loader2
 } from "lucide-react";
 
 // Types for collected data from Quick Mode synthesis
@@ -251,6 +253,8 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
   const [clientSignature, setClientSignature] = useState<SignatureData | null>(null);
   const [contractorSignature, setContractorSignature] = useState<SignatureData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedContractId, setSavedContractId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<{
     companyLogoUrl?: string | null;
     companyName?: string | null;
@@ -383,6 +387,87 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
 
   const updateContract = (field: string, value: any) => {
     setContract(prev => ({ ...prev, [field]: value }));
+  };
+
+  const saveContractToDatabase = async () => {
+    if (!user) {
+      toast.error("Please sign in to save contracts");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const contractData = {
+        user_id: user.id,
+        contract_number: contract.contractNumber,
+        contract_date: contract.contractDate,
+        template_type: selectedTemplate,
+        status: contractorSignature && clientSignature ? "signed" : contractorSignature ? "pending_client" : "draft",
+        
+        contractor_name: contract.contractorName,
+        contractor_address: contract.contractorAddress,
+        contractor_phone: contract.contractorPhone,
+        contractor_email: contract.contractorEmail,
+        contractor_license: contract.licenseNumber,
+        
+        client_name: contract.clientName,
+        client_address: contract.clientAddress,
+        client_phone: contract.clientPhone,
+        client_email: contract.clientEmail,
+        
+        project_name: contract.projectName,
+        project_address: contract.projectAddress,
+        scope_of_work: contract.scopeOfWork,
+        
+        total_amount: contract.totalAmount,
+        deposit_percentage: contract.depositPercentage,
+        deposit_amount: contract.depositAmount,
+        payment_schedule: contract.paymentSchedule,
+        
+        start_date: contract.startDate || null,
+        estimated_end_date: contract.estimatedEndDate || null,
+        working_days: contract.workingDays,
+        
+        warranty_period: contract.warrantyPeriod,
+        change_order_policy: contract.changeOrderPolicy,
+        cancellation_policy: contract.cancellationPolicy,
+        dispute_resolution: contract.disputeResolution,
+        additional_terms: contract.additionalTerms,
+        materials_included: contract.materialsIncluded,
+        has_liability_insurance: contract.hasLiabilityInsurance,
+        has_wsib: contract.hasWSIB,
+        
+        client_signature: clientSignature ? JSON.parse(JSON.stringify(clientSignature)) : null,
+        contractor_signature: contractorSignature ? JSON.parse(JSON.stringify(contractorSignature)) : null,
+      };
+
+      if (savedContractId) {
+        // Update existing contract
+        const { error } = await supabase
+          .from("contracts")
+          .update(contractData)
+          .eq("id", savedContractId);
+
+        if (error) throw error;
+        toast.success("Contract updated!");
+      } else {
+        // Insert new contract
+        const { data, error } = await supabase
+          .from("contracts")
+          .insert(contractData)
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        setSavedContractId(data.id);
+        toast.success("Contract saved!");
+      }
+    } catch (error) {
+      console.error("Error saving contract:", error);
+      toast.error("Failed to save contract");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const generateContractPDF = () => {
@@ -1185,19 +1270,38 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
 
               <Separator />
 
-              {/* Generate Button */}
-              <Button
-                onClick={generateContractPDF}
-                disabled={isGenerating}
-                className="w-full bg-slate-800 hover:bg-slate-900"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {isGenerating ? "Generating..." : "Generate Contract PDF"}
-              </Button>
+              {/* Action Buttons */}
+              <div className="space-y-2">
+                <Button
+                  onClick={saveContractToDatabase}
+                  disabled={isSaving}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  {savedContractId ? "Update Contract" : "Save Contract"}
+                </Button>
 
-              <p className="text-xs text-center text-muted-foreground">
-                Opens print dialog for PDF
-              </p>
+                <Button
+                  onClick={generateContractPDF}
+                  disabled={isGenerating}
+                  className="w-full bg-slate-800 hover:bg-slate-900"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isGenerating ? "Generating..." : "Generate Contract PDF"}
+                </Button>
+              </div>
+
+              {savedContractId && (
+                <p className="text-xs text-center text-green-600 flex items-center justify-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Contract saved to history
+                </p>
+              )}
 
               <Separator />
 
@@ -1209,7 +1313,7 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
                 </p>
                 <p className="flex items-start gap-2">
                   <Send className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  <span>Save the PDF and send via email</span>
+                  <span>Save the contract and send PDF via email</span>
                 </p>
               </div>
             </CardContent>
