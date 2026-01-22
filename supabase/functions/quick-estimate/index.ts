@@ -44,15 +44,27 @@ interface ConflictItem {
 }
 
 // STEP 1: Gemini Pro - The Visual Specialist
-async function geminiVisualAnalysis(image: string, description: string, apiKey: string): Promise<GeminiVisualData> {
-  const geminiPrompt = `You are a VISUAL ANALYSIS specialist for construction. Your job is to LOOK at the image and extract what you SEE.
+async function geminiVisualAnalysis(image: string, description: string, apiKey: string, isPremium: boolean): Promise<GeminiVisualData> {
+  const basePrompt = `You are a VISUAL ANALYSIS specialist for construction. Your job is to LOOK at the image and extract what you SEE.
 
 ANALYZE THE IMAGE AND EXTRACT:
 1. TOTAL AREA - Read the exact measurement shown (e.g., "1350 sq ft")
 2. SURFACE TYPE - What material is visible? (tile, hardwood, concrete, carpet, etc.)
 3. SURFACE CONDITION - Current state (new, worn, damaged, subfloor exposed, etc.)
 4. VISIBLE FEATURES - What rooms/areas are shown? Any obstacles?
-5. ROOM TYPE - Kitchen, bathroom, living room, basement, etc.
+5. ROOM TYPE - Kitchen, bathroom, living room, basement, etc.`;
+
+  const premiumAdditions = isPremium ? `
+
+=== PREMIUM DEEP ANALYSIS ===
+6. STRUCTURAL ELEMENTS - Identify load-bearing walls, doorways, windows, columns
+7. ACCESSIBILITY - Note any accessibility considerations (ramps, wide doorways)
+8. UTILITIES - Visible electrical outlets, plumbing, HVAC vents that may affect work
+9. COMPLEXITY ASSESSMENT - Rate project complexity (simple/moderate/complex/highly complex)
+10. SPECIAL CONSIDERATIONS - Identify areas requiring special treatment (moisture, high traffic, etc.)` : '';
+
+  const geminiPrompt = `${basePrompt}
+${premiumAdditions}
 
 ${description ? `User notes: "${description}"` : ""}
 
@@ -64,13 +76,17 @@ RESPOND IN THIS EXACT JSON FORMAT:
   "surface_condition": "current condition assessment",
   "visible_features": ["feature1", "feature2"],
   "room_type": "room type",
-  "confidence": "high/medium/low"
+  "confidence": "high/medium/low"${isPremium ? `,
+  "structural_elements": ["element1", "element2"],
+  "utilities_detected": ["utility1", "utility2"],
+  "complexity_rating": "simple/moderate/complex/highly complex",
+  "special_considerations": ["consideration1", "consideration2"]` : ''}
 }
 
 CRITICAL: Read ANY visible measurements EXACTLY as written. If you see "Total Area = 1350 sq ft", return 1350.
 If no area measurement is visible, estimate based on room proportions and set confidence to "low".`;
 
-  console.log("GEMINI: Starting visual analysis...");
+  console.log("GEMINI: Starting", isPremium ? "DEEP" : "STANDARD", "visual analysis...");
   
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -79,7 +95,7 @@ If no area measurement is visible, estimate based on room proportions and set co
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-pro",
+      model: isPremium ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
       messages: [{
         role: "user",
         content: [
@@ -87,7 +103,7 @@ If no area measurement is visible, estimate based on room proportions and set co
           { type: "image_url", image_url: { url: image } }
         ]
       }],
-      max_tokens: 1000,
+      max_tokens: isPremium ? 1500 : 800,
     }),
   });
 
@@ -149,7 +165,8 @@ async function gptEstimationAnalysis(
   image: string, 
   description: string, 
   geminiData: GeminiVisualData, 
-  apiKey: string
+  apiKey: string,
+  isPremium: boolean
 ): Promise<GPTEstimateData> {
   const areaValue = geminiData.total_area;
   
@@ -308,15 +325,15 @@ function detectConflicts(gemini: GeminiVisualData, gpt: GPTEstimateData): Confli
 }
 
 // Main dual-engine analysis
-async function dualEngineAnalysis(image: string, description: string, apiKey: string) {
-  console.log("=== DUAL ENGINE ANALYSIS START ===");
+async function dualEngineAnalysis(image: string, description: string, apiKey: string, isPremium: boolean) {
+  console.log("=== DUAL ENGINE ANALYSIS START ===", isPremium ? "(PREMIUM)" : "(STANDARD)");
   
   // Step 1: Gemini visual analysis
-  const geminiData = await geminiVisualAnalysis(image, description, apiKey);
+  const geminiData = await geminiVisualAnalysis(image, description, apiKey, isPremium);
   console.log("Gemini complete:", { area: geminiData.total_area, confidence: geminiData.confidence });
   
   // Step 2: GPT estimation based on Gemini data
-  const gptData = await gptEstimationAnalysis(image, description, geminiData, apiKey);
+  const gptData = await gptEstimationAnalysis(image, description, geminiData, apiKey, isPremium);
   console.log("GPT complete:", { materials: gptData.materials.length, laborHours: gptData.labor.hours });
   
   // Step 3: Conflict detection
@@ -437,16 +454,17 @@ serve(async (req) => {
   }
 
   try {
-    const { image, description, type } = await req.json();
+    const { image, description, type, isPremium } = await req.json();
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
     if (!image) throw new Error("No image provided");
 
-    console.log(`Processing ${type} request...`);
+    const premiumMode = isPremium === true;
+    console.log(`Processing ${type} request... (Premium: ${premiumMode})`);
 
     const result = type === "photo_estimate" 
-      ? await dualEngineAnalysis(image, description, apiKey)
+      ? await dualEngineAnalysis(image, description, apiKey, premiumMode)
       : await standardAnalysis(image, description, apiKey);
 
     return new Response(JSON.stringify(result), {
