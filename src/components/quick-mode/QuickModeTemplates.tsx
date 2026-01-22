@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bath, UtensilsCrossed, PaintBucket, Home, Wrench, Zap, Droplets, TreePine, Check, ChevronRight, Plus, Pencil, Trash2, X, Save, ClipboardList, Star, User } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Bath, UtensilsCrossed, PaintBucket, Home, Wrench, Zap, Droplets, TreePine, Check, ChevronRight, Plus, Pencil, Trash2, X, Save, ClipboardList, Star, User, AlertCircle, Clock, CheckCircle2, Circle, PlayCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ChecklistItem {
   id: string;
@@ -39,6 +40,11 @@ interface QuickModeTemplatesProps {
     checklist: ChecklistItem[];
     completedTasks: string[];
     materials: string[];
+    projectStatus?: {
+      status: string;
+      label: string;
+      progress: number;
+    };
   }) => void;
   onContinueToCalculator?: (data: {
     templateId: string;
@@ -47,6 +53,11 @@ interface QuickModeTemplatesProps {
     checklist: ChecklistItem[];
     completedTasks: string[];
     materials: string[];
+    projectStatus?: {
+      status: string;
+      label: string;
+      progress: number;
+    };
   }) => void;
 }
 
@@ -487,7 +498,12 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
       projectName: projectName.trim(),
       checklist: currentChecklist,
       completedTasks: Array.from(completedTasks),
-      materials: currentMaterials
+      materials: currentMaterials,
+      projectStatus: {
+        status: projectStatus.status,
+        label: projectStatus.label,
+        progress
+      }
     };
 
     // Also add to collected data
@@ -498,11 +514,30 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
     // Continue to calculator with the template data
     if (onContinueToCalculator) {
       onContinueToCalculator(templateData);
-      toast.success("Template saved! Now configure your materials in the Calculator.");
+      const statusMessage = progress < 100 
+        ? `Template saved (${projectStatus.label}). Configure your materials in the Calculator.`
+        : "Template complete! Now configure your materials in the Calculator.";
+      toast.success(statusMessage);
     }
   };
 
+  // Project status based on progress
+  const projectStatus = useMemo(() => {
+    const totalTasks = currentChecklist.length;
+    if (totalTasks === 0) return { status: "not_started", label: "Not Started", color: "text-muted-foreground", bgColor: "bg-muted", icon: Circle };
+    if (progress === 0) return { status: "not_started", label: "Not Started", color: "text-muted-foreground", bgColor: "bg-muted", icon: Circle };
+    if (progress < 25) return { status: "just_started", label: "Just Started", color: "text-blue-600", bgColor: "bg-blue-100", icon: PlayCircle };
+    if (progress < 50) return { status: "in_progress", label: "In Progress", color: "text-amber-600", bgColor: "bg-amber-100", icon: Clock };
+    if (progress < 75) return { status: "halfway", label: "Halfway Done", color: "text-orange-600", bgColor: "bg-orange-100", icon: Clock };
+    if (progress < 100) return { status: "almost_done", label: "Almost Done", color: "text-green-600", bgColor: "bg-green-100", icon: CheckCircle2 };
+    return { status: "complete", label: "Complete", color: "text-green-700", bgColor: "bg-green-200", icon: CheckCircle2 };
+  }, [progress, currentChecklist.length]);
+
+  const isProjectIncomplete = progress < 100 && currentChecklist.length > 0;
+
   if (selectedTemplate) {
+    const StatusIcon = projectStatus.icon;
+    
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -526,6 +561,11 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Project Status Badge */}
+            <Badge className={`${projectStatus.bgColor} ${projectStatus.color} border-0 gap-1.5 px-3 py-1`}>
+              <StatusIcon className="w-4 h-4" />
+              {projectStatus.label}
+            </Badge>
             <Badge variant="secondary" className="text-lg px-4 py-1">
               {progress}% Complete
             </Badge>
@@ -539,13 +579,29 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar with status color */}
         <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full bg-amber-500 transition-all duration-300"
+            className={`h-full transition-all duration-300 ${
+              progress === 100 ? "bg-green-500" : 
+              progress >= 75 ? "bg-green-400" :
+              progress >= 50 ? "bg-amber-500" :
+              progress >= 25 ? "bg-amber-400" : "bg-blue-400"
+            }`}
             style={{ width: `${progress}%` }}
           />
         </div>
+
+        {/* Incomplete Project Warning */}
+        {isProjectIncomplete && (
+          <Alert className="border-amber-300 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              <span className="font-medium">Project not complete.</span> {currentChecklist.length - completedTasks.size} task(s) remaining. 
+              You can continue, but the project will be marked as "{projectStatus.label}" in your Project Summary.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Project Name */}
         <div className="space-y-2">
