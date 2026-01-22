@@ -51,15 +51,15 @@ const DevTierPanel = () => {
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed bottom-20 right-4 z-[9999]">
         <Button
-          size="sm"
+          size="default"
           variant="outline"
-          className="bg-slate-900 text-white border-slate-700 hover:bg-slate-800 shadow-lg gap-2"
+          className="bg-amber-500 text-black border-amber-600 hover:bg-amber-400 shadow-2xl gap-2 font-bold animate-pulse"
           onClick={() => setIsMinimized(false)}
         >
-          <Settings2 className="h-4 w-4" />
-          DEV
+          <Settings2 className="h-5 w-5" />
+          DEV TIER
           {currentOverride && (
             <Badge className={`${TIERS.find(t => t.tier === currentOverride)?.color} text-white text-xs`}>
               {currentOverride}
