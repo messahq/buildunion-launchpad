@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription, SubscriptionTier } from "@/hooks/useSubscription";
 
 // Feature-specific trial limits
 const TRIAL_LIMITS: Record<string, number> = {
@@ -14,6 +14,16 @@ const getDefaultMaxTrials = (feature: string): number => {
   return TRIAL_LIMITS[feature] ?? 3;
 };
 
+// Check for dev tier override directly from localStorage
+const getDevTierOverride = (): SubscriptionTier | null => {
+  if (typeof window === 'undefined') return null;
+  const override = localStorage.getItem("dev_tier_override");
+  if (override && ["free", "pro", "premium", "enterprise"].includes(override)) {
+    return override as SubscriptionTier;
+  }
+  return null;
+};
+
 interface TrialData {
   usedCount: number;
   maxAllowed: number;
@@ -23,7 +33,10 @@ interface TrialData {
 export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
   const { user } = useAuth();
   const { subscription } = useSubscription();
-  const isPremiumUser = subscription?.subscribed === true;
+  
+  // Check both: real subscription OR dev override
+  const devOverride = getDevTierOverride();
+  const isPremiumUser = subscription?.subscribed === true || (devOverride !== null && devOverride !== "free");
   
   const defaultMax = getDefaultMaxTrials(feature);
   const [trialData, setTrialData] = useState<TrialData>({
