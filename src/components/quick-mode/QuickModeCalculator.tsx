@@ -557,25 +557,19 @@ Estimated Labor: ${results.laborHours} hours
               ))}
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                onClick={calculate}
-                className="flex-1 bg-amber-500 hover:bg-amber-600"
-              >
-                <Calculator className="w-4 h-4 mr-2" />
-                Calculate
-              </Button>
-              {results && (
-                <Button
-                  onClick={saveResult}
-                  variant="outline"
-                  className="border-green-300 text-green-700 hover:bg-green-50"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add to Summary
-                </Button>
-              )}
-            </div>
+            <Button
+              onClick={calculate}
+              className="w-full bg-amber-500 hover:bg-amber-600"
+            >
+              <Calculator className="w-4 h-4 mr-2" />
+              Calculate
+            </Button>
+            {results && (
+              <p className="text-xs text-center text-green-600 flex items-center justify-center gap-1">
+                <Check className="w-3 h-3" />
+                Added to Summary automatically
+              </p>
+            )}
           </CardContent>
         </Card>
 
