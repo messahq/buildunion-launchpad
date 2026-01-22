@@ -28,10 +28,9 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data, error: authError } = await supabaseClient.auth.getClaims(token);
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
-    if (authError || !data?.claims) {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
