@@ -118,6 +118,8 @@ export const buildProjectSummaryHTML = (data: {
   companyPhone?: string | null;
   companyEmail?: string | null;
   companyWebsite?: string | null;
+  clientSignature?: { type: 'drawn' | 'typed'; data: string; name: string } | null;
+  contractorSignature?: { type: 'drawn' | 'typed'; data: string; name: string } | null;
 }): string => {
   const {
     quoteNumber,
@@ -137,7 +139,9 @@ export const buildProjectSummaryHTML = (data: {
     companyName,
     companyPhone,
     companyEmail,
-    companyWebsite
+    companyWebsite,
+    clientSignature,
+    contractorSignature
   } = data;
 
   // Build materials table rows with HTML escaping for user-controlled data
@@ -293,14 +297,25 @@ export const buildProjectSummaryHTML = (data: {
         ` : ''}
 
         <!-- Signatures -->
+        <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
         <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
           <div style="padding-top: 12px; border-top: 2px solid #1e293b;">
             <p style="font-size: 12px; color: #64748b; margin: 0;"><strong>Client Signature</strong></p>
-            <p style="font-size: 11px; color: #94a3b8; margin-top: 32px;">Date: _______________</p>
+            ${clientSignature 
+              ? clientSignature.type === 'drawn'
+                ? '<img src="' + clientSignature.data + '" alt="Client Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
+                : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + escapeHtml(clientSignature.data) + '</p>'
+              : '<div style="height: 40px; margin: 8px 0;"></div>'}
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Date: ${new Date().toLocaleDateString('en-CA')}</p>
           </div>
           <div style="padding-top: 12px; border-top: 2px solid #1e293b;">
             <p style="font-size: 12px; color: #64748b; margin: 0;"><strong>Contractor Signature</strong></p>
-            <p style="font-size: 11px; color: #94a3b8; margin-top: 32px;">Date: _______________</p>
+            ${contractorSignature 
+              ? contractorSignature.type === 'drawn'
+                ? '<img src="' + contractorSignature.data + '" alt="Contractor Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
+                : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + escapeHtml(contractorSignature.data) + '</p>'
+              : '<div style="height: 40px; margin: 8px 0;"></div>'}
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Date: ${new Date().toLocaleDateString('en-CA')}</p>
           </div>
         </div>
       </div>

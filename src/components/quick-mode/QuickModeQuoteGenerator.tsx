@@ -24,6 +24,12 @@ interface LineItem {
   unitPrice: number;
 }
 
+interface SignatureData {
+  type: 'drawn' | 'typed';
+  data: string;
+  name: string;
+}
+
 interface QuoteData {
   // Company Info
   companyName: string;
@@ -51,6 +57,10 @@ interface QuoteData {
   paymentTerms: string;
   notes: string;
   warranty: string;
+  
+  // Signatures
+  clientSignature?: SignatureData | null;
+  contractorSignature?: SignatureData | null;
 }
 
 interface CollectedData {
@@ -1217,7 +1227,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
             {/* Continue to Summary */}
             <Button
-              onClick={() => onQuoteGenerated?.(quote)}
+              onClick={() => onQuoteGenerated?.({ ...quote, clientSignature, contractorSignature })}
               variant="outline"
               className="w-full gap-2"
             >
