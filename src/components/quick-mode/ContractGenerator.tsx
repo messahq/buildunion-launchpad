@@ -17,6 +17,13 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile } from "@/hooks/useBuProfile";
@@ -36,7 +43,11 @@ import {
   PenLine,
   CheckCircle2,
   Clock,
-  Send
+  Send,
+  Home,
+  Building,
+  Wrench,
+  FileCheck
 } from "lucide-react";
 
 // Types for collected data from Quick Mode synthesis
@@ -60,6 +71,97 @@ interface CollectedData {
   }>;
 }
 
+// Contract template types
+type ContractTemplateType = "custom" | "residential" | "commercial" | "renovation";
+
+interface ContractTemplate {
+  id: ContractTemplateType;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  depositPercentage: number;
+  paymentSchedule: string;
+  workingDays: string;
+  warrantyPeriod: string;
+  changeOrderPolicy: string;
+  cancellationPolicy: string;
+  disputeResolution: string;
+  hasLiabilityInsurance: boolean;
+  hasWSIB: boolean;
+  materialsIncluded: boolean;
+  additionalTerms?: string;
+}
+
+const CONTRACT_TEMPLATES: ContractTemplate[] = [
+  {
+    id: "custom",
+    name: "Custom Contract",
+    description: "Start from scratch with your own terms",
+    icon: <FileCheck className="w-5 h-5" />,
+    depositPercentage: 50,
+    paymentSchedule: "50% deposit upon signing, 50% upon completion",
+    workingDays: "Monday to Friday, 8:00 AM - 5:00 PM",
+    warrantyPeriod: "1 year",
+    changeOrderPolicy: "Any changes to the scope of work must be agreed upon in writing and may result in additional charges.",
+    cancellationPolicy: "Either party may cancel this contract with 14 days written notice. The client is responsible for payment of work completed up to the date of cancellation.",
+    disputeResolution: "Any disputes arising from this contract shall be resolved through mediation before pursuing legal action.",
+    hasLiabilityInsurance: true,
+    hasWSIB: true,
+    materialsIncluded: true,
+  },
+  {
+    id: "residential",
+    name: "Residential",
+    description: "Home improvement & residential projects",
+    icon: <Home className="w-5 h-5" />,
+    depositPercentage: 30,
+    paymentSchedule: "30% deposit upon signing, 30% at project midpoint, 40% upon final completion and inspection",
+    workingDays: "Monday to Friday, 8:00 AM - 5:00 PM. Weekend work by prior arrangement only.",
+    warrantyPeriod: "2 years on workmanship, manufacturer warranties apply to materials",
+    changeOrderPolicy: "All changes must be documented in writing with a signed Change Order form. Additional costs will be calculated at current labor and material rates plus 15% overhead. No changes will begin until the Change Order is approved and signed by both parties.",
+    cancellationPolicy: "Homeowner may cancel within 10 business days of signing without penalty. After this period, the client is responsible for materials ordered and work completed. Contractor will provide itemized breakdown of costs incurred.",
+    disputeResolution: "Both parties agree to attempt resolution through direct communication first. If unresolved within 14 days, disputes will proceed to mediation through a mutually agreed mediator before any legal action.",
+    hasLiabilityInsurance: true,
+    hasWSIB: true,
+    materialsIncluded: true,
+    additionalTerms: "• Contractor will maintain a clean work site and protect existing structures\n• Client provides access to water and electricity\n• Permits and inspections are the contractor's responsibility unless otherwise specified\n• Final walkthrough and punch list to be completed before final payment",
+  },
+  {
+    id: "commercial",
+    name: "Commercial",
+    description: "Business & commercial construction",
+    icon: <Building className="w-5 h-5" />,
+    depositPercentage: 25,
+    paymentSchedule: "25% deposit upon signing, progress payments monthly based on certified work completed, 10% holdback released 45 days after substantial completion",
+    workingDays: "As per project schedule. After-hours and weekend work available at premium rates if required to meet deadlines.",
+    warrantyPeriod: "1 year on general workmanship, 5 years on structural elements, manufacturer warranties on all equipment and materials",
+    changeOrderPolicy: "All changes require a formal Change Order with detailed scope, pricing, and schedule impact. Change Orders must be approved in writing by authorized representatives of both parties. Changes affecting critical path will require schedule adjustment.",
+    cancellationPolicy: "Either party may terminate with 30 days written notice. Client is responsible for all work completed, materials ordered, and reasonable demobilization costs. Contractor must provide complete documentation of work to date.",
+    disputeResolution: "Disputes shall first be addressed at the project manager level. Unresolved issues will escalate to senior management within 7 days. If still unresolved, parties agree to binding arbitration under commercial arbitration rules.",
+    hasLiabilityInsurance: true,
+    hasWSIB: true,
+    materialsIncluded: true,
+    additionalTerms: "• Contractor maintains comprehensive commercial liability insurance ($2M minimum)\n• All work to comply with applicable building codes and regulations\n• Weekly progress reports and monthly schedule updates required\n• Safety plan and WHMIS compliance mandatory\n• Bonding available upon request",
+  },
+  {
+    id: "renovation",
+    name: "Renovation",
+    description: "Remodeling & renovation projects",
+    icon: <Wrench className="w-5 h-5" />,
+    depositPercentage: 35,
+    paymentSchedule: "35% deposit upon signing (covers demolition and initial materials), 35% at rough-in completion, 30% upon final completion",
+    workingDays: "Monday to Friday, 8:00 AM - 5:00 PM. Demolition and loud work limited to 9:00 AM - 4:00 PM where applicable.",
+    warrantyPeriod: "2 years on all new work and installations. Pre-existing conditions not covered.",
+    changeOrderPolicy: "Renovation projects often uncover hidden conditions. Discovery work will be documented with photos and discussed before proceeding. Additional costs require signed approval. A 10% contingency is recommended for unforeseen conditions.",
+    cancellationPolicy: "Client may cancel with 14 days written notice. Due to the nature of renovation work, client is responsible for all demolition performed, materials purchased, and work completed. Space will be left in a safe, secure condition.",
+    disputeResolution: "Given the complexity of renovation work, parties agree to document all decisions in writing. Disputes will be addressed through on-site meetings with both parties present. Mediation through a licensed contractor or inspector if needed.",
+    hasLiabilityInsurance: true,
+    hasWSIB: true,
+    materialsIncluded: true,
+    additionalTerms: "• Pre-renovation inspection and documentation included\n• Asbestos/lead testing may be required for older structures (additional cost)\n• Client responsible for temporary relocation of furniture and personal items\n• Dust barriers and protection of adjacent areas included\n• Daily cleanup and debris removal included",
+  },
+];
+
 interface ContractGeneratorProps {
   quoteData?: any;
   collectedData?: CollectedData | null;
@@ -70,6 +172,8 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
+  
+  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType>("custom");
   
   const [contract, setContract] = useState({
     // Contract Info
@@ -111,6 +215,7 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
     changeOrderPolicy: "Any changes to the scope of work must be agreed upon in writing and may result in additional charges.",
     cancellationPolicy: "Either party may cancel this contract with 14 days written notice. The client is responsible for payment of work completed up to the date of cancellation.",
     disputeResolution: "Any disputes arising from this contract shall be resolved through mediation before pursuing legal action.",
+    additionalTerms: "",
     
     // Insurance & Licensing
     hasLiabilityInsurance: true,
@@ -118,6 +223,29 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
     licenseNumber: "",
   });
 
+  // Apply template when selected
+  const applyTemplate = (templateId: ContractTemplateType) => {
+    const template = CONTRACT_TEMPLATES.find(t => t.id === templateId);
+    if (!template) return;
+
+    setContract(prev => ({
+      ...prev,
+      depositPercentage: template.depositPercentage,
+      paymentSchedule: template.paymentSchedule,
+      workingDays: template.workingDays,
+      warrantyPeriod: template.warrantyPeriod,
+      changeOrderPolicy: template.changeOrderPolicy,
+      cancellationPolicy: template.cancellationPolicy,
+      disputeResolution: template.disputeResolution,
+      hasLiabilityInsurance: template.hasLiabilityInsurance,
+      hasWSIB: template.hasWSIB,
+      materialsIncluded: template.materialsIncluded,
+      additionalTerms: template.additionalTerms || "",
+    }));
+
+    setSelectedTemplate(templateId);
+    toast.success(`${template.name} template applied`);
+  };
   const [clientSignature, setClientSignature] = useState<SignatureData | null>(null);
   const [contractorSignature, setContractorSignature] = useState<SignatureData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -442,6 +570,14 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
             </ol>
           </div>
 
+          ${contract.additionalTerms ? `
+          <!-- Additional Terms -->
+          <div class="section">
+            <div class="section-title">📋 ADDITIONAL TERMS & CONDITIONS</div>
+            <p style="white-space: pre-line;">${contract.additionalTerms}</p>
+          </div>
+          ` : ''}
+
           <!-- Digital Signature Notice -->
           <div class="info-banner">
             <h4>ℹ️ ABOUT DIGITAL SIGNATURES</h4>
@@ -519,6 +655,55 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
 
   return (
     <div className="space-y-6">
+      {/* Contract Template Selector */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <FileCheck className="w-5 h-5 text-amber-500" />
+            Contract Template
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Choose a template to pre-fill terms and conditions for your project type
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {CONTRACT_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                onClick={() => applyTemplate(template.id)}
+                className={`p-4 rounded-lg border-2 text-left transition-all hover:shadow-md ${
+                  selectedTemplate === template.id
+                    ? "border-amber-500 bg-amber-50"
+                    : "border-border hover:border-amber-300"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={selectedTemplate === template.id ? "text-amber-600" : "text-muted-foreground"}>
+                    {template.icon}
+                  </span>
+                  <span className="font-semibold">{template.name}</span>
+                  {selectedTemplate === template.id && (
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 ml-auto" />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{template.description}</p>
+              </button>
+            ))}
+          </div>
+          
+          {selectedTemplate !== "custom" && (
+            <Alert className="mt-4 border-green-200 bg-green-50">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                <strong>{CONTRACT_TEMPLATES.find(t => t.id === selectedTemplate)?.name}</strong> template applied. 
+                Terms, warranty, and policies have been pre-filled. You can still edit any field below.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Digital Signature Info Banner */}
       <Alert className="border-blue-200 bg-blue-50">
         <Info className="h-5 w-5 text-blue-600" />
@@ -819,6 +1004,22 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
                         onChange={(e) => updateContract("cancellationPolicy", e.target.value)}
                         rows={2}
                       />
+                    </div>
+                    <Separator className="my-4" />
+                    <div className="space-y-2">
+                      <Label>Additional Terms</Label>
+                      <Textarea
+                        value={contract.additionalTerms}
+                        onChange={(e) => updateContract("additionalTerms", e.target.value)}
+                        placeholder="Project-specific terms, special conditions, or notes..."
+                        rows={4}
+                      />
+                      {selectedTemplate !== "custom" && contract.additionalTerms && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-green-500" />
+                          Pre-filled from {CONTRACT_TEMPLATES.find(t => t.id === selectedTemplate)?.name} template
+                        </p>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
