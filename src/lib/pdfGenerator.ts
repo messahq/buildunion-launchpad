@@ -115,6 +115,9 @@ export const buildProjectSummaryHTML = (data: {
   formatCurrency: (amount: number) => string;
   companyLogoUrl?: string | null;
   companyName?: string | null;
+  companyPhone?: string | null;
+  companyEmail?: string | null;
+  companyWebsite?: string | null;
 }): string => {
   const {
     quoteNumber,
@@ -131,7 +134,10 @@ export const buildProjectSummaryHTML = (data: {
     regionShortName,
     formatCurrency,
     companyLogoUrl,
-    companyName
+    companyName,
+    companyPhone,
+    companyEmail,
+    companyWebsite
   } = data;
 
   // Build materials table rows with HTML escaping for user-controlled data
@@ -194,20 +200,29 @@ export const buildProjectSummaryHTML = (data: {
       </style>
     </head>
     <body>
-      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          ${companyLogoUrl ? `
-            <img src="${escapeHtml(companyLogoUrl)}" alt="Company Logo" style="height: 48px; width: auto; max-width: 120px; object-fit: contain; background: white; padding: 4px; border-radius: 6px;" />
-          ` : ''}
-          <div>
-            <h1 style="font-size: 24px; font-weight: 700; margin: 0;">${companyName ? escapeHtml(companyName) : '🏗️ BuildUnion'}</h1>
-            <p style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Professional Construction Project Summary</p>
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            ${companyLogoUrl ? `
+              <img src="${escapeHtml(companyLogoUrl)}" alt="Company Logo" style="height: 56px; width: auto; max-width: 140px; object-fit: contain; background: white; padding: 6px; border-radius: 8px;" />
+            ` : ''}
+            <div>
+              <h1 style="font-size: 24px; font-weight: 700; margin: 0;">${companyName ? escapeHtml(companyName) : '🏗️ BuildUnion'}</h1>
+              <p style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Professional Construction Project Summary</p>
+            </div>
+          </div>
+          <div style="text-align: right; background: rgba(255,255,255,0.2); padding: 12px 20px; border-radius: 8px;">
+            <div style="font-size: 16px; font-weight: 700; letter-spacing: 1px;">${escapeHtml(quoteNumber)}</div>
+            <div style="font-size: 11px; opacity: 0.9; margin-top: 2px;">Generated: ${escapeHtml(currentDate)}</div>
           </div>
         </div>
-        <div style="text-align: right; background: rgba(255,255,255,0.2); padding: 12px 20px; border-radius: 8px;">
-          <div style="font-size: 16px; font-weight: 700; letter-spacing: 1px;">${escapeHtml(quoteNumber)}</div>
-          <div style="font-size: 11px; opacity: 0.9; margin-top: 2px;">Generated: ${escapeHtml(currentDate)}</div>
-        </div>
+        ${(companyPhone || companyEmail || companyWebsite) ? `
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.3); display: flex; gap: 24px; flex-wrap: wrap; font-size: 11px;">
+            ${companyPhone ? `<span style="display: flex; align-items: center; gap: 6px;">📞 ${escapeHtml(companyPhone)}</span>` : ''}
+            ${companyEmail ? `<span style="display: flex; align-items: center; gap: 6px;">✉️ ${escapeHtml(companyEmail)}</span>` : ''}
+            ${companyWebsite ? `<span style="display: flex; align-items: center; gap: 6px;">🌐 ${escapeHtml(companyWebsite)}</span>` : ''}
+          </div>
+        ` : ''}
       </div>
 
       <div style="padding: 24px 32px;">
@@ -290,15 +305,26 @@ export const buildProjectSummaryHTML = (data: {
         </div>
       </div>
 
-      <div style="margin-top: 32px; padding: 20px; background: #1e293b; color: white;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px;">
-          ${companyLogoUrl ? `
-            <img src="${escapeHtml(companyLogoUrl)}" alt="Company Logo" style="height: 32px; width: auto; max-width: 80px; object-fit: contain; background: white; padding: 3px; border-radius: 4px;" />
-          ` : ''}
-          <p style="font-size: 14px; font-weight: 600; margin: 0;">${companyName ? escapeHtml(companyName) : 'BuildUnion'}</p>
+      <div style="margin-top: 32px; padding: 24px 32px; background: #1e293b; color: white;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${companyLogoUrl ? `
+              <img src="${escapeHtml(companyLogoUrl)}" alt="Company Logo" style="height: 40px; width: auto; max-width: 100px; object-fit: contain; background: white; padding: 4px; border-radius: 6px;" />
+            ` : ''}
+            <div>
+              <p style="font-size: 16px; font-weight: 700; margin: 0;">${companyName ? escapeHtml(companyName) : 'BuildUnion'}</p>
+              <p style="font-size: 10px; opacity: 0.7; margin-top: 2px;">Licensed & Insured • WSIB Covered</p>
+            </div>
+          </div>
+          <div style="text-align: right; font-size: 11px;">
+            ${companyPhone ? `<p style="margin: 0 0 4px 0; opacity: 0.9;">📞 ${escapeHtml(companyPhone)}</p>` : ''}
+            ${companyEmail ? `<p style="margin: 0 0 4px 0; opacity: 0.9;">✉️ ${escapeHtml(companyEmail)}</p>` : ''}
+            ${companyWebsite ? `<p style="margin: 0; opacity: 0.9;">🌐 ${escapeHtml(companyWebsite)}</p>` : ''}
+          </div>
         </div>
-        <p style="font-size: 10px; opacity: 0.8; margin: 0;">Licensed & Insured • WSIB Covered • Professional Construction Management</p>
-        <p style="font-size: 9px; opacity: 0.6; margin-top: 6px;">Generated with BuildUnion • Greater Toronto Area</p>
+        <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center;">
+          <p style="font-size: 9px; opacity: 0.6; margin: 0;">Generated with BuildUnion • Professional Construction Management</p>
+        </div>
       </div>
     </body>
     </html>

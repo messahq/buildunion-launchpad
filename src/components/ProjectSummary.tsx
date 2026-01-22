@@ -550,7 +550,10 @@ export function ProjectSummary({
       regionShortName: config.shortName,
       formatCurrency,
       companyLogoUrl: profile?.company_logo_url,
-      companyName: profile?.company_name
+      companyName: profile?.company_name,
+      companyPhone: profile?.phone,
+      companyEmail: user?.email,
+      companyWebsite: profile?.company_website
     };
   };
 
