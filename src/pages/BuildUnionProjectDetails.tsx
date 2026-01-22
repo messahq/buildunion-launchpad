@@ -17,7 +17,7 @@ import {
   AlertCircle, Sparkles,
   Pencil, X, Check,
   Users, Image, FileCheck, Briefcase, MapPin,
-  Camera, DollarSign, Package, Brain, Crown, Lock, FileUp
+  Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -70,7 +70,7 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
-  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team">("ai");
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "tasks">("ai");
   const [showStatsPopup, setShowStatsPopup] = useState(false);
   
   // Tier access: Pro+ can access Blueprint Analysis
@@ -777,23 +777,7 @@ const BuildUnionProjectDetails = () => {
           </Card>
         )}
 
-        {/* Team Management Card - Only visible to owner */}
-        {project && user && project.user_id === user.id && (
-          <div className="space-y-6">
-            <TeamManagement projectId={project.id} isOwner={true} />
-            <TaskAssignment projectId={project.id} isOwner={true} />
-          </div>
-        )}
-
-        {/* Team Members Card - Visible to non-owners */}
-        {project && user && project.user_id !== user.id && (
-          <div className="space-y-6">
-            <TeamManagement projectId={project.id} isOwner={false} />
-            <TaskAssignment projectId={project.id} isOwner={false} />
-          </div>
-        )}
-
-        {/* Quick Mode Summary - Shows data from Quick Mode flow */}
+        {/* Quick Mode Summary - Foundation of all projects */}
         {projectSummary && (
           <Card className="mb-6 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
             <CardHeader className="pb-4">
@@ -952,11 +936,6 @@ const BuildUnionProjectDetails = () => {
               </Button>
             </CardContent>
           </Card>
-        )}
-
-        {/* Contract History */}
-        {project && user && (
-          <ContractHistory projectId={project.id} />
         )}
 
         <div className="space-y-6">
@@ -1192,6 +1171,17 @@ const BuildUnionProjectDetails = () => {
                           Team
                         </button>
                         <button
+                          onClick={() => setBlueprintTab("tasks")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                            blueprintTab === "tasks" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <ClipboardList className="w-4 h-4 inline mr-2" />
+                          Tasks
+                        </button>
+                        <button
                           onClick={() => setBlueprintTab("facts")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                             blueprintTab === "facts" 
@@ -1199,7 +1189,7 @@ const BuildUnionProjectDetails = () => {
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <FileCheck className="w-4 h-4 inline mr-2" />
+                          <Sparkles className="w-4 h-4 inline mr-2" />
                           Facts
                         </button>
                       </div>
@@ -1334,6 +1324,12 @@ const BuildUnionProjectDetails = () => {
                       {blueprintTab === "team" && (
                         <div className="p-4">
                           <TeamManagement projectId={project.id} isOwner={project.user_id === user.id} />
+                        </div>
+                      )}
+
+                      {blueprintTab === "tasks" && (
+                        <div className="p-4">
+                          <TaskAssignment projectId={project.id} isOwner={project.user_id === user.id} />
                         </div>
                       )}
 
