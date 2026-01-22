@@ -479,6 +479,7 @@ const BuildUnionQuickMode = () => {
             <TabsContent value="contract" className="mt-0">
               <ContractGenerator 
                 quoteData={null}
+                collectedData={collectedData}
                 onContractGenerated={(contractData) => {
                   toast.success("Contract generated successfully!");
                 }}
