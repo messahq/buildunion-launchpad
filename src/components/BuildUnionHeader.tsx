@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Plus, Crown, Zap, Folder, Eye, Sun, Moon } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,8 +16,6 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useTheme } from "@/hooks/useTheme";
 import { toast } from "sonner";
-
-import NewProjectModal from "@/components/NewProjectModal";
 
 const languages = [
   { code: "en", name: "English" },
@@ -38,7 +36,6 @@ const BuildUnionHeader = () => {
   const { profile } = useBuProfile();
   const { theme, toggleTheme } = useTheme();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
   
@@ -150,17 +147,6 @@ const BuildUnionHeader = () => {
           >
             <Folder className="h-4 w-4" />
             <span className="hidden sm:inline">Projects</span>
-          </Button>
-
-
-          {/* Start New Project Button */}
-          <Button
-            size="sm"
-            onClick={() => setShowNewProjectModal(true)}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium gap-1.5 hidden md:flex"
-          >
-            <Plus className="h-4 w-4" />
-            <span>New Project</span>
           </Button>
 
           {/* Language Selector - hidden on mobile */}
@@ -295,11 +281,6 @@ const BuildUnionHeader = () => {
           )}
         </div>
       </div>
-
-      {/* New Project Modal */}
-
-      {/* New Project Modal */}
-      <NewProjectModal open={showNewProjectModal} onOpenChange={setShowNewProjectModal} />
     </header>
   );
 };
