@@ -17,7 +17,7 @@ import {
   AlertCircle, Sparkles,
   Pencil, X, Check,
   Users, Image, FileCheck, Briefcase, MapPin,
-  Camera, DollarSign, Package, Brain, Crown, Lock
+  Camera, DollarSign, Package, Brain, Crown, Lock, FileUp
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -70,6 +70,7 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts">("ai");
   
   // Tier access: Pro+ can access Blueprint Analysis
   const isPro = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
@@ -1064,63 +1065,216 @@ const BuildUnionProjectDetails = () => {
                 </CardContent>
               </Card>
             ) : (
-              <>
-                {/* Blueprint Panel Toggle Button when collapsed */}
-                {!showBlueprintPanel && (
-                  <Card 
-                    className="border-cyan-200 bg-gradient-to-br from-white to-cyan-50/50 cursor-pointer hover:shadow-md transition-all"
-                    onClick={() => setShowBlueprintPanel(true)}
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                          <Brain className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-slate-900">Blueprint Analysis</h3>
-                            <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs gap-1">
-                              <Crown className="w-3 h-3" />
-                              {isPremium ? "Premium" : "Pro"}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            M.E.S.S.A. dual-engine AI • Click to expand
-                          </p>
-                        </div>
-                        <Button variant="outline" className="gap-2 border-cyan-300 text-cyan-700 hover:bg-cyan-50">
-                          <Brain className="w-4 h-4" />
-                          Open
-                        </Button>
+              <Card className="border-cyan-200 bg-white">
+                {/* Blueprint Analysis Header */}
+                <div className="bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-3 rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <Brain className="w-5 h-5 text-white" />
                       </div>
-                    </CardContent>
-                  </Card>
+                      <div>
+                        <h3 className="text-white font-semibold flex items-center gap-2">
+                          Blueprint Analysis
+                          <Badge className="bg-white/20 text-white border-0 text-xs gap-1">
+                            <Crown className="w-3 h-3" />
+                            {isPremium ? "Premium" : "Pro"}
+                          </Badge>
+                        </h3>
+                        <p className="text-white/80 text-xs">M.E.S.S.A. dual-engine AI • Gemini + GPT-5</p>
+                      </div>
+                    </div>
+                    {!showBlueprintPanel && (
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        onClick={() => setShowBlueprintPanel(true)}
+                        className="bg-white/20 hover:bg-white/30 text-white border-0"
+                      >
+                        Expand
+                      </Button>
+                    )}
+                    {showBlueprintPanel && (
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        onClick={() => setShowBlueprintPanel(false)}
+                        className="bg-white/20 hover:bg-white/30 text-white border-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Collapsed State - Quick Summary */}
+                {!showBlueprintPanel && (
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="text-center p-3 bg-slate-50 rounded-lg">
+                        <FileText className="w-5 h-5 text-cyan-500 mx-auto mb-1" />
+                        <div className="text-lg font-bold text-slate-900">{documents.length}</div>
+                        <div className="text-xs text-slate-500">Documents</div>
+                      </div>
+                      <div className="text-center p-3 bg-slate-50 rounded-lg">
+                        <Camera className="w-5 h-5 text-cyan-500 mx-auto mb-1" />
+                        <div className="text-lg font-bold text-slate-900">{siteImageUrls.length}</div>
+                        <div className="text-xs text-slate-500">Site Photos</div>
+                      </div>
+                      <div className="text-center p-3 bg-slate-50 rounded-lg">
+                        <Sparkles className="w-5 h-5 text-cyan-500 mx-auto mb-1" />
+                        <div className="text-lg font-bold text-slate-900">
+                          {projectSummary?.verified_facts ? (projectSummary.verified_facts as any[]).length : 0}
+                        </div>
+                        <div className="text-xs text-slate-500">Verified Facts</div>
+                      </div>
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white gap-2"
+                      onClick={() => setShowBlueprintPanel(true)}
+                    >
+                      <Brain className="w-4 h-4" />
+                      Open Blueprint Analysis
+                    </Button>
+                  </CardContent>
                 )}
 
-                {/* Full M.E.S.S.A. Panel when expanded */}
+                {/* Expanded State - Full M.E.S.S.A. Interface */}
                 {showBlueprintPanel && (
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowBlueprintPanel(false)}
-                      className="absolute -top-2 -right-2 z-10 h-8 w-8 p-0 rounded-full bg-slate-100 hover:bg-slate-200"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    <ProjectAIPanel
-                      projectId={project.id}
-                      projectName={project.name}
-                      userId={user.id}
-                      documents={documents}
-                      siteImages={project.site_images || []}
-                      projectSummary={projectSummary}
-                      isOwner={project.user_id === user.id}
-                      isPremium={isPremium}
-                    />
-                  </div>
+                  <CardContent className="p-0">
+                    {/* Analysis Tabs */}
+                    <div className="border-b border-slate-200">
+                      <div className="flex">
+                        <button
+                          onClick={() => setBlueprintTab("ai")}
+                          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                            blueprintTab === "ai" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Brain className="w-4 h-4 inline mr-2" />
+                          AI Analysis
+                        </button>
+                        <button
+                          onClick={() => setBlueprintTab("documents")}
+                          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                            blueprintTab === "documents" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <FileUp className="w-4 h-4 inline mr-2" />
+                          Documents
+                        </button>
+                        <button
+                          onClick={() => setBlueprintTab("facts")}
+                          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                            blueprintTab === "facts" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <FileCheck className="w-4 h-4 inline mr-2" />
+                          Facts
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="min-h-[500px]">
+                      {blueprintTab === "ai" && (
+                        <ProjectAIPanel
+                          projectId={project.id}
+                          projectName={project.name}
+                          userId={user.id}
+                          documents={documents}
+                          siteImages={project.site_images || []}
+                          projectSummary={projectSummary}
+                          isOwner={project.user_id === user.id}
+                          isPremium={isPremium}
+                        />
+                      )}
+
+                      {blueprintTab === "documents" && (
+                        <div className="p-4">
+                          <ProjectDocuments
+                            projectId={project.id}
+                            userId={user.id}
+                            documents={documents}
+                            onDocumentsChange={setDocuments}
+                            isOwner={project.user_id === user.id}
+                          />
+                        </div>
+                      )}
+
+                      {blueprintTab === "facts" && (
+                        <div className="p-4">
+                          {/* Verified Facts from M.E.S.S.A. */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-slate-900 flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-cyan-500" />
+                                Verified Project Facts
+                              </h4>
+                              <Badge variant="outline" className="text-xs">
+                                {projectSummary?.verified_facts ? (projectSummary.verified_facts as any[]).length : 0} facts
+                              </Badge>
+                            </div>
+                            
+                            {projectSummary?.verified_facts && (projectSummary.verified_facts as any[]).length > 0 ? (
+                              <div className="space-y-3">
+                                {(projectSummary.verified_facts as any[]).map((fact: any, idx: number) => (
+                                  <div key={idx} className="p-3 bg-slate-50 rounded-lg border">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                                        <FileCheck className="w-3 h-3 text-cyan-600" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-slate-900">{fact.question || fact.title || `Fact ${idx + 1}`}</p>
+                                        <p className="text-sm text-slate-600 mt-1">{fact.answer || fact.value || fact.content}</p>
+                                        {fact.verification_status && (
+                                          <Badge 
+                                            variant="outline" 
+                                            className={`mt-2 text-xs ${
+                                              fact.verification_status === "verified" 
+                                                ? "border-green-300 text-green-700 bg-green-50" 
+                                                : "border-amber-300 text-amber-700 bg-amber-50"
+                                            }`}
+                                          >
+                                            {fact.verification_status === "verified" ? "✓ Verified" : "⚠ Unverified"}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-12">
+                                <FileCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                <p className="text-sm font-medium text-slate-700">No verified facts yet</p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  Use the AI Analysis tab to extract and verify project facts
+                                </p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="mt-4 gap-2"
+                                  onClick={() => setBlueprintTab("ai")}
+                                >
+                                  <Brain className="w-4 h-4" />
+                                  Start AI Analysis
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
                 )}
-              </>
+              </Card>
             )}
 
             {/* Premium Features Preview */}
