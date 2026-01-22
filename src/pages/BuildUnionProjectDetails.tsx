@@ -965,7 +965,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                     </div>
                     <div>
                       <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                        Blueprint Analysis
+                        Blueprint Team Project
                         <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white gap-1">
                           <Crown className="w-3 h-3" />
                           Pro
@@ -1010,7 +1010,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
               </Card>
             ) : (
               <Card className="border-cyan-200 bg-white">
-                {/* Blueprint Analysis Header */}
+                {/* Blueprint Team Project Header */}
                 <div className="bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-3 rounded-t-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1019,7 +1019,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                       </div>
                       <div>
                         <h3 className="text-white font-semibold flex items-center gap-2">
-                          Blueprint Analysis
+                          Blueprint Team Project
                           <Badge className="bg-white/20 text-white border-0 text-xs gap-1">
                             <Crown className="w-3 h-3" />
                             {isPremium ? "Premium" : "Pro"}
@@ -1130,7 +1130,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                       onClick={() => setShowBlueprintPanel(true)}
                     >
                       <Brain className="w-4 h-4" />
-                      Open Blueprint Analysis
+                      Open Blueprint Team Project
                     </Button>
                   </CardContent>
                 )}

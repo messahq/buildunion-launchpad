@@ -474,8 +474,89 @@ const handleContractGenerated = () => {
       ) : (
         /* Contract List */
         <div className="space-y-3">
-          {contracts.map((contract, index) => (
+          {contracts.map((contract, index) => {
+            // Calculate contract status for progress tracker
+            const hasContractorSig = !!contract.contractor_signature;
+            const hasClientSig = !!contract.client_signature;
+            const getContractStage = () => {
+              if (hasContractorSig && hasClientSig) return 4; // Complete
+              if (hasContractorSig && !hasClientSig) return 2; // Sent (awaiting client)
+              return 1; // Draft
+            };
+            const stage = getContractStage();
+
+            return (
             <div key={contract.id} className="p-4 bg-white border rounded-lg hover:shadow-sm transition-shadow">
+              {/* Contract Status Progress Tracker */}
+              <div className="mb-4 pb-4 border-b border-slate-100">
+                <div className="flex items-center justify-between">
+                  {/* Stage 1: Draft */}
+                  <div className="flex flex-col items-center flex-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                      stage >= 1 ? "bg-cyan-500 text-white" : "bg-slate-200 text-slate-500"
+                    }`}>
+                      1
+                    </div>
+                    <span className={`text-xs mt-1 ${stage >= 1 ? "text-cyan-600 font-medium" : "text-slate-400"}`}>
+                      Draft
+                    </span>
+                  </div>
+
+                  {/* Connector 1-2 */}
+                  <div className={`h-1 flex-1 mx-1 rounded transition-all ${
+                    stage >= 2 ? "bg-cyan-500" : "bg-slate-200"
+                  }`} />
+
+                  {/* Stage 2: Sent */}
+                  <div className="flex flex-col items-center flex-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                      stage >= 2 ? "bg-cyan-500 text-white" : "bg-slate-200 text-slate-500"
+                    }`}>
+                      2
+                    </div>
+                    <span className={`text-xs mt-1 ${stage >= 2 ? "text-cyan-600 font-medium" : "text-slate-400"}`}>
+                      Sent
+                    </span>
+                  </div>
+
+                  {/* Connector 2-3 */}
+                  <div className={`h-1 flex-1 mx-1 rounded transition-all ${
+                    stage >= 3 ? "bg-amber-500" : "bg-slate-200"
+                  }`} />
+
+                  {/* Stage 3: Client Signed */}
+                  <div className="flex flex-col items-center flex-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                      stage >= 3 ? "bg-amber-500 text-white" : stage >= 2 && hasClientSig ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"
+                    }`}>
+                      3
+                    </div>
+                    <span className={`text-xs mt-1 text-center ${
+                      (stage >= 3 || hasClientSig) ? "text-amber-600 font-medium" : "text-slate-400"
+                    }`}>
+                      Client Signed
+                    </span>
+                  </div>
+
+                  {/* Connector 3-4 */}
+                  <div className={`h-1 flex-1 mx-1 rounded transition-all ${
+                    stage >= 4 ? "bg-green-500" : "bg-slate-200"
+                  }`} />
+
+                  {/* Stage 4: Complete */}
+                  <div className="flex flex-col items-center flex-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                      stage >= 4 ? "bg-green-500 text-white" : "bg-slate-200 text-slate-500"
+                    }`}>
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <span className={`text-xs mt-1 ${stage >= 4 ? "text-green-600 font-medium" : "text-slate-400"}`}>
+                      Complete
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="space-y-2 flex-1">
                   {/* Header */}
@@ -518,18 +599,6 @@ const handleContractGenerated = () => {
                       {formatCurrency(contract.total_amount)}
                     </p>
                   )}
-
-                  {/* Signature Status */}
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className={`flex items-center gap-1 ${contract.contractor_signature ? "text-green-600" : "text-muted-foreground"}`}>
-                      {contract.contractor_signature ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                      Contractor
-                    </span>
-                    <span className={`flex items-center gap-1 ${contract.client_signature ? "text-green-600" : "text-muted-foreground"}`}>
-                      {contract.client_signature ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                      Client
-                    </span>
-                  </div>
                 </div>
 
                 {/* Actions */}
@@ -606,7 +675,8 @@ const handleContractGenerated = () => {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>
