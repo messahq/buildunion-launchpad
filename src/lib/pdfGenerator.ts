@@ -118,8 +118,8 @@ export const buildProjectSummaryHTML = (data: {
   companyPhone?: string | null;
   companyEmail?: string | null;
   companyWebsite?: string | null;
-  clientSignature?: { type: 'drawn' | 'typed'; data: string; name: string } | null;
-  contractorSignature?: { type: 'drawn' | 'typed'; data: string; name: string } | null;
+  clientSignature?: { type: 'drawn' | 'typed'; data: string; name: string; signedAt?: string } | null;
+  contractorSignature?: { type: 'drawn' | 'typed'; data: string; name: string; signedAt?: string } | null;
 }): string => {
   const {
     quoteNumber,
@@ -306,7 +306,7 @@ export const buildProjectSummaryHTML = (data: {
                 ? '<img src="' + clientSignature.data + '" alt="Client Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
                 : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + escapeHtml(clientSignature.data) + '</p>'
               : '<div style="height: 40px; margin: 8px 0;"></div>'}
-            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Date: ${new Date().toLocaleDateString('en-CA')}</p>
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Date: ${clientSignature?.signedAt ? new Date(clientSignature.signedAt).toLocaleDateString('en-CA') : '_______________'}</p>
           </div>
           <div style="padding-top: 12px; border-top: 2px solid #1e293b;">
             <p style="font-size: 12px; color: #64748b; margin: 0;"><strong>Contractor Signature</strong></p>
@@ -315,7 +315,7 @@ export const buildProjectSummaryHTML = (data: {
                 ? '<img src="' + contractorSignature.data + '" alt="Contractor Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
                 : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + escapeHtml(contractorSignature.data) + '</p>'
               : '<div style="height: 40px; margin: 8px 0;"></div>'}
-            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Date: ${new Date().toLocaleDateString('en-CA')}</p>
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Date: ${contractorSignature?.signedAt ? new Date(contractorSignature.signedAt).toLocaleDateString('en-CA') : '_______________'}</p>
           </div>
         </div>
       </div>
