@@ -170,33 +170,87 @@ async function gptEstimationAnalysis(
 ): Promise<GPTEstimateData> {
   const areaValue = geminiData.total_area;
   
-  const gptPrompt = `You are a PROFESSIONAL CONSTRUCTION ESTIMATOR. Calculate materials needed based on the area.
+  // Detect project type from description
+  const descLower = (description || "").toLowerCase();
+  const isPainting = descLower.includes("paint") || descLower.includes("festés") || descLower.includes("festeni");
+  const isFlooring = descLower.includes("floor") || descLower.includes("tile") || descLower.includes("padló") || descLower.includes("csempe");
+  
+  // Build project-specific estimation rules
+  let estimationRules = "";
+  let materialsExample = "";
+  let projectType = "General construction";
+  
+  if (isPainting) {
+    projectType = "Painting project";
+    estimationRules = `=== PAINTING ESTIMATION RULES ===
+- Paint coverage: ~350-400 sq ft per gallon (1 coat)
+- Primer coverage: ~300-350 sq ft per gallon
+- For 2 coats of paint, double the paint quantity
+- Painter's tape: 1 roll per 60 linear ft
+- Drop cloths: 1 per 200 sq ft
+- Brushes/rollers: basic set per 500 sq ft
+- Add 10% extra for waste/touch-ups`;
+    materialsExample = `{
+    "materials": [
+      {"item": "Interior Paint", "quantity": NUMBER, "unit": "gallons", "notes": "2 coats, calc details"},
+      {"item": "Primer", "quantity": NUMBER, "unit": "gallons", "notes": "1 coat"},
+      {"item": "Painter's Tape", "quantity": NUMBER, "unit": "rolls", "notes": "60 ft/roll"},
+      {"item": "Drop Cloths", "quantity": NUMBER, "unit": "pcs", "notes": ""},
+      {"item": "Roller Kit", "quantity": NUMBER, "unit": "sets", "notes": "roller + brushes"}
+    ],
+    "total_material_area": ${areaValue || "ESTIMATED_AREA"},
+    "summary": "Paint materials for ${areaValue || 'estimated'} sq ft",
+    "recommendations": ["tip1", "tip2"]
+  }`;
+  } else if (isFlooring || !description) {
+    projectType = "Flooring/Tile project";
+    estimationRules = `=== FLOORING ESTIMATION RULES ===
+- Tile box: ~12 sq ft per box
+- Tile adhesive: 1 bag per 40 sq ft
+- Grout: 1 bag per 80 sq ft
+- Add 10-15% waste factor`;
+    materialsExample = `{
+    "materials": [
+      {"item": "Ceramic Tile", "quantity": NUMBER, "unit": "boxes", "notes": "calc details"},
+      {"item": "Tile Adhesive", "quantity": NUMBER, "unit": "bags", "notes": ""},
+      {"item": "Grout", "quantity": NUMBER, "unit": "bags", "notes": ""}
+    ],
+    "total_material_area": ${areaValue || "ESTIMATED_AREA"},
+    "summary": "Brief summary",
+    "recommendations": ["tip1", "tip2"]
+  }`;
+  } else {
+    projectType = description;
+    estimationRules = `=== GENERAL ESTIMATION RULES ===
+Based on the project description, estimate appropriate materials.
+Add 10-15% waste factor for materials.`;
+    materialsExample = `{
+    "materials": [
+      {"item": "Primary Material", "quantity": NUMBER, "unit": "appropriate unit", "notes": "calculation details"}
+    ],
+    "total_material_area": ${areaValue || "ESTIMATED_AREA"},
+    "summary": "Brief summary based on project type",
+    "recommendations": ["tip1", "tip2"]
+  }`;
+  }
+  
+  const gptPrompt = `You are a PROFESSIONAL CONSTRUCTION ESTIMATOR. Calculate materials needed based on the area and PROJECT TYPE.
 
 === VISUAL DATA ===
 - Total Area: ${areaValue ? `${areaValue} sq ft` : "Estimate from image"}
 - Surface Type: ${geminiData.surface_type}
 - Room Type: ${geminiData.room_type}
 
-=== PROJECT ===
-${description || "General flooring/tile work"}
+=== PROJECT TYPE ===
+${projectType}
+User description: "${description || 'Not specified'}"
 
-=== ESTIMATION RULES ===
-- Tile box: ~12 sq ft per box
-- Tile adhesive: 1 bag per 40 sq ft
-- Grout: 1 bag per 80 sq ft
-- Add 10-15% waste factor
+${estimationRules}
 
-RESPOND IN JSON:
-{
-  "materials": [
-    {"item": "Ceramic Tile", "quantity": NUMBER, "unit": "boxes", "notes": "calc details"},
-    {"item": "Tile Adhesive", "quantity": NUMBER, "unit": "bags", "notes": ""},
-    {"item": "Grout", "quantity": NUMBER, "unit": "bags", "notes": ""}
-  ],
-  "total_material_area": ${areaValue || "ESTIMATED_AREA"},
-  "summary": "Brief summary",
-  "recommendations": ["tip1", "tip2"]
-}`;
+RESPOND IN THIS EXACT JSON FORMAT:
+${materialsExample}
+
+CRITICAL: Match materials to the PROJECT TYPE. If user says "paint", provide PAINT materials, NOT tiles!`;
 
   console.log("GPT-5: Starting estimation with area:", areaValue);
   
@@ -228,14 +282,29 @@ RESPOND IN JSON:
     console.error("GPT-5: API error", response.status);
     // Calculate fallback materials if we have area
     if (areaValue) {
-      const wasteArea = Math.ceil(areaValue * 1.15);
-      defaultResult.materials = [
-        { item: "Tile/Flooring", quantity: wasteArea, unit: "sq ft", notes: `${areaValue} + 15% waste` },
-        { item: "Tile Boxes (12 sq ft/box)", quantity: Math.ceil(wasteArea / 12), unit: "boxes", notes: "" },
-        { item: "Tile Adhesive", quantity: Math.ceil(areaValue / 40), unit: "bags", notes: "1 bag/40 sq ft" },
-        { item: "Grout", quantity: Math.ceil(areaValue / 80), unit: "bags", notes: "1 bag/80 sq ft" },
-      ];
-      defaultResult.summary = `Material estimate for ${areaValue} sq ft flooring project.`;
+      if (isPainting) {
+        // Paint fallback
+        const paintGallons = Math.ceil((areaValue / 350) * 2); // 2 coats
+        const primerGallons = Math.ceil(areaValue / 325);
+        defaultResult.materials = [
+          { item: "Interior Paint", quantity: paintGallons, unit: "gallons", notes: `${areaValue} sq ft × 2 coats` },
+          { item: "Primer", quantity: primerGallons, unit: "gallons", notes: "1 coat" },
+          { item: "Painter's Tape", quantity: Math.ceil(areaValue / 200), unit: "rolls", notes: "" },
+          { item: "Drop Cloths", quantity: Math.ceil(areaValue / 200), unit: "pcs", notes: "" },
+          { item: "Roller Kit", quantity: Math.ceil(areaValue / 500), unit: "sets", notes: "" },
+        ];
+        defaultResult.summary = `Paint materials for ${areaValue} sq ft painting project.`;
+      } else {
+        // Flooring fallback
+        const wasteArea = Math.ceil(areaValue * 1.15);
+        defaultResult.materials = [
+          { item: "Tile/Flooring", quantity: wasteArea, unit: "sq ft", notes: `${areaValue} + 15% waste` },
+          { item: "Tile Boxes (12 sq ft/box)", quantity: Math.ceil(wasteArea / 12), unit: "boxes", notes: "" },
+          { item: "Tile Adhesive", quantity: Math.ceil(areaValue / 40), unit: "bags", notes: "1 bag/40 sq ft" },
+          { item: "Grout", quantity: Math.ceil(areaValue / 80), unit: "bags", notes: "1 bag/80 sq ft" },
+        ];
+        defaultResult.summary = `Material estimate for ${areaValue} sq ft flooring project.`;
+      }
     }
     return defaultResult;
   }
@@ -260,16 +329,28 @@ RESPOND IN JSON:
     console.error("GPT-5: JSON parse failed");
     defaultResult.raw_response = rawContent.substring(0, 500);
     
-    // Calculate fallback if we have area
+    // Calculate fallback if we have area - respect project type
     if (areaValue) {
-      const wasteArea = Math.ceil(areaValue * 1.15);
-      defaultResult.materials = [
-        { item: "Tile/Flooring", quantity: wasteArea, unit: "sq ft", notes: `${areaValue} + 15% waste` },
-        { item: "Tile Boxes (12 sq ft/box)", quantity: Math.ceil(wasteArea / 12), unit: "boxes", notes: "" },
-        { item: "Tile Adhesive", quantity: Math.ceil(areaValue / 40), unit: "bags", notes: "1 bag/40 sq ft" },
-        { item: "Grout", quantity: Math.ceil(areaValue / 80), unit: "bags", notes: "1 bag/80 sq ft" },
-      ];
-      defaultResult.summary = `Material estimate for ${areaValue} sq ft flooring project.`;
+      if (isPainting) {
+        const paintGallons = Math.ceil((areaValue / 350) * 2);
+        const primerGallons = Math.ceil(areaValue / 325);
+        defaultResult.materials = [
+          { item: "Interior Paint", quantity: paintGallons, unit: "gallons", notes: `${areaValue} sq ft × 2 coats` },
+          { item: "Primer", quantity: primerGallons, unit: "gallons", notes: "1 coat" },
+          { item: "Painter's Tape", quantity: Math.ceil(areaValue / 200), unit: "rolls", notes: "" },
+          { item: "Drop Cloths", quantity: Math.ceil(areaValue / 200), unit: "pcs", notes: "" },
+        ];
+        defaultResult.summary = `Paint materials for ${areaValue} sq ft painting project.`;
+      } else {
+        const wasteArea = Math.ceil(areaValue * 1.15);
+        defaultResult.materials = [
+          { item: "Tile/Flooring", quantity: wasteArea, unit: "sq ft", notes: `${areaValue} + 15% waste` },
+          { item: "Tile Boxes (12 sq ft/box)", quantity: Math.ceil(wasteArea / 12), unit: "boxes", notes: "" },
+          { item: "Tile Adhesive", quantity: Math.ceil(areaValue / 40), unit: "bags", notes: "1 bag/40 sq ft" },
+          { item: "Grout", quantity: Math.ceil(areaValue / 80), unit: "bags", notes: "1 bag/80 sq ft" },
+        ];
+        defaultResult.summary = `Material estimate for ${areaValue} sq ft flooring project.`;
+      }
     }
     
     return defaultResult;
