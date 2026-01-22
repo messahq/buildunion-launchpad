@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Users, FileCheck, Briefcase, Plus, X, Pencil, 
+  Users, FileCheck, Plus, X, Pencil, 
   Check, Loader2, MessageSquare, ChevronDown, ChevronUp
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,23 +59,21 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   
-  // Editing states
-  const [editTrades, setEditTrades] = useState<string[]>(project.trades || []);
+  // Editing states - manpower now includes trades with counts
   const [editManpower, setEditManpower] = useState<ManpowerReq[]>(project.manpower_requirements || []);
   const [editCertifications, setEditCertifications] = useState<string[]>(project.required_certifications || []);
   const [additionalNotes, setAdditionalNotes] = useState("");
   
   // Custom/Other inputs
-  const [showOtherTrade, setShowOtherTrade] = useState(false);
-  const [otherTrade, setOtherTrade] = useState("");
+  const [showOtherRole, setShowOtherRole] = useState(false);
+  const [otherRole, setOtherRole] = useState("");
   const [showOtherCert, setShowOtherCert] = useState(false);
   const [otherCert, setOtherCert] = useState("");
   
   // Expand/collapse sections
   const [expandedSections, setExpandedSections] = useState({
     manpower: true,
-    certifications: true,
-    trades: true
+    certifications: true
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -83,7 +81,6 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
   };
 
   const handleStartEdit = () => {
-    setEditTrades(project.trades || []);
     setEditManpower(project.manpower_requirements || []);
     setEditCertifications(project.required_certifications || []);
     setAdditionalNotes("");
@@ -92,17 +89,26 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setShowOtherTrade(false);
+    setShowOtherRole(false);
     setShowOtherCert(false);
-    setOtherTrade("");
+    setOtherRole("");
     setOtherCert("");
   };
 
-  const handleAddOtherTrade = () => {
-    if (otherTrade.trim() && !editTrades.includes(otherTrade.trim())) {
-      setEditTrades([...editTrades, otherTrade.trim()]);
-      setOtherTrade("");
-      setShowOtherTrade(false);
+  const handleAddOtherRole = () => {
+    if (otherRole.trim()) {
+      const existing = editManpower.find(m => m.trade.toLowerCase() === otherRole.trim().toLowerCase());
+      if (existing) {
+        setEditManpower(editManpower.map(m => 
+          m.trade.toLowerCase() === otherRole.trim().toLowerCase() 
+            ? { ...m, count: m.count + 1 } 
+            : m
+        ));
+      } else {
+        setEditManpower([...editManpower, { trade: otherRole.trim(), count: 1 }]);
+      }
+      setOtherRole("");
+      setShowOtherRole(false);
     }
   };
 
@@ -142,13 +148,15 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Derive trades array from manpower requirements
+      const derivedTrades = editManpower.map(m => m.trade);
+
       const { error } = await supabase
         .from("projects")
         .update({
-          trades: editTrades,
+          trades: derivedTrades,
           manpower_requirements: editManpower as any,
           required_certifications: editCertifications,
-          // Note: additionalNotes could be stored in description or a new field
         })
         .eq("id", project.id);
 
@@ -156,7 +164,7 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
 
       onProjectUpdate({
         ...project,
-        trades: editTrades,
+        trades: derivedTrades,
         manpower_requirements: editManpower,
         required_certifications: editCertifications,
       });
@@ -171,15 +179,18 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
     }
   };
 
-  // Quick add trades that aren't in TRADE_LABELS
   const getTradeLabel = (trade: string) => {
     return TRADE_LABELS[trade as keyof typeof TRADE_LABELS] || trade;
   };
 
+  // Calculate totals
+  const totalWorkers = editManpower.reduce((sum, m) => sum + m.count, 0);
+  const projectTotalWorkers = (project.manpower_requirements || []).reduce((sum, m) => sum + m.count, 0);
+
   if (isEditing) {
     return (
       <div className="p-4 space-y-6">
-        {/* Manpower Requirements */}
+        {/* Manpower & Trades Requirements - Unified */}
         <div className="space-y-3">
           <button 
             onClick={() => toggleSection("manpower")}
@@ -187,18 +198,25 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
           >
             <h4 className="font-medium text-slate-900 flex items-center gap-2">
               <Users className="w-4 h-4 text-cyan-500" />
-              Manpower Requirements
+              Manpower & Trades Requirements
             </h4>
-            {expandedSections.manpower ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <div className="flex items-center gap-2">
+              {totalWorkers > 0 && (
+                <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200">
+                  {totalWorkers} total
+                </Badge>
+              )}
+              {expandedSections.manpower ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
           </button>
           
           {expandedSections.manpower && (
             <div className="space-y-3">
-              <p className="text-sm text-slate-500">Select trades and specify how many workers you need:</p>
+              <p className="text-sm text-slate-500">Select trades/roles and specify how many workers you need for each:</p>
               
-              {/* Current manpower */}
+              {/* Current manpower selections */}
               {editManpower.length > 0 && (
-                <div className="space-y-2 mb-3">
+                <div className="space-y-2 mb-4">
                   {editManpower.map((req) => (
                     <div key={req.trade} className="flex items-center gap-2 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
                       <span className="flex-1 text-sm font-medium text-slate-700">
@@ -236,48 +254,57 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
                 </div>
               )}
 
-              {/* Quick add trades */}
+              {/* Quick add trades - show all available */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {Object.entries(TRADE_LABELS).slice(0, 12).map(([key, label]) => (
-                  <Button
-                    key={key}
-                    variant="outline"
-                    size="sm"
-                    className={`justify-start gap-2 ${
-                      editManpower.some(m => m.trade === key) 
-                        ? "border-cyan-300 bg-cyan-50" 
-                        : ""
-                    }`}
-                    onClick={() => handleAddManpower(key)}
-                  >
-                    <Plus className="w-3 h-3" />
-                    {label}
-                  </Button>
-                ))}
+                {Object.entries(TRADE_LABELS).map(([key, label]) => {
+                  const isAdded = editManpower.some(m => m.trade === key);
+                  return (
+                    <Button
+                      key={key}
+                      variant="outline"
+                      size="sm"
+                      className={`justify-start gap-2 ${
+                        isAdded 
+                          ? "border-cyan-400 bg-cyan-100 text-cyan-800" 
+                          : "hover:border-cyan-300"
+                      }`}
+                      onClick={() => handleAddManpower(key)}
+                    >
+                      <Plus className="w-3 h-3" />
+                      {label}
+                      {isAdded && (
+                        <Badge className="ml-auto bg-cyan-500 text-white text-xs px-1.5 py-0">
+                          {editManpower.find(m => m.trade === key)?.count}
+                        </Badge>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
 
-              {/* Other button */}
-              {!showOtherTrade ? (
+              {/* Other role button */}
+              {!showOtherRole ? (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 border-dashed"
-                  onClick={() => setShowOtherTrade(true)}
+                  className="gap-2 border-dashed mt-2"
+                  onClick={() => setShowOtherRole(true)}
                 >
                   <Plus className="w-3 h-3" />
-                  Other Role...
+                  Other Role / Trade...
                 </Button>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-2">
                   <Input
-                    placeholder="Enter custom role..."
-                    value={otherTrade}
-                    onChange={(e) => setOtherTrade(e.target.value)}
+                    placeholder="Enter custom role or trade..."
+                    value={otherRole}
+                    onChange={(e) => setOtherRole(e.target.value)}
                     className="flex-1"
-                    onKeyDown={(e) => e.key === "Enter" && handleAddOtherTrade()}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddOtherRole()}
+                    autoFocus
                   />
-                  <Button size="sm" onClick={handleAddOtherTrade}>Add</Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setShowOtherTrade(false); setOtherTrade(""); }}>
+                  <Button size="sm" onClick={handleAddOtherRole}>Add</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setShowOtherRole(false); setOtherRole(""); }}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
@@ -296,12 +323,19 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
               <FileCheck className="w-4 h-4 text-cyan-500" />
               Required Certifications
             </h4>
-            {expandedSections.certifications ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <div className="flex items-center gap-2">
+              {editCertifications.length > 0 && (
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                  {editCertifications.length} selected
+                </Badge>
+              )}
+              {expandedSections.certifications ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
           </button>
 
           {expandedSections.certifications && (
             <div className="space-y-3">
-              <p className="text-sm text-slate-500">Select required certifications for this project:</p>
+              <p className="text-sm text-slate-500">Select required certifications for workers on this project:</p>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {CERTIFICATION_OPTIONS.map((cert) => (
@@ -348,7 +382,7 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
                 </div>
               )}
 
-              {/* Other button */}
+              {/* Other certification button */}
               {!showOtherCert ? (
                 <Button
                   variant="outline"
@@ -367,75 +401,12 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
                     onChange={(e) => setOtherCert(e.target.value)}
                     className="flex-1"
                     onKeyDown={(e) => e.key === "Enter" && handleAddOtherCert()}
+                    autoFocus
                   />
                   <Button size="sm" onClick={handleAddOtherCert}>Add</Button>
                   <Button size="sm" variant="ghost" onClick={() => { setShowOtherCert(false); setOtherCert(""); }}>
                     <X className="w-4 h-4" />
                   </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Required Trades */}
-        <div className="space-y-3">
-          <button 
-            onClick={() => toggleSection("trades")}
-            className="flex items-center justify-between w-full"
-          >
-            <h4 className="font-medium text-slate-900 flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-cyan-500" />
-              Required Trades
-            </h4>
-            {expandedSections.trades ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-
-          {expandedSections.trades && (
-            <div className="space-y-3">
-              <p className="text-sm text-slate-500">Select all trades needed for this project:</p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {Object.entries(TRADE_LABELS).map(([key, label]) => (
-                  <div key={key} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`trade-edit-${key}`}
-                      checked={editTrades.includes(key)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setEditTrades([...editTrades, key]);
-                        } else {
-                          setEditTrades(editTrades.filter(t => t !== key));
-                        }
-                      }}
-                    />
-                    <label 
-                      htmlFor={`trade-edit-${key}`} 
-                      className="text-sm text-slate-600 cursor-pointer"
-                    >
-                      {label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-
-              {/* Custom trades */}
-              {editTrades.filter(t => !Object.keys(TRADE_LABELS).includes(t)).length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {editTrades.filter(t => !Object.keys(TRADE_LABELS).includes(t)).map((trade) => (
-                    <Badge 
-                      key={trade} 
-                      className="gap-1 bg-amber-50 text-amber-700 border-amber-200"
-                    >
-                      {trade}
-                      <button 
-                        onClick={() => setEditTrades(editTrades.filter(t => t !== trade))}
-                        className="ml-1 hover:text-red-500"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
                 </div>
               )}
             </div>
@@ -489,19 +460,26 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
     );
   }
 
-  // View mode
+  // View mode - unified display
   return (
     <div className="p-4 space-y-6">
-      {/* Manpower Requirements */}
+      {/* Manpower & Trades Requirements */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="font-medium text-slate-900 flex items-center gap-2">
             <Users className="w-4 h-4 text-cyan-500" />
-            Manpower Requirements
+            Manpower & Trades
           </h4>
-          <Badge variant="outline" className="text-xs">
-            {project.manpower_requirements?.length || 0} roles
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {project.manpower_requirements?.length || 0} roles
+            </Badge>
+            {projectTotalWorkers > 0 && (
+              <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200 text-xs">
+                {projectTotalWorkers} workers
+              </Badge>
+            )}
+          </div>
         </div>
         
         {project.manpower_requirements && project.manpower_requirements.length > 0 ? (
@@ -521,7 +499,7 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
           <div className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg text-center">
             <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
             <p>No manpower requirements defined yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Click Edit to add required workers and roles.</p>
+            <p className="text-xs text-slate-400 mt-1">Click Edit to add required trades and worker counts.</p>
           </div>
         )}
       </div>
@@ -551,35 +529,6 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
             <FileCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
             <p>No certifications required yet.</p>
             <p className="text-xs text-slate-400 mt-1">Click Edit to specify required certifications.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Required Trades */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="font-medium text-slate-900 flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-cyan-500" />
-            Required Trades
-          </h4>
-          <Badge variant="outline" className="text-xs">
-            {project.trades?.length || 0} trades
-          </Badge>
-        </div>
-        
-        {project.trades && project.trades.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {project.trades.map((trade, idx) => (
-              <Badge key={idx} className="bg-amber-50 text-amber-700 border-amber-200">
-                {getTradeLabel(trade)}
-              </Badge>
-            ))}
-          </div>
-        ) : (
-          <div className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg text-center">
-            <Briefcase className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p>No trades specified yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Click Edit to select required trades.</p>
           </div>
         )}
       </div>
