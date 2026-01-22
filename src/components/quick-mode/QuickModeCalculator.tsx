@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Calculator, Plus, Trash2, Copy, Check, ArrowRight, LayoutTemplate, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -363,11 +363,51 @@ interface QuickModeCalculatorProps {
   prefillAreaUnit?: string;
 }
 
+// Map template names to calculator types
+const templateToCalculatorMap: Record<string, string> = {
+  "interior painting": "paint",
+  "painting": "paint",
+  "bathroom renovation": "tile",
+  "bathroom": "tile",
+  "flooring installation": "flooring",
+  "flooring": "flooring",
+  "kitchen remodel": "tile",
+  "kitchen": "tile",
+  "roof repair/replace": "roofing",
+  "roofing": "roofing",
+  "deck building": "deck",
+  "deck": "deck",
+  "drywall installation": "drywall",
+  "drywall": "drywall",
+  "hvac service": "other",
+  "electrical upgrade": "other",
+  "plumbing repair": "other",
+  "landscaping": "other",
+  "window replacement": "other",
+  "insulation": "insulation",
+  "fencing": "fencing",
+  "concrete": "concrete",
+  "carpet": "carpet",
+};
+
 const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, prefillArea, prefillAreaUnit }: QuickModeCalculatorProps) => {
-  const [selectedCalc, setSelectedCalc] = useState(calculators[0]);
+  // Determine initial calculator based on template
+  const initialCalc = useMemo(() => {
+    if (templateData?.templateName) {
+      const templateKey = templateData.templateName.toLowerCase();
+      const calcId = templateToCalculatorMap[templateKey];
+      if (calcId) {
+        const matched = calculators.find(c => c.id === calcId);
+        if (matched) return matched;
+      }
+    }
+    return calculators[0];
+  }, [templateData?.templateName]);
+
+  const [selectedCalc, setSelectedCalc] = useState(initialCalc);
   const [inputs, setInputs] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
-    calculators[0].inputs.forEach((input) => {
+    initialCalc.inputs.forEach((input) => {
       initial[input.id] = input.defaultValue || 0;
     });
     
@@ -387,6 +427,32 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
     calcType: string;
     result: ReturnType<CalculatorType["calculate"]>;
   }>>([]);
+
+  // Update calculator when template changes
+  useEffect(() => {
+    if (templateData?.templateName) {
+      const templateKey = templateData.templateName.toLowerCase();
+      const calcId = templateToCalculatorMap[templateKey];
+      if (calcId && calcId !== selectedCalc.id) {
+        const matched = calculators.find(c => c.id === calcId);
+        if (matched) {
+          setSelectedCalc(matched);
+          const newInputs: Record<string, number> = {};
+          matched.inputs.forEach((input) => {
+            newInputs[input.id] = input.defaultValue || 0;
+          });
+          // Apply prefill area if available
+          if (prefillArea) {
+            const sqRoot = Math.sqrt(prefillArea);
+            newInputs["length"] = Math.round(sqRoot);
+            newInputs["width"] = Math.round(prefillArea / Math.round(sqRoot));
+          }
+          setInputs(newInputs);
+          setResults(null);
+        }
+      }
+    }
+  }, [templateData?.templateName]);
 
   const handleCalcChange = (calcId: string) => {
     const calc = calculators.find((c) => c.id === calcId);
