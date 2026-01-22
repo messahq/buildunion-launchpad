@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate } from "lucide-react";
+import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
 import { RegionSelector } from "@/components/RegionSelector";
@@ -92,6 +93,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   const [quote, setQuote] = useState<QuoteData>(defaultQuote);
   const [activeSection, setActiveSection] = useState<"company" | "client" | "items" | "preview">("company");
   const [isSaving, setIsSaving] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
   const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
   const { user } = useAuth();
 
@@ -818,7 +820,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
               <CardDescription>Add materials, labor, and other costs</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {quote.lineItems.map((item, index) => (
+              {/* First 2 items always visible */}
+              {quote.lineItems.slice(0, 2).map((item, index) => (
                 <div
                   key={item.id}
                   className="p-4 border border-border rounded-lg space-y-3"
@@ -844,7 +847,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                       onChange={(e) =>
                         updateLineItem(item.id, "description", e.target.value)
                       }
-                      placeholder="e.g., Labor - Tile Installation"
+                      placeholder="e.g., Labor, Materials, Equipment..."
                     />
                   </div>
                   
@@ -897,6 +900,108 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                   </div>
                 </div>
               ))}
+
+              {/* Collapsible remaining items */}
+              {quote.lineItems.length > 2 && (
+                <Collapsible open={showAllItems} onOpenChange={setShowAllItems}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" className="w-full gap-2">
+                      {showAllItems ? (
+                        <>
+                          <ChevronUp className="w-4 h-4" />
+                          Hide {quote.lineItems.length - 2} more items
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4" />
+                          Show {quote.lineItems.length - 2} more items
+                        </>
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    {quote.lineItems.slice(2).map((item, index) => (
+                      <div
+                        key={item.id}
+                        className="p-4 border border-border rounded-lg space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Item {index + 3}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeLineItem(item.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Input
+                            value={item.description}
+                            onChange={(e) =>
+                              updateLineItem(item.id, "description", e.target.value)
+                            }
+                            placeholder="e.g., Labor, Materials, Equipment..."
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="space-y-2">
+                            <Label>Quantity</Label>
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                updateLineItem(item.id, "quantity", parseFloat(e.target.value) || 0)
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Unit</Label>
+                            <Select
+                              value={item.unit}
+                              onValueChange={(value) => updateLineItem(item.id, "unit", value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {units.map((unit) => (
+                                  <SelectItem key={unit} value={unit}>
+                                    {unit}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Unit Price ($)</Label>
+                            <Input
+                              type="number"
+                              value={item.unitPrice}
+                              onChange={(e) =>
+                                updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
+                              }
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <span className="text-sm text-muted-foreground">Line Total: </span>
+                          <span className="font-semibold text-amber-600">
+                            ${(item.quantity * item.unitPrice).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
 
               <Button variant="outline" onClick={addLineItem} className="w-full">
                 <Plus className="w-4 h-4 mr-2" />
