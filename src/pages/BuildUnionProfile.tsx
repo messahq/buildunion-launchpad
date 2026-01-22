@@ -45,8 +45,11 @@ const BuildUnionProfile = () => {
   const { profile, loading: profileLoading, saving, updateProfile, ensureProfile } = useBuProfile();
   const { subscription } = useSubscription();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
 
   // Form state
   const [primaryTrade, setPrimaryTrade] = useState<ConstructionTrade | "">("");
@@ -77,6 +80,7 @@ const BuildUnionProfile = () => {
       setPhone(profile.phone || "");
       setCompanyName(profile.company_name || "");
       setCompanyWebsite(profile.company_website || "");
+      setCompanyLogoUrl(profile.company_logo_url || null);
       setBio(profile.bio || "");
       setHourlyRate(profile.hourly_rate?.toString() || "");
       setAvailability(profile.availability || "available");
@@ -133,6 +137,54 @@ const BuildUnionProfile = () => {
       toast.error('Failed to upload profile picture');
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  // Handle company logo upload
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 2MB for logos)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be less than 2MB');
+      return;
+    }
+
+    try {
+      setUploadingLogo(true);
+
+      // Create unique file path
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/company-logo.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new logo URL
+      await updateProfile({ company_logo_url: publicUrl } as any);
+      setCompanyLogoUrl(publicUrl);
+      toast.success('Company logo updated!');
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      toast.error('Failed to upload company logo');
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -511,6 +563,62 @@ const BuildUnionProfile = () => {
                     placeholder="e.g., Greater Toronto Area"
                     value={serviceArea}
                     onChange={(e) => setServiceArea(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Company Logo Upload */}
+              <Separator className="my-4" />
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Company Logo
+                  <Badge variant="secondary" className="text-xs">For PDF Quotes</Badge>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Upload your company logo to display it on PDF quotes and invoices.
+                </p>
+                <div className="flex items-center gap-4">
+                  {companyLogoUrl ? (
+                    <div className="relative group">
+                      <img 
+                        src={companyLogoUrl} 
+                        alt="Company Logo" 
+                        className="h-16 w-auto max-w-32 object-contain border rounded-lg p-1 bg-white"
+                      />
+                      <button
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={uploadingLogo}
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        {uploadingLogo ? (
+                          <Loader2 className="h-4 w-4 text-white animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4 text-white" />
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="gap-2"
+                    >
+                      {uploadingLogo ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Upload Logo
+                    </Button>
+                  )}
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
                   />
                 </div>
               </div>
