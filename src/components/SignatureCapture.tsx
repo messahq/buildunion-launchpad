@@ -3,10 +3,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Eraser, Pen, Type, Check } from "lucide-react";
+import { Eraser, Pen, Type, Check, Calendar } from "lucide-react";
+
+export interface SignatureData {
+  type: 'drawn' | 'typed';
+  data: string;
+  name: string;
+  signedAt: string; // ISO date string when signature was captured
+}
 
 interface SignatureCaptureProps {
-  onSignatureChange: (signature: { type: 'drawn' | 'typed'; data: string; name: string } | null) => void;
+  onSignatureChange: (signature: SignatureData | null) => void;
   label?: string;
   placeholder?: string;
 }
@@ -21,6 +28,7 @@ const SignatureCapture = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasDrawnSignature, setHasDrawnSignature] = useState(false);
+  const [signedDate, setSignedDate] = useState<string | null>(null);
 
   // Initialize canvas
   useEffect(() => {
@@ -90,10 +98,13 @@ const SignatureCapture = ({
     if (isDrawing && hasDrawnSignature) {
       const canvas = canvasRef.current;
       if (canvas) {
+        const now = new Date().toISOString();
+        setSignedDate(now);
         onSignatureChange({
           type: 'drawn',
           data: canvas.toDataURL('image/png'),
-          name: ''
+          name: '',
+          signedAt: now
         });
       }
     }
@@ -108,28 +119,36 @@ const SignatureCapture = ({
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setHasDrawnSignature(false);
+    setSignedDate(null);
     onSignatureChange(null);
   };
 
   const handleTypedNameChange = (name: string) => {
     setTypedName(name);
     if (name.trim()) {
+      const now = new Date().toISOString();
+      setSignedDate(now);
       onSignatureChange({
         type: 'typed',
         data: name,
-        name: name
+        name: name,
+        signedAt: now
       });
     } else {
+      setSignedDate(null);
       onSignatureChange(null);
     }
   };
 
-  // Script fonts for typed signature
-  const scriptFonts = [
-    { name: 'Dancing Script', className: 'font-dancing' },
-    { name: 'Great Vibes', className: 'font-vibes' },
-    { name: 'Pacifico', className: 'font-pacifico' }
-  ];
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString('en-CA', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="space-y-3">
@@ -206,11 +225,17 @@ const SignatureCapture = ({
         </TabsContent>
       </Tabs>
       
-      {/* Signature confirmation */}
-      {((activeTab === 'type' && typedName) || (activeTab === 'draw' && hasDrawnSignature)) && (
-        <div className="flex items-center gap-2 text-sm text-green-600">
-          <Check className="w-4 h-4" />
-          <span>Signature captured</span>
+      {/* Signature confirmation with date */}
+      {((activeTab === 'type' && typedName) || (activeTab === 'draw' && hasDrawnSignature)) && signedDate && (
+        <div className="flex flex-col gap-1 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
+            <Check className="w-4 h-4" />
+            <span>Signature captured</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-green-600">
+            <Calendar className="w-3 h-3" />
+            <span>Signed: {formatDate(signedDate)}</span>
+          </div>
         </div>
       )}
     </div>

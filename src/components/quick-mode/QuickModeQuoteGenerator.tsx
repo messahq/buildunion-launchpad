@@ -28,6 +28,7 @@ interface SignatureData {
   type: 'drawn' | 'typed';
   data: string;
   name: string;
+  signedAt?: string;
 }
 
 interface QuoteData {
