@@ -42,6 +42,7 @@ export interface BuProfile {
   phone: string | null;
   company_name: string | null;
   company_website: string | null;
+  company_logo_url: string | null;
   bio: string | null;
   hourly_rate: number | null;
   availability: string;

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBuProfile } from "@/hooks/useBuProfile";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
 import { RegionSelector } from "@/components/RegionSelector";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,7 @@ export function ProjectSummary({
 }: ProjectSummaryProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useBuProfile();
   const { formatCurrency, formatDate, calculateTax, config } = useRegionSettings();
   const [summary, setSummary] = useState<ProjectSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -546,7 +548,9 @@ export function ProjectSummary({
       status: summary?.status,
       createdAt: summary?.created_at ? formatDate(summary.created_at) : currentDate,
       regionShortName: config.shortName,
-      formatCurrency
+      formatCurrency,
+      companyLogoUrl: profile?.company_logo_url,
+      companyName: profile?.company_name
     };
   };
 

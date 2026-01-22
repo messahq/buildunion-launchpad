@@ -113,6 +113,8 @@ export const buildProjectSummaryHTML = (data: {
   createdAt?: string;
   regionShortName?: string;
   formatCurrency: (amount: number) => string;
+  companyLogoUrl?: string | null;
+  companyName?: string | null;
 }): string => {
   const {
     quoteNumber,
@@ -127,7 +129,9 @@ export const buildProjectSummaryHTML = (data: {
     status,
     createdAt,
     regionShortName,
-    formatCurrency
+    formatCurrency,
+    companyLogoUrl,
+    companyName
   } = data;
 
   // Build materials table rows with HTML escaping for user-controlled data
@@ -191,9 +195,14 @@ export const buildProjectSummaryHTML = (data: {
     </head>
     <body>
       <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h1 style="font-size: 24px; font-weight: 700; margin: 0;">🏗️ BuildUnion</h1>
-          <p style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Professional Construction Project Summary</p>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          ${companyLogoUrl ? `
+            <img src="${escapeHtml(companyLogoUrl)}" alt="Company Logo" style="height: 48px; width: auto; max-width: 120px; object-fit: contain; background: white; padding: 4px; border-radius: 6px;" />
+          ` : ''}
+          <div>
+            <h1 style="font-size: 24px; font-weight: 700; margin: 0;">${companyName ? escapeHtml(companyName) : '🏗️ BuildUnion'}</h1>
+            <p style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Professional Construction Project Summary</p>
+          </div>
         </div>
         <div style="text-align: right; background: rgba(255,255,255,0.2); padding: 12px 20px; border-radius: 8px;">
           <div style="font-size: 16px; font-weight: 700; letter-spacing: 1px;">${escapeHtml(quoteNumber)}</div>
