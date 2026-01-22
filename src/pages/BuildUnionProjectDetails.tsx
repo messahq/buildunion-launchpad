@@ -70,7 +70,8 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
-  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "stats">("ai");
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team">("ai");
+  const [showStatsPopup, setShowStatsPopup] = useState(false);
   
   // Tier access: Pro+ can access Blueprint Analysis
   const isPro = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
@@ -1059,24 +1060,77 @@ const BuildUnionProjectDetails = () => {
                 {!showBlueprintPanel && (
                   <CardContent className="p-4">
                     <div className="grid grid-cols-3 gap-3 mb-4">
-                      <div className="text-center p-3 bg-slate-50 rounded-lg">
+                      <button 
+                        onClick={() => { setShowBlueprintPanel(true); setBlueprintTab("documents"); }}
+                        className="text-center p-3 bg-slate-50 rounded-lg hover:bg-cyan-50 transition-colors cursor-pointer"
+                      >
                         <FileText className="w-5 h-5 text-cyan-500 mx-auto mb-1" />
                         <div className="text-lg font-bold text-slate-900">{documents.length}</div>
                         <div className="text-xs text-slate-500">Documents</div>
-                      </div>
-                      <div className="text-center p-3 bg-slate-50 rounded-lg">
+                      </button>
+                      <button 
+                        onClick={() => setShowStatsPopup(!showStatsPopup)}
+                        className="text-center p-3 bg-slate-50 rounded-lg hover:bg-cyan-50 transition-colors cursor-pointer"
+                      >
                         <Camera className="w-5 h-5 text-cyan-500 mx-auto mb-1" />
                         <div className="text-lg font-bold text-slate-900">{siteImageUrls.length}</div>
                         <div className="text-xs text-slate-500">Site Photos</div>
-                      </div>
-                      <div className="text-center p-3 bg-slate-50 rounded-lg">
+                      </button>
+                      <button 
+                        onClick={() => { setShowBlueprintPanel(true); setBlueprintTab("facts"); }}
+                        className="text-center p-3 bg-slate-50 rounded-lg hover:bg-cyan-50 transition-colors cursor-pointer"
+                      >
                         <Sparkles className="w-5 h-5 text-cyan-500 mx-auto mb-1" />
                         <div className="text-lg font-bold text-slate-900">
                           {projectSummary?.verified_facts ? (projectSummary.verified_facts as any[]).length : 0}
                         </div>
                         <div className="text-xs text-slate-500">Verified Facts</div>
-                      </div>
+                      </button>
                     </div>
+                    
+                    {/* Stats Popup */}
+                    {showStatsPopup && (
+                      <div className="mb-4 p-4 bg-white border border-cyan-200 rounded-lg shadow-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-slate-900 flex items-center gap-2">
+                            <Package className="w-4 h-4 text-cyan-500" />
+                            Project Stats
+                          </h4>
+                          <button onClick={() => setShowStatsPopup(false)} className="text-slate-400 hover:text-slate-600">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Documents</span>
+                            <span className="font-medium text-slate-900">{documents.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Site Photos</span>
+                            <span className="font-medium text-slate-900">{siteImageUrls.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Total Files</span>
+                            <span className="font-medium text-slate-900">{documents.length + siteImageUrls.length}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Total Size</span>
+                            <span className="font-medium text-slate-900">
+                              {documents.reduce((acc, d) => acc + (d.file_size || 0), 0) > 0 
+                                ? formatFileSize(documents.reduce((acc, d) => acc + (d.file_size || 0), 0))
+                                : 'No files'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Status</span>
+                            <Badge className={`text-xs ${getStatusColor(project.status)}`}>
+                              {project.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <Button 
                       className="w-full bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white gap-2"
                       onClick={() => setShowBlueprintPanel(true)}
@@ -1147,17 +1201,6 @@ const BuildUnionProjectDetails = () => {
                         >
                           <FileCheck className="w-4 h-4 inline mr-2" />
                           Facts
-                        </button>
-                        <button
-                          onClick={() => setBlueprintTab("stats")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                            blueprintTab === "stats" 
-                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
-                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          <Package className="w-4 h-4 inline mr-2" />
-                          Stats
                         </button>
                       </div>
                     </div>
@@ -1354,48 +1397,6 @@ const BuildUnionProjectDetails = () => {
                                 </Button>
                               </div>
                             )}
-                          </div>
-                        </div>
-                      )}
-
-                      {blueprintTab === "stats" && (
-                        <div className="p-4">
-                          <div className="space-y-4">
-                            <h4 className="font-medium text-slate-900 flex items-center gap-2">
-                              <Package className="w-4 h-4 text-cyan-500" />
-                              Project Stats
-                            </h4>
-                            
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
-                                <span className="text-sm text-slate-600">Documents</span>
-                                <span className="text-sm font-medium text-slate-900">{documents.length}</span>
-                              </div>
-                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
-                                <span className="text-sm text-slate-600">Site Photos</span>
-                                <span className="text-sm font-medium text-slate-900">{siteImageUrls.length}</span>
-                              </div>
-                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
-                                <span className="text-sm text-slate-600">Total Files</span>
-                                <span className="text-sm font-medium text-slate-900">{documents.length + siteImageUrls.length}</span>
-                              </div>
-                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
-                                <span className="text-sm text-slate-600">Total Size</span>
-                                <span className="text-sm font-medium text-slate-900">
-                                  {documents.reduce((acc, d) => acc + (d.file_size || 0), 0) > 0 
-                                    ? formatFileSize(documents.reduce((acc, d) => acc + (d.file_size || 0), 0))
-                                    : siteImageUrls.length > 0 
-                                      ? `${siteImageUrls.length} image${siteImageUrls.length !== 1 ? 's' : ''}`
-                                      : 'No files'}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
-                                <span className="text-sm text-slate-600">Status</span>
-                                <Badge className={`text-xs ${getStatusColor(project.status)}`}>
-                                  {project.status}
-                                </Badge>
-                              </div>
-                            </div>
                           </div>
                         </div>
                       )}
