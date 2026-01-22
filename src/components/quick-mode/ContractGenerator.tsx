@@ -165,13 +165,50 @@ const CONTRACT_TEMPLATES: ContractTemplate[] = [
   },
 ];
 
+interface ExistingContract {
+  id: string;
+  contract_number: string;
+  contract_date: string;
+  template_type: string;
+  contractor_name: string | null;
+  contractor_address: string | null;
+  contractor_phone: string | null;
+  contractor_email: string | null;
+  contractor_license: string | null;
+  client_name: string | null;
+  client_address: string | null;
+  client_phone: string | null;
+  client_email: string | null;
+  project_name: string | null;
+  project_address: string | null;
+  scope_of_work: string | null;
+  total_amount: number | null;
+  deposit_percentage: number | null;
+  deposit_amount: number | null;
+  payment_schedule: string | null;
+  start_date: string | null;
+  estimated_end_date: string | null;
+  working_days: string | null;
+  warranty_period: string | null;
+  change_order_policy: string | null;
+  cancellation_policy: string | null;
+  dispute_resolution: string | null;
+  additional_terms: string | null;
+  materials_included: boolean | null;
+  has_liability_insurance: boolean | null;
+  has_wsib: boolean | null;
+  client_signature: any | null;
+  contractor_signature: any | null;
+}
+
 interface ContractGeneratorProps {
   quoteData?: any;
   collectedData?: CollectedData | null;
+  existingContract?: ExistingContract | null;
   onContractGenerated?: (contractData: any) => void;
 }
 
-const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: ContractGeneratorProps) => {
+const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated }: ContractGeneratorProps) => {
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
@@ -284,8 +321,56 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
     fetchProfileForBranding();
   }, [user]);
 
-  // Load profile data
+// Load existing contract data for editing
   useEffect(() => {
+    if (existingContract) {
+      setContract({
+        contractNumber: existingContract.contract_number,
+        contractDate: existingContract.contract_date,
+        contractorName: existingContract.contractor_name || "",
+        contractorAddress: existingContract.contractor_address || "",
+        contractorPhone: existingContract.contractor_phone || "",
+        contractorEmail: existingContract.contractor_email || "",
+        contractorLicense: existingContract.contractor_license || "",
+        clientName: existingContract.client_name || "",
+        clientAddress: existingContract.client_address || "",
+        clientPhone: existingContract.client_phone || "",
+        clientEmail: existingContract.client_email || "",
+        projectName: existingContract.project_name || "",
+        projectAddress: existingContract.project_address || "",
+        projectDescription: "",
+        totalAmount: existingContract.total_amount || 0,
+        depositPercentage: existingContract.deposit_percentage || 50,
+        depositAmount: existingContract.deposit_amount || 0,
+        paymentSchedule: existingContract.payment_schedule || "50% deposit upon signing, 50% upon completion",
+        startDate: existingContract.start_date || "",
+        estimatedEndDate: existingContract.estimated_end_date || "",
+        workingDays: existingContract.working_days || "Monday to Friday, 8:00 AM - 5:00 PM",
+        scopeOfWork: existingContract.scope_of_work || "",
+        materialsIncluded: existingContract.materials_included ?? true,
+        warrantyPeriod: existingContract.warranty_period || "1 year",
+        changeOrderPolicy: existingContract.change_order_policy || "",
+        cancellationPolicy: existingContract.cancellation_policy || "",
+        disputeResolution: existingContract.dispute_resolution || "",
+        additionalTerms: existingContract.additional_terms || "",
+        hasLiabilityInsurance: existingContract.has_liability_insurance ?? true,
+        hasWSIB: existingContract.has_wsib ?? true,
+        licenseNumber: existingContract.contractor_license || "",
+      });
+      setSelectedTemplate((existingContract.template_type as ContractTemplateType) || "custom");
+      setSavedContractId(existingContract.id);
+      
+      // Load signatures if they exist
+      if (existingContract.client_signature) {
+        setClientSignature(existingContract.client_signature);
+      }
+      if (existingContract.contractor_signature) {
+        setContractorSignature(existingContract.contractor_signature);
+      }
+      return;
+    }
+    
+    // Load profile data for new contracts
     if (profile) {
       setContract(prev => ({
         ...prev,
@@ -309,7 +394,7 @@ const ContractGenerator = ({ quoteData, collectedData, onContractGenerated }: Co
           sum + (item.quantity * item.unitPrice), 0) || 0,
       }));
     }
-  }, [profile, user, quoteData]);
+  }, [existingContract, profile, user, quoteData]);
 
   // Pre-fill from collected synthesis data (dual-engine results)
   useEffect(() => {
