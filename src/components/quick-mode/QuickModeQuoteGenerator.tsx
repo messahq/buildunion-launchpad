@@ -342,7 +342,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
       <html>
       <head>
         <title>Quote ${quote.quoteNumber}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
@@ -658,20 +658,20 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
           <div class="signature-section">
             <div class="sig-box">
               <p><strong>Client Acceptance</strong></p>
-              ${clientSignature ? (
-                clientSignature.type === 'drawn' 
-                  ? `<img src="${clientSignature.data}" alt="Client Signature" style="max-height: 60px; margin: 8px 0;" />`
-                  : `<p style="font-family: 'Dancing Script', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">${clientSignature.data}</p>`
-              ) : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
+              ${clientSignature 
+                ? clientSignature.type === 'drawn' 
+                  ? '<img src="' + clientSignature.data + '" alt="Client Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
+                  : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + clientSignature.data + '</p>'
+                : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
               <p style="font-size: 11px; color: #666;">Signature & Date</p>
             </div>
             <div class="sig-box">
               <p><strong>Contractor Authorization</strong></p>
-              ${contractorSignature ? (
-                contractorSignature.type === 'drawn' 
-                  ? `<img src="${contractorSignature.data}" alt="Contractor Signature" style="max-height: 60px; margin: 8px 0;" />`
-                  : `<p style="font-family: 'Dancing Script', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">${contractorSignature.data}</p>`
-              ) : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
+              ${contractorSignature 
+                ? contractorSignature.type === 'drawn' 
+                  ? '<img src="' + contractorSignature.data + '" alt="Contractor Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
+                  : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + contractorSignature.data + '</p>'
+                : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
               <p style="font-size: 11px; color: #666;">Signature & Date</p>
             </div>
           </div>
