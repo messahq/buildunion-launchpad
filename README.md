@@ -71,3 +71,31 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Google Maps API Key Security
+
+The Team Map View feature uses a Google Maps API key stored securely in backend secrets. To protect your API key from unauthorized usage, configure the following in your [Google Cloud Console](https://console.cloud.google.com/):
+
+### HTTP Referrer Restrictions
+
+1. Go to **APIs & Services > Credentials**
+2. Click on your Maps API key
+3. Under **Application restrictions**, select **HTTP referrers (websites)**
+4. Add your allowed domains:
+   - `https://your-app.lovable.app/*`
+   - `https://your-custom-domain.com/*`
+   - `http://localhost:*/*` (for development only)
+
+### API Quotas & Limits
+
+1. Go to **APIs & Services > Quotas**
+2. Search for "Maps JavaScript API"
+3. Set daily request limits appropriate for your usage
+4. Consider setting per-user quotas to prevent abuse
+
+### Recommended Security Practices
+
+- **Never expose the API key in client-side code** - This app uses a secure backend function to retrieve the key
+- **Monitor usage** - Regularly check the Google Cloud Console for unexpected spikes
+- **Enable billing alerts** - Set up budget alerts to catch unauthorized usage early
+- **Rotate keys periodically** - Generate new keys and update secrets if you suspect compromise
