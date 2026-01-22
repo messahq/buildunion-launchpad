@@ -1,0 +1,220 @@
+import { useState, useRef, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Eraser, Pen, Type, Check } from "lucide-react";
+
+interface SignatureCaptureProps {
+  onSignatureChange: (signature: { type: 'drawn' | 'typed'; data: string; name: string } | null) => void;
+  label?: string;
+  placeholder?: string;
+}
+
+const SignatureCapture = ({ 
+  onSignatureChange, 
+  label = "Signature",
+  placeholder = "Type your full name"
+}: SignatureCaptureProps) => {
+  const [activeTab, setActiveTab] = useState<'draw' | 'type'>('type');
+  const [typedName, setTypedName] = useState("");
+  const [isDrawing, setIsDrawing] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hasDrawnSignature, setHasDrawnSignature] = useState(false);
+
+  // Initialize canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Set drawing style
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }, []);
+
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    
+    const rect = canvas.getBoundingClientRect();
+    
+    if ('touches' in e) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    }
+    
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+    
+    setIsDrawing(true);
+    const { x, y } = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+    
+    const { x, y } = getCoordinates(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    setHasDrawnSignature(true);
+  };
+
+  const stopDrawing = () => {
+    if (isDrawing && hasDrawnSignature) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        onSignatureChange({
+          type: 'drawn',
+          data: canvas.toDataURL('image/png'),
+          name: ''
+        });
+      }
+    }
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !canvas) return;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setHasDrawnSignature(false);
+    onSignatureChange(null);
+  };
+
+  const handleTypedNameChange = (name: string) => {
+    setTypedName(name);
+    if (name.trim()) {
+      onSignatureChange({
+        type: 'typed',
+        data: name,
+        name: name
+      });
+    } else {
+      onSignatureChange(null);
+    }
+  };
+
+  // Script fonts for typed signature
+  const scriptFonts = [
+    { name: 'Dancing Script', className: 'font-dancing' },
+    { name: 'Great Vibes', className: 'font-vibes' },
+    { name: 'Pacifico', className: 'font-pacifico' }
+  ];
+
+  return (
+    <div className="space-y-3">
+      <Label className="text-sm font-medium">{label}</Label>
+      
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'draw' | 'type')}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="type" className="gap-2">
+            <Type className="w-4 h-4" />
+            Type
+          </TabsTrigger>
+          <TabsTrigger value="draw" className="gap-2">
+            <Pen className="w-4 h-4" />
+            Draw
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="type" className="mt-3">
+          <div className="space-y-3">
+            <Input
+              placeholder={placeholder}
+              value={typedName}
+              onChange={(e) => handleTypedNameChange(e.target.value)}
+              className="text-lg"
+            />
+            {typedName && (
+              <div className="p-4 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/30">
+                <p className="text-xs text-muted-foreground mb-2">Signature preview:</p>
+                <div 
+                  className="text-3xl text-slate-800"
+                  style={{ fontFamily: "'Dancing Script', cursive" }}
+                >
+                  {typedName}
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="draw" className="mt-3">
+          <div className="space-y-3">
+            <div className="relative border-2 border-dashed border-muted-foreground/30 rounded-lg overflow-hidden bg-white">
+              <canvas
+                ref={canvasRef}
+                width={400}
+                height={150}
+                className="w-full touch-none cursor-crosshair"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+              />
+              {!hasDrawnSignature && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <p className="text-muted-foreground text-sm">Draw your signature here</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearCanvas}
+                className="gap-2"
+              >
+                <Eraser className="w-4 h-4" />
+                Clear
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Signature confirmation */}
+      {((activeTab === 'type' && typedName) || (activeTab === 'draw' && hasDrawnSignature)) && (
+        <div className="flex items-center gap-2 text-sm text-green-600">
+          <Check className="w-4 h-4" />
+          <span>Signature captured</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SignatureCapture;
