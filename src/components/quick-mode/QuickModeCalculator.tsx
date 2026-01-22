@@ -409,6 +409,15 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
   const calculate = () => {
     const result = selectedCalc.calculate(inputs);
     setResults(result);
+    
+    // Automatically save the result to summary
+    const savedItem = {
+      calcType: selectedCalc.name,
+      result: result,
+    };
+    setSavedResults(prev => [...prev, savedItem]);
+    onCalculatorComplete?.(savedItem);
+    toast.success(`${selectedCalc.name} calculated and added to summary!`);
   };
 
   const saveResult = () => {
