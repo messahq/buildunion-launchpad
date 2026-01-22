@@ -290,9 +290,15 @@ export const buildProjectSummaryHTML = (data: {
         </div>
       </div>
 
-      <div style="margin-top: 32px; padding: 20px; background: #1e293b; color: white; text-align: center;">
-        <p style="font-size: 12px; font-weight: 600; margin: 0;">BuildUnion - Professional Construction Management</p>
-        <p style="font-size: 10px; opacity: 0.8; margin-top: 4px;">Licensed & Insured • WSIB Covered</p>
+      <div style="margin-top: 32px; padding: 20px; background: #1e293b; color: white;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px;">
+          ${companyLogoUrl ? `
+            <img src="${escapeHtml(companyLogoUrl)}" alt="Company Logo" style="height: 32px; width: auto; max-width: 80px; object-fit: contain; background: white; padding: 3px; border-radius: 4px;" />
+          ` : ''}
+          <p style="font-size: 14px; font-weight: 600; margin: 0;">${companyName ? escapeHtml(companyName) : 'BuildUnion'}</p>
+        </div>
+        <p style="font-size: 10px; opacity: 0.8; margin: 0;">Licensed & Insured • WSIB Covered • Professional Construction Management</p>
+        <p style="font-size: 9px; opacity: 0.6; margin-top: 6px;">Generated with BuildUnion • Greater Toronto Area</p>
       </div>
     </body>
     </html>
