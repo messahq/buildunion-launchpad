@@ -345,3 +345,320 @@ export const buildProjectSummaryHTML = (data: {
     </html>
   `;
 };
+
+// Build the professional HTML template for contracts
+export const buildContractHTML = (data: {
+  contractNumber: string;
+  contractDate: string;
+  templateType: string;
+  contractorInfo: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    license?: string;
+  };
+  clientInfo: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+  };
+  projectInfo: {
+    name: string;
+    address: string;
+    description?: string;
+  };
+  financialTerms: {
+    totalAmount: number;
+    depositPercentage: number;
+    depositAmount: number;
+    paymentSchedule: string;
+  };
+  timeline: {
+    startDate: string;
+    estimatedEndDate: string;
+    workingDays: string;
+  };
+  terms: {
+    scopeOfWork: string;
+    warrantyPeriod: string;
+    materialsIncluded: boolean;
+    changeOrderPolicy: string;
+    cancellationPolicy: string;
+    disputeResolution: string;
+    additionalTerms?: string;
+    hasLiabilityInsurance: boolean;
+    hasWSIB: boolean;
+  };
+  signatures: {
+    client?: { type: 'drawn' | 'typed'; data: string; name: string; signedAt?: string } | null;
+    contractor?: { type: 'drawn' | 'typed'; data: string; name: string; signedAt?: string } | null;
+  };
+  branding: {
+    companyLogoUrl?: string | null;
+    companyName?: string | null;
+    companyPhone?: string | null;
+    companyEmail?: string | null;
+    companyWebsite?: string | null;
+  };
+  formatCurrency: (amount: number) => string;
+  regionName?: string;
+}): string => {
+  const {
+    contractNumber,
+    contractDate,
+    templateType,
+    contractorInfo,
+    clientInfo,
+    projectInfo,
+    financialTerms,
+    timeline,
+    terms,
+    signatures,
+    branding,
+    formatCurrency,
+    regionName
+  } = data;
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '_______________';
+    return new Date(dateStr).toLocaleDateString('en-CA', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const templateLabels: Record<string, string> = {
+    custom: 'Custom Contract',
+    residential: 'Residential Construction',
+    commercial: 'Commercial Construction',
+    renovation: 'Renovation Project'
+  };
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Construction Contract - ${escapeHtml(contractNumber)}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+          color: #1e293b; 
+          background: #fff;
+          line-height: 1.6;
+          font-size: 12px;
+        }
+        .header { 
+          background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); 
+          color: white; 
+          padding: 24px 40px; 
+        }
+        .header-content { display: flex; justify-content: space-between; align-items: flex-start; }
+        .brand { display: flex; align-items: center; gap: 16px; }
+        .brand-logo { height: 56px; width: auto; max-width: 140px; object-fit: contain; background: white; padding: 6px; border-radius: 8px; }
+        .brand-title { font-size: 22px; font-weight: 700; }
+        .brand-subtitle { font-size: 11px; opacity: 0.9; margin-top: 4px; }
+        .contract-badge { text-align: right; background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 8px; }
+        .contract-number { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+        .contract-date { font-size: 11px; opacity: 0.9; margin-top: 2px; }
+        .contact-bar { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.3); display: flex; gap: 24px; font-size: 11px; flex-wrap: wrap; }
+        .content { padding: 24px 40px; }
+        .section { margin-bottom: 24px; }
+        .section-title { font-size: 14px; font-weight: 700; color: #0e7490; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #0891b2; text-transform: uppercase; letter-spacing: 0.5px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .party-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+        .party-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 8px; }
+        .party-name { font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 6px; }
+        .party-detail { font-size: 11px; color: #64748b; margin-bottom: 2px; }
+        .highlight-box { background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); border: 1px solid #22d3ee; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+        .terms-list { margin-left: 20px; color: #475569; }
+        .terms-list li { margin-bottom: 10px; }
+        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+        .sig-box { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .sig-line { margin-top: 12px; padding-top: 8px; border-top: 1px dashed #94a3b8; }
+        .footer { margin-top: 40px; padding: 24px 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; }
+        .footer-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+        .footer-brand { display: flex; align-items: center; gap: 12px; }
+        .footer-logo { height: 40px; width: auto; border-radius: 6px; background: white; padding: 4px; }
+        .footer-legal { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; font-size: 9px; opacity: 0.6; }
+      </style>
+    </head>
+    <body>
+      <!-- Header with Branding -->
+      <div class="header">
+        <div class="header-content">
+          <div class="brand">
+            ${branding.companyLogoUrl ? `<img src="${escapeHtml(branding.companyLogoUrl)}" alt="Company Logo" class="brand-logo" />` : ''}
+            <div>
+              <div class="brand-title">${branding.companyName ? escapeHtml(branding.companyName) : '🏗️ BuildUnion'}</div>
+              <div class="brand-subtitle">${escapeHtml(templateLabels[templateType] || 'Construction Contract')}</div>
+            </div>
+          </div>
+          <div class="contract-badge">
+            <div class="contract-number">${escapeHtml(contractNumber)}</div>
+            <div class="contract-date">Date: ${formatDate(contractDate)}</div>
+          </div>
+        </div>
+        ${(branding.companyPhone || branding.companyEmail || branding.companyWebsite) ? `
+          <div class="contact-bar">
+            ${branding.companyPhone ? `<span>📞 ${escapeHtml(branding.companyPhone)}</span>` : ''}
+            ${branding.companyEmail ? `<span>✉️ ${escapeHtml(branding.companyEmail)}</span>` : ''}
+            ${branding.companyWebsite ? `<span>🌐 ${escapeHtml(branding.companyWebsite)}</span>` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="content">
+        <!-- Parties -->
+        <div class="section">
+          <div class="section-title">👥 Parties to This Agreement</div>
+          <div class="grid-2">
+            <div class="party-box">
+              <div class="party-label">🔨 Contractor</div>
+              <div class="party-name">${escapeHtml(contractorInfo.name) || '_______________'}</div>
+              <div class="party-detail">${escapeHtml(contractorInfo.address) || 'Address: _______________'}</div>
+              <div class="party-detail">📞 ${escapeHtml(contractorInfo.phone) || '_______________'}</div>
+              <div class="party-detail">✉️ ${escapeHtml(contractorInfo.email) || '_______________'}</div>
+              ${contractorInfo.license ? `<div class="party-detail">License #: ${escapeHtml(contractorInfo.license)}</div>` : ''}
+            </div>
+            <div class="party-box">
+              <div class="party-label">👤 Client</div>
+              <div class="party-name">${escapeHtml(clientInfo.name) || '_______________'}</div>
+              <div class="party-detail">${escapeHtml(clientInfo.address) || 'Address: _______________'}</div>
+              <div class="party-detail">📞 ${escapeHtml(clientInfo.phone) || '_______________'}</div>
+              <div class="party-detail">✉️ ${escapeHtml(clientInfo.email) || '_______________'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Details -->
+        <div class="section">
+          <div class="section-title">📍 Project Details</div>
+          <p><strong>Project Name:</strong> ${escapeHtml(projectInfo.name) || '_______________'}</p>
+          <p><strong>Location:</strong> ${escapeHtml(projectInfo.address) || '_______________'}</p>
+          ${projectInfo.description ? `<p style="margin-top: 8px;"><strong>Description:</strong> ${escapeHtml(projectInfo.description)}</p>` : ''}
+        </div>
+
+        <!-- Scope of Work -->
+        ${terms.scopeOfWork ? `
+        <div class="section">
+          <div class="section-title">📋 Scope of Work</div>
+          <p style="white-space: pre-line;">${escapeHtml(terms.scopeOfWork)}</p>
+        </div>
+        ` : ''}
+
+        <!-- Financial Terms -->
+        <div class="section">
+          <div class="section-title">💰 Financial Terms</div>
+          <div class="highlight-box">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>Total Contract Amount:</span>
+              <strong style="font-size: 18px; color: #0e7490;">${formatCurrency(financialTerms.totalAmount)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>Deposit Required (${financialTerms.depositPercentage}%):</span>
+              <strong>${formatCurrency(financialTerms.depositAmount)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Balance Due Upon Completion:</span>
+              <strong>${formatCurrency(financialTerms.totalAmount - financialTerms.depositAmount)}</strong>
+            </div>
+          </div>
+          <p><strong>Payment Schedule:</strong> ${escapeHtml(financialTerms.paymentSchedule)}</p>
+        </div>
+
+        <!-- Timeline -->
+        <div class="section">
+          <div class="section-title">📅 Project Timeline</div>
+          <div class="grid-2">
+            <p><strong>Start Date:</strong> ${formatDate(timeline.startDate)}</p>
+            <p><strong>Estimated Completion:</strong> ${formatDate(timeline.estimatedEndDate)}</p>
+          </div>
+          <p style="margin-top: 8px;"><strong>Working Hours:</strong> ${escapeHtml(timeline.workingDays)}</p>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="section">
+          <div class="section-title">📜 Terms & Conditions</div>
+          <ol class="terms-list">
+            <li><strong>Warranty:</strong> The Contractor warrants all workmanship for a period of ${escapeHtml(terms.warrantyPeriod)} from the date of completion.</li>
+            <li><strong>Materials:</strong> ${terms.materialsIncluded ? 'All materials are included in the contract price unless otherwise specified.' : 'Materials are NOT included and will be billed separately.'}</li>
+            <li><strong>Change Orders:</strong> ${escapeHtml(terms.changeOrderPolicy)}</li>
+            <li><strong>Cancellation:</strong> ${escapeHtml(terms.cancellationPolicy)}</li>
+            <li><strong>Dispute Resolution:</strong> ${escapeHtml(terms.disputeResolution)}</li>
+            ${terms.hasLiabilityInsurance ? '<li><strong>Insurance:</strong> Contractor maintains comprehensive general liability insurance.</li>' : ''}
+            ${terms.hasWSIB ? '<li><strong>WSIB:</strong> Contractor maintains valid WSIB coverage for all workers.</li>' : ''}
+          </ol>
+        </div>
+
+        ${terms.additionalTerms ? `
+        <div class="section">
+          <div class="section-title">📋 Additional Terms</div>
+          <p style="white-space: pre-line;">${escapeHtml(terms.additionalTerms)}</p>
+        </div>
+        ` : ''}
+
+        <!-- Signatures -->
+        <div class="signature-section">
+          <div class="sig-box">
+            <p style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">👤 Client Acceptance</p>
+            <p style="font-size: 10px; color: #64748b; margin-bottom: 12px;">By signing below, the Client agrees to all terms and conditions.</p>
+            ${signatures.client 
+              ? signatures.client.type === 'drawn'
+                ? `<img src="${signatures.client.data}" alt="Client Signature" style="max-height: 60px; margin: 8px 0; display: block;" />`
+                : `<p style="font-family: 'Dancing Script', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">${escapeHtml(signatures.client.data)}</p>`
+              : '<div style="height: 50px; border-bottom: 2px solid #1e293b; margin: 8px 0;"></div>'}
+            <div class="sig-line">
+              <p style="font-size: 11px; color: #64748b;">
+                <strong>Print Name:</strong> ${escapeHtml(clientInfo.name) || '_______________'}<br/>
+                <strong>Date:</strong> ${signatures.client?.signedAt ? new Date(signatures.client.signedAt).toLocaleDateString('en-CA') : '_______________'}
+              </p>
+            </div>
+          </div>
+          <div class="sig-box">
+            <p style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">🔨 Contractor Authorization</p>
+            <p style="font-size: 10px; color: #64748b; margin-bottom: 12px;">By signing below, the Contractor agrees to perform all work as specified.</p>
+            ${signatures.contractor 
+              ? signatures.contractor.type === 'drawn'
+                ? `<img src="${signatures.contractor.data}" alt="Contractor Signature" style="max-height: 60px; margin: 8px 0; display: block;" />`
+                : `<p style="font-family: 'Dancing Script', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">${escapeHtml(signatures.contractor.data)}</p>`
+              : '<div style="height: 50px; border-bottom: 2px solid #1e293b; margin: 8px 0;"></div>'}
+            <div class="sig-line">
+              <p style="font-size: 11px; color: #64748b;">
+                <strong>Print Name:</strong> ${escapeHtml(contractorInfo.name) || '_______________'}<br/>
+                <strong>Date:</strong> ${signatures.contractor?.signedAt ? new Date(signatures.contractor.signedAt).toLocaleDateString('en-CA') : '_______________'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-content">
+          <div class="footer-brand">
+            ${branding.companyLogoUrl ? `<img src="${escapeHtml(branding.companyLogoUrl)}" alt="Logo" class="footer-logo" />` : ''}
+            <div>
+              <p style="font-weight: 600; font-size: 14px; margin: 0;">${branding.companyName ? escapeHtml(branding.companyName) : 'BuildUnion'}</p>
+              <p style="font-size: 10px; opacity: 0.8; margin: 0;">Licensed & Insured • WSIB Covered</p>
+            </div>
+          </div>
+          <div style="text-align: right; font-size: 11px;">
+            ${branding.companyPhone ? `<p style="margin: 0 0 4px 0; opacity: 0.9;">📞 ${escapeHtml(branding.companyPhone)}</p>` : ''}
+            ${branding.companyEmail ? `<p style="margin: 0 0 4px 0; opacity: 0.9;">✉️ ${escapeHtml(branding.companyEmail)}</p>` : ''}
+            ${branding.companyWebsite ? `<p style="margin: 0; opacity: 0.9;">🌐 ${escapeHtml(branding.companyWebsite)}</p>` : ''}
+          </div>
+        </div>
+        <div class="footer-legal">
+          ${regionName ? `Governed by the laws of ${escapeHtml(regionName)}, Canada • ` : ''}Generated with BuildUnion • Professional Construction Management
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
