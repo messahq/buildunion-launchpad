@@ -330,6 +330,10 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   };
 
   const generatePDF = () => {
+    // Always use current date for issued date
+    const currentDate = new Date().toISOString().split("T")[0];
+    const validUntilDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    
     // Create a printable version
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -575,8 +579,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
           <div class="quote-badge">
             <div class="number">QUOTE #${quote.quoteNumber}</div>
             <div class="dates">
-              Issued: ${new Date(quote.quoteDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
-              Valid Until: ${new Date(quote.validUntil).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+              Issued: ${new Date(currentDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
+              Valid Until: ${new Date(validUntilDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
             </div>
           </div>
         </div>
