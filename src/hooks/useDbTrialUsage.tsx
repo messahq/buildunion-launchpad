@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 
 // Feature-specific trial limits
 const TRIAL_LIMITS: Record<string, number> = {
@@ -21,6 +22,9 @@ interface TrialData {
 
 export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
   const { user } = useAuth();
+  const { subscription } = useSubscription();
+  const isPremiumUser = subscription?.subscribed === true;
+  
   const defaultMax = getDefaultMaxTrials(feature);
   const [trialData, setTrialData] = useState<TrialData>({
     usedCount: 0,
@@ -141,15 +145,20 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
     }
   }, [user, feature, defaultMax]);
 
+  // Premium users have unlimited access
+  const effectiveRemainingTrials = isPremiumUser ? Infinity : remainingTrials;
+  const effectiveHasTrialsRemaining = isPremiumUser ? true : hasTrialsRemaining;
+
   return {
     usedCount: trialData.usedCount,
-    remainingTrials,
-    hasTrialsRemaining,
-    maxTrials: trialData.maxAllowed,
+    remainingTrials: effectiveRemainingTrials,
+    hasTrialsRemaining: effectiveHasTrialsRemaining,
+    maxTrials: isPremiumUser ? Infinity : trialData.maxAllowed,
     useOneTrial,
     resetTrials,
     loading,
     isAuthenticated: !!user,
+    isPremiumUser,
   };
 };
 
