@@ -17,7 +17,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
-import SignatureCapture from "@/components/SignatureCapture";
+import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
@@ -36,16 +36,8 @@ import {
   PenLine,
   CheckCircle2,
   Clock,
-  Send,
-  Share2
+  Send
 } from "lucide-react";
-
-interface SignatureData {
-  type: 'drawn' | 'typed';
-  data: string;
-  name: string;
-  signedAt?: string;
-}
 
 interface ContractGeneratorProps {
   quoteData?: any;
