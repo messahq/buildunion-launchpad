@@ -276,7 +276,7 @@ const BuildUnionQuickMode = () => {
                   <span className="text-sm font-medium text-amber-600 uppercase tracking-wide">Quick Mode</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-                  Fast Estimates for Small Jobs
+                  Quick Estimates & Quotes
                 </h1>
                 <p className="text-muted-foreground max-w-xl">
                   No blueprints? No problem. Get instant material estimates, use project templates, 
@@ -396,7 +396,7 @@ const BuildUnionQuickMode = () => {
                 <span className="hidden sm:inline">Calculator</span>
                 <span className="sm:hidden">Calc</span>
                 {collectedData.calculatorResults.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{collectedData.calculatorResults.length}</Badge>
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">✓</Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger 
