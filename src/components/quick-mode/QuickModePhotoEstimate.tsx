@@ -186,17 +186,17 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
     <>
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Upload Section */}
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Camera className="w-5 h-5 text-amber-500" />
-            Photo Upload
+            Upload Photos & Files
           </CardTitle>
-          <CardDescription>
-            Take a photo of the work area and our dual-engine AI will estimate materials
+          <CardDescription className="text-sm leading-relaxed">
+            Upload blueprints, site photos, or floor plans. Our dual-engine AI will analyze and estimate materials.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           {/* Image Preview or Upload Zone */}
           {selectedImage ? (
             <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted">
@@ -222,32 +222,32 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
               <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-4 group-hover:bg-amber-200 transition-colors">
                 <ImageIcon className="w-8 h-8 text-amber-600" />
               </div>
-              <p className="text-foreground font-medium mb-1">Drop photo here or click to upload</p>
-              <p className="text-sm text-muted-foreground">JPG, PNG up to 10MB</p>
+              <p className="text-foreground font-medium mb-1">Drop files here or click to upload</p>
+              <p className="text-sm text-muted-foreground">JPG, PNG, PDF up to 10MB</p>
             </div>
           )}
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,application/pdf"
             capture="environment"
             onChange={handleImageSelect}
             className="hidden"
           />
 
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-11"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Upload Photo
+              Upload Photos & Files
             </Button>
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-11"
               onClick={() => {
                 if (fileInputRef.current) {
                   fileInputRef.current.setAttribute("capture", "environment");
@@ -262,38 +262,55 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Describe the work (optional)</Label>
+            <Label htmlFor="description" className="text-sm font-medium">
+              Describe the work (optional)
+            </Label>
             <Textarea
               id="description"
               placeholder="e.g., I want to paint this room, approx. 150 sq ft (or 14 m²)..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
+              className="resize-none text-sm"
             />
           </div>
 
-          {/* Trial indicator for non-premium users */}
-          {isAuthenticated && !isPremium && (
-            <div className="p-3 bg-muted/50 rounded-lg border border-border">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">AI Estimates remaining:</span>
+          {/* Tier-based analysis info */}
+          <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">Analysis Depth</span>
+              {isPremium ? (
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs gap-1">
+                  <Crown className="w-3 h-3" />
+                  Deep Analysis
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-xs">
+                  Standard
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {isPremium 
+                ? "Pro tier: Full dual-engine analysis with detailed material breakdown, structural insights, and unlimited estimates."
+                : "Free tier: Basic analysis with essential material estimates. Upgrade for deeper insights."
+              }
+            </p>
+            {isAuthenticated && !isPremium && (
+              <div className="flex items-center justify-between pt-1 border-t border-border">
+                <span className="text-xs text-muted-foreground">AI Estimates remaining:</span>
                 <Badge variant={hasTrialsRemaining ? "secondary" : "destructive"} className="text-xs">
                   {remainingTrials}/{maxTrials}
                 </Badge>
               </div>
-              {!hasTrialsRemaining && (
-                <p className="text-xs text-destructive mt-2">
-                  Upgrade to Pro for unlimited AI estimates
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Analyze Button */}
           <Button
             onClick={analyzePhoto}
             disabled={!selectedImage || isAnalyzing || (!isPremium && isAuthenticated && !hasTrialsRemaining)}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+            className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-medium text-base"
           >
             {isAnalyzing ? (
               <>
@@ -314,35 +331,31 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
           </Button>
 
           {/* Dual Engine Info */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Eye className="w-3 h-3" />
-              <span>Gemini Pro (Visual)</span>
-              <span>+</span>
-              <Brain className="w-3 h-3" />
-              <span>GPT-5 (Estimation)</span>
+          <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-cyan-600" />
+              <span>Gemini Pro</span>
             </div>
-            {isPremium && (
-              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs gap-1">
-                <Crown className="w-3 h-3" />
-                Unlimited
-              </Badge>
-            )}
+            <span className="text-muted-foreground/50">+</span>
+            <div className="flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5 text-green-600" />
+              <span>GPT-5</span>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Results Section */}
-      <Card className="border-border">
-        <CardHeader>
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Sparkles className="w-5 h-5 text-amber-500" />
                 AI Estimate
               </CardTitle>
-              <CardDescription>
-                {result ? "Material list and labor estimate based on your photo" : "Upload a photo to get started"}
+              <CardDescription className="text-sm leading-relaxed">
+                {result ? "Material list and analysis based on your upload" : "Upload photos or files to get started"}
               </CardDescription>
             </div>
             {getVerificationBadge()}
@@ -355,8 +368,8 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
                 <ImageIcon className="w-8 h-8 text-muted-foreground" />
               </div>
               <h4 className="font-medium text-foreground mb-2">No estimate yet</h4>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Upload a photo of your work area and describe the job to get AI-powered material estimates
+              <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+                Upload a photo or blueprint of your work area and describe the job to get AI-powered material estimates
               </p>
             </div>
           ) : (
