@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate, ChevronDown, ChevronUp } from "lucide-react";
+import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate, ChevronDown, ChevronUp, PenLine } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { useRegionSettings } from "@/hooks/useRegionSettings";
 import { RegionSelector } from "@/components/RegionSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import SignatureCapture from "@/components/SignatureCapture";
 
 interface LineItem {
   id: string;
@@ -98,6 +99,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
     companyWebsite?: string | null;
     phone?: string | null;
   } | null>(null);
+  const [clientSignature, setClientSignature] = useState<{ type: 'drawn' | 'typed'; data: string; name: string } | null>(null);
+  const [contractorSignature, setContractorSignature] = useState<{ type: 'drawn' | 'typed'; data: string; name: string } | null>(null);
   const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
   const { user } = useAuth();
 
@@ -655,11 +658,21 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
           <div class="signature-section">
             <div class="sig-box">
               <p><strong>Client Acceptance</strong></p>
-              <p>Signature & Date</p>
+              ${clientSignature ? (
+                clientSignature.type === 'drawn' 
+                  ? `<img src="${clientSignature.data}" alt="Client Signature" style="max-height: 60px; margin: 8px 0;" />`
+                  : `<p style="font-family: 'Dancing Script', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">${clientSignature.data}</p>`
+              ) : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
+              <p style="font-size: 11px; color: #666;">Signature & Date</p>
             </div>
             <div class="sig-box">
               <p><strong>Contractor Authorization</strong></p>
-              <p>Signature & Date</p>
+              ${contractorSignature ? (
+                contractorSignature.type === 'drawn' 
+                  ? `<img src="${contractorSignature.data}" alt="Contractor Signature" style="max-height: 60px; margin: 8px 0;" />`
+                  : `<p style="font-family: 'Dancing Script', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">${contractorSignature.data}</p>`
+              ) : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
+              <p style="font-size: 11px; color: #666;">Signature & Date</p>
             </div>
           </div>
 
@@ -1093,6 +1106,32 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                   placeholder="Any additional terms or notes..."
                   rows={3}
                 />
+              </div>
+
+              <Separator />
+
+              {/* Signature Capture Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <PenLine className="w-5 h-5 text-amber-500" />
+                  <h4 className="font-semibold text-foreground">Digital Signatures</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Capture signatures for the quote. You can type your name or draw your signature.
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <SignatureCapture
+                    label="Client Signature"
+                    placeholder="Client's full name"
+                    onSignatureChange={setClientSignature}
+                  />
+                  <SignatureCapture
+                    label="Contractor Signature"
+                    placeholder="Your full name"
+                    onSignatureChange={setContractorSignature}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
