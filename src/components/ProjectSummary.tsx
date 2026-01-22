@@ -834,6 +834,16 @@ export function ProjectSummary({
         </Alert>
       )}
 
+      {/* Data Source Info Alert */}
+      <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <Sparkles className="h-5 w-5 text-blue-600" />
+        <AlertTitle className="text-blue-800">AI Estimated Data</AlertTitle>
+        <AlertDescription className="text-blue-700">
+          The data shown below is estimated based on your uploaded documents and photos. 
+          <strong> You can edit any values</strong> by clicking the Edit button above before saving to your project.
+        </AlertDescription>
+      </Alert>
+
       {/* Source Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-blue-200 bg-blue-50/50">
@@ -858,7 +868,7 @@ export function ProjectSummary({
             <div>
               <p className="text-xs text-green-600 font-medium">Calculator</p>
               <p className="font-bold text-green-800">
-                {(summary.calculator_results as any[])?.length || 0} calculations
+                {(summary.calculator_results as any[])?.length || calculatorResults?.length || 0} calculations
               </p>
             </div>
           </CardContent>
@@ -872,7 +882,7 @@ export function ProjectSummary({
             <div>
               <p className="text-xs text-cyan-600 font-medium">Template Items</p>
               <p className="font-bold text-cyan-800">
-                {(summary.template_items as any[])?.length || 0} items
+                {(summary.template_items as any[])?.length || templateItems?.length || 0} items
               </p>
             </div>
           </CardContent>
