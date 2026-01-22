@@ -220,17 +220,20 @@ const ProjectList = () => {
 
   if (projects.length === 0) {
     return (
-      <Card className="border-border bg-card">
-        <CardContent className="py-12 text-center">
-          <Folder className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No projects yet</h3>
-          <p className="text-muted-foreground mb-6">Start your first project and let M.E.S.S.A. analyze your documents.</p>
-          <Button onClick={() => setShowNewProjectModal(true)} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 gap-2">
-            <Plus className="h-4 w-4" />
-            New Project
-          </Button>
-        </CardContent>
-      </Card>
+      <>
+        <Card className="border-border bg-card">
+          <CardContent className="py-12 text-center">
+            <Folder className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No projects yet</h3>
+            <p className="text-muted-foreground mb-6">Start your first project and let M.E.S.S.A. analyze your documents.</p>
+            <Button onClick={() => setShowNewProjectModal(true)} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 gap-2">
+              <Plus className="h-4 w-4" />
+              New Project
+            </Button>
+          </CardContent>
+        </Card>
+        <NewProjectModal open={showNewProjectModal} onOpenChange={setShowNewProjectModal} />
+      </>
     );
   }
 
