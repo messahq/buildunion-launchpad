@@ -531,6 +531,10 @@ export function ProjectSummary({
     const matTotal = editedItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
     const taxRes = calculateTax(matTotal);
 
+    // Extract signatures from quoteData if available
+    const clientSignature = quoteData?.clientSignature || null;
+    const contractorSignature = quoteData?.contractorSignature || null;
+
     return {
       quoteNumber,
       currentDate,
@@ -553,7 +557,9 @@ export function ProjectSummary({
       companyName: profile?.company_name,
       companyPhone: profile?.phone,
       companyEmail: user?.email,
-      companyWebsite: profile?.company_website
+      companyWebsite: profile?.company_website,
+      clientSignature,
+      contractorSignature
     };
   };
 
