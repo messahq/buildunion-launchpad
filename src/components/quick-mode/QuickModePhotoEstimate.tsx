@@ -342,14 +342,24 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
                 AI Estimate
               </CardTitle>
               <CardDescription>
-                Material list and labor estimate based on your photo
+                {result ? "Material list and labor estimate based on your photo" : "Upload a photo to get started"}
               </CardDescription>
             </div>
             {getVerificationBadge()}
           </div>
         </CardHeader>
         <CardContent>
-          {result ? (
+          {!result ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <ImageIcon className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h4 className="font-medium text-foreground mb-2">No estimate yet</h4>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Upload a photo of your work area and describe the job to get AI-powered material estimates
+              </p>
+            </div>
+          ) : (
             <div className="space-y-6">
               {/* Detected Area */}
               {result.area && (
@@ -500,15 +510,6 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
                 Continue to Templates
                 <ArrowRight className="w-4 h-4" />
               </Button>
-            </div>
-          ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Sparkles className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">
-                Upload a photo and click "Get AI Estimate" to see dual-engine analysis
-              </p>
             </div>
           )}
         </CardContent>
