@@ -92,8 +92,44 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   const [activeSection, setActiveSection] = useState<"company" | "client" | "items" | "preview">("company");
   const [isSaving, setIsSaving] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
+  const [profileData, setProfileData] = useState<{
+    companyLogoUrl?: string | null;
+    companyName?: string | null;
+    companyWebsite?: string | null;
+    phone?: string | null;
+  } | null>(null);
   const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
   const { user } = useAuth();
+
+  // Fetch profile data for branding
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('bu_profiles')
+        .select('company_logo_url, company_name, company_website, phone')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setProfileData({
+          companyLogoUrl: data.company_logo_url,
+          companyName: data.company_name,
+          companyWebsite: data.company_website,
+          phone: data.phone
+        });
+        
+        // Pre-fill company info from profile
+        setQuote(prev => ({
+          ...prev,
+          companyName: data.company_name || prev.companyName,
+          companyPhone: data.phone || prev.companyPhone,
+          companyEmail: user.email || prev.companyEmail
+        }));
+      }
+    };
+    fetchProfile();
+  }, [user]);
 
   // Pre-fill line items from collected data
   useEffect(() => {
@@ -519,10 +555,19 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
       </head>
       <body>
         <div class="header-bar">
-          <div class="company-brand">
-            <h1>${quote.companyName || "Your Company Name"}</h1>
-            <p>${quote.companyAddress || "Address"}</p>
-            <p>${quote.companyPhone || "Phone"} • ${quote.companyEmail || "Email"}</p>
+          <div class="company-brand" style="display: flex; align-items: center; gap: 16px;">
+            ${profileData?.companyLogoUrl ? `
+              <img src="${profileData.companyLogoUrl}" alt="Company Logo" style="height: 60px; width: auto; border-radius: 8px; background: white; padding: 4px;" />
+            ` : ''}
+            <div>
+              <h1>${quote.companyName || profileData?.companyName || "Your Company Name"}</h1>
+              <p>${quote.companyAddress || "Address"}</p>
+              <p style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                ${quote.companyPhone || profileData?.phone ? `<span>📞 ${quote.companyPhone || profileData?.phone}</span>` : ''}
+                ${quote.companyEmail || user?.email ? `<span>✉️ ${quote.companyEmail || user?.email}</span>` : ''}
+                ${profileData?.companyWebsite ? `<span>🌐 ${profileData.companyWebsite}</span>` : ''}
+              </p>
+            </div>
           </div>
           <div class="quote-badge">
             <div class="number">QUOTE #${quote.quoteNumber}</div>
@@ -618,9 +663,24 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
             </div>
           </div>
 
-          <div class="footer">
-            <p>Thank you for your business. This quote was generated using BuildUnion.</p>
-            <p>${config.legalNote} • ${config.footer}</p>
+          <div class="footer" style="margin-top: 48px; padding: 24px 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              ${profileData?.companyLogoUrl ? `
+                <img src="${profileData.companyLogoUrl}" alt="Logo" style="height: 40px; width: auto; border-radius: 6px; background: white; padding: 3px;" />
+              ` : ''}
+              <div>
+                <p style="font-weight: 600; font-size: 14px; margin: 0;">${quote.companyName || profileData?.companyName || 'Your Company'}</p>
+                <p style="font-size: 11px; opacity: 0.8; margin: 0;">Licensed & Insured • WSIB Covered</p>
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 12px;">
+              <p style="margin: 0; display: flex; gap: 16px; justify-content: flex-end; flex-wrap: wrap;">
+                ${quote.companyPhone || profileData?.phone ? `<span>📞 ${quote.companyPhone || profileData?.phone}</span>` : ''}
+                ${quote.companyEmail || user?.email ? `<span>✉️ ${quote.companyEmail || user?.email}</span>` : ''}
+              </p>
+              ${profileData?.companyWebsite ? `<p style="margin: 4px 0 0 0; opacity: 0.8;">🌐 ${profileData.companyWebsite}</p>` : ''}
+              <p style="margin: 8px 0 0 0; font-size: 10px; opacity: 0.6;">${config.legalNote} • ${config.footer}</p>
+            </div>
           </div>
         </div>
       </body>
