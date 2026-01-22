@@ -17,12 +17,13 @@ import {
   AlertCircle, Sparkles,
   Pencil, X, Check,
   Users, Image, FileCheck, Briefcase, MapPin,
-  Camera, DollarSign, Package
+  Camera, DollarSign, Package, Brain, Crown, Lock
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { TRADE_LABELS, ConstructionTrade } from "@/hooks/useBuProfile";
 
@@ -61,12 +62,18 @@ const BuildUnionProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { subscription } = useSubscription();
   const [project, setProject] = useState<Project | null>(null);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([]);
   const [siteImageUrls, setSiteImageUrls] = useState<string[]>([]);
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
+  
+  // Tier access: Pro+ can access Blueprint Analysis
+  const isPro = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
+  const isPremium = subscription.tier === "premium" || subscription.tier === "enterprise";
   
   // Edit mode
   const [isEditing, setIsEditing] = useState(false);
@@ -1001,17 +1008,161 @@ const BuildUnionProjectDetails = () => {
             </Card>
           </div>
 
-          {/* M.E.S.S.A. Analysis Column */}
-          <ProjectAIPanel
-            projectId={project.id}
-            projectName={project.name}
-            userId={user.id}
-            documents={documents}
-            siteImages={project.site_images || []}
-            projectSummary={projectSummary}
-            isOwner={project.user_id === user.id}
-            isPremium={false}
-          />
+          {/* Blueprint Analysis / M.E.S.S.A. Column - Tier Gated */}
+          <div className="space-y-6">
+            {/* Tier Access Card */}
+            {!isPro ? (
+              <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/30">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                      <Brain className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        Blueprint Analysis
+                        <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white gap-1">
+                          <Crown className="w-3 h-3" />
+                          Pro
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>M.E.S.S.A. dual-engine AI analysis</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <p className="text-sm text-slate-600">
+                      Unlock advanced blueprint analysis with our dual-engine AI system. Upload PDF blueprints and documents for comprehensive project intelligence.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+                        <Brain className="w-4 h-4 text-cyan-500" />
+                        <span>Dual-Engine AI</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+                        <FileText className="w-4 h-4 text-cyan-500" />
+                        <span>PDF Blueprints</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+                        <FileCheck className="w-4 h-4 text-cyan-500" />
+                        <span>Verified Facts</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+                        <Sparkles className="w-4 h-4 text-cyan-500" />
+                        <span>Smart Analysis</span>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => navigate("/buildunion/pricing")}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white gap-2"
+                    >
+                      <Crown className="w-4 h-4" />
+                      Upgrade to Pro
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Blueprint Panel Toggle Button when collapsed */}
+                {!showBlueprintPanel && (
+                  <Card 
+                    className="border-cyan-200 bg-gradient-to-br from-white to-cyan-50/50 cursor-pointer hover:shadow-md transition-all"
+                    onClick={() => setShowBlueprintPanel(true)}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                          <Brain className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-slate-900">Blueprint Analysis</h3>
+                            <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs gap-1">
+                              <Crown className="w-3 h-3" />
+                              {isPremium ? "Premium" : "Pro"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            M.E.S.S.A. dual-engine AI • Click to expand
+                          </p>
+                        </div>
+                        <Button variant="outline" className="gap-2 border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+                          <Brain className="w-4 h-4" />
+                          Open
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Full M.E.S.S.A. Panel when expanded */}
+                {showBlueprintPanel && (
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowBlueprintPanel(false)}
+                      className="absolute -top-2 -right-2 z-10 h-8 w-8 p-0 rounded-full bg-slate-100 hover:bg-slate-200"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <ProjectAIPanel
+                      projectId={project.id}
+                      projectName={project.name}
+                      userId={user.id}
+                      documents={documents}
+                      siteImages={project.site_images || []}
+                      projectSummary={projectSummary}
+                      isOwner={project.user_id === user.id}
+                      isPremium={isPremium}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Premium Features Preview */}
+            {isPro && !isPremium && (
+              <Card className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Crown className="w-5 h-5 text-amber-500" />
+                    <span className="font-medium text-slate-800">Premium Features</span>
+                    <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">Coming with Premium</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                    <div className="flex items-center gap-1.5">
+                      <Lock className="w-3 h-3 text-amber-400" />
+                      Send Summary to Team
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Lock className="w-3 h-3 text-amber-400" />
+                      Generate Project Report
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Lock className="w-3 h-3 text-amber-400" />
+                      Conflict Visualization
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Lock className="w-3 h-3 text-amber-400" />
+                      Team Map View
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/buildunion/pricing")}
+                    className="w-full mt-3 border-amber-300 text-amber-700 hover:bg-amber-50 gap-2"
+                  >
+                    <Crown className="w-4 h-4" />
+                    Upgrade to Premium
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </main>
