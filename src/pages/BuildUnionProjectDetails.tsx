@@ -69,13 +69,27 @@ const BuildUnionProjectDetails = () => {
   const [siteImageUrls, setSiteImageUrls] = useState<string[]>([]);
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
+const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
   const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "tasks" | "contracts">("ai");
   const [showStatsPopup, setShowStatsPopup] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState<"pro" | "premium" | null>(null);
   
   // Tier access: Pro+ can access Blueprint Analysis
   const isPro = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
   const isPremium = subscription.tier === "premium" || subscription.tier === "enterprise";
+
+  // Tab click handler with tier gating
+  const handleTabClick = (tab: typeof blueprintTab, requiredTier: "free" | "pro" | "premium") => {
+    if (requiredTier === "pro" && !isPro) {
+      setShowUpgradePrompt("pro");
+      return;
+    }
+    if (requiredTier === "premium" && !isPremium) {
+      setShowUpgradePrompt("premium");
+      return;
+    }
+    setBlueprintTab(tab);
+  };
   
   // Edit mode
   const [isEditing, setIsEditing] = useState(false);
@@ -1127,7 +1141,7 @@ const BuildUnionProjectDetails = () => {
                     <div className="border-b border-slate-200 overflow-x-auto">
                       <div className="flex min-w-max">
                         <button
-                          onClick={() => setBlueprintTab("ai")}
+                          onClick={() => handleTabClick("ai", "pro")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "ai" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
@@ -1139,7 +1153,7 @@ const BuildUnionProjectDetails = () => {
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
-                          onClick={() => setBlueprintTab("documents")}
+                          onClick={() => handleTabClick("documents", "pro")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "documents" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
@@ -1151,7 +1165,7 @@ const BuildUnionProjectDetails = () => {
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
-                          onClick={() => setBlueprintTab("requirements")}
+                          onClick={() => handleTabClick("requirements", "free")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "requirements" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
@@ -1162,7 +1176,7 @@ const BuildUnionProjectDetails = () => {
                           Requirements
                         </button>
                         <button
-                          onClick={() => setBlueprintTab("team")}
+                          onClick={() => handleTabClick("team", "pro")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "team" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
@@ -1174,7 +1188,7 @@ const BuildUnionProjectDetails = () => {
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
-                          onClick={() => setBlueprintTab("tasks")}
+                          onClick={() => handleTabClick("tasks", "pro")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "tasks" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
@@ -1186,7 +1200,7 @@ const BuildUnionProjectDetails = () => {
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
-                          onClick={() => setBlueprintTab("facts")}
+                          onClick={() => handleTabClick("facts", "premium")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "facts" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
@@ -1198,7 +1212,7 @@ const BuildUnionProjectDetails = () => {
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white">PREMIUM</span>
                         </button>
                         <button
-                          onClick={() => setBlueprintTab("contracts")}
+                          onClick={() => handleTabClick("contracts", "free")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "contracts" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
@@ -1210,6 +1224,50 @@ const BuildUnionProjectDetails = () => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Upgrade Prompt Dialog */}
+                    {showUpgradePrompt && (
+                      <div className="p-6 bg-gradient-to-br from-slate-50 to-cyan-50/30 border-b">
+                        <div className="flex items-start gap-4">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                            showUpgradePrompt === "premium" 
+                              ? "bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/20" 
+                              : "bg-gradient-to-br from-cyan-400 to-blue-500 shadow-cyan-500/20"
+                          }`}>
+                            <Crown className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-slate-900">
+                              {showUpgradePrompt === "premium" ? "Premium Feature" : "Pro Feature"}
+                            </h4>
+                            <p className="text-sm text-slate-600 mt-1">
+                              {showUpgradePrompt === "premium" 
+                                ? "Verified Facts and advanced analytics are available with Premium. Get dual-engine AI verification and comprehensive project insights."
+                                : "This feature requires a Pro subscription. Unlock AI Analysis, Document Management, Team Collaboration, and Task Assignment."}
+                            </p>
+                            <div className="flex items-center gap-3 mt-4">
+                              <Button
+                                onClick={() => navigate("/buildunion/pricing")}
+                                className={`gap-2 ${
+                                  showUpgradePrompt === "premium"
+                                    ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                                    : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                                } text-white`}
+                              >
+                                <Crown className="w-4 h-4" />
+                                Upgrade to {showUpgradePrompt === "premium" ? "Premium" : "Pro"}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => setShowUpgradePrompt(null)}
+                              >
+                                Maybe Later
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Tab Content */}
                     <div className="min-h-[500px]">

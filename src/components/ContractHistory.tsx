@@ -23,8 +23,6 @@ import {
   Calendar,
   DollarSign,
   Trash2,
-  Eye,
-  Download,
   Clock,
   CheckCircle2,
   User,
@@ -35,7 +33,8 @@ import {
   Building,
   Wrench,
   FileCheck,
-  ArrowLeft
+  ArrowLeft,
+  Pencil
 } from "lucide-react";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
 
@@ -46,9 +45,32 @@ interface Contract {
   template_type: string;
   status: string;
   contractor_name: string | null;
+  contractor_address: string | null;
+  contractor_phone: string | null;
+  contractor_email: string | null;
+  contractor_license: string | null;
   client_name: string | null;
+  client_address: string | null;
+  client_phone: string | null;
+  client_email: string | null;
   project_name: string | null;
+  project_address: string | null;
+  scope_of_work: string | null;
   total_amount: number | null;
+  deposit_percentage: number | null;
+  deposit_amount: number | null;
+  payment_schedule: string | null;
+  start_date: string | null;
+  estimated_end_date: string | null;
+  working_days: string | null;
+  warranty_period: string | null;
+  change_order_policy: string | null;
+  cancellation_policy: string | null;
+  dispute_resolution: string | null;
+  additional_terms: string | null;
+  materials_included: boolean | null;
+  has_liability_insurance: boolean | null;
+  has_wsib: boolean | null;
   client_signature: any | null;
   contractor_signature: any | null;
   created_at: string;
@@ -93,19 +115,20 @@ const ContractHistory = ({ projectId, showTitle = true }: ContractHistoryProps) 
   const { formatCurrency } = useRegionSettings();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType | null>(null);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
 
-  const fetchContracts = async () => {
+const fetchContracts = async () => {
     if (!user) return;
 
     try {
-      let query = supabase
-        .from("contracts")
+      let query = (supabase
+        .from("contracts" as any)
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })) as any;
 
       if (projectId) {
         query = query.eq("project_id", projectId);
@@ -114,7 +137,7 @@ const ContractHistory = ({ projectId, showTitle = true }: ContractHistoryProps) 
       const { data, error } = await query;
 
       if (error) throw error;
-      setContracts(data || []);
+      setContracts((data || []) as Contract[]);
     } catch (error) {
       console.error("Error fetching contracts:", error);
       toast.error("Failed to load contracts");
@@ -127,13 +150,13 @@ const ContractHistory = ({ projectId, showTitle = true }: ContractHistoryProps) 
     fetchContracts();
   }, [user, projectId]);
 
-  const handleDelete = async (contractId: string) => {
+const handleDelete = async (contractId: string) => {
     setDeletingId(contractId);
     try {
-      const { error } = await supabase
-        .from("contracts")
+      const { error } = await (supabase
+        .from("contracts" as any)
         .delete()
-        .eq("id", contractId);
+        .eq("id", contractId)) as any;
 
       if (error) throw error;
 
@@ -175,15 +198,42 @@ const ContractHistory = ({ projectId, showTitle = true }: ContractHistoryProps) 
     setShowTemplateSelector(false);
   };
 
-  const handleContractGenerated = () => {
+const handleContractGenerated = () => {
     setSelectedTemplate(null);
+    setEditingContract(null);
     fetchContracts();
   };
 
   const handleBackToList = () => {
     setSelectedTemplate(null);
+    setEditingContract(null);
     setShowTemplateSelector(false);
   };
+
+  const handleEditContract = (contract: Contract) => {
+    setEditingContract(contract);
+  };
+
+// Show Contract Generator when editing existing contract
+  if (editingContract) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBackToList}
+          className="gap-2 text-slate-600 hover:text-slate-900"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Contracts
+        </Button>
+        <ContractGenerator
+          existingContract={editingContract}
+          onContractGenerated={handleContractGenerated}
+        />
+      </div>
+    );
+  }
 
   // Show Contract Generator when template is selected
   if (selectedTemplate) {
@@ -353,6 +403,15 @@ const ContractHistory = ({ projectId, showTitle = true }: ContractHistoryProps) 
 
                 {/* Actions */}
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditContract(contract)}
+                    className="gap-1"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Edit
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
