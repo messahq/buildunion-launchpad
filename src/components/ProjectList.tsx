@@ -227,7 +227,7 @@ const ProjectList = () => {
           <p className="text-muted-foreground mb-6">Start your first project and let M.E.S.S.A. analyze your documents.</p>
           <Button onClick={() => setShowNewProjectModal(true)} className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 gap-2">
             <Plus className="h-4 w-4" />
-            Create Your First Project
+            New Project
           </Button>
         </CardContent>
       </Card>
