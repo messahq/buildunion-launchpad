@@ -136,7 +136,8 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
         body: {
           image: selectedImage,
           description: description,
-          type: "photo_estimate"
+          type: "photo_estimate",
+          isPremium: isPremium
         }
       });
 
