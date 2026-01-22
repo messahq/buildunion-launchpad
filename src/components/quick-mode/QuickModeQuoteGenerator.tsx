@@ -79,9 +79,7 @@ const defaultQuote: QuoteData = {
   quoteNumber: `Q-${Date.now().toString().slice(-6)}`,
   quoteDate: new Date().toISOString().split("T")[0],
   validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-  lineItems: [
-    { id: "1", description: "", quantity: 1, unit: "unit", unitPrice: 0 },
-  ],
+  lineItems: [],
   paymentTerms: "50% deposit required. Balance due upon completion.",
   notes: "",
   warranty: "1 year workmanship warranty included.",
