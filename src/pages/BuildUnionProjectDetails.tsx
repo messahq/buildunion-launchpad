@@ -1128,79 +1128,84 @@ const BuildUnionProjectDetails = () => {
                       <div className="flex min-w-max">
                         <button
                           onClick={() => setBlueprintTab("ai")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "ai" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <Brain className="w-4 h-4 inline mr-2" />
+                          <Brain className="w-4 h-4" />
                           AI Analysis
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
                           onClick={() => setBlueprintTab("documents")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "documents" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <FileUp className="w-4 h-4 inline mr-2" />
+                          <FileUp className="w-4 h-4" />
                           Documents
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
                           onClick={() => setBlueprintTab("requirements")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "requirements" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <Users className="w-4 h-4 inline mr-2" />
+                          <Users className="w-4 h-4" />
                           Requirements
                         </button>
                         <button
                           onClick={() => setBlueprintTab("team")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "team" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <Briefcase className="w-4 h-4 inline mr-2" />
+                          <Briefcase className="w-4 h-4" />
                           Team
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
                           onClick={() => setBlueprintTab("tasks")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "tasks" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <ClipboardList className="w-4 h-4 inline mr-2" />
+                          <ClipboardList className="w-4 h-4" />
                           Tasks
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         <button
                           onClick={() => setBlueprintTab("facts")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "facts" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <Sparkles className="w-4 h-4 inline mr-2" />
+                          <Sparkles className="w-4 h-4" />
                           Facts
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white">PREMIUM</span>
                         </button>
                         <button
                           onClick={() => setBlueprintTab("contracts")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
                             blueprintTab === "contracts" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <ScrollText className="w-4 h-4 inline mr-2" />
+                          <ScrollText className="w-4 h-4" />
                           Contracts
                         </button>
                       </div>
