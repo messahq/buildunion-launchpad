@@ -17,7 +17,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
+import { useBuProfile } from "@/hooks/useBuProfile";
 import { toast } from "sonner";
+import { downloadPDF, buildContractHTML } from "@/lib/pdfGenerator";
 import {
   FileText,
   Calendar,
@@ -34,7 +36,9 @@ import {
   Wrench,
   FileCheck,
   ArrowLeft,
-  Pencil
+  Pencil,
+  Download,
+  Copy
 } from "lucide-react";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
 
@@ -112,13 +116,16 @@ const CONTRACT_TEMPLATES = [
 
 const ContractHistory = ({ projectId, showTitle = true }: ContractHistoryProps) => {
   const { user } = useAuth();
-  const { formatCurrency } = useRegionSettings();
+  const { formatCurrency, config } = useRegionSettings();
+  const { profile } = useBuProfile();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
-const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType | null>(null);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [duplicatingContract, setDuplicatingContract] = useState<Contract | null>(null);
 
 const fetchContracts = async () => {
     if (!user) return;
@@ -201,18 +208,142 @@ const handleDelete = async (contractId: string) => {
 const handleContractGenerated = () => {
     setSelectedTemplate(null);
     setEditingContract(null);
+    setDuplicatingContract(null);
     fetchContracts();
   };
 
   const handleBackToList = () => {
     setSelectedTemplate(null);
     setEditingContract(null);
+    setDuplicatingContract(null);
     setShowTemplateSelector(false);
   };
 
   const handleEditContract = (contract: Contract) => {
     setEditingContract(contract);
   };
+
+  const handleDuplicateContract = (contract: Contract) => {
+    // Create a new contract based on the existing one (without ID and with new number)
+    const duplicated = {
+      ...contract,
+      id: '', // Will be generated on save
+      contract_number: `C-${Date.now().toString().slice(-6)}`,
+      contract_date: new Date().toISOString().split('T')[0],
+      client_signature: null, // Clear signatures for new contract
+      contractor_signature: null,
+      status: 'draft'
+    };
+    setDuplicatingContract(duplicated);
+  };
+
+  const handleDownloadPDF = async (contract: Contract) => {
+    setDownloadingId(contract.id);
+    try {
+      const htmlContent = buildContractHTML({
+        contractNumber: contract.contract_number,
+        contractDate: contract.contract_date,
+        templateType: contract.template_type || 'custom',
+        contractorInfo: {
+          name: contract.contractor_name || '',
+          address: contract.contractor_address || '',
+          phone: contract.contractor_phone || '',
+          email: contract.contractor_email || '',
+          license: contract.contractor_license || undefined
+        },
+        clientInfo: {
+          name: contract.client_name || '',
+          address: contract.client_address || '',
+          phone: contract.client_phone || '',
+          email: contract.client_email || ''
+        },
+        projectInfo: {
+          name: contract.project_name || '',
+          address: contract.project_address || '',
+          description: contract.scope_of_work || undefined
+        },
+        financialTerms: {
+          totalAmount: contract.total_amount || 0,
+          depositPercentage: contract.deposit_percentage || 50,
+          depositAmount: contract.deposit_amount || 0,
+          paymentSchedule: contract.payment_schedule || ''
+        },
+        timeline: {
+          startDate: contract.start_date || '',
+          estimatedEndDate: contract.estimated_end_date || '',
+          workingDays: contract.working_days || ''
+        },
+        terms: {
+          scopeOfWork: contract.scope_of_work || '',
+          warrantyPeriod: contract.warranty_period || '1 year',
+          materialsIncluded: contract.materials_included ?? true,
+          changeOrderPolicy: contract.change_order_policy || '',
+          cancellationPolicy: contract.cancellation_policy || '',
+          disputeResolution: contract.dispute_resolution || '',
+          additionalTerms: contract.additional_terms || undefined,
+          hasLiabilityInsurance: contract.has_liability_insurance ?? true,
+          hasWSIB: contract.has_wsib ?? true
+        },
+        signatures: {
+          client: contract.client_signature as any,
+          contractor: contract.contractor_signature as any
+        },
+        branding: {
+          companyLogoUrl: profile?.company_logo_url,
+          companyName: profile?.company_name || contract.contractor_name,
+          companyPhone: profile?.phone || contract.contractor_phone,
+          companyEmail: contract.contractor_email,
+          companyWebsite: profile?.company_website
+        },
+        formatCurrency,
+        regionName: config?.name
+      });
+
+      await downloadPDF(htmlContent, {
+        filename: `Contract-${contract.contract_number}.pdf`,
+        pageFormat: 'letter'
+      });
+
+      toast.success('Contract PDF downloaded!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+// Show Contract Generator when duplicating a contract
+  if (duplicatingContract) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBackToList}
+          className="gap-2 text-slate-600 hover:text-slate-900"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Contracts
+        </Button>
+        <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 mb-2">
+          <p className="text-sm text-cyan-800 flex items-center gap-2">
+            <Copy className="w-4 h-4" />
+            Creating a copy of contract <strong>#{duplicatingContract.contract_number}</strong> — signatures have been cleared
+          </p>
+        </div>
+        <ContractGenerator
+          existingContract={{
+            ...duplicatingContract,
+            id: '', // Clear ID to create new
+            client_signature: null,
+            contractor_signature: null
+          }}
+          onContractGenerated={handleContractGenerated}
+        />
+      </div>
+    );
+  }
 
 // Show Contract Generator when editing existing contract
   if (editingContract) {
@@ -402,15 +533,41 @@ const handleContractGenerated = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadPDF(contract)}
+                    disabled={downloadingId === contract.id}
+                    className="gap-1"
+                    title="Download PDF"
+                  >
+                    {downloadingId === contract.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                    <span className="hidden sm:inline">PDF</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDuplicateContract(contract)}
+                    className="gap-1"
+                    title="Duplicate Contract"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span className="hidden sm:inline">Duplicate</span>
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditContract(contract)}
                     className="gap-1"
+                    title="Edit Contract"
                   >
                     <Pencil className="w-4 h-4" />
-                    Edit
+                    <span className="hidden sm:inline">Edit</span>
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -419,6 +576,7 @@ const handleContractGenerated = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         disabled={deletingId === contract.id}
+                        title="Delete Contract"
                       >
                         {deletingId === contract.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />

@@ -358,7 +358,10 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
         licenseNumber: existingContract.contractor_license || "",
       });
       setSelectedTemplate((existingContract.template_type as ContractTemplateType) || "custom");
-      setSavedContractId(existingContract.id);
+      // Only set savedContractId if it's a valid ID (not empty string for duplicates)
+      if (existingContract.id && existingContract.id.trim() !== '') {
+        setSavedContractId(existingContract.id);
+      }
       
       // Load signatures if they exist
       if (existingContract.client_signature) {
