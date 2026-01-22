@@ -70,7 +70,7 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
-  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts">("ai");
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team">("ai");
   
   // Tier access: Pro+ can access Blueprint Analysis
   const isPro = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
@@ -1084,17 +1084,7 @@ const BuildUnionProjectDetails = () => {
                         <p className="text-white/80 text-xs">M.E.S.S.A. dual-engine AI • Gemini + GPT-5</p>
                       </div>
                     </div>
-                    {!showBlueprintPanel && (
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        onClick={() => setShowBlueprintPanel(true)}
-                        className="bg-white/20 hover:bg-white/30 text-white border-0"
-                      >
-                        Expand
-                      </Button>
-                    )}
-                    {showBlueprintPanel && (
+                    {showBlueprintPanel ? (
                       <Button 
                         size="sm" 
                         variant="secondary"
@@ -1102,6 +1092,15 @@ const BuildUnionProjectDetails = () => {
                         className="bg-white/20 hover:bg-white/30 text-white border-0"
                       >
                         <X className="w-4 h-4" />
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        onClick={() => setShowBlueprintPanel(true)}
+                        className="bg-white/20 hover:bg-white/30 text-white border-0"
+                      >
+                        Expand
                       </Button>
                     )}
                   </div>
@@ -1143,11 +1142,11 @@ const BuildUnionProjectDetails = () => {
                 {showBlueprintPanel && (
                   <CardContent className="p-0">
                     {/* Analysis Tabs */}
-                    <div className="border-b border-slate-200">
-                      <div className="flex">
+                    <div className="border-b border-slate-200 overflow-x-auto">
+                      <div className="flex min-w-max">
                         <button
                           onClick={() => setBlueprintTab("ai")}
-                          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                             blueprintTab === "ai" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
@@ -1158,7 +1157,7 @@ const BuildUnionProjectDetails = () => {
                         </button>
                         <button
                           onClick={() => setBlueprintTab("documents")}
-                          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                             blueprintTab === "documents" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
@@ -1168,8 +1167,30 @@ const BuildUnionProjectDetails = () => {
                           Documents
                         </button>
                         <button
+                          onClick={() => setBlueprintTab("requirements")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                            blueprintTab === "requirements" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Users className="w-4 h-4 inline mr-2" />
+                          Requirements
+                        </button>
+                        <button
+                          onClick={() => setBlueprintTab("team")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                            blueprintTab === "team" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Briefcase className="w-4 h-4 inline mr-2" />
+                          Team
+                        </button>
+                        <button
                           onClick={() => setBlueprintTab("facts")}
-                          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                             blueprintTab === "facts" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
@@ -1205,6 +1226,111 @@ const BuildUnionProjectDetails = () => {
                             onDocumentsChange={setDocuments}
                             isOwner={project.user_id === user.id}
                           />
+                        </div>
+                      )}
+
+                      {blueprintTab === "requirements" && (
+                        <div className="p-4 space-y-6">
+                          {/* Manpower Requirements */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-slate-900 flex items-center gap-2">
+                                <Users className="w-4 h-4 text-cyan-500" />
+                                Manpower Requirements
+                              </h4>
+                              <Badge variant="outline" className="text-xs">
+                                {project.manpower_requirements?.length || 0} roles
+                              </Badge>
+                            </div>
+                            
+                            {project.manpower_requirements && project.manpower_requirements.length > 0 ? (
+                              <div className="space-y-2">
+                                {project.manpower_requirements.map((req, idx) => (
+                                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                                    <span className="text-sm font-medium text-slate-700">
+                                      {TRADE_LABELS[req.trade as keyof typeof TRADE_LABELS] || req.trade}
+                                    </span>
+                                    <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200">
+                                      {req.count} worker{req.count > 1 ? 's' : ''}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg text-center">
+                                No manpower requirements defined. Edit project to add.
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Required Certifications */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-slate-900 flex items-center gap-2">
+                                <FileCheck className="w-4 h-4 text-cyan-500" />
+                                Required Certifications
+                              </h4>
+                              <Badge variant="outline" className="text-xs">
+                                {project.required_certifications?.length || 0} certs
+                              </Badge>
+                            </div>
+                            
+                            {project.required_certifications && project.required_certifications.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {project.required_certifications.map((cert, idx) => (
+                                  <Badge key={idx} variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                                    {cert}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg text-center">
+                                No certifications required. Edit project to add.
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Required Trades */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-slate-900 flex items-center gap-2">
+                                <Briefcase className="w-4 h-4 text-cyan-500" />
+                                Required Trades
+                              </h4>
+                              <Badge variant="outline" className="text-xs">
+                                {project.trades?.length || 0} trades
+                              </Badge>
+                            </div>
+                            
+                            {project.trades && project.trades.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {project.trades.map((trade, idx) => (
+                                  <Badge key={idx} className="bg-amber-50 text-amber-700 border-amber-200">
+                                    {TRADE_LABELS[trade as keyof typeof TRADE_LABELS] || trade}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg text-center">
+                                No trades specified. Edit project to add.
+                              </p>
+                            )}
+                          </div>
+
+                          <Button 
+                            variant="outline" 
+                            className="w-full gap-2 mt-4"
+                            onClick={() => setIsEditing(true)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit Requirements
+                          </Button>
+                        </div>
+                      )}
+
+                      {blueprintTab === "team" && (
+                        <div className="p-4">
+                          <TeamManagement projectId={project.id} isOwner={project.user_id === user.id} />
                         </div>
                       )}
 
