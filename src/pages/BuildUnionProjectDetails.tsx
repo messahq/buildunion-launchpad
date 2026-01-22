@@ -17,7 +17,7 @@ import {
   AlertCircle, Sparkles,
   Pencil, X, Check,
   Users, Image, FileCheck, Briefcase, MapPin,
-  Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList
+  Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList, ScrollText
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -70,7 +70,7 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
-  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "tasks">("ai");
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "tasks" | "contracts">("ai");
   const [showStatsPopup, setShowStatsPopup] = useState(false);
   
   // Tier access: Pro+ can access Blueprint Analysis
@@ -1192,6 +1192,17 @@ const BuildUnionProjectDetails = () => {
                           <Sparkles className="w-4 h-4 inline mr-2" />
                           Facts
                         </button>
+                        <button
+                          onClick={() => setBlueprintTab("contracts")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                            blueprintTab === "contracts" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <ScrollText className="w-4 h-4 inline mr-2" />
+                          Contracts
+                        </button>
                       </div>
                     </div>
 
@@ -1394,6 +1405,12 @@ const BuildUnionProjectDetails = () => {
                               </div>
                             )}
                           </div>
+                        </div>
+                      )}
+
+                      {blueprintTab === "contracts" && (
+                        <div className="p-4">
+                          <ContractHistory projectId={project.id} showTitle={false} />
                         </div>
                       )}
                     </div>
