@@ -5,6 +5,7 @@ import TeamManagement from "@/components/TeamManagement";
 import TaskAssignment from "@/components/TaskAssignment";
 import ProjectDocuments from "@/components/ProjectDocuments";
 import ProjectAIPanel from "@/components/ProjectAIPanel";
+import ContractHistory from "@/components/ContractHistory";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -942,6 +943,11 @@ const BuildUnionProjectDetails = () => {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Contract History */}
+        {project && user && (
+          <ContractHistory projectId={project.id} />
         )}
 
         <div className="grid lg:grid-cols-2 gap-6">

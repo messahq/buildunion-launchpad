@@ -119,6 +119,137 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          additional_terms: string | null
+          cancellation_policy: string | null
+          change_order_policy: string | null
+          client_address: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_signature: Json | null
+          contract_date: string
+          contract_number: string
+          contractor_address: string | null
+          contractor_email: string | null
+          contractor_license: string | null
+          contractor_name: string | null
+          contractor_phone: string | null
+          contractor_signature: Json | null
+          created_at: string
+          deposit_amount: number | null
+          deposit_percentage: number | null
+          dispute_resolution: string | null
+          estimated_end_date: string | null
+          has_liability_insurance: boolean | null
+          has_wsib: boolean | null
+          id: string
+          materials_included: boolean | null
+          payment_schedule: string | null
+          project_address: string | null
+          project_id: string | null
+          project_name: string | null
+          scope_of_work: string | null
+          start_date: string | null
+          status: string
+          template_type: string | null
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+          warranty_period: string | null
+          working_days: string | null
+        }
+        Insert: {
+          additional_terms?: string | null
+          cancellation_policy?: string | null
+          change_order_policy?: string | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_signature?: Json | null
+          contract_date?: string
+          contract_number: string
+          contractor_address?: string | null
+          contractor_email?: string | null
+          contractor_license?: string | null
+          contractor_name?: string | null
+          contractor_phone?: string | null
+          contractor_signature?: Json | null
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_percentage?: number | null
+          dispute_resolution?: string | null
+          estimated_end_date?: string | null
+          has_liability_insurance?: boolean | null
+          has_wsib?: boolean | null
+          id?: string
+          materials_included?: boolean | null
+          payment_schedule?: string | null
+          project_address?: string | null
+          project_id?: string | null
+          project_name?: string | null
+          scope_of_work?: string | null
+          start_date?: string | null
+          status?: string
+          template_type?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+          warranty_period?: string | null
+          working_days?: string | null
+        }
+        Update: {
+          additional_terms?: string | null
+          cancellation_policy?: string | null
+          change_order_policy?: string | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_signature?: Json | null
+          contract_date?: string
+          contract_number?: string
+          contractor_address?: string | null
+          contractor_email?: string | null
+          contractor_license?: string | null
+          contractor_name?: string | null
+          contractor_phone?: string | null
+          contractor_signature?: Json | null
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_percentage?: number | null
+          dispute_resolution?: string | null
+          estimated_end_date?: string | null
+          has_liability_insurance?: boolean | null
+          has_wsib?: boolean | null
+          id?: string
+          materials_included?: boolean | null
+          payment_schedule?: string | null
+          project_address?: string | null
+          project_id?: string | null
+          project_name?: string | null
+          scope_of_work?: string | null
+          start_date?: string | null
+          status?: string
+          template_type?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+          warranty_period?: string | null
+          working_days?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_logs: {
         Row: {
           body: string | null
