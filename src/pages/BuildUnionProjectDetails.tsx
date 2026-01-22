@@ -70,7 +70,7 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
-  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team">("ai");
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "stats">("ai");
   
   // Tier access: Pro+ can access Blueprint Analysis
   const isPro = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
@@ -958,59 +958,8 @@ const BuildUnionProjectDetails = () => {
           <ContractHistory projectId={project.id} />
         )}
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Documents Column */}
-          <div className="space-y-6">
-            <ProjectDocuments
-              projectId={project.id}
-              userId={user.id}
-              documents={documents}
-              onDocumentsChange={setDocuments}
-              isOwner={project.user_id === user.id}
-            />
-
-            {/* Project Stats */}
-            <Card className="border-slate-200 bg-white">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-700">
-                  Project Stats
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Documents</span>
-                  <span className="text-sm font-medium text-slate-900">{documents.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Site Photos</span>
-                  <span className="text-sm font-medium text-slate-900">{siteImageUrls.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Total Files</span>
-                  <span className="text-sm font-medium text-slate-900">{documents.length + siteImageUrls.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Total Size</span>
-                  <span className="text-sm font-medium text-slate-900">
-                    {documents.reduce((acc, d) => acc + (d.file_size || 0), 0) > 0 
-                      ? formatFileSize(documents.reduce((acc, d) => acc + (d.file_size || 0), 0))
-                      : siteImageUrls.length > 0 
-                        ? `${siteImageUrls.length} image${siteImageUrls.length !== 1 ? 's' : ''}`
-                        : 'No files'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Status</span>
-                  <Badge className={`text-xs ${getStatusColor(project.status)}`}>
-                    {project.status}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Blueprint Analysis / M.E.S.S.A. Column - Tier Gated */}
-          <div className="space-y-6">
+        <div className="space-y-6">
+          {/* Blueprint Analysis / M.E.S.S.A. - Tier Gated */}
             {/* Tier Access Card */}
             {!isPro ? (
               <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/30">
@@ -1198,6 +1147,17 @@ const BuildUnionProjectDetails = () => {
                         >
                           <FileCheck className="w-4 h-4 inline mr-2" />
                           Facts
+                        </button>
+                        <button
+                          onClick={() => setBlueprintTab("stats")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                            blueprintTab === "stats" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Package className="w-4 h-4 inline mr-2" />
+                          Stats
                         </button>
                       </div>
                     </div>
@@ -1397,6 +1357,48 @@ const BuildUnionProjectDetails = () => {
                           </div>
                         </div>
                       )}
+
+                      {blueprintTab === "stats" && (
+                        <div className="p-4">
+                          <div className="space-y-4">
+                            <h4 className="font-medium text-slate-900 flex items-center gap-2">
+                              <Package className="w-4 h-4 text-cyan-500" />
+                              Project Stats
+                            </h4>
+                            
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                                <span className="text-sm text-slate-600">Documents</span>
+                                <span className="text-sm font-medium text-slate-900">{documents.length}</span>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                                <span className="text-sm text-slate-600">Site Photos</span>
+                                <span className="text-sm font-medium text-slate-900">{siteImageUrls.length}</span>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                                <span className="text-sm text-slate-600">Total Files</span>
+                                <span className="text-sm font-medium text-slate-900">{documents.length + siteImageUrls.length}</span>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                                <span className="text-sm text-slate-600">Total Size</span>
+                                <span className="text-sm font-medium text-slate-900">
+                                  {documents.reduce((acc, d) => acc + (d.file_size || 0), 0) > 0 
+                                    ? formatFileSize(documents.reduce((acc, d) => acc + (d.file_size || 0), 0))
+                                    : siteImageUrls.length > 0 
+                                      ? `${siteImageUrls.length} image${siteImageUrls.length !== 1 ? 's' : ''}`
+                                      : 'No files'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                                <span className="text-sm text-slate-600">Status</span>
+                                <Badge className={`text-xs ${getStatusColor(project.status)}`}>
+                                  {project.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 )}
@@ -1444,9 +1446,8 @@ const BuildUnionProjectDetails = () => {
             )}
           </div>
         </div>
-      </div>
-    </main>
-  );
-};
+      </main>
+    );
+  };
 
 export default BuildUnionProjectDetails;
