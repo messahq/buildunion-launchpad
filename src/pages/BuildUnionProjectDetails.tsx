@@ -7,6 +7,7 @@ import ProjectDocuments from "@/components/ProjectDocuments";
 import ProjectAIPanel from "@/components/ProjectAIPanel";
 import ContractHistory from "@/components/ContractHistory";
 import RequirementsTab from "@/components/RequirementsTab";
+import OperationalTruthSummaryCard from "@/components/OperationalTruthSummaryCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1313,6 +1314,11 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
 
                       {blueprintTab === "facts" && (
                         <div className="p-4">
+                          {/* Summary Card */}
+                          <OperationalTruthSummaryCard 
+                            facts={projectSummary?.verified_facts as any[] || []} 
+                          />
+                          
                           {/* Verified Facts from M.E.S.S.A. */}
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
