@@ -1078,7 +1078,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                         <div className="text-lg font-bold text-slate-900">
                           {projectSummary?.verified_facts ? (projectSummary.verified_facts as any[]).length : 0}
                         </div>
-                        <div className="text-xs text-slate-500">Verified Facts</div>
+                        <div className="text-xs text-slate-500">Operational Truth</div>
                       </button>
                     </div>
                     
@@ -1167,6 +1167,18 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                           Team
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
+                        {/* Requirements */}
+                        <button
+                          onClick={() => handleTabClick("requirements", "free")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                            blueprintTab === "requirements" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Briefcase className="w-4 h-4" />
+                          Requirements
+                        </button>
                         {/* Contracts */}
                         <button
                           onClick={() => handleTabClick("contracts", "free")}
@@ -1192,7 +1204,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                           AI Synthesis
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
-                        {/* Facts */}
+                        {/* Operational Truth (Facts) - Last */}
                         <button
                           onClick={() => handleTabClick("facts", "premium")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
@@ -1202,20 +1214,8 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                           }`}
                         >
                           <Sparkles className="w-4 h-4" />
-                          Facts
+                          Operational Truth
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white">PREMIUM</span>
-                        </button>
-                        {/* Requirements - Hidden from main nav but accessible */}
-                        <button
-                          onClick={() => handleTabClick("requirements", "free")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                            blueprintTab === "requirements" 
-                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
-                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          <Briefcase className="w-4 h-4" />
-                          Requirements
                         </button>
                       </div>
                     </div>
@@ -1318,7 +1318,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                             <div className="flex items-center justify-between">
                               <h4 className="font-medium text-slate-900 flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-cyan-500" />
-                                Verified Project Facts
+                                Operational Truth
                               </h4>
                               <Badge variant="outline" className="text-xs">
                                 {projectSummary?.verified_facts ? (projectSummary.verified_facts as any[]).length : 0} facts
