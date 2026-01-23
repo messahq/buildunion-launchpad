@@ -21,16 +21,18 @@ serve(async (req) => {
       );
     }
 
-    // Verify the user's token
+    // Create Supabase client with auth header
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Use getClaims() to verify the JWT token
+    const token = authHeader.replace("Bearer ", "");
+    const { data, error: authError } = await supabaseClient.auth.getClaims(token);
 
-    if (authError || !user) {
+    if (authError || !data?.claims) {
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
