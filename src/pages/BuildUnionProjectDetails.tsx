@@ -71,7 +71,7 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
-  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "tasks" | "contracts">("ai");
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "contracts">("documents");
   const [showStatsPopup, setShowStatsPopup] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState<"pro" | "premium" | null>(null);
   
@@ -1141,18 +1141,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                     {/* Analysis Tabs */}
                     <div className="border-b border-slate-200 overflow-x-auto">
                       <div className="flex min-w-max">
-                        <button
-                          onClick={() => handleTabClick("ai", "pro")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                            blueprintTab === "ai" 
-                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
-                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          <Brain className="w-4 h-4" />
-                          AI Analysis
-                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
-                        </button>
+                        {/* Documents - First */}
                         <button
                           onClick={() => handleTabClick("documents", "pro")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
@@ -1165,17 +1154,7 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                           Documents
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
-                        <button
-                          onClick={() => handleTabClick("requirements", "free")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                            blueprintTab === "requirements" 
-                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
-                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          <Users className="w-4 h-4" />
-                          Requirements
-                        </button>
+                        {/* Team (includes Tasks) */}
                         <button
                           onClick={() => handleTabClick("team", "pro")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
@@ -1184,22 +1163,36 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <Briefcase className="w-4 h-4" />
+                          <Users className="w-4 h-4" />
                           Team
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
+                        {/* Contracts */}
                         <button
-                          onClick={() => handleTabClick("tasks", "pro")}
+                          onClick={() => handleTabClick("contracts", "free")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                            blueprintTab === "tasks" 
+                            blueprintTab === "contracts" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <ClipboardList className="w-4 h-4" />
-                          Tasks
+                          <ScrollText className="w-4 h-4" />
+                          Contracts
+                        </button>
+                        {/* AI Synthesis */}
+                        <button
+                          onClick={() => handleTabClick("ai", "pro")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                            blueprintTab === "ai" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Brain className="w-4 h-4" />
+                          AI Synthesis
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
+                        {/* Facts */}
                         <button
                           onClick={() => handleTabClick("facts", "premium")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
@@ -1212,16 +1205,17 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                           Facts
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white">PREMIUM</span>
                         </button>
+                        {/* Requirements - Hidden from main nav but accessible */}
                         <button
-                          onClick={() => handleTabClick("contracts", "free")}
+                          onClick={() => handleTabClick("requirements", "free")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                            blueprintTab === "contracts" 
+                            blueprintTab === "requirements" 
                               ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
                               : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                         >
-                          <ScrollText className="w-4 h-4" />
-                          Contracts
+                          <Briefcase className="w-4 h-4" />
+                          Requirements
                         </button>
                       </div>
                     </div>
@@ -1306,14 +1300,14 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                       )}
 
                       {blueprintTab === "team" && (
-                        <div className="p-4">
+                        <div className="p-4 space-y-6">
+                          {/* Team Management */}
                           <TeamManagement projectId={project.id} isOwner={project.user_id === user.id} />
-                        </div>
-                      )}
-
-                      {blueprintTab === "tasks" && (
-                        <div className="p-4">
-                          <TaskAssignment projectId={project.id} isOwner={project.user_id === user.id} />
+                          
+                          {/* Task Assignment - Integrated */}
+                          <div className="border-t border-slate-200 pt-6">
+                            <TaskAssignment projectId={project.id} isOwner={project.user_id === user.id} />
+                          </div>
                         </div>
                       )}
 
