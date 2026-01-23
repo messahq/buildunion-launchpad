@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import RequirementsTemplates from "@/components/RequirementsTemplates";
 
 // Predefined certification options
 const CERTIFICATION_OPTIONS = [
@@ -190,6 +191,18 @@ const RequirementsTab = ({ project, onProjectUpdate, TRADE_LABELS }: Requirement
   if (isEditing) {
     return (
       <div className="p-4 space-y-6">
+        {/* Template Button */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-500">Configure project requirements or start from a template:</p>
+          <RequirementsTemplates 
+            onApplyTemplate={(manpower, certifications) => {
+              setEditManpower(manpower);
+              setEditCertifications(certifications);
+              toast.success("Template applied! Adjust as needed.");
+            }} 
+          />
+        </div>
+
         {/* Manpower & Trades Requirements - Unified */}
         <div className="space-y-3">
           <button 
