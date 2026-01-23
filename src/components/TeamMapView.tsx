@@ -483,10 +483,11 @@ const TeamMapView = () => {
       }
     };
 
-    if (hasMapAccess) {
+    // Only fetch API key when user is authenticated AND has map access
+    if (user && hasMapAccess) {
       fetchApiKey();
     }
-  }, [hasMapAccess]);
+  }, [user, hasMapAccess]);
 
   useEffect(() => {
     if (user && hasMapAccess) {
