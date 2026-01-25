@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "pwa-icons/*.png"],
+      devOptions: {
+        enabled: false
+      },
       manifest: {
         name: "BuildUnion",
         short_name: "BuildUnion",
@@ -41,6 +44,7 @@ export default defineConfig(({ mode }) => ({
         lang: "en"
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api/],
