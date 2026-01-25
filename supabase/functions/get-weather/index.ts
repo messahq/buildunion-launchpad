@@ -128,27 +128,42 @@ serve(async (req) => {
       throw new Error("OpenWeatherMap API key not configured");
     }
 
-    const { lat, lon, location, days = 5 } = await req.json();
+    const body = await req.json();
+    const { lat, lon, location, days = 5 } = body || {};
     
     let latitude = lat;
     let longitude = lon;
     
     // If location string provided instead of coordinates, geocode it
     if (location && (!lat || !lon)) {
-      const geoUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
-      const geoRes = await fetch(geoUrl);
-      const geoData = await geoRes.json();
-      
-      if (geoData.length === 0) {
-        throw new Error("Location not found");
+      try {
+        const geoUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
+        const geoRes = await fetch(geoUrl);
+        
+        if (!geoRes.ok) {
+          throw new Error(`Geocoding failed with status ${geoRes.status}`);
+        }
+        
+        const geoData = await geoRes.json();
+        
+        if (!geoData || !Array.isArray(geoData) || geoData.length === 0) {
+          throw new Error(`Location not found: ${location}`);
+        }
+        
+        if (!geoData[0]?.lat || !geoData[0]?.lon) {
+          throw new Error(`Invalid geocoding response for: ${location}`);
+        }
+        
+        latitude = geoData[0].lat;
+        longitude = geoData[0].lon;
+      } catch (geoError: any) {
+        console.error("Geocoding error:", geoError);
+        throw new Error(`Could not geocode location: ${location}. ${geoError.message || ''}`);
       }
-      
-      latitude = geoData[0].lat;
-      longitude = geoData[0].lon;
     }
     
     if (!latitude || !longitude) {
-      throw new Error("Location coordinates required");
+      throw new Error("Location coordinates required - please provide lat/lon or a valid address");
     }
 
     // Fetch current weather
