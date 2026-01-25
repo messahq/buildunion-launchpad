@@ -116,13 +116,38 @@ export const useSubscription = () => {
     setError(null);
 
     try {
+      // Refresh the session first to ensure we have a valid token
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      // Use the refreshed token if available, otherwise use the current one
+      const tokenToUse = refreshData?.session?.access_token || session.access_token;
+      
+      if (refreshError) {
+        console.warn("Session refresh warning:", refreshError.message);
+        // Continue with current token - edge function will handle gracefully
+      }
+
       const { data, error: fnError } = await supabase.functions.invoke("check-subscription", {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${tokenToUse}`,
         },
       });
 
       if (fnError) throw fnError;
+
+      // If token was expired, the edge function returns token_expired flag
+      if (data?.token_expired) {
+        console.warn("Token expired during subscription check - session may need refresh");
+        // Set free tier but don't throw error
+        setSubscription({
+          subscribed: false,
+          tier: "free",
+          productId: null,
+          subscriptionEnd: null,
+          billingInterval: null,
+        });
+        return;
+      }
 
       const productInfo = data.product_id ? PRODUCT_TO_TIER[data.product_id] : null;
 
@@ -136,6 +161,14 @@ export const useSubscription = () => {
     } catch (err) {
       console.error("Error checking subscription:", err);
       setError(err instanceof Error ? err.message : "Failed to check subscription");
+      // On error, default to free tier instead of crashing
+      setSubscription({
+        subscribed: false,
+        tier: "free",
+        productId: null,
+        subscriptionEnd: null,
+        billingInterval: null,
+      });
     } finally {
       setLoading(false);
     }
