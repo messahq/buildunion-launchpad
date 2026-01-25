@@ -110,25 +110,20 @@ const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm transition-colors">
       <div className="container mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-        {/* Left - Back to Dock */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/buildunion")}
-          className="text-muted-foreground hover:text-foreground gap-1 sm:gap-2 px-1 sm:px-3"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm hidden sm:inline">Back to Home</span>
-        </Button>
-
-        {/* Center - Logo + Project Mode Indicator */}
-        <div 
-          className="hidden sm:flex absolute left-1/2 -translate-x-1/2 items-center gap-3"
-        >
-          <span 
-            className="text-lg sm:text-xl font-light tracking-tight cursor-pointer"
+        {/* Left - Logo + Mode Indicator */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Back button - only on mobile */}
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => navigate("/buildunion")}
+            className="text-muted-foreground hover:text-foreground p-1.5 sm:hidden"
           >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+
+          {/* Logo - just decorative, not clickable */}
+          <span className="text-lg sm:text-xl font-light tracking-tight">
             <span className="text-foreground">Build</span>
             <span className="text-amber-500">Union</span>
           </span>
@@ -165,7 +160,7 @@ const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
           )}
         </div>
 
-        {/* Right - Auth Buttons & Language */}
+        {/* Right - Navigation & Auth */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
 
           {/* Dark Mode Toggle */}
