@@ -128,6 +128,13 @@ const BuildUnionQuickMode = () => {
     clientSignature: false,
   });
 
+  // Determine tier for progress tracking
+  const userTier = subscription?.tier === "premium" || subscription?.tier === "enterprise" 
+    ? subscription.tier 
+    : subscription?.subscribed 
+      ? "pro" 
+      : "free";
+
   // Build progress data for the hook
   const progressData: QuickModeProgressData = {
     photo: {
@@ -184,6 +191,26 @@ const BuildUnionQuickMode = () => {
         client: contractProgress.clientSignature,
       },
     },
+    // Team features - will be populated when in Team mode
+    documents: {
+      hasDocuments: false,
+      count: 0,
+      blueprintsUploaded: false,
+      photosUploaded: !!collectedData.photoEstimate,
+    },
+    team: {
+      hasMembers: false,
+      count: 0,
+      rolesAssigned: false,
+      invitesSent: false,
+    },
+    tasks: {
+      hasTasks: false,
+      count: 0,
+      completedCount: 0,
+      overdueCount: 0,
+    },
+    tier: userTier as "free" | "pro" | "premium" | "enterprise",
   };
 
   const progress = useQuickModeProgress(progressData);
@@ -433,6 +460,9 @@ const BuildUnionQuickMode = () => {
             statusColor={progress.statusColor}
             activeTab={activeTab}
             onTabClick={handleTabChange}
+            isPro={progress.isPro}
+            soloComplete={progress.soloComplete}
+            teamComplete={progress.teamComplete}
           />
         </section>
 
