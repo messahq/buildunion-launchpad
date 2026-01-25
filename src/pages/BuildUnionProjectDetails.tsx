@@ -1073,9 +1073,15 @@ const BuildUnionProjectDetails = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-amber-600" />
-                    </div>
+                    {/* Mode Toggle replaces the static icon */}
+                    <ProjectModeToggle
+                      summaryId={projectSummary?.id}
+                      projectId={projectId}
+                      initialMode="solo"
+                      onModeChange={(newMode) => setProjectMode(newMode)}
+                      variant="icon"
+                      showLabel={false}
+                    />
                     <div>
                       <CardTitle className="text-base font-medium text-slate-800">
                         Solo Mode Active
@@ -1085,14 +1091,6 @@ const BuildUnionProjectDetails = () => {
                       </CardDescription>
                     </div>
                   </div>
-                  <ProjectModeToggle
-                    summaryId={projectSummary?.id}
-                    projectId={projectId}
-                    initialMode="solo"
-                    onModeChange={(newMode) => setProjectMode(newMode)}
-                    variant="button"
-                    showLabel={false}
-                  />
                 </div>
               </CardHeader>
               <CardContent className="pt-0 space-y-4">

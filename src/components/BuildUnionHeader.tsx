@@ -178,52 +178,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
             <span className="text-amber-500">Union</span>
           </span>
           
-          {/* Project Mode Indicator - Clickable */}
-          {projectMode && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={summaryId && onModeChange ? handleModeToggle : undefined}
-                    disabled={isTogglingMode || !summaryId || !onModeChange}
-                    className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
-                      projectMode === "team"
-                        ? "bg-cyan-100 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700 hover:bg-cyan-200 dark:hover:bg-cyan-800/40"
-                        : "bg-amber-100 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-800/40"
-                    } ${summaryId && onModeChange ? "cursor-pointer" : "cursor-default"} disabled:opacity-50`}
-                  >
-                    {isTogglingMode ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                    ) : projectMode === "team" ? (
-                      <Users className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                    ) : (
-                      <User className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                    )}
-                    <span className={`text-xs font-medium ${
-                      projectMode === "team"
-                        ? "text-cyan-700 dark:text-cyan-300"
-                        : "text-amber-700 dark:text-amber-300"
-                    }`}>
-                      {projectMode === "team" ? "Team" : "Solo"}
-                    </span>
-                    {/* PRO badge for Solo mode when can't access team */}
-                    {projectMode === "solo" && !canAccessTeamMode && summaryId && onModeChange && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-600 border-cyan-200 ml-0.5">
-                        PRO
-                      </Badge>
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {summaryId && onModeChange ? (
-                    <p>Click to switch to {projectMode === "team" ? "Solo" : "Team"} mode</p>
-                  ) : (
-                    <p>Current project mode: {projectMode === "team" ? "Team" : "Solo"}</p>
-                  )}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          {/* Project Mode Indicator removed - now shown at bottom of page */}
         </div>
 
         {/* Right - Navigation & Auth */}
