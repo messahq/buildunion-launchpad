@@ -220,6 +220,10 @@ const BuildUnionProjectDetails = () => {
 
         if (summaryData) {
           setProjectSummary(summaryData);
+          // Sync project mode from database
+          if (summaryData.mode) {
+            setProjectMode(summaryData.mode as "solo" | "team");
+          }
         }
 
         // Fetch team invitations
