@@ -1086,19 +1086,15 @@ const BuildUnionProjectDetails = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-0 space-y-4">
-                {/* Mode Toggle above progress bar - right aligned with label */}
+                {/* Mode Toggle above progress bar - right aligned, text style */}
                 <div className="flex justify-end">
-                  <div className="flex flex-col items-center gap-1">
-                    <ProjectModeToggle
-                      summaryId={projectSummary?.id}
-                      projectId={projectId}
-                      initialMode="solo"
-                      onModeChange={(newMode) => setProjectMode(newMode)}
-                      variant="icon"
-                      showLabel={false}
-                    />
-                    <span className="text-xs font-medium text-amber-600">Solo</span>
-                  </div>
+                  <ProjectModeToggle
+                    summaryId={projectSummary?.id}
+                    projectId={projectId}
+                    initialMode="solo"
+                    onModeChange={(newMode) => setProjectMode(newMode)}
+                    variant="text"
+                  />
                 </div>
 
                 {/* Team Readiness Progress Indicator */}

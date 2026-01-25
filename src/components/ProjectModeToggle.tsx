@@ -35,7 +35,7 @@ interface ProjectModeToggleProps {
   projectId?: string | null;
   initialMode?: ProjectMode;
   onModeChange?: (newMode: ProjectMode) => void;
-  variant?: "switch" | "button" | "compact" | "icon";
+  variant?: "switch" | "button" | "compact" | "icon" | "text";
   showLabel?: boolean;
 }
 
@@ -86,6 +86,39 @@ export function ProjectModeToggle({
     { icon: Clock, label: "Set timelines & milestones", tier: "PRO" },
     { icon: Shield, label: "Operational Truth verification", tier: "PREMIUM" },
   ];
+
+  // Text variant - minimal text button like "Team" (for toolbar rows)
+  if (variant === "text") {
+    return (
+      <>
+        <button
+          onClick={handleToggle}
+          disabled={isLoading}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors rounded-md hover:bg-muted/50 ${
+            isTeamMode
+              ? "text-cyan-600 dark:text-cyan-400"
+              : "text-foreground"
+          }`}
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : isTeamMode ? (
+            <Users className="h-4 w-4" />
+          ) : (
+            <User className="h-4 w-4" />
+          )}
+          <span>{isTeamMode ? "Team" : "Solo"}</span>
+        </button>
+
+        <UpgradeDialog
+          open={showUpgradeDialog}
+          onOpenChange={setShowUpgradeDialog}
+          onUpgrade={handleUpgrade}
+          features={teamFeatures}
+        />
+      </>
+    );
+  }
 
   // Icon variant - circular icon button (for card headers)
   if (variant === "icon") {
