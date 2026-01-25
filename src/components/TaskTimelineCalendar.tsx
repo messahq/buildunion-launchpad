@@ -41,9 +41,11 @@ import {
   AlertTriangle,
   User,
   CalendarDays,
+  Cloud,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useWeather, getWeatherIconUrl, getAlertIcon, type ForecastDay } from "@/hooks/useWeather";
 
 interface Task {
   id: string;
@@ -65,6 +67,7 @@ interface TaskTimelineCalendarProps {
   tasks: Task[];
   isOwner: boolean;
   onTaskClick?: (task: Task) => void;
+  projectAddress?: string;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -86,6 +89,7 @@ const TaskTimelineCalendar = ({
   tasks,
   isOwner,
   onTaskClick,
+  projectAddress,
 }: TaskTimelineCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
@@ -93,6 +97,13 @@ const TaskTimelineCalendar = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedDayTasks, setSelectedDayTasks] = useState<Task[] | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Weather integration
+  const { forecast, getWeatherForDate, loading: weatherLoading } = useWeather({
+    location: projectAddress,
+    days: 5,
+    enabled: !!projectAddress
+  });
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -251,6 +262,18 @@ const TaskTimelineCalendar = ({
           <AlertTriangle className="h-3 w-3 text-red-500" />
           <span className="text-slate-600">Overdue</span>
         </div>
+        {projectAddress && (
+          <>
+            <div className="flex items-center gap-1.5">
+              <Cloud className="h-3 w-3 text-blue-400" />
+              <span className="text-slate-600">Weather</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-amber-500">⚠️</span>
+              <span className="text-slate-600">Weather Alert</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Calendar Grid */}
@@ -283,6 +306,12 @@ const TaskTimelineCalendar = ({
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const isDragOver = dragOverDate && isSameDay(day, dragOverDate);
             const isPastDay = isPast(startOfDay(day)) && !isToday(day);
+            
+            // Get weather for this day
+            const dateStr = format(day, "yyyy-MM-dd");
+            const dayWeather = getWeatherForDate(dateStr);
+            const hasWeatherAlerts = (dayWeather?.alerts?.length ?? 0) > 0;
+            const hasDangerAlert = dayWeather?.alerts?.some(a => a.severity === "danger");
 
             return (
               <div
@@ -292,7 +321,9 @@ const TaskTimelineCalendar = ({
                   !isCurrentMonth && "bg-slate-50/50",
                   isToday(day) && "bg-amber-50/50",
                   isDragOver && "bg-cyan-50 ring-2 ring-inset ring-cyan-400",
-                  isPastDay && dayTasks.some((t) => t.status !== "completed") && "bg-red-50/30"
+                  isPastDay && dayTasks.some((t) => t.status !== "completed") && "bg-red-50/30",
+                  hasDangerAlert && "bg-red-50/20",
+                  hasWeatherAlerts && !hasDangerAlert && "bg-amber-50/20"
                 )}
                 onDragOver={(e) => handleDragOver(e, day)}
                 onDragLeave={handleDragLeave}
@@ -302,7 +333,7 @@ const TaskTimelineCalendar = ({
                 }}
                 onClick={() => handleDayClick(day)}
               >
-                {/* Day Number */}
+                {/* Day Number + Weather */}
                 <div
                   className={cn(
                     "text-xs font-medium mb-1 flex items-center justify-between",
@@ -313,14 +344,58 @@ const TaskTimelineCalendar = ({
                       : "text-slate-400"
                   )}
                 >
-                  <span
-                    className={cn(
-                      "w-6 h-6 flex items-center justify-center rounded-full",
-                      isToday(day) && "bg-amber-600 text-white"
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={cn(
+                        "w-6 h-6 flex items-center justify-center rounded-full",
+                        isToday(day) && "bg-amber-600 text-white"
+                      )}
+                    >
+                      {format(day, "d")}
+                    </span>
+                    {/* Weather indicator */}
+                    {dayWeather && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className={cn(
+                              "flex items-center gap-0.5",
+                              hasDangerAlert && "text-red-600",
+                              hasWeatherAlerts && !hasDangerAlert && "text-amber-600"
+                            )}>
+                              <img 
+                                src={getWeatherIconUrl(dayWeather.icon)}
+                                alt={dayWeather.description}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-[10px]">{dayWeather.temp_max}°</span>
+                              {hasWeatherAlerts && (
+                                <span className="text-[10px]">{hasDangerAlert ? "🚨" : "⚠️"}</span>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <div className="text-xs space-y-1">
+                              <div className="font-medium capitalize">{dayWeather.description}</div>
+                              <div>High: {dayWeather.temp_max}°C / Low: {dayWeather.temp_min}°C</div>
+                              <div>Wind: {Math.round(dayWeather.wind_speed * 3.6)} km/h</div>
+                              {dayWeather.rain_prob > 30 && (
+                                <div>Rain: {dayWeather.rain_prob}%</div>
+                              )}
+                              {dayWeather.alerts?.map((alert, idx) => (
+                                <div key={idx} className={cn(
+                                  "p-1 rounded text-[10px]",
+                                  alert.severity === "danger" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                )}>
+                                  {getAlertIcon(alert.type)} {alert.message}
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
-                  >
-                    {format(day, "d")}
-                  </span>
+                  </div>
                   {dayTasks.length > 3 && (
                     <Badge variant="secondary" className="text-[10px] h-4 px-1">
                       +{dayTasks.length - 3}
