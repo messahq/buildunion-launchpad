@@ -31,6 +31,7 @@ export type Database = {
           hourly_rate: number | null
           id: string
           is_contractor: boolean | null
+          is_public_profile: boolean | null
           is_union_member: boolean | null
           is_verified: boolean | null
           latitude: number | null
@@ -65,6 +66,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_contractor?: boolean | null
+          is_public_profile?: boolean | null
           is_union_member?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
@@ -99,6 +101,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_contractor?: boolean | null
+          is_public_profile?: boolean | null
           is_union_member?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
@@ -246,6 +249,74 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_posts: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          replies_count: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          replies_count?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          replies_count?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      forum_replies: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_replies_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
             referencedColumns: ["id"]
           },
         ]
