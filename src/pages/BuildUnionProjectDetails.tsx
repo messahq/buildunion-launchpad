@@ -22,7 +22,7 @@ import {
   Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList, ScrollText,
   Download, Eye
 } from "lucide-react";
-import { downloadPDF, buildContractHTML } from "@/lib/pdfGenerator";
+import { downloadPDF, generatePDFBlob, buildContractHTML } from "@/lib/pdfGenerator";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -115,6 +115,7 @@ const BuildUnionProjectDetails = () => {
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [projectContracts, setProjectContracts] = useState<ProjectContract[]>([]);
   const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
+  const [viewingContractId, setViewingContractId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
   const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "contracts">("documents");
@@ -355,6 +356,87 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
       toast.error('Failed to generate PDF');
     } finally {
       setDownloadingContractId(null);
+    }
+  };
+
+  // Handle contract PDF view in new tab
+  const handleViewContractPDF = async (contract: ProjectContract) => {
+    setViewingContractId(contract.id);
+    try {
+      const htmlContent = buildContractHTML({
+        contractNumber: contract.contract_number,
+        contractDate: contract.contract_date,
+        templateType: contract.template_type || 'custom',
+        contractorInfo: {
+          name: contract.contractor_name || '',
+          address: contract.contractor_address || '',
+          phone: contract.contractor_phone || '',
+          email: contract.contractor_email || '',
+          license: contract.contractor_license || undefined
+        },
+        clientInfo: {
+          name: contract.client_name || '',
+          address: contract.client_address || '',
+          phone: contract.client_phone || '',
+          email: contract.client_email || ''
+        },
+        projectInfo: {
+          name: contract.project_name || '',
+          address: contract.project_address || '',
+          description: contract.scope_of_work || undefined
+        },
+        financialTerms: {
+          totalAmount: contract.total_amount || 0,
+          depositPercentage: contract.deposit_percentage || 50,
+          depositAmount: contract.deposit_amount || 0,
+          paymentSchedule: contract.payment_schedule || ''
+        },
+        timeline: {
+          startDate: contract.start_date || '',
+          estimatedEndDate: contract.estimated_end_date || '',
+          workingDays: contract.working_days || ''
+        },
+        terms: {
+          scopeOfWork: contract.scope_of_work || '',
+          warrantyPeriod: contract.warranty_period || '1 year',
+          materialsIncluded: contract.materials_included ?? true,
+          changeOrderPolicy: contract.change_order_policy || '',
+          cancellationPolicy: contract.cancellation_policy || '',
+          disputeResolution: contract.dispute_resolution || '',
+          additionalTerms: contract.additional_terms || undefined,
+          hasLiabilityInsurance: contract.has_liability_insurance ?? true,
+          hasWSIB: contract.has_wsib ?? true
+        },
+        signatures: {
+          client: contract.client_signature,
+          contractor: contract.contractor_signature
+        },
+        branding: {
+          companyLogoUrl: profile?.company_logo_url,
+          companyName: profile?.company_name || contract.contractor_name,
+          companyPhone: profile?.phone || contract.contractor_phone,
+          companyEmail: contract.contractor_email,
+          companyWebsite: profile?.company_website
+        },
+        formatCurrency,
+        regionName: config?.name
+      });
+
+      const blob = await generatePDFBlob(htmlContent, {
+        filename: `Contract-${contract.contract_number}.pdf`,
+        pageFormat: 'letter'
+      });
+      
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      
+      // Revoke after a short delay to ensure the tab has loaded
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF preview');
+    } finally {
+      setViewingContractId(null);
     }
   };
 
@@ -1123,20 +1205,38 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                             </p>
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownloadContractPDF(contract)}
-                          disabled={downloadingContractId === contract.id}
-                          className="gap-2 border-purple-200 hover:bg-purple-50 hover:text-purple-700"
-                        >
-                          {downloadingContractId === contract.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                          <span className="hidden sm:inline">PDF</span>
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewContractPDF(contract)}
+                            disabled={viewingContractId === contract.id}
+                            className="gap-2 border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+                            title="View PDF in new tab"
+                          >
+                            {viewingContractId === contract.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                            <span className="hidden sm:inline">View</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadContractPDF(contract)}
+                            disabled={downloadingContractId === contract.id}
+                            className="gap-2 border-purple-200 hover:bg-purple-50 hover:text-purple-700"
+                            title="Download PDF"
+                          >
+                            {downloadingContractId === contract.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                            <span className="hidden sm:inline">Download</span>
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
