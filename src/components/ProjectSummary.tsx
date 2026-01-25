@@ -49,7 +49,8 @@ import {
   CheckSquare,
   Image,
   File,
-  FileImage
+  FileImage,
+  Users
 } from "lucide-react";
 import {
   Alert,
@@ -58,6 +59,8 @@ import {
 } from "@/components/ui/alert";
 import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
 import { ShareSummaryDialog } from "@/components/ShareSummaryDialog";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
+import { UpgradeToTeamProjectDialog } from "@/components/UpgradeToTeamProjectDialog";
 import { generatePDFBlob, buildProjectSummaryHTML, buildContractHTML } from "@/lib/pdfGenerator";
 import {
   Accordion,
@@ -1091,6 +1094,20 @@ export function ProjectSummary({
               Edit
             </Button>
           )}
+
+          <UpgradeToTeamProjectDialog
+            summaryId={summary?.id}
+            projectId={summary?.project_id || projectId}
+            projectName={quoteData?.projectName}
+            lineItemsCount={editedItems.length}
+            totalAmount={grandTotal}
+            formatCurrency={formatCurrency}
+          >
+            <Button className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Team Project</span>
+            </Button>
+          </UpgradeToTeamProjectDialog>
         </div>
       </div>
 
@@ -2047,7 +2064,23 @@ export function ProjectSummary({
           <Send className="h-4 w-4" />
           Send Invoice
         </Button>
+        <UpgradeToTeamProjectDialog
+          summaryId={summary?.id}
+          projectId={summary?.project_id || projectId}
+          projectName={quoteData?.projectName}
+          lineItemsCount={editedItems.length}
+          totalAmount={grandTotal}
+          formatCurrency={formatCurrency}
+        >
+          <Button className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600">
+            <Users className="h-4 w-4" />
+            Upgrade to Team Project
+          </Button>
+        </UpgradeToTeamProjectDialog>
       </div>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTopButton />
     </div>
   );
 }
