@@ -1,198 +1,112 @@
 
-# Plan: "Skip to Blueprints" áthelyezése a New Project Modalba
+# Megoldási Terv: Session Stabilitás Javítása
 
-## Összefoglaló
-A "Skip to Blueprints" gomb áthelyezése a Quick Mode oldalról a "Start New Project" modalba, hogy a felhasználó már a projekt indításakor választhassa ki, hogy gyors módot (Quick Mode) vagy azonnal blueprint elemzést (M.E.S.S.A.) szeretne.
+## Probléma Összefoglalás
 
-## Változtatások
+A felhasználó azért nem marad bejelentkezve, mert a kód túl gyakran próbálja manuálisan frissíteni a session tokent, ami Supabase rate limitet (429-es hibát) okoz. Amikor ezt a limitet elérjük, a session érvénytelenné válik és a rendszer kijelentkezteti a felhasználót.
 
-### 1. NewProjectModal.tsx módosítása
-Új kártyát adunk a Quick Mode mellé "Blueprint Analysis" opcióval:
+## Mi a baj?
 
-**Új kártya elemei:**
-- Ikon: Ciánkék/kék gradiens háttér, `FileUp` vagy `Sparkles` ikon
-- Címke: "Blueprint Analysis" + "PRO" badge
-- Leírás: "Upload blueprints for M.E.S.S.A. AI deep analysis"
-- Tier jelzés:
-  - Ha guest: Lock ikon + "Sign in required"
-  - Ha Free user: Trial counter badge (pl. "2/3 trials")
-  - Ha Pro user: Crown ikon + "Unlimited"
+- A Supabase kliens **már automatikusan frissíti a tokent** (`autoRefreshToken: true` beállítás)
+- De a kód 3 helyen is **manuálisan** hívja a `refreshSession()`-t minden API hívás előtt
+- Ez túl sok kérést generál → 429 rate limit → session elvesztése → kijelentkezés
 
-**Új importok szükségesek:**
-- `FileUp`, `Lock`, `Sparkles` a lucide-react-ből
-- `useDbTrialUsage` hívás `blueprint_analysis` feature-re
-- `AuthGateModal` kezelés guest-eknek
+## Megoldás
 
-**Navigációs logika:**
-- Guest → AuthGateModal megnyitása
-- Free user trial-lal → `/buildunion/workspace/new` navigáció + trial fogyasztás
-- Free user trial nélkül → `/buildunion/pricing` átirányítás
-- Pro user → `/buildunion/workspace/new` navigáció
-
-### 2. BuildUnionQuickMode.tsx módosítása
-A "Skip to Blueprints" gomb eltávolítása a fejlécből, mivel már a modalból elérhető.
-
-**Eltávolítandó elemek (288-319. sorok körül):**
-- A teljes Tooltip+Button blokk ami a "Skip to Blueprints"-et tartalmazza
-- A kapcsolódó handler logika (`handleSkipToBlueprints`, `navigateToBlueprints`) megtartható, de nem lesz UI elem hozzá
-
-### 3. Modal layout frissítés
-A modal szélesebb lesz (`sm:max-w-lg`) és a két kártya egymás alatt jelenik meg egyértelmű választási lehetőséggel.
+Eltávolítjuk a felesleges manuális `refreshSession()` hívásokat, és helyettük a Supabase kliens automatikus token kezelésére bízzuk a frissítést. Ahol szükséges, egyszerűen lekérjük az aktuális session-t token frissítés nélkül.
 
 ---
 
-## Technikai részletek
+## 1. lépés: useSubscription.tsx módosítás
 
-### NewProjectModal.tsx változások:
-
-```typescript
-// Új importok
-import { Zap, Camera, Calculator, FileText, Crown, FileUp, Lock, Sparkles } from "lucide-react";
-import { toast } from "sonner";
-
-// Új hook a blueprint trial-okhoz
-const { 
-  remainingTrials: blueprintTrials, 
-  maxTrials: blueprintMaxTrials,
-  hasTrialsRemaining: hasBlueprintTrials,
-  useOneTrial: useBlueprintTrial,
-  isPremiumUser: isPremium 
-} = useDbTrialUsage("blueprint_analysis");
-
-// Új handler
-const handleBlueprintMode = async () => {
-  if (!user) {
-    // Guest - show auth gate or redirect to login
-    onOpenChange(false);
-    navigate("/buildunion/login?redirect=/buildunion/workspace/new");
-    return;
-  }
-  
-  if (!isPremium && !hasBlueprintTrials) {
-    toast.error("You've used all free trials. Upgrade to Pro for unlimited access.");
-    onOpenChange(false);
-    navigate("/buildunion/pricing");
-    return;
-  }
-  
-  if (!isPremium) {
-    await useBlueprintTrial();
-    toast.success(`Blueprint trial used. ${blueprintTrials - 1} remaining.`);
-  }
-  
-  onOpenChange(false);
-  navigate("/buildunion/workspace/new");
-};
-```
-
-### Új kártya UI:
-
-```jsx
-{/* Blueprint Analysis Option - PRO */}
-<Card 
-  className="cursor-pointer hover:border-cyan-400 hover:shadow-md transition-all group border-2 mt-4"
-  onClick={handleBlueprintMode}
->
-  <CardContent className="p-5">
-    <div className="flex items-start gap-4">
-      <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-        <FileUp className="w-7 h-7 text-white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-semibold text-foreground text-lg">Blueprint Analysis</h3>
-          <Badge className="text-xs bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
-            PRO
-          </Badge>
-          {/* Tier indicator */}
-          {!user ? (
-            <Lock className="w-4 h-4 text-muted-foreground" />
-          ) : isPremium ? (
-            <Badge className="text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-white gap-1">
-              <Crown className="w-3 h-3" />
-              Unlimited
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="text-xs">
-              {blueprintTrials}/{blueprintMaxTrials} trials
-            </Badge>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground mb-3">
-          Upload blueprints for M.E.S.S.A. AI deep analysis and automated material takeoff.
-        </p>
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
-            AI Analysis
-          </span>
-          <span className="flex items-center gap-1">
-            <FileText className="w-3.5 h-3.5 text-cyan-500" />
-            Material Takeoff
-          </span>
-        </div>
-      </div>
-    </div>
-  </CardContent>
-</Card>
-```
-
-### Trial info banner frissítés:
-
-A banner mindkét trial típust mutatja (Quick Estimate + Blueprint Analysis) ha a user nem premium:
-
-```jsx
-{user && !isPremium && (
-  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-    <p className="text-sm font-medium text-amber-800 mb-1">Your Free Trials:</p>
-    <div className="flex items-center justify-center gap-2">
-      <div className="text-center p-2 bg-white rounded border flex-1">
-        <div className="font-bold text-amber-600">{estimateTrials}/{estimateMaxTrials}</div>
-        <div className="text-xs text-muted-foreground">AI Estimates</div>
-      </div>
-      <div className="text-center p-2 bg-white rounded border flex-1">
-        <div className="font-bold text-cyan-600">{blueprintTrials}/{blueprintMaxTrials}</div>
-        <div className="text-xs text-muted-foreground">Blueprints</div>
-      </div>
-    </div>
-  </div>
-)}
-```
-
----
-
-## Visual Flow
+**Mit csinálunk:**
+- Eltávolítjuk a manuális `refreshSession()` hívást
+- Helyette egyszerűen az aktuális session tokent használjuk
+- Ha a token lejárt, a Supabase kliens automatikusan frissíti
 
 ```text
-┌─────────────────────────────────────────────┐
-│          Start New Project                  │
-│                                             │
-│  ┌───────────────────────────────────────┐  │
-│  │ 🟡 Your Free Trials:                  │  │
-│  │  [3/3 AI Estimates] [2/3 Blueprints]  │  │
-│  └───────────────────────────────────────┘  │
-│                                             │
-│  ┌───────────────────────────────────────┐  │
-│  │ ⚡ Quick Mode            [Fast]       │  │
-│  │    Photo estimates, templates...      │  │
-│  │    📷 Photo  📊 Calc  📄 Quote       │  │
-│  └───────────────────────────────────────┘  │
-│                                             │
-│  ┌───────────────────────────────────────┐  │
-│  │ 📤 Blueprint Analysis   [PRO] [2/3]   │  │
-│  │    M.E.S.S.A. AI deep analysis        │  │
-│  │    ✨ AI  📄 Takeoff                  │  │
-│  └───────────────────────────────────────┘  │
-│                                             │
-│  "Upgrade to Pro for unlimited access"      │
-└─────────────────────────────────────────────┘
+Módosítandó rész (~154-163. sor):
+ELŐTTE:
+  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+  const tokenToUse = refreshData?.session?.access_token || session.access_token;
+
+UTÁNA:
+  // Use current session - Supabase client handles token refresh automatically
+  const tokenToUse = session.access_token;
 ```
 
 ---
 
-## Érintett fájlok
+## 2. lépés: TeamMapView.tsx módosítás
 
-| Fájl | Művelet |
-|------|---------|
-| `src/components/NewProjectModal.tsx` | Módosítás - Blueprint kártya hozzáadása |
-| `src/pages/BuildUnionQuickMode.tsx` | Módosítás - Skip to Blueprints gomb eltávolítása |
+**Mit csinálunk:**
+- Eltávolítjuk a manuális `refreshSession()` hívást
+- Az aktuális session-t használjuk (ami az AuthProvider-ből jön)
+
+```text
+Módosítandó rész (~470-482. sor):
+ELŐTTE:
+  const { data: refreshData } = await supabase.auth.refreshSession();
+  const tokenToUse = refreshData?.session?.access_token;
+
+UTÁNA:
+  const { data: { session } } = await supabase.auth.getSession();
+  const tokenToUse = session?.access_token;
+```
+
+---
+
+## 3. lépés: useProjectConflicts.tsx módosítás
+
+**Mit csinálunk:**
+- Ugyanaz mint fent - `refreshSession()` helyett `getSession()`
+
+```text
+Módosítandó rész (~21-28. sor):
+ELŐTTE:
+  const { data: refreshData } = await supabase.auth.refreshSession();
+  const tokenToUse = refreshData?.session?.access_token;
+
+UTÁNA:
+  const { data: { session } } = await supabase.auth.getSession();
+  const tokenToUse = session?.access_token;
+```
+
+---
+
+## 4. lépés: Subscription ellenőrzés ritkítása
+
+**Mit csinálunk:**
+- Az auto-refresh intervallumot 60 másodpercről 5 percre növeljük
+- Ez tovább csökkenti a Stripe API terhelést is
+
+```text
+Módosítandó rész (~267. sor):
+ELŐTTE:
+  }, 60000);  // 1 perc
+
+UTÁNA:
+  }, 300000); // 5 perc
+```
+
+---
+
+## Technikai Részletek
+
+| Fájl | Változtatás |
+|------|-------------|
+| `src/hooks/useSubscription.tsx` | `refreshSession()` eltávolítása, intervallum növelése |
+| `src/components/TeamMapView.tsx` | `refreshSession()` → `getSession()` |
+| `src/hooks/useProjectConflicts.tsx` | `refreshSession()` → `getSession()` |
+
+## Miért működik ez?
+
+1. **A Supabase kliens automatikusan kezeli a token frissítést** - Az `autoRefreshToken: true` beállítás biztosítja, hogy a token lejárata előtt automatikusan megújuljon
+2. **A `getSession()` nem okoz rate limitet** - Ez csak lekéri az aktuális session-t a localStorage-ból, nem küld hálózati kérést
+3. **Kevesebb API hívás = stabilabb működés** - A Stripe API sem kapja el a rate limitet
+
+## Várt Eredmény
+
+- A felhasználó bejelentkezve marad
+- Nem lesz többé 429-es rate limit hiba
+- A session stabilan megmarad böngésző frissítés után is
