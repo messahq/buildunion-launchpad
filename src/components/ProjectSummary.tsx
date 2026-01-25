@@ -57,6 +57,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
+import { ShareSummaryDialog } from "@/components/ShareSummaryDialog";
 import { generatePDFBlob, buildProjectSummaryHTML, buildContractHTML } from "@/lib/pdfGenerator";
 import {
   Accordion,
@@ -1948,16 +1949,18 @@ export function ProjectSummary({
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 justify-end">
-        <SaveAsTemplateDialog
+        <ShareSummaryDialog
+          summaryId={summary?.id}
           lineItems={editedItems}
-          photoEstimate={photoEstimate || summary?.photo_estimate}
-          calculatorType={(summary?.calculator_results as any[])?.[0]?.calcType}
+          clientInfo={clientInfo}
+          totalAmount={grandTotal}
+          formatCurrency={formatCurrency}
         >
           <Button variant="outline" className="gap-2">
-            <LayoutTemplate className="h-4 w-4" />
-            Save as Template
+            <Send className="h-4 w-4" />
+            Share Summary
           </Button>
-        </SaveAsTemplateDialog>
+        </ShareSummaryDialog>
         <Button 
           variant="outline" 
           onClick={() => generatePDF(false)} 
