@@ -1,6 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+// Cache for subscription data to prevent rate limiting
+let subscriptionCache: {
+  data: SubscriptionData | null;
+  timestamp: number;
+  userId: string | null;
+} = {
+  data: null,
+  timestamp: 0,
+  userId: null,
+};
+
+// Minimum time between API calls (30 seconds)
+const CACHE_DURATION_MS = 30000;
 
 export type SubscriptionTier = "free" | "pro" | "premium" | "enterprise";
 
@@ -100,8 +114,11 @@ export const useSubscription = () => {
     return null;
   };
 
-  const checkSubscription = useCallback(async () => {
-    if (!session?.access_token) {
+  // Ref to track if a check is already in progress
+  const checkInProgress = useRef(false);
+
+  const checkSubscription = useCallback(async (forceRefresh = false) => {
+    if (!session?.access_token || !user?.id) {
       setSubscription({
         subscribed: false,
         tier: "free",
@@ -112,6 +129,24 @@ export const useSubscription = () => {
       return;
     }
 
+    // Check cache first (unless force refresh)
+    const now = Date.now();
+    if (
+      !forceRefresh &&
+      subscriptionCache.data &&
+      subscriptionCache.userId === user.id &&
+      now - subscriptionCache.timestamp < CACHE_DURATION_MS
+    ) {
+      setSubscription(subscriptionCache.data);
+      return;
+    }
+
+    // Prevent concurrent checks
+    if (checkInProgress.current) {
+      return;
+    }
+
+    checkInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -138,41 +173,49 @@ export const useSubscription = () => {
       // If token was expired, the edge function returns token_expired flag
       if (data?.token_expired) {
         console.warn("Token expired during subscription check - session may need refresh");
-        // Set free tier but don't throw error
-        setSubscription({
+        const freeData: SubscriptionData = {
           subscribed: false,
           tier: "free",
           productId: null,
           subscriptionEnd: null,
           billingInterval: null,
-        });
+        };
+        setSubscription(freeData);
+        subscriptionCache = { data: freeData, timestamp: now, userId: user.id };
         return;
       }
 
       const productInfo = data.product_id ? PRODUCT_TO_TIER[data.product_id] : null;
 
-      setSubscription({
+      const newSubscription: SubscriptionData = {
         subscribed: data.subscribed,
         tier: productInfo?.tier || "free",
         productId: data.product_id,
         subscriptionEnd: data.subscription_end,
         billingInterval: productInfo?.interval || null,
-      });
+      };
+      
+      setSubscription(newSubscription);
+      // Update cache
+      subscriptionCache = { data: newSubscription, timestamp: now, userId: user.id };
     } catch (err) {
       console.error("Error checking subscription:", err);
       setError(err instanceof Error ? err.message : "Failed to check subscription");
       // On error, default to free tier instead of crashing
-      setSubscription({
+      const freeData: SubscriptionData = {
         subscribed: false,
         tier: "free",
         productId: null,
         subscriptionEnd: null,
         billingInterval: null,
-      });
+      };
+      setSubscription(freeData);
+      subscriptionCache = { data: freeData, timestamp: now, userId: user.id };
     } finally {
       setLoading(false);
+      checkInProgress.current = false;
     }
-  }, [session?.access_token]);
+  }, [session?.access_token, user?.id]);
 
   const createCheckout = async (priceId: string) => {
     if (!session?.access_token) {

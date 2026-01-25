@@ -470,7 +470,22 @@ const TeamMapView = () => {
   useEffect(() => {
     const fetchApiKey = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("get-maps-key");
+        // Refresh session first to ensure valid token
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        const tokenToUse = refreshData?.session?.access_token;
+        
+        if (!tokenToUse) {
+          console.warn("No valid session for maps key fetch");
+          setApiKeyError(true);
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke("get-maps-key", {
+          headers: {
+            Authorization: `Bearer ${tokenToUse}`,
+          },
+        });
+        
         if (error) throw error;
         if (data?.key) {
           setApiKey(data.key);
