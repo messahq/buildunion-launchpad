@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.get-weather]
 verify_jwt = false
+
+[functions.weather-alert-check]
+verify_jwt = false
