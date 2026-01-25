@@ -1102,6 +1102,15 @@ export function ProjectSummary({
             lineItemsCount={editedItems.length}
             totalAmount={grandTotal}
             formatCurrency={formatCurrency}
+            clientName={clientInfo.name}
+            clientAddress={clientInfo.address}
+            photoEstimate={{
+              estimatedArea: summary?.photo_estimate?.estimatedArea || photoEstimate?.estimatedArea,
+              areaUnit: summary?.photo_estimate?.areaUnit || photoEstimate?.areaUnit || "sq ft",
+              materials: summary?.photo_estimate?.materials || photoEstimate?.materials,
+              projectType: summary?.photo_estimate?.projectType || photoEstimate?.projectType,
+            }}
+            calculatorResults={summary?.calculator_results || calculatorResults}
           >
             <Button className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600">
               <Users className="h-4 w-4" />
@@ -2071,6 +2080,15 @@ export function ProjectSummary({
           lineItemsCount={editedItems.length}
           totalAmount={grandTotal}
           formatCurrency={formatCurrency}
+          clientName={clientInfo.name}
+          clientAddress={clientInfo.address}
+          photoEstimate={{
+            estimatedArea: summary?.photo_estimate?.estimatedArea || photoEstimate?.estimatedArea,
+            areaUnit: summary?.photo_estimate?.areaUnit || photoEstimate?.areaUnit || "sq ft",
+            materials: summary?.photo_estimate?.materials || photoEstimate?.materials,
+            projectType: summary?.photo_estimate?.projectType || photoEstimate?.projectType,
+          }}
+          calculatorResults={summary?.calculator_results || calculatorResults}
         >
           <Button className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600">
             <Users className="h-4 w-4" />
