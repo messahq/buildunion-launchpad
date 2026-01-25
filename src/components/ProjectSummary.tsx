@@ -46,7 +46,10 @@ import {
   ClipboardList,
   Shield,
   Brain,
-  CheckSquare
+  CheckSquare,
+  Image,
+  File,
+  FileImage
 } from "lucide-react";
 import {
   Alert,
@@ -162,6 +165,7 @@ export function ProjectSummary({
   const [editMode, setEditMode] = useState(false);
   const [editedItems, setEditedItems] = useState<LineItem[]>([]);
   const [projectContracts, setProjectContracts] = useState<ProjectContract[]>([]);
+  const [projectDocuments, setProjectDocuments] = useState<{ id: string; file_name: string; file_path: string; file_size: number | null; uploaded_at: string }[]>([]);
   const [viewingContractId, setViewingContractId] = useState<string | null>(null);
   const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
   const [clientInfo, setClientInfo] = useState({
@@ -204,16 +208,26 @@ export function ProjectSummary({
       });
       setNotes(summaryData.notes || "");
 
-      // Fetch contracts if project_id exists
+      // Fetch contracts and documents if project_id exists
       if (summaryData.project_id) {
-        const { data: contractsData } = await supabase
-          .from("contracts")
-          .select("*")
-          .eq("project_id", summaryData.project_id)
-          .order("created_at", { ascending: false });
+        const [contractsResult, documentsResult] = await Promise.all([
+          supabase
+            .from("contracts")
+            .select("*")
+            .eq("project_id", summaryData.project_id)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("project_documents")
+            .select("*")
+            .eq("project_id", summaryData.project_id)
+            .order("uploaded_at", { ascending: false })
+        ]);
         
-        if (contractsData) {
-          setProjectContracts(contractsData as unknown as ProjectContract[]);
+        if (contractsResult.data) {
+          setProjectContracts(contractsResult.data as unknown as ProjectContract[]);
+        }
+        if (documentsResult.data) {
+          setProjectDocuments(documentsResult.data);
         }
       }
     } catch (error) {
@@ -1497,6 +1511,121 @@ export function ProjectSummary({
                       </p>
                     )}
                   </div>
+
+                  {/* ===== ANALYZED FILES & DOCUMENTS ===== */}
+                  {(projectDocuments.length > 0 || projectContracts.length > 0) && (
+                    <div className="mt-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-slate-600" />
+                        <span className="font-medium text-sm text-slate-700">Analyzed Project Files</span>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-3">
+                        {/* Project Documents */}
+                        {projectDocuments.length > 0 && (
+                          <div className="bg-white rounded-lg border p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                              <Image className="h-4 w-4 text-blue-500" />
+                              <span>Uploaded Files ({projectDocuments.length})</span>
+                            </div>
+                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                              {projectDocuments.slice(0, 5).map((doc) => {
+                                const isPdf = doc.file_name.toLowerCase().endsWith('.pdf');
+                                const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(doc.file_name);
+                                return (
+                                  <div key={doc.id} className="flex items-center gap-2 text-xs bg-gray-50 rounded px-2 py-1.5">
+                                    {isPdf ? (
+                                      <File className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                    ) : isImage ? (
+                                      <FileImage className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                                    ) : (
+                                      <FileText className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+                                    )}
+                                    <span className="truncate flex-1" title={doc.file_name}>{doc.file_name}</span>
+                                    <Badge variant="outline" className="text-[10px] px-1.5">
+                                      {isPdf ? 'PDF' : isImage ? 'Image' : 'Doc'}
+                                    </Badge>
+                                  </div>
+                                );
+                              })}
+                              {projectDocuments.length > 5 && (
+                                <p className="text-xs text-muted-foreground text-center">
+                                  +{projectDocuments.length - 5} more files
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Contracts */}
+                        {projectContracts.length > 0 && (
+                          <div className="bg-white rounded-lg border p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                              <FileSignature className="h-4 w-4 text-rose-500" />
+                              <span>Contracts ({projectContracts.length})</span>
+                            </div>
+                            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                              {projectContracts.slice(0, 5).map((contract) => (
+                                <div key={contract.id} className="flex items-center justify-between gap-2 text-xs bg-gray-50 rounded px-2 py-1.5">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <FileSignature className="h-3.5 w-3.5 text-rose-500 flex-shrink-0" />
+                                    <span className="truncate">{contract.contract_number}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-[10px] px-1.5 ${
+                                        contract.client_signature && contract.contractor_signature 
+                                          ? 'bg-green-50 text-green-700 border-green-200' 
+                                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                                      }`}
+                                    >
+                                      {contract.client_signature && contract.contractor_signature ? 'Signed' : 'Draft'}
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => handleViewContractPDF(contract)}
+                                      disabled={viewingContractId === contract.id}
+                                    >
+                                      {viewingContractId === contract.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Eye className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => handleDownloadContractPDF(contract)}
+                                      disabled={downloadingContractId === contract.id}
+                                    >
+                                      {downloadingContractId === contract.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Download className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* AI Analysis Note */}
+                      <div className="text-xs text-slate-500 bg-slate-50 rounded-md p-2 flex items-start gap-2">
+                        <Brain className="h-3.5 w-3.5 mt-0.5 text-violet-500 flex-shrink-0" />
+                        <span>
+                          Both AI engines analyze uploaded images, PDFs, and blueprints to extract measurements, 
+                          verify material quantities, and cross-reference contract terms for Operational Truth verification.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
