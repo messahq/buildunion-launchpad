@@ -400,47 +400,52 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
             {/* Contact Options */}
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-foreground">Contact</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 gap-2">
+                {/* Message Button - Always show for other users' profiles */}
                 {!isOwnProfile && (
                   <Button 
                     onClick={handleStartChat}
-                    className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Send Message
-                    {!hasPremiumAccess && (
+                    {!hasPremiumAccess && user && (
                       <Badge variant="secondary" className="ml-2 text-[10px]">Premium</Badge>
                     )}
                   </Button>
                 )}
-                {member.phone && (
-                  <Button
-                    variant="outline"
-                    asChild
-                    className="flex-1"
-                  >
-                    <a href={`tel:${member.phone}`}>
-                      <Phone className="h-4 w-4 mr-2" />
-                      Call
-                    </a>
-                  </Button>
-                )}
-                {member.company_website && (
-                  <Button
-                    variant="outline"
-                    asChild
-                    className="flex-1"
-                  >
-                    <a 
-                      href={member.company_website.startsWith('http') ? member.company_website : `https://${member.company_website}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                
+                {/* Call and Website buttons */}
+                <div className="flex gap-2">
+                  {member.phone && (
+                    <Button
+                      variant="outline"
+                      asChild
+                      className="flex-1"
                     >
-                      <Globe className="h-4 w-4 mr-2" />
-                      Website
-                    </a>
-                  </Button>
-                )}
+                      <a href={`tel:${member.phone}`}>
+                        <Phone className="h-4 w-4 mr-2" />
+                        Call
+                      </a>
+                    </Button>
+                  )}
+                  {member.company_website && (
+                    <Button
+                      variant="outline"
+                      asChild
+                      className="flex-1"
+                    >
+                      <a 
+                        href={member.company_website.startsWith('http') ? member.company_website : `https://${member.company_website}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        <Globe className="h-4 w-4 mr-2" />
+                        Website
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
