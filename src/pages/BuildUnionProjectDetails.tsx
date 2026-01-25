@@ -928,14 +928,6 @@ const BuildUnionProjectDetails = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  {/* Project Mode Toggle */}
-                  <ProjectModeToggle
-                    summaryId={projectSummary?.id}
-                    projectId={projectId}
-                    initialMode={projectMode}
-                    onModeChange={(newMode) => setProjectMode(newMode)}
-                    variant="compact"
-                  />
                   
                   <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
                     <Pencil className="h-4 w-4" />

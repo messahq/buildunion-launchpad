@@ -1145,13 +1145,6 @@ export function ProjectSummary({
               Edit
             </Button>
           )}
-
-          <ProjectModeToggle
-            summaryId={summary?.id}
-            projectId={summary?.project_id || projectId}
-            initialMode={(summary?.project_id ? "team" : "solo") as ProjectMode}
-            variant="compact"
-          />
         </div>
       </div>
 
