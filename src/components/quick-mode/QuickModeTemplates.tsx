@@ -482,11 +482,6 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
 
   // Handle continue to next step (now goes to calculator)
   const handleContinue = () => {
-    if (!projectName.trim()) {
-      toast.error("Please enter a project name");
-      return;
-    }
-
     if (currentChecklist.length === 0) {
       toast.error("Please add at least one task to the checklist");
       return;
