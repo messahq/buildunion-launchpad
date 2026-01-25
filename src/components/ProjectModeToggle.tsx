@@ -35,7 +35,7 @@ interface ProjectModeToggleProps {
   projectId?: string | null;
   initialMode?: ProjectMode;
   onModeChange?: (newMode: ProjectMode) => void;
-  variant?: "switch" | "button" | "compact";
+  variant?: "switch" | "button" | "compact" | "icon";
   showLabel?: boolean;
 }
 
@@ -86,6 +86,48 @@ export function ProjectModeToggle({
     { icon: Clock, label: "Set timelines & milestones", tier: "PRO" },
     { icon: Shield, label: "Operational Truth verification", tier: "PREMIUM" },
   ];
+
+  // Icon variant - circular icon button (for card headers)
+  if (variant === "icon") {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleToggle}
+              disabled={isLoading}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                isTeamMode
+                  ? "bg-cyan-100 hover:bg-cyan-200 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700"
+                  : "bg-amber-100 hover:bg-amber-200 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-700"
+              }`}
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : isTeamMode ? (
+                <Users className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              ) : (
+                <User className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isTeamMode ? "Switch to Solo mode" : "Switch to Team mode"}</p>
+            {!canAccessTeamMode && !isTeamMode && (
+              <p className="text-xs text-muted-foreground">Requires Pro plan</p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+
+        <UpgradeDialog
+          open={showUpgradeDialog}
+          onOpenChange={setShowUpgradeDialog}
+          onUpgrade={handleUpgrade}
+          features={teamFeatures}
+        />
+      </TooltipProvider>
+    );
+  }
 
   // Compact variant - just icons
   if (variant === "compact") {
