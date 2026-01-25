@@ -18,8 +18,14 @@ interface MemberCardProps {
     is_contractor?: boolean;
     is_union_member?: boolean;
     union_name?: string;
+    bio?: string;
+    phone?: string;
+    company_website?: string;
+    certifications?: string[];
+    experience_level?: string;
   };
   profileName?: string;
+  onClick?: () => void;
 }
 
 const tradeLabels: Record<string, string> = {
@@ -50,13 +56,16 @@ const availabilityColors: Record<string, string> = {
   unavailable: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
 };
 
-export const MemberCard = ({ member, profileName }: MemberCardProps) => {
+export const MemberCard = ({ member, profileName, onClick }: MemberCardProps) => {
   const displayName = profileName || member.company_name || "BuildUnion Member";
   const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   const tradeName = member.primary_trade ? tradeLabels[member.primary_trade] || member.primary_trade : "Trade Professional";
 
   return (
-    <Card className="hover:border-amber-200 dark:hover:border-amber-700 transition-colors">
+    <Card 
+      className="hover:border-amber-200 dark:hover:border-amber-700 transition-colors cursor-pointer"
+      onClick={onClick}
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <Avatar className="h-12 w-12">
