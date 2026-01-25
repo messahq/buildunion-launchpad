@@ -249,95 +249,103 @@ export function ProjectSummary({
       // Build initial line items from collected data
       const initialLineItems: LineItem[] = [];
       
-      // Process photo estimate materials
-      if (photoEstimate?.materials && Array.isArray(photoEstimate.materials)) {
-        photoEstimate.materials.forEach((mat: any) => {
-          initialLineItems.push({
-            name: mat.item || mat.name || "Material",
-            quantity: mat.quantity || 1,
-            unit: mat.unit || "unit",
-            unit_price: mat.price || mat.unitPrice || 0,
-            total: (mat.quantity || 1) * (mat.price || mat.unitPrice || 0),
-            source: "photo"
-          });
-        });
-      }
-      
-      // Process quote line items (from Quote Generator)
-      if (quoteData?.lineItems && Array.isArray(quoteData.lineItems)) {
+      // PRIORITY: If quoteData has lineItems, use ONLY those (final edited list from Quote Generator)
+      if (quoteData?.lineItems && Array.isArray(quoteData.lineItems) && quoteData.lineItems.length > 0) {
         quoteData.lineItems.forEach((item: any) => {
+          // Determine source based on item id prefix
+          let source: LineItem["source"] = "manual";
+          if (item.id?.startsWith("photo-")) source = "photo";
+          else if (item.id?.startsWith("calc-") || item.id?.startsWith("labor-")) source = "calculator";
+          else if (item.id?.startsWith("template-")) source = "template";
+          
           initialLineItems.push({
             name: item.description || "Item",
             quantity: item.quantity || 1,
             unit: item.unit || "unit",
             unit_price: item.unitPrice || 0,
             total: (item.quantity || 1) * (item.unitPrice || 0),
-            source: "manual"
+            source
           });
         });
-      }
-      
-      // Process calculator results
-      if (calculatorResults && Array.isArray(calculatorResults)) {
-        calculatorResults.forEach((calc: any) => {
-          if (calc.result?.materials && Array.isArray(calc.result.materials)) {
-            calc.result.materials.forEach((mat: any) => {
+      } else {
+        // Fallback: Aggregate from individual sources if no quote data
+        
+        // Process photo estimate materials
+        if (photoEstimate?.materials && Array.isArray(photoEstimate.materials)) {
+          photoEstimate.materials.forEach((mat: any) => {
+            initialLineItems.push({
+              name: mat.item || mat.name || "Material",
+              quantity: mat.quantity || 1,
+              unit: mat.unit || "unit",
+              unit_price: mat.price || mat.unitPrice || 0,
+              total: (mat.quantity || 1) * (mat.price || mat.unitPrice || 0),
+              source: "photo"
+            });
+          });
+        }
+        
+        // Process calculator results
+        if (calculatorResults && Array.isArray(calculatorResults)) {
+          calculatorResults.forEach((calc: any) => {
+            if (calc.result?.materials && Array.isArray(calc.result.materials)) {
+              calc.result.materials.forEach((mat: any) => {
+                initialLineItems.push({
+                  name: mat.item || mat.name || "Material",
+                  quantity: mat.quantity || 1,
+                  unit: mat.unit || "unit",
+                  unit_price: 0,
+                  total: 0,
+                  source: "calculator"
+                });
+              });
+            }
+            // Add labor from calculator
+            if (calc.result?.laborHours) {
               initialLineItems.push({
-                name: mat.item || mat.name || "Material",
-                quantity: mat.quantity || 1,
-                unit: mat.unit || "unit",
+                name: `Labor - ${calc.calcType || "Work"}`,
+                quantity: calc.result.laborHours,
+                unit: "hour",
                 unit_price: 0,
                 total: 0,
                 source: "calculator"
               });
-            });
-          }
-          // Add labor from calculator
-          if (calc.result?.laborHours) {
-            initialLineItems.push({
-              name: `Labor - ${calc.calcType || "Work"}`,
-              quantity: calc.result.laborHours,
-              unit: "hour",
-              unit_price: 0,
-              total: 0,
-              source: "calculator"
-            });
-          }
-        });
-      }
-      
-      // Process template items
-      if (templateItems && Array.isArray(templateItems)) {
-        templateItems.forEach((template: any) => {
-          // Add template materials
-          if (template.materials && Array.isArray(template.materials)) {
-            template.materials.forEach((mat: any) => {
-              const matName = typeof mat === "string" ? mat : (mat.name || mat.item || "Material");
-              initialLineItems.push({
-                name: matName,
-                quantity: typeof mat === "object" ? (mat.quantity || 1) : 1,
-                unit: typeof mat === "object" ? (mat.unit || "unit") : "unit",
-                unit_price: typeof mat === "object" ? (mat.price || 0) : 0,
-                total: 0,
-                source: "template"
-              });
-            });
-          }
-          // Add template tasks as labor items
-          if (template.checklist && Array.isArray(template.checklist)) {
-            const completedCount = template.completedTasks?.length || 0;
-            if (completedCount > 0) {
-              initialLineItems.push({
-                name: `${template.templateName || template.projectName || "Template"} - Labor`,
-                quantity: completedCount,
-                unit: "tasks",
-                unit_price: 0,
-                total: 0,
-                source: "template"
+            }
+          });
+        }
+        
+        // Process template items
+        if (templateItems && Array.isArray(templateItems)) {
+          templateItems.forEach((template: any) => {
+            // Add template materials
+            if (template.materials && Array.isArray(template.materials)) {
+              template.materials.forEach((mat: any) => {
+                const matName = typeof mat === "string" ? mat : (mat.name || mat.item || "Material");
+                initialLineItems.push({
+                  name: matName,
+                  quantity: typeof mat === "object" ? (mat.quantity || 1) : 1,
+                  unit: typeof mat === "object" ? (mat.unit || "unit") : "unit",
+                  unit_price: typeof mat === "object" ? (mat.price || 0) : 0,
+                  total: 0,
+                  source: "template"
+                });
               });
             }
-          }
-        });
+            // Add template tasks as labor items
+            if (template.checklist && Array.isArray(template.checklist)) {
+              const completedCount = template.completedTasks?.length || 0;
+              if (completedCount > 0) {
+                initialLineItems.push({
+                  name: `${template.templateName || template.projectName || "Template"} - Labor`,
+                  quantity: completedCount,
+                  unit: "tasks",
+                  unit_price: 0,
+                  total: 0,
+                  source: "template"
+                });
+              }
+            }
+          });
+        }
       }
 
       // Set client info from quote data
