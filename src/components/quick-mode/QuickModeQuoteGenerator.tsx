@@ -71,11 +71,24 @@ interface CollectedData {
   templateItems: any[];
 }
 
+interface QuoteProgressUpdate {
+  companyName?: string;
+  companyPhone?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientAddress?: string;
+  clientPhone?: string;
+  lineItemsCount?: number;
+}
+
 interface QuickModeQuoteGeneratorProps {
   collectedData?: CollectedData;
   onSkipToSummary?: () => void;
   onQuoteGenerated?: (quote: QuoteData) => void;
   onSaveToProjects?: (projectData: any) => void;
+  onProgressUpdate?: (data: QuoteProgressUpdate) => void;
 }
 
 const defaultQuote: QuoteData = {
@@ -100,7 +113,7 @@ const defaultQuote: QuoteData = {
 
 const units = ["unit", "sq ft", "lin ft", "hour", "day", "each", "lot", "job"];
 
-const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenerated, onSaveToProjects }: QuickModeQuoteGeneratorProps) => {
+const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenerated, onSaveToProjects, onProgressUpdate }: QuickModeQuoteGeneratorProps) => {
   const [quote, setQuote] = useState<QuoteData>(defaultQuote);
   const [activeSection, setActiveSection] = useState<"company" | "client" | "items" | "preview">("company");
   const [isSaving, setIsSaving] = useState(false);
@@ -117,6 +130,21 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   const [saveProjectName, setSaveProjectName] = useState("");
   const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
   const { user } = useAuth();
+
+  // Report progress updates to parent
+  useEffect(() => {
+    onProgressUpdate?.({
+      companyName: quote.companyName,
+      companyPhone: quote.companyPhone,
+      companyAddress: quote.companyAddress,
+      companyEmail: quote.companyEmail,
+      clientName: quote.clientName,
+      clientEmail: quote.clientEmail,
+      clientAddress: quote.clientAddress,
+      clientPhone: quote.clientPhone,
+      lineItemsCount: quote.lineItems.length,
+    });
+  }, [quote, onProgressUpdate]);
 
   // Fetch profile data for branding
   useEffect(() => {
