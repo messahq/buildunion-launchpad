@@ -8,6 +8,8 @@ export interface ProgressStep {
   subSteps?: ProgressSubStep[];
   isComplete: boolean;
   isSkipped: boolean;
+  tier?: "FREE" | "PRO" | "PREMIUM"; // Required tier for this step
+  isLocked?: boolean; // Whether the step is locked due to tier
 }
 
 export interface ProgressSubStep {
@@ -15,6 +17,8 @@ export interface ProgressSubStep {
   name: string;
   weight: number; // Percentage of parent step
   isComplete: boolean;
+  dueDate?: string; // Optional due date for time-based tracking
+  isEditable?: boolean; // Whether this substep can be edited
 }
 
 export interface QuickModeProgressData {
@@ -73,15 +77,47 @@ export interface QuickModeProgressData {
       client: boolean;
     };
   };
+  // Team features (PRO tier)
+  documents?: {
+    hasDocuments: boolean;
+    count: number;
+    blueprintsUploaded?: boolean;
+    photosUploaded?: boolean;
+  };
+  team?: {
+    hasMembers: boolean;
+    count: number;
+    rolesAssigned?: boolean;
+    invitesSent?: boolean;
+  };
+  tasks?: {
+    hasTasks: boolean;
+    count: number;
+    completedCount: number;
+    overdueCount: number;
+  };
+  // Premium features
+  messaging?: {
+    hasConversations: boolean;
+    count: number;
+  };
+  // Subscription tier
+  tier?: "free" | "pro" | "premium" | "enterprise";
 }
 
-// Weight distribution: 5 main steps = 20% each
+// Weight distribution: 8 main steps
+// Solo Mode (FREE): Photo, Templates, Calculator, Quote, Contract = 80%
+// Team Mode (PRO): Documents, Team, Tasks = 20% additional
+// Total can reach 100% with all features unlocked
 const STEP_WEIGHTS = {
-  photo: 20,
-  templates: 20,
-  calculator: 20,
-  quote: 20,
-  contract: 20,
+  photo: 12.5,
+  templates: 12.5,
+  calculator: 12.5,
+  quote: 12.5,
+  contract: 12.5,
+  documents: 12.5,
+  team: 12.5,
+  tasks: 12.5,
 };
 
 // Sub-step weights within Quote (totaling 100% of parent)
@@ -100,13 +136,35 @@ const CONTRACT_SUBSTEP_WEIGHTS = {
   signatures: 20,
 };
 
+// Sub-step weights within Documents
+const DOCUMENTS_SUBSTEP_WEIGHTS = {
+  blueprints: 50,
+  sitePhotos: 50,
+};
+
+// Sub-step weights within Team
+const TEAM_SUBSTEP_WEIGHTS = {
+  inviteMembers: 50,
+  assignRoles: 50,
+};
+
+// Sub-step weights within Tasks
+const TASKS_SUBSTEP_WEIGHTS = {
+  createTasks: 33.33,
+  assignTasks: 33.33,
+  trackProgress: 33.34,
+};
+
 export const useQuickModeProgress = (data: QuickModeProgressData) => {
   const progress = useMemo(() => {
     let totalPercentage = 0;
     const steps: ProgressStep[] = [];
     const warnings: string[] = [];
+    
+    const isPro = data.tier === "pro" || data.tier === "premium" || data.tier === "enterprise";
+    const isPremium = data.tier === "premium" || data.tier === "enterprise";
 
-    // 1. Photo Step (20%)
+    // 1. Photo Step (12.5%)
     const photoComplete = data.photo.hasData;
     if (photoComplete) {
       totalPercentage += STEP_WEIGHTS.photo;
@@ -117,9 +175,10 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       weight: STEP_WEIGHTS.photo,
       isComplete: photoComplete,
       isSkipped: false,
+      tier: "FREE",
     });
 
-    // 2. Templates Step (20%)
+    // 2. Templates Step (12.5%)
     const templatesComplete = data.templates.hasData;
     if (templatesComplete) {
       totalPercentage += STEP_WEIGHTS.templates;
@@ -130,9 +189,10 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       weight: STEP_WEIGHTS.templates,
       isComplete: templatesComplete,
       isSkipped: false,
+      tier: "FREE",
     });
 
-    // 3. Calculator Step (20%)
+    // 3. Calculator Step (12.5%)
     const calculatorComplete = data.calculator.hasData;
     if (calculatorComplete) {
       totalPercentage += STEP_WEIGHTS.calculator;
@@ -143,19 +203,20 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       weight: STEP_WEIGHTS.calculator,
       isComplete: calculatorComplete,
       isSkipped: false,
+      tier: "FREE",
     });
 
-    // 4. Quote Step (20%) - with sub-steps
+    // 4. Quote Step (12.5%) - with sub-steps
     const quoteSubSteps: ProgressSubStep[] = [];
     let quoteSubTotal = 0;
 
-    // Your Info sub-step (33.33% of quote = 6.67% total)
+    // Your Info sub-step
     const yourInfoFields = [
       data.quote.yourInfo.companyName,
       data.quote.yourInfo.phone,
       data.quote.yourInfo.email,
     ];
-    const yourInfoComplete = yourInfoFields.filter(Boolean).length >= 2; // At least 2 of 3
+    const yourInfoComplete = yourInfoFields.filter(Boolean).length >= 2;
     if (yourInfoComplete) {
       quoteSubTotal += QUOTE_SUBSTEP_WEIGHTS.yourInfo;
     }
@@ -164,9 +225,10 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Your Info",
       weight: QUOTE_SUBSTEP_WEIGHTS.yourInfo,
       isComplete: yourInfoComplete,
+      isEditable: true,
     });
 
-    // Client sub-step (33.33% of quote = 6.67% total)
+    // Client sub-step
     const clientComplete = data.quote.client.name && data.quote.client.email;
     if (clientComplete) {
       quoteSubTotal += QUOTE_SUBSTEP_WEIGHTS.client;
@@ -176,9 +238,10 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Client Info",
       weight: QUOTE_SUBSTEP_WEIGHTS.client,
       isComplete: clientComplete,
+      isEditable: true,
     });
 
-    // Line Items sub-step (33.34% of quote = 6.67% total)
+    // Line Items sub-step
     const lineItemsComplete = data.quote.lineItems.hasItems && data.quote.lineItems.count > 0;
     if (lineItemsComplete) {
       quoteSubTotal += QUOTE_SUBSTEP_WEIGHTS.lineItems;
@@ -188,9 +251,9 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Line Items",
       weight: QUOTE_SUBSTEP_WEIGHTS.lineItems,
       isComplete: lineItemsComplete,
+      isEditable: true,
     });
 
-    // Calculate quote percentage (sub-steps / 100 * step weight)
     const quotePercentage = (quoteSubTotal / 100) * STEP_WEIGHTS.quote;
     totalPercentage += quotePercentage;
 
@@ -202,13 +265,13 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       subSteps: quoteSubSteps,
       isComplete: quoteComplete,
       isSkipped: false,
+      tier: "FREE",
     });
 
-    // 5. Contract Step (20%) - with sub-steps
+    // 5. Contract Step (12.5%) - with sub-steps
     const contractSubSteps: ProgressSubStep[] = [];
     let contractSubTotal = 0;
 
-    // Contractor info (25% of contract = 5% total)
     const contractorComplete = data.contract.contractor.name;
     if (contractorComplete) {
       contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.contractor;
@@ -218,9 +281,9 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Contractor Info",
       weight: CONTRACT_SUBSTEP_WEIGHTS.contractor,
       isComplete: contractorComplete,
+      isEditable: true,
     });
 
-    // Client info (25% of contract = 5% total)
     const contractClientComplete = data.contract.client.name;
     if (contractClientComplete) {
       contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.client;
@@ -230,9 +293,9 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Client Info",
       weight: CONTRACT_SUBSTEP_WEIGHTS.client,
       isComplete: contractClientComplete,
+      isEditable: true,
     });
 
-    // Terms (20% of contract = 4% total)
     const termsComplete = data.contract.terms.scopeOfWork && data.contract.terms.totalAmount;
     if (termsComplete) {
       contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.terms;
@@ -242,9 +305,9 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Terms & Scope",
       weight: CONTRACT_SUBSTEP_WEIGHTS.terms,
       isComplete: termsComplete,
+      isEditable: true,
     });
 
-    // Timeline (20% of contract = 4% total)
     const timelineComplete = data.contract.timeline.startDate || data.contract.timeline.estimatedEndDate;
     if (timelineComplete) {
       contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.timeline;
@@ -254,9 +317,9 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Timeline",
       weight: CONTRACT_SUBSTEP_WEIGHTS.timeline,
       isComplete: timelineComplete,
+      isEditable: true,
     });
 
-    // Signatures (20% of contract = 4% total)
     const signaturesComplete = data.contract.signatures.contractor;
     if (signaturesComplete) {
       contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.signatures;
@@ -266,9 +329,9 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Signatures",
       weight: CONTRACT_SUBSTEP_WEIGHTS.signatures,
       isComplete: signaturesComplete,
+      isEditable: true,
     });
 
-    // Calculate contract percentage
     const contractPercentage = (contractSubTotal / 100) * STEP_WEIGHTS.contract;
     totalPercentage += contractPercentage;
 
@@ -280,6 +343,151 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       subSteps: contractSubSteps,
       isComplete: contractComplete,
       isSkipped: false,
+      tier: "FREE",
+    });
+
+    // 6. Documents Step (12.5%) - PRO TIER
+    const documentsSubSteps: ProgressSubStep[] = [];
+    let documentsSubTotal = 0;
+
+    const blueprintsComplete = data.documents?.blueprintsUploaded ?? false;
+    if (blueprintsComplete) {
+      documentsSubTotal += DOCUMENTS_SUBSTEP_WEIGHTS.blueprints;
+    }
+    documentsSubSteps.push({
+      id: "blueprints",
+      name: "Upload Blueprints",
+      weight: DOCUMENTS_SUBSTEP_WEIGHTS.blueprints,
+      isComplete: blueprintsComplete,
+      isEditable: true,
+    });
+
+    const sitePhotosComplete = data.documents?.photosUploaded ?? false;
+    if (sitePhotosComplete) {
+      documentsSubTotal += DOCUMENTS_SUBSTEP_WEIGHTS.sitePhotos;
+    }
+    documentsSubSteps.push({
+      id: "sitePhotos",
+      name: "Site Photos",
+      weight: DOCUMENTS_SUBSTEP_WEIGHTS.sitePhotos,
+      isComplete: sitePhotosComplete,
+      isEditable: true,
+    });
+
+    const documentsComplete = data.documents?.hasDocuments ?? false;
+    if (isPro) {
+      const documentsPercentage = (documentsSubTotal / 100) * STEP_WEIGHTS.documents;
+      totalPercentage += documentsPercentage;
+    }
+    steps.push({
+      id: "documents",
+      name: "Documents",
+      weight: STEP_WEIGHTS.documents,
+      subSteps: documentsSubSteps,
+      isComplete: documentsComplete,
+      isSkipped: false,
+      tier: "PRO",
+      isLocked: !isPro,
+    });
+
+    // 7. Team Step (12.5%) - PRO TIER
+    const teamSubSteps: ProgressSubStep[] = [];
+    let teamSubTotal = 0;
+
+    const inviteMembersComplete = data.team?.invitesSent ?? false;
+    if (inviteMembersComplete) {
+      teamSubTotal += TEAM_SUBSTEP_WEIGHTS.inviteMembers;
+    }
+    teamSubSteps.push({
+      id: "inviteMembers",
+      name: "Invite Members",
+      weight: TEAM_SUBSTEP_WEIGHTS.inviteMembers,
+      isComplete: inviteMembersComplete,
+      isEditable: true,
+    });
+
+    const assignRolesComplete = data.team?.rolesAssigned ?? false;
+    if (assignRolesComplete) {
+      teamSubTotal += TEAM_SUBSTEP_WEIGHTS.assignRoles;
+    }
+    teamSubSteps.push({
+      id: "assignRoles",
+      name: "Assign Roles",
+      weight: TEAM_SUBSTEP_WEIGHTS.assignRoles,
+      isComplete: assignRolesComplete,
+      isEditable: true,
+    });
+
+    const teamComplete = data.team?.hasMembers ?? false;
+    if (isPro) {
+      const teamPercentage = (teamSubTotal / 100) * STEP_WEIGHTS.team;
+      totalPercentage += teamPercentage;
+    }
+    steps.push({
+      id: "team",
+      name: "Team",
+      weight: STEP_WEIGHTS.team,
+      subSteps: teamSubSteps,
+      isComplete: teamComplete,
+      isSkipped: false,
+      tier: "PRO",
+      isLocked: !isPro,
+    });
+
+    // 8. Tasks Step (12.5%) - PRO TIER
+    const tasksSubSteps: ProgressSubStep[] = [];
+    let tasksSubTotal = 0;
+
+    const createTasksComplete = (data.tasks?.count ?? 0) > 0;
+    if (createTasksComplete) {
+      tasksSubTotal += TASKS_SUBSTEP_WEIGHTS.createTasks;
+    }
+    tasksSubSteps.push({
+      id: "createTasks",
+      name: "Create Tasks",
+      weight: TASKS_SUBSTEP_WEIGHTS.createTasks,
+      isComplete: createTasksComplete,
+      isEditable: true,
+    });
+
+    const assignTasksComplete = (data.tasks?.count ?? 0) > 0 && createTasksComplete;
+    if (assignTasksComplete) {
+      tasksSubTotal += TASKS_SUBSTEP_WEIGHTS.assignTasks;
+    }
+    tasksSubSteps.push({
+      id: "assignTasks",
+      name: "Assign Tasks",
+      weight: TASKS_SUBSTEP_WEIGHTS.assignTasks,
+      isComplete: assignTasksComplete,
+      isEditable: true,
+    });
+
+    const trackProgressComplete = (data.tasks?.completedCount ?? 0) > 0;
+    if (trackProgressComplete) {
+      tasksSubTotal += TASKS_SUBSTEP_WEIGHTS.trackProgress;
+    }
+    tasksSubSteps.push({
+      id: "trackProgress",
+      name: "Track Progress",
+      weight: TASKS_SUBSTEP_WEIGHTS.trackProgress,
+      isComplete: trackProgressComplete,
+      isEditable: true,
+    });
+
+    const tasksComplete = data.tasks?.hasTasks ?? false;
+    if (isPro) {
+      const tasksPercentage = (tasksSubTotal / 100) * STEP_WEIGHTS.tasks;
+      totalPercentage += tasksPercentage;
+    }
+    steps.push({
+      id: "tasks",
+      name: "Tasks",
+      weight: STEP_WEIGHTS.tasks,
+      subSteps: tasksSubSteps,
+      isComplete: tasksComplete,
+      isSkipped: false,
+      tier: "PRO",
+      isLocked: !isPro,
     });
 
     // Generate warnings for incomplete required items
@@ -292,26 +500,42 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
     if (!data.quote.lineItems.hasItems) {
       warnings.push("No line items added");
     }
+    if (isPro && data.tasks?.overdueCount && data.tasks.overdueCount > 0) {
+      warnings.push(`${data.tasks.overdueCount} overdue task${data.tasks.overdueCount > 1 ? "s" : ""}`);
+    }
+
+    // Calculate percentage relative to available features
+    // For free users: max is 62.5% (5 steps * 12.5%)
+    // For pro users: max is 100% (8 steps * 12.5%)
+    const maxPercentage = isPro ? 100 : 62.5;
+    const normalizedPercentage = Math.min(100, Math.round((totalPercentage / maxPercentage) * 100));
 
     // Determine overall status
-    let status: "not_started" | "in_progress" | "ready_for_quote" | "complete" = "not_started";
+    let status: "not_started" | "in_progress" | "ready_for_quote" | "ready_for_team" | "complete" = "not_started";
     if (totalPercentage === 0) {
       status = "not_started";
-    } else if (totalPercentage >= 100) {
+    } else if (normalizedPercentage >= 100) {
       status = "complete";
-    } else if (totalPercentage >= 60) {
+    } else if (normalizedPercentage >= 80 && isPro) {
+      status = "ready_for_team";
+    } else if (normalizedPercentage >= 60) {
       status = "ready_for_quote";
     } else {
       status = "in_progress";
     }
 
     return {
-      percentage: Math.round(totalPercentage),
+      percentage: normalizedPercentage,
+      rawPercentage: Math.round(totalPercentage),
       steps,
       warnings,
       status,
       statusLabel: getStatusLabel(status),
       statusColor: getStatusColor(status),
+      isPro,
+      isPremium,
+      soloComplete: steps.slice(0, 5).every(s => s.isComplete),
+      teamComplete: isPro && steps.slice(5).every(s => s.isComplete),
     };
   }, [data]);
 
@@ -326,6 +550,8 @@ function getStatusLabel(status: string): string {
       return "In Progress";
     case "ready_for_quote":
       return "Ready for Quote";
+    case "ready_for_team":
+      return "Team Ready";
     case "complete":
       return "Complete";
     default:
@@ -341,6 +567,8 @@ function getStatusColor(status: string): string {
       return "bg-amber-100 text-amber-700";
     case "ready_for_quote":
       return "bg-blue-100 text-blue-700";
+    case "ready_for_team":
+      return "bg-cyan-100 text-cyan-700";
     case "complete":
       return "bg-green-100 text-green-700";
     default:
