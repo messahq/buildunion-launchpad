@@ -1,4 +1,4 @@
-import { MapPin, Briefcase, Clock, CheckCircle } from "lucide-react";
+import { MapPin, Briefcase, Clock, CheckCircle, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,6 +16,8 @@ interface MemberCardProps {
     experience_years?: number;
     is_verified?: boolean;
     is_contractor?: boolean;
+    is_union_member?: boolean;
+    union_name?: string;
   };
   profileName?: string;
 }
@@ -49,7 +51,7 @@ const availabilityColors: Record<string, string> = {
 };
 
 export const MemberCard = ({ member, profileName }: MemberCardProps) => {
-  const displayName = member.company_name || profileName || "BuildUnion Member";
+  const displayName = profileName || member.company_name || "BuildUnion Member";
   const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   const tradeName = member.primary_trade ? tradeLabels[member.primary_trade] || member.primary_trade : "Trade Professional";
 
@@ -70,6 +72,9 @@ export const MemberCard = ({ member, profileName }: MemberCardProps) => {
                 <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
               )}
             </div>
+            {member.company_name && profileName && member.company_name !== profileName && (
+              <p className="text-xs text-muted-foreground truncate">{member.company_name}</p>
+            )}
             <p className="text-sm text-muted-foreground">{tradeName}</p>
             
             <div className="flex flex-wrap gap-2 mt-2">
@@ -85,6 +90,12 @@ export const MemberCard = ({ member, profileName }: MemberCardProps) => {
                 <Badge variant="outline" className="text-xs">
                   <Briefcase className="h-3 w-3 mr-1" />
                   Contractor
+                </Badge>
+              )}
+              {member.is_union_member && (
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                  <Users className="h-3 w-3 mr-1" />
+                  Union
                 </Badge>
               )}
             </div>
@@ -103,6 +114,12 @@ export const MemberCard = ({ member, profileName }: MemberCardProps) => {
                 </div>
               )}
             </div>
+
+            {member.union_name && member.is_union_member && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 truncate">
+                {member.union_name}
+              </p>
+            )}
 
             {member.secondary_trades && member.secondary_trades.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
