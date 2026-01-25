@@ -19,6 +19,8 @@ export interface ProgressSubStep {
   isComplete: boolean;
   dueDate?: string; // Optional due date for time-based tracking
   isEditable?: boolean; // Whether this substep can be edited
+  isOverdue?: boolean; // Whether this sub-step is past due
+  overdueCount?: number; // Number of overdue items in this category
 }
 
 export interface QuickModeProgressData {
@@ -95,6 +97,8 @@ export interface QuickModeProgressData {
     count: number;
     completedCount: number;
     overdueCount: number;
+    dueSoonCount?: number; // Tasks due within 3 days
+    onTimeCount?: number; // Tasks that are on schedule
   };
   // Premium features
   messaging?: {
@@ -150,9 +154,10 @@ const TEAM_SUBSTEP_WEIGHTS = {
 
 // Sub-step weights within Tasks
 const TASKS_SUBSTEP_WEIGHTS = {
-  createTasks: 33.33,
-  assignTasks: 33.33,
-  trackProgress: 33.34,
+  createTasks: 25,
+  assignTasks: 25,
+  trackProgress: 25,
+  onTimeTasks: 25, // New: bonus for no overdue tasks
 };
 
 export const useQuickModeProgress = (data: QuickModeProgressData) => {
@@ -437,8 +442,13 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
     // 8. Tasks Step (12.5%) - PRO TIER
     const tasksSubSteps: ProgressSubStep[] = [];
     let tasksSubTotal = 0;
+    
+    const taskCount = data.tasks?.count ?? 0;
+    const completedCount = data.tasks?.completedCount ?? 0;
+    const overdueCount = data.tasks?.overdueCount ?? 0;
+    const dueSoonCount = data.tasks?.dueSoonCount ?? 0;
 
-    const createTasksComplete = (data.tasks?.count ?? 0) > 0;
+    const createTasksComplete = taskCount > 0;
     if (createTasksComplete) {
       tasksSubTotal += TASKS_SUBSTEP_WEIGHTS.createTasks;
     }
@@ -450,7 +460,7 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       isEditable: true,
     });
 
-    const assignTasksComplete = (data.tasks?.count ?? 0) > 0 && createTasksComplete;
+    const assignTasksComplete = taskCount > 0 && createTasksComplete;
     if (assignTasksComplete) {
       tasksSubTotal += TASKS_SUBSTEP_WEIGHTS.assignTasks;
     }
@@ -462,7 +472,7 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       isEditable: true,
     });
 
-    const trackProgressComplete = (data.tasks?.completedCount ?? 0) > 0;
+    const trackProgressComplete = completedCount > 0;
     if (trackProgressComplete) {
       tasksSubTotal += TASKS_SUBSTEP_WEIGHTS.trackProgress;
     }
@@ -474,9 +484,39 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       isEditable: true,
     });
 
+    // On-time tasks bonus - no overdue tasks
+    const onTimeComplete = taskCount > 0 && overdueCount === 0;
+    if (onTimeComplete) {
+      tasksSubTotal += TASKS_SUBSTEP_WEIGHTS.onTimeTasks;
+    }
+    tasksSubSteps.push({
+      id: "onTimeTasks",
+      name: overdueCount > 0 ? `${overdueCount} Overdue` : "All On Time",
+      weight: TASKS_SUBSTEP_WEIGHTS.onTimeTasks,
+      isComplete: onTimeComplete,
+      isEditable: false,
+      isOverdue: overdueCount > 0,
+      overdueCount: overdueCount,
+    });
+
+    // Add due soon warning sub-step if applicable
+    if (dueSoonCount > 0 && overdueCount === 0) {
+      tasksSubSteps.push({
+        id: "dueSoon",
+        name: `${dueSoonCount} Due Soon`,
+        weight: 0, // Info only, no weight
+        isComplete: false,
+        isEditable: false,
+        isOverdue: false,
+      });
+    }
+
     const tasksComplete = data.tasks?.hasTasks ?? false;
     if (isPro) {
-      const tasksPercentage = (tasksSubTotal / 100) * STEP_WEIGHTS.tasks;
+      // Apply penalty for overdue tasks: reduce earned progress by 10% per overdue task (max 50% penalty)
+      const overduePenalty = Math.min(50, overdueCount * 10);
+      const adjustedTasksSubTotal = tasksSubTotal * ((100 - overduePenalty) / 100);
+      const tasksPercentage = (adjustedTasksSubTotal / 100) * STEP_WEIGHTS.tasks;
       totalPercentage += tasksPercentage;
     }
     steps.push({
@@ -484,7 +524,7 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       name: "Tasks",
       weight: STEP_WEIGHTS.tasks,
       subSteps: tasksSubSteps,
-      isComplete: tasksComplete,
+      isComplete: tasksComplete && overdueCount === 0,
       isSkipped: false,
       tier: "PRO",
       isLocked: !isPro,
