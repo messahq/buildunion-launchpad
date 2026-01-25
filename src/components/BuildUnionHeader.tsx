@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useTheme } from "@/hooks/useTheme";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { toast } from "sonner";
 
 const languages = [
@@ -35,6 +36,7 @@ const BuildUnionHeader = () => {
   const { subscription } = useSubscription();
   const { profile } = useBuProfile();
   const { theme, toggleTheme } = useTheme();
+  const { unreadCount } = useUnreadMessages();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
@@ -166,10 +168,18 @@ const BuildUnionHeader = () => {
               variant="ghost"
               size="sm"
               onClick={() => navigate("/buildunion/messages")}
-              className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
+              className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1 relative"
             >
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Messages</span>
+              {unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1.5 text-[10px] flex items-center justify-center rounded-full"
+                >
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Badge>
+              )}
             </Button>
           )}
 

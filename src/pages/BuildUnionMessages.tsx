@@ -301,10 +301,29 @@ export default function BuildUnionMessages() {
     }
   };
 
+  const sendPushNotification = async (recipientId: string, senderName: string, messagePreview: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await supabase.functions.invoke("send-message-notification", {
+        body: {
+          recipientId,
+          senderName,
+          messagePreview: messagePreview.length > 50 ? messagePreview.slice(0, 50) + "..." : messagePreview,
+        },
+      });
+    } catch (err) {
+      // Silent fail - push notification is not critical
+      console.error("Error sending push notification:", err);
+    }
+  };
+
   const sendMessage = async () => {
     if (!user || !selectedConversation || !newMessage.trim()) return;
 
     setIsSending(true);
+    const messageText = newMessage.trim();
 
     try {
       const { data, error } = await supabase
@@ -312,7 +331,7 @@ export default function BuildUnionMessages() {
         .insert({
           sender_id: user.id,
           recipient_id: selectedConversation.partnerId,
-          message: newMessage.trim(),
+          message: messageText,
         })
         .select()
         .single();
@@ -341,6 +360,10 @@ export default function BuildUnionMessages() {
       });
 
       setNewMessage("");
+
+      // Send push notification to recipient
+      const senderName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Someone";
+      sendPushNotification(selectedConversation.partnerId, senderName, messageText);
     } catch (err) {
       console.error("Error sending message:", err);
       toast.error("Failed to send message");
