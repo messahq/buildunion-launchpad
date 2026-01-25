@@ -80,6 +80,38 @@ interface LineItem {
   source: "photo" | "calculator" | "template" | "blueprint" | "manual";
 }
 
+// Database format for line_items (used for storage consistency)
+interface DBLineItem {
+  id?: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+  source: string;
+}
+
+// Transform component format to DB format for consistent storage
+const toDBLineItem = (item: LineItem, index: number): DBLineItem => ({
+  id: `item-${index}-${item.name.replace(/\s+/g, '-')}`,
+  description: item.name || "Item",
+  quantity: Number(item.quantity) || 1,
+  unit: item.unit || "unit",
+  unitPrice: Number(item.unit_price) || 0,
+  total: Number(item.total) || (Number(item.quantity || 1) * Number(item.unit_price || 0)),
+  source: item.source || "manual"
+});
+
+// Transform DB format to component format for UI rendering
+const fromDBLineItem = (item: any): LineItem => ({
+  name: item.name || item.description || "Item",
+  quantity: Number(item.quantity) || 1,
+  unit: item.unit || "unit",
+  unit_price: Number(item.unit_price ?? item.unitPrice) || 0,
+  total: Number(item.total) || (Number(item.quantity || 1) * Number(item.unit_price ?? item.unitPrice ?? 0)),
+  source: item.source || "manual"
+});
+
 interface ProjectSummaryData {
   id: string;
   project_id: string | null;
@@ -205,16 +237,8 @@ export function ProjectSummary({
       const summaryData = data as unknown as ProjectSummaryData;
       setSummary(summaryData);
       
-      // Transform line_items from DB format to component format
-      // DB stores: description, unitPrice | Component expects: name, unit_price
-      const transformedLineItems: LineItem[] = (summaryData.line_items || []).map((item: any) => ({
-        name: item.name || item.description || "Item",
-        quantity: Number(item.quantity) || 1,
-        unit: item.unit || "unit",
-        unit_price: Number(item.unit_price ?? item.unitPrice) || 0,
-        total: Number(item.total) || (Number(item.quantity || 1) * Number(item.unit_price ?? item.unitPrice ?? 0)),
-        source: item.source || "manual"
-      }));
+      // Transform line_items from DB format to component format using helper
+      const transformedLineItems: LineItem[] = (summaryData.line_items || []).map(fromDBLineItem);
       setEditedItems(transformedLineItems);
       
       setClientInfo({
@@ -372,6 +396,9 @@ export function ProjectSummary({
         setNotes(quoteData.notes || quoteData.paymentTerms || "");
       }
       
+      // Transform to consistent DB format before saving
+      const dbLineItems: DBLineItem[] = initialLineItems.map((item, index) => toDBLineItem(item, index));
+      
       const { data, error } = await supabase
         .from("project_summaries")
         .insert({
@@ -380,7 +407,7 @@ export function ProjectSummary({
           photo_estimate: photoEstimate || null,
           calculator_results: calculatorResults || [],
           template_items: templateItems || [],
-          line_items: initialLineItems.length > 0 ? (initialLineItems as unknown as any) : null,
+          line_items: dbLineItems.length > 0 ? (dbLineItems as unknown as any) : null,
           client_name: quoteData?.clientName || null,
           client_email: quoteData?.clientEmail || null,
           client_phone: quoteData?.clientPhone || null,
@@ -442,10 +469,13 @@ export function ProjectSummary({
         item.source === "manual" ? sum + item.total : sum, 0
       );
 
+      // Transform to consistent DB format before saving
+      const dbLineItems: DBLineItem[] = editedItems.map((item, index) => toDBLineItem(item, index));
+
       const { error } = await supabase
         .from("project_summaries")
         .update({
-          line_items: editedItems as unknown as any,
+          line_items: dbLineItems as unknown as any,
           material_cost: totalMaterial,
           labor_cost: totalLabor,
           total_cost: totalMaterial + totalLabor,
