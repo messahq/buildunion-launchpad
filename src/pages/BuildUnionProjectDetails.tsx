@@ -1084,6 +1084,54 @@ const BuildUnionProjectDetails = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-0 space-y-4">
+                {/* Team Readiness Progress Indicator */}
+                {(() => {
+                  // Calculate readiness based on project data
+                  const checks = [
+                    { label: "Photo Estimate", done: !!projectSummary?.photo_estimate?.estimatedArea },
+                    { label: "Line Items", done: Array.isArray(projectSummary?.line_items) && projectSummary.line_items.length > 0 },
+                    { label: "Client Info", done: !!projectSummary?.client_name },
+                    { label: "Quote Total", done: (projectSummary?.total_cost || 0) > 0 },
+                    { label: "Pro Subscription", done: isPro },
+                  ];
+                  const completedCount = checks.filter(c => c.done).length;
+                  const progressPercent = Math.round((completedCount / checks.length) * 100);
+                  
+                  return (
+                    <div className="bg-white/80 rounded-lg p-3 border border-amber-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-slate-700">Team Mode Readiness</span>
+                        <span className="text-xs font-bold text-amber-600">{progressPercent}%</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+                        <div 
+                          className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {checks.map((check, idx) => (
+                          <div 
+                            key={idx}
+                            className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${
+                              check.done 
+                                ? "bg-green-100 text-green-700" 
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {check.done ? (
+                              <Check className="w-2.5 h-2.5" />
+                            ) : (
+                              <div className="w-2.5 h-2.5 rounded-full border border-current" />
+                            )}
+                            {check.label}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Team Mode Features Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                   <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg border border-amber-100">
