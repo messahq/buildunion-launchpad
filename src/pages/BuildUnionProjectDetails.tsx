@@ -1164,11 +1164,7 @@ const BuildUnionProjectDetails = () => {
                       <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
                         <div className="flex items-center gap-1.5">
                           <Lock className="w-3 h-3 text-amber-400" />
-                          Send Summary to Team
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Lock className="w-3 h-3 text-amber-400" />
-                          Generate Project Report
+                          Direct Messaging
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Lock className="w-3 h-3 text-amber-400" />
@@ -1176,7 +1172,11 @@ const BuildUnionProjectDetails = () => {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Lock className="w-3 h-3 text-amber-400" />
-                          Team Map View
+                          Priority AI Responses
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Lock className="w-3 h-3 text-amber-400" />
+                          Project Reports
                         </div>
                       </div>
                       <Button 
