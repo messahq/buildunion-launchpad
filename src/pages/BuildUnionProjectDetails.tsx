@@ -21,7 +21,7 @@ import {
   ArrowLeft, FileText, Calendar, Loader2, Plus, Trash2,
   AlertCircle, Sparkles,
   Pencil, X, Check,
-  Users, Image, FileCheck, Briefcase, MapPin,
+  Users, User, Image, FileCheck, Briefcase, MapPin,
   Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList, ScrollText,
   Download, Eye
 } from "lucide-react";
@@ -1073,15 +1073,7 @@ const BuildUnionProjectDetails = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {/* Mode Toggle replaces the static icon */}
-                    <ProjectModeToggle
-                      summaryId={projectSummary?.id}
-                      projectId={projectId}
-                      initialMode="solo"
-                      onModeChange={(newMode) => setProjectMode(newMode)}
-                      variant="icon"
-                      showLabel={false}
-                    />
+                    <User className="w-5 h-5 text-amber-600" />
                     <div>
                       <CardTitle className="text-base font-medium text-slate-800">
                         Solo Mode Active
@@ -1094,6 +1086,18 @@ const BuildUnionProjectDetails = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-0 space-y-4">
+                {/* Mode Toggle above progress bar */}
+                <div className="flex justify-center">
+                  <ProjectModeToggle
+                    summaryId={projectSummary?.id}
+                    projectId={projectId}
+                    initialMode="solo"
+                    onModeChange={(newMode) => setProjectMode(newMode)}
+                    variant="icon"
+                    showLabel={false}
+                  />
+                </div>
+
                 {/* Team Readiness Progress Indicator */}
                 {(() => {
                   // Calculate readiness based on project data
