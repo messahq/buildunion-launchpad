@@ -1,112 +1,97 @@
 
-# Megoldási Terv: Session Stabilitás Javítása
 
-## Probléma Összefoglalás
+# Terv: Projekt Mód Vizuális Jelzés Javítása
 
-A felhasználó azért nem marad bejelentkezve, mert a kód túl gyakran próbálja manuálisan frissíteni a session tokent, ami Supabase rate limitet (429-es hibát) okoz. Amikor ezt a limitet elérjük, a session érvénytelenné válik és a rendszer kijelentkezteti a felhasználót.
+## Probléma
 
-## Mi a baj?
-
-- A Supabase kliens **már automatikusan frissíti a tokent** (`autoRefreshToken: true` beállítás)
-- De a kód 3 helyen is **manuálisan** hívja a `refreshSession()`-t minden API hívás előtt
-- Ez túl sok kérést generál → 429 rate limit → session elvesztése → kijelentkezés
+A jelenlegi toggle komponens csak finom szín különbségeket használ (amber vs cyan), ami nem elég egyértelmű a felhasználó számára, hogy tudja melyik módban van éppen.
 
 ## Megoldás
 
-Eltávolítjuk a felesleges manuális `refreshSession()` hívásokat, és helyettük a Supabase kliens automatikus token kezelésére bízzuk a frissítést. Ahol szükséges, egyszerűen lekérjük az aktuális session-t token frissítés nélkül.
+Vizuális javítások hozzáadása, hogy egyértelműen látható legyen az aktuális mód.
 
 ---
 
-## 1. lépés: useSubscription.tsx módosítás
+## Változtatások
 
-**Mit csinálunk:**
-- Eltávolítjuk a manuális `refreshSession()` hívást
-- Helyette egyszerűen az aktuális session tokent használjuk
-- Ha a token lejárt, a Supabase kliens automatikusan frissíti
+### 1. Aktív mód kiemelése háttérszínnel
 
-```text
-Módosítandó rész (~154-163. sor):
+A jelenleg aktív mód szövegét és ikonját egy színes háttérrel emeljük ki.
+
+```
 ELŐTTE:
-  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-  const tokenToUse = refreshData?.session?.access_token || session.access_token;
+  Solo [switch] Team
 
 UTÁNA:
-  // Use current session - Supabase client handles token refresh automatically
-  const tokenToUse = session.access_token;
+  [Solo aktív badge - amber háttér] [switch] Team (szürke)
+  
+  VAGY
+  
+  Solo (szürke) [switch] [Team aktív badge - cyan háttér]
+```
+
+### 2. Részletes kód változtatás
+
+**Fájl:** `src/components/ProjectModeToggle.tsx` (182-216. sorok)
+
+Az aktív mód kapjon egy kitöltött badge-et a szöveg köré:
+
+| Mód | Ikon szín | Szöveg szín | Háttér |
+|-----|-----------|-------------|--------|
+| Solo (aktív) | amber-600 | amber-700 | amber-100 border + rounded |
+| Solo (inaktív) | muted | muted | nincs |
+| Team (aktív) | cyan-600 | cyan-700 | cyan-100 border + rounded |
+| Team (inaktív) | muted | muted | nincs |
+
+### 3. Kód példa
+
+```tsx
+// Solo oldal
+<div className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all ${
+  !isTeamMode 
+    ? "bg-amber-100 border border-amber-300" 
+    : ""
+}`}>
+  <User className={`h-4 w-4 ${!isTeamMode ? "text-amber-600" : "text-muted-foreground"}`} />
+  <span className={`text-sm font-medium ${!isTeamMode ? "text-amber-700" : "text-muted-foreground"}`}>
+    Solo
+  </span>
+</div>
+
+// Team oldal
+<div className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all ${
+  isTeamMode 
+    ? "bg-cyan-100 border border-cyan-300" 
+    : ""
+}`}>
+  <Users className={`h-4 w-4 ${isTeamMode ? "text-cyan-600" : "text-muted-foreground"}`} />
+  <span className={`text-sm font-medium ${isTeamMode ? "text-cyan-700" : "text-muted-foreground"}`}>
+    Team
+  </span>
+</div>
 ```
 
 ---
 
-## 2. lépés: TeamMapView.tsx módosítás
+## Vizuális Eredmény
 
-**Mit csinálunk:**
-- Eltávolítjuk a manuális `refreshSession()` hívást
-- Az aktuális session-t használjuk (ami az AuthProvider-ből jön)
+```
+Solo módban:
+┌─────────────┐
+│ 👤 Solo     │ ○───  👥 Team  PRO
+└─────────────┘
+  amber háttér
 
-```text
-Módosítandó rész (~470-482. sor):
-ELŐTTE:
-  const { data: refreshData } = await supabase.auth.refreshSession();
-  const tokenToUse = refreshData?.session?.access_token;
-
-UTÁNA:
-  const { data: { session } } = await supabase.auth.getSession();
-  const tokenToUse = session?.access_token;
+Team módban:
+                      ┌─────────────┐
+  👤 Solo      ───○   │ 👥 Team     │
+                      └─────────────┘
+                        cyan háttér
 ```
 
----
+## Előnyök
 
-## 3. lépés: useProjectConflicts.tsx módosítás
+- Egy pillantás alatt látható melyik mód aktív
+- A színes háttér erősebb vizuális jel mint csak a szövegszín
+- Konzisztens a meglévő design nyelvvel (amber = solo, cyan = team)
 
-**Mit csinálunk:**
-- Ugyanaz mint fent - `refreshSession()` helyett `getSession()`
-
-```text
-Módosítandó rész (~21-28. sor):
-ELŐTTE:
-  const { data: refreshData } = await supabase.auth.refreshSession();
-  const tokenToUse = refreshData?.session?.access_token;
-
-UTÁNA:
-  const { data: { session } } = await supabase.auth.getSession();
-  const tokenToUse = session?.access_token;
-```
-
----
-
-## 4. lépés: Subscription ellenőrzés ritkítása
-
-**Mit csinálunk:**
-- Az auto-refresh intervallumot 60 másodpercről 5 percre növeljük
-- Ez tovább csökkenti a Stripe API terhelést is
-
-```text
-Módosítandó rész (~267. sor):
-ELŐTTE:
-  }, 60000);  // 1 perc
-
-UTÁNA:
-  }, 300000); // 5 perc
-```
-
----
-
-## Technikai Részletek
-
-| Fájl | Változtatás |
-|------|-------------|
-| `src/hooks/useSubscription.tsx` | `refreshSession()` eltávolítása, intervallum növelése |
-| `src/components/TeamMapView.tsx` | `refreshSession()` → `getSession()` |
-| `src/hooks/useProjectConflicts.tsx` | `refreshSession()` → `getSession()` |
-
-## Miért működik ez?
-
-1. **A Supabase kliens automatikusan kezeli a token frissítést** - Az `autoRefreshToken: true` beállítás biztosítja, hogy a token lejárata előtt automatikusan megújuljon
-2. **A `getSession()` nem okoz rate limitet** - Ez csak lekéri az aktuális session-t a localStorage-ból, nem küld hálózati kérést
-3. **Kevesebb API hívás = stabilabb működés** - A Stripe API sem kapja el a rate limitet
-
-## Várt Eredmény
-
-- A felhasználó bejelentkezve marad
-- Nem lesz többé 429-es rate limit hiba
-- A session stabilan megmarad böngésző frissítés után is
