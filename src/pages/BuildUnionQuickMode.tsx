@@ -68,14 +68,6 @@ interface ContractProgressData {
   clientSignature: boolean;
 }
 
-// Full draft data including progress
-interface QuickModeDraftData {
-  collectedData: CollectedData;
-  quoteProgress: QuoteProgressData;
-  contractProgress: ContractProgressData;
-  activeTab: string;
-}
-
 interface PhotoEstimatePreFill {
   area: number;
   areaUnit: string;
@@ -88,8 +80,8 @@ const BuildUnionQuickMode = () => {
   const { subscription } = useSubscription();
   const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials, isAuthenticated } = useDbTrialUsage("blueprint_analysis");
   
-  // Draft data for returning users - now includes full progress
-  const { draftData, hasDraft, saveDraft, clearDraft, lastUpdated: draftLastUpdated } = useDraftData<QuickModeDraftData>("quick_mode");
+  // Draft data for returning users
+  const { draftData, hasDraft, saveDraft, clearDraft } = useDraftData<CollectedData>("quick_mode");
 
   const isCreateFlow = searchParams.get("flow") === "create";
   const isPremium = subscription?.subscribed === true;
@@ -204,38 +196,17 @@ const BuildUnionQuickMode = () => {
     }
   }, [user, hasDraft, draftData]);
 
-  // Auto-save draft for authenticated users - save full progress data
+  // Auto-save draft for authenticated users
   useEffect(() => {
-    if (user && (collectedData.photoEstimate || collectedData.calculatorResults.length > 0 || collectedData.templateItems.length > 0 || quoteProgress.lineItemsCount > 0 || contractProgress.contractorName)) {
-      const fullDraftData: QuickModeDraftData = {
-        collectedData,
-        quoteProgress,
-        contractProgress,
-        activeTab,
-      };
-      saveDraft(fullDraftData);
+    if (user && (collectedData.photoEstimate || collectedData.calculatorResults.length > 0 || collectedData.templateItems.length > 0)) {
+      saveDraft(collectedData);
     }
-  }, [user, collectedData, quoteProgress, contractProgress, activeTab, saveDraft]);
+  }, [user, collectedData, saveDraft]);
 
-  // Handle resuming from draft - restore full progress
+  // Handle resuming from draft
   const handleResumeDraft = () => {
     if (draftData) {
-      // Restore collected data
-      if (draftData.collectedData) {
-        setCollectedData(draftData.collectedData);
-      }
-      // Restore quote progress
-      if (draftData.quoteProgress) {
-        setQuoteProgress(draftData.quoteProgress);
-      }
-      // Restore contract progress
-      if (draftData.contractProgress) {
-        setContractProgress(draftData.contractProgress);
-      }
-      // Restore active tab
-      if (draftData.activeTab) {
-        setActiveTab(draftData.activeTab);
-      }
+      setCollectedData(draftData);
       toast.success("Welcome back! Your progress has been restored.");
     }
     setShowDraftResume(false);
@@ -457,8 +428,6 @@ const BuildUnionQuickMode = () => {
             statusColor={progress.statusColor}
             activeTab={activeTab}
             onTabClick={handleTabChange}
-            lastSaved={draftLastUpdated}
-            isLoggedIn={!!user}
           />
         </section>
 
@@ -604,76 +573,7 @@ const BuildUnionQuickMode = () => {
         }
       />
 
-      {/* Draft Resume Dialog */}
-      {showDraftResume && draftData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Continue Your Project?</h3>
-                <p className="text-sm text-muted-foreground">
-                  You have saved progress from a previous session
-                </p>
-              </div>
-            </div>
-            
-            {/* Progress Preview */}
-            <div className="bg-muted/50 rounded-lg p-4 mb-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {draftData.collectedData?.photoEstimate && (
-                  <div className="flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-blue-500" />
-                    <span>Photo Estimate</span>
-                  </div>
-                )}
-                {draftData.collectedData?.calculatorResults?.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Calculator className="w-4 h-4 text-green-500" />
-                    <span>{draftData.collectedData.calculatorResults.length} Calculations</span>
-                  </div>
-                )}
-                {draftData.collectedData?.templateItems?.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <LayoutTemplate className="w-4 h-4 text-cyan-500" />
-                    <span>{draftData.collectedData.templateItems.length} Templates</span>
-                  </div>
-                )}
-                {draftData.quoteProgress?.lineItemsCount > 0 && (
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-purple-500" />
-                    <span>{draftData.quoteProgress.lineItemsCount} Line Items</span>
-                  </div>
-                )}
-                {draftData.contractProgress?.contractorName && (
-                  <div className="flex items-center gap-2">
-                    <ClipboardSignature className="w-4 h-4 text-orange-500" />
-                    <span>Contract Started</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleStartFresh}
-              >
-                Start Fresh
-              </Button>
-              <Button
-                className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500"
-                onClick={handleResumeDraft}
-              >
-                Continue
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Draft Resume Dialog - removed as per user request */}
     </div>
   );
 };
