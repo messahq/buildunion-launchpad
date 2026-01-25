@@ -12,7 +12,9 @@ import {
   Users,
   ListTodo,
   Lock,
-  Crown
+  Crown,
+  AlertTriangle,
+  Clock
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -232,6 +234,10 @@ const StepButton = ({
   const stepPct = getStepPercentage(step);
   const hasSubSteps = step.subSteps && step.subSteps.length > 0;
   const tierStyle = step.tier ? tierColors[step.tier] : tierColors.FREE;
+  
+  // Check for overdue tasks in this step
+  const hasOverdue = step.subSteps?.some(s => 'isOverdue' in s && s.isOverdue);
+  const overdueCount = step.subSteps?.find(s => 'overdueCount' in s)?.overdueCount as number | undefined;
 
   return (
     <div className="relative">
@@ -247,23 +253,33 @@ const StepButton = ({
         className={cn(
           "w-full flex flex-col items-center p-2 rounded-lg transition-all",
           step.isLocked && "opacity-50 cursor-not-allowed",
-          !step.isLocked && isActive && "bg-amber-50 border border-amber-200",
-          !step.isLocked && !isActive && "hover:bg-muted/50"
+          !step.isLocked && hasOverdue && "bg-red-50 border border-red-200",
+          !step.isLocked && !hasOverdue && isActive && "bg-amber-50 border border-amber-200",
+          !step.isLocked && !hasOverdue && !isActive && "hover:bg-muted/50"
         )}
       >
         <div className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center mb-1 relative",
           step.isLocked && "bg-slate-100 text-slate-400",
-          !step.isLocked && step.isComplete && "bg-green-100 text-green-600",
-          !step.isLocked && !step.isComplete && stepPct > 0 && "bg-amber-100 text-amber-600",
-          !step.isLocked && !step.isComplete && stepPct === 0 && "bg-gray-100 text-gray-400"
+          !step.isLocked && hasOverdue && "bg-red-100 text-red-600",
+          !step.isLocked && !hasOverdue && step.isComplete && "bg-green-100 text-green-600",
+          !step.isLocked && !hasOverdue && !step.isComplete && stepPct > 0 && "bg-amber-100 text-amber-600",
+          !step.isLocked && !hasOverdue && !step.isComplete && stepPct === 0 && "bg-gray-100 text-gray-400"
         )}>
           {step.isLocked ? (
             <Lock className="h-4 w-4" />
+          ) : hasOverdue ? (
+            <AlertTriangle className="h-4 w-4" />
           ) : step.isComplete ? (
             <CheckCircle2 className="h-4 w-4" />
           ) : (
             stepIcons[step.id]
+          )}
+          {/* Overdue badge */}
+          {hasOverdue && overdueCount && overdueCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              {overdueCount}
+            </span>
           )}
         </div>
         <span className={cn(
@@ -310,28 +326,50 @@ const StepButton = ({
       {/* Sub-steps dropdown */}
       {hasSubSteps && isExpanded && !step.isLocked && (
         <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border border-border rounded-lg shadow-lg p-2 min-w-[160px]">
-          {step.subSteps!.map((subStep) => (
-            <div
-              key={subStep.id}
-              className={cn(
-                "flex items-center justify-between px-2 py-1.5 rounded text-xs",
-                subStep.isComplete && "bg-green-50",
-                !subStep.isComplete && "bg-amber-50"
-              )}
-            >
-              <span className={cn(
-                subStep.isComplete ? "text-green-700" : "text-amber-700"
-              )}>
-                {subStep.name}
-              </span>
-              <span className={cn(
-                "font-medium",
-                subStep.isComplete ? "text-green-600" : "text-amber-600"
-              )}>
-                {subStep.isComplete ? "✓" : `${Math.round(subStep.weight / 3)}%`}
-              </span>
-            </div>
-          ))}
+          {step.subSteps!.map((subStep) => {
+            const isOverdueSubStep = 'isOverdue' in subStep && subStep.isOverdue;
+            const overdueCount = 'overdueCount' in subStep ? (subStep.overdueCount as number) : 0;
+            
+            return (
+              <div
+                key={subStep.id}
+                className={cn(
+                  "flex items-center justify-between px-2 py-1.5 rounded text-xs",
+                  isOverdueSubStep && "bg-red-50 border border-red-200",
+                  !isOverdueSubStep && subStep.isComplete && "bg-green-50",
+                  !isOverdueSubStep && !subStep.isComplete && "bg-amber-50"
+                )}
+              >
+                <div className="flex items-center gap-1.5">
+                  {isOverdueSubStep && <AlertTriangle className="h-3 w-3 text-red-500" />}
+                  {!isOverdueSubStep && subStep.id === "dueSoon" && <Clock className="h-3 w-3 text-amber-500" />}
+                  <span className={cn(
+                    isOverdueSubStep && "text-red-700 font-medium",
+                    !isOverdueSubStep && subStep.isComplete && "text-green-700",
+                    !isOverdueSubStep && !subStep.isComplete && "text-amber-700"
+                  )}>
+                    {subStep.name}
+                  </span>
+                </div>
+                <span className={cn(
+                  "font-medium",
+                  isOverdueSubStep && "text-red-600",
+                  !isOverdueSubStep && subStep.isComplete && "text-green-600",
+                  !isOverdueSubStep && !subStep.isComplete && "text-amber-600"
+                )}>
+                  {isOverdueSubStep ? (
+                    <AlertCircle className="h-3 w-3 text-red-500" />
+                  ) : subStep.isComplete ? (
+                    "✓"
+                  ) : subStep.weight > 0 ? (
+                    `${Math.round(subStep.weight / 4)}%`
+                  ) : (
+                    <Clock className="h-3 w-3" />
+                  )}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { format, differenceInDays, isPast, isToday, isTomorrow, startOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { 
   ListTodo, 
   Plus, 
@@ -22,15 +29,18 @@ import {
   CheckCircle2, 
   AlertCircle,
   Loader2,
-  Calendar,
+  CalendarIcon,
   Flag,
   User,
   Pencil,
   Trash2,
   PlayCircle,
-  Circle
+  Circle,
+  AlertTriangle,
+  Bell
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface TaskAssignmentProps {
   projectId: string;
@@ -88,7 +98,8 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
   const [description, setDescription] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [priority, setPriority] = useState("medium");
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Fetch tasks and members
   useEffect(() => {
@@ -181,8 +192,9 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
     setDescription("");
     setAssignedTo("");
     setPriority("medium");
-    setDueDate("");
+    setDueDate(undefined);
     setEditingTask(null);
+    setCalendarOpen(false);
   };
 
   const openCreateDialog = () => {
@@ -196,7 +208,7 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
     setDescription(task.description || "");
     setAssignedTo(task.assigned_to);
     setPriority(task.priority);
-    setDueDate(task.due_date ? task.due_date.split("T")[0] : "");
+    setDueDate(task.due_date ? new Date(task.due_date) : undefined);
     setDialogOpen(true);
   };
 
@@ -215,7 +227,7 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
         assigned_to: assignedTo,
         assigned_by: user?.id || "",
         priority,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        due_date: dueDate ? dueDate.toISOString() : null,
       };
 
       if (editingTask) {
@@ -301,6 +313,28 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
   const pendingTasks = tasks.filter((t) => t.status === "pending");
   const inProgressTasks = tasks.filter((t) => t.status === "in_progress");
   const completedTasks = tasks.filter((t) => t.status === "completed");
+  const overdueTasks = tasks.filter((t) => 
+    t.due_date && 
+    isPast(startOfDay(new Date(t.due_date))) && 
+    !isToday(new Date(t.due_date)) &&
+    t.status !== "completed"
+  );
+
+  // Helper to get due date display info
+  const getDueDateInfo = (dueDateStr: string | null) => {
+    if (!dueDateStr) return null;
+    const date = new Date(dueDateStr);
+    const today = startOfDay(new Date());
+    const dueDay = startOfDay(date);
+    const daysUntil = differenceInDays(dueDay, today);
+    
+    if (isToday(date)) return { label: "Due today", color: "text-amber-600", urgent: true };
+    if (isTomorrow(date)) return { label: "Due tomorrow", color: "text-blue-600", urgent: false };
+    if (isPast(dueDay)) return { label: `${Math.abs(daysUntil)} days overdue`, color: "text-red-600", urgent: true };
+    if (daysUntil <= 3) return { label: `${daysUntil} days left`, color: "text-amber-600", urgent: false };
+    if (daysUntil <= 7) return { label: `${daysUntil} days left`, color: "text-slate-600", urgent: false };
+    return { label: format(date, "MMM d"), color: "text-slate-500", urgent: false };
+  };
 
   return (
     <>
@@ -344,15 +378,36 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* In Progress */}
-              {inProgressTasks.length > 0 && (
+              {/* Overdue Alert Banner */}
+              {overdueTasks.length > 0 && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-red-800">
+                      {overdueTasks.length} Overdue Task{overdueTasks.length !== 1 ? "s" : ""}
+                    </p>
+                    <p className="text-xs text-red-600">
+                      These tasks require immediate attention
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
+                    <Bell className="h-3 w-3 mr-1" />
+                    Action Required
+                  </Badge>
+                </div>
+              )}
+
+              {/* Overdue Tasks */}
+              {overdueTasks.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <PlayCircle className="h-3 w-3" />
-                    In Progress ({inProgressTasks.length})
+                  <p className="text-xs font-medium text-red-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Overdue ({overdueTasks.length})
                   </p>
                   <div className="space-y-2">
-                    {inProgressTasks.map((task) => (
+                    {overdueTasks.map((task) => (
                       <TaskItem
                         key={task.id}
                         task={task}
@@ -362,6 +417,32 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
                         onStatusChange={(status) => handleUpdateStatus(task.id, status)}
                         getPriorityBadge={getPriorityBadge}
                         getStatusInfo={getStatusInfo}
+                        getDueDateInfo={getDueDateInfo}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* In Progress */}
+              {inProgressTasks.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <PlayCircle className="h-3 w-3" />
+                    In Progress ({inProgressTasks.length})
+                  </p>
+                  <div className="space-y-2">
+                    {inProgressTasks.filter(t => !overdueTasks.find(o => o.id === t.id)).map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        isOwner={isOwner}
+                        onEdit={() => openEditDialog(task)}
+                        onDelete={() => handleDeleteTask(task.id)}
+                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        getPriorityBadge={getPriorityBadge}
+                        getStatusInfo={getStatusInfo}
+                        getDueDateInfo={getDueDateInfo}
                       />
                     ))}
                   </div>
@@ -373,10 +454,10 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
                 <div>
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                     <Circle className="h-3 w-3" />
-                    Pending ({pendingTasks.length})
+                    Pending ({pendingTasks.filter(t => !overdueTasks.find(o => o.id === t.id)).length})
                   </p>
                   <div className="space-y-2">
-                    {pendingTasks.map((task) => (
+                    {pendingTasks.filter(t => !overdueTasks.find(o => o.id === t.id)).map((task) => (
                       <TaskItem
                         key={task.id}
                         task={task}
@@ -386,6 +467,7 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
                         onStatusChange={(status) => handleUpdateStatus(task.id, status)}
                         getPriorityBadge={getPriorityBadge}
                         getStatusInfo={getStatusInfo}
+                        getDueDateInfo={getDueDateInfo}
                       />
                     ))}
                   </div>
@@ -410,6 +492,7 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
                         onStatusChange={(status) => handleUpdateStatus(task.id, status)}
                         getPriorityBadge={getPriorityBadge}
                         getStatusInfo={getStatusInfo}
+                        getDueDateInfo={getDueDateInfo}
                       />
                     ))}
                   </div>
@@ -500,11 +583,43 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Due Date</label>
-              <Input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : <span>Pick a due date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={(date) => {
+                      setDueDate(date);
+                      setCalendarOpen(false);
+                    }}
+                    disabled={(date) => date < startOfDay(new Date())}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {dueDate && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs text-slate-500 h-6 px-2"
+                  onClick={() => setDueDate(undefined)}
+                >
+                  Clear date
+                </Button>
+              )}
             </div>
 
             <Button
@@ -529,6 +644,12 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
 };
 
 // Task Item Component
+interface DueDateInfo {
+  label: string;
+  color: string;
+  urgent: boolean;
+}
+
 interface TaskItemProps {
   task: Task;
   isOwner: boolean;
@@ -537,12 +658,14 @@ interface TaskItemProps {
   onStatusChange: (status: string) => void;
   getPriorityBadge: (priority: string) => JSX.Element;
   getStatusInfo: (status: string) => { value: string; label: string; icon: any; color: string };
+  getDueDateInfo?: (dueDateStr: string | null) => DueDateInfo | null;
 }
 
-const TaskItem = ({ task, isOwner, onEdit, onDelete, onStatusChange, getPriorityBadge, getStatusInfo }: TaskItemProps) => {
+const TaskItem = ({ task, isOwner, onEdit, onDelete, onStatusChange, getPriorityBadge, getStatusInfo, getDueDateInfo }: TaskItemProps) => {
   const statusInfo = getStatusInfo(task.status);
   const StatusIcon = statusInfo.icon;
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "completed";
+  const dueDateInfo = getDueDateInfo ? getDueDateInfo(task.due_date) : null;
 
   return (
     <div className={`
@@ -587,9 +710,9 @@ const TaskItem = ({ task, isOwner, onEdit, onDelete, onStatusChange, getPriority
             <span>{task.assignee_name}</span>
           </div>
           {task.due_date && (
-            <div className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-600" : "text-slate-500"}`}>
-              {isOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
-              <span>{new Date(task.due_date).toLocaleDateString()}</span>
+            <div className={`flex items-center gap-1 text-xs ${dueDateInfo?.color || (isOverdue ? "text-red-600" : "text-slate-500")}`}>
+              {isOverdue || dueDateInfo?.urgent ? <AlertCircle className="h-3 w-3" /> : <CalendarIcon className="h-3 w-3" />}
+              <span>{dueDateInfo?.label || new Date(task.due_date).toLocaleDateString()}</span>
             </div>
           )}
         </div>
