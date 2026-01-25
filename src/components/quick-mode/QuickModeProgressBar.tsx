@@ -1,4 +1,4 @@
-import { Camera, LayoutTemplate, Calculator, FileText, ClipboardSignature, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Cloud, CloudOff } from "lucide-react";
+import { Camera, LayoutTemplate, Calculator, FileText, ClipboardSignature, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,8 +15,6 @@ interface QuickModeProgressBarProps {
   statusColor: string;
   activeTab: string;
   onTabClick: (tab: string) => void;
-  lastSaved?: Date | null;
-  isLoggedIn?: boolean;
 }
 
 const stepIcons: Record<string, React.ReactNode> = {
@@ -36,8 +34,6 @@ export const QuickModeProgressBar = ({
   statusColor,
   activeTab,
   onTabClick,
-  lastSaved,
-  isLoggedIn,
 }: QuickModeProgressBarProps) => {
   const [showSubSteps, setShowSubSteps] = useState<string | null>(null);
 
@@ -48,17 +44,6 @@ export const QuickModeProgressBar = ({
     const completedSubSteps = step.subSteps.filter(s => s.isComplete).length;
     const totalSubSteps = step.subSteps.length;
     return Math.round((completedSubSteps / totalSubSteps) * step.weight);
-  };
-
-  const formatLastSaved = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return date.toLocaleDateString();
   };
 
   return (
@@ -85,39 +70,9 @@ export const QuickModeProgressBar = ({
           </div>
           <div>
             <h3 className="font-semibold text-foreground">Project Progress</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge className={cn(statusColor)}>
-                {statusLabel}
-              </Badge>
-              {/* Auto-save indicator */}
-              {isLoggedIn && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className={cn(
-                      "flex items-center gap-1 text-xs",
-                      lastSaved ? "text-green-600" : "text-muted-foreground"
-                    )}>
-                      {lastSaved ? (
-                        <>
-                          <Cloud className="h-3 w-3" />
-                          <span>Saved {formatLastSaved(lastSaved)}</span>
-                        </>
-                      ) : (
-                        <>
-                          <CloudOff className="h-3 w-3" />
-                          <span>Not saved</span>
-                        </>
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {lastSaved 
-                      ? "Progress auto-saved to your account" 
-                      : "Add data to auto-save your progress"}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
+            <Badge className={cn("mt-1", statusColor)}>
+              {statusLabel}
+            </Badge>
           </div>
         </div>
 
