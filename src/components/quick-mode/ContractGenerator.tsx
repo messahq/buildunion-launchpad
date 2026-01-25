@@ -1230,69 +1230,199 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                           <span className="font-medium text-purple-900">Project Timeline Preview</span>
                         </div>
                         
-                        {/* Timeline Bar */}
-                        <div className="relative">
-                          <div className="flex items-center justify-between mb-2">
-                            {/* Start Date */}
+                        {/* Timeline Bar with Milestones */}
+                        <div className="relative pt-2">
+                          {/* Main Timeline Track */}
+                          <div className="relative h-3 bg-gray-200 rounded-full overflow-visible">
+                            {/* Progress Fill */}
+                            {contract.startDate && contract.estimatedEndDate && (() => {
+                              const start = new Date(contract.startDate);
+                              const end = new Date(contract.estimatedEndDate);
+                              const today = new Date();
+                              const totalDuration = end.getTime() - start.getTime();
+                              const elapsed = today.getTime() - start.getTime();
+                              const progressPercent = Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
+                              
+                              return (
+                                <div 
+                                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 via-amber-400 to-purple-500 rounded-full transition-all duration-300"
+                                  style={{ width: `${progressPercent}%` }}
+                                />
+                              );
+                            })()}
+                            
+                            {/* Milestone Markers */}
+                            {contract.startDate && contract.estimatedEndDate && (
+                              <>
+                                {/* Rough-in at 25% */}
+                                <div className="absolute top-1/2 -translate-y-1/2" style={{ left: '25%' }}>
+                                  <div className="relative group">
+                                    <div className="w-3 h-3 rounded-full bg-amber-500 border-2 border-white shadow-sm cursor-pointer hover:scale-125 transition-transform" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-amber-600 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                      Rough-in
+                                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-amber-600" />
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Inspection at 50% */}
+                                <div className="absolute top-1/2 -translate-y-1/2" style={{ left: '50%' }}>
+                                  <div className="relative group">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm cursor-pointer hover:scale-125 transition-transform" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-blue-600 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                      Inspection
+                                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-blue-600" />
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Final Finish at 85% */}
+                                <div className="absolute top-1/2 -translate-y-1/2" style={{ left: '85%' }}>
+                                  <div className="relative group">
+                                    <div className="w-3 h-3 rounded-full bg-cyan-500 border-2 border-white shadow-sm cursor-pointer hover:scale-125 transition-transform" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-cyan-600 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                      Final Finish
+                                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-cyan-600" />
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Today Indicator */}
+                                {(() => {
+                                  const start = new Date(contract.startDate);
+                                  const end = new Date(contract.estimatedEndDate);
+                                  const today = new Date();
+                                  const totalDuration = end.getTime() - start.getTime();
+                                  const elapsed = today.getTime() - start.getTime();
+                                  const todayPercent = (elapsed / totalDuration) * 100;
+                                  
+                                  // Only show if today is within the project range
+                                  if (todayPercent >= 0 && todayPercent <= 100) {
+                                    return (
+                                      <div 
+                                        className="absolute top-1/2 -translate-y-1/2 z-10" 
+                                        style={{ left: `${todayPercent}%` }}
+                                      >
+                                        <div className="relative group">
+                                          <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow-lg animate-pulse cursor-pointer" />
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-red-600 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                            Today
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-red-600" />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Start/End Labels */}
+                          <div className="flex justify-between mt-3">
                             <div className="flex flex-col items-start">
-                              <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow-md z-10" />
-                              <span className="text-xs font-medium text-green-700 mt-1">Start</span>
-                              <span className="text-xs text-muted-foreground">
-                                {contract.startDate ? new Date(contract.startDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded-full bg-green-500" />
+                                <span className="text-xs font-medium text-green-700">Start</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground mt-0.5">
+                                {contract.startDate ? new Date(contract.startDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : 'Not set'}
                               </span>
                             </div>
                             
-                            {/* Duration Info */}
-                            <div className="flex-1 mx-4">
-                              <div className="relative h-2 bg-gradient-to-r from-green-400 via-amber-400 to-purple-500 rounded-full" />
-                              {contract.startDate && contract.estimatedEndDate && (
-                                <div className="text-center mt-2">
-                                  <span className="text-sm font-semibold text-purple-700">
-                                    {(() => {
-                                      const start = new Date(contract.startDate);
-                                      const end = new Date(contract.estimatedEndDate);
-                                      const diffTime = Math.abs(end.getTime() - start.getTime());
-                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                      const weeks = Math.floor(diffDays / 7);
-                                      const days = diffDays % 7;
-                                      
-                                      // Calculate working days (excluding weekends)
-                                      let workingDays = 0;
-                                      const current = new Date(start);
-                                      while (current <= end) {
-                                        const dayOfWeek = current.getDay();
-                                        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                                          workingDays++;
-                                        }
-                                        current.setDate(current.getDate() + 1);
-                                      }
-                                      
-                                      return (
-                                        <div className="space-y-1">
-                                          <div className="text-purple-700">
-                                            {weeks > 0 ? `${weeks} week${weeks > 1 ? 's' : ''}${days > 0 ? ` ${days} day${days > 1 ? 's' : ''}` : ''}` : `${diffDays} day${diffDays > 1 ? 's' : ''}`}
-                                          </div>
-                                          <div className="text-xs text-muted-foreground">
-                                            ~{workingDays} working days
-                                          </div>
-                                        </div>
-                                      );
-                                    })()}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* End Date */}
                             <div className="flex flex-col items-end">
-                              <div className="w-4 h-4 rounded-full bg-purple-500 border-2 border-white shadow-md z-10" />
-                              <span className="text-xs font-medium text-purple-700 mt-1">End</span>
-                              <span className="text-xs text-muted-foreground">
-                                {contract.estimatedEndDate ? new Date(contract.estimatedEndDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs font-medium text-purple-700">End</span>
+                                <div className="w-3 h-3 rounded-full bg-purple-500" />
+                              </div>
+                              <span className="text-xs text-muted-foreground mt-0.5">
+                                {contract.estimatedEndDate ? new Date(contract.estimatedEndDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : 'Not set'}
                               </span>
                             </div>
                           </div>
+                          
+                          {/* Milestone Legend */}
+                          {contract.startDate && contract.estimatedEndDate && (
+                            <div className="flex flex-wrap justify-center gap-3 mt-4 pt-3 border-t border-purple-100">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                <span className="text-xs text-muted-foreground">Rough-in (25%)</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                                <span className="text-xs text-muted-foreground">Inspection (50%)</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
+                                <span className="text-xs text-muted-foreground">Final Finish (85%)</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                                <span className="text-xs text-muted-foreground">Today</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
+                        
+                        {/* Duration Summary */}
+                        {contract.startDate && contract.estimatedEndDate && (
+                          <div className="mt-4 pt-3 border-t border-purple-200">
+                            <div className="flex justify-center">
+                              <div className="text-center">
+                                {(() => {
+                                  const start = new Date(contract.startDate);
+                                  const end = new Date(contract.estimatedEndDate);
+                                  const today = new Date();
+                                  const diffTime = Math.abs(end.getTime() - start.getTime());
+                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                  const weeks = Math.floor(diffDays / 7);
+                                  const days = diffDays % 7;
+                                  
+                                  // Calculate working days (excluding weekends)
+                                  let workingDays = 0;
+                                  const current = new Date(start);
+                                  while (current <= end) {
+                                    const dayOfWeek = current.getDay();
+                                    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                                      workingDays++;
+                                    }
+                                    current.setDate(current.getDate() + 1);
+                                  }
+                                  
+                                  // Calculate days remaining
+                                  const daysRemaining = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                  const isOverdue = daysRemaining < 0;
+                                  const hasStarted = today >= start;
+                                  
+                                  return (
+                                    <div className="space-y-2">
+                                      <div className="text-sm font-semibold text-purple-700">
+                                        {weeks > 0 ? `${weeks} week${weeks > 1 ? 's' : ''}${days > 0 ? ` ${days} day${days > 1 ? 's' : ''}` : ''}` : `${diffDays} day${diffDays > 1 ? 's' : ''}`}
+                                        <span className="text-muted-foreground font-normal"> (~{workingDays} working days)</span>
+                                      </div>
+                                      {hasStarted && (
+                                        <div className={`text-xs font-medium ${isOverdue ? 'text-red-600' : 'text-green-600'}`}>
+                                          {isOverdue 
+                                            ? `⚠️ ${Math.abs(daysRemaining)} days overdue`
+                                            : daysRemaining === 0 
+                                              ? '🎯 Due today!'
+                                              : `✓ ${daysRemaining} days remaining`
+                                          }
+                                        </div>
+                                      )}
+                                      {!hasStarted && (
+                                        <div className="text-xs text-muted-foreground">
+                                          📅 Starts in {Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))} days
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Quick Duration Buttons */}
                         {contract.startDate && !contract.estimatedEndDate && (
