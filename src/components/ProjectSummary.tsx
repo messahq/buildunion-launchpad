@@ -40,7 +40,13 @@ import {
   ShieldAlert,
   LayoutTemplate,
   FolderPlus,
-  FileDown
+  FileDown,
+  Eye,
+  FileSignature,
+  ClipboardList,
+  Shield,
+  Brain,
+  CheckSquare
 } from "lucide-react";
 import {
   Alert,
@@ -48,7 +54,13 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
-import { generatePDFBlob, buildProjectSummaryHTML } from "@/lib/pdfGenerator";
+import { generatePDFBlob, buildProjectSummaryHTML, buildContractHTML } from "@/lib/pdfGenerator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { saveDocumentToProject } from "@/lib/documentUtils";
 
 interface LineItem {
@@ -83,6 +95,42 @@ interface ProjectSummaryData {
   updated_at: string;
 }
 
+interface ProjectContract {
+  id: string;
+  contract_number: string;
+  status: string;
+  contract_date: string;
+  total_amount: number | null;
+  contractor_name: string | null;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  client_address: string | null;
+  contractor_email: string | null;
+  contractor_phone: string | null;
+  contractor_address: string | null;
+  contractor_license: string | null;
+  scope_of_work: string | null;
+  start_date: string | null;
+  estimated_end_date: string | null;
+  working_days: string | null;
+  deposit_percentage: number | null;
+  deposit_amount: number | null;
+  payment_schedule: string | null;
+  materials_included: boolean | null;
+  warranty_period: string | null;
+  change_order_policy: string | null;
+  cancellation_policy: string | null;
+  additional_terms: string | null;
+  dispute_resolution: string | null;
+  has_liability_insurance: boolean | null;
+  has_wsib: boolean | null;
+  client_signature: any;
+  contractor_signature: any;
+  template_type: string | null;
+  created_at: string;
+}
+
 interface ProjectSummaryProps {
   summaryId?: string;
   photoEstimate?: any;
@@ -113,6 +161,9 @@ export function ProjectSummary({
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedItems, setEditedItems] = useState<LineItem[]>([]);
+  const [projectContracts, setProjectContracts] = useState<ProjectContract[]>([]);
+  const [viewingContractId, setViewingContractId] = useState<string | null>(null);
+  const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
   const [clientInfo, setClientInfo] = useState({
     name: "",
     email: "",
@@ -152,6 +203,19 @@ export function ProjectSummary({
         address: summaryData.client_address || ""
       });
       setNotes(summaryData.notes || "");
+
+      // Fetch contracts if project_id exists
+      if (summaryData.project_id) {
+        const { data: contractsData } = await supabase
+          .from("contracts")
+          .select("*")
+          .eq("project_id", summaryData.project_id)
+          .order("created_at", { ascending: false });
+        
+        if (contractsData) {
+          setProjectContracts(contractsData as unknown as ProjectContract[]);
+        }
+      }
     } catch (error) {
       console.error("Error fetching summary:", error);
       toast.error("Failed to load summary");
@@ -628,6 +692,169 @@ export function ProjectSummary({
     toast.success("PDF generated! Print dialog opened.");
   };
 
+  // Contract PDF View (opens in new tab)
+  const handleViewContractPDF = async (contract: ProjectContract) => {
+    setViewingContractId(contract.id);
+    try {
+      const htmlContent = buildContractHTML({
+        contractNumber: contract.contract_number,
+        contractDate: contract.contract_date,
+        templateType: contract.template_type || 'custom',
+        contractorInfo: {
+          name: contract.contractor_name || profile?.company_name || '',
+          email: contract.contractor_email || user?.email || '',
+          phone: contract.contractor_phone || profile?.phone || '',
+          address: contract.contractor_address || '',
+          license: contract.contractor_license || '',
+        },
+        clientInfo: {
+          name: contract.client_name || '',
+          email: contract.client_email || '',
+          phone: contract.client_phone || '',
+          address: contract.client_address || '',
+        },
+        projectInfo: {
+          name: quoteData?.projectName || 'Project',
+          address: contract.client_address || '',
+          description: contract.scope_of_work || '',
+        },
+        financialTerms: {
+          totalAmount: contract.total_amount || 0,
+          depositPercentage: contract.deposit_percentage || 50,
+          depositAmount: contract.deposit_amount || 0,
+          paymentSchedule: contract.payment_schedule || 'As agreed',
+        },
+        timeline: {
+          startDate: contract.start_date || '',
+          estimatedEndDate: contract.estimated_end_date || '',
+          workingDays: contract.working_days || 'Monday - Friday, 8:00 AM - 5:00 PM',
+        },
+        terms: {
+          scopeOfWork: contract.scope_of_work || '',
+          materialsIncluded: contract.materials_included ?? true,
+          warrantyPeriod: contract.warranty_period || '1 year',
+          changeOrderPolicy: contract.change_order_policy || '',
+          cancellationPolicy: contract.cancellation_policy || '',
+          additionalTerms: contract.additional_terms || '',
+          disputeResolution: contract.dispute_resolution || '',
+          hasLiabilityInsurance: contract.has_liability_insurance ?? true,
+          hasWSIB: contract.has_wsib ?? true,
+        },
+        signatures: {
+          client: contract.client_signature,
+          contractor: contract.contractor_signature,
+        },
+        branding: {
+          companyLogoUrl: profile?.company_logo_url || undefined,
+          companyName: profile?.company_name || undefined,
+          companyPhone: profile?.phone || undefined,
+          companyEmail: user?.email || undefined,
+          companyWebsite: profile?.company_website || undefined,
+        },
+        formatCurrency,
+      });
+      const blob = await generatePDFBlob(htmlContent, { filename: `Contract-${contract.contract_number}.pdf` });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('Error viewing contract PDF:', error);
+      toast.error('Failed to generate contract preview');
+    } finally {
+      setViewingContractId(null);
+    }
+  };
+
+  // Contract PDF Download
+  const handleDownloadContractPDF = async (contract: ProjectContract) => {
+    setDownloadingContractId(contract.id);
+    try {
+      const htmlContent = buildContractHTML({
+        contractNumber: contract.contract_number,
+        contractDate: contract.contract_date,
+        templateType: contract.template_type || 'custom',
+        contractorInfo: {
+          name: contract.contractor_name || profile?.company_name || '',
+          email: contract.contractor_email || user?.email || '',
+          phone: contract.contractor_phone || profile?.phone || '',
+          address: contract.contractor_address || '',
+          license: contract.contractor_license || '',
+        },
+        clientInfo: {
+          name: contract.client_name || '',
+          email: contract.client_email || '',
+          phone: contract.client_phone || '',
+          address: contract.client_address || '',
+        },
+        projectInfo: {
+          name: quoteData?.projectName || 'Project',
+          address: contract.client_address || '',
+          description: contract.scope_of_work || '',
+        },
+        financialTerms: {
+          totalAmount: contract.total_amount || 0,
+          depositPercentage: contract.deposit_percentage || 50,
+          depositAmount: contract.deposit_amount || 0,
+          paymentSchedule: contract.payment_schedule || 'As agreed',
+        },
+        timeline: {
+          startDate: contract.start_date || '',
+          estimatedEndDate: contract.estimated_end_date || '',
+          workingDays: contract.working_days || 'Monday - Friday, 8:00 AM - 5:00 PM',
+        },
+        terms: {
+          scopeOfWork: contract.scope_of_work || '',
+          materialsIncluded: contract.materials_included ?? true,
+          warrantyPeriod: contract.warranty_period || '1 year',
+          changeOrderPolicy: contract.change_order_policy || '',
+          cancellationPolicy: contract.cancellation_policy || '',
+          additionalTerms: contract.additional_terms || '',
+          disputeResolution: contract.dispute_resolution || '',
+          hasLiabilityInsurance: contract.has_liability_insurance ?? true,
+          hasWSIB: contract.has_wsib ?? true,
+        },
+        signatures: {
+          client: contract.client_signature,
+          contractor: contract.contractor_signature,
+        },
+        branding: {
+          companyLogoUrl: profile?.company_logo_url || undefined,
+          companyName: profile?.company_name || undefined,
+          companyPhone: profile?.phone || undefined,
+          companyEmail: user?.email || undefined,
+          companyWebsite: profile?.company_website || undefined,
+        },
+        formatCurrency,
+      });
+      const blob = await generatePDFBlob(htmlContent, { filename: `Contract-${contract.contract_number}.pdf` });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Contract-${contract.contract_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Contract PDF downloaded!');
+    } catch (error) {
+      console.error('Error downloading contract PDF:', error);
+      toast.error('Failed to download contract');
+    } finally {
+      setDownloadingContractId(null);
+    }
+  };
+
+  const getContractStatusBadge = (status: string, clientSig: any, contractorSig: any) => {
+    if (clientSig && contractorSig) {
+      return <Badge className="bg-green-100 text-green-700"><CheckCircle2 className="h-3 w-3 mr-1" />Signed</Badge>;
+    } else if (contractorSig) {
+      return <Badge className="bg-amber-100 text-amber-700"><FileSignature className="h-3 w-3 mr-1" />Awaiting Client</Badge>;
+    } else if (status === 'draft') {
+      return <Badge variant="secondary"><Edit3 className="h-3 w-3 mr-1" />Draft</Badge>;
+    }
+    return <Badge variant="outline">{status}</Badge>;
+  };
+
   // formatCurrency and formatDate now come from useRegionSettings hook
 
   const getSourceBadge = (source: string) => {
@@ -847,143 +1074,237 @@ export function ProjectSummary({
         </Alert>
       )}
 
-      {/* Quick Mode Data Sources Banner */}
-      <Card className="border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-3">
+      {/* ===== 8 ELEMENTS FOR OPERATIONAL TRUTH VERIFICATION ===== */}
+      <Card className="border-amber-300 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-3">
             <div className="p-2 bg-amber-100 rounded-lg">
-              <Sparkles className="h-5 w-5 text-amber-600" />
+              <Shield className="h-6 w-6 text-amber-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-amber-800">Quick Mode Data Collected</h3>
-              <p className="text-sm text-amber-600">Your estimate is built from the following sources:</p>
+              <h2 className="text-lg font-bold text-amber-800">8 Data Elements for Operational Truth</h2>
+              <p className="text-sm text-amber-600 font-normal">These elements will be analyzed by dual AI engines (OpenAI + Gemini) for verification</p>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(photoEstimate || summary.photo_estimate) && (
-              <Badge className="bg-blue-100 text-blue-700 gap-1.5 px-3 py-1.5">
-                <Camera className="h-3.5 w-3.5" />
-                Photo Estimate
-                {(photoEstimate?.area || summary.photo_estimate?.area) && (
-                  <span className="font-bold">• {photoEstimate?.area || summary.photo_estimate?.area} sq ft</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Grid of 8 Elements */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* 1. Photo Estimate */}
+            <Card className={`border-2 transition-all ${(photoEstimate || summary.photo_estimate) ? 'border-blue-300 bg-blue-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${(photoEstimate || summary.photo_estimate) ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                    <Camera className={`h-4 w-4 ${(photoEstimate || summary.photo_estimate) ? 'text-blue-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">1. Photo Estimate</span>
+                  {(photoEstimate || summary.photo_estimate) && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">
+                  {(photoEstimate?.area || summary.photo_estimate?.area) 
+                    ? `${photoEstimate?.area || summary.photo_estimate?.area} sq ft` 
+                    : "Not provided"}
+                </p>
+                {(photoEstimate?.materials || summary.photo_estimate?.materials)?.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(photoEstimate?.materials || summary.photo_estimate?.materials).length} materials detected
+                  </p>
                 )}
-              </Badge>
-            )}
-            {((summary.calculator_results as any[])?.length > 0 || calculatorResults?.length > 0) && (
-              <Badge className="bg-green-100 text-green-700 gap-1.5 px-3 py-1.5">
-                <Calculator className="h-3.5 w-3.5" />
-                Calculator
-                <span className="font-bold">• {(summary.calculator_results as any[])?.length || calculatorResults?.length} results</span>
-              </Badge>
-            )}
-            {((summary.template_items as any[])?.length > 0 || templateItems?.length > 0) && (
-              <Badge className="bg-cyan-100 text-cyan-700 gap-1.5 px-3 py-1.5">
-                <LayoutTemplate className="h-3.5 w-3.5" />
-                Templates
-                <span className="font-bold">• {(summary.template_items as any[])?.length || templateItems?.length} items</span>
-              </Badge>
-            )}
-            {quoteData && (
-              <Badge className="bg-purple-100 text-purple-700 gap-1.5 px-3 py-1.5">
-                <Receipt className="h-3.5 w-3.5" />
-                Quote Generated
-                {quoteData.lineItems?.length > 0 && (
-                  <span className="font-bold">• {quoteData.lineItems.length} line items</span>
-                )}
-              </Badge>
-            )}
-            {editedItems.length > 0 && (
-              <Badge className="bg-gray-100 text-gray-700 gap-1.5 px-3 py-1.5">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Total Items
-                <span className="font-bold">• {editedItems.length}</span>
-              </Badge>
-            )}
+              </CardContent>
+            </Card>
+
+            {/* 2. Templates */}
+            <Card className={`border-2 transition-all ${((summary.template_items as any[])?.length > 0 || templateItems?.length > 0) ? 'border-cyan-300 bg-cyan-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${((summary.template_items as any[])?.length > 0 || templateItems?.length > 0) ? 'bg-cyan-100' : 'bg-gray-100'}`}>
+                    <LayoutTemplate className={`h-4 w-4 ${((summary.template_items as any[])?.length > 0 || templateItems?.length > 0) ? 'text-cyan-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">2. Templates</span>
+                  {((summary.template_items as any[])?.length > 0 || templateItems?.length > 0) && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">
+                  {(summary.template_items as any[])?.length || templateItems?.length || 0} items
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* 3. Calculator */}
+            <Card className={`border-2 transition-all ${((summary.calculator_results as any[])?.length > 0 || calculatorResults?.length > 0) ? 'border-green-300 bg-green-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${((summary.calculator_results as any[])?.length > 0 || calculatorResults?.length > 0) ? 'bg-green-100' : 'bg-gray-100'}`}>
+                    <Calculator className={`h-4 w-4 ${((summary.calculator_results as any[])?.length > 0 || calculatorResults?.length > 0) ? 'text-green-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">3. Calculator</span>
+                  {((summary.calculator_results as any[])?.length > 0 || calculatorResults?.length > 0) && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">
+                  {(summary.calculator_results as any[])?.length || calculatorResults?.length || 0} calculations
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* 4. Quote - Line Items */}
+            <Card className={`border-2 transition-all ${(quoteData?.lineItems?.length > 0 || editedItems.length > 0) ? 'border-purple-300 bg-purple-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${(quoteData?.lineItems?.length > 0 || editedItems.length > 0) ? 'bg-purple-100' : 'bg-gray-100'}`}>
+                    <ClipboardList className={`h-4 w-4 ${(quoteData?.lineItems?.length > 0 || editedItems.length > 0) ? 'text-purple-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">4. Quote Items</span>
+                  {(quoteData?.lineItems?.length > 0 || editedItems.length > 0) && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">
+                  {quoteData?.lineItems?.length || editedItems.length || 0} line items
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* 5. Quote - Client Info */}
+            <Card className={`border-2 transition-all ${(clientInfo.name || quoteData?.clientName) ? 'border-indigo-300 bg-indigo-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${(clientInfo.name || quoteData?.clientName) ? 'bg-indigo-100' : 'bg-gray-100'}`}>
+                    <User className={`h-4 w-4 ${(clientInfo.name || quoteData?.clientName) ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">5. Client Info</span>
+                  {(clientInfo.name || quoteData?.clientName) && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800 truncate">
+                  {clientInfo.name || quoteData?.clientName || "Not provided"}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* 6. Quote - Pricing */}
+            <Card className={`border-2 transition-all ${materialTotal > 0 ? 'border-emerald-300 bg-emerald-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${materialTotal > 0 ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                    <Receipt className={`h-4 w-4 ${materialTotal > 0 ? 'text-emerald-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">6. Quote Total</span>
+                  {materialTotal > 0 && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">
+                  {materialTotal > 0 ? formatCurrency(grandTotal) : "Not calculated"}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* 7. Contract - Preview */}
+            <Card className={`border-2 transition-all ${projectContracts.length > 0 ? 'border-rose-300 bg-rose-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${projectContracts.length > 0 ? 'bg-rose-100' : 'bg-gray-100'}`}>
+                    <Eye className={`h-4 w-4 ${projectContracts.length > 0 ? 'text-rose-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">7. Contract View</span>
+                  {projectContracts.length > 0 && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">
+                  {projectContracts.length > 0 ? `${projectContracts.length} contract(s)` : "No contracts"}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* 8. Contract - Download */}
+            <Card className={`border-2 transition-all ${projectContracts.length > 0 ? 'border-orange-300 bg-orange-50/70' : 'border-gray-200 bg-gray-50/50 opacity-60'}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md ${projectContracts.length > 0 ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                    <FileDown className={`h-4 w-4 ${projectContracts.length > 0 ? 'text-orange-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700">8. Contract PDF</span>
+                  {projectContracts.length > 0 && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">
+                  {projectContracts.length > 0 ? "Available" : "Not generated"}
+                </p>
+              </CardContent>
+            </Card>
           </div>
-          {(clientInfo.name || quoteData?.clientName) && (
-            <div className="mt-3 pt-3 border-t border-amber-200 flex items-center gap-2 text-sm text-amber-700">
-              <User className="h-4 w-4" />
-              <span>Client: <strong>{clientInfo.name || quoteData?.clientName}</strong></span>
-              {(clientInfo.email || quoteData?.clientEmail) && (
-                <>
-                  <span className="text-amber-300">|</span>
-                  <Mail className="h-4 w-4" />
-                  <span>{clientInfo.email || quoteData?.clientEmail}</span>
-                </>
-              )}
-            </div>
+
+          {/* Contract Details Accordion */}
+          {projectContracts.length > 0 && (
+            <Accordion type="single" collapsible className="mt-4">
+              <AccordionItem value="contracts" className="border rounded-lg bg-white/80">
+                <AccordionTrigger className="px-4 hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <FileSignature className="h-5 w-5 text-rose-600" />
+                    <span className="font-semibold">Contract Documents ({projectContracts.length})</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="space-y-3">
+                    {projectContracts.map((contract) => (
+                      <div 
+                        key={contract.id} 
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-gray-500" />
+                          <div>
+                            <p className="font-medium text-sm">{contract.contract_number}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(contract.created_at)} • {contract.total_amount ? formatCurrency(contract.total_amount) : 'No amount'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getContractStatusBadge(contract.status, contract.client_signature, contract.contractor_signature)}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewContractPDF(contract)}
+                            disabled={viewingContractId === contract.id}
+                            className="gap-1.5"
+                          >
+                            {viewingContractId === contract.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Eye className="h-3.5 w-3.5" />
+                            )}
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadContractPDF(contract)}
+                            disabled={downloadingContractId === contract.id}
+                            className="gap-1.5"
+                          >
+                            {downloadingContractId === contract.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Download className="h-3.5 w-3.5" />
+                            )}
+                            PDF
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           )}
+
+          {/* Operational Truth Notice */}
+          <Alert className="bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200">
+            <Brain className="h-5 w-5 text-violet-600" />
+            <AlertTitle className="text-violet-800 flex items-center gap-2">
+              Operational Truth Verification
+              <Badge className="bg-violet-100 text-violet-700">Dual AI Engine</Badge>
+            </AlertTitle>
+            <AlertDescription className="text-violet-700">
+              All 8 elements above will be cross-referenced by <strong>OpenAI GPT-5</strong> and <strong>Google Gemini</strong> to detect conflicts, 
+              verify data consistency, and establish the operational truth for your project.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
-
-      {/* Data Source Info Alert */}
-      <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <Sparkles className="h-5 w-5 text-blue-600" />
-        <AlertTitle className="text-blue-800">AI Estimated Data</AlertTitle>
-        <AlertDescription className="text-blue-700">
-          The data shown below is estimated based on your uploaded documents and photos. 
-          <strong> You can edit any values</strong> by clicking the Edit button above before saving to your project.
-        </AlertDescription>
-      </Alert>
-
-      {/* Source Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-blue-200 bg-blue-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Camera className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-blue-600 font-medium">Photo Estimate</p>
-              <p className="font-bold text-blue-800">
-                {photoEstimate?.area ? `${photoEstimate.area} ${photoEstimate.areaUnit || 'sq ft'}` : (summary.photo_estimate?.area ? `${summary.photo_estimate.area} ${summary.photo_estimate.areaUnit || 'sq ft'}` : "—")}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200 bg-green-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Calculator className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-green-600 font-medium">Calculator</p>
-              <p className="font-bold text-green-800">
-                {(summary.calculator_results as any[])?.length || calculatorResults?.length || 0} calculations
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-cyan-200 bg-cyan-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-cyan-100 rounded-lg">
-              <FileText className="h-5 w-5 text-cyan-600" />
-            </div>
-            <div>
-              <p className="text-xs text-cyan-600 font-medium">Template Items</p>
-              <p className="font-bold text-cyan-800">
-                {(summary.template_items as any[])?.length || templateItems?.length || 0} items
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-orange-200 bg-orange-50/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs text-orange-600 font-medium">M.E.S.S.A. Facts</p>
-              <p className="font-bold text-orange-800">
-                {(summary.verified_facts as any[])?.length || 0} verified
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Photo Estimate Details */}
       {(photoEstimate || summary.photo_estimate) && (
