@@ -218,10 +218,29 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
     }
   };
 
+  const sendPushNotification = async (recipientId: string, senderName: string, messagePreview: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await supabase.functions.invoke("send-message-notification", {
+        body: {
+          recipientId,
+          senderName,
+          messagePreview: messagePreview.length > 50 ? messagePreview.slice(0, 50) + "..." : messagePreview,
+        },
+      });
+    } catch (err) {
+      // Silent fail - push notification is not critical
+      console.error("Error sending push notification:", err);
+    }
+  };
+
   const sendMessage = async () => {
     if (!user || !member || !newMessage.trim()) return;
 
     setIsSending(true);
+    const messageText = newMessage.trim();
 
     try {
       const { data, error } = await supabase
@@ -229,7 +248,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
         .insert({
           sender_id: user.id,
           recipient_id: member.user_id,
-          message: newMessage.trim(),
+          message: messageText,
         })
         .select()
         .single();
@@ -247,6 +266,10 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
 
       setNewMessage("");
       toast.success("Message sent!");
+
+      // Send push notification to recipient
+      const senderName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Someone";
+      sendPushNotification(member.user_id, senderName, messageText);
     } catch (err) {
       console.error("Error sending message:", err);
       toast.error("Failed to send message");
