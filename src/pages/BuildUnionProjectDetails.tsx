@@ -9,6 +9,7 @@ import ContractHistory from "@/components/ContractHistory";
 import RequirementsTab from "@/components/RequirementsTab";
 import OperationalTruthSummaryCard from "@/components/OperationalTruthSummaryCard";
 import { ProjectSummary } from "@/components/ProjectSummary";
+import { ProjectModeToggle } from "@/components/ProjectModeToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -118,10 +119,11 @@ const BuildUnionProjectDetails = () => {
   const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
   const [viewingContractId, setViewingContractId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
+  const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
   const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "contracts">("documents");
   const [showStatsPopup, setShowStatsPopup] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState<"pro" | "premium" | null>(null);
+  const [projectMode, setProjectMode] = useState<"solo" | "team">("team"); // Team projects are team by default
   
   // Tier access: Pro+ can access Blueprint Analysis
   const isPro = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
@@ -915,7 +917,16 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Project Mode Toggle */}
+                  <ProjectModeToggle
+                    summaryId={projectSummary?.id}
+                    projectId={projectId}
+                    initialMode={projectMode}
+                    onModeChange={(newMode) => setProjectMode(newMode)}
+                    variant="compact"
+                  />
+                  
                   <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
                     <Pencil className="h-4 w-4" />
                     Edit Project
@@ -1034,10 +1045,59 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
         )}
 
         <div className="space-y-6">
-          {/* Blueprint Analysis / M.E.S.S.A. - Tier Gated */}
-            {/* Tier Access Card */}
-            {!isPro ? (
-              <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/30">
+          {/* Blueprint Analysis / M.E.S.S.A. - Mode and Tier Gated */}
+          {projectMode === "solo" ? (
+            // Solo Mode - Show simplified view with upgrade prompt
+            <Card className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-medium text-slate-800">
+                        Solo Mode Active
+                      </CardTitle>
+                      <CardDescription>
+                        Switch to Team mode to unlock collaboration features
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <ProjectModeToggle
+                    summaryId={projectSummary?.id}
+                    projectId={projectId}
+                    initialMode="solo"
+                    onModeChange={(newMode) => setProjectMode(newMode)}
+                    variant="button"
+                    showLabel={false}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg border border-amber-100">
+                    <FileText className="w-4 h-4 text-amber-500" />
+                    <span>Documents</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg border border-amber-100">
+                    <Users className="w-4 h-4 text-amber-500" />
+                    <span>Team & Tasks</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg border border-amber-100">
+                    <Brain className="w-4 h-4 text-amber-500" />
+                    <span>AI Synthesis</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg border border-amber-100">
+                    <MapPin className="w-4 h-4 text-amber-500" />
+                    <span>Team Map</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : !isPro ? (
+            // Team Mode but no Pro subscription
+            <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-cyan-50/30">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
