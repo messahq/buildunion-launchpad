@@ -572,7 +572,7 @@ const BuildUnionProjectDetails = () => {
   if (loading) {
     return (
       <main className="bg-slate-50 min-h-screen">
-        <BuildUnionHeader />
+        <BuildUnionHeader projectMode={projectMode} />
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
         </div>
@@ -583,7 +583,7 @@ const BuildUnionProjectDetails = () => {
   if (!project || !user) {
     return (
       <main className="bg-slate-50 min-h-screen">
-        <BuildUnionHeader />
+        <BuildUnionHeader projectMode={projectMode} />
         <div className="max-w-4xl mx-auto px-6 py-12 text-center">
           <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-slate-900 mb-2">
@@ -599,7 +599,7 @@ const BuildUnionProjectDetails = () => {
 
   return (
     <main className="bg-slate-50 min-h-screen">
-      <BuildUnionHeader />
+      <BuildUnionHeader projectMode={projectMode} />
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Back Link */}

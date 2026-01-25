@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useBuProfile } from "@/hooks/useBuProfile";
@@ -30,7 +36,11 @@ const languages = [
   { code: "hu", name: "Magyar" },
 ];
 
-const BuildUnionHeader = () => {
+interface BuildUnionHeaderProps {
+  projectMode?: "solo" | "team";
+}
+
+const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { subscription } = useSubscription();
@@ -111,15 +121,48 @@ const BuildUnionHeader = () => {
           <span className="text-sm hidden sm:inline">Back to Home</span>
         </Button>
 
-        {/* Center - Logo (hidden on very small screens) */}
+        {/* Center - Logo + Project Mode Indicator */}
         <div 
-          className="hidden xs:flex absolute left-1/2 -translate-x-1/2 cursor-pointer"
-          onClick={() => navigate("/buildunion")}
+          className="hidden xs:flex absolute left-1/2 -translate-x-1/2 items-center gap-3"
         >
-          <span className="text-lg sm:text-xl font-light tracking-tight">
+          <span 
+            className="text-lg sm:text-xl font-light tracking-tight cursor-pointer"
+            onClick={() => navigate("/buildunion")}
+          >
             <span className="text-foreground">Build</span>
             <span className="text-amber-500">Union</span>
           </span>
+          
+          {/* Project Mode Indicator */}
+          {projectMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+                    projectMode === "team"
+                      ? "bg-cyan-100 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700"
+                      : "bg-amber-100 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-700"
+                  }`}>
+                    {projectMode === "team" ? (
+                      <Users className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+                    ) : (
+                      <User className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    )}
+                    <span className={`text-xs font-medium ${
+                      projectMode === "team"
+                        ? "text-cyan-700 dark:text-cyan-300"
+                        : "text-amber-700 dark:text-amber-300"
+                    }`}>
+                      {projectMode === "team" ? "Team" : "Solo"}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Current project mode: {projectMode === "team" ? "Team" : "Solo"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
 
         {/* Right - Auth Buttons & Language */}
