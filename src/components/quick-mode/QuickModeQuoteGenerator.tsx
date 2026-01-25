@@ -384,6 +384,63 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
     }
   };
 
+  // Auto-save project and generate PDF
+  const generatePDFAndSave = async () => {
+    // First, auto-save the project if user is authenticated
+    if (user) {
+      const projectName = quote.projectName.trim() || quote.clientName.trim() || `Quote ${quote.quoteNumber}`;
+      
+      try {
+        // Create project
+        const { data: project, error: projectError } = await supabase
+          .from('projects')
+          .insert({
+            user_id: user.id,
+            name: projectName,
+            description: `Generated from Quick Mode. Client: ${quote.clientName || 'Not specified'}`,
+            status: 'draft',
+            address: quote.projectAddress || quote.clientAddress || null,
+          })
+          .select()
+          .single();
+
+        if (!projectError && project) {
+          // Create project summary with all collected data
+          await supabase
+            .from('project_summaries')
+            .insert([{
+              user_id: user.id,
+              project_id: project.id,
+              status: 'draft',
+              client_name: quote.clientName || null,
+              client_email: quote.clientEmail || null,
+              client_phone: quote.clientPhone || null,
+              client_address: quote.clientAddress || null,
+              line_items: quote.lineItems as any,
+              material_cost: subtotal,
+              total_cost: total,
+              notes: quote.notes || null,
+              photo_estimate: collectedData?.photoEstimate || null,
+              calculator_results: collectedData?.calculatorResults || null,
+              template_items: collectedData?.templateItems || null,
+            }]);
+          
+          toast.success("Project auto-saved!");
+          
+          if (onSaveToProjects) {
+            onSaveToProjects({ projectId: project.id, quote, collectedData });
+          }
+        }
+      } catch (error) {
+        console.error("Error auto-saving project:", error);
+        // Continue with PDF generation even if save fails
+      }
+    }
+    
+    // Then generate PDF
+    generatePDF();
+  };
+
   const generatePDF = () => {
     // Always use current date for issued date
     const currentDate = new Date().toISOString().split("T")[0];
@@ -1239,7 +1296,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
             {/* Generate Button */}
             <Button
-              onClick={generatePDF}
+              onClick={generatePDFAndSave}
               className="w-full bg-amber-500 hover:bg-amber-600"
             >
               <Download className="w-4 h-4 mr-2" />
