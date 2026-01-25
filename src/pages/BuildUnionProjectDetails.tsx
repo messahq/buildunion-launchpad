@@ -1052,7 +1052,7 @@ const BuildUnionProjectDetails = () => {
         <div className="space-y-6">
           {/* Blueprint Analysis / M.E.S.S.A. - Mode and Tier Gated */}
           {projectMode === "solo" ? (
-            // Solo Mode - Show simplified view with upgrade prompt
+            // Solo Mode - Show unified card with team features + premium preview
             <Card className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -1079,7 +1079,8 @@ const BuildUnionProjectDetails = () => {
                   />
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 space-y-4">
+                {/* Team Mode Features Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                   <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg border border-amber-100">
                     <FileText className="w-4 h-4 text-amber-500" />
@@ -1098,6 +1099,46 @@ const BuildUnionProjectDetails = () => {
                     <span>Team Map</span>
                   </div>
                 </div>
+
+                {/* Premium Features Section - Integrated */}
+                {isPro && !isPremium && (
+                  <>
+                    <div className="border-t border-amber-200 pt-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Crown className="w-5 h-5 text-amber-500" />
+                        <span className="font-medium text-slate-800">Premium Features</span>
+                        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">Coming with Premium</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                        <div className="flex items-center gap-1.5">
+                          <Lock className="w-3 h-3 text-amber-400" />
+                          Send Summary to Team
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Lock className="w-3 h-3 text-amber-400" />
+                          Generate Project Report
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Lock className="w-3 h-3 text-amber-400" />
+                          Conflict Visualization
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Lock className="w-3 h-3 text-amber-400" />
+                          Team Map View
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate("/buildunion/pricing")}
+                        className="w-full mt-3 border-amber-300 text-amber-700 hover:bg-amber-50 gap-2"
+                      >
+                        <Crown className="w-4 h-4" />
+                        Upgrade to Premium
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ) : !isPro ? (
@@ -1533,46 +1574,6 @@ const BuildUnionProjectDetails = () => {
                     </div>
                   </CardContent>
                 )}
-              </Card>
-            )}
-
-            {/* Premium Features Preview */}
-            {isPro && !isPremium && (
-              <Card className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Crown className="w-5 h-5 text-amber-500" />
-                    <span className="font-medium text-slate-800">Premium Features</span>
-                    <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">Coming with Premium</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <Lock className="w-3 h-3 text-amber-400" />
-                      Send Summary to Team
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Lock className="w-3 h-3 text-amber-400" />
-                      Generate Project Report
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Lock className="w-3 h-3 text-amber-400" />
-                      Conflict Visualization
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Lock className="w-3 h-3 text-amber-400" />
-                      Team Map View
-                    </div>
-                  </div>
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/buildunion/pricing")}
-                    className="w-full mt-3 border-amber-300 text-amber-700 hover:bg-amber-50 gap-2"
-                  >
-                    <Crown className="w-4 h-4" />
-                    Upgrade to Premium
-                  </Button>
-                </CardContent>
               </Card>
             )}
           </div>
