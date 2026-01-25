@@ -10,6 +10,7 @@ import RequirementsTab from "@/components/RequirementsTab";
 import OperationalTruthSummaryCard from "@/components/OperationalTruthSummaryCard";
 import { ProjectSummary } from "@/components/ProjectSummary";
 import { ProjectModeToggle } from "@/components/ProjectModeToggle";
+import { WeatherWidget } from "@/components/WeatherWidget";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -953,6 +954,17 @@ const BuildUnionProjectDetails = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Weather Forecast Panel */}
+        {project.address && (
+          <div className="mb-6">
+            <WeatherWidget 
+              location={project.address} 
+              showForecast={true}
+              className="border-slate-200 bg-white"
+            />
+          </div>
+        )}
 
         {/* Project Requirements Section */}
         {(project.trades?.length || project.manpower_requirements?.length || project.required_certifications?.length || siteImageUrls.length > 0 || teamInvitations.length > 0) && (
