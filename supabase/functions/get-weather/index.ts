@@ -137,7 +137,7 @@ serve(async (req) => {
     // If location string provided instead of coordinates, geocode it
     if (location && (!lat || !lon)) {
       try {
-        const geoUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
+        const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
         const geoRes = await fetch(geoUrl);
         
         if (!geoRes.ok) {
