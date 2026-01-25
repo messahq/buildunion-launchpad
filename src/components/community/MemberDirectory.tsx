@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MemberCard } from "./MemberCard";
+import { MemberDetailDialog } from "./MemberDetailDialog";
 import { toast } from "sonner";
 
 interface Member {
@@ -32,6 +33,11 @@ interface Member {
   is_public_profile?: boolean;
   is_union_member?: boolean;
   union_name?: string;
+  bio?: string;
+  phone?: string;
+  company_website?: string;
+  certifications?: string[];
+  experience_level?: string;
 }
 
 const trades = [
@@ -69,6 +75,8 @@ export const MemberDirectory = () => {
   const [showContractorsOnly, setShowContractorsOnly] = useState(false);
   const [showUnionOnly, setShowUnionOnly] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
 
   const fetchMembers = async () => {
@@ -287,10 +295,21 @@ export const MemberDirectory = () => {
               key={member.id}
               member={member}
               profileName={profileNames[member.user_id]}
+              onClick={() => {
+                setSelectedMember(member);
+                setDialogOpen(true);
+              }}
             />
           ))}
         </div>
       )}
+
+      <MemberDetailDialog
+        member={selectedMember}
+        profileName={selectedMember ? profileNames[selectedMember.user_id] : undefined}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 };
