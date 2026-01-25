@@ -37,10 +37,13 @@ import {
   PlayCircle,
   Circle,
   AlertTriangle,
-  Bell
+  Bell,
+  CalendarDays,
+  List
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import TaskTimelineCalendar from "./TaskTimelineCalendar";
 
 interface TaskAssignmentProps {
   projectId: string;
@@ -92,6 +95,7 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   // Form state
   const [title, setTitle] = useState("");
@@ -351,16 +355,51 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
                 {inProgressTasks.length > 0 && ` • ${inProgressTasks.length} in progress`}
               </CardDescription>
             </div>
-            {isOwner && members.length > 0 && (
-              <Button
-                size="sm"
-                className="gap-1 bg-amber-600 hover:bg-amber-700"
-                onClick={openCreateDialog}
-              >
-                <Plus className="h-4 w-4" />
-                Add Task
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* View Toggle */}
+              {tasks.length > 0 && (
+                <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-7 px-2.5 text-xs gap-1.5 rounded-md transition-colors",
+                      viewMode === "list"
+                        ? "bg-white shadow-sm text-slate-900"
+                        : "text-slate-600 hover:text-slate-900"
+                    )}
+                    onClick={() => setViewMode("list")}
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    List
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-7 px-2.5 text-xs gap-1.5 rounded-md transition-colors",
+                      viewMode === "calendar"
+                        ? "bg-white shadow-sm text-slate-900"
+                        : "text-slate-600 hover:text-slate-900"
+                    )}
+                    onClick={() => setViewMode("calendar")}
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Timeline
+                  </Button>
+                </div>
+              )}
+              {isOwner && members.length > 0 && (
+                <Button
+                  size="sm"
+                  className="gap-1 bg-amber-600 hover:bg-amber-700"
+                  onClick={openCreateDialog}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Task
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -376,6 +415,12 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
               <p>No tasks yet</p>
               {isOwner && <p className="text-xs mt-1">Create tasks for your team</p>}
             </div>
+          ) : viewMode === "calendar" ? (
+            <TaskTimelineCalendar
+              tasks={tasks}
+              isOwner={isOwner}
+              onTaskClick={(task) => openEditDialog(task)}
+            />
           ) : (
             <div className="space-y-6">
               {/* Overdue Alert Banner */}
