@@ -210,6 +210,7 @@ interface ContractProgressUpdate {
   scopeOfWork?: string;
   totalAmount?: number;
   startDate?: string;
+  estimatedEndDate?: string;
   contractorSignature?: boolean;
   clientSignature?: boolean;
 }
@@ -312,12 +313,13 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
     onProgressUpdate?.({
       contractorName: contract.contractorName,
       contractorAddress: contract.contractorAddress,
-      contractorLicense: contract.contractorLicense,
+      contractorLicense: contract.licenseNumber,
       clientName: contract.clientName,
       clientAddress: contract.clientAddress,
       scopeOfWork: contract.scopeOfWork,
       totalAmount: contract.totalAmount,
       startDate: contract.startDate,
+      estimatedEndDate: contract.estimatedEndDate,
       contractorSignature: !!contractorSignature,
       clientSignature: !!clientSignature,
     });

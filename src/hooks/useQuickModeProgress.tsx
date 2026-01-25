@@ -63,7 +63,10 @@ export interface QuickModeProgressData {
     terms: {
       scopeOfWork: boolean;
       totalAmount: boolean;
+    };
+    timeline: {
       startDate: boolean;
+      estimatedEndDate: boolean;
     };
     signatures: {
       contractor: boolean;
@@ -90,10 +93,11 @@ const QUOTE_SUBSTEP_WEIGHTS = {
 
 // Sub-step weights within Contract (totaling 100% of parent)
 const CONTRACT_SUBSTEP_WEIGHTS = {
-  contractor: 25,
-  client: 25,
-  terms: 25,
-  signatures: 25,
+  contractor: 20,
+  client: 20,
+  terms: 20,
+  timeline: 20,
+  signatures: 20,
 };
 
 export const useQuickModeProgress = (data: QuickModeProgressData) => {
@@ -228,7 +232,7 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       isComplete: contractClientComplete,
     });
 
-    // Terms (25% of contract = 5% total)
+    // Terms (20% of contract = 4% total)
     const termsComplete = data.contract.terms.scopeOfWork && data.contract.terms.totalAmount;
     if (termsComplete) {
       contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.terms;
@@ -240,7 +244,19 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       isComplete: termsComplete,
     });
 
-    // Signatures (25% of contract = 5% total)
+    // Timeline (20% of contract = 4% total)
+    const timelineComplete = data.contract.timeline.startDate || data.contract.timeline.estimatedEndDate;
+    if (timelineComplete) {
+      contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.timeline;
+    }
+    contractSubSteps.push({
+      id: "timeline",
+      name: "Timeline",
+      weight: CONTRACT_SUBSTEP_WEIGHTS.timeline,
+      isComplete: timelineComplete,
+    });
+
+    // Signatures (20% of contract = 4% total)
     const signaturesComplete = data.contract.signatures.contractor;
     if (signaturesComplete) {
       contractSubTotal += CONTRACT_SUBSTEP_WEIGHTS.signatures;
