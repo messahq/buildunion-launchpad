@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calculator, Plus, Trash2, Copy, Check, ArrowRight, LayoutTemplate, Sparkles } from "lucide-react";
+import { Calculator, Plus, Trash2, Copy, Check, ArrowRight, LayoutTemplate, Sparkles, Pencil, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+
+interface MaterialItem {
+  item: string;
+  quantity: number;
+  unit: string;
+}
 
 interface CalculatorType {
   id: string;
@@ -23,7 +29,7 @@ interface CalculatorType {
   calculate: (inputs: Record<string, number>) => {
     result: number;
     breakdown: string;
-    materials: Array<{ item: string; quantity: number; unit: string }>;
+    materials: MaterialItem[];
     laborHours: number;
   };
 }
@@ -422,6 +428,8 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
     return initial;
   });
   const [results, setResults] = useState<ReturnType<CalculatorType["calculate"]> | null>(null);
+  const [editableMaterials, setEditableMaterials] = useState<MaterialItem[]>([]);
+  const [editingMaterial, setEditingMaterial] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [savedResults, setSavedResults] = useState<Array<{
     calcType: string;
@@ -475,6 +483,7 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
   const calculate = () => {
     const result = selectedCalc.calculate(inputs);
     setResults(result);
+    setEditableMaterials([...result.materials]); // Copy materials for editing
     
     // Automatically save the result to summary
     const savedItem = {
@@ -484,6 +493,64 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
     setSavedResults(prev => [...prev, savedItem]);
     onCalculatorComplete?.(savedItem);
     toast.success(`${selectedCalc.name} calculated and added to summary!`);
+  };
+
+  // Update material quantity
+  const updateMaterialQuantity = (index: number, quantity: number) => {
+    setEditableMaterials(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], quantity };
+      return updated;
+    });
+  };
+
+  // Update material name
+  const updateMaterialName = (index: number, item: string) => {
+    setEditableMaterials(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], item };
+      return updated;
+    });
+  };
+
+  // Add custom material
+  const addCustomMaterial = () => {
+    setEditableMaterials(prev => [...prev, { item: "Custom item", quantity: 1, unit: "pcs" }]);
+  };
+
+  // Remove material
+  const removeMaterial = (index: number) => {
+    setEditableMaterials(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Save edited materials
+  const saveEditedMaterials = () => {
+    if (!results) return;
+    
+    const updatedResults = {
+      ...results,
+      materials: editableMaterials,
+    };
+    setResults(updatedResults);
+    
+    // Update saved results with edited materials
+    const savedItem = {
+      calcType: selectedCalc.name,
+      result: updatedResults,
+    };
+    
+    // Replace the last saved result with updated one
+    setSavedResults(prev => {
+      const newResults = [...prev];
+      if (newResults.length > 0) {
+        newResults[newResults.length - 1] = savedItem;
+      }
+      return newResults;
+    });
+    
+    onCalculatorComplete?.(savedItem);
+    setEditingMaterial(null);
+    toast.success("Materials updated and saved!");
   };
 
   const saveResult = () => {
@@ -676,22 +743,92 @@ Estimated Labor: ${results.laborHours} hours
                   </p>
                 </div>
 
-                {/* Materials List */}
+                {/* Materials List - Editable */}
                 <div>
-                  <h4 className="font-semibold text-foreground mb-3">Materials Needed</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-foreground">Materials Needed</h4>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={addCustomMaterial}
+                        className="text-xs"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Item
+                      </Button>
+                      {editingMaterial !== null && (
+                        <Button 
+                          size="sm"
+                          onClick={saveEditedMaterials}
+                          className="text-xs bg-green-500 hover:bg-green-600"
+                        >
+                          <Save className="w-3 h-3 mr-1" />
+                          Save Changes
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <div className="space-y-2">
-                    {results.materials.map((material, index) => (
+                    {editableMaterials.map((material, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-background rounded-lg border border-border"
+                        className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border group hover:border-amber-200 transition-colors"
                       >
-                        <span className="text-foreground">{material.item}</span>
-                        <Badge variant="secondary" className="font-mono">
-                          {material.quantity} {material.unit}
-                        </Badge>
+                        {editingMaterial === index ? (
+                          <>
+                            <Input
+                              value={material.item}
+                              onChange={(e) => updateMaterialName(index, e.target.value)}
+                              className="flex-1 h-8"
+                            />
+                            <Input
+                              type="number"
+                              value={material.quantity}
+                              onChange={(e) => updateMaterialQuantity(index, parseFloat(e.target.value) || 0)}
+                              className="w-20 h-8 text-center"
+                            />
+                            <span className="text-xs text-muted-foreground w-12">{material.unit}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingMaterial(null)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Check className="w-4 h-4 text-green-500" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-foreground">{material.item}</span>
+                            <Badge variant="secondary" className="font-mono">
+                              {material.quantity} {material.unit}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingMaterial(index)}
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeMaterial(index)}
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Pencil className="w-3 h-3" />
+                    Click on any item to edit quantities or add custom materials
+                  </p>
                 </div>
 
                 {/* Labor Estimate */}
