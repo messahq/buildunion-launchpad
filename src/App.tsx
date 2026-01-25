@@ -20,6 +20,7 @@ import BuildUnionQuickMode from "./pages/BuildUnionQuickMode";
 import BuildUnionProfileView from "./pages/BuildUnionProfileView";
 import BuildUnionProjectSummary from "./pages/BuildUnionProjectSummary";
 import BuildUnionCommunity from "./pages/BuildUnionCommunity";
+import BuildUnionMessages from "./pages/BuildUnionMessages";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ConfirmEmail from "./pages/ConfirmEmail";
@@ -55,6 +56,7 @@ const App = () => (
                   <Route path="/buildunion/summary" element={<BuildUnionProjectSummary />} />
                   <Route path="/buildunion/summary/:summaryId" element={<BuildUnionProjectSummary />} />
                   <Route path="/buildunion/community" element={<BuildUnionCommunity />} />
+                  <Route path="/buildunion/messages" element={<BuildUnionMessages />} />
                   <Route path="/buildunion/login" element={<Login />} />
                   <Route path="/buildunion/register" element={<Register />} />
                   <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />
