@@ -151,16 +151,8 @@ export const useSubscription = () => {
     setError(null);
 
     try {
-      // Refresh the session first to ensure we have a valid token
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      
-      // Use the refreshed token if available, otherwise use the current one
-      const tokenToUse = refreshData?.session?.access_token || session.access_token;
-      
-      if (refreshError) {
-        console.warn("Session refresh warning:", refreshError.message);
-        // Continue with current token - edge function will handle gracefully
-      }
+      // Use current session token - Supabase client handles token refresh automatically
+      const tokenToUse = session.access_token;
 
       const { data, error: fnError } = await supabase.functions.invoke("check-subscription", {
         headers: {
@@ -265,7 +257,7 @@ export const useSubscription = () => {
 
     const interval = setInterval(() => {
       checkSubscription();
-    }, 60000);
+    }, 300000); // 5 minutes - reduced from 60s to prevent rate limiting
 
     return () => clearInterval(interval);
   }, [user, checkSubscription]);

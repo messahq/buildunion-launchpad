@@ -470,9 +470,9 @@ const TeamMapView = () => {
   useEffect(() => {
     const fetchApiKey = async () => {
       try {
-        // Refresh session first to ensure valid token
-        const { data: refreshData } = await supabase.auth.refreshSession();
-        const tokenToUse = refreshData?.session?.access_token;
+        // Get current session - Supabase client handles token refresh automatically
+        const { data: { session } } = await supabase.auth.getSession();
+        const tokenToUse = session?.access_token;
         
         if (!tokenToUse) {
           console.warn("No valid session for maps key fetch");
