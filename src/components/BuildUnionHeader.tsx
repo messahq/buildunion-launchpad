@@ -123,7 +123,7 @@ const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
 
         {/* Center - Logo + Project Mode Indicator */}
         <div 
-          className="hidden xs:flex absolute left-1/2 -translate-x-1/2 items-center gap-3"
+          className="hidden sm:flex absolute left-1/2 -translate-x-1/2 items-center gap-3"
         >
           <span 
             className="text-lg sm:text-xl font-light tracking-tight cursor-pointer"
