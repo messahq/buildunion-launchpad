@@ -18,16 +18,16 @@ export interface ProjectConflict {
 // Use Google Geocoding to get coordinates from address
 async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
-    // Refresh session first to ensure valid token
-    const { data: refreshData } = await supabase.auth.refreshSession();
-    const tokenToUse = refreshData?.session?.access_token;
+    // Get current session - Supabase client handles token refresh automatically
+    const { data: { session } } = await supabase.auth.getSession();
+    const tokenToUse = session?.access_token;
     
     if (!tokenToUse) {
       console.warn("No valid session for geocoding");
       return null;
     }
 
-    // Get the maps API key with fresh token
+    // Get the maps API key with current token
     const { data: keyData } = await supabase.functions.invoke("get-maps-key", {
       headers: {
         Authorization: `Bearer ${tokenToUse}`,
