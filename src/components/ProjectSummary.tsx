@@ -602,7 +602,7 @@ export function ProjectSummary({
     setEditedItems(editedItems.filter((_, i) => i !== index));
   };
 
-  // Helper function to get PDF data
+  // Helper function to get PDF data with all detailed summary elements
   const getPDFData = () => {
     const photoData = photoEstimate || summary?.photo_estimate || {};
     const currentDate = new Date().toLocaleDateString('en-CA');
@@ -613,6 +613,49 @@ export function ProjectSummary({
     // Extract signatures from quoteData if available
     const clientSignature = quoteData?.clientSignature || null;
     const contractorSignature = quoteData?.contractorSignature || null;
+
+    // Get calculator results from summary or props
+    const calcResults = (calculatorResults.length > 0 ? calculatorResults : summary?.calculator_results) || [];
+    
+    // Get template items from summary or props
+    const templItems = (templateItems.length > 0 ? templateItems : summary?.template_items) || [];
+
+    // Format calculator results for PDF
+    const formattedCalcResults = calcResults.map((calc: any) => ({
+      calculator: calc.calculator || calc.name || 'Calculator',
+      area: calc.area || calc.estimatedArea || 0,
+      material: calc.material || calc.selectedMaterial || '',
+      totalCost: calc.totalCost || calc.total || 0
+    }));
+
+    // Format template items for PDF
+    const formattedTemplateItems = templItems.map((item: any) => ({
+      name: item.name || 'Item',
+      quantity: item.quantity || 1,
+      unit: item.unit || 'units',
+      unit_price: item.unit_price || item.price || 0
+    }));
+
+    // Format project documents for PDF
+    const formattedDocs = projectDocuments.map((doc: any) => ({
+      name: doc.file_name || doc.name || 'Document',
+      type: doc.file_name?.includes('.pdf') ? 'pdf' : 
+            doc.file_name?.match(/\.(jpg|jpeg|png|gif)$/i) ? 'image' : 'file'
+    }));
+
+    // Format contracts for PDF
+    const formattedContracts = projectContracts.map((contract: any) => ({
+      number: contract.contract_number || 'Contract',
+      status: contract.status || 'draft',
+      total: contract.total_amount || 0
+    }));
+
+    // Dual engine analysis data
+    const dualEngineAnalysis = photoData?.geminiSummary || photoData?.openaiSummary ? {
+      geminiSummary: photoData?.geminiSummary || 'Area estimation, spatial measurements, text extraction from blueprints/PDFs',
+      openaiSummary: photoData?.openaiSummary || 'Material quantity verification, coverage rates, waste factor calculations',
+      verificationStatus: photoData?.verificationStatus || 'verified'
+    } : undefined;
 
     return {
       quoteNumber,
@@ -638,7 +681,13 @@ export function ProjectSummary({
       companyEmail: user?.email,
       companyWebsite: profile?.company_website,
       clientSignature,
-      contractorSignature
+      contractorSignature,
+      // Extended detailed data
+      calculatorResults: formattedCalcResults,
+      templateItems: formattedTemplateItems,
+      dualEngineAnalysis,
+      projectDocuments: formattedDocs,
+      contracts: formattedContracts
     };
   };
 
@@ -1955,6 +2004,11 @@ export function ProjectSummary({
           clientInfo={clientInfo}
           totalAmount={grandTotal}
           formatCurrency={formatCurrency}
+          photoEstimate={photoEstimate || summary?.photo_estimate}
+          calculatorResults={calculatorResults.length > 0 ? calculatorResults : summary?.calculator_results}
+          templateItems={templateItems.length > 0 ? templateItems : summary?.template_items}
+          contractsCount={projectContracts.length}
+          documentsCount={projectDocuments.length}
         >
           <Button variant="outline" className="gap-2">
             <Send className="h-4 w-4" />

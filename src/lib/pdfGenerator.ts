@@ -120,6 +120,16 @@ export const buildProjectSummaryHTML = (data: {
   companyWebsite?: string | null;
   clientSignature?: { type: 'drawn' | 'typed'; data: string; name: string; signedAt?: string } | null;
   contractorSignature?: { type: 'drawn' | 'typed'; data: string; name: string; signedAt?: string } | null;
+  // Extended data for detailed summary
+  calculatorResults?: Array<{ calculator: string; area: number; material: string; totalCost: number }>;
+  templateItems?: Array<{ name: string; quantity: number; unit: string; unit_price: number }>;
+  dualEngineAnalysis?: {
+    geminiSummary?: string;
+    openaiSummary?: string;
+    verificationStatus?: string;
+  };
+  projectDocuments?: Array<{ name: string; type: string }>;
+  contracts?: Array<{ number: string; status: string; total: number }>;
 }): string => {
   const {
     quoteNumber,
@@ -141,7 +151,12 @@ export const buildProjectSummaryHTML = (data: {
     companyEmail,
     companyWebsite,
     clientSignature,
-    contractorSignature
+    contractorSignature,
+    calculatorResults = [],
+    templateItems = [],
+    dualEngineAnalysis,
+    projectDocuments = [],
+    contracts = []
   } = data;
 
   // Build materials table rows with HTML escaping for user-controlled data
@@ -165,24 +180,131 @@ export const buildProjectSummaryHTML = (data: {
   `).join('');
 
   // Build photo estimate section with HTML escaping
-  const photoMaterialsSection = photoData?.materials?.length > 0 ? `
+  const photoMaterialsSection = photoData?.materials?.length > 0 || photoData?.area ? `
     <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #93c5fd; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 16px; font-weight: 600; color: #1e40af; margin: 0 0 16px 0;">📸 AI Photo Analysis - Detected Materials</h3>
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;">
         <div style="background: white; border-radius: 8px; padding: 12px 16px; text-align: center;">
           <span style="display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 4px;">Total Area</span>
-          <span style="font-size: 18px; font-weight: 700; color: #1e40af;">${escapeHtml(photoData.area || 'N/A')} ${escapeHtml(photoData.areaUnit || 'sq ft')}</span>
+          <span style="font-size: 18px; font-weight: 700; color: #1e40af;">${escapeHtml(photoData?.area || 'N/A')} ${escapeHtml(photoData?.areaUnit || 'sq ft')}</span>
         </div>
         <div style="background: white; border-radius: 8px; padding: 12px 16px; text-align: center;">
           <span style="display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 4px;">Confidence</span>
-          <span style="font-size: 18px; font-weight: 700; ${photoData.areaConfidence === 'high' ? 'color: #16a34a;' : photoData.areaConfidence === 'medium' ? 'color: #ca8a04;' : 'color: #dc2626;'}">${escapeHtml((photoData.areaConfidence || 'Unknown').toUpperCase())}</span>
+          <span style="font-size: 18px; font-weight: 700; ${photoData?.areaConfidence === 'high' ? 'color: #16a34a;' : photoData?.areaConfidence === 'medium' ? 'color: #ca8a04;' : 'color: #dc2626;'}">${escapeHtml((photoData?.areaConfidence || 'Unknown').toUpperCase())}</span>
         </div>
         <div style="background: white; border-radius: 8px; padding: 12px 16px; text-align: center;">
           <span style="display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 4px;">Surface Type</span>
-          <span style="font-size: 18px; font-weight: 700; color: #1e40af;">${escapeHtml(photoData.surfaceType || 'Unknown')}</span>
+          <span style="font-size: 18px; font-weight: 700; color: #1e40af;">${escapeHtml(photoData?.surfaceType || 'Unknown')}</span>
         </div>
       </div>
-      ${photoData.summary ? `<div style="margin-top: 16px; padding: 12px; background: white; border-radius: 8px; font-size: 12px; color: #475569;"><strong>AI Summary:</strong> ${escapeHtml(photoData.summary)}</div>` : ''}
+      ${photoData?.summary ? `<div style="margin-top: 16px; padding: 12px; background: white; border-radius: 8px; font-size: 12px; color: #475569;"><strong>AI Summary:</strong> ${escapeHtml(photoData.summary)}</div>` : ''}
+      ${photoData?.materials?.length > 0 ? `
+        <div style="margin-top: 16px;">
+          <h4 style="font-size: 12px; font-weight: 600; color: #1e40af; margin: 0 0 8px 0;">Detected Materials:</h4>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${photoData.materials.map((m: any) => `
+              <span style="background: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; border: 1px solid #93c5fd;">
+                ${escapeHtml(m.name || m)} ${m.quantity ? `(${m.quantity} ${m.unit || 'units'})` : ''}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  ` : '';
+
+  // Calculator results section
+  const calculatorSection = calculatorResults.length > 0 ? `
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #86efac; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <h3 style="font-size: 16px; font-weight: 600; color: #166534; margin: 0 0 16px 0;">🧮 Calculator Results</h3>
+      <div style="display: grid; gap: 12px;">
+        ${calculatorResults.map(calc => `
+          <div style="background: white; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-weight: 600; color: #1e293b;">${escapeHtml(calc.calculator || 'Calculator')}</span>
+              <span style="display: block; font-size: 11px; color: #64748b; margin-top: 2px;">${escapeHtml(calc.material || '')} • ${calc.area || 0} sq ft</span>
+            </div>
+            <span style="font-size: 16px; font-weight: 700; color: #166534;">${formatCurrency(calc.totalCost || 0)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Template items section
+  const templateSection = templateItems.length > 0 ? `
+    <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 1px solid #d8b4fe; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <h3 style="font-size: 16px; font-weight: 600; color: #7e22ce; margin: 0 0 16px 0;">📋 Template Items Applied</h3>
+      <div style="display: grid; gap: 8px;">
+        ${templateItems.slice(0, 5).map(item => `
+          <div style="background: white; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 500; color: #1e293b;">${escapeHtml(item.name)}</span>
+            <span style="font-size: 12px; color: #7e22ce;">${item.quantity} ${escapeHtml(item.unit)} @ ${formatCurrency(item.unit_price)}</span>
+          </div>
+        `).join('')}
+        ${templateItems.length > 5 ? `<p style="font-size: 11px; color: #7e22ce; text-align: center; margin-top: 8px;">+ ${templateItems.length - 5} more items</p>` : ''}
+      </div>
+    </div>
+  ` : '';
+
+  // Dual Engine Analysis section
+  const dualEngineSection = dualEngineAnalysis ? `
+    <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <h3 style="font-size: 16px; font-weight: 600; color: #854d0e; margin: 0 0 16px 0;">🔬 Dual Engine AI Verification</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="background: white; border-radius: 8px; padding: 16px; border-left: 4px solid #3b82f6;">
+          <h4 style="font-size: 12px; font-weight: 600; color: #3b82f6; margin: 0 0 8px 0;">🔵 Gemini (Visual Specialist)</h4>
+          <p style="font-size: 11px; color: #475569; margin: 0;">${escapeHtml(dualEngineAnalysis.geminiSummary || 'Area estimation, spatial measurements, text extraction from blueprints/PDFs')}</p>
+        </div>
+        <div style="background: white; border-radius: 8px; padding: 16px; border-left: 4px solid #22c55e;">
+          <h4 style="font-size: 12px; font-weight: 600; color: #22c55e; margin: 0 0 8px 0;">🟢 OpenAI (Material Calculator)</h4>
+          <p style="font-size: 11px; color: #475569; margin: 0;">${escapeHtml(dualEngineAnalysis.openaiSummary || 'Material quantity verification, coverage rates, waste factor calculations')}</p>
+        </div>
+      </div>
+      ${dualEngineAnalysis.verificationStatus ? `
+        <div style="margin-top: 16px; padding: 12px; background: white; border-radius: 8px; text-align: center;">
+          <span style="font-size: 12px; font-weight: 600; ${dualEngineAnalysis.verificationStatus === 'verified' ? 'color: #16a34a;' : 'color: #dc2626;'}">
+            ${dualEngineAnalysis.verificationStatus === 'verified' ? '✅ Cross-Verified' : '⚠️ Discrepancy Detected'}
+          </span>
+        </div>
+      ` : ''}
+    </div>
+  ` : '';
+
+  // Documents section
+  const documentsSection = projectDocuments.length > 0 ? `
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <h3 style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0 0 16px 0;">📁 Project Documents (${projectDocuments.length})</h3>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+        ${projectDocuments.map(doc => `
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">${doc.type?.includes('image') ? '🖼️' : doc.type?.includes('pdf') ? '📄' : '📎'}</span>
+            <span style="font-size: 12px; color: #1e293b;">${escapeHtml(doc.name)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Contracts section
+  const contractsSection = contracts.length > 0 ? `
+    <div style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <h3 style="font-size: 16px; font-weight: 600; color: #991b1b; margin: 0 0 16px 0;">📝 Associated Contracts (${contracts.length})</h3>
+      <div style="display: grid; gap: 12px;">
+        ${contracts.map(contract => `
+          <div style="background: white; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-weight: 600; color: #1e293b;">${escapeHtml(contract.number)}</span>
+              <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase;
+                ${contract.status === 'complete' ? 'background: #dcfce7; color: #166534;' : ''}
+                ${contract.status === 'sent' ? 'background: #dbeafe; color: #1e40af;' : ''}
+                ${contract.status === 'draft' ? 'background: #f1f5f9; color: #475569;' : ''}
+              ">${escapeHtml(contract.status)}</span>
+            </div>
+            <span style="font-size: 16px; font-weight: 700; color: #991b1b;">${formatCurrency(contract.total)}</span>
+          </div>
+        `).join('')}
+      </div>
     </div>
   ` : '';
 
@@ -248,6 +370,21 @@ export const buildProjectSummaryHTML = (data: {
 
         <!-- Photo Estimate Section -->
         ${photoMaterialsSection}
+
+        <!-- Dual Engine Analysis -->
+        ${dualEngineSection}
+
+        <!-- Calculator Results -->
+        ${calculatorSection}
+
+        <!-- Template Items -->
+        ${templateSection}
+
+        <!-- Project Documents -->
+        ${documentsSection}
+
+        <!-- Contracts -->
+        ${contractsSection}
 
         <!-- Line Items -->
         <div style="margin-bottom: 24px;">

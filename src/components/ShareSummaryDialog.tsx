@@ -54,6 +54,12 @@ interface ShareSummaryDialogProps {
   totalAmount: number;
   formatCurrency: (amount: number) => string;
   children: React.ReactNode;
+  // Extended detailed data
+  photoEstimate?: any;
+  calculatorResults?: any[];
+  templateItems?: any[];
+  contractsCount?: number;
+  documentsCount?: number;
 }
 
 interface SearchedUser {
@@ -70,18 +76,29 @@ export function ShareSummaryDialog({
   clientInfo,
   totalAmount,
   formatCurrency,
-  children 
+  children,
+  photoEstimate,
+  calculatorResults = [],
+  templateItems = [],
+  contractsCount = 0,
+  documentsCount = 0
 }: ShareSummaryDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState<"email" | "user">("email");
   
+  // Count sources
+  const photoItems = lineItems.filter(i => i.source === 'photo').length;
+  const calcItems = lineItems.filter(i => i.source === 'calculator').length;
+  const templateItemsCount = lineItems.filter(i => i.source === 'template').length;
+  const blueprintItems = lineItems.filter(i => i.source === 'blueprint').length;
+  
   // Email form state
   const [emailData, setEmailData] = useState({
     recipientEmail: clientInfo.email || "",
-    subject: "Project Summary - BuildUnion",
-    message: `Hi ${clientInfo.name || "there"},\n\nPlease find the attached project summary with ${lineItems.length} items totaling ${formatCurrency(totalAmount)}.\n\nBest regards`
+    subject: "Detailed Project Summary - BuildUnion",
+    message: `Hi ${clientInfo.name || "there"},\n\nPlease find the attached detailed project summary including:\n• ${lineItems.length} line items (${photoItems} from AI photo, ${calcItems} from calculators, ${templateItemsCount} from templates)\n• Total: ${formatCurrency(totalAmount)}\n${photoEstimate?.area ? `• Estimated area: ${photoEstimate.area} sq ft` : ''}\n${contractsCount > 0 ? `• ${contractsCount} associated contract(s)` : ''}\n${documentsCount > 0 ? `• ${documentsCount} project document(s)` : ''}\n\nBest regards`
   });
 
   // User search state
@@ -150,9 +167,9 @@ export function ShareSummaryDialog({
 
     setSending(true);
     try {
-      // Create a message with the summary link
+      // Create a detailed message with the summary link
       const summaryLink = summaryId ? `/buildunion/summary?summaryId=${summaryId}` : "";
-      const fullMessage = `${userMessage}\n\n📋 Project Summary:\n• ${lineItems.length} items\n• Total: ${formatCurrency(totalAmount)}\n• Client: ${clientInfo.name || "Not specified"}${summaryLink ? `\n\n🔗 View: ${window.location.origin}${summaryLink}` : ""}`;
+      const fullMessage = `${userMessage}\n\n📋 **Detailed Project Summary:**\n• ${lineItems.length} line items (${photoItems} photo AI, ${calcItems} calculator, ${templateItemsCount} template${blueprintItems > 0 ? `, ${blueprintItems} blueprint` : ''})\n• Total: ${formatCurrency(totalAmount)}\n• Client: ${clientInfo.name || "Not specified"}${photoEstimate?.area ? `\n• Estimated area: ${photoEstimate.area} sq ft` : ''}${calculatorResults.length > 0 ? `\n• ${calculatorResults.length} calculator result(s)` : ''}${templateItems.length > 0 ? `\n• ${templateItems.length} template item(s)` : ''}${contractsCount > 0 ? `\n• ${contractsCount} contract(s) attached` : ''}${documentsCount > 0 ? `\n• ${documentsCount} document(s) uploaded` : ''}${summaryLink ? `\n\n🔗 View full summary: ${window.location.origin}${summaryLink}` : ""}`;
 
       const { error } = await supabase
         .from("team_messages")
@@ -212,17 +229,58 @@ export function ShareSummaryDialog({
 
           {/* Email Tab */}
           <TabsContent value="email" className="space-y-4 mt-4">
-            {/* Summary Preview */}
+            {/* Detailed Summary Preview */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
               <div className="flex items-center gap-2 text-sm text-blue-800">
                 <FileSpreadsheet className="h-4 w-4" />
-                <span className="font-medium">Summary includes:</span>
+                <span className="font-medium">Detailed Summary includes:</span>
               </div>
-              <ul className="mt-2 text-sm text-blue-700 space-y-1">
-                <li>• {lineItems.length} line items</li>
-                <li>• Total: {formatCurrency(totalAmount)}</li>
-                {clientInfo.name && <li>• Client: {clientInfo.name}</li>}
-              </ul>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-blue-700">
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>{lineItems.length} line items</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>Total: {formatCurrency(totalAmount)}</span>
+                </div>
+                {photoItems > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span>{photoItems} AI photo items</span>
+                  </div>
+                )}
+                {calcItems > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>{calcItems} calculator items</span>
+                  </div>
+                )}
+                {photoEstimate?.area && (
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span>Area: {photoEstimate.area} sq ft</span>
+                  </div>
+                )}
+                {contractsCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    <span>{contractsCount} contract(s)</span>
+                  </div>
+                )}
+                {documentsCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-slate-500" />
+                    <span>{documentsCount} document(s)</span>
+                  </div>
+                )}
+                {clientInfo.name && (
+                  <div className="flex items-center gap-1 col-span-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                    <span>Client: {clientInfo.name}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -278,14 +336,22 @@ export function ShareSummaryDialog({
 
           {/* User Tab */}
           <TabsContent value="user" className="space-y-4 mt-4">
-            {/* Summary Preview */}
+            {/* Detailed Summary Preview */}
             <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg p-4 border border-purple-200">
               <div className="flex items-center gap-2 text-sm text-purple-800">
                 <MessageSquare className="h-4 w-4" />
-                <span className="font-medium">Send as direct message</span>
+                <span className="font-medium">Detailed summary will be shared</span>
               </div>
-              <p className="mt-1 text-xs text-purple-600">
-                The summary link and details will be shared via the internal messaging system.
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-purple-700">
+                <span>• {lineItems.length} items ({formatCurrency(totalAmount)})</span>
+                {photoItems > 0 && <span>• {photoItems} AI photo items</span>}
+                {calcItems > 0 && <span>• {calcItems} calculator items</span>}
+                {photoEstimate?.area && <span>• Area: {photoEstimate.area} sq ft</span>}
+                {contractsCount > 0 && <span>• {contractsCount} contract(s)</span>}
+                {documentsCount > 0 && <span>• {documentsCount} document(s)</span>}
+              </div>
+              <p className="mt-2 text-xs text-purple-600">
+                Recipient will receive a link to view the full detailed summary.
               </p>
             </div>
 
