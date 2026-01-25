@@ -29,7 +29,7 @@ interface DraftData {
 
 const ProjectList = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -187,6 +187,17 @@ const ProjectList = () => {
       toast.error("Failed to delete project");
     }
   };
+
+  // Show loading while auth is initializing
+  if (authLoading) {
+    return (
+      <Card className="border-border bg-card">
+        <CardContent className="py-12 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!user) {
     return (

@@ -30,7 +30,7 @@ interface TeamMemberOnline {
 }
 
 const OnlineTeamWidget = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { subscription } = useSubscription();
   const { onlineUsers, onlineCount, isConnected } = useOnlinePresence();
@@ -41,12 +41,15 @@ const OnlineTeamWidget = () => {
   const hasPremiumAccess = subscription.tier !== "free";
 
   useEffect(() => {
+    // Wait for auth to initialize
+    if (authLoading) return;
+    
     if (user && hasPremiumAccess) {
       fetchTeamMembers();
     } else {
       setIsLoading(false);
     }
-  }, [user, hasPremiumAccess]);
+  }, [user, hasPremiumAccess, authLoading]);
 
   const fetchTeamMembers = async () => {
     if (!user) return;
