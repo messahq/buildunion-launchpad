@@ -204,7 +204,19 @@ export function ProjectSummary({
       // Cast the data to our expected type
       const summaryData = data as unknown as ProjectSummaryData;
       setSummary(summaryData);
-      setEditedItems(summaryData.line_items || []);
+      
+      // Transform line_items from DB format to component format
+      // DB stores: description, unitPrice | Component expects: name, unit_price
+      const transformedLineItems: LineItem[] = (summaryData.line_items || []).map((item: any) => ({
+        name: item.name || item.description || "Item",
+        quantity: Number(item.quantity) || 1,
+        unit: item.unit || "unit",
+        unit_price: Number(item.unit_price ?? item.unitPrice) || 0,
+        total: Number(item.total) || (Number(item.quantity || 1) * Number(item.unit_price ?? item.unitPrice ?? 0)),
+        source: item.source || "manual"
+      }));
+      setEditedItems(transformedLineItems);
+      
       setClientInfo({
         name: summaryData.client_name || "",
         email: summaryData.client_email || "",
