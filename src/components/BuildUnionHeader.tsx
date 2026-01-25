@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -159,6 +159,19 @@ const BuildUnionHeader = () => {
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Community</span>
           </Button>
+
+          {/* Messages Link - only for logged in users */}
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/buildunion/messages")}
+              className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Messages</span>
+            </Button>
+          )}
 
           {/* Language Selector - hidden on mobile */}
           <DropdownMenu>
