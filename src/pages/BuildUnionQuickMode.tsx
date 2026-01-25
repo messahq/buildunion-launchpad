@@ -440,60 +440,6 @@ const BuildUnionQuickMode = () => {
         {/* Main Content with Tabs */}
         <section className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid grid-cols-3 sm:grid-cols-5 gap-2 h-auto p-1 bg-muted/50 mb-6">
-              <TabsTrigger 
-                value="photo" 
-                className="flex items-center gap-2 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              >
-                <Camera className="w-4 h-4" />
-                <span className="hidden sm:inline">Photo</span>
-                <span className="sm:hidden">Photo</span>
-                {collectedData.photoEstimate && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">✓</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="templates" 
-                className="flex items-center gap-2 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              >
-                <LayoutTemplate className="w-4 h-4" />
-                <span className="hidden sm:inline">Templates</span>
-                <span className="sm:hidden">Tmpl</span>
-                {collectedData.templateItems.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{collectedData.templateItems.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="calculator" 
-                className="flex items-center gap-2 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              >
-                <Calculator className="w-4 h-4" />
-                <span className="hidden sm:inline">Calc</span>
-                <span className="sm:hidden">Calc</span>
-                {collectedData.calculatorResults.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">✓</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="quote" 
-                className="flex items-center gap-2 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">Quote</span>
-                <span className="sm:hidden">Quote</span>
-                {!user && <Lock className="w-3 h-3 text-muted-foreground" />}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="contract" 
-                className="flex items-center gap-2 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-              >
-                <ClipboardSignature className="w-4 h-4" />
-                <span className="hidden sm:inline">Contract</span>
-                <span className="sm:hidden">Contract</span>
-                {!user && <Lock className="w-3 h-3 text-muted-foreground" />}
-              </TabsTrigger>
-            </TabsList>
-
             <TabsContent value="photo" className="mt-0">
               <QuickModePhotoEstimate 
                 onEstimateComplete={handlePhotoEstimateComplete}
