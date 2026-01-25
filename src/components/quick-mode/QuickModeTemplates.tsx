@@ -603,16 +603,6 @@ const QuickModeTemplates = ({ onTemplateSelect, onContinueToCalculator }: QuickM
           </Alert>
         )}
 
-        {/* Project Name */}
-        <div className="space-y-2">
-          <Label htmlFor="projectName">Project Name *</Label>
-          <Input
-            id="projectName"
-            placeholder="e.g., Johnson Bathroom Reno"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-          />
-        </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Checklist */}
