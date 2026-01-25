@@ -1356,6 +1356,151 @@ export function ProjectSummary({
               </div>
             </div>
 
+            {/* ===== DUAL ENGINE ANALYSIS - Gemini & OpenAI ===== */}
+            <Accordion type="single" collapsible defaultValue="dual-engine">
+              <AccordionItem value="dual-engine" className="border rounded-lg bg-gradient-to-r from-violet-50 via-purple-50 to-indigo-50">
+                <AccordionTrigger className="px-4 hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <Brain className="h-5 w-5 text-violet-600" />
+                    <span className="font-semibold text-violet-800">Dual Engine Analysis</span>
+                    <Badge className="bg-violet-100 text-violet-700 text-xs">Gemini + OpenAI</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="grid md:grid-cols-2 gap-4 mt-2">
+                    {/* GEMINI Engine */}
+                    <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+                      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-white" />
+                          <span className="font-semibold text-white text-sm">Google Gemini</span>
+                          <Badge className="bg-white/20 text-white text-xs ml-auto">Visual Specialist</Badge>
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <div>
+                          <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">What Gemini Analyzed</p>
+                          <ul className="text-sm text-slate-700 space-y-1">
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                              <span>Visual area estimation from {(photoEstimate?.imageCount || summary.photo_estimate?.imageCount) || 1} uploaded image(s)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                              <span>Surface type & condition detection</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                              <span>Spatial measurements & dimensions</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                              <span>Blueprint/floor plan text extraction</span>
+                            </li>
+                          </ul>
+                        </div>
+                        <Separator />
+                        <div>
+                          <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Gemini Output</p>
+                          <div className="bg-blue-50 rounded-md p-3 text-sm">
+                            <p className="text-slate-700">
+                              {(photoEstimate?.geminiSummary || summary.photo_estimate?.geminiSummary) || 
+                               `Detected ${(photoEstimate?.area || summary.photo_estimate?.area) || "N/A"} sq ft area with ${((photoEstimate?.materials || summary.photo_estimate?.materials)?.length) || 0} materials identified. Surface: ${(photoEstimate?.surfaceType || summary.photo_estimate?.surfaceType) || "standard"}.`}
+                            </p>
+                          </div>
+                        </div>
+                        {(photoEstimate?.geminiConfidence || summary.photo_estimate?.geminiConfidence) && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500">Confidence Score</span>
+                            <Badge className="bg-blue-100 text-blue-700">{photoEstimate?.geminiConfidence || summary.photo_estimate?.geminiConfidence}%</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* OPENAI Engine */}
+                    <div className="bg-white rounded-lg border border-emerald-200 overflow-hidden">
+                      <div className="bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <Brain className="h-4 w-4 text-white" />
+                          <span className="font-semibold text-white text-sm">OpenAI GPT-5</span>
+                          <Badge className="bg-white/20 text-white text-xs ml-auto">Material Calculator</Badge>
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <div>
+                          <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-1">What OpenAI Verified</p>
+                          <ul className="text-sm text-slate-700 space-y-1">
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                              <span>Material quantity calculations</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                              <span>Industry-standard coverage rates</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                              <span>Trade-specific recommendations</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <CheckSquare className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                              <span>Waste factor & safety margins</span>
+                            </li>
+                          </ul>
+                        </div>
+                        <Separator />
+                        <div>
+                          <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-1">OpenAI Output</p>
+                          <div className="bg-emerald-50 rounded-md p-3 text-sm">
+                            <p className="text-slate-700">
+                              {(photoEstimate?.openaiSummary || summary.photo_estimate?.openaiSummary) || 
+                               `Calculated ${((photoEstimate?.materials || summary.photo_estimate?.materials)?.length) || 0} materials with 10% waste factor. Project type: ${(photoEstimate?.projectType || summary.photo_estimate?.projectType) || "general construction"}.`}
+                            </p>
+                          </div>
+                        </div>
+                        {(photoEstimate?.openaiConfidence || summary.photo_estimate?.openaiConfidence) && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500">Confidence Score</span>
+                            <Badge className="bg-emerald-100 text-emerald-700">{photoEstimate?.openaiConfidence || summary.photo_estimate?.openaiConfidence}%</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Verification Status */}
+                  <div className="mt-4 p-3 bg-white rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-violet-600" />
+                        <span className="font-medium text-sm text-slate-700">Dual Engine Verification Status</span>
+                      </div>
+                      {(photoEstimate?.dualEngine?.verified || summary.photo_estimate?.dualEngine?.verified) ? (
+                        <Badge className="bg-green-100 text-green-700">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Engines Agree
+                        </Badge>
+                      ) : (photoEstimate?.dualEngine?.conflict || summary.photo_estimate?.dualEngine?.conflict) ? (
+                        <Badge className="bg-amber-100 text-amber-700">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Could not be verified
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-600">Pending Analysis</Badge>
+                      )}
+                    </div>
+                    {(photoEstimate?.dualEngine?.discrepancy || summary.photo_estimate?.dualEngine?.discrepancy) && (
+                      <p className="text-xs text-amber-700 mt-2 bg-amber-50 p-2 rounded">
+                        <AlertTriangle className="h-3 w-3 inline mr-1" />
+                        {photoEstimate?.dualEngine?.discrepancy || summary.photo_estimate?.dualEngine?.discrepancy}
+                      </p>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
             {/* Materials from Photo Estimate */}
             {((photoEstimate?.materials || summary.photo_estimate?.materials)?.length > 0) && (
               <div>
