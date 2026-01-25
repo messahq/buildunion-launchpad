@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -34,7 +34,8 @@ import {
   Trash2,
   Minus,
   Lock,
-  Crown
+  Crown,
+  Wand2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -101,6 +102,7 @@ const WIZARD_STEPS = [
 
 const BuildUnionNewProject = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { subscription } = useSubscription();
   const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials } = useDbTrialUsage("project_creation");
@@ -139,6 +141,134 @@ const BuildUnionNewProject = () => {
   const [isIndexing, setIsIndexing] = useState(false);
   const [indexingProgress, setIndexingProgress] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  // Quick Mode upgrade state
+  const [isFromQuickMode, setIsFromQuickMode] = useState(false);
+  const [quickModeSummaryId, setQuickModeSummaryId] = useState<string | null>(null);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+
+  // Parse Quick Mode data from URL and auto-fill form
+  useEffect(() => {
+    const fromQuickModeParam = searchParams.get("fromQuickMode");
+    if (fromQuickModeParam) {
+      try {
+        const quickModeData = JSON.parse(decodeURIComponent(fromQuickModeParam));
+        setIsFromQuickMode(true);
+        setQuickModeSummaryId(quickModeData.summaryId || null);
+        
+        // Auto-fill project name
+        if (quickModeData.name) {
+          setProjectName(quickModeData.name);
+        }
+        
+        // Auto-fill address from client address
+        if (quickModeData.address) {
+          setAddress(quickModeData.address);
+        }
+        
+        // Auto-detect trades from photo estimate project type
+        if (quickModeData.photoEstimate?.projectType) {
+          const projectType = quickModeData.photoEstimate.projectType.toLowerCase();
+          const detectedTrades: ConstructionTrade[] = [];
+          
+          if (projectType.includes("paint")) {
+            detectedTrades.push("painter" as ConstructionTrade);
+          }
+          if (projectType.includes("floor") || projectType.includes("tile") || projectType.includes("carpet")) {
+            detectedTrades.push("flooring_specialist" as ConstructionTrade);
+          }
+          if (projectType.includes("electric")) {
+            detectedTrades.push("electrician" as ConstructionTrade);
+          }
+          if (projectType.includes("plumb")) {
+            detectedTrades.push("plumber" as ConstructionTrade);
+          }
+          if (projectType.includes("roof")) {
+            detectedTrades.push("roofer" as ConstructionTrade);
+          }
+          if (projectType.includes("drywall")) {
+            detectedTrades.push("drywall_installer" as ConstructionTrade);
+          }
+          if (projectType.includes("hvac") || projectType.includes("heating") || projectType.includes("cooling")) {
+            detectedTrades.push("hvac_technician" as ConstructionTrade);
+          }
+          if (projectType.includes("deck")) {
+            detectedTrades.push("carpenter" as ConstructionTrade);
+          }
+          if (projectType.includes("concrete") || projectType.includes("mason")) {
+            detectedTrades.push("mason" as ConstructionTrade);
+          }
+          
+          if (detectedTrades.length > 0) {
+            setSelectedTrades(detectedTrades);
+          }
+        }
+        
+        // Generate AI description from Quick Mode data
+        generateAIDescription(quickModeData);
+        
+      } catch (error) {
+        console.error("Failed to parse Quick Mode data:", error);
+      }
+    }
+  }, [searchParams]);
+
+  // AI-powered description generation
+  const generateAIDescription = async (quickModeData: any) => {
+    setIsGeneratingDescription(true);
+    try {
+      const projectInfo = {
+        name: quickModeData.name || "Construction Project",
+        address: quickModeData.address || "",
+        clientName: quickModeData.clientName || "",
+        lineItemsCount: quickModeData.lineItemsCount || 0,
+        totalAmount: quickModeData.totalAmount || 0,
+        photoEstimate: quickModeData.photoEstimate || {},
+        calculatorResults: quickModeData.calculatorResults || [],
+      };
+
+      // Build a comprehensive context string for AI
+      let context = `Project: ${projectInfo.name}`;
+      if (projectInfo.address) context += `\nLocation: ${projectInfo.address}`;
+      if (projectInfo.clientName) context += `\nClient: ${projectInfo.clientName}`;
+      if (projectInfo.lineItemsCount > 0) context += `\n${projectInfo.lineItemsCount} line items`;
+      if (projectInfo.totalAmount > 0) context += `\nEstimated value: $${projectInfo.totalAmount.toLocaleString()}`;
+      
+      if (projectInfo.photoEstimate?.estimatedArea) {
+        context += `\nEstimated area: ${projectInfo.photoEstimate.estimatedArea} ${projectInfo.photoEstimate.areaUnit || 'sq ft'}`;
+      }
+      if (projectInfo.photoEstimate?.projectType) {
+        context += `\nProject type: ${projectInfo.photoEstimate.projectType}`;
+      }
+      if (projectInfo.photoEstimate?.materials?.length > 0) {
+        context += `\nMaterials: ${projectInfo.photoEstimate.materials.map((m: any) => m.name).join(", ")}`;
+      }
+      if (projectInfo.calculatorResults?.length > 0) {
+        context += `\nCalculator estimates: ${projectInfo.calculatorResults.map((c: any) => c.name || c.material).filter(Boolean).join(", ")}`;
+      }
+
+      // Call AI to generate description
+      const response = await supabase.functions.invoke("ask-messa", {
+        body: {
+          message: `Based on this Quick Mode project data, write a brief 2-3 sentence professional project description for a construction team project. Focus on scope and key details. Data:\n${context}`,
+          context: "team_project_description",
+        },
+      });
+
+      if (response.data?.answer) {
+        setProjectDescription(response.data.answer);
+      } else {
+        // Fallback description
+        setProjectDescription(`Upgraded from Quick Mode estimate. ${projectInfo.photoEstimate?.projectType ? `Project type: ${projectInfo.photoEstimate.projectType}.` : ""} ${projectInfo.lineItemsCount > 0 ? `Includes ${projectInfo.lineItemsCount} line items.` : ""}`);
+      }
+    } catch (error) {
+      console.error("AI description generation failed:", error);
+      // Fallback description
+      setProjectDescription("Upgraded from Quick Mode for team collaboration. Review and customize project details as needed.");
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
 
   // Check project creation limit for non-premium users
   useEffect(() => {
@@ -514,10 +644,28 @@ const BuildUnionNewProject = () => {
         });
       }
 
+      // 4. Link Quick Mode summary to the new project if upgrading
+      if (isFromQuickMode && quickModeSummaryId) {
+        const { error: linkError } = await supabase
+          .from("project_summaries")
+          .update({
+            project_id: project.id,
+            status: "upgraded",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", quickModeSummaryId);
+          
+        if (linkError) {
+          console.error("Failed to link Quick Mode summary:", linkError);
+        } else {
+          console.log("Quick Mode summary linked to project:", project.id);
+        }
+      }
+
       // Simulate indexing completion
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      toast.success("Project created successfully!");
+      toast.success(isFromQuickMode ? "✅ Project upgraded to Team Mode!" : "Project created successfully!");
       navigate(`/buildunion/project/${project.id}`);
     } catch (error) {
       console.error("Error creating project:", error);
@@ -641,6 +789,24 @@ const BuildUnionNewProject = () => {
             {/* Step 1: Basic Info */}
             {currentStep === 1 && (
               <div className="space-y-6">
+                {/* Quick Mode Upgrade Banner */}
+                {isFromQuickMode && (
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-amber-100 rounded-lg">
+                        <Sparkles className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-amber-900">Upgrading from Quick Mode</h4>
+                        <p className="text-sm text-amber-700 mt-1">
+                          Your project data has been auto-extracted. AI is generating a description from your estimate.
+                          Review and customize the fields below.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="projectName" className="text-slate-700 font-medium">
                     Project Name *
@@ -714,17 +880,37 @@ const BuildUnionNewProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-slate-700 font-medium">
+                  <Label htmlFor="description" className="text-slate-700 font-medium flex items-center gap-2">
                     Description (optional)
+                    {isGeneratingDescription && (
+                      <Badge variant="secondary" className="gap-1 text-xs animate-pulse">
+                        <Wand2 className="h-3 w-3" />
+                        AI generating...
+                      </Badge>
+                    )}
                   </Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Brief description of your project..."
-                    value={projectDescription}
-                    onChange={(e) => setProjectDescription(e.target.value)}
-                    className="border-slate-200 resize-none"
-                    rows={3}
-                  />
+                  <div className="relative">
+                    <Textarea
+                      id="description"
+                      placeholder={isGeneratingDescription ? "AI is generating description from Quick Mode data..." : "Brief description of your project..."}
+                      value={projectDescription}
+                      onChange={(e) => setProjectDescription(e.target.value)}
+                      className="border-slate-200 resize-none"
+                      rows={3}
+                      disabled={isGeneratingDescription}
+                    />
+                    {isGeneratingDescription && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 rounded-md">
+                        <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+                      </div>
+                    )}
+                  </div>
+                  {isFromQuickMode && projectDescription && !isGeneratingDescription && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      Auto-generated from Quick Mode data - edit as needed
+                    </p>
+                  )}
                 </div>
               </div>
             )}

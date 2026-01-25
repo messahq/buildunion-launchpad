@@ -35,6 +35,16 @@ interface UpgradeToTeamProjectDialogProps {
   totalAmount?: number;
   formatCurrency?: (amount: number) => string;
   children: React.ReactNode;
+  // New props for Quick Mode data transfer
+  clientName?: string;
+  clientAddress?: string;
+  photoEstimate?: {
+    estimatedArea?: number;
+    areaUnit?: string;
+    materials?: Array<{ name: string; quantity: number; unit: string }>;
+    projectType?: string;
+  };
+  calculatorResults?: Array<{ name?: string; area?: number; material?: string; total?: number }>;
 }
 
 export function UpgradeToTeamProjectDialog({
@@ -45,6 +55,10 @@ export function UpgradeToTeamProjectDialog({
   totalAmount = 0,
   formatCurrency = (n) => `$${n.toFixed(2)}`,
   children,
+  clientName,
+  clientAddress,
+  photoEstimate,
+  calculatorResults,
 }: UpgradeToTeamProjectDialogProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -52,7 +66,7 @@ export function UpgradeToTeamProjectDialog({
   const [open, setOpen] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
 
-  const canUpgrade = subscription.tier === "pro" || subscription.tier === "premium" || subscription.tier === "enterprise";
+  const canUpgrade = subscription?.tier === "pro" || subscription?.tier === "premium" || subscription?.tier === "enterprise";
   const hasProject = !!projectId;
 
   const handleUpgrade = async () => {
@@ -77,41 +91,27 @@ export function UpgradeToTeamProjectDialog({
         return;
       }
 
-      // Create new project from summary
-      const { data: newProject, error: projectError } = await supabase
-        .from("projects")
-        .insert({
-          user_id: user.id,
-          name: projectName || `Team Project - ${new Date().toLocaleDateString()}`,
-          status: "active",
-          description: "Upgraded from Quick Mode for team collaboration",
-        })
-        .select()
-        .single();
+      // Navigate to the new project form with Quick Mode data pre-filled
+      // The form will use AI to auto-generate the description
+      const quickModeData = {
+        summaryId,
+        name: projectName || "",
+        address: clientAddress || "",
+        clientName: clientName || "",
+        lineItemsCount,
+        totalAmount,
+        photoEstimate: photoEstimate || {},
+        calculatorResults: calculatorResults || [],
+      };
 
-      if (projectError) throw projectError;
-
-      // Link summary to the new project
-      if (summaryId) {
-        const { error: updateError } = await supabase
-          .from("project_summaries")
-          .update({
-            project_id: newProject.id,
-            status: "upgraded",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", summaryId);
-
-        if (updateError) throw updateError;
-      }
-
-      toast.success("✅ Project upgraded to team mode!");
+      // Encode data for URL
+      const encodedData = encodeURIComponent(JSON.stringify(quickModeData));
+      
+      toast.success("Opening Team Project setup with Quick Mode data...");
       setOpen(false);
-
-      // Navigate to the project details page
-      setTimeout(() => {
-        navigate(`/buildunion/project/${newProject.id}`);
-      }, 500);
+      
+      // Navigate to the new project form with pre-filled data
+      navigate(`/buildunion/workspace/new?fromQuickMode=${encodedData}`);
     } catch (error: any) {
       console.error("Upgrade error:", error);
       toast.error(error.message || "Failed to upgrade project");
