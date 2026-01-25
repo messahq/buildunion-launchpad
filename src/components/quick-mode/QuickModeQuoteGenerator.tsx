@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate, ChevronDown, ChevronUp, PenLine } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,6 +113,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   } | null>(null);
   const [clientSignature, setClientSignature] = useState<{ type: 'drawn' | 'typed'; data: string; name: string } | null>(null);
   const [contractorSignature, setContractorSignature] = useState<{ type: 'drawn' | 'typed'; data: string; name: string } | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveProjectName, setSaveProjectName] = useState("");
   const { calculateTax, config, formatCurrency: formatCurrencyRegion } = useRegionSettings();
   const { user } = useAuth();
 
@@ -276,6 +279,17 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
   const taxResult = calculateTax(subtotal);
   const total = taxResult.total;
 
+  // Open save dialog
+  const handleOpenSaveDialog = () => {
+    if (!user) {
+      toast.error("Please sign in to save projects");
+      return;
+    }
+    // Pre-fill with project name if exists
+    setSaveProjectName(quote.projectName || "");
+    setShowSaveDialog(true);
+  };
+
   // Save to projects function
   const handleSaveToProjects = async () => {
     if (!user) {
@@ -283,7 +297,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
       return;
     }
 
-    if (!quote.projectName.trim()) {
+    const projectName = saveProjectName.trim() || quote.projectName.trim();
+    if (!projectName) {
       toast.error("Please enter a project name");
       return;
     }
@@ -295,7 +310,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
         .from('projects')
         .insert({
           user_id: user.id,
-          name: quote.projectName || `Quick Mode Project - ${new Date().toLocaleDateString()}`,
+          name: projectName,
           description: `Generated from Quick Mode. Client: ${quote.clientName || 'Not specified'}`,
           status: 'draft',
           address: quote.projectAddress || quote.clientAddress || null,
@@ -327,6 +342,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
       if (summaryError) throw summaryError;
 
+      setShowSaveDialog(false);
       toast.success("Project saved successfully!");
       
       if (onSaveToProjects) {
@@ -1210,7 +1226,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
             {/* Save to Projects - Primary Action */}
             <Button
-              onClick={handleSaveToProjects}
+              onClick={handleOpenSaveDialog}
               disabled={isSaving || !user}
               className="w-full gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
             >
@@ -1223,6 +1239,66 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                 Sign in to save projects
               </p>
             )}
+
+            {/* Save Dialog */}
+            <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <FolderPlus className="w-5 h-5 text-green-500" />
+                    Save to Projects
+                  </DialogTitle>
+                  <DialogDescription>
+                    Enter a name to save this quote as a project.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="projectName">Project Name <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="projectName"
+                      value={saveProjectName}
+                      onChange={(e) => setSaveProjectName(e.target.value)}
+                      placeholder="e.g. Kitchen Renovation - Smith"
+                      autoFocus
+                    />
+                  </div>
+                  
+                  {/* Summary of what will be saved */}
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                    <p className="text-sm font-medium">Will be saved:</p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      {quote.clientName && (
+                        <p>• Client: {quote.clientName}</p>
+                      )}
+                      <p>• {quote.lineItems.length} line items</p>
+                      <p>• Total: ${total.toFixed(2)}</p>
+                      {collectedData?.photoEstimate && (
+                        <p>• Photo estimate data</p>
+                      )}
+                      {collectedData?.calculatorResults && collectedData.calculatorResults.length > 0 && (
+                        <p>• Calculator results ({collectedData.calculatorResults.length})</p>
+                      )}
+                      {collectedData?.templateItems && collectedData.templateItems.length > 0 && (
+                        <p>• Template items ({collectedData.templateItems.length})</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSaveToProjects}
+                    disabled={isSaving || !saveProjectName.trim()}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
+                    {isSaving ? "Saving..." : "Save Project"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <Separator />
 
