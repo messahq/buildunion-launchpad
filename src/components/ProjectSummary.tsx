@@ -60,7 +60,8 @@ import {
 import { SaveAsTemplateDialog } from "@/components/SaveAsTemplateDialog";
 import { ShareSummaryDialog } from "@/components/ShareSummaryDialog";
 import { ScrollToTopButton } from "@/components/ScrollToTopButton";
-import { UpgradeToTeamProjectDialog } from "@/components/UpgradeToTeamProjectDialog";
+import { ProjectModeToggle } from "@/components/ProjectModeToggle";
+import { ProjectMode } from "@/hooks/useProjectMode";
 import { generatePDFBlob, buildProjectSummaryHTML, buildContractHTML } from "@/lib/pdfGenerator";
 import {
   Accordion,
@@ -1103,28 +1104,12 @@ export function ProjectSummary({
             </Button>
           )}
 
-          <UpgradeToTeamProjectDialog
+          <ProjectModeToggle
             summaryId={summary?.id}
             projectId={summary?.project_id || projectId}
-            projectName={quoteData?.projectName}
-            lineItemsCount={editedItems.length}
-            totalAmount={grandTotal}
-            formatCurrency={formatCurrency}
-            clientName={clientInfo.name}
-            clientAddress={clientInfo.address}
-            photoEstimate={{
-              estimatedArea: summary?.photo_estimate?.estimatedArea || photoEstimate?.estimatedArea,
-              areaUnit: summary?.photo_estimate?.areaUnit || photoEstimate?.areaUnit || "sq ft",
-              materials: summary?.photo_estimate?.materials || photoEstimate?.materials,
-              projectType: summary?.photo_estimate?.projectType || photoEstimate?.projectType,
-            }}
-            calculatorResults={summary?.calculator_results || calculatorResults}
-          >
-            <Button className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Team Project</span>
-            </Button>
-          </UpgradeToTeamProjectDialog>
+            initialMode={(summary?.project_id ? "team" : "solo") as ProjectMode}
+            variant="compact"
+          />
         </div>
       </div>
 
@@ -2081,28 +2066,7 @@ export function ProjectSummary({
           <Send className="h-4 w-4" />
           Send Invoice
         </Button>
-        <UpgradeToTeamProjectDialog
-          summaryId={summary?.id}
-          projectId={summary?.project_id || projectId}
-          projectName={quoteData?.projectName}
-          lineItemsCount={editedItems.length}
-          totalAmount={grandTotal}
-          formatCurrency={formatCurrency}
-          clientName={clientInfo.name}
-          clientAddress={clientInfo.address}
-          photoEstimate={{
-            estimatedArea: summary?.photo_estimate?.estimatedArea || photoEstimate?.estimatedArea,
-            areaUnit: summary?.photo_estimate?.areaUnit || photoEstimate?.areaUnit || "sq ft",
-            materials: summary?.photo_estimate?.materials || photoEstimate?.materials,
-            projectType: summary?.photo_estimate?.projectType || photoEstimate?.projectType,
-          }}
-          calculatorResults={summary?.calculator_results || calculatorResults}
-        >
-          <Button className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600">
-            <Users className="h-4 w-4" />
-            Upgrade to Team Project
-          </Button>
-        </UpgradeToTeamProjectDialog>
+{/* Mode toggle moved to header - single point of control */}
       </div>
 
       {/* Scroll to Top Button */}

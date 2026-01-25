@@ -464,6 +464,7 @@ export type Database = {
           labor_cost: number | null
           line_items: Json | null
           material_cost: number | null
+          mode: string
           notes: string | null
           photo_estimate: Json | null
           project_id: string | null
@@ -489,6 +490,7 @@ export type Database = {
           labor_cost?: number | null
           line_items?: Json | null
           material_cost?: number | null
+          mode?: string
           notes?: string | null
           photo_estimate?: Json | null
           project_id?: string | null
@@ -514,6 +516,7 @@ export type Database = {
           labor_cost?: number | null
           line_items?: Json | null
           material_cost?: number | null
+          mode?: string
           notes?: string | null
           photo_estimate?: Json | null
           project_id?: string | null
