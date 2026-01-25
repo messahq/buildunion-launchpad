@@ -1221,6 +1221,110 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                         />
                       </div>
                     </div>
+
+                    {/* Visual Timeline Preview */}
+                    {(contract.startDate || contract.estimatedEndDate) && (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Calendar className="w-4 h-4 text-purple-600" />
+                          <span className="font-medium text-purple-900">Project Timeline Preview</span>
+                        </div>
+                        
+                        {/* Timeline Bar */}
+                        <div className="relative">
+                          <div className="flex items-center justify-between mb-2">
+                            {/* Start Date */}
+                            <div className="flex flex-col items-start">
+                              <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow-md z-10" />
+                              <span className="text-xs font-medium text-green-700 mt-1">Start</span>
+                              <span className="text-xs text-muted-foreground">
+                                {contract.startDate ? new Date(contract.startDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                              </span>
+                            </div>
+                            
+                            {/* Duration Info */}
+                            <div className="flex-1 mx-4">
+                              <div className="relative h-2 bg-gradient-to-r from-green-400 via-amber-400 to-purple-500 rounded-full" />
+                              {contract.startDate && contract.estimatedEndDate && (
+                                <div className="text-center mt-2">
+                                  <span className="text-sm font-semibold text-purple-700">
+                                    {(() => {
+                                      const start = new Date(contract.startDate);
+                                      const end = new Date(contract.estimatedEndDate);
+                                      const diffTime = Math.abs(end.getTime() - start.getTime());
+                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                      const weeks = Math.floor(diffDays / 7);
+                                      const days = diffDays % 7;
+                                      
+                                      // Calculate working days (excluding weekends)
+                                      let workingDays = 0;
+                                      const current = new Date(start);
+                                      while (current <= end) {
+                                        const dayOfWeek = current.getDay();
+                                        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                                          workingDays++;
+                                        }
+                                        current.setDate(current.getDate() + 1);
+                                      }
+                                      
+                                      return (
+                                        <div className="space-y-1">
+                                          <div className="text-purple-700">
+                                            {weeks > 0 ? `${weeks} week${weeks > 1 ? 's' : ''}${days > 0 ? ` ${days} day${days > 1 ? 's' : ''}` : ''}` : `${diffDays} day${diffDays > 1 ? 's' : ''}`}
+                                          </div>
+                                          <div className="text-xs text-muted-foreground">
+                                            ~{workingDays} working days
+                                          </div>
+                                        </div>
+                                      );
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* End Date */}
+                            <div className="flex flex-col items-end">
+                              <div className="w-4 h-4 rounded-full bg-purple-500 border-2 border-white shadow-md z-10" />
+                              <span className="text-xs font-medium text-purple-700 mt-1">End</span>
+                              <span className="text-xs text-muted-foreground">
+                                {contract.estimatedEndDate ? new Date(contract.estimatedEndDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Duration Buttons */}
+                        {contract.startDate && !contract.estimatedEndDate && (
+                          <div className="mt-4 pt-3 border-t border-purple-200">
+                            <span className="text-xs text-muted-foreground mb-2 block">Quick set duration:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {[
+                                { label: '1 Week', days: 7 },
+                                { label: '2 Weeks', days: 14 },
+                                { label: '1 Month', days: 30 },
+                                { label: '2 Months', days: 60 },
+                                { label: '3 Months', days: 90 },
+                              ].map((option) => (
+                                <button
+                                  key={option.label}
+                                  type="button"
+                                  onClick={() => {
+                                    const start = new Date(contract.startDate);
+                                    start.setDate(start.getDate() + option.days);
+                                    updateContract("estimatedEndDate", start.toISOString().split('T')[0]);
+                                  }}
+                                  className="px-3 py-1 text-xs font-medium rounded-full bg-white border border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 transition-colors"
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label>Working Days / Hours</Label>
                       <Input
