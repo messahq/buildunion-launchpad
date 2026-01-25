@@ -1387,16 +1387,6 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
             <Separator />
 
-            {/* Continue to Summary */}
-            <Button
-              onClick={() => onQuoteGenerated?.({ ...quote, clientSignature, contractorSignature })}
-              variant="outline"
-              className="w-full gap-2"
-            >
-              View Full Summary
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-
             {/* Skip to Summary */}
             <Button
               variant="ghost"
