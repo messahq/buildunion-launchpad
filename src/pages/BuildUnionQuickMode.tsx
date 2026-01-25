@@ -286,38 +286,6 @@ const BuildUnionQuickMode = () => {
               </div>
               
               <div className="flex flex-wrap items-center gap-3">
-                {/* Skip to Blueprints - PRO */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      onClick={handleSkipToBlueprints}
-                      className="gap-2 border-cyan-200 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-300"
-                    >
-                      <FileUp className="w-4 h-4" />
-                      <span className="hidden sm:inline">Skip to Blueprints</span>
-                      <span className="sm:hidden">Blueprints</span>
-                      {!user ? (
-                        <Lock className="w-3 h-3 text-muted-foreground" />
-                      ) : isPremium ? (
-                        <Crown className="w-3 h-3 text-amber-500" />
-                      ) : (
-                        <Badge variant="secondary" className="ml-1 text-xs">
-                          {remainingTrials}/{maxTrials}
-                        </Badge>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {!user 
-                      ? "Sign in to access Blueprint Analysis" 
-                      : isPremium 
-                        ? "Upload blueprints for M.E.S.S.A. analysis (Premium)" 
-                        : `${remainingTrials} free trial${remainingTrials !== 1 ? 's' : ''} remaining`
-                    }
-                  </TooltipContent>
-                </Tooltip>
-                
                 {/* Summary Button */}
                 <Button
                   onClick={goToSummary}
