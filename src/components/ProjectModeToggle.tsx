@@ -182,10 +182,15 @@ export function ProjectModeToggle({
   return (
     <>
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <User className={`h-4 w-4 ${!isTeamMode ? "text-amber-600" : "text-muted-foreground"}`} />
+        {/* Solo mode label with active background */}
+        <div className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all ${
+          !isTeamMode 
+            ? "bg-amber-100 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-700" 
+            : ""
+        }`}>
+          <User className={`h-4 w-4 ${!isTeamMode ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`} />
           {showLabel && (
-            <span className={`text-sm font-medium ${!isTeamMode ? "text-amber-700" : "text-muted-foreground"}`}>
+            <span className={`text-sm font-medium ${!isTeamMode ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground"}`}>
               Solo
             </span>
           )}
@@ -198,10 +203,15 @@ export function ProjectModeToggle({
           className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-cyan-500 data-[state=checked]:to-blue-500"
         />
 
-        <div className="flex items-center gap-2">
-          <Users className={`h-4 w-4 ${isTeamMode ? "text-cyan-600" : "text-muted-foreground"}`} />
+        {/* Team mode label with active background */}
+        <div className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all ${
+          isTeamMode 
+            ? "bg-cyan-100 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700" 
+            : ""
+        }`}>
+          <Users className={`h-4 w-4 ${isTeamMode ? "text-cyan-600 dark:text-cyan-400" : "text-muted-foreground"}`} />
           {showLabel && (
-            <span className={`text-sm font-medium ${isTeamMode ? "text-cyan-700" : "text-muted-foreground"}`}>
+            <span className={`text-sm font-medium ${isTeamMode ? "text-cyan-700 dark:text-cyan-300" : "text-muted-foreground"}`}>
               Team
             </span>
           )}
