@@ -64,6 +64,7 @@ interface ContractProgressData {
   scopeOfWork: string;
   totalAmount: number;
   startDate: string;
+  estimatedEndDate: string;
   contractorSignature: boolean;
   clientSignature: boolean;
 }
@@ -122,6 +123,7 @@ const BuildUnionQuickMode = () => {
     scopeOfWork: "",
     totalAmount: 0,
     startDate: "",
+    estimatedEndDate: "",
     contractorSignature: false,
     clientSignature: false,
   });
@@ -172,7 +174,10 @@ const BuildUnionQuickMode = () => {
       terms: {
         scopeOfWork: !!contractProgress.scopeOfWork,
         totalAmount: contractProgress.totalAmount > 0,
+      },
+      timeline: {
         startDate: !!contractProgress.startDate,
+        estimatedEndDate: !!contractProgress.estimatedEndDate,
       },
       signatures: {
         contractor: contractProgress.contractorSignature,
@@ -523,6 +528,7 @@ const BuildUnionQuickMode = () => {
                     scopeOfWork: data.scopeOfWork || "",
                     totalAmount: data.totalAmount || 0,
                     startDate: data.startDate || "",
+                    estimatedEndDate: data.estimatedEndDate || "",
                     contractorSignature: data.contractorSignature || false,
                     clientSignature: data.clientSignature || false,
                   });
