@@ -599,7 +599,12 @@ const BuildUnionProjectDetails = () => {
 
   return (
     <main className="bg-slate-50 min-h-screen">
-      <BuildUnionHeader projectMode={projectMode} />
+      <BuildUnionHeader 
+        projectMode={projectMode}
+        summaryId={projectSummary?.id}
+        projectId={projectId}
+        onModeChange={(newMode) => setProjectMode(newMode)}
+      />
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Back Link */}

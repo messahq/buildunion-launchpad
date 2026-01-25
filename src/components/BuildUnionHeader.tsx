@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import { useBuProfile } from "@/hooks/useBuProfile";
 import { useTheme } from "@/hooks/useTheme";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const languages = [
   { code: "en", name: "English" },
@@ -38,9 +39,12 @@ const languages = [
 
 interface BuildUnionHeaderProps {
   projectMode?: "solo" | "team";
+  summaryId?: string;
+  projectId?: string;
+  onModeChange?: (mode: "solo" | "team") => void;
 }
 
-const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
+const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: BuildUnionHeaderProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { subscription } = useSubscription();
@@ -48,6 +52,52 @@ const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
   const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useUnreadMessages();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [isTogglingMode, setIsTogglingMode] = useState(false);
+
+  // Check if user can access team mode (Pro/Premium/Enterprise)
+  const canAccessTeamMode =
+    subscription?.tier === "pro" ||
+    subscription?.tier === "premium" ||
+    subscription?.tier === "enterprise";
+
+  // Handle mode toggle from header indicator
+  const handleModeToggle = async () => {
+    if (!summaryId || !onModeChange) return;
+    
+    // If switching to team and not authorized, redirect to pricing
+    if (projectMode === "solo" && !canAccessTeamMode) {
+      toast.info("Upgrade to Pro to unlock Team features");
+      navigate("/buildunion/pricing");
+      return;
+    }
+
+    setIsTogglingMode(true);
+    try {
+      const newMode = projectMode === "solo" ? "team" : "solo";
+      
+      // If project already exists, just update mode
+      if (projectId) {
+        const { error } = await supabase
+          .from("project_summaries")
+          .update({ mode: newMode })
+          .eq("id", summaryId);
+
+        if (error) throw error;
+        
+        onModeChange(newMode);
+        toast.success(`Switched to ${newMode === "team" ? "Team" : "Solo"} mode`);
+      } else if (newMode === "team") {
+        // Need to create project - navigate to project creation
+        toast.success("Opening Team Project setup...");
+        navigate(`/buildunion/workspace/new?fromQuickMode=${encodeURIComponent(JSON.stringify({ summaryId }))}`);
+      }
+    } catch (error: any) {
+      console.error("Mode toggle error:", error);
+      toast.error(error.message || "Failed to switch mode");
+    } finally {
+      setIsTogglingMode(false);
+    }
+  };
 
   const currentLang = languages.find((l) => l.code === selectedLanguage);
   
@@ -128,17 +178,23 @@ const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
             <span className="text-amber-500">Union</span>
           </span>
           
-          {/* Project Mode Indicator */}
+          {/* Project Mode Indicator - Clickable */}
           {projectMode && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
-                    projectMode === "team"
-                      ? "bg-cyan-100 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700"
-                      : "bg-amber-100 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-700"
-                  }`}>
-                    {projectMode === "team" ? (
+                  <button
+                    onClick={summaryId && onModeChange ? handleModeToggle : undefined}
+                    disabled={isTogglingMode || !summaryId || !onModeChange}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+                      projectMode === "team"
+                        ? "bg-cyan-100 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700 hover:bg-cyan-200 dark:hover:bg-cyan-800/40"
+                        : "bg-amber-100 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-800/40"
+                    } ${summaryId && onModeChange ? "cursor-pointer" : "cursor-default"} disabled:opacity-50`}
+                  >
+                    {isTogglingMode ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : projectMode === "team" ? (
                       <Users className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
                     ) : (
                       <User className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
@@ -150,10 +206,20 @@ const BuildUnionHeader = ({ projectMode }: BuildUnionHeaderProps) => {
                     }`}>
                       {projectMode === "team" ? "Team" : "Solo"}
                     </span>
-                  </div>
+                    {/* PRO badge for Solo mode when can't access team */}
+                    {projectMode === "solo" && !canAccessTeamMode && summaryId && onModeChange && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-600 border-cyan-200 ml-0.5">
+                        PRO
+                      </Badge>
+                    )}
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Current project mode: {projectMode === "team" ? "Team" : "Solo"}</p>
+                  {summaryId && onModeChange ? (
+                    <p>Click to switch to {projectMode === "team" ? "Solo" : "Team"} mode</p>
+                  ) : (
+                    <p>Current project mode: {projectMode === "team" ? "Team" : "Solo"}</p>
+                  )}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
