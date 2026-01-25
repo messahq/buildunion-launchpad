@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 export default function BuildUnionProjectSummary() {
-  const { summaryId } = useParams();
+  const { summaryId: pathSummaryId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Support both path param (/summary/:summaryId) and query param (?summaryId=...)
+  const summaryId = pathSummaryId || searchParams.get("summaryId") || undefined;
 
   // Get data from URL params if creating new summary from Quick Mode
   const projectId = searchParams.get("projectId");
