@@ -8,6 +8,7 @@ import QuickModeCalculator from "@/components/quick-mode/QuickModeCalculator";
 import QuickModeQuoteGenerator from "@/components/quick-mode/QuickModeQuoteGenerator";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
 import QuickModeOnboarding from "@/components/quick-mode/QuickModeOnboarding";
+import QuickModeProgressBar from "@/components/quick-mode/QuickModeProgressBar";
 import DataMergeDialog from "@/components/DataMergeDialog";
 import AuthGateModal from "@/components/AuthGateModal";
 import GuestProgressBar from "@/components/GuestProgressBar";
@@ -20,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useDraftData } from "@/hooks/useDraftData";
+import { useQuickModeProgress, QuickModeProgressData } from "@/hooks/useQuickModeProgress";
 import { toast } from "sonner";
 
 // Template data type for passing between tabs
@@ -37,6 +39,33 @@ interface CollectedData {
   photoEstimate: any | null;
   calculatorResults: any[];
   templateItems: any[];
+}
+
+// Quote data for progress tracking
+interface QuoteProgressData {
+  companyName: string;
+  companyPhone: string;
+  companyAddress: string;
+  companyEmail: string;
+  clientName: string;
+  clientEmail: string;
+  clientAddress: string;
+  clientPhone: string;
+  lineItemsCount: number;
+}
+
+// Contract data for progress tracking
+interface ContractProgressData {
+  contractorName: string;
+  contractorAddress: string;
+  contractorLicense: string;
+  clientName: string;
+  clientAddress: string;
+  scopeOfWork: string;
+  totalAmount: number;
+  startDate: string;
+  contractorSignature: boolean;
+  clientSignature: boolean;
 }
 
 interface PhotoEstimatePreFill {
@@ -70,6 +99,89 @@ const BuildUnionQuickMode = () => {
     calculatorResults: [],
     templateItems: []
   });
+
+  // Quote and Contract progress tracking
+  const [quoteProgress, setQuoteProgress] = useState<QuoteProgressData>({
+    companyName: "",
+    companyPhone: "",
+    companyAddress: "",
+    companyEmail: "",
+    clientName: "",
+    clientEmail: "",
+    clientAddress: "",
+    clientPhone: "",
+    lineItemsCount: 0,
+  });
+
+  const [contractProgress, setContractProgress] = useState<ContractProgressData>({
+    contractorName: "",
+    contractorAddress: "",
+    contractorLicense: "",
+    clientName: "",
+    clientAddress: "",
+    scopeOfWork: "",
+    totalAmount: 0,
+    startDate: "",
+    contractorSignature: false,
+    clientSignature: false,
+  });
+
+  // Build progress data for the hook
+  const progressData: QuickModeProgressData = {
+    photo: {
+      hasData: !!collectedData.photoEstimate,
+      area: collectedData.photoEstimate?.detectedArea || collectedData.photoEstimate?.area,
+      areaUnit: collectedData.photoEstimate?.areaUnit,
+    },
+    templates: {
+      hasData: collectedData.templateItems.length > 0,
+      count: collectedData.templateItems.length,
+    },
+    calculator: {
+      hasData: collectedData.calculatorResults.length > 0,
+      count: collectedData.calculatorResults.length,
+    },
+    quote: {
+      yourInfo: {
+        companyName: !!quoteProgress.companyName,
+        phone: !!quoteProgress.companyPhone,
+        address: !!quoteProgress.companyAddress,
+        email: !!quoteProgress.companyEmail,
+      },
+      client: {
+        name: !!quoteProgress.clientName,
+        email: !!quoteProgress.clientEmail,
+        address: !!quoteProgress.clientAddress,
+        phone: !!quoteProgress.clientPhone,
+      },
+      lineItems: {
+        hasItems: quoteProgress.lineItemsCount > 0,
+        count: quoteProgress.lineItemsCount,
+      },
+    },
+    contract: {
+      contractor: {
+        name: !!contractProgress.contractorName,
+        address: !!contractProgress.contractorAddress,
+        license: !!contractProgress.contractorLicense,
+      },
+      client: {
+        name: !!contractProgress.clientName,
+        address: !!contractProgress.clientAddress,
+      },
+      terms: {
+        scopeOfWork: !!contractProgress.scopeOfWork,
+        totalAmount: contractProgress.totalAmount > 0,
+        startDate: !!contractProgress.startDate,
+      },
+      signatures: {
+        contractor: contractProgress.contractorSignature,
+        client: contractProgress.clientSignature,
+      },
+    },
+  };
+
+  const progress = useQuickModeProgress(progressData);
   
   // Template data to pass to calculator
   const [currentTemplateData, setCurrentTemplateData] = useState<TemplateData | null>(null);
@@ -305,31 +417,25 @@ const BuildUnionQuickMode = () => {
           </div>
         </section>
 
+        {/* Quick Mode Progress Bar */}
+        <section className="container mx-auto px-4 sm:px-6 pt-4">
+          <QuickModeProgressBar
+            percentage={progress.percentage}
+            steps={progress.steps}
+            warnings={progress.warnings}
+            status={progress.status}
+            statusLabel={progress.statusLabel}
+            statusColor={progress.statusColor}
+            activeTab={activeTab}
+            onTabClick={handleTabChange}
+          />
+        </section>
+
         {/* Guest Progress Bar */}
         <GuestProgressBar 
           hasPhotoEstimate={!!collectedData.photoEstimate} 
-          className="container mx-auto px-4 sm:px-6 mt-4"
+          className="container mx-auto px-4 sm:px-6"
         />
-
-        {/* Collected Data Indicator */}
-        {collectedItemsCount > 0 && (
-          <div className="container mx-auto px-4 sm:px-6 pt-4">
-            <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span className="text-sm text-amber-700">
-                <strong>{collectedItemsCount}</strong> items collected for summary
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={goToSummary}
-                className="ml-auto text-amber-600 hover:text-amber-700"
-              >
-                View →
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Main Content with Tabs */}
         <section className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -417,6 +523,19 @@ const BuildUnionQuickMode = () => {
               <QuickModeQuoteGenerator 
                 collectedData={collectedData}
                 onSkipToSummary={goToSummary}
+                onProgressUpdate={(data) => {
+                  setQuoteProgress({
+                    companyName: data.companyName || "",
+                    companyPhone: data.companyPhone || "",
+                    companyAddress: data.companyAddress || "",
+                    companyEmail: data.companyEmail || "",
+                    clientName: data.clientName || "",
+                    clientEmail: data.clientEmail || "",
+                    clientAddress: data.clientAddress || "",
+                    clientPhone: data.clientPhone || "",
+                    lineItemsCount: data.lineItemsCount || 0,
+                  });
+                }}
                 onQuoteGenerated={(quote) => {
                   // Navigate to summary with quote data
                   const params = new URLSearchParams();
@@ -448,6 +567,20 @@ const BuildUnionQuickMode = () => {
               <ContractGenerator 
                 quoteData={null}
                 collectedData={collectedData}
+                onProgressUpdate={(data) => {
+                  setContractProgress({
+                    contractorName: data.contractorName || "",
+                    contractorAddress: data.contractorAddress || "",
+                    contractorLicense: data.contractorLicense || "",
+                    clientName: data.clientName || "",
+                    clientAddress: data.clientAddress || "",
+                    scopeOfWork: data.scopeOfWork || "",
+                    totalAmount: data.totalAmount || 0,
+                    startDate: data.startDate || "",
+                    contractorSignature: data.contractorSignature || false,
+                    clientSignature: data.clientSignature || false,
+                  });
+                }}
                 onContractGenerated={(contractData) => {
                   toast.success("Contract generated successfully!");
                 }}

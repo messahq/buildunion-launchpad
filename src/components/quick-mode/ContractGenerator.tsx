@@ -201,14 +201,28 @@ interface ExistingContract {
   contractor_signature: any | null;
 }
 
+interface ContractProgressUpdate {
+  contractorName?: string;
+  contractorAddress?: string;
+  contractorLicense?: string;
+  clientName?: string;
+  clientAddress?: string;
+  scopeOfWork?: string;
+  totalAmount?: number;
+  startDate?: string;
+  contractorSignature?: boolean;
+  clientSignature?: boolean;
+}
+
 interface ContractGeneratorProps {
   quoteData?: any;
   collectedData?: CollectedData | null;
   existingContract?: ExistingContract | null;
   onContractGenerated?: (contractData: any) => void;
+  onProgressUpdate?: (data: ContractProgressUpdate) => void;
 }
 
-const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated }: ContractGeneratorProps) => {
+const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate }: ContractGeneratorProps) => {
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
@@ -292,6 +306,22 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedContractId, setSavedContractId] = useState<string | null>(null);
+
+  // Report progress updates to parent
+  useEffect(() => {
+    onProgressUpdate?.({
+      contractorName: contract.contractorName,
+      contractorAddress: contract.contractorAddress,
+      contractorLicense: contract.contractorLicense,
+      clientName: contract.clientName,
+      clientAddress: contract.clientAddress,
+      scopeOfWork: contract.scopeOfWork,
+      totalAmount: contract.totalAmount,
+      startDate: contract.startDate,
+      contractorSignature: !!contractorSignature,
+      clientSignature: !!clientSignature,
+    });
+  }, [contract, contractorSignature, clientSignature, onProgressUpdate]);
   const [profileData, setProfileData] = useState<{
     companyLogoUrl?: string | null;
     companyName?: string | null;
