@@ -1544,7 +1544,7 @@ const BuildUnionProjectDetails = () => {
                           
                           {/* Task Assignment - Integrated */}
                           <div className="border-t border-slate-200 pt-6">
-                            <TaskAssignment projectId={project.id} isOwner={project.user_id === user.id} />
+                            <TaskAssignment projectId={project.id} isOwner={project.user_id === user.id} projectAddress={project.address || undefined} />
                           </div>
                         </div>
                       )}

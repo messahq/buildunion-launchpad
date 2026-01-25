@@ -48,6 +48,7 @@ import TaskTimelineCalendar from "./TaskTimelineCalendar";
 interface TaskAssignmentProps {
   projectId: string;
   isOwner: boolean;
+  projectAddress?: string;
 }
 
 interface TeamMember {
@@ -87,7 +88,7 @@ const STATUSES = [
   { value: "completed", label: "Completed", icon: CheckCircle2, color: "text-green-600" },
 ];
 
-const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
+const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentProps) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -420,6 +421,7 @@ const TaskAssignment = ({ projectId, isOwner }: TaskAssignmentProps) => {
               tasks={tasks}
               isOwner={isOwner}
               onTaskClick={(task) => openEditDialog(task)}
+              projectAddress={projectAddress}
             />
           ) : (
             <div className="space-y-6">
