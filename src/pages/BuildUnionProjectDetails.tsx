@@ -19,8 +19,12 @@ import {
   AlertCircle, Sparkles,
   Pencil, X, Check,
   Users, Image, FileCheck, Briefcase, MapPin,
-  Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList, ScrollText
+  Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList, ScrollText,
+  Download, Eye
 } from "lucide-react";
+import { downloadPDF, buildContractHTML } from "@/lib/pdfGenerator";
+import { useRegionSettings } from "@/hooks/useRegionSettings";
+import { useBuProfile } from "@/hooks/useBuProfile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,16 +64,57 @@ interface ProjectDocument {
   uploaded_at: string;
 }
 
+interface ProjectContract {
+  id: string;
+  contract_number: string;
+  contract_date: string;
+  template_type: string | null;
+  status: string;
+  contractor_name: string | null;
+  contractor_address: string | null;
+  contractor_phone: string | null;
+  contractor_email: string | null;
+  contractor_license: string | null;
+  client_name: string | null;
+  client_address: string | null;
+  client_phone: string | null;
+  client_email: string | null;
+  project_name: string | null;
+  project_address: string | null;
+  scope_of_work: string | null;
+  total_amount: number | null;
+  deposit_percentage: number | null;
+  deposit_amount: number | null;
+  payment_schedule: string | null;
+  start_date: string | null;
+  estimated_end_date: string | null;
+  working_days: string | null;
+  warranty_period: string | null;
+  change_order_policy: string | null;
+  cancellation_policy: string | null;
+  dispute_resolution: string | null;
+  additional_terms: string | null;
+  materials_included: boolean | null;
+  has_liability_insurance: boolean | null;
+  has_wsib: boolean | null;
+  client_signature: any | null;
+  contractor_signature: any | null;
+}
+
 const BuildUnionProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { subscription } = useSubscription();
+  const { config, formatCurrency } = useRegionSettings();
+  const { profile } = useBuProfile();
   const [project, setProject] = useState<Project | null>(null);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([]);
   const [siteImageUrls, setSiteImageUrls] = useState<string[]>([]);
   const [projectSummary, setProjectSummary] = useState<any>(null);
+  const [projectContracts, setProjectContracts] = useState<ProjectContract[]>([]);
+  const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
   const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "contracts">("documents");
@@ -183,6 +228,17 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
         if (!inviteError) {
           setTeamInvitations(inviteData || []);
         }
+
+        // Fetch project contracts
+        const { data: contractsData } = await supabase
+          .from("contracts")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false });
+
+        if (contractsData) {
+          setProjectContracts(contractsData);
+        }
       } catch (error) {
         console.error("Error fetching project:", error);
         toast.error("Failed to load project");
@@ -222,6 +278,96 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
         return "bg-slate-100 text-slate-700 border-slate-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+  };
+
+  // Handle contract PDF download
+  const handleDownloadContractPDF = async (contract: ProjectContract) => {
+    setDownloadingContractId(contract.id);
+    try {
+      const htmlContent = buildContractHTML({
+        contractNumber: contract.contract_number,
+        contractDate: contract.contract_date,
+        templateType: contract.template_type || 'custom',
+        contractorInfo: {
+          name: contract.contractor_name || '',
+          address: contract.contractor_address || '',
+          phone: contract.contractor_phone || '',
+          email: contract.contractor_email || '',
+          license: contract.contractor_license || undefined
+        },
+        clientInfo: {
+          name: contract.client_name || '',
+          address: contract.client_address || '',
+          phone: contract.client_phone || '',
+          email: contract.client_email || ''
+        },
+        projectInfo: {
+          name: contract.project_name || '',
+          address: contract.project_address || '',
+          description: contract.scope_of_work || undefined
+        },
+        financialTerms: {
+          totalAmount: contract.total_amount || 0,
+          depositPercentage: contract.deposit_percentage || 50,
+          depositAmount: contract.deposit_amount || 0,
+          paymentSchedule: contract.payment_schedule || ''
+        },
+        timeline: {
+          startDate: contract.start_date || '',
+          estimatedEndDate: contract.estimated_end_date || '',
+          workingDays: contract.working_days || ''
+        },
+        terms: {
+          scopeOfWork: contract.scope_of_work || '',
+          warrantyPeriod: contract.warranty_period || '1 year',
+          materialsIncluded: contract.materials_included ?? true,
+          changeOrderPolicy: contract.change_order_policy || '',
+          cancellationPolicy: contract.cancellation_policy || '',
+          disputeResolution: contract.dispute_resolution || '',
+          additionalTerms: contract.additional_terms || undefined,
+          hasLiabilityInsurance: contract.has_liability_insurance ?? true,
+          hasWSIB: contract.has_wsib ?? true
+        },
+        signatures: {
+          client: contract.client_signature,
+          contractor: contract.contractor_signature
+        },
+        branding: {
+          companyLogoUrl: profile?.company_logo_url,
+          companyName: profile?.company_name || contract.contractor_name,
+          companyPhone: profile?.phone || contract.contractor_phone,
+          companyEmail: contract.contractor_email,
+          companyWebsite: profile?.company_website
+        },
+        formatCurrency,
+        regionName: config?.name
+      });
+
+      await downloadPDF(htmlContent, {
+        filename: `Contract-${contract.contract_number}.pdf`,
+        pageFormat: 'letter'
+      });
+
+      toast.success('Contract PDF downloaded!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setDownloadingContractId(null);
+    }
+  };
+
+  const getContractStatusBadge = (contract: ProjectContract) => {
+    const hasBothSignatures = contract.client_signature && contract.contractor_signature;
+    const hasContractorSignature = contract.contractor_signature;
+
+    if (hasBothSignatures) {
+      return <Badge className="bg-green-100 text-green-800 text-xs">Signed</Badge>;
+    } else if (hasContractorSignature) {
+      return <Badge className="bg-amber-100 text-amber-800 text-xs">Awaiting Client</Badge>;
+    } else {
+      return <Badge className="bg-slate-100 text-slate-800 text-xs">Draft</Badge>;
     }
   };
 
@@ -938,6 +1084,62 @@ const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
                 <div className="text-sm text-slate-600 bg-white rounded-lg border border-green-100 p-3">
                   <span className="font-medium">Notes: </span>
                   {projectSummary.notes}
+                </div>
+              )}
+
+              {/* Project Contracts - PDF Downloads */}
+              {projectContracts.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <ScrollText className="h-4 w-4 text-purple-600" />
+                    Contracts ({projectContracts.length})
+                  </div>
+                  <div className="bg-white rounded-lg border border-green-100 p-4 space-y-3">
+                    {projectContracts.map((contract) => (
+                      <div 
+                        key={contract.id} 
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <FileText className="h-4 w-4 text-purple-600" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">#{contract.contract_number}</span>
+                              {getContractStatusBadge(contract)}
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              {new Date(contract.contract_date).toLocaleDateString("en-CA", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric"
+                              })}
+                              {contract.total_amount && contract.total_amount > 0 && (
+                                <span className="ml-2 text-amber-600 font-medium">
+                                  {formatCurrency(contract.total_amount)}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadContractPDF(contract)}
+                          disabled={downloadingContractId === contract.id}
+                          className="gap-2 border-purple-200 hover:bg-purple-50 hover:text-purple-700"
+                        >
+                          {downloadingContractId === contract.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                          <span className="hidden sm:inline">PDF</span>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
