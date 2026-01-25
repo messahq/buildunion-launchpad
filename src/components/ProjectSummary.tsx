@@ -847,6 +847,75 @@ export function ProjectSummary({
         </Alert>
       )}
 
+      {/* Quick Mode Data Sources Banner */}
+      <Card className="border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Sparkles className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-amber-800">Quick Mode Data Collected</h3>
+              <p className="text-sm text-amber-600">Your estimate is built from the following sources:</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(photoEstimate || summary.photo_estimate) && (
+              <Badge className="bg-blue-100 text-blue-700 gap-1.5 px-3 py-1.5">
+                <Camera className="h-3.5 w-3.5" />
+                Photo Estimate
+                {(photoEstimate?.area || summary.photo_estimate?.area) && (
+                  <span className="font-bold">• {photoEstimate?.area || summary.photo_estimate?.area} sq ft</span>
+                )}
+              </Badge>
+            )}
+            {((summary.calculator_results as any[])?.length > 0 || calculatorResults?.length > 0) && (
+              <Badge className="bg-green-100 text-green-700 gap-1.5 px-3 py-1.5">
+                <Calculator className="h-3.5 w-3.5" />
+                Calculator
+                <span className="font-bold">• {(summary.calculator_results as any[])?.length || calculatorResults?.length} results</span>
+              </Badge>
+            )}
+            {((summary.template_items as any[])?.length > 0 || templateItems?.length > 0) && (
+              <Badge className="bg-cyan-100 text-cyan-700 gap-1.5 px-3 py-1.5">
+                <LayoutTemplate className="h-3.5 w-3.5" />
+                Templates
+                <span className="font-bold">• {(summary.template_items as any[])?.length || templateItems?.length} items</span>
+              </Badge>
+            )}
+            {quoteData && (
+              <Badge className="bg-purple-100 text-purple-700 gap-1.5 px-3 py-1.5">
+                <Receipt className="h-3.5 w-3.5" />
+                Quote Generated
+                {quoteData.lineItems?.length > 0 && (
+                  <span className="font-bold">• {quoteData.lineItems.length} line items</span>
+                )}
+              </Badge>
+            )}
+            {editedItems.length > 0 && (
+              <Badge className="bg-gray-100 text-gray-700 gap-1.5 px-3 py-1.5">
+                <TrendingUp className="h-3.5 w-3.5" />
+                Total Items
+                <span className="font-bold">• {editedItems.length}</span>
+              </Badge>
+            )}
+          </div>
+          {(clientInfo.name || quoteData?.clientName) && (
+            <div className="mt-3 pt-3 border-t border-amber-200 flex items-center gap-2 text-sm text-amber-700">
+              <User className="h-4 w-4" />
+              <span>Client: <strong>{clientInfo.name || quoteData?.clientName}</strong></span>
+              {(clientInfo.email || quoteData?.clientEmail) && (
+                <>
+                  <span className="text-amber-300">|</span>
+                  <Mail className="h-4 w-4" />
+                  <span>{clientInfo.email || quoteData?.clientEmail}</span>
+                </>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Data Source Info Alert */}
       <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <Sparkles className="h-5 w-5 text-blue-600" />
