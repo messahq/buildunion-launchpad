@@ -683,6 +683,74 @@ const ProjectAIPanel = ({
               </div>
             )}
 
+            {/* Quick Mode Templates Section */}
+            {projectSummary?.template_items && projectSummary.template_items.length > 0 && (
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-3 border border-amber-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <ClipboardList className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-slate-700">Quick Mode Templates</span>
+                  <Badge className="ml-auto bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">
+                    <ShieldCheck className="h-3 w-3 mr-0.5" />
+                    Verified
+                  </Badge>
+                </div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {projectSummary.template_items.map((template: any, idx: number) => (
+                    <div 
+                      key={idx} 
+                      className="bg-white/70 rounded px-2 py-2 border border-amber-100 hover:border-amber-300 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{template.icon || '📋'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-700 truncate">
+                            {template.name || template.title || `Template ${idx + 1}`}
+                          </p>
+                          {template.description && (
+                            <p className="text-[10px] text-slate-500 truncate">{template.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] text-amber-600">
+                          {template.materials?.length > 0 && (
+                            <span className="bg-amber-100 px-1.5 py-0.5 rounded">
+                              {template.materials.length} materials
+                            </span>
+                          )}
+                          {template.checklist?.length > 0 && (
+                            <span className="bg-amber-100 px-1.5 py-0.5 rounded">
+                              {template.checklist.length} tasks
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Show template materials preview */}
+                      {template.materials && template.materials.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {template.materials.slice(0, 3).map((mat: any, mIdx: number) => (
+                            <span 
+                              key={mIdx} 
+                              className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded"
+                            >
+                              {mat.name || mat.description || `Item ${mIdx + 1}`}
+                            </span>
+                          ))}
+                          {template.materials.length > 3 && (
+                            <span className="text-[10px] text-slate-400">
+                              +{template.materials.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-amber-500" />
+                  Templates applied from Quick Mode workflow
+                </p>
+              </div>
+            )}
+
             {/* Quick Actions */}
             <div className="border-t border-slate-100 pt-3 mt-3">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
