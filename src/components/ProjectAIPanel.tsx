@@ -7,7 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Send, Loader2, Brain, Sparkles, ShieldCheck, AlertCircle, 
   BookOpen, Zap, Crown, Users, Mail, FileText, Calculator,
-  FileCheck
+  FileCheck, CheckCircle2, XCircle, Camera, ClipboardList, 
+  ScrollText, DollarSign, Contact
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -45,8 +46,18 @@ interface ProjectSummary {
   labor_cost?: number;
   client_name?: string;
   client_email?: string;
+  client_address?: string;
+  client_phone?: string;
   photo_estimate?: any;
   calculator_results?: any[];
+  template_items?: any[];
+}
+
+interface ProjectContract {
+  id: string;
+  contract_number: string;
+  status: string;
+  total_amount?: number | null;
 }
 
 interface TeamMember {
@@ -71,6 +82,7 @@ interface ProjectAIPanelProps {
   documents: ProjectDocument[];
   siteImages: string[];
   projectSummary?: ProjectSummary | null;
+  projectContracts?: ProjectContract[];
   teamMembers?: TeamMember[];
   tasks?: Task[];
   isOwner?: boolean;
@@ -145,6 +157,7 @@ const ProjectAIPanel = ({
   documents, 
   siteImages,
   projectSummary,
+  projectContracts = [],
   teamMembers = [],
   tasks = [],
   isOwner = false,
@@ -319,38 +332,116 @@ const ProjectAIPanel = ({
         )}
       </div>
 
-      {/* Context Summary Bar */}
-      <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center gap-3 text-xs overflow-x-auto">
-        {documents.length > 0 && (
-          <div className="flex items-center gap-1.5 text-slate-600 whitespace-nowrap">
-            <FileText className="h-3.5 w-3.5" />
-            <span>{documents.length} docs</span>
+      {/* Operational Truth Data Status - 8 Elements */}
+      <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-slate-600">Operational Truth Elements</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+            <span className="text-xs text-slate-500">Gemini</span>
+            <span className="text-slate-300">+</span>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-xs text-slate-500">GPT-5</span>
           </div>
-        )}
-        {siteImages.length > 0 && (
-          <div className="flex items-center gap-1.5 text-slate-600 whitespace-nowrap">
-            <FileCheck className="h-3.5 w-3.5" />
-            <span>{siteImages.length} photos</span>
+        </div>
+        
+        {/* 8 Elements Grid */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {/* 1. Photo Estimate */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectSummary?.photo_estimate && Object.keys(projectSummary.photo_estimate).length > 0
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-slate-200 text-slate-500"
+          }`}>
+            {projectSummary?.photo_estimate && Object.keys(projectSummary.photo_estimate).length > 0
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <XCircle className="h-3 w-3" />}
+            <span className="truncate">1. Photo</span>
           </div>
-        )}
-        {projectSummary && (
-          <div className="flex items-center gap-1.5 text-green-600 whitespace-nowrap">
-            <Calculator className="h-3.5 w-3.5" />
-            <span>Estimate</span>
+          
+          {/* 2. Templates */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectSummary?.template_items && projectSummary.template_items.length > 0
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-slate-200 text-slate-500"
+          }`}>
+            {projectSummary?.template_items && projectSummary.template_items.length > 0
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <XCircle className="h-3 w-3" />}
+            <span className="truncate">2. Template</span>
           </div>
-        )}
-        {teamMembers.length > 0 && (
-          <div className="flex items-center gap-1.5 text-blue-600 whitespace-nowrap">
-            <Users className="h-3.5 w-3.5" />
-            <span>{teamMembers.length} team</span>
+          
+          {/* 3. Calculator */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectSummary?.calculator_results && projectSummary.calculator_results.length > 0
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-slate-200 text-slate-500"
+          }`}>
+            {projectSummary?.calculator_results && projectSummary.calculator_results.length > 0
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <XCircle className="h-3 w-3" />}
+            <span className="truncate">3. Calc</span>
           </div>
-        )}
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-          <span className="text-slate-500">Gemini</span>
-          <span className="text-slate-300">+</span>
-          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-slate-500">GPT-5</span>
+          
+          {/* 4. Quote Items */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectSummary?.line_items && projectSummary.line_items.length > 0
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-slate-200 text-slate-500"
+          }`}>
+            {projectSummary?.line_items && projectSummary.line_items.length > 0
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <XCircle className="h-3 w-3" />}
+            <span className="truncate">4. Quote</span>
+          </div>
+          
+          {/* 5. Client Info */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectSummary?.client_name || projectSummary?.client_email
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-slate-200 text-slate-500"
+          }`}>
+            {projectSummary?.client_name || projectSummary?.client_email
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <XCircle className="h-3 w-3" />}
+            <span className="truncate">5. Client</span>
+          </div>
+          
+          {/* 6. Quote Total */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectSummary?.total_cost && projectSummary.total_cost > 0
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-slate-200 text-slate-500"
+          }`}>
+            {projectSummary?.total_cost && projectSummary.total_cost > 0
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <XCircle className="h-3 w-3" />}
+            <span className="truncate">6. Total</span>
+          </div>
+          
+          {/* 7. Contract Preview */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectContracts.length > 0
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-amber-100 text-amber-700"
+          }`}>
+            {projectContracts.length > 0
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <AlertCircle className="h-3 w-3" />}
+            <span className="truncate">7. Contract</span>
+          </div>
+          
+          {/* 8. Contract PDF (Signed) */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+            projectContracts.some(c => c.status === 'complete' || c.status === 'signed')
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-amber-100 text-amber-700"
+          }`}>
+            {projectContracts.some(c => c.status === 'complete' || c.status === 'signed')
+              ? <CheckCircle2 className="h-3 w-3" />
+              : <AlertCircle className="h-3 w-3" />}
+            <span className="truncate">8. Signed</span>
+          </div>
         </div>
       </div>
 
