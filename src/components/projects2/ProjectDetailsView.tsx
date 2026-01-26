@@ -33,9 +33,11 @@ import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
 import TaskGanttTimeline from "./TaskGanttTimeline";
+import HierarchicalTimeline from "./HierarchicalTimeline";
 import BaselineLockCard from "./BaselineLockCard";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
+import { useWeather } from "@/hooks/useWeather";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useSingleProjectConflicts } from "@/hooks/useSingleProjectConflicts";
 import { useProjectTeam } from "@/hooks/useProjectTeam";
@@ -152,6 +154,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [tasks, setTasks] = useState<TaskWithBudget[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [totalTaskBudget, setTotalTaskBudget] = useState(0);
+  const [timelineView, setTimelineView] = useState<"gantt" | "hierarchical">("hierarchical");
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -190,6 +193,13 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     longitude: undefined,
     status: undefined as "on_site" | "en_route" | "away" | undefined,
   }));
+
+  // Weather data for timeline integration
+  const { forecast: weatherForecast } = useWeather({
+    location: project?.address || undefined,
+    days: 5,
+    enabled: !!project?.address,
+  });
 
   // Fetch project and summary
   useEffect(() => {
@@ -816,17 +826,52 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             />
           )}
 
-          {/* Task Gantt Timeline */}
+          {/* Timeline View Toggle */}
+          {tasks.length > 0 && (
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
+              <div className="flex border rounded-md overflow-hidden">
+                <Button
+                  variant={timelineView === "hierarchical" ? "default" : "ghost"}
+                  size="sm"
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setTimelineView("hierarchical")}
+                >
+                  {t("timeline.phases", "Phases")}
+                </Button>
+                <Button
+                  variant={timelineView === "gantt" ? "default" : "ghost"}
+                  size="sm"
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setTimelineView("gantt")}
+                >
+                  {t("timeline.gantt", "Gantt")}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Timeline Content */}
           {tasksLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
             </div>
           ) : tasks.length > 0 ? (
-            <TaskGanttTimeline
-              tasks={tasks}
-              isOwner={isOwner}
-              onBudgetUpdate={handleBudgetUpdate}
-            />
+            timelineView === "hierarchical" ? (
+              <HierarchicalTimeline
+                tasks={tasks}
+                materials={aiAnalysis?.materials}
+                weatherForecast={weatherForecast}
+                projectAddress={project.address || undefined}
+                onTaskClick={(task) => console.log("Task clicked:", task)}
+              />
+            ) : (
+              <TaskGanttTimeline
+                tasks={tasks}
+                isOwner={isOwner}
+                onBudgetUpdate={handleBudgetUpdate}
+              />
+            )
           ) : (
             <ActiveProjectTimeline 
               projectId={projectId}

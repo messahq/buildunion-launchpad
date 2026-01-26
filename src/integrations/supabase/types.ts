@@ -14,6 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      baseline_versions: {
+        Row: {
+          change_reason: string
+          changed_at: string
+          changed_by: string
+          created_at: string
+          id: string
+          previous_version_id: string | null
+          project_id: string
+          snapshot: Json
+          summary_id: string
+          version_number: number
+        }
+        Insert: {
+          change_reason: string
+          changed_at?: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          previous_version_id?: string | null
+          project_id: string
+          snapshot: Json
+          summary_id: string
+          version_number?: number
+        }
+        Update: {
+          change_reason?: string
+          changed_at?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          previous_version_id?: string | null
+          project_id?: string
+          snapshot?: Json
+          summary_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseline_versions_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "baseline_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_baseline_versions_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_baseline_versions_summary"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "project_summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bu_profiles: {
         Row: {
           availability: string | null
@@ -461,6 +522,7 @@ export type Database = {
           client_name: string | null
           client_phone: string | null
           created_at: string
+          current_baseline_version_id: string | null
           id: string
           invoice_id: string | null
           invoice_sent_at: string | null
@@ -491,6 +553,7 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
+          current_baseline_version_id?: string | null
           id?: string
           invoice_id?: string | null
           invoice_sent_at?: string | null
@@ -521,6 +584,7 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
+          current_baseline_version_id?: string | null
           id?: string
           invoice_id?: string | null
           invoice_sent_at?: string | null
@@ -540,6 +604,13 @@ export type Database = {
           verified_facts?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_summaries_current_baseline_version_id_fkey"
+            columns: ["current_baseline_version_id"]
+            isOneToOne: false
+            referencedRelation: "baseline_versions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_summaries_project_id_fkey"
             columns: ["project_id"]
