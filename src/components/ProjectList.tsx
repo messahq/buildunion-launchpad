@@ -27,13 +27,18 @@ interface DraftData {
   data: any;
 }
 
-const ProjectList = () => {
+interface ProjectListProps {
+  onProjectSelect?: (id: string, name: string) => void;
+}
+
+const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [draftData, setDraftData] = useState<DraftData | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -312,54 +317,93 @@ const ProjectList = () => {
       {/* Own Projects Grid */}
       {ownProjects.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ownProjects.map((project) => (
-            <Card 
-              key={project.id} 
-              className="border-border bg-card hover:border-amber-400 hover:shadow-md transition-all duration-200 cursor-pointer group"
-              onClick={() => navigate(`/buildunion/project/${project.id}`)}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/20 dark:group-hover:bg-amber-500/30 transition-colors">
-                    <Folder className="h-5 w-5 text-amber-600" />
+          {ownProjects.map((project) => {
+            const isSelected = selectedProjectId === project.id;
+            return (
+              <Card 
+                key={project.id} 
+                className={`border-border bg-card hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                  isSelected ? 'border-amber-500 ring-2 ring-amber-200 shadow-md' : 'hover:border-amber-400'
+                }`}
+                onClick={(e) => {
+                  // Toggle selection
+                  if (isSelected) {
+                    setSelectedProjectId(null);
+                    onProjectSelect?.('', '');
+                  } else {
+                    setSelectedProjectId(project.id);
+                    onProjectSelect?.(project.id, project.name);
+                  }
+                }}
+                onDoubleClick={() => navigate(`/buildunion/project/${project.id}`)}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                      isSelected 
+                        ? 'bg-amber-500/30 dark:bg-amber-500/40' 
+                        : 'bg-amber-500/10 dark:bg-amber-500/20 group-hover:bg-amber-500/20 dark:group-hover:bg-amber-500/30'
+                    }`}>
+                      <Folder className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isSelected && (
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
+                          Selected
+                        </Badge>
+                      )}
+                      <Badge className={`text-xs ${getStatusColor(project.status)}`}>
+                        {project.status}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => handleDeleteProject(e, project)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={`text-xs ${getStatusColor(project.status)}`}>
-                      {project.status}
-                    </Badge>
+                  <CardTitle className={`text-lg font-semibold mt-3 transition-colors ${
+                    isSelected ? 'text-amber-700' : 'text-foreground group-hover:text-amber-600'
+                  }`}>
+                    {project.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {project.description && (
+                    <CardDescription className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                      {project.description}
+                    </CardDescription>
+                  )}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {formatDate(project.created_at)}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <FileText className="h-3 w-3" />
+                        Documents
+                      </div>
+                    </div>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => handleDeleteProject(e, project)}
+                      size="sm"
+                      className="h-6 px-2 text-[10px] text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/buildunion/project/${project.id}`);
+                      }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Open →
                     </Button>
                   </div>
-                </div>
-                <CardTitle className="text-lg font-semibold text-foreground mt-3 group-hover:text-amber-600 transition-colors">
-                  {project.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {project.description && (
-                  <CardDescription className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                    {project.description}
-                  </CardDescription>
-                )}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(project.created_at)}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <FileText className="h-3 w-3" />
-                    Documents
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
