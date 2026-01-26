@@ -120,6 +120,25 @@
     "conflictDetection": "Konfliktus Észlelés",
     "reportsEnabled": "Jelentések Engedélyezve"
   },
+  "decisionLog": {
+    "title": "AI Döntési Napló",
+    "upgradeMessage": "Frissíts Pro-ra a részletes AI indoklás és motor kimenetek megtekintéséhez.",
+    "conflictDetected": "KONFLIKTUS",
+    "enginesUsed": "Használt Motorok",
+    "areaComparison": "Terület Összehasonlítás",
+    "photoDetected": "Fotó AI",
+    "blueprint": "Tervrajz",
+    "areaConflictWarning": "A terület mérések több mint 10%-kal eltérnek. Manuális ellenőrzés javasolt.",
+    "rawOutputs": "Motor Kimenetek",
+    "synthesis": "Szintézis Eredmény",
+    "materialsDetected": "Észlelt Anyagok"
+  },
+  "tiers": {
+    "proDescription": "Haladó AI elemzés és csapat funkciók feloldása",
+    "premiumDescription": "Teljes hozzáférés konfliktus vizualizációval és prioritás támogatással",
+    "enterpriseDescription": "Egyedi megoldások nagy szervezeteknek",
+    "clickToUpgrade": "Kattints a frissítéshez"
+  },
   "auth": {
     "email": "Email",
     "password": "Jelszó",

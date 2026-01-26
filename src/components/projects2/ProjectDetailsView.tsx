@@ -27,8 +27,10 @@ import ConflictStatusIndicator from "./ConflictStatusIndicator";
 import TeamMapWidget from "./TeamMapWidget";
 import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
+import { DecisionLogPanel } from "./DecisionLogPanel";
 import { buildOperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
+import { useSubscription } from "@/hooks/useSubscription";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -113,6 +115,13 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const { t } = useTranslation();
+  const { subscription, isDevOverride } = useSubscription();
+  
+  // Derive tier status - check for Pro or higher
+  const isPro = isDevOverride || 
+    subscription?.tier === "pro" || 
+    subscription?.tier === "premium" || 
+    subscription?.tier === "enterprise";
 
   // Load project data
   useEffect(() => {
@@ -390,6 +399,21 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               </CardContent>
             </Card>
           )}
+
+          {/* AI Decision Log Panel - Pro+ feature */}
+          <DecisionLogPanel
+            geminiOutput={dualEngineOutput?.gemini?.rawExcerpt || (dualEngineOutput?.gemini ? JSON.stringify(dualEngineOutput.gemini.visualFindings) : null)}
+            openaiOutput={dualEngineOutput?.openai?.rawExcerpt || (dualEngineOutput?.openai ? JSON.stringify(dualEngineOutput.openai.regulatoryNotes) : null)}
+            synthesisResult={synthesisResult ? {
+              answer: `Area: ${synthesisResult.operationalTruth?.confirmedArea || "N/A"} ${synthesisResult.operationalTruth?.areaUnit || "sq ft"}`,
+              verification_status: synthesisResult.verificationStatus === "conflicts_detected" ? "conflict" : synthesisResult.verificationStatus,
+              sources: synthesisResult.conflicts,
+            } : null}
+            detectedArea={aiAnalysis?.area}
+            blueprintArea={blueprintAnalysis?.detectedArea}
+            materials={aiAnalysis?.materials}
+            isPro={isPro}
+          />
 
           {/* Empty state if no AI data */}
           {!filterAnswers && !aiAnalysis && (
