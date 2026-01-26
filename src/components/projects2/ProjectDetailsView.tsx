@@ -1018,15 +1018,41 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           </TabsContent>
         )}
 
-        {/* Materials Tab - Material Calculation */}
+        {/* Materials Tab - Material Calculation from AI-analyzed tasks */}
         <TabsContent value="materials" className="mt-6">
           <MaterialCalculationTab 
-            materials={aiAnalysis?.materials || [
-              { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
-              { item: "Underlayment", quantity: 1400, unit: "sq ft" },
-              { item: "Baseboard Trim", quantity: 280, unit: "linear ft" },
-              { item: "Adhesive & Supplies", quantity: 15, unit: "units" }
-            ]}
+            materials={(() => {
+              // Aggregate unique materials from tasks with their prices
+              type MaterialEntry = { item: string; quantity: number; unit: string; unitPrice: number };
+              const materialMap: Record<string, MaterialEntry> = {};
+              
+              tasks.forEach(task => {
+                // Extract material name from task title (e.g., "Order Laminate Flooring" -> "Laminate Flooring")
+                const materialMatch = task.title.match(/(?:Order|Install|Deliver|Verify)\s+(.+?)(?:\s+to site)?$/i);
+                const materialName = materialMatch ? materialMatch[1] : task.title;
+                
+                // Only count "Order" tasks to avoid duplicating quantities
+                if (task.title.toLowerCase().startsWith('order') && task.quantity) {
+                  if (!materialMap[materialName]) {
+                    materialMap[materialName] = {
+                      item: materialName,
+                      quantity: task.quantity,
+                      unit: task.description?.match(/(\d+)\s+(\w+\s*\w*)\s+of/)?.[2] || "units",
+                      unitPrice: task.unit_price || 0,
+                    };
+                  }
+                }
+              });
+              
+              const result = Object.values(materialMap);
+              
+              // Fallback to AI analysis if no tasks
+              if (result.length === 0 && aiAnalysis?.materials) {
+                return aiAnalysis.materials;
+              }
+              
+              return result;
+            })()}
           />
         </TabsContent>
 

@@ -25,8 +25,15 @@ interface MaterialItem {
   totalPrice: number;
 }
 
+interface TaskBasedMaterial {
+  item: string;
+  quantity: number;
+  unit: string;
+  unitPrice?: number;
+}
+
 interface MaterialCalculationTabProps {
-  materials: { item: string; quantity: number; unit: string }[];
+  materials: TaskBasedMaterial[];
   onMaterialsChange?: (materials: MaterialItem[]) => void;
   currency?: string;
 }
@@ -45,8 +52,8 @@ export function MaterialCalculationTab({
       item: m.item,
       quantity: m.quantity,
       unit: m.unit,
-      unitPrice: 0,
-      totalPrice: 0,
+      unitPrice: m.unitPrice || 0,
+      totalPrice: m.quantity * (m.unitPrice || 0),
     }))
   );
   
