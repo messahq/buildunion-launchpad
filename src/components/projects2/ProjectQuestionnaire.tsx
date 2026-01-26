@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { 
   MapPin, 
   Camera,
@@ -259,9 +259,6 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
   // Validation - name is required, work type helps AI
   const isValid = answers.name.trim().length >= 2;
 
-  // Always show recommendation based on current answers
-  const recommendation = determineWorkflow(answers);
-
   return (
     <div className="space-y-6 p-4">
       {/* Header */}
@@ -453,42 +450,23 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
           />
         </div>
 
-        {/* AI Recommendation Preview */}
-        {recommendation && (
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-foreground">
-                    Recommended: {recommendation.mode === "quick" ? "Quick Mode" : recommendation.mode === "standard" ? "Standard Workflow" : "Full Project Management"}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {recommendation.estimatedSteps} steps • {recommendation.features.slice(0, 3).join(", ")}
-                    {recommendation.features.length > 3 && ` +${recommendation.features.length - 3} more`}
-                  </div>
-                </div>
-              </div>
-              
-              {/* AI Analysis Info */}
-              {(answers.images.length > 0 || answers.documents.length > 0) && (
-                <div className="text-xs text-primary bg-primary/10 rounded-lg p-2 space-y-1">
-                  <strong>AI will analyze:</strong>
-                  {answers.images.length > 0 && (
-                    <div>📷 {answers.images.length} photo(s) for surface detection & material estimation</div>
-                  )}
-                  {answers.documents.length > 0 && (
-                    <div>📄 {answers.documents.length} PDF(s) for area measurements & dimensions</div>
-                  )}
-                  {tierConfig?.isPremium && (
-                    <div className="text-primary font-medium">✨ Deep structural analysis enabled</div>
-                  )}
-                </div>
+        {/* AI Analysis Hint - shown only when files are uploaded */}
+        {(answers.images.length > 0 || answers.documents.length > 0) && (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div className="font-medium text-foreground">AI will analyze your uploads:</div>
+              {answers.images.length > 0 && (
+                <div>📷 {answers.images.length} photo(s) - surface detection & material estimation</div>
               )}
-            </CardContent>
-          </Card>
+              {answers.documents.length > 0 && (
+                <div>📄 {answers.documents.length} PDF(s) - area measurements & dimensions</div>
+              )}
+              {tierConfig?.isPremium && (
+                <div className="text-primary font-medium">✨ Deep structural analysis enabled</div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
