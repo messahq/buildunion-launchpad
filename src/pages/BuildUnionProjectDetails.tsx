@@ -121,7 +121,7 @@ const BuildUnionProjectDetails = () => {
   const [viewingContractId, setViewingContractId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBlueprintPanel, setShowBlueprintPanel] = useState(false);
-  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "contracts">("documents");
+  const [blueprintTab, setBlueprintTab] = useState<"ai" | "documents" | "facts" | "requirements" | "team" | "contracts">("ai");
   const [showStatsPopup, setShowStatsPopup] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState<"pro" | "premium" | null>(null);
   const [projectMode, setProjectMode] = useState<"solo" | "team">("team"); // Team projects are team by default
@@ -1384,7 +1384,20 @@ const BuildUnionProjectDetails = () => {
                     {/* Analysis Tabs */}
                     <div className="border-b border-slate-200 overflow-x-auto">
                       <div className="flex min-w-max">
-                        {/* Documents - First */}
+                        {/* AI Synthesis - First (Core Intelligence Hub) */}
+                        <button
+                          onClick={() => handleTabClick("ai", "pro")}
+                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                            blueprintTab === "ai" 
+                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
+                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Brain className="w-4 h-4" />
+                          AI Synthesis
+                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
+                        </button>
+                        {/* Documents */}
                         <button
                           onClick={() => handleTabClick("documents", "pro")}
                           className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
@@ -1433,19 +1446,6 @@ const BuildUnionProjectDetails = () => {
                         >
                           <ScrollText className="w-4 h-4" />
                           Contracts
-                        </button>
-                        {/* AI Synthesis */}
-                        <button
-                          onClick={() => handleTabClick("ai", "pro")}
-                          className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                            blueprintTab === "ai" 
-                              ? "text-cyan-700 border-b-2 border-cyan-500 bg-cyan-50/50" 
-                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          <Brain className="w-4 h-4" />
-                          AI Synthesis
-                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">PRO</span>
                         </button>
                         {/* Operational Truth (Facts) - Last */}
                         <button
@@ -1517,6 +1517,12 @@ const BuildUnionProjectDetails = () => {
                           documents={documents}
                           siteImages={project.site_images || []}
                           projectSummary={projectSummary}
+                          projectContracts={projectContracts.map(c => ({
+                            id: c.id,
+                            contract_number: c.contract_number,
+                            status: c.status,
+                            total_amount: c.total_amount
+                          }))}
                           isOwner={project.user_id === user.id}
                           isPremium={isPremium}
                         />
