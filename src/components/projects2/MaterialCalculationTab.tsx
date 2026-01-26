@@ -17,7 +17,8 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  Loader2
+  Loader2,
+  MapPin
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -48,6 +49,10 @@ interface MaterialCalculationTabProps {
   projectName?: string;
   projectAddress?: string;
   companyName?: string;
+  companyLogoUrl?: string | null;
+  companyPhone?: string | null;
+  companyEmail?: string | null;
+  companyWebsite?: string | null;
   onCostsChange?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[] }) => void;
   currency?: string;
 }
@@ -115,6 +120,10 @@ export function MaterialCalculationTab({
   projectName = "Project",
   projectAddress = "",
   companyName,
+  companyLogoUrl,
+  companyPhone,
+  companyEmail,
+  companyWebsite,
   onCostsChange,
   currency = "CAD"
 }: MaterialCalculationTabProps) {
@@ -316,16 +325,21 @@ export function MaterialCalculationTab({
         </head>
         <body>
           <div style="max-width: 800px; margin: 0 auto; padding: 40px;">
-            <!-- Header -->
+            <!-- Header with Company Branding -->
             <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 12px; margin-bottom: 32px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                  <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">Cost Breakdown</h1>
-                  <p style="font-size: 14px; opacity: 0.9;">${projectName}</p>
-                  ${projectAddress ? `<p style="font-size: 12px; opacity: 0.7; margin-top: 4px;">📍 ${projectAddress}</p>` : ''}
+                <div style="display: flex; align-items: center; gap: 16px;">
+                  ${companyLogoUrl ? `
+                    <img src="${companyLogoUrl}" alt="Company Logo" style="height: 56px; width: auto; max-width: 140px; object-fit: contain; background: white; padding: 6px; border-radius: 8px;" />
+                  ` : ''}
+                  <div>
+                    <h1 style="font-size: ${companyName ? '20px' : '28px'}; font-weight: 700; margin-bottom: 4px;">${companyName || 'Cost Breakdown'}</h1>
+                    ${companyName ? `<p style="font-size: 14px; opacity: 0.9;">Cost Breakdown</p>` : ''}
+                    <p style="font-size: 14px; opacity: 0.9; margin-top: 4px;">${projectName}</p>
+                    ${projectAddress ? `<p style="font-size: 12px; opacity: 0.7; margin-top: 4px;">📍 ${projectAddress}</p>` : ''}
+                  </div>
                 </div>
                 <div style="text-align: right;">
-                  ${companyName ? `<p style="font-size: 16px; font-weight: 600;">${companyName}</p>` : ''}
                   <p style="font-size: 12px; opacity: 0.8;">Generated: ${currentDate}</p>
                   <div style="margin-top: 8px; background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 6px; display: inline-block;">
                     <span style="font-size: 11px; opacity: 0.9;">Tax Region: </span>
@@ -333,7 +347,15 @@ export function MaterialCalculationTab({
                   </div>
                 </div>
               </div>
-            </div>
+              
+              <!-- Company Contact Info Bar -->
+              ${(companyPhone || companyEmail || companyWebsite) ? `
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; gap: 24px; flex-wrap: wrap; font-size: 12px; opacity: 0.9;">
+                  ${companyPhone ? `<span>📞 ${companyPhone}</span>` : ''}
+                  ${companyEmail ? `<span>✉️ ${companyEmail}</span>` : ''}
+                  ${companyWebsite ? `<span>🌐 ${companyWebsite}</span>` : ''}
+                </div>
+              ` : ''}
 
             <!-- Materials Section -->
             ${materialItems.length > 0 ? `
@@ -471,11 +493,32 @@ export function MaterialCalculationTab({
               </div>
             </div>
 
-            <!-- Footer -->
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px;">
-              <p>This is a cost breakdown generated for project estimation purposes.</p>
-              <p style="margin-top: 4px;">Tax rates applicable for ${taxInfo.provinceName}, Canada</p>
-              <p style="margin-top: 4px;">Generated on ${currentDate}</p>
+            <!-- Footer with Company Branding -->
+            <div style="margin-top: 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 24px; border-radius: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  ${companyLogoUrl ? `
+                    <img src="${companyLogoUrl}" alt="Company Logo" style="height: 40px; width: auto; max-width: 100px; object-fit: contain; background: white; padding: 4px; border-radius: 6px;" />
+                  ` : ''}
+                  <div>
+                    <p style="font-weight: 600; font-size: 14px;">${companyName || 'BuildUnion'}</p>
+                    ${(companyPhone || companyEmail) ? `
+                      <p style="font-size: 11px; opacity: 0.8; margin-top: 2px;">
+                        ${companyPhone ? `📞 ${companyPhone}` : ''} ${companyPhone && companyEmail ? ' • ' : ''} ${companyEmail ? `✉️ ${companyEmail}` : ''}
+                      </p>
+                    ` : ''}
+                    ${companyWebsite ? `<p style="font-size: 11px; opacity: 0.8;">🌐 ${companyWebsite}</p>` : ''}
+                  </div>
+                </div>
+                <div style="text-align: right; font-size: 11px; opacity: 0.8;">
+                  <p>Cost breakdown for project estimation purposes</p>
+                  <p style="margin-top: 2px;">Tax rates: ${taxInfo.provinceName}, Canada</p>
+                  <p style="margin-top: 2px; font-style: italic;">Licensed & Insured</p>
+                </div>
+              </div>
+              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; font-size: 10px; opacity: 0.7;">
+                Generated on ${currentDate}
+              </div>
             </div>
           </div>
         </body>
@@ -876,55 +919,124 @@ export function MaterialCalculationTab({
         </Card>
       </Collapsible>
 
-      {/* Grand Total - matching project total with beige background */}
+      {/* Grand Total - matching project total with beige background and tax */}
       <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
         <CardContent className="py-4">
-          <div className="space-y-3">
-            {/* Section subtotals */}
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Package className="h-3.5 w-3.5 text-blue-500" />
-                <span>Materials</span>
-              </div>
-              <div className="text-right font-medium">{formatCurrency(materialsTotal)}</div>
-              
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Hammer className="h-3.5 w-3.5 text-amber-500" />
-                <span>Labor</span>
-              </div>
-              <div className="text-right font-medium">{formatCurrency(laborTotal)}</div>
-              
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MoreHorizontal className="h-3.5 w-3.5 text-purple-500" />
-                <span>Other</span>
-              </div>
-              <div className="text-right font-medium">{formatCurrency(otherTotal)}</div>
-            </div>
-            
-            {/* Divider */}
-            <div className="border-t border-amber-300 dark:border-amber-700" />
-            
-            {/* Grand Total */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-amber-700 dark:text-amber-400" />
-                <span className="font-semibold text-lg text-amber-900 dark:text-amber-200">
-                  {t("materials.grandTotal", "Grand Total")}
-                </span>
-              </div>
-              <div className="text-2xl font-bold text-amber-800 dark:text-amber-300">
-                {formatCurrency(grandTotal)}
-              </div>
-            </div>
+          {(() => {
+            const taxInfo = getCanadianTaxRates(projectAddress);
+            const subtotal = grandTotal;
+            const gstAmount = taxInfo.gst > 0 ? subtotal * taxInfo.gst : 0;
+            const pstAmount = taxInfo.pst > 0 ? subtotal * taxInfo.pst : 0;
+            const hstAmount = taxInfo.hst > 0 ? subtotal * taxInfo.hst : 0;
+            const totalTax = gstAmount + pstAmount + hstAmount;
+            const grandTotalWithTax = subtotal + totalTax;
 
-            {/* Comparison with project total */}
-            {Math.abs(grandTotal - projectTotal) > 0.01 && projectTotal > 0 && (
-              <div className="flex items-center justify-between text-xs text-amber-700/70 dark:text-amber-400/70 pt-2 border-t border-dashed border-amber-300 dark:border-amber-700">
-                <span>Project Total (from tasks)</span>
-                <span className="font-medium">{formatCurrency(projectTotal)}</span>
+            return (
+              <div className="space-y-3">
+                {/* Section subtotals */}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Package className="h-3.5 w-3.5 text-blue-500" />
+                    <span>Materials</span>
+                  </div>
+                  <div className="text-right font-medium">{formatCurrency(materialsTotal)}</div>
+                  
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Hammer className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Labor</span>
+                  </div>
+                  <div className="text-right font-medium">{formatCurrency(laborTotal)}</div>
+                  
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MoreHorizontal className="h-3.5 w-3.5 text-purple-500" />
+                    <span>Other</span>
+                  </div>
+                  <div className="text-right font-medium">{formatCurrency(otherTotal)}</div>
+                </div>
+                
+                {/* Subtotal */}
+                <div className="border-t border-amber-300 dark:border-amber-700 pt-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-800 dark:text-amber-300 font-medium">Subtotal</span>
+                    <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                  </div>
+                </div>
+
+                {/* Tax Region & Breakdown */}
+                {projectAddress && (
+                  <div className="bg-amber-100/50 dark:bg-amber-900/30 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <MapPin className="h-3.5 w-3.5 text-amber-600" />
+                      <span className="text-amber-700 dark:text-amber-400 font-medium">
+                        Tax Region: {taxInfo.provinceName} ({taxInfo.provinceCode})
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-1 text-sm">
+                      {taxInfo.hst > 0 && (
+                        <>
+                          <span className="text-amber-700/80 dark:text-amber-400/80">
+                            HST ({(taxInfo.hst * 100).toFixed(0)}%)
+                          </span>
+                          <span className="text-right font-medium">{formatCurrency(hstAmount)}</span>
+                        </>
+                      )}
+                      {taxInfo.gst > 0 && (
+                        <>
+                          <span className="text-amber-700/80 dark:text-amber-400/80">
+                            GST ({(taxInfo.gst * 100).toFixed(0)}%)
+                          </span>
+                          <span className="text-right font-medium">{formatCurrency(gstAmount)}</span>
+                        </>
+                      )}
+                      {taxInfo.pst > 0 && (
+                        <>
+                          <span className="text-amber-700/80 dark:text-amber-400/80">
+                            {taxInfo.provinceCode === 'QC' ? 'QST' : 'PST'} ({(taxInfo.pst * 100).toFixed(taxInfo.provinceCode === 'QC' ? 3 : 0)}%)
+                          </span>
+                          <span className="text-right font-medium">{formatCurrency(pstAmount)}</span>
+                        </>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-between text-sm border-t border-dashed border-amber-300 dark:border-amber-600 pt-1">
+                      <span className="text-amber-800 dark:text-amber-300 font-medium">Total Tax</span>
+                      <span className="font-semibold">{formatCurrency(totalTax)}</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Divider */}
+                <div className="border-t-2 border-amber-400 dark:border-amber-600" />
+                
+                {/* Grand Total with Tax */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+                    <div>
+                      <span className="font-semibold text-lg text-amber-900 dark:text-amber-200">
+                        {t("materials.grandTotal", "Grand Total")}
+                      </span>
+                      <span className="text-xs text-amber-600 dark:text-amber-400 block">
+                        (incl. tax)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-amber-800 dark:text-amber-300">
+                    {formatCurrency(grandTotalWithTax)}
+                  </div>
+                </div>
+
+                {/* Comparison with project total */}
+                {Math.abs(grandTotalWithTax - projectTotal) > 0.01 && projectTotal > 0 && (
+                  <div className="flex items-center justify-between text-xs text-amber-700/70 dark:text-amber-400/70 pt-2 border-t border-dashed border-amber-300 dark:border-amber-700">
+                    <span>Project Total (from tasks)</span>
+                    <span className="font-medium">{formatCurrency(projectTotal)}</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>
