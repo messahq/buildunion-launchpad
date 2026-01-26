@@ -915,32 +915,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6 mt-6">
-          {/* AI Synthesis Card (if filter answers exist) */}
-          {filterAnswers && aiTriggers && (
-            <ProjectSynthesis
-              filterAnswers={filterAnswers}
-              aiTriggers={aiTriggers}
-              dualEngineOutput={dualEngineOutput}
-              synthesisResult={synthesisResult}
-            />
-          )}
-
-          {/* Project Description */}
-          {project.description && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  Project Description
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{project.description}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Editable AI Analysis Summary */}
+          {/* Editable AI Analysis Summary - Primary display for AI data */}
           {summary && (
             <EditableAIAnalysisSummary
               projectId={projectId}
@@ -961,6 +936,21 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                 window.location.reload();
               }}
             />
+          )}
+
+          {/* Project Description */}
+          {project.description && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  Project Description
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{project.description}</p>
+              </CardContent>
+            </Card>
           )}
 
           {/* AI Decision Log Panel - Pro+ feature */}
