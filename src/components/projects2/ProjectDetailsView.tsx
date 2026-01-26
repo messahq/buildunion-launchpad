@@ -497,19 +497,44 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
     fetchTasks();
 
-    // Subscribe to realtime updates
+    // Subscribe to realtime updates - but DON'T refetch on every change
+    // to prevent scroll position reset. Only handle INSERT/DELETE events.
     const channel = supabase
       .channel(`project_tasks_budget_${projectId}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "project_tasks",
           filter: `project_id=eq.${projectId}`,
         },
-        () => {
-          fetchTasks();
+        (payload) => {
+          // Only add new task if it doesn't already exist (prevents duplicates from our own inserts)
+          setTasks(prev => {
+            if (prev.some(t => t.id === payload.new.id)) return prev;
+            const newTask = {
+              ...payload.new,
+              unit_price: payload.new.unit_price || 0,
+              quantity: payload.new.quantity || 1,
+              total_cost: payload.new.total_cost || 0,
+              assignee_name: "Team Member",
+              assignee_avatar: undefined,
+            } as TaskWithBudget;
+            return [...prev, newTask];
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "project_tasks",
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          setTasks(prev => prev.filter(t => t.id !== payload.old.id));
         }
       )
       .subscribe();
