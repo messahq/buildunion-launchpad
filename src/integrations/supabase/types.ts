@@ -451,6 +451,9 @@ export type Database = {
       project_summaries: {
         Row: {
           ai_workflow_config: Json | null
+          baseline_locked_at: string | null
+          baseline_locked_by: string | null
+          baseline_snapshot: Json | null
           blueprint_analysis: Json | null
           calculator_results: Json | null
           client_address: string | null
@@ -478,6 +481,9 @@ export type Database = {
         }
         Insert: {
           ai_workflow_config?: Json | null
+          baseline_locked_at?: string | null
+          baseline_locked_by?: string | null
+          baseline_snapshot?: Json | null
           blueprint_analysis?: Json | null
           calculator_results?: Json | null
           client_address?: string | null
@@ -505,6 +511,9 @@ export type Database = {
         }
         Update: {
           ai_workflow_config?: Json | null
+          baseline_locked_at?: string | null
+          baseline_locked_by?: string | null
+          baseline_snapshot?: Json | null
           blueprint_analysis?: Json | null
           calculator_results?: Json | null
           client_address?: string | null
@@ -597,8 +606,11 @@ export type Database = {
           id: string
           priority: string
           project_id: string
+          quantity: number | null
           status: string
           title: string
+          total_cost: number | null
+          unit_price: number | null
           updated_at: string
         }
         Insert: {
@@ -610,8 +622,11 @@ export type Database = {
           id?: string
           priority?: string
           project_id: string
+          quantity?: number | null
           status?: string
           title: string
+          total_cost?: number | null
+          unit_price?: number | null
           updated_at?: string
         }
         Update: {
@@ -623,8 +638,11 @@ export type Database = {
           id?: string
           priority?: string
           project_id?: string
+          quantity?: number | null
           status?: string
           title?: string
+          total_cost?: number | null
+          unit_price?: number | null
           updated_at?: string
         }
         Relationships: [

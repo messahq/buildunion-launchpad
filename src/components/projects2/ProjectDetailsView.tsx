@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,8 @@ import {
   Loader2,
   Map,
   Download,
-  Users
+  Users,
+  DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,8 @@ import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
+import TaskGanttTimeline from "./TaskGanttTimeline";
+import BaselineLockCard from "./BaselineLockCard";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -107,6 +110,28 @@ interface ProjectSummaryData {
   client_phone: string | null;
   total_cost: number | null;
   line_items: unknown[];
+  baseline_snapshot: OperationalTruth | null;
+  baseline_locked_at: string | null;
+  baseline_locked_by: string | null;
+}
+
+interface TaskWithBudget {
+  id: string;
+  project_id: string;
+  assigned_to: string;
+  assigned_by: string;
+  title: string;
+  description: string | null;
+  priority: string;
+  status: string;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  unit_price?: number;
+  quantity?: number;
+  total_cost?: number;
+  assignee_name?: string;
+  assignee_avatar?: string;
 }
 
 interface ProjectDetailsViewProps {
@@ -124,6 +149,14 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [tasks, setTasks] = useState<TaskWithBudget[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [totalTaskBudget, setTotalTaskBudget] = useState(0);
+  const [baselineState, setBaselineState] = useState<{
+    snapshot: OperationalTruth | null;
+    lockedAt: string | null;
+    lockedBy: string | null;
+  }>({ snapshot: null, lockedAt: null, lockedBy: null });
   const { t } = useTranslation();
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
@@ -157,6 +190,8 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     longitude: undefined,
     status: undefined as "on_site" | "en_route" | "away" | undefined,
   }));
+
+  // Fetch project and summary
   useEffect(() => {
     const loadProject = async () => {
       setLoading(true);
@@ -185,7 +220,15 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         setProject(projectResult.data as ProjectData);
         
         if (summaryResult.data) {
-          setSummary(summaryResult.data as unknown as ProjectSummaryData);
+          const summaryData = summaryResult.data as unknown as ProjectSummaryData;
+          setSummary(summaryData);
+          
+          // Set baseline state from summary
+          setBaselineState({
+            snapshot: summaryData.baseline_snapshot as OperationalTruth | null,
+            lockedAt: summaryData.baseline_locked_at,
+            lockedBy: summaryData.baseline_locked_by,
+          });
         }
       } catch (error) {
         console.error("Error loading project:", error);
@@ -197,6 +240,118 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
     loadProject();
   }, [projectId, onBack]);
+
+  // Fetch tasks with budget data
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!projectId) return;
+      
+      setTasksLoading(true);
+      try {
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("project_tasks")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("due_date", { ascending: true });
+
+        if (tasksError) throw tasksError;
+
+        // Fetch team members for enrichment
+        const { data: membersData } = await supabase
+          .from("project_members")
+          .select("user_id, role")
+          .eq("project_id", projectId);
+
+        // Get profile info for each member
+        const memberProfiles: Record<string, { full_name: string; avatar_url?: string }> = {};
+        if (membersData) {
+          for (const member of membersData) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name, avatar_url")
+              .eq("user_id", member.user_id)
+              .maybeSingle();
+            
+            if (profile) {
+              memberProfiles[member.user_id] = {
+                full_name: profile.full_name || "Team Member",
+                avatar_url: profile.avatar_url || undefined,
+              };
+            }
+          }
+        }
+
+        // Enrich tasks
+        const enrichedTasks = (tasksData || []).map((task) => ({
+          ...task,
+          unit_price: task.unit_price || 0,
+          quantity: task.quantity || 1,
+          total_cost: task.total_cost || 0,
+          assignee_name: memberProfiles[task.assigned_to]?.full_name || "Unknown",
+          assignee_avatar: memberProfiles[task.assigned_to]?.avatar_url,
+        }));
+
+        setTasks(enrichedTasks);
+        
+        // Calculate total budget
+        const total = enrichedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+        setTotalTaskBudget(total);
+      } catch (err) {
+        console.error("Error fetching tasks:", err);
+      } finally {
+        setTasksLoading(false);
+      }
+    };
+
+    fetchTasks();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel(`project_tasks_budget_${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_tasks",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          fetchTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId]);
+
+  // Handle budget update callback
+  const handleBudgetUpdate = useCallback((taskId: string, unitPrice: number, quantity: number) => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, unit_price: unitPrice, quantity, total_cost: unitPrice * quantity }
+          : t
+      )
+    );
+    // Recalculate total
+    setTotalTaskBudget((prev) => {
+      const oldTask = tasks.find((t) => t.id === taskId);
+      const oldCost = oldTask?.total_cost || 0;
+      return prev - oldCost + unitPrice * quantity;
+    });
+  }, [tasks]);
+
+  // Handle baseline locked callback
+  const handleBaselineLocked = useCallback((baseline: OperationalTruth, lockedAt: string) => {
+    setBaselineState({
+      snapshot: baseline,
+      lockedAt,
+      lockedBy: user?.id || null,
+    });
+  }, [user?.id]);
 
   // Extract data from summary
   const aiConfig = summary?.ai_workflow_config;
@@ -373,6 +528,19 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
         {/* Header Actions */}
         <div className="flex items-center gap-3">
+          {/* Total Budget Display */}
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-sm font-semibold gap-1.5 hidden sm:flex",
+              totalTaskBudget > 0
+                ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
+                : "border-muted"
+            )}
+          >
+            <DollarSign className="h-3.5 w-3.5" />
+            Total: ${totalTaskBudget.toLocaleString()}
+          </Badge>
           {/* Generate Report Button - Premium Feature */}
           <div className="relative">
             <Button
@@ -635,11 +803,36 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         )}
 
         {/* Timeline Tab */}
-        <TabsContent value="timeline" className="mt-6">
-          <ActiveProjectTimeline 
-            projectId={projectId}
-            projectName={project.name}
-          />
+        <TabsContent value="timeline" className="mt-6 space-y-6">
+          {/* Baseline Lock Card */}
+          {summary && (
+            <BaselineLockCard
+              projectId={projectId}
+              summaryId={summary.id}
+              operationalTruth={operationalTruth}
+              currentBaseline={baselineState}
+              isOwner={isOwner}
+              onBaselineLocked={handleBaselineLocked}
+            />
+          )}
+
+          {/* Task Gantt Timeline */}
+          {tasksLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+            </div>
+          ) : tasks.length > 0 ? (
+            <TaskGanttTimeline
+              tasks={tasks}
+              isOwner={isOwner}
+              onBudgetUpdate={handleBudgetUpdate}
+            />
+          ) : (
+            <ActiveProjectTimeline 
+              projectId={projectId}
+              projectName={project.name}
+            />
+          )}
         </TabsContent>
 
         {/* Weather Tab */}
