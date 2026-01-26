@@ -136,34 +136,103 @@ serve(async (req) => {
     
     // If location string provided instead of coordinates, geocode it
     if (location && (!lat || !lon)) {
+      // Validate location string - skip obvious placeholders
+      const invalidLocations = ['test', 'example', 'placeholder', 'n/a', 'na', 'tbd', 'xxx', ''];
+      const normalizedLocation = location.toString().toLowerCase().trim();
+      
+      if (invalidLocations.includes(normalizedLocation) || normalizedLocation.length < 3) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Invalid location", 
+            message: "Please provide a valid project address for weather data",
+            code: "INVALID_LOCATION"
+          }),
+          { 
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400 
+          }
+        );
+      }
+      
       try {
         const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
         const geoRes = await fetch(geoUrl);
         
         if (!geoRes.ok) {
-          throw new Error(`Geocoding failed with status ${geoRes.status}`);
+          console.error("Geocoding API returned:", geoRes.status);
+          return new Response(
+            JSON.stringify({ 
+              error: "Geocoding failed", 
+              message: `Could not find location: ${location}. Try adding city/state/country.`,
+              code: "GEOCODING_FAILED"
+            }),
+            { 
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400 
+            }
+          );
         }
         
         const geoData = await geoRes.json();
         
         if (!geoData || !Array.isArray(geoData) || geoData.length === 0) {
-          throw new Error(`Location not found: ${location}`);
+          return new Response(
+            JSON.stringify({ 
+              error: "Location not found", 
+              message: `No results for: ${location}. Try a more specific address.`,
+              code: "LOCATION_NOT_FOUND"
+            }),
+            { 
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400 
+            }
+          );
         }
         
         if (!geoData[0]?.lat || !geoData[0]?.lon) {
-          throw new Error(`Invalid geocoding response for: ${location}`);
+          return new Response(
+            JSON.stringify({ 
+              error: "Invalid geocoding response", 
+              message: `Could not determine coordinates for: ${location}`,
+              code: "INVALID_GEOCODE"
+            }),
+            { 
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400 
+            }
+          );
         }
         
         latitude = geoData[0].lat;
         longitude = geoData[0].lon;
       } catch (geoError: any) {
         console.error("Geocoding error:", geoError);
-        throw new Error(`Could not geocode location: ${location}. ${geoError.message || ''}`);
+        return new Response(
+          JSON.stringify({ 
+            error: "Geocoding error", 
+            message: `Could not geocode location: ${location}`,
+            code: "GEOCODING_ERROR"
+          }),
+          { 
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400 
+          }
+        );
       }
     }
     
     if (!latitude || !longitude) {
-      throw new Error("Location coordinates required - please provide lat/lon or a valid address");
+      return new Response(
+        JSON.stringify({ 
+          error: "Location required", 
+          message: "Please provide a valid project address or coordinates",
+          code: "NO_LOCATION"
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400 
+        }
+      );
     }
 
     // Fetch current weather
