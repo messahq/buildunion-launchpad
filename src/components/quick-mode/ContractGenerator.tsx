@@ -233,10 +233,11 @@ interface ContractGeneratorProps {
   onContractGenerated?: (contractData: any) => void;
   onProgressUpdate?: (data: ContractProgressUpdate) => void;
   onContinue?: () => void;
+  onSaveToProjects?: (projectId: string) => void;
   projectData?: ProjectData;
 }
 
-const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate, onContinue, projectData }: ContractGeneratorProps) => {
+const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate, onContinue, onSaveToProjects, projectData }: ContractGeneratorProps) => {
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
@@ -1703,6 +1704,67 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                   <CheckCircle2 className="w-3 h-3" />
                   Contract saved to history
                 </p>
+              )}
+
+              {/* Save to Projects Button */}
+              {savedContractId && onSaveToProjects && (
+                <Button
+                  onClick={async () => {
+                    // Create project if needed and navigate
+                    const projectName = contract.projectName.trim() || contract.clientName.trim() || `Contract ${contract.contractNumber}`;
+                    
+                    try {
+                      // Create project
+                      const { data: project, error: projectError } = await supabase
+                        .from('projects')
+                        .insert({
+                          user_id: user?.id,
+                          name: projectName,
+                          address: contract.projectAddress || contract.clientAddress,
+                          description: contract.scopeOfWork?.substring(0, 500) || "Created from Quick Mode contract",
+                          status: 'active',
+                        })
+                        .select()
+                        .single();
+
+                      if (projectError) throw projectError;
+
+                      // Update contract with project_id
+                      await supabase
+                        .from('contracts')
+                        .update({ project_id: project.id })
+                        .eq('id', savedContractId);
+
+                      // Create project summary
+                      await supabase
+                        .from('project_summaries')
+                        .insert({
+                          user_id: user?.id,
+                          project_id: project.id,
+                          mode: 'solo',
+                          status: 'active',
+                          client_name: contract.clientName,
+                          client_email: contract.clientEmail,
+                          client_phone: contract.clientPhone,
+                          client_address: contract.clientAddress,
+                          total_cost: contract.totalAmount,
+                          photo_estimate: collectedData?.photoEstimate || null,
+                          calculator_results: collectedData?.calculatorResults || null,
+                          template_items: collectedData?.templateItems || null,
+                        });
+
+                      toast.success("Project saved successfully!");
+                      onSaveToProjects(project.id);
+                    } catch (error: any) {
+                      console.error("Error saving project:", error);
+                      toast.error(error.message || "Failed to save project");
+                    }
+                  }}
+                  className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
+                >
+                  <Save className="w-4 h-4" />
+                  Save to Projects
+                </Button>
               )}
 
               <Separator />
