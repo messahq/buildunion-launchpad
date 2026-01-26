@@ -863,7 +863,17 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                 materials={aiAnalysis?.materials}
                 weatherForecast={weatherForecast}
                 projectAddress={project.address || undefined}
+                teamLocations={teamMembersForMap.map(m => ({
+                  userId: m.user_id,
+                  name: m.full_name,
+                  isOnSite: m.status === "on_site",
+                  lastSeen: undefined,
+                }))}
                 onTaskClick={(task) => console.log("Task clicked:", task)}
+                onAutoShift={(shiftedTasks) => {
+                  console.log("Auto-shift tasks:", shiftedTasks);
+                  // TODO: Implement actual task date updates in database
+                }}
               />
             ) : (
               <TaskGanttTimeline
