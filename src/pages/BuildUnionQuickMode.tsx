@@ -563,6 +563,10 @@ const BuildUnionQuickMode = () => {
                     navigate(`/buildunion/project/${data.projectId}`);
                   }, 1000);
                 }}
+                onContinueToContracts={() => {
+                  // Navigate to contracts tab
+                  handleTabChange("contract");
+                }}
               />
             </TabsContent>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate, ChevronDown, ChevronUp, PenLine } from "lucide-react";
+import { FileText, Plus, Trash2, Download, Building2, User, DollarSign, ArrowRight, SkipForward, Save, FolderPlus, LayoutTemplate, ChevronDown, ChevronUp, PenLine, FileSignature } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,7 @@ interface QuickModeQuoteGeneratorProps {
   onQuoteGenerated?: (quote: QuoteData) => void;
   onSaveToProjects?: (projectData: any) => void;
   onProgressUpdate?: (data: QuoteProgressUpdate) => void;
+  onContinueToContracts?: () => void;
 }
 
 const defaultQuote: QuoteData = {
@@ -114,8 +115,10 @@ const defaultQuote: QuoteData = {
 
 const units = ["unit", "sq ft", "lin ft", "hour", "day", "each", "lot", "job"];
 
-const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenerated, onSaveToProjects, onProgressUpdate }: QuickModeQuoteGeneratorProps) => {
+const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenerated, onSaveToProjects, onProgressUpdate, onContinueToContracts }: QuickModeQuoteGeneratorProps) => {
   const [quote, setQuote] = useState<QuoteData>(defaultQuote);
+  const [hasGeneratedPDF, setHasGeneratedPDF] = useState(false);
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<"company" | "client" | "items" | "preview">("company");
   const [isSaving, setIsSaving] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
@@ -385,10 +388,10 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
     }
   };
 
-  // Auto-save project and generate PDF
+  // Auto-save project and generate PDF (but stay on page)
   const generatePDFAndSave = async () => {
     // First, auto-save the project if user is authenticated
-    if (user) {
+    if (user && !savedProjectId) {
       const projectName = quote.projectName.trim() || quote.clientName.trim() || `Quote ${quote.quoteNumber}`;
       
       try {
@@ -426,10 +429,12 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
               template_items: collectedData?.templateItems || null,
             }]);
           
-          toast.success("Project auto-saved!");
+          setSavedProjectId(project.id);
+          toast.success("Project saved! You can now continue to Contracts.");
           
-          if (onSaveToProjects) {
-            onSaveToProjects({ projectId: project.id, quote, collectedData });
+          // Call onQuoteGenerated to update quote data for contracts
+          if (onQuoteGenerated) {
+            onQuoteGenerated(quote);
           }
         }
       } catch (error) {
@@ -439,6 +444,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
     }
     
     // Then generate PDF
+    setHasGeneratedPDF(true);
     generatePDF();
   };
 
@@ -1388,6 +1394,26 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
               </DialogContent>
             </Dialog>
 
+            {/* Continue to Contracts - Show after PDF generation */}
+            {hasGeneratedPDF && (
+              <>
+                <Separator />
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+                  <p className="text-sm text-amber-800 mb-3 font-medium">
+                    ✅ Quote generated! Ready to create a contract?
+                  </p>
+                  <Button
+                    onClick={onContinueToContracts}
+                    className="w-full gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  >
+                    <FileSignature className="w-4 h-4" />
+                    Continue to Contracts
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </>
+            )}
+
             <Separator />
 
             {/* Skip to Summary */}
@@ -1403,6 +1429,33 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
         </Card>
       </div>
     </div>
+
+    {/* Bottom CTA for Continue to Contracts - Always visible after PDF */}
+    {hasGeneratedPDF && (
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-4 z-50 lg:relative lg:bg-transparent lg:border-0 lg:p-0 lg:mt-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between gap-4 p-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 rounded-xl border border-amber-300">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500 rounded-lg">
+                <FileSignature className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Quote Complete!</p>
+                <p className="text-sm text-muted-foreground">Continue to create a professional contract</p>
+              </div>
+            </div>
+            <Button
+              onClick={onContinueToContracts}
+              size="lg"
+              className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg"
+            >
+              <span className="hidden sm:inline">Continue to</span> Contracts
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };
