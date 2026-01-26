@@ -87,7 +87,9 @@ export function WeatherWidget({
       error.includes("Invalid location") ||
       error.includes("Location not found") ||
       error.includes("more specific address") ||
-      error.includes("No results");
+      error.includes("No results") ||
+      error.includes("Geocoding failed") ||
+      error.includes("Could not find location");
     
     return (
       <Card className={cn(isInvalidAddress ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20" : "border-destructive/50", className)}>
