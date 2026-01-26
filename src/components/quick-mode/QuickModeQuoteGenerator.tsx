@@ -16,6 +16,7 @@ import { RegionSelector } from "@/components/RegionSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import SignatureCapture from "@/components/SignatureCapture";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 interface LineItem {
   id: string;
@@ -906,9 +907,9 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
               </div>
               <div className="space-y-2">
                 <Label>Address</Label>
-                <Input
+                <AddressAutocomplete
                   value={quote.companyAddress}
-                  onChange={(e) => updateQuote("companyAddress", e.target.value)}
+                  onChange={(value) => updateQuote("companyAddress", value)}
                   placeholder="123 Main St, Toronto, ON M1A 1A1"
                 />
               </div>
@@ -952,9 +953,9 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
               </div>
               <div className="space-y-2">
                 <Label>Client Address</Label>
-                <Input
+                <AddressAutocomplete
                   value={quote.clientAddress}
-                  onChange={(e) => updateQuote("clientAddress", e.target.value)}
+                  onChange={(value) => updateQuote("clientAddress", value)}
                   placeholder="456 Oak Ave, Toronto, ON M2B 2B2"
                 />
               </div>
@@ -989,9 +990,9 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
               </div>
               <div className="space-y-2">
                 <Label>Project Address (if different)</Label>
-                <Input
+                <AddressAutocomplete
                   value={quote.projectAddress}
-                  onChange={(e) => updateQuote("projectAddress", e.target.value)}
+                  onChange={(value) => updateQuote("projectAddress", value)}
                   placeholder="Same as client address"
                 />
               </div>

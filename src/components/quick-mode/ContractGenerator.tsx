@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
@@ -1099,9 +1100,9 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                         </div>
                         <div className="space-y-2">
                           <Label>Address</Label>
-                          <Input
+                          <AddressAutocomplete
                             value={contract.clientAddress}
-                            onChange={(e) => updateContract("clientAddress", e.target.value)}
+                            onChange={(value) => updateContract("clientAddress", value)}
                             placeholder="Client address"
                           />
                         </div>
@@ -1147,9 +1148,9 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                       </div>
                       <div className="space-y-2">
                         <Label>Project Address</Label>
-                        <Input
+                        <AddressAutocomplete
                           value={contract.projectAddress}
-                          onChange={(e) => updateContract("projectAddress", e.target.value)}
+                          onChange={(value) => updateContract("projectAddress", value)}
                           placeholder="Work site location"
                         />
                       </div>
