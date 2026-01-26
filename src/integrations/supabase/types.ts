@@ -450,6 +450,7 @@ export type Database = {
       }
       project_summaries: {
         Row: {
+          ai_workflow_config: Json | null
           blueprint_analysis: Json | null
           calculator_results: Json | null
           client_address: string | null
@@ -476,6 +477,7 @@ export type Database = {
           verified_facts: Json | null
         }
         Insert: {
+          ai_workflow_config?: Json | null
           blueprint_analysis?: Json | null
           calculator_results?: Json | null
           client_address?: string | null
@@ -502,6 +504,7 @@ export type Database = {
           verified_facts?: Json | null
         }
         Update: {
+          ai_workflow_config?: Json | null
           blueprint_analysis?: Json | null
           calculator_results?: Json | null
           client_address?: string | null

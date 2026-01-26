@@ -19,8 +19,7 @@ import { cn } from "@/lib/utils";
 // TYPE DEFINITIONS
 // ============================================
 
-// Size will be determined by AI from images/data analysis
-export type ProjectSize = "small" | "medium" | "large";
+// ProjectSize is determined by AI, not user input
 export type WorkType = 
   | "painting" 
   | "flooring" 
@@ -35,7 +34,6 @@ export type WorkType =
   | "new_construction" 
   | "repair" 
   | "other";
-export type TeamNeed = "solo" | "with_team";
 
 export interface UploadedFile {
   file: File;
@@ -43,12 +41,11 @@ export interface UploadedFile {
   preview?: string;
 }
 
+// Simplified answers - no size or teamNeed (AI determines these)
 export interface ProjectAnswers {
   name: string;
-  size: ProjectSize | null; // Will be set by AI
   location: string;
   workType: WorkType | null;
-  teamNeed: TeamNeed | null;
   description: string;
   images: File[];
   documents: File[]; // PDF/blueprints
@@ -82,7 +79,7 @@ const WORK_TYPES: { value: WorkType; label: string; icon: string }[] = [
 // Maps answers to workflow recommendation
 // Note: Size will be determined by AI later, so we base initial workflow on work type and data availability
 export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendation {
-  const { workType, teamNeed, images, documents } = answers;
+  const { workType, images, documents } = answers;
   
   let recommendation: WorkflowRecommendation = {
     mode: "quick",
@@ -96,7 +93,6 @@ export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendati
   const hasUploadedContent = images.length > 0 || documents.length > 0;
   
   // Start with quick mode, AI will upgrade if needed based on analysis
-  recommendation.mode = hasUploadedContent ? "quick" : "quick";
   recommendation.estimatedSteps = hasUploadedContent ? 4 : 3;
   recommendation.features = hasUploadedContent 
     ? ["AI Analysis", "Photo Estimate", "Quote", "Contract"]
@@ -143,14 +139,6 @@ export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendati
       break;
   }
 
-  // Team need overrides
-  if (teamNeed === "with_team") {
-    recommendation.teamEnabled = true;
-    if (!recommendation.features.includes("Team")) {
-      recommendation.features.push("Team");
-    }
-  }
-
   return recommendation;
 }
 
@@ -178,10 +166,8 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
   
   const [answers, setAnswers] = useState<ProjectAnswers>({
     name: "",
-    size: null,
     location: "",
     workType: null,
-    teamNeed: null,
     description: "",
     images: [],
     documents: [],
