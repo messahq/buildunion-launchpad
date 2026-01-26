@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,16 +24,10 @@ import { useTheme } from "@/hooks/useTheme";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 const languages = [
   { code: "en", name: "English" },
-  { code: "es", name: "Español" },
-  { code: "fr", name: "Français" },
-  { code: "de", name: "Deutsch" },
-  { code: "zh", name: "中文" },
-  { code: "ja", name: "日本語" },
-  { code: "ar", name: "العربية" },
-  { code: "pt", name: "Português" },
   { code: "hu", name: "Magyar" },
 ];
 
@@ -51,7 +45,14 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   const { profile } = useBuProfile();
   const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useUnreadMessages();
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const { t, i18n } = useTranslation();
+  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
+
+  // Sync language changes
+  const handleLanguageChange = (langCode: string) => {
+    setSelectedLanguage(langCode);
+    i18n.changeLanguage(langCode);
+  };
   const [isTogglingMode, setIsTogglingMode] = useState(false);
 
   // Check if user can access team mode (Pro/Premium/Enterprise)
@@ -269,7 +270,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
               {languages.map((lang) => (
                 <DropdownMenuItem
                   key={lang.code}
-                  onClick={() => setSelectedLanguage(lang.code)}
+                  onClick={() => handleLanguageChange(lang.code)}
                   className={selectedLanguage === lang.code ? "bg-accent" : ""}
                 >
                   {lang.name}
@@ -348,7 +349,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   {languages.map((lang) => (
                     <DropdownMenuItem
                       key={lang.code}
-                      onClick={() => setSelectedLanguage(lang.code)}
+                      onClick={() => handleLanguageChange(lang.code)}
                       className={`pl-7 ${selectedLanguage === lang.code ? "bg-accent font-medium" : ""}`}
                     >
                       {lang.name}

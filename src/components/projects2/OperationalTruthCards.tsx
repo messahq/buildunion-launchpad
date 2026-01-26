@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   Ruler, 
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OperationalTruth } from "@/types/operationalTruth";
+import { useTranslation } from "react-i18next";
 
 interface OperationalTruthCardsProps {
   operationalTruth: OperationalTruth;
@@ -69,6 +69,8 @@ const PillarCard = ({ icon, label, value, status, iconColor }: PillarCardProps) 
 );
 
 export default function OperationalTruthCards({ operationalTruth }: OperationalTruthCardsProps) {
+  const { t } = useTranslation();
+  
   const {
     confirmedArea,
     areaUnit,
@@ -89,7 +91,7 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
         <Brain className="h-5 w-5 text-primary" />
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium">Operational Truth Verification</span>
+            <span className="text-sm font-medium">{t("operationalTruth.title")}</span>
             <span className="text-sm text-muted-foreground">{verificationRate}%</span>
           </div>
           <Progress value={verificationRate} className="h-2" />
@@ -101,48 +103,48 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
         {/* Pillar 1: Confirmed Area */}
         <PillarCard
           icon={<Ruler className="h-4 w-4" />}
-          label="Confirmed Area"
-          value={confirmedArea ? `${confirmedArea.toLocaleString()} ${areaUnit}` : "Pending"}
+          label={t("operationalTruth.confirmedArea")}
+          value={confirmedArea ? `${confirmedArea.toLocaleString()} ${areaUnit}` : t("operationalTruth.pending")}
           status={confirmedArea ? "verified" : "pending"}
         />
 
         {/* Pillar 2: Materials Count */}
         <PillarCard
           icon={<Package className="h-4 w-4" />}
-          label="Materials"
-          value={materialsCount > 0 ? `${materialsCount} items` : "None detected"}
+          label={t("operationalTruth.materials")}
+          value={materialsCount > 0 ? `${materialsCount} ${t("operationalTruth.items")}` : t("operationalTruth.noneDetected")}
           status={materialsCount > 0 ? "verified" : "pending"}
         />
 
         {/* Pillar 3: Blueprint Status */}
         <PillarCard
           icon={<FileText className="h-4 w-4" />}
-          label="Blueprint"
-          value={blueprintStatus === "analyzed" ? "Analyzed" : blueprintStatus === "none" ? "Not provided" : "Pending"}
+          label={t("operationalTruth.blueprint")}
+          value={blueprintStatus === "analyzed" ? t("operationalTruth.analyzed") : blueprintStatus === "none" ? t("operationalTruth.notProvided") : t("operationalTruth.pending")}
           status={blueprintStatus === "analyzed" ? "verified" : blueprintStatus === "none" ? "warning" : "pending"}
         />
 
         {/* Pillar 4: OBC Compliance */}
         <PillarCard
           icon={<Shield className="h-4 w-4" />}
-          label="OBC Status"
-          value={obcCompliance === "clear" ? "Clear" : obcCompliance === "permit_required" ? "Permit Req." : "Pending"}
+          label={t("operationalTruth.obcStatus")}
+          value={obcCompliance === "clear" ? t("operationalTruth.clear") : obcCompliance === "permit_required" ? t("operationalTruth.permitRequired") : t("operationalTruth.pending")}
           status={obcCompliance === "clear" ? "verified" : obcCompliance === "permit_required" ? "warning" : "pending"}
         />
 
         {/* Pillar 5: Conflict Status */}
         <PillarCard
           icon={<AlertTriangle className="h-4 w-4" />}
-          label="Conflict Check"
-          value={conflictStatus === "aligned" ? "Aligned" : conflictStatus === "conflict_detected" ? "Conflicts" : "Pending"}
+          label={t("operationalTruth.conflictCheck")}
+          value={conflictStatus === "aligned" ? t("operationalTruth.aligned") : conflictStatus === "conflict_detected" ? t("operationalTruth.conflicts") : t("operationalTruth.pending")}
           status={conflictStatus === "aligned" ? "verified" : conflictStatus === "conflict_detected" ? "warning" : "pending"}
         />
 
         {/* Pillar 6: Project Mode */}
         <PillarCard
           icon={<Users className="h-4 w-4" />}
-          label="Project Mode"
-          value={projectMode === "team" ? "Team Mode" : "Solo Mode"}
+          label={t("operationalTruth.projectMode")}
+          value={projectMode === "team" ? t("projects.teamMode") : t("projects.soloMode")}
           status="verified"
           iconColor={projectMode === "team" ? "text-cyan-500" : "text-amber-500"}
         />
@@ -150,16 +152,16 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
         {/* Pillar 7: Project Size */}
         <PillarCard
           icon={<Gauge className="h-4 w-4" />}
-          label="Project Size"
-          value={projectSize.charAt(0).toUpperCase() + projectSize.slice(1)}
+          label={t("operationalTruth.projectSize")}
+          value={t(`operationalTruth.${projectSize}`)}
           status="verified"
         />
 
         {/* Pillar 8: Confidence Level */}
         <PillarCard
           icon={<Brain className="h-4 w-4" />}
-          label="AI Confidence"
-          value={confidenceLevel.charAt(0).toUpperCase() + confidenceLevel.slice(1)}
+          label={t("operationalTruth.aiConfidence")}
+          value={t(`operationalTruth.${confidenceLevel}`)}
           status={confidenceLevel === "high" ? "verified" : confidenceLevel === "medium" ? "verified" : "warning"}
         />
       </div>

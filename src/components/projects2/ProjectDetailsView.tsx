@@ -28,6 +28,7 @@ import TeamMapWidget from "./TeamMapWidget";
 import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
 import { buildOperationalTruth } from "@/types/operationalTruth";
+import { useTranslation } from "react-i18next";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -87,6 +88,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [summary, setSummary] = useState<ProjectSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const { t } = useTranslation();
 
   // Load project data
   useEffect(() => {
@@ -183,7 +185,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                     : "border-amber-500 text-amber-600 dark:text-amber-400"
                 )}
               >
-                {summary?.mode || "solo"} mode
+                {isTeamMode ? t("projects.teamMode") : t("projects.soloMode")}
               </Badge>
               <Badge 
                 variant="outline" 
@@ -240,25 +242,25 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         )}>
           <TabsTrigger value="overview" className="gap-2">
             <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">Overview</span>
+            <span className="hidden sm:inline">{t("projects.overview")}</span>
           </TabsTrigger>
           <TabsTrigger value="documents" className="gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Documents</span>
+            <span className="hidden sm:inline">{t("projects.documents")}</span>
           </TabsTrigger>
           {isTeamMode && (
             <TabsTrigger value="map" className="gap-2">
               <Map className="h-4 w-4" />
-              <span className="hidden sm:inline">Site Map</span>
+              <span className="hidden sm:inline">{t("projects.siteMap")}</span>
             </TabsTrigger>
           )}
           <TabsTrigger value="timeline" className="gap-2">
             <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">Timeline</span>
+            <span className="hidden sm:inline">{t("projects.timeline")}</span>
           </TabsTrigger>
           <TabsTrigger value="weather" className="gap-2">
             <Cloud className="h-4 w-4" />
-            <span className="hidden sm:inline">Weather</span>
+            <span className="hidden sm:inline">{t("projects.weather")}</span>
           </TabsTrigger>
         </TabsList>
 

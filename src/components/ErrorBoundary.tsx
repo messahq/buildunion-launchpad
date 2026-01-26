@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import i18n from '@/i18n';
 
 interface Props {
   children: ReactNode;
@@ -58,11 +59,13 @@ class ErrorBoundary extends Component<Props, State> {
             </div>
             
             <h1 className="text-2xl font-bold text-slate-900 mb-2">
-              Something went wrong
+              {i18n.t('errors.somethingWentWrong')}
             </h1>
             
             <p className="text-slate-600 mb-6">
-              We encountered an unexpected error. Don't worry, your data is safe.
+              {i18n.language === 'hu' 
+                ? 'Váratlan hiba történt. Ne aggódj, az adataid biztonságban vannak.' 
+                : "We encountered an unexpected error. Don't worry, your data is safe."}
             </p>
 
             {import.meta.env.DEV && this.state.error && (
@@ -85,7 +88,7 @@ class ErrorBoundary extends Component<Props, State> {
                 className="gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Try Again
+                {i18n.t('errors.tryAgain')}
               </Button>
               
               <Button
@@ -93,7 +96,7 @@ class ErrorBoundary extends Component<Props, State> {
                 className="gap-2 bg-amber-500 hover:bg-amber-600"
               >
                 <Home className="h-4 w-4" />
-                Go Home
+                {i18n.t('errors.goHome')}
               </Button>
             </div>
 
@@ -101,7 +104,7 @@ class ErrorBoundary extends Component<Props, State> {
               onClick={this.handleReload}
               className="mt-4 text-sm text-slate-500 hover:text-slate-700 underline"
             >
-              Reload Page
+              {i18n.t('errors.reloadPage')}
             </button>
           </div>
         </div>
