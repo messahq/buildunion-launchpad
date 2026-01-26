@@ -83,7 +83,10 @@
     "userModified": "Felhasználó módosította",
     "aiDraftTooltip": "AI által generált vázlat",
     "userModifiedTooltip": "Felhasználó által módosított feladat",
-    "userModifiedTask": "Feladat módosítva - az alapállapot felülvizsgálata szükséges lehet"
+    "userModifiedTask": "Feladat módosítva - az alapállapot felülvizsgálata szükséges lehet",
+    "movedNotice": "Az idővonal most már integrálva van fent",
+    "movedDescription": "A projekt idővonal most mindig látható közvetlenül a Projekt Idősor sáv alatt az oldal tetején.",
+    "scrollToTop": "Görgetés az idővonalhoz"
   },
   "taskEdit": {
     "title": "Feladat szerkesztése",

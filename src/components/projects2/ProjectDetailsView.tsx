@@ -787,8 +787,157 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         isEditable={isOwner}
       />
 
+      {/* INTEGRATED TIMELINE SECTION - Directly below Project Timeline */}
+      <div className="space-y-4">
+        {/* Timeline View Toggle */}
+        <div className="flex items-center justify-between gap-2">
+          {/* My Tasks indicator for team members */}
+          {!isOwner && user && (
+            <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50/50 dark:bg-cyan-950/30">
+              <Users className="h-3 w-3 mr-1" />
+              {t("timeline.teamMemberView", "Team Member View")}
+            </Badge>
+          )}
+          
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
+            <div className="flex border rounded-md overflow-hidden">
+              {/* My Tasks view for team members */}
+              {!isOwner && user && (
+                <Button
+                  variant={timelineView === "myTasks" ? "default" : "ghost"}
+                  size="sm"
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setTimelineView("myTasks")}
+                >
+                  {t("timeline.myTasks", "My Tasks")}
+                </Button>
+              )}
+              <Button
+                variant={timelineView === "hierarchical" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-8 text-xs"
+                onClick={() => setTimelineView("hierarchical")}
+              >
+                {t("timeline.phases", "Phases")}
+              </Button>
+              <Button
+                variant={timelineView === "gantt" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-8 text-xs"
+                onClick={() => setTimelineView("gantt")}
+              >
+                {t("timeline.gantt", "Gantt")}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline Content */}
+        {tasksLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+          </div>
+        ) : timelineView === "myTasks" && user ? (
+          <TeamMemberTimeline
+            tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+            currentUserId={user.id}
+            currentUserName={members.find(m => m.user_id === user.id)?.full_name || user.email?.split('@')[0] || "You"}
+            projectId={projectId}
+            onTaskComplete={handleTaskComplete}
+            onVerificationSubmit={(taskId, photoUrl) => {
+              console.log("Verification submitted:", taskId, photoUrl);
+              handleTaskComplete(taskId);
+            }}
+            globalVerificationRate={globalVerificationRate}
+          />
+        ) : timelineView === "hierarchical" ? (
+          <HierarchicalTimeline
+            tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+            materials={aiAnalysis?.materials || [
+              { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
+              { item: "Underlayment", quantity: 1400, unit: "sq ft" },
+              { item: "Baseboard Trim", quantity: 280, unit: "linear ft" },
+              { item: "Adhesive & Supplies", quantity: 15, unit: "units" }
+            ]}
+            weatherForecast={weatherForecast}
+            projectAddress={project.address || undefined}
+            teamLocations={teamMembersForMap.map(m => ({
+              userId: m.user_id,
+              name: m.full_name,
+              isOnSite: m.status === "on_site",
+              lastSeen: undefined,
+            }))}
+            projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+            projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+            onTaskClick={(task) => console.log("Task clicked:", task)}
+            onAutoShift={(shiftedTasks) => {
+              console.log("Auto-shift tasks:", shiftedTasks);
+            }}
+            onProjectDatesChange={async (startDate, endDate, tasksToShift) => {
+              // Update all task due dates in database
+              for (const taskShift of tasksToShift) {
+                await supabase
+                  .from("project_tasks")
+                  .update({ due_date: taskShift.newDueDate })
+                  .eq("id", taskShift.taskId);
+              }
+              
+              // Refresh tasks
+              const { data } = await supabase
+                .from("project_tasks")
+                .select("*")
+                .eq("project_id", projectId)
+                .order("due_date", { ascending: true });
+              
+              if (data) {
+                setTasks(data.map(t => ({
+                  ...t,
+                  unit_price: t.unit_price || 0,
+                  quantity: t.quantity || 1,
+                  total_cost: t.total_cost || 0,
+                })));
+              }
+              
+              toast.success(`${tasksToShift.length} tasks updated`);
+            }}
+          />
+        ) : (
+          <TaskGanttTimeline
+            tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+            isOwner={isOwner}
+            projectId={projectId}
+            teamMembers={members.map(m => ({
+              user_id: m.user_id,
+              name: m.full_name || "Unknown",
+              avatar_url: (m as any).avatar_url,
+              role: m.role,
+            }))}
+            onBudgetUpdate={handleBudgetUpdate}
+            onTaskUpdated={(updatedTask, shiftedTasks) => {
+              // Refresh tasks after update
+              setTasks(prev => prev.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t));
+              if (shiftedTasks && shiftedTasks.length > 0) {
+                // Also update shifted tasks
+                setTasks(prev => prev.map(t => {
+                  const shifted = shiftedTasks.find(st => st.taskId === t.id);
+                  if (shifted) {
+                    return { ...t, due_date: shifted.newDueDate };
+                  }
+                  return t;
+                }));
+              }
+            }}
+            onBaselineUnlock={() => {
+              // Mark that user has modified tasks - could trigger baseline unlock
+              toast.info(t("timeline.userModifiedTask", "Task modified - baseline may need review"));
+            }}
+          />
+        )}
+      </div>
+
       {/* Operational Truth Cards - 8 Pillars */}
-      <OperationalTruthCards 
+      <OperationalTruthCards
         operationalTruth={buildOperationalTruth({
           aiAnalysis,
           blueprintAnalysis: blueprintAnalysis ? { analyzed: !!blueprintAnalysis.extractedText } : undefined,
@@ -1039,180 +1188,27 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           </TabsContent>
         )}
 
-        {/* Timeline Tab */}
-        <TabsContent value="timeline" className="mt-6 space-y-6">
-          {/* Synced Project Timeline Bar in Timeline Tab */}
-          <ProjectTimelineBar
-            projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
-            projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
-            onDatesChange={async (startDate, endDate) => {
-              // Update summary state
-              setSummary(prev => prev ? {
-                ...prev,
-                project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
-                project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
-              } : null);
-              
-              // Persist to database
-              if (summary?.id) {
-                await supabase
-                  .from("project_summaries")
-                  .update({
-                    project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
-                    project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
-                  })
-                  .eq("id", summary.id);
-              }
-            }}
-            isEditable={isOwner}
-            className="mb-2"
-          />
-
-          {/* Timeline View Toggle - Always show */}
-          <div className="flex items-center justify-between gap-2">
-            {/* My Tasks indicator for team members */}
-            {!isOwner && user && (
-              <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50/50 dark:bg-cyan-950/30">
-                <Users className="h-3 w-3 mr-1" />
-                {t("timeline.teamMemberView", "Team Member View")}
-              </Badge>
-            )}
-            
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
-              <div className="flex border rounded-md overflow-hidden">
-                {/* My Tasks view for team members */}
-                {!isOwner && user && (
-                  <Button
-                    variant={timelineView === "myTasks" ? "default" : "ghost"}
-                    size="sm"
-                    className="rounded-none h-8 text-xs"
-                    onClick={() => setTimelineView("myTasks")}
-                  >
-                    {t("timeline.myTasks", "My Tasks")}
-                  </Button>
-                )}
-                <Button
-                  variant={timelineView === "hierarchical" ? "default" : "ghost"}
-                  size="sm"
-                  className="rounded-none h-8 text-xs"
-                  onClick={() => setTimelineView("hierarchical")}
-                >
-                  {t("timeline.phases", "Phases")}
-                </Button>
-                <Button
-                  variant={timelineView === "gantt" ? "default" : "ghost"}
-                  size="sm"
-                  className="rounded-none h-8 text-xs"
-                  onClick={() => setTimelineView("gantt")}
-                >
-                  {t("timeline.gantt", "Gantt")}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Timeline Content - Always show HierarchicalTimeline with demo data if no tasks */}
-          {tasksLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-            </div>
-          ) : timelineView === "myTasks" && user ? (
-            <TeamMemberTimeline
-              tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
-              currentUserId={user.id}
-              currentUserName={members.find(m => m.user_id === user.id)?.full_name || user.email?.split('@')[0] || "You"}
-              projectId={projectId}
-              onTaskComplete={handleTaskComplete}
-              onVerificationSubmit={(taskId, photoUrl) => {
-                console.log("Verification submitted:", taskId, photoUrl);
-                handleTaskComplete(taskId);
-              }}
-              globalVerificationRate={globalVerificationRate}
-            />
-          ) : timelineView === "hierarchical" ? (
-            <HierarchicalTimeline
-              tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
-              materials={aiAnalysis?.materials || [
-                { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
-                { item: "Underlayment", quantity: 1400, unit: "sq ft" },
-                { item: "Baseboard Trim", quantity: 280, unit: "linear ft" },
-                { item: "Adhesive & Supplies", quantity: 15, unit: "units" }
-              ]}
-              weatherForecast={weatherForecast}
-              projectAddress={project.address || undefined}
-              teamLocations={teamMembersForMap.map(m => ({
-                userId: m.user_id,
-                name: m.full_name,
-                isOnSite: m.status === "on_site",
-                lastSeen: undefined,
-              }))}
-              projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
-              projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
-              onTaskClick={(task) => console.log("Task clicked:", task)}
-              onAutoShift={(shiftedTasks) => {
-                console.log("Auto-shift tasks:", shiftedTasks);
-              }}
-              onProjectDatesChange={async (startDate, endDate, tasksToShift) => {
-                // Update all task due dates in database
-                for (const taskShift of tasksToShift) {
-                  await supabase
-                    .from("project_tasks")
-                    .update({ due_date: taskShift.newDueDate })
-                    .eq("id", taskShift.taskId);
-                }
-                
-                // Refresh tasks
-                const { data } = await supabase
-                  .from("project_tasks")
-                  .select("*")
-                  .eq("project_id", projectId)
-                  .order("due_date", { ascending: true });
-                
-                if (data) {
-                  setTasks(data.map(t => ({
-                    ...t,
-                    unit_price: t.unit_price || 0,
-                    quantity: t.quantity || 1,
-                    total_cost: t.total_cost || 0,
-                  })));
-                }
-                
-                toast.success(`${tasksToShift.length} tasks updated`);
-              }}
-            />
-          ) : (
-            <TaskGanttTimeline
-              tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
-              isOwner={isOwner}
-              projectId={projectId}
-              teamMembers={members.map(m => ({
-                user_id: m.user_id,
-                name: m.full_name || "Unknown",
-                avatar_url: (m as any).avatar_url,
-                role: m.role,
-              }))}
-              onBudgetUpdate={handleBudgetUpdate}
-              onTaskUpdated={(updatedTask, shiftedTasks) => {
-                // Refresh tasks after update
-                setTasks(prev => prev.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t));
-                if (shiftedTasks && shiftedTasks.length > 0) {
-                  // Also update shifted tasks
-                  setTasks(prev => prev.map(t => {
-                    const shifted = shiftedTasks.find(st => st.taskId === t.id);
-                    if (shifted) {
-                      return { ...t, due_date: shifted.newDueDate };
-                    }
-                    return t;
-                  }));
-                }
-              }}
-              onBaselineUnlock={() => {
-                // Mark that user has modified tasks - could trigger baseline unlock
-                toast.info(t("timeline.userModifiedTask", "Task modified - baseline may need review"));
-              }}
-            />
-          )}
+        {/* Timeline Tab - Now redirects to main timeline above */}
+        <TabsContent value="timeline" className="mt-6">
+          <Card className="border-dashed border-2 border-amber-200 bg-amber-50/30 dark:bg-amber-950/10">
+            <CardContent className="py-8 text-center">
+              <Calendar className="h-10 w-10 mx-auto text-amber-500 mb-3" />
+              <p className="font-medium text-foreground mb-2">
+                {t("timeline.movedNotice", "Timeline is now integrated above")}
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t("timeline.movedDescription", "The project timeline is now always visible directly below the Project Timeline bar at the top of this page.")}
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("timeline.scrollToTop", "Scroll to Timeline")}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Weather Tab */}
