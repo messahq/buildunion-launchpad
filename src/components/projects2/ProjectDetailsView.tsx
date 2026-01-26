@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +34,7 @@ import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
 import TaskGanttTimeline from "./TaskGanttTimeline";
 import HierarchicalTimeline from "./HierarchicalTimeline";
+import TeamMemberTimeline from "./TeamMemberTimeline";
 import BaselineLockCard from "./BaselineLockCard";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
@@ -154,7 +155,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [tasks, setTasks] = useState<TaskWithBudget[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [totalTaskBudget, setTotalTaskBudget] = useState(0);
-  const [timelineView, setTimelineView] = useState<"gantt" | "hierarchical">("hierarchical");
+  const [timelineView, setTimelineView] = useState<"gantt" | "hierarchical" | "myTasks">("hierarchical");
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -353,6 +354,60 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
       return prev - oldCost + unitPrice * quantity;
     });
   }, [tasks]);
+
+  // Calculate global verification rate based on completed verification tasks
+  const globalVerificationRate = useMemo(() => {
+    const verificationTasks = tasks.filter(t => 
+      t.title.toLowerCase().includes("verify") ||
+      t.title.toLowerCase().includes("inspect") ||
+      t.title.toLowerCase().includes("check") ||
+      t.title.toLowerCase().includes("final")
+    );
+    
+    if (verificationTasks.length === 0) {
+      // Fallback: use overall task completion
+      const completed = tasks.filter(t => t.status === "completed").length;
+      return tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+    }
+    
+    const completedVerif = verificationTasks.filter(t => t.status === "completed").length;
+    return Math.round((completedVerif / verificationTasks.length) * 100);
+  }, [tasks]);
+
+  // Handle task completion (for verification feedback)
+  const handleTaskComplete = useCallback(async (taskId: string) => {
+    // Refresh tasks list
+    const { data } = await supabase
+      .from("project_tasks")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("due_date", { ascending: true });
+    
+    if (data) {
+      setTasks(prev => {
+        const memberProfiles: Record<string, { full_name: string; avatar_url?: string }> = {};
+        prev.forEach(t => {
+          if (t.assignee_name) {
+            memberProfiles[t.assigned_to] = { 
+              full_name: t.assignee_name, 
+              avatar_url: t.assignee_avatar 
+            };
+          }
+        });
+        
+        return data.map(task => ({
+          ...task,
+          unit_price: task.unit_price || 0,
+          quantity: task.quantity || 1,
+          total_cost: task.total_cost || 0,
+          assignee_name: memberProfiles[task.assigned_to]?.full_name || "Unknown",
+          assignee_avatar: memberProfiles[task.assigned_to]?.avatar_url,
+        }));
+      });
+    }
+    
+    toast.success(t("timeline.verificationUpdated", "Verification rate updated!"));
+  }, [projectId, t]);
 
   // Handle baseline locked callback
   const handleBaselineLocked = useCallback((baseline: OperationalTruth, lockedAt: string) => {
@@ -828,25 +883,46 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
           {/* Timeline View Toggle */}
           {tasks.length > 0 && (
-            <div className="flex items-center justify-end gap-2">
-              <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
-              <div className="flex border rounded-md overflow-hidden">
-                <Button
-                  variant={timelineView === "hierarchical" ? "default" : "ghost"}
-                  size="sm"
-                  className="rounded-none h-8 text-xs"
-                  onClick={() => setTimelineView("hierarchical")}
-                >
-                  {t("timeline.phases", "Phases")}
-                </Button>
-                <Button
-                  variant={timelineView === "gantt" ? "default" : "ghost"}
-                  size="sm"
-                  className="rounded-none h-8 text-xs"
-                  onClick={() => setTimelineView("gantt")}
-                >
-                  {t("timeline.gantt", "Gantt")}
-                </Button>
+            <div className="flex items-center justify-between gap-2">
+              {/* My Tasks indicator for team members */}
+              {!isOwner && user && (
+                <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50/50 dark:bg-cyan-950/30">
+                  <Users className="h-3 w-3 mr-1" />
+                  {t("timeline.teamMemberView", "Team Member View")}
+                </Badge>
+              )}
+              
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
+                <div className="flex border rounded-md overflow-hidden">
+                  {/* My Tasks view for team members */}
+                  {!isOwner && user && (
+                    <Button
+                      variant={timelineView === "myTasks" ? "default" : "ghost"}
+                      size="sm"
+                      className="rounded-none h-8 text-xs"
+                      onClick={() => setTimelineView("myTasks")}
+                    >
+                      {t("timeline.myTasks", "My Tasks")}
+                    </Button>
+                  )}
+                  <Button
+                    variant={timelineView === "hierarchical" ? "default" : "ghost"}
+                    size="sm"
+                    className="rounded-none h-8 text-xs"
+                    onClick={() => setTimelineView("hierarchical")}
+                  >
+                    {t("timeline.phases", "Phases")}
+                  </Button>
+                  <Button
+                    variant={timelineView === "gantt" ? "default" : "ghost"}
+                    size="sm"
+                    className="rounded-none h-8 text-xs"
+                    onClick={() => setTimelineView("gantt")}
+                  >
+                    {t("timeline.gantt", "Gantt")}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -857,7 +933,20 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
             </div>
           ) : tasks.length > 0 ? (
-            timelineView === "hierarchical" ? (
+            timelineView === "myTasks" && user ? (
+              <TeamMemberTimeline
+                tasks={tasks}
+                currentUserId={user.id}
+                currentUserName={members.find(m => m.user_id === user.id)?.full_name || user.email?.split('@')[0] || "You"}
+                projectId={projectId}
+                onTaskComplete={handleTaskComplete}
+                onVerificationSubmit={(taskId, photoUrl) => {
+                  console.log("Verification submitted:", taskId, photoUrl);
+                  handleTaskComplete(taskId);
+                }}
+                globalVerificationRate={globalVerificationRate}
+              />
+            ) : timelineView === "hierarchical" ? (
               <HierarchicalTimeline
                 tasks={tasks}
                 materials={aiAnalysis?.materials}
@@ -872,7 +961,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                 onTaskClick={(task) => console.log("Task clicked:", task)}
                 onAutoShift={(shiftedTasks) => {
                   console.log("Auto-shift tasks:", shiftedTasks);
-                  // TODO: Implement actual task date updates in database
                 }}
               />
             ) : (
