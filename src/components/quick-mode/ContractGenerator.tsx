@@ -535,10 +535,10 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
     setContract(prev => ({ ...prev, [field]: value }));
   };
 
-  const saveContractToDatabase = async () => {
+  const saveContractToDatabase = async (): Promise<string | null> => {
     if (!user) {
       toast.error("Please sign in to save contracts");
-      return;
+      return null;
     }
 
     setIsSaving(true);
@@ -587,6 +587,8 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
         contractor_signature: contractorSignature ? JSON.parse(JSON.stringify(contractorSignature)) : null,
       };
 
+      let resultId = savedContractId;
+      
       if (savedContractId) {
         // Update existing contract
         const { error } = await supabase
@@ -606,12 +608,13 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
 
         if (error) throw error;
         setSavedContractId(data.id);
+        resultId = data.id;
         toast.success("Contract saved!");
       }
       
       // Notify parent to refresh contracts list (syncs Operational Truth)
       onContractGenerated?.({
-        id: savedContractId,
+        id: resultId,
         contract_number: contract.contractNumber,
         total_amount: contract.totalAmount,
         status: contractorSignature && clientSignature ? 'signed' : contractorSignature ? 'pending_client' : 'draft',
@@ -620,9 +623,12 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
         start_date: contract.startDate,
         estimated_end_date: contract.estimatedEndDate,
       });
+      
+      return resultId;
     } catch (error) {
       console.error("Error saving contract:", error);
       toast.error("Failed to save contract");
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -1706,14 +1712,24 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                 </p>
               )}
 
-              {/* Save to Projects Button */}
-              {savedContractId && onSaveToProjects && (
+              {/* Save to Projects Button - Always visible */}
+              {onSaveToProjects && (
                 <Button
                   onClick={async () => {
-                    // Create project if needed and navigate
-                    const projectName = contract.projectName.trim() || contract.clientName.trim() || `Contract ${contract.contractNumber}`;
-                    
                     try {
+                      // Save contract first if not already saved
+                      let contractId = savedContractId;
+                      if (!contractId) {
+                        contractId = await saveContractToDatabase();
+                        if (!contractId) {
+                          toast.error("Please save the contract first");
+                          return;
+                        }
+                      }
+
+                      // Create project if needed and navigate
+                      const projectName = contract.projectName.trim() || contract.clientName.trim() || `Contract ${contract.contractNumber}`;
+                      
                       // Create project
                       const { data: project, error: projectError } = await supabase
                         .from('projects')
@@ -1733,7 +1749,7 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                       await supabase
                         .from('contracts')
                         .update({ project_id: project.id })
-                        .eq('id', savedContractId);
+                        .eq('id', contractId);
 
                       // Create project summary
                       await supabase
@@ -1760,10 +1776,20 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                       toast.error(error.message || "Failed to save project");
                     }
                   }}
+                  disabled={isSaving}
                   className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white"
                 >
-                  <Save className="w-4 h-4" />
-                  Save to Projects
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save to Projects
+                    </>
+                  )}
                 </Button>
               )}
 
