@@ -1018,21 +1018,19 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           </TabsContent>
         )}
 
-        {/* Materials Tab - Material Calculation from AI-analyzed tasks */}
+        {/* Materials Tab - Cost Breakdown from AI-analyzed tasks */}
         <TabsContent value="materials" className="mt-6">
           <MaterialCalculationTab 
             materials={(() => {
-              // Aggregate unique materials from tasks with their prices
-              type MaterialEntry = { item: string; quantity: number; unit: string; unitPrice: number };
-              const materialMap: Record<string, MaterialEntry> = {};
+              // Aggregate materials from "Order" tasks
+              type CostEntry = { item: string; quantity: number; unit: string; unitPrice: number };
+              const materialMap: Record<string, CostEntry> = {};
               
               tasks.forEach(task => {
-                // Extract material name from task title (e.g., "Order Laminate Flooring" -> "Laminate Flooring")
-                const materialMatch = task.title.match(/(?:Order|Install|Deliver|Verify)\s+(.+?)(?:\s+to site)?$/i);
-                const materialName = materialMatch ? materialMatch[1] : task.title;
-                
-                // Only count "Order" tasks to avoid duplicating quantities
                 if (task.title.toLowerCase().startsWith('order') && task.quantity) {
+                  const materialMatch = task.title.match(/Order\s+(.+?)$/i);
+                  const materialName = materialMatch ? materialMatch[1] : task.title;
+                  
                   if (!materialMap[materialName]) {
                     materialMap[materialName] = {
                       item: materialName,
@@ -1045,14 +1043,35 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               });
               
               const result = Object.values(materialMap);
-              
-              // Fallback to AI analysis if no tasks
               if (result.length === 0 && aiAnalysis?.materials) {
                 return aiAnalysis.materials;
               }
-              
               return result;
             })()}
+            labor={(() => {
+              // Aggregate labor from "Install" tasks
+              type CostEntry = { item: string; quantity: number; unit: string; unitPrice: number };
+              const laborMap: Record<string, CostEntry> = {};
+              
+              tasks.forEach(task => {
+                if (task.title.toLowerCase().startsWith('install') && task.quantity) {
+                  const laborMatch = task.title.match(/Install\s+(.+?)$/i);
+                  const laborName = laborMatch ? `${laborMatch[1]} Installation` : task.title;
+                  
+                  if (!laborMap[laborName]) {
+                    laborMap[laborName] = {
+                      item: laborName,
+                      quantity: task.quantity,
+                      unit: task.description?.match(/(\d+)\s+(\w+\s*\w*)\s+of/)?.[2] || "units",
+                      unitPrice: task.unit_price || 0,
+                    };
+                  }
+                }
+              });
+              
+              return Object.values(laborMap);
+            })()}
+            projectTotal={totalTaskBudget}
           />
         </TabsContent>
 
