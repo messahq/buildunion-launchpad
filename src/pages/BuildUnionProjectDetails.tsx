@@ -1718,6 +1718,7 @@ const BuildUnionProjectDetails = () => {
                             projectId={project.id} 
                             showTitle={false}
                             onNavigateToAI={() => setBlueprintTab("ai")}
+                            templateItems={projectSummary?.template_items as any[] || []}
                           />
                         </div>
                       )}

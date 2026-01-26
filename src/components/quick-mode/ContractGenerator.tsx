@@ -50,7 +50,8 @@ import {
   Wrench,
   FileCheck,
   Save,
-  Loader2
+  Loader2,
+  ArrowRight
 } from "lucide-react";
 
 // Types for collected data from Quick Mode synthesis
@@ -221,9 +222,10 @@ interface ContractGeneratorProps {
   existingContract?: ExistingContract | null;
   onContractGenerated?: (contractData: any) => void;
   onProgressUpdate?: (data: ContractProgressUpdate) => void;
+  onContinue?: () => void;
 }
 
-const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate }: ContractGeneratorProps) => {
+const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate, onContinue }: ContractGeneratorProps) => {
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
@@ -1670,6 +1672,19 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                   <span>Save the contract and send PDF via email</span>
                 </p>
               </div>
+
+              {/* Continue Button */}
+              {onContinue && (
+                <div className="pt-4 border-t border-slate-200">
+                  <Button
+                    onClick={onContinue}
+                    className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+                  >
+                    Continue
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
