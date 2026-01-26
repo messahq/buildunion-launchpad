@@ -1,23 +1,24 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
-  ArrowRight, 
-  ArrowLeft, 
-  Ruler, 
   MapPin, 
-  Wrench, 
-  Users,
-  CheckCircle2,
+  Camera,
   Sparkles,
-  Loader2
+  Loader2,
+  X,
+  Upload,
+  User,
+  Users,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ============================================
-// QUESTION DEFINITIONS & WORKFLOW MAPPING
+// TYPE DEFINITIONS
 // ============================================
 
 export type ProjectSize = "small" | "medium" | "large";
@@ -30,6 +31,8 @@ export interface ProjectAnswers {
   location: string;
   workType: WorkType | null;
   teamNeed: TeamNeed | null;
+  description: string;
+  images: File[];
 }
 
 export interface WorkflowRecommendation {
@@ -40,11 +43,50 @@ export interface WorkflowRecommendation {
   features: string[];
 }
 
+// Size categories matching pricing tiers
+const SIZE_OPTIONS: { 
+  value: ProjectSize; 
+  label: string; 
+  teamSize: string; 
+  description: string;
+  icon: React.ReactNode;
+}[] = [
+  { 
+    value: "small", 
+    label: "Small", 
+    teamSize: "1-2 people",
+    description: "Quick jobs, simple estimates",
+    icon: <User className="h-5 w-5" />
+  },
+  { 
+    value: "medium", 
+    label: "Medium", 
+    teamSize: "Up to 10 people",
+    description: "Standard projects with team",
+    icon: <Users className="h-5 w-5" />
+  },
+  { 
+    value: "large", 
+    label: "Large", 
+    teamSize: "10-50+ people",
+    description: "Complex projects, full management",
+    icon: <Building2 className="h-5 w-5" />
+  },
+];
+
+const WORK_TYPES: { value: WorkType; label: string; icon: string }[] = [
+  { value: "painting", label: "Painting", icon: "🎨" },
+  { value: "flooring", label: "Flooring", icon: "🪵" },
+  { value: "renovation", label: "Renovation", icon: "🔨" },
+  { value: "new_construction", label: "New Build", icon: "🏗️" },
+  { value: "repair", label: "Repair", icon: "🔧" },
+  { value: "other", label: "Other", icon: "📋" },
+];
+
 // Maps answers to workflow recommendation
 export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendation {
   const { size, workType, teamNeed } = answers;
   
-  // Default recommendation
   let recommendation: WorkflowRecommendation = {
     mode: "quick",
     calculator: null,
@@ -53,17 +95,20 @@ export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendati
     features: ["Photo Estimate", "Quote", "Contract"]
   };
 
-  // Size determines base complexity
+  // Size determines base complexity (matching pricing tiers)
   if (size === "small") {
     recommendation.mode = "quick";
     recommendation.estimatedSteps = 3;
+    recommendation.features = ["Photo Estimate", "Quote", "Contract"];
   } else if (size === "medium") {
     recommendation.mode = "standard";
     recommendation.estimatedSteps = 5;
-    recommendation.features = ["Photo Estimate", "Calculator", "Quote", "Contract", "Templates"];
+    recommendation.teamEnabled = true;
+    recommendation.features = ["Photo Estimate", "Calculator", "Quote", "Contract", "Team"];
   } else if (size === "large") {
     recommendation.mode = "full";
     recommendation.estimatedSteps = 8;
+    recommendation.teamEnabled = true;
     recommendation.features = ["Documents", "Photo Estimate", "Calculator", "Quote", "Contract", "Team", "Tasks", "Timeline"];
   }
 
@@ -76,372 +121,27 @@ export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendati
       recommendation.calculator = "tile";
       break;
     case "renovation":
-      recommendation.calculator = "general";
-      break;
     case "new_construction":
-      recommendation.mode = "full"; // Override to full for new construction
       recommendation.calculator = "general";
-      recommendation.estimatedSteps = 8;
+      if (workType === "new_construction" && size !== "large") {
+        recommendation.mode = "full";
+        recommendation.estimatedSteps = 8;
+      }
       break;
     case "repair":
-      recommendation.calculator = null; // No specific calculator
+      recommendation.calculator = null;
       break;
   }
 
   // Team need overrides
   if (teamNeed === "with_team") {
     recommendation.teamEnabled = true;
-    if (recommendation.mode === "quick") {
-      recommendation.mode = "standard";
-      recommendation.estimatedSteps = 5;
-    }
     if (!recommendation.features.includes("Team")) {
       recommendation.features.push("Team");
     }
   }
 
   return recommendation;
-}
-
-// ============================================
-// QUESTION STEP COMPONENTS
-// ============================================
-
-interface StepProps {
-  answers: ProjectAnswers;
-  onUpdate: (updates: Partial<ProjectAnswers>) => void;
-  onNext: () => void;
-  onBack?: () => void;
-}
-
-// Step 1: Project Name
-function NameStep({ answers, onUpdate, onNext }: StepProps) {
-  const isValid = answers.name.trim().length >= 2;
-  
-  return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">What's your project called?</h2>
-        <p className="text-muted-foreground">Give your project a memorable name</p>
-      </div>
-      
-      <div className="max-w-md mx-auto space-y-4">
-        <Input
-          value={answers.name}
-          onChange={(e) => onUpdate({ name: e.target.value })}
-          placeholder="e.g., Kitchen Renovation, Basement Flooring..."
-          className="text-lg h-12"
-          autoFocus
-        />
-        
-        <Button 
-          onClick={onNext} 
-          disabled={!isValid}
-          className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-        >
-          Continue
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// Step 2: Project Size
-function SizeStep({ answers, onUpdate, onNext, onBack }: StepProps) {
-  const sizes: { value: ProjectSize; label: string; description: string; icon: string }[] = [
-    { value: "small", label: "Small", description: "Quick job, under $5,000", icon: "🏠" },
-    { value: "medium", label: "Medium", description: "Standard project, $5,000 - $25,000", icon: "🏗️" },
-    { value: "large", label: "Large", description: "Major project, over $25,000", icon: "🏢" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">How big is this project?</h2>
-        <p className="text-muted-foreground">This helps us set up the right workflow</p>
-      </div>
-      
-      <div className="grid gap-4 max-w-lg mx-auto">
-        {sizes.map((size) => (
-          <Card
-            key={size.value}
-            className={cn(
-              "cursor-pointer transition-all hover:border-amber-400",
-              answers.size === size.value && "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20"
-            )}
-            onClick={() => {
-              onUpdate({ size: size.value });
-              setTimeout(onNext, 300);
-            }}
-          >
-            <CardContent className="flex items-center gap-4 p-4">
-              <span className="text-3xl">{size.icon}</span>
-              <div className="flex-1">
-                <div className="font-semibold text-foreground">{size.label}</div>
-                <div className="text-sm text-muted-foreground">{size.description}</div>
-              </div>
-              {answers.size === size.value && (
-                <CheckCircle2 className="h-5 w-5 text-amber-500" />
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex justify-center">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// Step 3: Location
-function LocationStep({ answers, onUpdate, onNext, onBack }: StepProps) {
-  const isValid = answers.location.trim().length >= 3;
-  
-  return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">Where is the project?</h2>
-        <p className="text-muted-foreground">City or address for logistics planning</p>
-      </div>
-      
-      <div className="max-w-md mx-auto space-y-4">
-        <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            value={answers.location}
-            onChange={(e) => onUpdate({ location: e.target.value })}
-            placeholder="e.g., Toronto, ON or 123 Main St..."
-            className="text-lg h-12 pl-10"
-          />
-        </div>
-        
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={onBack} className="flex-1 h-12">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <Button 
-            onClick={onNext} 
-            disabled={!isValid}
-            className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-          >
-            Continue
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Step 4: Work Type
-function WorkTypeStep({ answers, onUpdate, onNext, onBack }: StepProps) {
-  const types: { value: WorkType; label: string; icon: string }[] = [
-    { value: "painting", label: "Painting", icon: "🎨" },
-    { value: "flooring", label: "Flooring / Tiling", icon: "🪵" },
-    { value: "renovation", label: "Renovation", icon: "🔨" },
-    { value: "new_construction", label: "New Construction", icon: "🏗️" },
-    { value: "repair", label: "Repair / Maintenance", icon: "🔧" },
-    { value: "other", label: "Other", icon: "📋" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">What type of work?</h2>
-        <p className="text-muted-foreground">We'll suggest the right tools and calculators</p>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
-        {types.map((type) => (
-          <Card
-            key={type.value}
-            className={cn(
-              "cursor-pointer transition-all hover:border-amber-400",
-              answers.workType === type.value && "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20"
-            )}
-            onClick={() => {
-              onUpdate({ workType: type.value });
-              setTimeout(onNext, 300);
-            }}
-          >
-            <CardContent className="flex flex-col items-center gap-2 p-4 text-center">
-              <span className="text-2xl">{type.icon}</span>
-              <div className="font-medium text-sm text-foreground">{type.label}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex justify-center">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// Step 5: Team Need
-function TeamStep({ answers, onUpdate, onNext, onBack }: StepProps) {
-  const options: { value: TeamNeed; label: string; description: string; icon: React.ReactNode }[] = [
-    { 
-      value: "solo", 
-      label: "Just Me", 
-      description: "Solo contractor or quick estimate",
-      icon: <Wrench className="h-8 w-8" />
-    },
-    { 
-      value: "with_team", 
-      label: "With Team", 
-      description: "Multiple workers, subcontractors",
-      icon: <Users className="h-8 w-8" />
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">Working alone or with a team?</h2>
-        <p className="text-muted-foreground">This determines collaboration features</p>
-      </div>
-      
-      <div className="grid gap-4 max-w-lg mx-auto">
-        {options.map((option) => (
-          <Card
-            key={option.value}
-            className={cn(
-              "cursor-pointer transition-all hover:border-amber-400",
-              answers.teamNeed === option.value && "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20"
-            )}
-            onClick={() => {
-              onUpdate({ teamNeed: option.value });
-              setTimeout(onNext, 300);
-            }}
-          >
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="text-amber-500">{option.icon}</div>
-              <div className="flex-1">
-                <div className="font-semibold text-foreground">{option.label}</div>
-                <div className="text-sm text-muted-foreground">{option.description}</div>
-              </div>
-              {answers.teamNeed === option.value && (
-                <CheckCircle2 className="h-5 w-5 text-amber-500" />
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex justify-center">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// Step 6: Summary & Recommendation
-function SummaryStep({ answers, onBack, onStart, saving }: StepProps & { onStart: () => void; saving?: boolean }) {
-  const recommendation = determineWorkflow(answers);
-  
-  const modeLabels = {
-    quick: "Quick Mode",
-    standard: "Standard Workflow", 
-    full: "Full Project Management"
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 mb-4">
-          <Sparkles className="h-4 w-4" />
-          <span className="text-sm font-medium">Workflow Ready</span>
-        </div>
-        <h2 className="text-2xl font-bold text-foreground">{answers.name}</h2>
-        <p className="text-muted-foreground">Here's your personalized workflow</p>
-      </div>
-      
-      <Card className="max-w-lg mx-auto border-amber-200 dark:border-amber-800">
-        <CardContent className="p-6 space-y-4">
-          {/* Project Summary */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <Label className="text-muted-foreground">Size</Label>
-              <p className="font-medium capitalize">{answers.size}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Location</Label>
-              <p className="font-medium">{answers.location}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Work Type</Label>
-              <p className="font-medium capitalize">{answers.workType?.replace("_", " ")}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Team</Label>
-              <p className="font-medium">{answers.teamNeed === "solo" ? "Solo" : "With Team"}</p>
-            </div>
-          </div>
-
-          <div className="border-t pt-4">
-            <Label className="text-muted-foreground">Recommended Workflow</Label>
-            <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">
-              {modeLabels[recommendation.mode]}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {recommendation.estimatedSteps} steps • {recommendation.features.length} features
-            </p>
-          </div>
-
-          {/* Features */}
-          <div className="flex flex-wrap gap-2">
-            {recommendation.features.map((feature) => (
-              <span 
-                key={feature}
-                className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground"
-              >
-                {feature}
-              </span>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-3 max-w-lg mx-auto">
-        <Button variant="outline" onClick={onBack} disabled={saving} className="flex-1 h-12">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Button 
-          onClick={onStart}
-          disabled={saving}
-          className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              Start Project
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
-  );
 }
 
 // ============================================
@@ -455,95 +155,254 @@ interface ProjectQuestionnaireProps {
 }
 
 export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: ProjectQuestionnaireProps) {
-  const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<ProjectAnswers>({
     name: "",
     size: null,
     location: "",
     workType: null,
     teamNeed: null,
+    description: "",
+    images: [],
   });
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const updateAnswers = (updates: Partial<ProjectAnswers>) => {
     setAnswers(prev => ({ ...prev, ...updates }));
   };
 
-  const totalSteps = 6;
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-  const handleStart = () => {
+    // Create previews
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+    updateAnswers({ images: [...answers.images, ...files] });
+  };
+
+  const removeImage = (index: number) => {
+    URL.revokeObjectURL(imagePreviews[index]);
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    updateAnswers({ images: answers.images.filter((_, i) => i !== index) });
+  };
+
+  const handleSubmit = () => {
     const workflow = determineWorkflow(answers);
     onComplete(answers, workflow);
   };
 
+  // Validation
+  const isValid = 
+    answers.name.trim().length >= 2 && 
+    answers.size !== null;
+
+  const recommendation = answers.size ? determineWorkflow(answers) : null;
+
   return (
-    <div className="min-h-[500px] flex flex-col">
-      {/* Progress indicator */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-muted-foreground">Step {step + 1} of {totalSteps}</span>
-          <Button variant="ghost" size="sm" onClick={onCancel} className="text-muted-foreground">
-            Cancel
-          </Button>
+    <div className="space-y-6 p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">New Project</h2>
+          <p className="text-sm text-muted-foreground">Tell us about your project</p>
         </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-300"
-            style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
-          />
-        </div>
+        <Button variant="ghost" size="icon" onClick={onCancel}>
+          <X className="h-5 w-5" />
+        </Button>
       </div>
 
-      {/* Step content */}
-      <div className="flex-1 flex items-center justify-center">
-        {step === 0 && (
-          <NameStep 
-            answers={answers} 
-            onUpdate={updateAnswers} 
-            onNext={() => setStep(1)} 
+      {/* Form */}
+      <div className="space-y-6">
+        {/* Project Name */}
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-foreground">
+            Project Name <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="name"
+            value={answers.name}
+            onChange={(e) => updateAnswers({ name: e.target.value })}
+            placeholder="e.g., Kitchen Renovation, Office Painting..."
+            className="h-11"
+            autoFocus
           />
-        )}
-        {step === 1 && (
-          <SizeStep 
-            answers={answers} 
-            onUpdate={updateAnswers} 
-            onNext={() => setStep(2)}
-            onBack={() => setStep(0)}
+        </div>
+
+        {/* Project Location */}
+        <div className="space-y-2">
+          <Label htmlFor="location" className="text-foreground">
+            Location
+          </Label>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="location"
+              value={answers.location}
+              onChange={(e) => updateAnswers({ location: e.target.value })}
+              placeholder="e.g., Toronto, ON"
+              className="h-11 pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Project Size - Matching Pricing Tiers */}
+        <div className="space-y-2">
+          <Label className="text-foreground">
+            Project Size <span className="text-destructive">*</span>
+          </Label>
+          <div className="grid grid-cols-3 gap-2">
+            {SIZE_OPTIONS.map((option) => (
+              <Card
+                key={option.value}
+                className={cn(
+                  "cursor-pointer transition-all hover:border-primary/50",
+                  answers.size === option.value 
+                    ? "border-primary bg-primary/5 ring-1 ring-primary" 
+                    : "border-border"
+                )}
+                onClick={() => updateAnswers({ size: option.value })}
+              >
+                <CardContent className="p-3 text-center space-y-1">
+                  <div className={cn(
+                    "mx-auto w-8 h-8 rounded-full flex items-center justify-center",
+                    answers.size === option.value 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    {option.icon}
+                  </div>
+                  <div className="font-medium text-sm text-foreground">{option.label}</div>
+                  <div className="text-xs text-muted-foreground">{option.teamSize}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Work Type */}
+        <div className="space-y-2">
+          <Label className="text-foreground">Work Type</Label>
+          <div className="flex flex-wrap gap-2">
+            {WORK_TYPES.map((type) => (
+              <button
+                key={type.value}
+                type="button"
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all border",
+                  answers.workType === type.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                )}
+                onClick={() => updateAnswers({ workType: type.value })}
+              >
+                <span>{type.icon}</span>
+                <span>{type.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Image Upload */}
+        <div className="space-y-2">
+          <Label className="text-foreground">Photos (optional)</Label>
+          <p className="text-xs text-muted-foreground">Upload site photos for AI analysis</p>
+          
+          <div className="flex flex-wrap gap-2">
+            {imagePreviews.map((preview, index) => (
+              <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
+                <img src={preview} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/80 flex items-center justify-center hover:bg-background"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-20 h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Camera className="h-5 w-5" />
+              <span className="text-xs">Add</span>
+            </button>
+          </div>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleImageUpload}
           />
-        )}
-        {step === 2 && (
-          <LocationStep 
-            answers={answers} 
-            onUpdate={updateAnswers} 
-            onNext={() => setStep(3)}
-            onBack={() => setStep(1)}
+        </div>
+
+        {/* Description */}
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-foreground">
+            Brief Description (optional)
+          </Label>
+          <Textarea
+            id="description"
+            value={answers.description}
+            onChange={(e) => updateAnswers({ description: e.target.value })}
+            placeholder="Describe the scope of work, materials needed, special requirements..."
+            rows={3}
+            className="resize-none"
           />
+        </div>
+
+        {/* AI Recommendation Preview */}
+        {recommendation && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm text-foreground">
+                    Recommended: {recommendation.mode === "quick" ? "Quick Mode" : recommendation.mode === "standard" ? "Standard Workflow" : "Full Project Management"}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {recommendation.estimatedSteps} steps • {recommendation.features.slice(0, 3).join(", ")}
+                    {recommendation.features.length > 3 && ` +${recommendation.features.length - 3} more`}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
-        {step === 3 && (
-          <WorkTypeStep 
-            answers={answers} 
-            onUpdate={updateAnswers} 
-            onNext={() => setStep(4)}
-            onBack={() => setStep(2)}
-          />
-        )}
-        {step === 4 && (
-          <TeamStep 
-            answers={answers} 
-            onUpdate={updateAnswers} 
-            onNext={() => setStep(5)}
-            onBack={() => setStep(3)}
-          />
-        )}
-        {step === 5 && (
-          <SummaryStep 
-            answers={answers} 
-            onUpdate={updateAnswers} 
-            onNext={() => {}}
-            onBack={() => setStep(4)}
-            onStart={handleStart}
-            saving={saving}
-          />
-        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-2">
+        <Button variant="outline" onClick={onCancel} disabled={saving} className="flex-1">
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmit}
+          disabled={!isValid || saving}
+          className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Upload className="mr-2 h-4 w-4" />
+              Create & Analyze
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

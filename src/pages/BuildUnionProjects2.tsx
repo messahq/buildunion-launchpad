@@ -76,8 +76,9 @@ const BuildUnionProjects2 = () => {
         other: "other"
       };
 
-      // Create project description from workflow
-      const description = `${workflow.mode} workflow with ${workflow.estimatedSteps} steps. Features: ${workflow.features.join(", ")}`;
+      // Create project description - use user's description or generate from workflow
+      const description = answers.description.trim() || 
+        `${workflow.mode} workflow with ${workflow.estimatedSteps} steps. Features: ${workflow.features.join(", ")}`;
 
       // Insert into projects table
       const { data: projectData, error: projectError } = await supabase
@@ -95,7 +96,32 @@ const BuildUnionProjects2 = () => {
 
       if (projectError) throw projectError;
 
-      // Also create a project_summaries entry with the workflow mode
+      // Upload images to storage if any
+      const uploadedImagePaths: string[] = [];
+      if (answers.images.length > 0) {
+        for (const image of answers.images) {
+          const fileExt = image.name.split('.').pop();
+          const fileName = `${projectData.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from("project-documents")
+            .upload(fileName, image);
+          
+          if (!uploadError) {
+            uploadedImagePaths.push(fileName);
+          }
+        }
+
+        // Update project with site_images if uploads succeeded
+        if (uploadedImagePaths.length > 0) {
+          await supabase
+            .from("projects")
+            .update({ site_images: uploadedImagePaths })
+            .eq("id", projectData.id);
+        }
+      }
+
+      // Create a project_summaries entry with the workflow mode
       const { error: summaryError } = await supabase
         .from("project_summaries")
         .insert({
@@ -113,13 +139,14 @@ const BuildUnionProjects2 = () => {
             features: workflow.features,
             projectSize: answers.size,
             workType: answers.workType,
-            teamNeed: answers.teamNeed
+            teamNeed: answers.teamNeed,
+            userDescription: answers.description,
+            imageCount: uploadedImagePaths.length
           }]
         });
 
       if (summaryError) {
         console.error("Error creating summary:", summaryError);
-        // Non-critical, continue
       }
 
       // Update local state
@@ -134,7 +161,11 @@ const BuildUnionProjects2 = () => {
       }, ...prev]);
 
       setShowQuestionnaire(false);
-      toast.success(`Project "${answers.name}" created!`);
+      toast.success(`Project "${answers.name}" created!`, {
+        description: uploadedImagePaths.length > 0 
+          ? `${uploadedImagePaths.length} photo(s) uploaded for AI analysis`
+          : undefined
+      });
 
     } catch (error) {
       console.error("Error saving project:", error);
