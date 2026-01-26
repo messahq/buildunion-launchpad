@@ -23,8 +23,9 @@ import {
   Pencil, X, Check,
   Users, User, Image, FileCheck, Briefcase, MapPin,
   Camera, DollarSign, Package, Brain, Crown, Lock, FileUp, ClipboardList, ScrollText,
-  Download, Eye
+  Download, Eye, AlertTriangle
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { downloadPDF, generatePDFBlob, buildContractHTML } from "@/lib/pdfGenerator";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
 import { useBuProfile } from "@/hooks/useBuProfile";
@@ -687,9 +688,23 @@ const BuildUnionProjectDetails = () => {
                   <Input
                     value={editAddress}
                     onChange={(e) => setEditAddress(e.target.value)}
-                    placeholder="Project address"
-                    className="mt-1 max-w-lg"
+                    placeholder="e.g., 123 Main Street, Toronto, ON"
+                    className={cn(
+                      "mt-1 max-w-lg",
+                      editAddress && editAddress.trim().length > 0 && editAddress.trim().length < 10 && "border-amber-400 focus:ring-amber-400"
+                    )}
                   />
+                  {editAddress && editAddress.trim().length > 0 && editAddress.trim().length < 10 && (
+                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Address seems incomplete - weather data may not be available
+                    </p>
+                  )}
+                  {(!editAddress || editAddress.trim().length === 0) && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add a valid address to enable weather forecasts and construction alerts
+                    </p>
+                  )}
                 </div>
 
                 <div>
