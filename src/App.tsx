@@ -12,7 +12,7 @@ import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
 import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
 import BuildUnionNewProject from "./pages/BuildUnionNewProject";
-import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
+
 import BuildUnionProjectFacts from "./pages/BuildUnionProjectFacts";
 import BuildUnionPricing from "./pages/BuildUnionPricing";
 import BuildUnionProfile from "./pages/BuildUnionProfile";
@@ -48,7 +48,7 @@ const App = () => (
                   <Route path="/dock" element={<Index />} />
                   <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
                   <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
-                  <Route path="/buildunion/project/:projectId" element={<BuildUnionProjectDetails />} />
+                  {/* Project details route removed - using Projects2 workflow */}
                   <Route path="/buildunion/facts" element={<BuildUnionProjectFacts />} />
                   <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
                   <Route path="/buildunion/profile" element={<BuildUnionProfile />} />
