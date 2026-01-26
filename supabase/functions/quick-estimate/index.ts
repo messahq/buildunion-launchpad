@@ -5,6 +5,40 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ============================================
+// FILTER ANSWERS & AI TRIGGERS INTERFACES
+// ============================================
+
+interface FilterAnswers {
+  inputFilter: {
+    dataAvailability: "both" | "blueprints_only" | "photos_only" | "none";
+    siteModifications: "significant" | "minor" | "none" | "unknown";
+  };
+  technicalFilter: {
+    affectsStructure: boolean;
+    affectsMechanical: boolean;
+    affectsFacade: boolean;
+    hasProjectManager: "yes_pm" | "yes_technical" | "no" | "self";
+  };
+  workflowFilter: {
+    subcontractorCount: "1-2" | "3-5" | "6+" | "not_applicable";
+    deadline: "strict_fixed" | "flexible_fixed" | "strict_flexible" | "both_flexible";
+  };
+}
+
+interface AITriggers {
+  ragEnabled: boolean;
+  conflictDetection: boolean;
+  obcSearch: boolean;
+  teamMapDepth: "basic" | "standard" | "deep";
+  reportGeneration: boolean;
+  recommendTeamMode: boolean;
+}
+
+// ============================================
+// DUAL-ENGINE OUTPUT TYPES
+// ============================================
+
 interface GeminiVisualData {
   total_area: number | null;
   unit: string;
@@ -32,6 +66,15 @@ interface GPTEstimateData {
   total_material_area: number;
   summary: string;
   recommendations: string[];
+  raw_response?: string;
+}
+
+// OpenAI OBC Validation Output (Placeholder for future OPENAI_API_KEY integration)
+interface OpenAIOBCData {
+  obcReferences: string[];
+  regulatoryNotes: string[];
+  permitRequired: boolean;
+  validationStatus: "validated" | "warning" | "pending";
   raw_response?: string;
 }
 
@@ -529,13 +572,57 @@ RESPOND IN JSON:
   }
 }
 
+// ============================================
+// OPENAI OBC VALIDATION PLACEHOLDER
+// Future: Use OPENAI_API_KEY for regulatory validation
+// ============================================
+
+async function openaiOBCValidation(
+  filterAnswers: FilterAnswers | null,
+  aiTriggers: AITriggers | null,
+  _apiKey: string
+): Promise<OpenAIOBCData> {
+  // PLACEHOLDER: This will be implemented when OPENAI_API_KEY is configured
+  // For now, return pending status based on filter answers
+  
+  const requiresOBC = aiTriggers?.obcSearch || false;
+  const affectsStructure = filterAnswers?.technicalFilter?.affectsStructure || false;
+  const affectsMechanical = filterAnswers?.technicalFilter?.affectsMechanical || false;
+  
+  // Generate placeholder OBC references based on work type
+  const obcReferences: string[] = [];
+  if (affectsStructure) {
+    obcReferences.push("OBC 9.10.14 - Structural Requirements");
+    obcReferences.push("OBC 4.1.5 - Load-Bearing Walls");
+  }
+  if (affectsMechanical) {
+    obcReferences.push("OBC 9.31 - Mechanical Systems");
+    obcReferences.push("OBC 9.33 - Plumbing Stacks");
+  }
+  
+  console.log("OBC Validation:", { requiresOBC, affectsStructure, affectsMechanical, obcReferences });
+  
+  return {
+    obcReferences,
+    regulatoryNotes: requiresOBC 
+      ? ["Building permit may be required", "Consult local building authority"]
+      : [],
+    permitRequired: affectsStructure || affectsMechanical,
+    validationStatus: "pending", // Will be "validated" when OPENAI_API_KEY is active
+  };
+}
+
+// ============================================
+// MAIN SERVER
+// ============================================
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { image, description, type, isPremium } = await req.json();
+    const { image, description, type, isPremium, filterAnswers, aiTriggers } = await req.json();
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
@@ -543,10 +630,35 @@ serve(async (req) => {
 
     const premiumMode = isPremium === true;
     console.log(`Processing ${type} request... (Premium: ${premiumMode})`);
+    
+    // Log filter data if provided
+    if (filterAnswers) {
+      console.log("Filter Answers received:", JSON.stringify(filterAnswers));
+    }
+    if (aiTriggers) {
+      console.log("AI Triggers:", JSON.stringify(aiTriggers));
+    }
 
+    // Run dual-engine analysis
     const result = type === "photo_estimate" 
       ? await dualEngineAnalysis(image, description, apiKey, premiumMode)
       : await standardAnalysis(image, description, apiKey);
+    
+    // If OBC search is triggered, add regulatory data
+    if (aiTriggers?.obcSearch) {
+      const obcData = await openaiOBCValidation(filterAnswers, aiTriggers, apiKey);
+      
+      // Merge OBC data into result
+      if (result.estimate) {
+        result.estimate.obcValidation = obcData;
+        result.estimate.dualEngine = result.estimate.dualEngine || {};
+        result.estimate.dualEngine.openai = {
+          role: "Regulatory Validator",
+          model: "gpt-5-mini (pending)",
+          findings: obcData,
+        };
+      }
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

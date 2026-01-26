@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SubscriptionTier, TEAM_LIMITS } from "@/hooks/useSubscription";
+import { FilterAnswers, AITriggers } from "./FilterQuestions";
+import ProjectSynthesis, { DualEngineOutput, SynthesisResult } from "./ProjectSynthesis";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -33,6 +35,9 @@ export interface AIAnalysisResult {
   projectSize: "small" | "medium" | "large";
   projectSizeReason: string;
   confidence: "low" | "medium" | "high";
+  // Dual-engine output for synthesis
+  dualEngineOutput?: DualEngineOutput;
+  synthesisResult?: SynthesisResult;
 }
 
 export interface EditedAnalysisData {
@@ -45,6 +50,8 @@ export interface WorkflowSelectorProps {
   projectId: string;
   analysisResult: AIAnalysisResult;
   tier: SubscriptionTier;
+  filterAnswers?: FilterAnswers;
+  aiTriggers?: AITriggers;
   onSelectWorkflow: (mode: "solo" | "team", editedData?: EditedAnalysisData) => void;
   onUpgradeClick: () => void;
 }
@@ -102,6 +109,8 @@ export default function WorkflowSelector({
   projectId,
   analysisResult,
   tier,
+  filterAnswers,
+  aiTriggers,
   onSelectWorkflow,
   onUpgradeClick,
 }: WorkflowSelectorProps) {
@@ -118,17 +127,41 @@ export default function WorkflowSelector({
   const [newMaterialName, setNewMaterialName] = useState("");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
 
-  // Determine recommended mode based on tier and project size
+  // Determine recommended mode based on tier, project size, AND filter answers (tier-logic hardcoding)
   const getRecommendedMode = (): "solo" | "team" => {
     if (tier === "free") return "solo";
     
-    // For PRO+ users, recommend based on project size
+    // TIER-LOGIC HARDCODING: Team Mode triggers
+    // 1. If aiTriggers explicitly recommends team mode
+    if (aiTriggers?.recommendTeamMode) {
+      return canAccessTeam ? "team" : "solo";
+    }
+    
+    // 2. If subcontractorCount > 3 (3-5 or 6+)
+    if (filterAnswers?.workflowFilter.subcontractorCount === "3-5" || 
+        filterAnswers?.workflowFilter.subcontractorCount === "6+") {
+      return canAccessTeam ? "team" : "solo";
+    }
+    
+    // 3. If structural work is involved
+    if (filterAnswers?.technicalFilter.affectsStructure) {
+      return canAccessTeam ? "team" : "solo";
+    }
+    
+    // 4. If mechanical main lines are affected
+    if (filterAnswers?.technicalFilter.affectsMechanical) {
+      return canAccessTeam ? "team" : "solo";
+    }
+    
+    // 5. Legacy: For PRO+ users, recommend based on project size
     if (analysisResult.projectSize === "large" || analysisResult.hasBlueprint) {
       return canAccessTeam ? "team" : "solo";
     }
     if (analysisResult.projectSize === "medium") {
       return canAccessTeam ? "team" : "solo";
     }
+    
+    // Default: Solo mode for low-risk answers
     return "solo";
   };
 
@@ -184,54 +217,65 @@ export default function WorkflowSelector({
   };
 
   return (
-    <div className="p-6 rounded-xl border bg-card">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-foreground">AI Analysis Complete</h3>
-            <Badge className={cn("text-[10px]", SIZE_COLORS[analysisResult.projectSize])}>
-              {analysisResult.projectSize.toUpperCase()} PROJECT
-            </Badge>
-            {analysisResult.confidence !== "high" && (
-              <Badge variant="outline" className="text-[10px]">
-                {analysisResult.confidence} confidence
+    <div className="space-y-0">
+      {/* Project Synthesis Bridge - Only show if we have filter data */}
+      {filterAnswers && aiTriggers && (
+        <ProjectSynthesis
+          filterAnswers={filterAnswers}
+          aiTriggers={aiTriggers}
+          dualEngineOutput={analysisResult.dualEngineOutput}
+          synthesisResult={analysisResult.synthesisResult}
+        />
+      )}
+
+      <div className="p-6 rounded-xl border bg-card">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold text-foreground">AI Analysis Complete</h3>
+              <Badge className={cn("text-[10px]", SIZE_COLORS[analysisResult.projectSize])}>
+                {analysisResult.projectSize.toUpperCase()} PROJECT
               </Badge>
+              {analysisResult.confidence !== "high" && (
+                <Badge variant="outline" className="text-[10px]">
+                  {analysisResult.confidence} confidence
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">{analysisResult.projectSizeReason}</p>
+          </div>
+        </div>
+
+        {/* Tier Info Banner */}
+        <div className="flex items-center justify-between px-4 py-2 mb-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-2">
+            <Crown className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-medium text-foreground">
+              {tier.charAt(0).toUpperCase() + tier.slice(1)} Plan
+            </span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {tier === "free" ? (
+              <span>Solo Mode only</span>
+            ) : (
+              <span>Up to {teamLimit === Infinity ? "unlimited" : teamLimit} team members</span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">{analysisResult.projectSizeReason}</p>
-        </div>
-      </div>
-
-      {/* Tier Info Banner */}
-      <div className="flex items-center justify-between px-4 py-2 mb-4 rounded-lg bg-muted/50 border border-border">
-        <div className="flex items-center gap-2">
-          <Crown className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-medium text-foreground">
-            {tier.charAt(0).toUpperCase() + tier.slice(1)} Plan
-          </span>
-        </div>
-        <div className="text-sm text-muted-foreground">
-          {tier === "free" ? (
-            <span>Solo Mode only</span>
-          ) : (
-            <span>Up to {teamLimit === Infinity ? "unlimited" : teamLimit} team members</span>
+          {tier === "free" && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onUpgradeClick}
+              className="text-xs text-primary hover:text-primary"
+            >
+              Upgrade
+            </Button>
           )}
         </div>
-        {tier === "free" && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onUpgradeClick}
-            className="text-xs text-primary hover:text-primary"
-          >
-            Upgrade
-          </Button>
-        )}
-      </div>
 
       {/* AI Detection Results - Editable */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 rounded-lg bg-muted/30">
@@ -526,6 +570,7 @@ export default function WorkflowSelector({
             )}
           </button>
         </div>
+      </div>
       </div>
 
       {/* User edits indicator */}

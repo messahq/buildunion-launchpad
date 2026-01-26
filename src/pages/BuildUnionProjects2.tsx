@@ -528,6 +528,8 @@ const BuildUnionProjects2 = () => {
                     projectId={createdProjectId}
                     analysisResult={aiAnalysisForSelector}
                     tier={subscription.tier}
+                    filterAnswers={filterAnswers || undefined}
+                    aiTriggers={aiTriggers || undefined}
                     onSelectWorkflow={handleWorkflowSelect}
                     onUpgradeClick={handleUpgradeClick}
                   />
