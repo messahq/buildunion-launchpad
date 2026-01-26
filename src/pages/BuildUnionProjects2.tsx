@@ -77,6 +77,60 @@ const BuildUnionProjects2 = () => {
     loadProjects();
   }, [user, authLoading]);
 
+  // AI-determined workflow state
+  const [aiWorkflowRecommendation, setAiWorkflowRecommendation] = useState<{
+    mode: "quick" | "standard" | "full";
+    reason: string;
+    projectSize: "small" | "medium" | "large";
+    features: string[];
+  } | null>(null);
+
+  // Determine workflow from AI analysis results
+  const determineAIWorkflow = (result: typeof analysisResult, tier: string) => {
+    if (!result) return null;
+
+    const area = result.estimate.area || 0;
+    const materialsCount = result.estimate.materials.length;
+    const hasBlueprint = result.blueprintAnalysis?.extractedText;
+    const isPremium = tier === "premium" || tier === "enterprise";
+    const isPro = tier === "pro" || isPremium;
+
+    // Determine project size from AI analysis
+    let projectSize: "small" | "medium" | "large" = "small";
+    if (area > 2000 || materialsCount > 10) {
+      projectSize = "large";
+    } else if (area > 500 || materialsCount > 5) {
+      projectSize = "medium";
+    }
+
+    // Determine workflow mode based on analysis + tier
+    let mode: "quick" | "standard" | "full" = "quick";
+    let reason = "";
+    let features: string[] = [];
+
+    if (projectSize === "large" || hasBlueprint) {
+      if (isPro) {
+        mode = "full";
+        reason = `Large project detected (${area} sq ft). Full project management recommended for team coordination.`;
+        features = ["AI Estimation", "Blueprint Analysis", "Team Management", "Document Hub", "Contract Generator"];
+      } else {
+        mode = "standard";
+        reason = `Large project detected. Upgrade to Pro for full team management features.`;
+        features = ["AI Estimation", "Quote Generator", "Contract"];
+      }
+    } else if (projectSize === "medium") {
+      mode = "standard";
+      reason = `Medium project (${area} sq ft) with ${materialsCount} materials. Standard workflow covers your needs.`;
+      features = ["AI Estimation", "Calculator", "Quote", "Contract"];
+    } else {
+      mode = "quick";
+      reason = `Quick estimate ready! ${area} sq ft detected with ${materialsCount} materials.`;
+      features = ["Photo Estimate", "Quote", "Contract"];
+    }
+
+    return { mode, reason, projectSize, features };
+  };
+
   // Trigger AI analysis after project creation
   useEffect(() => {
     const hasContent = pendingImages.length > 0 || pendingDocuments.length > 0;
@@ -90,30 +144,63 @@ const BuildUnionProjects2 = () => {
         workType: pendingWorkType,
       }).then((result) => {
         if (result) {
-          const areaText = result.estimate.area 
-            ? `Detected ${result.estimate.area} ${result.estimate.areaUnit}` 
-            : "Analysis complete";
-          const docText = result.blueprintAnalysis?.documentCount 
-            ? ` from ${result.blueprintAnalysis.documentCount} document(s)` 
-            : "";
-          
-          toast.success("AI analysis complete!", {
-            description: `${areaText}${docText} with ${result.estimate.materials.length} materials`,
-            action: {
-              label: "View Project",
-              onClick: () => navigate(`/buildunion/project/${createdProjectId}`),
-            },
-          });
+          // AI determines the workflow based on analysis
+          const workflow = determineAIWorkflow(result, subscription.tier);
+          if (workflow) {
+            setAiWorkflowRecommendation(workflow);
+            
+            // Update project_summaries with AI-determined workflow
+            supabase
+              .from("project_summaries")
+              .update({
+                calculator_results: [{
+                  type: "ai_workflow_recommendation",
+                  ...workflow,
+                  aiAnalysis: {
+                    area: result.estimate.area,
+                    areaUnit: result.estimate.areaUnit,
+                    materialsCount: result.estimate.materials.length,
+                    hasBlueprint: !!result.blueprintAnalysis?.extractedText
+                  }
+                }]
+              })
+              .eq("project_id", createdProjectId)
+              .then(() => {
+                toast.success("AI analysis complete!", {
+                  description: workflow.reason
+                });
+              });
+          }
         }
-        // Reset pending state
+        // Reset pending state but keep createdProjectId for workflow selection
         setPendingImages([]);
         setPendingDocuments([]);
         setPendingWorkType(null);
         setPendingDescription("");
-        setCreatedProjectId(null);
       });
     }
-  }, [createdProjectId, pendingImages, pendingDocuments, analyzing]);
+  }, [createdProjectId, pendingImages, pendingDocuments, analyzing, subscription.tier]);
+
+  // Handle workflow selection after AI recommendation
+  const handleWorkflowSelect = async (mode: "quick" | "standard" | "full") => {
+    if (!createdProjectId) return;
+
+    // Navigate based on selected workflow
+    if (mode === "quick") {
+      // Go to Quick Mode with pre-filled data
+      navigate(`/buildunion/quick-mode?projectId=${createdProjectId}`);
+    } else if (mode === "full" && (subscription.tier === "pro" || subscription.tier === "premium")) {
+      // Go to full project details
+      navigate(`/buildunion/project/${createdProjectId}`);
+    } else {
+      // Standard mode - go to project with focus on estimate
+      navigate(`/buildunion/project/${createdProjectId}?tab=synthesis`);
+    }
+
+    // Reset state
+    setAiWorkflowRecommendation(null);
+    setCreatedProjectId(null);
+  };
 
   const handleQuestionnaireComplete = async (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
     if (!user) {
@@ -310,7 +397,7 @@ const BuildUnionProjects2 = () => {
               </div>
 
               {/* AI Analysis Progress (if running) */}
-              {(analyzing || analysisResult || analysisError) && (
+              {analyzing && (
                 <div className="mb-6">
                   <AIAnalysisProgress
                     progress={progress}
@@ -321,6 +408,93 @@ const BuildUnionProjects2 = () => {
                     imageCount={pendingImages.length}
                     documentCount={pendingDocuments.length}
                   />
+                </div>
+              )}
+
+              {/* AI Workflow Recommendation (after analysis) */}
+              {aiWorkflowRecommendation && !analyzing && (
+                <div className="mb-6 p-6 rounded-xl border bg-card">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">AI Recommendation</h3>
+                      <p className="text-sm text-muted-foreground">{aiWorkflowRecommendation.reason}</p>
+                    </div>
+                  </div>
+
+                  {/* Workflow Options */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                    <button
+                      onClick={() => handleWorkflowSelect("quick")}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        aiWorkflowRecommendation.mode === "quick"
+                          ? "border-amber-500 bg-amber-500/10"
+                          : "border-border hover:border-amber-300"
+                      }`}
+                    >
+                      <div className="font-medium text-foreground">Quick Mode</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Photo → Quote → Contract
+                      </div>
+                      {aiWorkflowRecommendation.mode === "quick" && (
+                        <span className="inline-block mt-2 text-xs font-medium text-amber-600">✓ Recommended</span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleWorkflowSelect("standard")}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        aiWorkflowRecommendation.mode === "standard"
+                          ? "border-cyan-500 bg-cyan-500/10"
+                          : "border-border hover:border-cyan-300"
+                      }`}
+                    >
+                      <div className="font-medium text-foreground">Standard</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Estimate + Calculator + Docs
+                      </div>
+                      {aiWorkflowRecommendation.mode === "standard" && (
+                        <span className="inline-block mt-2 text-xs font-medium text-cyan-600">✓ Recommended</span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleWorkflowSelect("full")}
+                      disabled={subscription.tier === "free"}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        aiWorkflowRecommendation.mode === "full"
+                          ? "border-blue-500 bg-blue-500/10"
+                          : subscription.tier === "free"
+                          ? "border-border opacity-50 cursor-not-allowed"
+                          : "border-border hover:border-blue-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">Full Project</span>
+                        {subscription.tier === "free" && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
+                            PRO
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Team + Tasks + Full Management
+                      </div>
+                      {aiWorkflowRecommendation.mode === "full" && subscription.tier !== "free" && (
+                        <span className="inline-block mt-2 text-xs font-medium text-blue-600">✓ Recommended</span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Features preview */}
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium">Selected features: </span>
+                      {aiWorkflowRecommendation.features.join(" → ")}
+                    </div>
+                  </div>
                 </div>
               )}
 
