@@ -83,7 +83,10 @@
     "userModified": "User Modified",
     "aiDraftTooltip": "AI generated draft",
     "userModifiedTooltip": "User modified task",
-    "userModifiedTask": "Task modified - baseline may need review"
+    "userModifiedTask": "Task modified - baseline may need review",
+    "movedNotice": "Timeline is now integrated above",
+    "movedDescription": "The project timeline is now always visible directly below the Project Timeline bar at the top of this page.",
+    "scrollToTop": "Scroll to Timeline"
   },
   "taskEdit": {
     "title": "Edit Task",
