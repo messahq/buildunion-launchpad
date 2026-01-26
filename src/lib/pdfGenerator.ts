@@ -1,12 +1,50 @@
-// PDF Generation utility for project summaries and invoices
+// PDF Generation utility for project summaries, invoices, and reports
 // Using jspdf + html2canvas directly (html2pdf.js removed due to security vulnerability)
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { OperationalTruth, OBCValidationDetails, OBCReference } from '@/types/operationalTruth';
 
 interface PDFOptions {
   filename: string;
   margin?: number;
   pageFormat?: 'a4' | 'letter';
+}
+
+// ============================================
+// PROJECT REPORT TYPES
+// ============================================
+
+export interface ConflictData {
+  conflictType: "area" | "cost" | "materials" | "facts";
+  severity: "high" | "medium" | "low";
+  description: string;
+  photoValue?: string | number;
+  blueprintValue?: string | number;
+}
+
+export interface ProjectReportParams {
+  projectInfo: {
+    name: string;
+    address: string;
+    trade: string;
+    createdAt: string;
+  };
+  operationalTruth: OperationalTruth;
+  obcDetails?: OBCValidationDetails;
+  conflicts: ConflictData[];
+  dualEngineOutput?: {
+    gemini?: { area?: number; confidence?: string; rawExcerpt?: string; materials?: Array<{ item: string; quantity: number; unit: string }> };
+    openai?: { permitRequired?: boolean; obcReferences?: OBCReference[]; rawExcerpt?: string };
+  };
+  companyBranding?: {
+    name?: string;
+    logo?: string;
+    license?: string;
+    wsib?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+  };
 }
 
 // HTML escape function to prevent XSS attacks
@@ -798,4 +836,421 @@ export const buildContractHTML = (data: {
     </body>
     </html>
   `;
+};
+
+// ============================================
+// PROJECT REPORT HTML TEMPLATE
+// ============================================
+
+export const buildProjectReportHTML = (params: ProjectReportParams): string => {
+  const {
+    projectInfo,
+    operationalTruth,
+    obcDetails,
+    conflicts,
+    dualEngineOutput,
+    companyBranding
+  } = params;
+
+  const currentDate = new Date().toLocaleDateString('en-CA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  // Helper functions
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'high': return { bg: '#fef2f2', border: '#fca5a5', text: '#dc2626' };
+      case 'medium': return { bg: '#fffbeb', border: '#fde047', text: '#ca8a04' };
+      case 'low': return { bg: '#f0fdf4', border: '#86efac', text: '#16a34a' };
+      default: return { bg: '#f8fafc', border: '#e2e8f0', text: '#64748b' };
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'clear':
+      case 'aligned':
+      case 'analyzed':
+      case 'high':
+        return { bg: '#dcfce7', text: '#166534' };
+      case 'permit_required':
+      case 'conflict_detected':
+      case 'medium':
+        return { bg: '#fef3c7', text: '#92400e' };
+      case 'pending':
+      case 'low':
+        return { bg: '#f1f5f9', text: '#64748b' };
+      default:
+        return { bg: '#f8fafc', text: '#475569' };
+    }
+  };
+
+  // Build 8 Pillars Section
+  const pillarsHTML = `
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+      <!-- Pillar 1: Confirmed Area -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Confirmed Area</div>
+        <div style="font-size: 18px; font-weight: 700; color: ${operationalTruth.confirmedArea ? '#0d9488' : '#94a3b8'};">
+          ${operationalTruth.confirmedArea ? `${operationalTruth.confirmedArea.toLocaleString()} ${operationalTruth.areaUnit}` : 'N/A'}
+        </div>
+      </div>
+      <!-- Pillar 2: Materials -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Materials</div>
+        <div style="font-size: 18px; font-weight: 700; color: ${operationalTruth.materialsCount > 0 ? '#0d9488' : '#94a3b8'};">
+          ${operationalTruth.materialsCount} items
+        </div>
+      </div>
+      <!-- Pillar 3: Blueprint -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Blueprint</div>
+        <div style="font-size: 14px; font-weight: 600;">
+          <span style="padding: 2px 8px; border-radius: 4px; background: ${getStatusColor(operationalTruth.blueprintStatus).bg}; color: ${getStatusColor(operationalTruth.blueprintStatus).text};">
+            ${operationalTruth.blueprintStatus.toUpperCase()}
+          </span>
+        </div>
+      </div>
+      <!-- Pillar 4: OBC Status -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">OBC Status</div>
+        <div style="font-size: 14px; font-weight: 600;">
+          <span style="padding: 2px 8px; border-radius: 4px; background: ${getStatusColor(operationalTruth.obcCompliance).bg}; color: ${getStatusColor(operationalTruth.obcCompliance).text};">
+            ${operationalTruth.obcCompliance === 'permit_required' ? 'PERMIT REQ.' : operationalTruth.obcCompliance.toUpperCase()}
+          </span>
+        </div>
+      </div>
+      <!-- Pillar 5: Conflict Check -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Conflict Check</div>
+        <div style="font-size: 14px; font-weight: 600;">
+          <span style="padding: 2px 8px; border-radius: 4px; background: ${getStatusColor(operationalTruth.conflictStatus).bg}; color: ${getStatusColor(operationalTruth.conflictStatus).text};">
+            ${operationalTruth.conflictStatus === 'conflict_detected' ? 'CONFLICTS' : operationalTruth.conflictStatus.toUpperCase()}
+          </span>
+        </div>
+      </div>
+      <!-- Pillar 6: Project Mode -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Project Mode</div>
+        <div style="font-size: 14px; font-weight: 600; color: ${operationalTruth.projectMode === 'team' ? '#0891b2' : '#f59e0b'};">
+          ${operationalTruth.projectMode.toUpperCase()}
+        </div>
+      </div>
+      <!-- Pillar 7: Project Size -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Project Size</div>
+        <div style="font-size: 14px; font-weight: 600; text-transform: capitalize;">
+          ${operationalTruth.projectSize}
+        </div>
+      </div>
+      <!-- Pillar 8: AI Confidence -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">AI Confidence</div>
+        <div style="font-size: 14px; font-weight: 600;">
+          <span style="padding: 2px 8px; border-radius: 4px; background: ${getStatusColor(operationalTruth.confidenceLevel).bg}; color: ${getStatusColor(operationalTruth.confidenceLevel).text};">
+            ${operationalTruth.confidenceLevel.toUpperCase()}
+          </span>
+        </div>
+      </div>
+    </div>
+    <!-- Verification Progress -->
+    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: 600; color: #166534;">Verification Progress</span>
+        <span style="font-size: 14px; font-weight: 700; color: #166534;">${operationalTruth.verificationRate}%</span>
+      </div>
+      <div style="background: #dcfce7; border-radius: 4px; height: 8px; overflow: hidden;">
+        <div style="background: linear-gradient(90deg, #22c55e, #16a34a); height: 100%; width: ${operationalTruth.verificationRate}%;"></div>
+      </div>
+      <div style="font-size: 10px; color: #15803d; margin-top: 4px;">${operationalTruth.verifiedPillars} of ${operationalTruth.totalPillars} pillars verified</div>
+    </div>
+  `;
+
+  // Build OBC Compliance Section
+  const obcHTML = obcDetails ? `
+    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #7dd3fc; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: #0369a1; margin: 0 0 16px 0;">🏛️ OBC Regulatory Compliance</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+        <div style="background: white; border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="font-size: 10px; text-transform: uppercase; color: #64748b;">Permit Required</div>
+          <div style="font-size: 16px; font-weight: 700; color: ${obcDetails.permitRequired ? '#dc2626' : '#16a34a'}; margin-top: 4px;">
+            ${obcDetails.permitRequired ? 'YES' : 'NO'}
+          </div>
+        </div>
+        <div style="background: white; border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="font-size: 10px; text-transform: uppercase; color: #64748b;">Permit Type</div>
+          <div style="font-size: 14px; font-weight: 600; color: #0369a1; margin-top: 4px; text-transform: capitalize;">
+            ${obcDetails.permitType || 'N/A'}
+          </div>
+        </div>
+        <div style="background: white; border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="font-size: 10px; text-transform: uppercase; color: #64748b;">Est. Cost</div>
+          <div style="font-size: 16px; font-weight: 700; color: #0369a1; margin-top: 4px;">
+            ${obcDetails.estimatedPermitCost ? `$${obcDetails.estimatedPermitCost.toLocaleString()}` : 'N/A'}
+          </div>
+        </div>
+      </div>
+      ${obcDetails.complianceScore > 0 ? `
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 11px; color: #0369a1;">Compliance Score</span>
+            <span style="font-size: 13px; font-weight: 700; color: #0369a1;">${obcDetails.complianceScore}%</span>
+          </div>
+          <div style="background: #bae6fd; border-radius: 4px; height: 8px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, #0ea5e9, #0284c7); height: 100%; width: ${obcDetails.complianceScore}%;"></div>
+          </div>
+        </div>
+      ` : ''}
+      ${obcDetails.references.length > 0 ? `
+        <div style="margin-top: 16px;">
+          <h4 style="font-size: 11px; font-weight: 600; color: #0369a1; margin: 0 0 8px 0;">OBC References</h4>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${obcDetails.references.slice(0, 6).map(ref => `
+              <span style="background: white; padding: 4px 10px; border-radius: 6px; font-size: 10px; border: 1px solid #7dd3fc;">
+                <strong>${escapeHtml(ref.code)}</strong>: ${escapeHtml(ref.title.slice(0, 40))}${ref.title.length > 40 ? '...' : ''}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${obcDetails.recommendations.length > 0 ? `
+        <div style="margin-top: 16px; padding: 12px; background: white; border-radius: 8px;">
+          <h4 style="font-size: 11px; font-weight: 600; color: #0369a1; margin: 0 0 8px 0;">Recommendations</h4>
+          <ul style="margin: 0; padding-left: 16px; font-size: 11px; color: #475569;">
+            ${obcDetails.recommendations.slice(0, 4).map(rec => `<li style="margin-bottom: 4px;">${escapeHtml(rec)}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+    </div>
+  ` : '';
+
+  // Build Conflicts Section
+  const conflictsHTML = conflicts.length > 0 ? `
+    <div style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: #991b1b; margin: 0 0 16px 0;">⚠️ Conflict Report (${conflicts.length} detected)</h3>
+      <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+        <thead>
+          <tr style="background: #1e293b; color: white;">
+            <th style="padding: 10px; text-align: left; font-size: 10px; text-transform: uppercase;">Type</th>
+            <th style="padding: 10px; text-align: center; font-size: 10px; text-transform: uppercase;">Severity</th>
+            <th style="padding: 10px; text-align: left; font-size: 10px; text-transform: uppercase;">Description</th>
+            <th style="padding: 10px; text-align: center; font-size: 10px; text-transform: uppercase;">Photo AI</th>
+            <th style="padding: 10px; text-align: center; font-size: 10px; text-transform: uppercase;">Blueprint</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${conflicts.map(conflict => {
+            const colors = getSeverityColor(conflict.severity);
+            return `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px; font-size: 11px; font-weight: 600; text-transform: capitalize;">${conflict.conflictType}</td>
+                <td style="padding: 10px; text-align: center;">
+                  <span style="padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; background: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.border};">
+                    ${conflict.severity.toUpperCase()}
+                  </span>
+                </td>
+                <td style="padding: 10px; font-size: 11px; color: #475569;">${escapeHtml(conflict.description)}</td>
+                <td style="padding: 10px; text-align: center; font-size: 11px; font-weight: 600;">${conflict.photoValue || '-'}</td>
+                <td style="padding: 10px; text-align: center; font-size: 11px; font-weight: 600;">${conflict.blueprintValue || '-'}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : '';
+
+  // Build AI Analysis Section
+  const aiAnalysisHTML = dualEngineOutput ? `
+    <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: #854d0e; margin: 0 0 16px 0;">🔬 Dual-Engine AI Analysis</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        ${dualEngineOutput.gemini ? `
+          <div style="background: white; border-radius: 8px; padding: 16px; border-left: 4px solid #3b82f6;">
+            <h4 style="font-size: 12px; font-weight: 600; color: #3b82f6; margin: 0 0 8px 0;">🔵 Gemini (Visual Specialist)</h4>
+            <div style="font-size: 11px; color: #475569;">
+              ${dualEngineOutput.gemini.area ? `<p style="margin: 0 0 4px 0;"><strong>Detected Area:</strong> ${dualEngineOutput.gemini.area.toLocaleString()} sq ft</p>` : ''}
+              ${dualEngineOutput.gemini.confidence ? `<p style="margin: 0 0 4px 0;"><strong>Confidence:</strong> ${dualEngineOutput.gemini.confidence}</p>` : ''}
+              ${dualEngineOutput.gemini.materials?.length ? `<p style="margin: 0;"><strong>Materials:</strong> ${dualEngineOutput.gemini.materials.length} items detected</p>` : ''}
+            </div>
+          </div>
+        ` : ''}
+        ${dualEngineOutput.openai ? `
+          <div style="background: white; border-radius: 8px; padding: 16px; border-left: 4px solid #22c55e;">
+            <h4 style="font-size: 12px; font-weight: 600; color: #22c55e; margin: 0 0 8px 0;">🟢 OpenAI (Regulatory Expert)</h4>
+            <div style="font-size: 11px; color: #475569;">
+              <p style="margin: 0 0 4px 0;"><strong>Permit Required:</strong> ${dualEngineOutput.openai.permitRequired ? 'Yes' : 'No'}</p>
+              ${dualEngineOutput.openai.obcReferences?.length ? `<p style="margin: 0;"><strong>OBC References:</strong> ${dualEngineOutput.openai.obcReferences.length} codes identified</p>` : ''}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  ` : '';
+
+  // Build Materials Section
+  const materialsHTML = dualEngineOutput?.gemini?.materials?.length ? `
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: #1e293b; margin: 0 0 16px 0;">📦 AI-Detected Materials</h3>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        ${dualEngineOutput.gemini.materials.slice(0, 12).map(m => `
+          <span style="background: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; border: 1px solid #e2e8f0;">
+            <strong>${escapeHtml(m.item)}</strong>: ${m.quantity} ${escapeHtml(m.unit)}
+          </span>
+        `).join('')}
+        ${dualEngineOutput.gemini.materials.length > 12 ? `<span style="font-size: 11px; color: #64748b; padding: 6px;">+${dualEngineOutput.gemini.materials.length - 12} more</span>` : ''}
+      </div>
+    </div>
+  ` : '';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Project Report - ${escapeHtml(projectInfo.name)}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+          color: #1a1a1a; 
+          background: #fff;
+          line-height: 1.5;
+          font-size: 12px;
+        }
+      </style>
+    </head>
+    <body>
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 24px 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            ${companyBranding?.logo ? `
+              <img src="${escapeHtml(companyBranding.logo)}" alt="Company Logo" style="height: 56px; width: auto; max-width: 140px; object-fit: contain; background: white; padding: 6px; border-radius: 8px;" />
+            ` : ''}
+            <div>
+              <h1 style="font-size: 24px; font-weight: 700; margin: 0;">${companyBranding?.name ? escapeHtml(companyBranding.name) : '🏗️ BuildUnion'}</h1>
+              <p style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Professional Project Analysis Report</p>
+            </div>
+          </div>
+          <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 8px;">
+            <div style="font-size: 11px; opacity: 0.8;">Generated</div>
+            <div style="font-size: 14px; font-weight: 600;">${currentDate}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Info Bar -->
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 16px 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0;">${escapeHtml(projectInfo.name)}</h2>
+            <p style="font-size: 12px; opacity: 0.9; margin-top: 2px;">
+              ${projectInfo.address ? `📍 ${escapeHtml(projectInfo.address)}` : ''}
+              ${projectInfo.trade ? ` • 🔧 ${escapeHtml(projectInfo.trade.replace('_', ' '))}` : ''}
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 10px; opacity: 0.8; text-transform: uppercase;">Project Created</div>
+            <div style="font-size: 12px; font-weight: 600;">${escapeHtml(projectInfo.createdAt)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div style="padding: 24px 32px;">
+        <!-- 8 Pillars Section -->
+        <h3 style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 3px solid #0d9488;">
+          📊 Operational Truth - 8 Pillars
+        </h3>
+        ${pillarsHTML}
+
+        <!-- OBC Compliance Section -->
+        ${obcHTML}
+
+        <!-- Conflicts Section -->
+        ${conflictsHTML}
+
+        <!-- AI Analysis Section -->
+        ${aiAnalysisHTML}
+
+        <!-- Materials Section -->
+        ${materialsHTML}
+
+        <!-- Signature Section -->
+        <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+          <div style="padding-top: 12px; border-top: 2px solid #1e293b;">
+            <p style="font-size: 12px; color: #64748b; margin: 0;"><strong>Project Manager Signature</strong></p>
+            <div style="height: 50px; margin: 8px 0;"></div>
+            <p style="font-size: 11px; color: #94a3b8;">Date: _______________</p>
+          </div>
+          <div style="padding-top: 12px; border-top: 2px solid #1e293b;">
+            <p style="font-size: 12px; color: #64748b; margin: 0;"><strong>Client Approval</strong></p>
+            <div style="height: 50px; margin: 8px 0;"></div>
+            <p style="font-size: 11px; color: #94a3b8;">Date: _______________</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="margin-top: 32px; padding: 24px 32px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${companyBranding?.logo ? `
+              <img src="${escapeHtml(companyBranding.logo)}" alt="Logo" style="height: 40px; width: auto; max-width: 100px; object-fit: contain; background: white; padding: 4px; border-radius: 6px;" />
+            ` : ''}
+            <div>
+              <p style="font-size: 14px; font-weight: 600; margin: 0;">${companyBranding?.name || 'BuildUnion'}</p>
+              <p style="font-size: 10px; opacity: 0.7; margin-top: 2px;">
+                ${companyBranding?.license ? `License: ${escapeHtml(companyBranding.license)} • ` : ''}
+                ${companyBranding?.wsib ? 'WSIB Covered • ' : ''}Licensed & Insured
+              </p>
+            </div>
+          </div>
+          <div style="text-align: right; font-size: 11px;">
+            ${companyBranding?.phone ? `<p style="margin: 0 0 4px 0; opacity: 0.9;">📞 ${escapeHtml(companyBranding.phone)}</p>` : ''}
+            ${companyBranding?.email ? `<p style="margin: 0 0 4px 0; opacity: 0.9;">✉️ ${escapeHtml(companyBranding.email)}</p>` : ''}
+            ${companyBranding?.website ? `<p style="margin: 0; opacity: 0.9;">🌐 ${escapeHtml(companyBranding.website)}</p>` : ''}
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center;">
+          <p style="font-size: 9px; opacity: 0.6; margin: 0;">Generated with BuildUnion • AI-Powered Construction Intelligence • Premium Report</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// ============================================
+// GENERATE PROJECT REPORT PDF
+// ============================================
+
+export const generateProjectReport = async (
+  params: ProjectReportParams,
+  options?: { download?: boolean; filename?: string }
+): Promise<Blob> => {
+  const htmlContent = buildProjectReportHTML(params);
+  const filename = options?.filename || `ProjectReport_${params.projectInfo.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+  
+  const blob = await generatePDFBlob(htmlContent, {
+    filename,
+    margin: 10,
+    pageFormat: 'a4'
+  });
+
+  if (options?.download !== false) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  return blob;
 };

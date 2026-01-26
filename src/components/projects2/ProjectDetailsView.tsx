@@ -13,7 +13,8 @@ import {
   Cloud,
   MessageSquare,
   Loader2,
-  Map
+  Map,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,10 +29,12 @@ import TeamMapWidget from "./TeamMapWidget";
 import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
-import { buildOperationalTruth } from "@/types/operationalTruth";
+import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useSingleProjectConflicts } from "@/hooks/useSingleProjectConflicts";
+import { generateProjectReport, ConflictData } from "@/lib/pdfGenerator";
+import { ProBadge } from "@/components/ui/pro-badge";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -115,6 +118,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [summary, setSummary] = useState<ProjectSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { t } = useTranslation();
   const { subscription, isDevOverride } = useSubscription();
   
@@ -124,7 +128,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     subscription?.tier === "premium" || 
     subscription?.tier === "enterprise";
   
-  // Check for Premium (for conflict visualization)
+  // Check for Premium (for conflict visualization and reports)
   const isPremium = isDevOverride || 
     subscription?.tier === "premium" || 
     subscription?.tier === "enterprise";
@@ -214,6 +218,70 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const hasLineItems = Array.isArray(summary?.line_items) && summary.line_items.length > 0;
   const totalCost = summary?.total_cost || 0;
 
+  // Build Operational Truth for report
+  const operationalTruth: OperationalTruth = buildOperationalTruth({
+    aiAnalysis,
+    blueprintAnalysis: blueprintAnalysis ? { analyzed: !!blueprintAnalysis.extractedText } : undefined,
+    dualEngineOutput,
+    synthesisResult,
+    filterAnswers,
+    projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
+  });
+
+  // Handle Generate Report
+  const handleGenerateReport = async () => {
+    if (!isPremium) {
+      toast.error(t("report.premiumRequired"));
+      return;
+    }
+
+    if (!project) return;
+
+    setIsGeneratingReport(true);
+    toast.info(t("report.generating"));
+
+    try {
+      // Convert project conflicts to ConflictData format
+      const conflictsForReport: ConflictData[] = projectConflicts.map(c => ({
+        conflictType: c.conflictType,
+        severity: c.severity,
+        description: c.description,
+        photoValue: c.photoValue,
+        blueprintValue: c.blueprintValue,
+      }));
+
+      await generateProjectReport({
+        projectInfo: {
+          name: project.name,
+          address: project.address || "",
+          trade: project.trade || "",
+          createdAt: format(new Date(project.created_at), "MMM d, yyyy"),
+        },
+        operationalTruth,
+        obcDetails: operationalTruth.obcDetails,
+        conflicts: conflictsForReport,
+        dualEngineOutput: dualEngineOutput ? {
+          gemini: dualEngineOutput.gemini ? {
+            area: aiAnalysis?.area || undefined,
+            confidence: aiAnalysis?.confidence,
+            materials: aiAnalysis?.materials,
+          } : undefined,
+          openai: dualEngineOutput.openai ? {
+            permitRequired: dualEngineOutput.openai.permitRequired,
+            obcReferences: operationalTruth.obcDetails?.references,
+          } : undefined,
+        } : undefined,
+      });
+
+      toast.success(t("report.success"));
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error(t("report.error"));
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
@@ -283,12 +351,43 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           </div>
         </div>
 
-        {/* Conflict Status Indicator - Always visible in header */}
-        <ConflictStatusIndicator
-          synthesisResult={synthesisResult}
-          dualEngineOutput={dualEngineOutput}
-          size="md"
-        />
+        {/* Header Actions */}
+        <div className="flex items-center gap-3">
+          {/* Generate Report Button - Premium Feature */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateReport}
+              disabled={isGeneratingReport || !isPremium}
+              className={cn(
+                "gap-2",
+                isPremium 
+                  ? "border-amber-500/50 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20" 
+                  : "opacity-70"
+              )}
+            >
+              {isGeneratingReport ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{t("report.generateReport")}</span>
+            </Button>
+            {!isPremium && (
+              <div className="absolute -top-2 -right-2">
+                <ProBadge tier="premium" size="sm" />
+              </div>
+            )}
+          </div>
+
+          {/* Conflict Status Indicator */}
+          <ConflictStatusIndicator
+            synthesisResult={synthesisResult}
+            dualEngineOutput={dualEngineOutput}
+            size="md"
+          />
+        </div>
       </div>
 
       {/* Operational Truth Cards - 8 Pillars */}
