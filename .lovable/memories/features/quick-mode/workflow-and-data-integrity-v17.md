@@ -1,0 +1,3 @@
+# Memory: features/quick-mode/workflow-and-data-integrity-v17
+
+The 'Quick Mode' workflow follows a Photo -> Calculator -> Quote -> Contract -> Templates sequence. Templates is now the final step that closes/saves the project. Project naming is deferred until the final stages to reduce friction. The system automatically syncs AI-detected dimensions to the calculator and triggers a background database save when 'Generate PDF Quote' is clicked. To maintain data integrity, a transformation layer (toDBLineItem/fromDBLineItem) ensures line item fields (name/unit_price vs description/unitPrice) remain consistent between the UI and database.
