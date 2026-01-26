@@ -11,6 +11,7 @@ import ProjectQuestionnaire, {
 import FilterQuestions, { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
 import AIAnalysisProgress from "@/components/projects2/AIAnalysisProgress";
 import WorkflowSelector, { AIAnalysisResult, EditedAnalysisData } from "@/components/projects2/WorkflowSelector";
+import ProjectDetailsView from "@/components/projects2/ProjectDetailsView";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,9 @@ const BuildUnionProjects2 = () => {
   const [pendingDocuments, setPendingDocuments] = useState<File[]>([]);
   const [pendingWorkType, setPendingWorkType] = useState<string | null>(null);
   const [pendingDescription, setPendingDescription] = useState<string>("");
+  
+  // Selected project for details view
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const { 
     analyzeProject, 
@@ -234,8 +238,8 @@ const BuildUnionProjects2 = () => {
         // Go to Quick Mode with pre-filled data
         navigate(`/buildunion/quick-mode?projectId=${createdProjectId}`);
       } else {
-        // Go to full project details (Team Mode)
-        navigate(`/buildunion/project/${createdProjectId}`);
+        // Go to project details view (Team Mode) - stay in Projects2
+        setSelectedProjectId(createdProjectId);
       }
 
       // Reset state
@@ -407,7 +411,7 @@ const BuildUnionProjects2 = () => {
         setPendingDescription(answers.description);
       } else {
         toast.success(`Project "${answers.name}" created!`);
-        navigate(`/buildunion/project/${projectData.id}`);
+        setSelectedProjectId(projectData.id);
       }
 
       // Clear questionnaire data
@@ -474,8 +478,16 @@ const BuildUnionProjects2 = () => {
             </div>
           )}
 
-          {/* Main Dashboard - shown when not in questionnaire or filter mode */}
-          {!showQuestionnaire && !showFilterQuestions && (
+          {/* Project Details View - when a project is selected */}
+          {!showQuestionnaire && !showFilterQuestions && selectedProjectId && (
+            <ProjectDetailsView
+              projectId={selectedProjectId}
+              onBack={() => setSelectedProjectId(null)}
+            />
+          )}
+
+          {/* Main Dashboard - shown when not in questionnaire, filter mode, or viewing project */}
+          {!showQuestionnaire && !showFilterQuestions && !selectedProjectId && (
             <>
               {/* Header */}
               <div className="flex items-center justify-between mb-8">
@@ -583,7 +595,7 @@ const BuildUnionProjects2 = () => {
                       {projects.map((project) => (
                         <div 
                           key={project.id}
-                          onClick={() => navigate(`/buildunion/project/${project.id}`)}
+                          onClick={() => setSelectedProjectId(project.id)}
                           className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer"
                         >
                           <div className="flex items-start justify-between">
