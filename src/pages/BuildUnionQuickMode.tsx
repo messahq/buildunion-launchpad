@@ -7,6 +7,7 @@ import QuickModeTemplates from "@/components/quick-mode/QuickModeTemplates";
 import QuickModeCalculator from "@/components/quick-mode/QuickModeCalculator";
 import QuickModeQuoteGenerator from "@/components/quick-mode/QuickModeQuoteGenerator";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
+import ContractPathSelector from "@/components/quick-mode/ContractPathSelector";
 import QuickModeOnboarding from "@/components/quick-mode/QuickModeOnboarding";
 import QuickModeProgressBar from "@/components/quick-mode/QuickModeProgressBar";
 import DataMergeDialog from "@/components/DataMergeDialog";
@@ -23,6 +24,9 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useDraftData } from "@/hooks/useDraftData";
 import { useQuickModeProgress, QuickModeProgressData } from "@/hooks/useQuickModeProgress";
 import { toast } from "sonner";
+
+// Contract mode: selector shows the path choice, simple shows ContractGenerator
+type ContractMode = "selector" | "simple";
 
 // Template data type for passing between tabs
 interface TemplateData {
@@ -93,6 +97,18 @@ const BuildUnionQuickMode = () => {
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [authGateFeature, setAuthGateFeature] = useState<"blueprints" | "templates" | "quote" | "summary">("blueprints");
   const [showDraftResume, setShowDraftResume] = useState(false);
+  const [contractMode, setContractMode] = useState<ContractMode>("selector");
+  
+  // Quote data to pass to contract path selector
+  const [quoteData, setQuoteData] = useState<{
+    clientName?: string;
+    clientEmail?: string;
+    clientAddress?: string;
+    clientPhone?: string;
+    lineItems?: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
+    totalAmount?: number;
+    scopeOfWork?: string;
+  } | null>(null);
   
   // Collected data from all tabs
   const [collectedData, setCollectedData] = useState<CollectedData>({
@@ -518,20 +534,26 @@ const BuildUnionQuickMode = () => {
                   });
                 }}
                 onQuoteGenerated={(quote) => {
-                  // Navigate to summary with quote data
-                  const params = new URLSearchParams();
-                  if (collectedData.photoEstimate) {
-                    params.set("photoEstimate", encodeURIComponent(JSON.stringify(collectedData.photoEstimate)));
-                  }
-                  if (collectedData.calculatorResults.length > 0) {
-                    params.set("calculatorResults", encodeURIComponent(JSON.stringify(collectedData.calculatorResults)));
-                  }
-                  if (collectedData.templateItems.length > 0) {
-                    params.set("templateItems", encodeURIComponent(JSON.stringify(collectedData.templateItems)));
-                  }
-                  params.set("quote", encodeURIComponent(JSON.stringify(quote)));
-                  clearDraft();
-                  navigate(`/buildunion/summary?${params.toString()}`);
+                  // Calculate total from line items
+                  const totalAmount = quote.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+                  
+                  // Save quote data for contract tab
+                  setQuoteData({
+                    clientName: quote.clientName,
+                    clientEmail: quote.clientEmail,
+                    clientAddress: quote.clientAddress,
+                    clientPhone: quote.clientPhone,
+                    lineItems: quote.lineItems.map(item => ({
+                      description: item.description,
+                      quantity: item.quantity,
+                      unitPrice: item.unitPrice,
+                      total: item.quantity * item.unitPrice,
+                    })),
+                    totalAmount,
+                    scopeOfWork: quote.notes || "",
+                  });
+                  // Navigate to contract tab instead of summary
+                  handleTabChange("contract");
                 }}
                 onSaveToProjects={(data) => {
                   // Navigate to project details after saving
@@ -545,28 +567,37 @@ const BuildUnionQuickMode = () => {
             </TabsContent>
 
             <TabsContent value="contract" className="mt-0">
-              <ContractGenerator 
-                quoteData={null}
-                collectedData={collectedData}
-                onProgressUpdate={(data) => {
-                  setContractProgress({
-                    contractorName: data.contractorName || "",
-                    contractorAddress: data.contractorAddress || "",
-                    contractorLicense: data.contractorLicense || "",
-                    clientName: data.clientName || "",
-                    clientAddress: data.clientAddress || "",
-                    scopeOfWork: data.scopeOfWork || "",
-                    totalAmount: data.totalAmount || 0,
-                    startDate: data.startDate || "",
-                    estimatedEndDate: data.estimatedEndDate || "",
-                    contractorSignature: data.contractorSignature || false,
-                    clientSignature: data.clientSignature || false,
-                  });
-                }}
-                onContractGenerated={(contractData) => {
-                  toast.success("Contract generated successfully!");
-                }}
-              />
+              {contractMode === "selector" ? (
+                <ContractPathSelector
+                  collectedData={collectedData}
+                  quoteData={quoteData}
+                  onSelectSimple={() => setContractMode("simple")}
+                  onClearDraft={clearDraft}
+                />
+              ) : (
+                <ContractGenerator 
+                  quoteData={quoteData}
+                  collectedData={collectedData}
+                  onProgressUpdate={(data) => {
+                    setContractProgress({
+                      contractorName: data.contractorName || "",
+                      contractorAddress: data.contractorAddress || "",
+                      contractorLicense: data.contractorLicense || "",
+                      clientName: data.clientName || "",
+                      clientAddress: data.clientAddress || "",
+                      scopeOfWork: data.scopeOfWork || "",
+                      totalAmount: data.totalAmount || 0,
+                      startDate: data.startDate || "",
+                      estimatedEndDate: data.estimatedEndDate || "",
+                      contractorSignature: data.contractorSignature || false,
+                      clientSignature: data.clientSignature || false,
+                    });
+                  }}
+                  onContractGenerated={(contractData) => {
+                    toast.success("Contract generated successfully!");
+                  }}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </section>
