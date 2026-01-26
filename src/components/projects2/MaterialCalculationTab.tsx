@@ -320,11 +320,13 @@ export function MaterialCalculationTab({
           <meta charset="utf-8">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.5; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.4; font-size: 11px; }
+            @page { margin: 10mm; }
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           </style>
         </head>
         <body>
-          <div style="max-width: 800px; margin: 0 auto; padding: 40px;">
+          <div style="max-width: 100%; margin: 0 auto; padding: 20px;">
             <!-- Header with Company Branding -->
             <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 12px; margin-bottom: 32px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -432,92 +434,128 @@ export function MaterialCalculationTab({
               </div>
             ` : ''}
 
-            <!-- Summary & Grand Total with Tax -->
-            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 24px; margin-top: 32px;">
+            <!-- Summary & Grand Total with Tax - Light neutral styling -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 24px;">
               <!-- Subtotals -->
-              <div style="margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                  <span style="color: #78716c;">📦 Materials</span>
-                  <span style="font-weight: 600;">${formatCurrency(materialsTotal)}</span>
+              <div style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
+                  <span style="color: #64748b; font-size: 12px;">📦 Materials</span>
+                  <span style="font-weight: 500; font-size: 12px;">${formatCurrency(materialsTotal)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                  <span style="color: #78716c;">🔨 Labor</span>
-                  <span style="font-weight: 600;">${formatCurrency(laborTotal)}</span>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
+                  <span style="color: #64748b; font-size: 12px;">🔨 Labor</span>
+                  <span style="font-weight: 500; font-size: 12px;">${formatCurrency(laborTotal)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                  <span style="color: #78716c;">⋯ Other</span>
-                  <span style="font-weight: 600;">${formatCurrency(otherTotal)}</span>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
+                  <span style="color: #64748b; font-size: 12px;">⋯ Other</span>
+                  <span style="font-weight: 500; font-size: 12px;">${formatCurrency(otherTotal)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.15); font-weight: 600;">
-                  <span style="color: #78350f;">Subtotal</span>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 600; font-size: 13px;">
+                  <span style="color: #1e293b;">Subtotal</span>
                   <span>${formatCurrency(subtotal)}</span>
                 </div>
               </div>
 
               <!-- Tax Section -->
-              <div style="background: rgba(255,255,255,0.5); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                  <span style="font-size: 12px; font-weight: 600; color: #78350f;">📋 Tax (${taxInfo.provinceName})</span>
-                </div>
+              <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+                <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 6px;">📋 Tax (${taxInfo.provinceName})</div>
                 ${taxInfo.hst > 0 ? `
-                  <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                    <span style="color: #78716c; font-size: 13px;">HST (${(taxInfo.hst * 100).toFixed(0)}%)</span>
+                  <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px;">
+                    <span style="color: #64748b;">HST (${(taxInfo.hst * 100).toFixed(0)}%)</span>
                     <span style="font-weight: 500;">${formatCurrency(hstAmount)}</span>
                   </div>
                 ` : ''}
                 ${taxInfo.gst > 0 ? `
-                  <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                    <span style="color: #78716c; font-size: 13px;">GST (${(taxInfo.gst * 100).toFixed(0)}%)</span>
+                  <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px;">
+                    <span style="color: #64748b;">GST (${(taxInfo.gst * 100).toFixed(0)}%)</span>
                     <span style="font-weight: 500;">${formatCurrency(gstAmount)}</span>
                   </div>
                 ` : ''}
                 ${taxInfo.pst > 0 ? `
-                  <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                    <span style="color: #78716c; font-size: 13px;">${taxInfo.provinceCode === 'QC' ? 'QST' : 'PST'} (${(taxInfo.pst * 100).toFixed(taxInfo.provinceCode === 'QC' ? 3 : 0)}%)</span>
+                  <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px;">
+                    <span style="color: #64748b;">${taxInfo.provinceCode === 'QC' ? 'QST' : 'PST'} (${(taxInfo.pst * 100).toFixed(taxInfo.provinceCode === 'QC' ? 3 : 0)}%)</span>
                     <span style="font-weight: 500;">${formatCurrency(pstAmount)}</span>
                   </div>
                 ` : ''}
-                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px dashed rgba(0,0,0,0.2); margin-top: 4px;">
-                  <span style="color: #78350f; font-weight: 600; font-size: 13px;">Total Tax</span>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-top: 1px dashed #e2e8f0; margin-top: 4px; font-size: 11px;">
+                  <span style="color: #475569; font-weight: 600;">Total Tax</span>
                   <span style="font-weight: 600;">${formatCurrency(totalTax)}</span>
                 </div>
               </div>
 
               <!-- Grand Total -->
-              <div style="border-top: 2px solid #b45309; padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="border-top: 2px solid #1e293b; padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <span style="font-size: 20px; font-weight: 700; color: #78350f;">Grand Total</span>
-                  <span style="font-size: 11px; color: #78716c; display: block;">(incl. tax)</span>
+                  <span style="font-size: 16px; font-weight: 700; color: #1e293b;">Grand Total</span>
+                  <span style="font-size: 10px; color: #64748b; display: block;">(incl. tax)</span>
                 </div>
-                <span style="font-size: 28px; font-weight: 800; color: #78350f;">${formatCurrency(grandTotalWithTax)}</span>
+                <span style="font-size: 22px; font-weight: 800; color: #1e293b;">${formatCurrency(grandTotalWithTax)}</span>
+              </div>
+            </div>
+
+            <!-- Client Signature Section -->
+            <div style="margin-top: 32px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
+              <h3 style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 16px;">Client Approval</h3>
+              <p style="font-size: 11px; color: #64748b; margin-bottom: 20px;">
+                By signing below, the client acknowledges and approves this cost breakdown for the project: <strong>${projectName}</strong>
+              </p>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Client Signature -->
+                <div>
+                  <p style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Client Signature</p>
+                  <div style="border-bottom: 2px solid #1e293b; height: 50px; margin-bottom: 8px;"></div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <div>
+                      <p style="font-size: 10px; color: #64748b;">Name:</p>
+                      <div style="border-bottom: 1px solid #94a3b8; width: 140px; height: 18px;"></div>
+                    </div>
+                    <div>
+                      <p style="font-size: 10px; color: #64748b;">Date:</p>
+                      <div style="border-bottom: 1px solid #94a3b8; width: 80px; height: 18px;"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Contractor Signature -->
+                <div>
+                  <p style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Contractor Signature</p>
+                  <div style="border-bottom: 2px solid #1e293b; height: 50px; margin-bottom: 8px;"></div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <div>
+                      <p style="font-size: 10px; color: #64748b;">Name:</p>
+                      <div style="border-bottom: 1px solid #94a3b8; width: 140px; height: 18px;"></div>
+                    </div>
+                    <div>
+                      <p style="font-size: 10px; color: #64748b;">Date:</p>
+                      <div style="border-bottom: 1px solid #94a3b8; width: 80px; height: 18px;"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Footer with Company Branding -->
-            <div style="margin-top: 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 24px; border-radius: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="margin-top: 24px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 16px; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                   ${companyLogoUrl ? `
-                    <img src="${companyLogoUrl}" alt="Company Logo" style="height: 40px; width: auto; max-width: 100px; object-fit: contain; background: white; padding: 4px; border-radius: 6px;" />
+                    <img src="${companyLogoUrl}" alt="Company Logo" style="height: 32px; width: auto; max-width: 80px; object-fit: contain; background: white; padding: 3px; border-radius: 4px;" />
                   ` : ''}
                   <div>
-                    <p style="font-weight: 600; font-size: 14px;">${companyName || 'BuildUnion'}</p>
+                    <p style="font-weight: 600; font-size: 12px;">${companyName || 'BuildUnion'}</p>
                     ${(companyPhone || companyEmail) ? `
-                      <p style="font-size: 11px; opacity: 0.8; margin-top: 2px;">
+                      <p style="font-size: 10px; opacity: 0.8; margin-top: 1px;">
                         ${companyPhone ? `📞 ${companyPhone}` : ''} ${companyPhone && companyEmail ? ' • ' : ''} ${companyEmail ? `✉️ ${companyEmail}` : ''}
                       </p>
                     ` : ''}
-                    ${companyWebsite ? `<p style="font-size: 11px; opacity: 0.8;">🌐 ${companyWebsite}</p>` : ''}
+                    ${companyWebsite ? `<p style="font-size: 10px; opacity: 0.8;">🌐 ${companyWebsite}</p>` : ''}
                   </div>
                 </div>
-                <div style="text-align: right; font-size: 11px; opacity: 0.8;">
-                  <p>Cost breakdown for project estimation purposes</p>
-                  <p style="margin-top: 2px;">Tax rates: ${taxInfo.provinceName}, Canada</p>
-                  <p style="margin-top: 2px; font-style: italic;">Licensed & Insured</p>
+                <div style="text-align: right; font-size: 10px; opacity: 0.8;">
+                  <p style="font-style: italic;">Licensed & Insured</p>
+                  <p style="margin-top: 2px;">Generated: ${currentDate}</p>
                 </div>
-              </div>
-              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; font-size: 10px; opacity: 0.7;">
-                Generated on ${currentDate}
               </div>
             </div>
           </div>
