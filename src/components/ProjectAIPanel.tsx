@@ -82,6 +82,7 @@ type BlueprintTab = "ai" | "documents" | "facts" | "requirements" | "team" | "co
 interface ProjectAIPanelProps {
   projectId: string;
   projectName: string;
+  projectAddress?: string | null;
   userId: string;
   documents: ProjectDocument[];
   siteImages: string[];
@@ -158,6 +159,7 @@ const SourceTags = ({ sources }: { sources?: SourceReference[] }) => {
 const ProjectAIPanel = ({ 
   projectId, 
   projectName,
+  projectAddress,
   userId,
   documents, 
   siteImages,
@@ -376,6 +378,31 @@ const ProjectAIPanel = ({
             <Crown className="h-3 w-3 mr-1" />
             Premium
           </Badge>
+        )}
+      </div>
+
+      {/* Project ID & Weather Info Bar */}
+      <div className="px-4 py-2 bg-gradient-to-r from-slate-50 to-cyan-50/30 border-b border-slate-100 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <FolderOpen className="h-3.5 w-3.5 text-slate-500" />
+            <span className="text-xs text-slate-500">Project ID:</span>
+            <code className="text-xs font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+              {projectId.slice(0, 8)}...
+            </code>
+          </div>
+          {projectAddress && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
+              <span>•</span>
+              <span className="truncate max-w-[150px]">{projectAddress}</span>
+            </div>
+          )}
+        </div>
+        {projectAddress && (
+          <div className="flex items-center gap-1 text-xs text-cyan-600 bg-cyan-50 px-2 py-1 rounded-full">
+            <span className="text-sm">🌤️</span>
+            <span className="font-medium">Weather-Aware Planning</span>
+          </div>
         )}
       </div>
 
