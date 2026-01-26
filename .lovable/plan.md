@@ -1,162 +1,92 @@
 
-# Project Report Generator - Professzionális PDF Export
+# Terv: Projekt Dátum Mezők hozzáadása a FilterQuestions-hez
 
-## Összefoglaló
-A Project Report Generator funkció lehetővé teszi Premium felhasználók számára, hogy professzionális PDF dokumentumot exportáljanak az összes AI elemzési eredménnyel, OBC megfelelőségi státusszal és Operational Truth pillérek adataival.
+## Mit csinálunk?
+A projekt kérdőív (FilterQuestions) 2. lépésében (Complexity & Regulations) az "I am the lead" opció után megjelenítünk két dátumválasztó mezőt:
+- **Project Start** (Projekt kezdete)
+- **Target End** (Tervezett befejezés)
 
----
-
-## Implementálandó elemek
-
-### 1. Új Report HTML Template
-**Fájl:** `src/lib/pdfGenerator.ts`
-
-Új `buildProjectReportHTML` függvény hozzáadása, amely tartalmazza:
-- **Header:** Céglogo, projekt neve, generálás dátuma
-- **Operational Truth szekció:** 8 pillér vizuális kártyákkal
-- **AI Analysis szekció:** 
-  - Gemini (Visual) eredmények
-  - OpenAI (Regulatory) eredmények
-  - Confidence szintek
-- **OBC Compliance szekció:**
-  - Engedély típusa és költsége
-  - OBC hivatkozások listája
-  - Megfelelőségi pontszám (progress bar)
-  - Ajánlások
-- **Conflict Report szekció:**
-  - Észlelt eltérések táblázat (site vs blueprint)
-  - Severity jelölések (high/medium/low)
-- **Materials szekció:** AI-detektált anyagok listája
-- **Footer:** WSIB, licensz, aláírás helyek
-
-### 2. Report generáló függvény
-**Fájl:** `src/lib/pdfGenerator.ts`
+## Hol lesz a változás?
 
 ```text
-generateProjectReport(params: ProjectReportParams): Promise<Blob>
-├── projectInfo (név, cím, trade)
-├── operationalTruth (8 pillér adatok)
-├── obcDetails (engedélyek, hivatkozások)
-├── conflicts (eltérések listája)
-├── dualEngineOutput (Gemini/OpenAI excerpts)
-└── companyBranding (logo, kontakt)
+┌─────────────────────────────────────────────────────┐
+│  Complexity & Regulations                           │
+│  What type of work is involved?                     │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  Does this work affect any of the following?        │
+│  ☐ Structural Components                            │
+│  ☐ Mechanical Main Lines                            │
+│  ☐ Exterior Facade                                  │
+│                                                     │
+│  Is there a designated Project Manager...?          │
+│  ┌─────────────────┐  ┌─────────────────┐          │
+│  │ Yes, PM         │  │ Yes, Technical  │          │
+│  └─────────────────┘  └─────────────────┘          │
+│  ┌─────────────────┐  ┌─────────────────┐          │
+│  │ I am the lead ⬤ │  │ Not assigned    │          │
+│  └─────────────────┘  └─────────────────┘          │
+│                                                     │
+│  ┌─────────────────────────────────────────────────┐│
+│  │  📅 PROJECT TIMELINE (ÚJ SZAKASZ!)             ││
+│  │  ┌──────────────┐  ┌──────────────┐            ││
+│  │  │ Project Start│  │ Target End   │            ││
+│  │  │ Pick a date  │  │ Pick a date  │            ││
+│  │  └──────────────┘  └──────────────┘            ││
+│  └─────────────────────────────────────────────────┘│
+│                                                     │
+└─────────────────────────────────────────────────────┘
 ```
-
-### 3. ProjectAIPanel integráció frissítése
-**Fájl:** `src/components/ProjectAIPanel.tsx`
-
-A jelenlegi mock `handleGenerateReport` helyettesítése:
-- Összegyűjti az összes adatot a project summary-ból
-- Meghívja az új `generateProjectReport` függvényt
-- Letölti a PDF-et és opcionálisan elmenti a project-documents-be
-- Loading állapot és toast visszajelzés
-
-### 4. ProjectDetailsView Report gomb
-**Fájl:** `src/components/projects2/ProjectDetailsView.tsx`
-
-- Új "Generate Report" gomb az Overview tab-on
-- Premium tier ellenőrzés (ProBadge ha locked)
-- Átadja az operationalTruth és obcDetails adatokat
-
-### 5. Lokalizáció
-**Fájlok:** `src/i18n/locales/en.json`, `src/i18n/locales/hu.json`
-
-Új kulcsok:
-- `report.title`, `report.generating`, `report.success`
-- `report.sections.*` (operational, obc, conflicts, materials)
-
----
-
-## Adatfolyam
-
-```text
-ProjectDetailsView
-    │
-    ├── operationalTruth (buildOperationalTruth)
-    ├── summary.photo_estimate
-    ├── summary.blueprint_analysis
-    ├── dualEngineOutput (Gemini + OpenAI)
-    └── conflicts (useSingleProjectConflicts)
-            │
-            ▼
-    generateProjectReport()
-            │
-            ▼
-    buildProjectReportHTML()
-            │
-            ▼
-    generatePDFBlob()
-            │
-            ▼
-    Download PDF / Save to Documents
-```
-
----
-
-## UI Design
-
-### Report generálás gomb
-- Helyzet: Overview tab jobb felső sarok
-- Ikon: FileText + Download
-- Szöveg: "Generate Report"
-- Premium jelzés: ProBadge PREMIUM tooltip
-- Loading: Spinner + "Generating..."
-
-### PDF Layout
-- A4/Letter formátum támogatás
-- Sötét header BuildUnion branding-gel
-- Szekciónkénti oldalszámozás
-- Színkódolt status badges (green/amber/red)
-- Professional sans-serif tipográfia
-
----
-
-## Érintett fájlok
-
-| Fájl | Változás típusa |
-|------|-----------------|
-| `src/lib/pdfGenerator.ts` | Új `buildProjectReportHTML` és `generateProjectReport` függvények |
-| `src/components/ProjectAIPanel.tsx` | `handleGenerateReport` valódi implementáció |
-| `src/components/projects2/ProjectDetailsView.tsx` | Report gomb hozzáadása |
-| `src/i18n/locales/en.json` | Report kulcsok |
-| `src/i18n/locales/hu.json` | Report kulcsok (magyar) |
-
----
 
 ## Technikai részletek
 
-### PDF Generator paraméterek
+### 1. FilterQuestions.tsx módosítások
+
+**Típus definíció bővítése:**
 ```typescript
-interface ProjectReportParams {
-  projectInfo: {
-    name: string;
-    address: string;
-    trade: string;
-    createdAt: string;
-  };
-  operationalTruth: OperationalTruth;
-  obcDetails?: OBCValidationDetails;
-  conflicts: ConflictData[];
-  dualEngineOutput?: {
-    gemini: { area: number; confidence: string; rawExcerpt?: string };
-    openai: { permitRequired: boolean; obcReferences: OBCReference[]; rawExcerpt?: string };
-  };
-  companyBranding?: {
-    name: string;
-    logo?: string;
-    license?: string;
-    wsib?: string;
+export interface FilterAnswers {
+  // ... meglévő mezők ...
+  technicalFilter: {
+    // ... meglévő mezők ...
+    projectStartDate: Date | null;  // ÚJ
+    projectEndDate: Date | null;    // ÚJ
   };
 }
 ```
 
-### Tier ellenőrzés
-```typescript
-const canGenerateReport = subscription?.tier === "premium" || subscription?.tier === "enterprise";
-```
+**TechnicalFilterStep komponens bővítése:**
+- Import: `Calendar`, `Popover`, `PopoverTrigger`, `PopoverContent`, `CalendarIcon`, `format` (date-fns)
+- Új UI szakasz az "I am the lead" kérdés alatt
+- Két dátumválasztó mező (Popover + Calendar)
+- Vizuális stílus: határolt doboz, CalendarIcon ikonok
 
-### Storage mentés
-A generált PDF automatikusan mentődik a `project-documents` bucket-be:
-```text
-{projectId}/reports/ProjectReport_{timestamp}.pdf
-```
+### 2. Adatok továbbítása
+
+A dátumok átkerülnek a FilterAnswers-ből a projekt mentéskor, és beíródnak a `project_summaries` táblába:
+- `project_start_date`
+- `project_end_date`
+
+Ez már létezik az adatbázisban az előző migrációból!
+
+### 3. Lokalizáció
+
+Új fordítási kulcsok:
+- `filterQuestions.projectTimeline` = "Project Timeline" / "Projekt ütemezés"
+- `filterQuestions.projectStart` = "Project Start" / "Projekt kezdete"  
+- `filterQuestions.targetEnd` = "Target End" / "Tervezett befejezés"
+- `filterQuestions.pickDate` = "Pick a date" / "Válassz dátumot"
+
+## Fájlok amelyek módosulnak
+
+| Fájl | Változás |
+|------|----------|
+| `src/components/projects2/FilterQuestions.tsx` | Dátum mezők UI hozzáadása |
+| `src/pages/BuildUnionProjects2.tsx` | Dátumok átadása mentéskor |
+| `src/i18n/locales/en.json` | Angol fordítások |
+| `src/i18n/locales/hu.json` | Magyar fordítások |
+
+## Előnyök
+
+1. A felhasználó már a projekt létrehozásakor megadhatja az ütemezést
+2. A Timeline automatikusan szinkronizálódik ezekkel a dátumokkal
+3. Nem kell később külön megadni a BaselineLockCard-ban
