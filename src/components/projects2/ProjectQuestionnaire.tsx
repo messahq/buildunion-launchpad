@@ -11,9 +11,6 @@ import {
   Loader2,
   X,
   Upload,
-  User,
-  Users,
-  Building2,
   FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,8 +19,22 @@ import { cn } from "@/lib/utils";
 // TYPE DEFINITIONS
 // ============================================
 
+// Size will be determined by AI from images/data analysis
 export type ProjectSize = "small" | "medium" | "large";
-export type WorkType = "painting" | "flooring" | "renovation" | "new_construction" | "repair" | "other";
+export type WorkType = 
+  | "painting" 
+  | "flooring" 
+  | "drywall" 
+  | "electrical" 
+  | "plumbing" 
+  | "hvac" 
+  | "roofing" 
+  | "carpentry"
+  | "concrete"
+  | "renovation" 
+  | "new_construction" 
+  | "repair" 
+  | "other";
 export type TeamNeed = "solo" | "with_team";
 
 export interface UploadedFile {
@@ -34,7 +45,7 @@ export interface UploadedFile {
 
 export interface ProjectAnswers {
   name: string;
-  size: ProjectSize | null;
+  size: ProjectSize | null; // Will be set by AI
   location: string;
   workType: WorkType | null;
   teamNeed: TeamNeed | null;
@@ -51,49 +62,27 @@ export interface WorkflowRecommendation {
   features: string[];
 }
 
-// Size categories matching pricing tiers
-const SIZE_OPTIONS: { 
-  value: ProjectSize; 
-  label: string; 
-  teamSize: string; 
-  description: string;
-  icon: React.ReactNode;
-}[] = [
-  { 
-    value: "small", 
-    label: "Small", 
-    teamSize: "1-2 people",
-    description: "Quick jobs, simple estimates",
-    icon: <User className="h-5 w-5" />
-  },
-  { 
-    value: "medium", 
-    label: "Medium", 
-    teamSize: "Up to 10 people",
-    description: "Standard projects with team",
-    icon: <Users className="h-5 w-5" />
-  },
-  { 
-    value: "large", 
-    label: "Large", 
-    teamSize: "10-50+ people",
-    description: "Complex projects, full management",
-    icon: <Building2 className="h-5 w-5" />
-  },
-];
-
+// Work types with more trade-specific options
 const WORK_TYPES: { value: WorkType; label: string; icon: string }[] = [
   { value: "painting", label: "Painting", icon: "🎨" },
   { value: "flooring", label: "Flooring", icon: "🪵" },
+  { value: "drywall", label: "Drywall", icon: "🧱" },
+  { value: "electrical", label: "Electrical", icon: "⚡" },
+  { value: "plumbing", label: "Plumbing", icon: "🔧" },
+  { value: "hvac", label: "HVAC", icon: "❄️" },
+  { value: "roofing", label: "Roofing", icon: "🏠" },
+  { value: "carpentry", label: "Carpentry", icon: "🪚" },
+  { value: "concrete", label: "Concrete", icon: "🧱" },
   { value: "renovation", label: "Renovation", icon: "🔨" },
   { value: "new_construction", label: "New Build", icon: "🏗️" },
-  { value: "repair", label: "Repair", icon: "🔧" },
+  { value: "repair", label: "Repair", icon: "🛠️" },
   { value: "other", label: "Other", icon: "📋" },
 ];
 
 // Maps answers to workflow recommendation
+// Note: Size will be determined by AI later, so we base initial workflow on work type and data availability
 export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendation {
-  const { size, workType, teamNeed } = answers;
+  const { workType, teamNeed, images, documents } = answers;
   
   let recommendation: WorkflowRecommendation = {
     mode: "quick",
@@ -103,22 +92,15 @@ export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendati
     features: ["Photo Estimate", "Quote", "Contract"]
   };
 
-  // Size determines base complexity (matching pricing tiers)
-  if (size === "small") {
-    recommendation.mode = "quick";
-    recommendation.estimatedSteps = 3;
-    recommendation.features = ["Photo Estimate", "Quote", "Contract"];
-  } else if (size === "medium") {
-    recommendation.mode = "standard";
-    recommendation.estimatedSteps = 5;
-    recommendation.teamEnabled = true;
-    recommendation.features = ["Photo Estimate", "Calculator", "Quote", "Contract", "Team"];
-  } else if (size === "large") {
-    recommendation.mode = "full";
-    recommendation.estimatedSteps = 8;
-    recommendation.teamEnabled = true;
-    recommendation.features = ["Documents", "Photo Estimate", "Calculator", "Quote", "Contract", "Team", "Tasks", "Timeline"];
-  }
+  // If we have images or documents, AI will analyze and refine the workflow
+  const hasUploadedContent = images.length > 0 || documents.length > 0;
+  
+  // Start with quick mode, AI will upgrade if needed based on analysis
+  recommendation.mode = hasUploadedContent ? "quick" : "quick";
+  recommendation.estimatedSteps = hasUploadedContent ? 4 : 3;
+  recommendation.features = hasUploadedContent 
+    ? ["AI Analysis", "Photo Estimate", "Quote", "Contract"]
+    : ["Manual Entry", "Quote", "Contract"];
 
   // Work type determines calculator
   switch (workType) {
@@ -128,12 +110,32 @@ export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendati
     case "flooring":
       recommendation.calculator = "tile";
       break;
+    case "drywall":
+      recommendation.calculator = "drywall";
+      break;
+    case "roofing":
+      recommendation.calculator = "roofing";
+      break;
+    case "concrete":
+      recommendation.calculator = "concrete";
+      break;
+    case "carpentry":
+      recommendation.calculator = "deck";
+      break;
+    case "electrical":
+    case "plumbing":
+    case "hvac":
+      recommendation.calculator = "other";
+      break;
     case "renovation":
     case "new_construction":
       recommendation.calculator = "general";
-      if (workType === "new_construction" && size !== "large") {
+      // New construction typically needs full workflow
+      if (workType === "new_construction") {
         recommendation.mode = "full";
-        recommendation.estimatedSteps = 8;
+        recommendation.estimatedSteps = 6;
+        recommendation.features = ["AI Analysis", "Documents", "Calculator", "Quote", "Contract", "Team"];
+        recommendation.teamEnabled = true;
       }
       break;
     case "repair":
@@ -254,12 +256,11 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
     onComplete(answers, workflow);
   };
 
-  // Validation
-  const isValid = 
-    answers.name.trim().length >= 2 && 
-    answers.size !== null;
+  // Validation - name is required, work type helps AI
+  const isValid = answers.name.trim().length >= 2;
 
-  const recommendation = answers.size ? determineWorkflow(answers) : null;
+  // Always show recommendation based on current answers
+  const recommendation = determineWorkflow(answers);
 
   return (
     <div className="space-y-6 p-4">
@@ -308,41 +309,7 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
           </div>
         </div>
 
-        {/* Project Size - Matching Pricing Tiers */}
-        <div className="space-y-2">
-          <Label className="text-foreground">
-            Project Size <span className="text-destructive">*</span>
-          </Label>
-          <div className="grid grid-cols-3 gap-2">
-            {SIZE_OPTIONS.map((option) => (
-              <Card
-                key={option.value}
-                className={cn(
-                  "cursor-pointer transition-all hover:border-primary/50",
-                  answers.size === option.value 
-                    ? "border-primary bg-primary/5 ring-1 ring-primary" 
-                    : "border-border"
-                )}
-                onClick={() => updateAnswers({ size: option.value })}
-              >
-                <CardContent className="p-3 text-center space-y-1">
-                  <div className={cn(
-                    "mx-auto w-8 h-8 rounded-full flex items-center justify-center",
-                    answers.size === option.value 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted text-muted-foreground"
-                  )}>
-                    {option.icon}
-                  </div>
-                  <div className="font-medium text-sm text-foreground">{option.label}</div>
-                  <div className="text-xs text-muted-foreground">{option.teamSize}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Work Type */}
+        {/* Work Type - expanded with more trades */}
         <div className="space-y-2">
           <Label className="text-foreground">Work Type</Label>
           <div className="flex flex-wrap gap-2">

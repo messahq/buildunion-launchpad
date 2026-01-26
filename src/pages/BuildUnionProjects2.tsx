@@ -129,6 +129,13 @@ const BuildUnionProjects2 = () => {
       const tradeMap: Record<string, string> = {
         painting: "painter",
         flooring: "flooring_specialist",
+        drywall: "drywall_installer",
+        electrical: "electrician",
+        plumbing: "plumber",
+        hvac: "hvac_technician",
+        roofing: "roofer",
+        carpentry: "carpenter",
+        concrete: "concrete_worker",
         renovation: "general_contractor",
         new_construction: "general_contractor",
         repair: "general_contractor",
