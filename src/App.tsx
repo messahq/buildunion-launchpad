@@ -21,6 +21,7 @@ import BuildUnionProfileView from "./pages/BuildUnionProfileView";
 import BuildUnionProjectSummary from "./pages/BuildUnionProjectSummary";
 import BuildUnionCommunity from "./pages/BuildUnionCommunity";
 import BuildUnionMessages from "./pages/BuildUnionMessages";
+import BuildUnionProjects2 from "./pages/BuildUnionProjects2";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ConfirmEmail from "./pages/ConfirmEmail";
@@ -57,6 +58,7 @@ const App = () => (
                   <Route path="/buildunion/summary/:summaryId" element={<BuildUnionProjectSummary />} />
                   <Route path="/buildunion/community" element={<BuildUnionCommunity />} />
                   <Route path="/buildunion/messages" element={<BuildUnionMessages />} />
+                  <Route path="/buildunion/projects2" element={<BuildUnionProjects2 />} />
                   <Route path="/buildunion/login" element={<Login />} />
                   <Route path="/buildunion/register" element={<Register />} />
                   <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />

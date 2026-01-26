@@ -210,6 +210,17 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
             <span className="hidden sm:inline">Projects</span>
           </Button>
 
+          {/* Projects 2 Test Link */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion/projects2")}
+            className="text-cyan-600 hover:text-cyan-700 font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
+          >
+            <span className="hidden sm:inline">Projects 2</span>
+            <span className="sm:hidden">P2</span>
+          </Button>
+
           {/* Community Link */}
           <Button
             variant="ghost"
