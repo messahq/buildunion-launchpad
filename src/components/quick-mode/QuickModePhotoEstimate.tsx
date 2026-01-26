@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain, ArrowRight, Calculator, Lock, Crown } from "lucide-react";
+import { Camera, Upload, Loader2, Sparkles, ImageIcon, X, AlertCircle, CheckCircle2, AlertTriangle, Eye, Brain, ArrowRight, Calculator, Lock, Crown, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -82,6 +82,8 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
   
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isPdfFile, setIsPdfFile] = useState(false);
+  const [fileName, setFileName] = useState<string>("");
   const [description, setDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<EstimateResult | null>(null);
@@ -93,11 +95,14 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("Image too large. Maximum size is 10MB.");
+        toast.error("File too large. Maximum size is 10MB.");
         return;
       }
       
       setImageFile(file);
+      setFileName(file.name);
+      setIsPdfFile(file.type === "application/pdf");
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         setSelectedImage(event.target?.result as string);
@@ -110,6 +115,8 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
   const clearImage = () => {
     setSelectedImage(null);
     setImageFile(null);
+    setIsPdfFile(false);
+    setFileName("");
     setResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -201,11 +208,19 @@ const QuickModePhotoEstimate = ({ onEstimateComplete, onContinueToTemplates, onC
           {/* Image Preview or Upload Zone */}
           {selectedImage ? (
             <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted">
-              <img
-                src={selectedImage}
-                alt="Work area"
-                className="w-full h-full object-cover"
-              />
+              {isPdfFile ? (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
+                  <FileText className="w-16 h-16 text-red-500 mb-3" />
+                  <p className="font-medium text-foreground text-sm truncate max-w-[80%]">{fileName}</p>
+                  <p className="text-xs text-muted-foreground mt-1">PDF Document - Ready for Analysis</p>
+                </div>
+              ) : (
+                <img
+                  src={selectedImage}
+                  alt="Work area"
+                  className="w-full h-full object-cover"
+                />
+              )}
               <Button
                 variant="destructive"
                 size="icon"
