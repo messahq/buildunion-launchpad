@@ -1,329 +1,237 @@
 
-# Projects 2 - Teljes Újratervezés a Filter Questions Integrációval
 
-## Jelenlegi Állapot Áttekintése
+# Operational Truth: Egységes Workflow Terv
 
-A meglévő rendszer:
-- `ProjectQuestionnaire.tsx` - alapvető projekt adatok gyűjtése
-- `AIAnalysisProgress.tsx` - elemzési progress bar
-- `WorkflowSelector.tsx` - AI eredmények megjelenítése és workflow választás
-- `useProjectAIAnalysis.tsx` - dual-engine AI hook
-- `quick-estimate` edge function - Gemini/GPT elemzés
+## A Jelenlegi Helyzet (Mi van most)
 
-## Új Architektúra - "Filter Questions" Lépéssel
+A rendszerben **két külön Operational Truth koncepció** él párhuzamosan:
+
+| Komponens | Mit mutat | Hol él |
+|-----------|-----------|--------|
+| `OperationalTruthSummaryCard` | Kérdés-válasz típusú "Facts" lista verifikációs %-kal | Régi Quick Mode/Summary flow |
+| `ProjectSynthesis` | 4 pillér: Area, Materials, Blueprint, OBC + Conflict | Projects 2 workflow |
+| Status Cards (felső sor) | Admin státusz: Photo Analysis, Line Items, Client Info, Total | ProjectDetailsView |
+
+**A probléma:** Ezek nem beszélnek egymással. A Status Cards admin adatokat mutat, nem az AI által megállapított "igazságot".
+
+---
+
+## A Cél (Mit építünk)
+
+Egyetlen, koherens **8 Pilléres Operational Truth** rendszer, ami a workflow minden pontján konzisztens:
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                     PROJECTS 2 - ÚJ WORKFLOW                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  [1] ProjectQuestionnaire (Megmarad, egyszerűsítve)                     │
-│      └─ Projekt név, Work Type, Location, Uploads, Description          │
-│                                                                          │
-│  [2] FilterQuestions (ÚJ KOMPONENS)                                     │
-│      ├─ INPUT Filter: Adatforrás és Hitelesség                          │
-│      │   • "Rendelkezésre állnak-e végleges PDF tervrajzok?"            │
-│      │   • "Történt-e módosítás a helyszínen a tervek óta?"             │
-│      │                                                                   │
-│      ├─ TECHNICAL Filter: Komplexitás és Szabályozás                    │
-│      │   • "Érint-e tartószerkezetet, gépészeti fővezetéket?"           │
-│      │   • "Van-e kijelölt műszaki vezető?"                             │
-│      │                                                                   │
-│      └─ WORKFLOW Filter: Erőforrás és Idő                               │
-│          • "Hány szakág összehangolása szükséges?"                      │
-│          • "Mi a kritikus határidő és van-e kötött költségkeret?"       │
-│                                                                          │
-│  [3] AI Analysis (Dual-Engine + Filter-Aware)                           │
-│      ├─ Gemini: Vizuális elemzés + blueprint összehasonlítás            │
-│      ├─ OpenAI: OBC szabályok keresése (ha struktúrális)                │
-│      └─ Synthesis: Conflict detection + AI üzenet                        │
-│                                                                          │
-│  [4] WorkflowSelector (Frissítve)                                        │
-│      ├─ AI Detection Results (szerkeszthető)                            │
-│      ├─ AI Explanation Message (a Gemini-féle szöveg)                   │
-│      ├─ Filter-Based Recommendations                                     │
-│      └─ Solo/Team mode választás (tier-gated)                           │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    8 PILLARS OF OPERATIONAL TRUTH               │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Confirmed Area     │ Gemini vizuális + Blueprint mérés     │
+│  2. Materials Count    │ Detektált anyagok száma               │
+│  3. Blueprint Status   │ Van/Nincs, elemezve                   │
+│  4. OBC Compliance     │ OpenAI szabályozási validáció         │
+│  5. Conflict Status    │ Gemini vs OpenAI egyezés              │
+│  6. Project Mode       │ Solo / Team (tier alapján)            │
+│  7. Project Size       │ Small / Medium / Large                │
+│  8. Confidence Level   │ AI bizonyosság szintje                │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Részletes Komponens Terv
-
-### 1. ÚJ: FilterQuestions Komponens
-
-**Fájl:** `src/components/projects2/FilterQuestions.tsx`
-
-**Három szűrő kategória:**
+## Workflow Adatfolyam
 
 ```text
-INPUT FILTER (Adatforrás Validáció)
-┌────────────────────────────────────────────────────────────┐
-│ 1. "Rendelkezésre állnak-e a végleges, pecséttel ellátott │
-│     PDF tervrajzok és a jelenlegi helyszíni fotók?"        │
-│     [ ] Igen, mindkettő   [ ] Csak tervrajz                │
-│     [ ] Csak fotók        [ ] Egyik sem                    │
-│                                                             │
-│ 2. "Történt-e bármilyen módosítás a helyszínen a tervek   │
-│     kiadása óta?"                                          │
-│     [ ] Igen, jelentős    [ ] Kisebb módosítások           │
-│     [ ] Nem               [ ] Nem tudom                    │
-└────────────────────────────────────────────────────────────┘
-
-TECHNICAL FILTER (Komplexitás + OBC Trigger)
-┌────────────────────────────────────────────────────────────┐
-│ 3. "A munka érint-e tartószerkezetet, gépészeti            │
-│     fővezetéket vagy külső homlokzatot?"                   │
-│     [ ] Tartószerkezet    [ ] Gépészeti fővezeték          │
-│     [ ] Külső homlokzat   [ ] Egyik sem                    │
-│                                                             │
-│ 4. "Van-e kijelölt felelős műszaki vezető vagy             │
-│     Project Manager a helyszínen?"                          │
-│     [ ] Igen, van PM      [ ] Igen, van műszaki vezető     │
-│     [ ] Nincs kijelölve   [ ] Én vagyok az                 │
-└────────────────────────────────────────────────────────────┘
-
-WORKFLOW FILTER (Erőforrás + Idő)
-┌────────────────────────────────────────────────────────────┐
-│ 5. "Hány különböző szakág összehangolása a feladat?"       │
-│     [ ] 1-2 szakág        [ ] 3-5 szakág                   │
-│     [ ] 6+ szakág         [ ] Nem releváns                 │
-│                                                             │
-│ 6. "Mi a kritikus átadási határidő és van-e kötött        │
-│     költségkeret?"                                          │
-│     [ ] Szigorú határidő + fix budget                      │
-│     [ ] Rugalmas határidő + fix budget                     │
-│     [ ] Szigorú határidő + rugalmas budget                 │
-│     [ ] Mindkettő rugalmas                                 │
-└────────────────────────────────────────────────────────────┘
-```
-
-**Filter válaszok hatásai:**
-
-| Válasz | Trigger | Eredmény |
-|--------|---------|----------|
-| Pecsételt tervrajz + fotó | RAG engedélyezés | Gemini vizuális összehasonlítás aktív |
-| Módosítás történt | Conflict Detection | Sárga/piros marker a térképen |
-| Tartószerkezet/gépészet | OBC keresés | OpenAI beazonosítja az engedélyeket |
-| Van PM | Team Mode ajánlás | PRO/PREMIUM workflow trigger |
-| 6+ szakág | Team Map scaling | AI Synthesis mélység növelése |
-| Szigorú határidő | Project Reports | Költségbecslés generálás |
-
----
-
-### 2. AI Analysis Message (Gemini válasz)
-
-Az AI elemzés után megjelenő üzenet dinamikusan épül fel a filter válaszok alapján:
-
-```text
-"Azért kérdeztem ezeket, mert a BuildUnion nem becsül, hanem elemez.
-
-A válaszai alapján:
-✓ Az OpenAI beazonosította a szükséges engedélyeket: [OBC 9.10.14 - Tartószerkezet]
-✓ A Gemini előkészítette a tervrajzok és fotók vizuális összevetését
-✓ [X] db szakág koordinációját igényli a projekt
-
-Most aktiválom a [PRO] workflow-t, ahol a Conflict Visualization 
-segít elkerülni a hibákat.
-
-📐 Detektált terület: 1,350 sq ft
-🧱 Anyagok: 12 tétel azonosítva
-⚠️ 1 eltérés észlelve a tervek és fotók között"
+[Questionnaire] 
+     │
+     ▼
+[FilterQuestions] ──► aiTriggers aktiválás
+     │
+     ▼
+[AI Analysis Hook] 
+     │
+     ├─► Gemini Engine (Visual): area, surfaceType, roomType
+     │
+     └─► OpenAI Engine (Regulatory): OBC refs, permit status
+     │
+     ▼
+[Synthesis Layer] ──► 8 Pillars összegzés + Conflict Detection
+     │
+     ▼
+[WorkflowSelector] ──► Ajánlás: Solo vs Team
+     │
+     ▼
+[ProjectDetailsView] ──► Tabs: Overview (8 Pillars), Documents, Map, Timeline, Weather
 ```
 
 ---
 
-### 3. Adatbázis Struktúra Bővítése
+## Implementációs Terv
 
-Az `ai_workflow_config` JSONB mező kiterjesztése:
+### 1. LÉPÉS: Egységes Típusdefiníció
+
+**Fájl:** `src/types/operationalTruth.ts` (új)
+
+Létrehozunk egy központi típust az Operational Truth 8 pillérére, amit minden komponens használ:
+
+```typescript
+export interface OperationalTruth {
+  // 8 Pillars
+  confirmedArea: number | null;
+  areaUnit: string;
+  materialsCount: number;
+  blueprintStatus: "analyzed" | "none" | "pending";
+  obcCompliance: "clear" | "permit_required" | "pending";
+  conflictStatus: "aligned" | "conflict_detected" | "pending";
+  projectMode: "solo" | "team";
+  projectSize: "small" | "medium" | "large";
+  confidenceLevel: "high" | "medium" | "low";
+  
+  // Verification
+  verifiedPillars: number; // Hány pillér verified
+  totalPillars: 8;
+  verificationRate: number; // %
+}
+```
+
+### 2. LÉPÉS: ProjectSynthesis Kiterjesztése
+
+**Fájl:** `src/components/projects2/ProjectSynthesis.tsx` (módosítás)
+
+A meglévő 4 pillért bővítjük 8-ra:
+- Jelenlegi: Area, Materials, Blueprint, OBC
+- Hozzáadva: Conflict Status, Mode, Size, Confidence
+
+Az UI 2x4-es grid lesz a jelenlegi 1x4 helyett.
+
+### 3. LÉPÉS: Status Cards Átalakítása
+
+**Fájl:** `src/components/projects2/ProjectDetailsView.tsx` (módosítás)
+
+A jelenlegi admin Status Cards (Photo Analysis, Line Items, Client Info, Total) helyett az Operational Truth 8 pillére jelenik meg:
+
+| Régi | Új |
+|------|-----|
+| Photo Analysis | Confirmed Area |
+| Line Items | Materials Count |
+| Client Info | Blueprint + OBC Status |
+| Total | Confidence + Conflict |
+
+### 4. LÉPÉS: Hook Kiegészítés
+
+**Fájl:** `src/hooks/useProjectAIAnalysis.tsx` (módosítás)
+
+A `synthesisResult` interfészt bővítjük, hogy mind a 8 pillért tartalmazza. A `determineProjectSize` függvény mellé `buildOperationalTruth` függvény:
+
+```typescript
+function buildOperationalTruth(
+  aiAnalysis, 
+  blueprintAnalysis, 
+  dualEngineOutput, 
+  filterAnswers, 
+  projectMode
+): OperationalTruth {
+  // Mind a 8 pillér kalkulálása
+  // verifiedPillars számítás
+  // verificationRate %
+}
+```
+
+### 5. LÉPÉS: OperationalTruthSummaryCard Integrálás
+
+**Fájl:** `src/components/OperationalTruthSummaryCard.tsx` (módosítás)
+
+A "Facts" lista helyett az új 8 pilléres struktúrát fogadja:
+- Props: `operationalTruth: OperationalTruth` 
+- UI: 8 pilléres progress + verification rate
+
+### 6. LÉPÉS: Database Sync
+
+**Fájl:** `supabase/functions/quick-estimate/index.ts` (módosítás)
+
+Az edge function visszatér a teljes 8 pilléres struktúrával, amit a `project_summaries.ai_workflow_config` JSON mezőbe mentünk.
+
+---
+
+## Komponens Hierarchia a Workflow-ban
+
+```text
+BuildUnionProjects2.tsx
+└── ProjectQuestionnaire
+└── FilterQuestions ──► aiTriggers
+└── useProjectAIAnalysis ──► 8 Pillars + DualEngineOutput
+└── WorkflowSelector
+    └── ProjectSynthesis ──► 8 Pillar Summary + Conflict Card
+└── ProjectDetailsView
+    ├── OperationalTruthStatusCards ──► 8 Pillar Quick View (felső sor)
+    └── Tabs
+        ├── Overview: ProjectSynthesis (részletes)
+        ├── Documents: DocumentsPane (RAG Verified badges)
+        ├── Site Map: TeamMapWidget (Team Mode only)
+        ├── Timeline: ActiveProjectTimeline
+        └── Weather: WeatherWidget
+```
+
+---
+
+## Adatbázis Struktúra
+
+A `project_summaries.ai_workflow_config` JSON mező tartalma:
 
 ```json
 {
-  "filterAnswers": {
-    "inputFilter": {
-      "hasStampedBlueprints": true,
-      "hasCurrentPhotos": true,
-      "siteModifications": "minor"
-    },
-    "technicalFilter": {
-      "structural": false,
-      "mechanical": true,
-      "facade": false,
-      "hasProjectManager": true
-    },
-    "workflowFilter": {
-      "subcontractorCount": "3-5",
-      "deadlineType": "strict",
-      "budgetType": "fixed"
-    }
-  },
-  "aiTriggers": {
-    "ragEnabled": true,
-    "conflictDetection": true,
-    "obcSearch": true,
-    "teamMapDepth": "standard",
-    "reportGeneration": true
-  },
-  "projectSize": "medium",
-  "projectSizeReason": "AI detected 1200 sq ft with 7 materials",
-  "recommendedMode": "team",
-  "selectedMode": "solo",
-  "tierAtCreation": "pro",
-  "teamLimitAtCreation": 10,
-  "aiAnalysis": {
-    "area": 1200,
+  "filterAnswers": { ... },
+  "aiTriggers": { "ragEnabled": true, "obcSearch": true, ... },
+  "operationalTruth": {
+    "confirmedArea": 1485,
     "areaUnit": "sq ft",
-    "materials": [...],
-    "hasBlueprint": true,
-    "confidence": "high",
-    "obcReferences": ["9.10.14", "3.1.5"],
-    "conflictsDetected": 1
+    "materialsCount": 12,
+    "blueprintStatus": "analyzed",
+    "obcCompliance": "clear",
+    "conflictStatus": "aligned",
+    "projectMode": "team",
+    "projectSize": "medium",
+    "confidenceLevel": "high",
+    "verifiedPillars": 7,
+    "verificationRate": 87.5
   },
-  "aiExplanationMessage": "Azért kérdeztem ezeket, mert..."
+  "dualEngineOutput": {
+    "gemini": { ... },
+    "openai": { ... }
+  },
+  "conflicts": []
 }
 ```
 
 ---
 
-### 4. Komponens Hierarchia és Flow
+## Összefoglaló
 
-```text
-BuildUnionProjects2.tsx (Fő Orchestrator)
-│
-├── showQuestionnaire === true
-│   └── ProjectQuestionnaire.tsx
-│       └── onComplete → setShowFilterQuestions(true)
-│
-├── showFilterQuestions === true (ÚJ ÁLLAPOT)
-│   └── FilterQuestions.tsx (ÚJ)
-│       └── onComplete → triggerAIAnalysis()
-│
-├── analyzing === true
-│   └── AIAnalysisProgress.tsx (frissítve)
-│       └── Filter-aware lépések megjelenítése
-│
-├── aiAnalysisForSelector !== null
-│   └── WorkflowSelector.tsx (frissítve)
-│       ├── AI Explanation Message (ÚJ)
-│       ├── Filter-Based Recommendations (ÚJ)
-│       ├── AI Detection Results (szerkeszthető)
-│       └── Solo/Team Mode választás
-│
-└── Projekt Lista (ha nincs aktív folyamat)
-```
+| Mit csinálunk | Miért |
+|---------------|-------|
+| 1 típusdefiníció | Minden komponens ugyanazt az adatstruktúrát használja |
+| 8 pillér | Teljes projekt állapot lefedés |
+| Status Cards átdolgozás | Admin → AI Truth |
+| Hook bővítés | Központi kalkuláció |
+| DB sync | Állandó adatmegőrzés |
 
 ---
 
-### 5. Implementációs Lépések
+## Technikai Részletek
 
-**Fázis 1: FilterQuestions Komponens Létrehozása**
-- Új fájl: `src/components/projects2/FilterQuestions.tsx`
-- Három szűrő kategória UI implementálása
-- Válaszok state kezelése és validáció
-- Animált átmenetek a szűrők között
+### Érintett Fájlok
 
-**Fázis 2: BuildUnionProjects2.tsx Frissítése**
-- Új state: `showFilterQuestions`, `filterAnswers`
-- Flow módosítás: Questionnaire → FilterQuestions → AI Analysis
-- Filter válaszok átadása az AI hook-nak
+1. **Új:** `src/types/operationalTruth.ts`
+2. **Módosítás:** `src/components/projects2/ProjectSynthesis.tsx`
+3. **Módosítás:** `src/components/projects2/ProjectDetailsView.tsx`
+4. **Módosítás:** `src/hooks/useProjectAIAnalysis.tsx`
+5. **Módosítás:** `src/components/OperationalTruthSummaryCard.tsx`
+6. **Módosítás:** `supabase/functions/quick-estimate/index.ts`
 
-**Fázis 3: useProjectAIAnalysis Hook Bővítése**
-- Filter válaszok fogadása paraméterként
-- OBC keresés trigger ha structural === true
-- Conflict detection fokozása ha modifications !== "none"
-- AI Explanation Message generálása
+### Tier Logika (Hardcoded)
 
-**Fázis 4: WorkflowSelector Frissítése**
-- AI Explanation Message megjelenítése
-- Filter-Based Recommendations szekció
-- Vizuális jelzések a triggerelt funkciókhoz
+| Feltétel | Ajánlás |
+|----------|---------|
+| `subcontractorCount > 3` | Team Mode |
+| `affectsStructure === true` | Team Mode |
+| `affectsMechanical === true` | Team Mode |
+| Minden más | Solo Mode |
 
-**Fázis 5: AIAnalysisProgress Frissítése**
-- Filter-aware lépések megjelenítése
-- OBC keresés progress ha aktív
-- Conflict detection progress ha aktív
-
----
-
-### 6. TypeScript Interfészek
-
-```typescript
-// Filter válaszok
-interface FilterAnswers {
-  inputFilter: {
-    dataAvailability: "both" | "blueprints_only" | "photos_only" | "none";
-    siteModifications: "significant" | "minor" | "none" | "unknown";
-  };
-  technicalFilter: {
-    affectsStructure: boolean;
-    affectsMechanical: boolean;
-    affectsFacade: boolean;
-    hasProjectManager: "yes_pm" | "yes_technical" | "no" | "self";
-  };
-  workflowFilter: {
-    subcontractorCount: "1-2" | "3-5" | "6+" | "not_applicable";
-    deadline: "strict_fixed" | "flexible_fixed" | "strict_flexible" | "both_flexible";
-  };
-}
-
-// AI Triggers (filter válaszokból számított)
-interface AITriggers {
-  ragEnabled: boolean;           // Ha van blueprint + fotó
-  conflictDetection: boolean;    // Ha van módosítás
-  obcSearch: boolean;            // Ha strukturális/gépészeti
-  teamMapDepth: "basic" | "standard" | "deep";  // Szakágak száma alapján
-  reportGeneration: boolean;     // Ha szigorú határidő/budget
-  recommendTeamMode: boolean;    // Ha van PM vagy 3+ szakág
-}
-
-// FilterQuestions props
-interface FilterQuestionsProps {
-  projectData: {
-    name: string;
-    workType: string | null;
-    hasImages: boolean;
-    hasDocuments: boolean;
-  };
-  onComplete: (answers: FilterAnswers) => void;
-  onBack: () => void;
-}
-```
-
----
-
-### 7. UI/UX Design Irányelvek
-
-**FilterQuestions UI:**
-- Kártya alapú design, egy kérdés per kártya
-- Animált átmenetek (slide) a kártyák között
-- Progress indicator (1/6, 2/6, stb.)
-- Visszalépés lehetősége
-- "Skip All" opció (alapértelmezett válaszokkal)
-- Ikonok és színek a kategóriákhoz:
-  - Input Filter: 📁 Kék
-  - Technical Filter: ⚙️ Narancs
-  - Workflow Filter: 📊 Zöld
-
-**AI Explanation Message UI:**
-- Disztinktív kártya a WorkflowSelector-ban
-- Gemini/OpenAI logók a megfelelő részeknél
-- Animált "typewriter" effekt az üzenethez
-- Expandálható "Decision Log" részletek
-
----
-
-### 8. Összefoglalás
-
-Ez a terv ötvözi:
-1. **Az eredeti Gemini tervet** - három szűrő kategória, AI magyarázó üzenet
-2. **A meglévő kódot** - ProjectQuestionnaire, WorkflowSelector, AI hook
-3. **A tier-based architektúrát** - létszám korlátok, nem projekt méret
-4. **A dual-engine AI-t** - Gemini vizuális + OpenAI szabályozási elemzés
-
-Az új workflow:
-1. Minimális input (név, work type, feltöltések)
-2. Intelligens szűrő kérdések (RAG, OBC, Team triggers)
-3. AI elemzés a filter válaszok alapján
-4. Átlátható magyarázat ("Azért kérdeztem...")
-5. Szerkeszthető eredmények és workflow választás
