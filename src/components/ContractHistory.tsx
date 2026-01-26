@@ -40,7 +40,8 @@ import {
   Download,
   Copy,
   ArrowRight,
-  Brain
+  Brain,
+  Info
 } from "lucide-react";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
 
@@ -82,10 +83,19 @@ interface Contract {
   created_at: string;
 }
 
+interface TemplateItem {
+  templateId?: string;
+  templateName?: string;
+  checklist?: Array<{ id: string; task: string; category: string }>;
+  completedTasks?: string[];
+  materials?: string[];
+}
+
 interface ContractHistoryProps {
   projectId?: string;
   showTitle?: boolean;
   onNavigateToAI?: () => void;
+  templateItems?: TemplateItem[];
 }
 
 type ContractTemplateType = "custom" | "residential" | "commercial" | "renovation";
@@ -117,7 +127,7 @@ const CONTRACT_TEMPLATES = [
   },
 ];
 
-const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI }: ContractHistoryProps) => {
+const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI, templateItems = [] }: ContractHistoryProps) => {
   const { user } = useAuth();
   const { formatCurrency, config } = useRegionSettings();
   const { profile } = useBuProfile();
@@ -446,6 +456,42 @@ const handleContractGenerated = () => {
 
   return (
     <div className="space-y-4">
+      {/* Quick Mode Templates Section */}
+      {templateItems.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 mb-4">
+          <h4 className="font-medium text-slate-900 flex items-center gap-2 mb-3">
+            <FileCheck className="w-4 h-4 text-amber-500" />
+            Quick Mode Templates
+            <Badge variant="secondary" className="ml-1 text-xs">{templateItems.length}</Badge>
+          </h4>
+          <div className="space-y-2">
+            {templateItems.map((template, idx) => (
+              <div key={idx} className="flex items-center justify-between bg-white/80 rounded-lg p-3 border border-amber-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <Wrench className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm text-slate-900">{template.templateName || 'Custom Template'}</p>
+                    <p className="text-xs text-slate-500">
+                      {template.completedTasks?.length || 0}/{template.checklist?.length || 0} tasks • {template.materials?.length || 0} materials
+                    </p>
+                  </div>
+                </div>
+                <Badge className="bg-green-100 text-green-700 text-xs">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Verified
+                </Badge>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-amber-700 mt-3 flex items-center gap-1">
+            <Info className="w-3 h-3" />
+            Templates from Quick Mode are available for personalized team contracts
+          </p>
+        </div>
+      )}
+
       {/* Header with Create Button */}
       <div className="flex items-center justify-between">
         {showTitle && (
