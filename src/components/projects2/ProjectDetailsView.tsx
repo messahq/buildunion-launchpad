@@ -33,6 +33,7 @@ import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
 import EditableAIAnalysisSummary from "./EditableAIAnalysisSummary";
+import { MaterialCalculationTab } from "./MaterialCalculationTab";
 
 import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
@@ -903,9 +904,9 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               </TabsTrigger>
             </>
           )}
-          <TabsTrigger value="timeline" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("projects.timeline")}</span>
+          <TabsTrigger value="materials" className="gap-2">
+            <DollarSign className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("projects.materials", "Materials")}</span>
           </TabsTrigger>
           <TabsTrigger value="weather" className="gap-2">
             <Cloud className="h-4 w-4" />
@@ -1017,19 +1018,16 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           </TabsContent>
         )}
 
-        {/* Timeline Tab - Shows phases info */}
-        <TabsContent value="timeline" className="mt-6">
-          <Card className="border-dashed border-2 border-amber-200 bg-amber-50/30 dark:bg-amber-950/10">
-            <CardContent className="py-8 text-center">
-              <Calendar className="h-10 w-10 mx-auto text-amber-500 mb-3" />
-              <p className="font-medium text-foreground mb-2">
-                {t("timeline.movedNotice", "Timeline phases are shown below")}
-              </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t("timeline.movedDescription", "Scroll down to see the project phases and task timeline.")}
-              </p>
-            </CardContent>
-          </Card>
+        {/* Materials Tab - Material Calculation */}
+        <TabsContent value="materials" className="mt-6">
+          <MaterialCalculationTab 
+            materials={aiAnalysis?.materials || [
+              { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
+              { item: "Underlayment", quantity: 1400, unit: "sq ft" },
+              { item: "Baseboard Trim", quantity: 280, unit: "linear ft" },
+              { item: "Adhesive & Supplies", quantity: 15, unit: "units" }
+            ]}
+          />
         </TabsContent>
 
         {/* Weather Tab */}
