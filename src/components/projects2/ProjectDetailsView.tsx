@@ -1185,7 +1185,32 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             <TaskGanttTimeline
               tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
               isOwner={isOwner}
+              projectId={projectId}
+              teamMembers={members.map(m => ({
+                user_id: m.user_id,
+                name: m.full_name || "Unknown",
+                avatar_url: (m as any).avatar_url,
+                role: m.role,
+              }))}
               onBudgetUpdate={handleBudgetUpdate}
+              onTaskUpdated={(updatedTask, shiftedTasks) => {
+                // Refresh tasks after update
+                setTasks(prev => prev.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t));
+                if (shiftedTasks && shiftedTasks.length > 0) {
+                  // Also update shifted tasks
+                  setTasks(prev => prev.map(t => {
+                    const shifted = shiftedTasks.find(st => st.taskId === t.id);
+                    if (shifted) {
+                      return { ...t, due_date: shifted.newDueDate };
+                    }
+                    return t;
+                  }));
+                }
+              }}
+              onBaselineUnlock={() => {
+                // Mark that user has modified tasks - could trigger baseline unlock
+                toast.info(t("timeline.userModifiedTask", "Task modified - baseline may need review"));
+              }}
             />
           )}
         </TabsContent>
