@@ -437,6 +437,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           const demoTasks = generateDemoTasks(projectId, user.id, aiMaterials);
           
           // Prepare tasks for database insertion (remove demo- prefix and use real UUIDs)
+          // NOTE: Do NOT include total_cost - it's a generated column (unit_price * quantity)
           const tasksToInsert = demoTasks.map(task => ({
             project_id: task.project_id,
             assigned_to: task.assigned_to,
@@ -448,7 +449,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             due_date: task.due_date,
             unit_price: task.unit_price,
             quantity: task.quantity,
-            total_cost: task.total_cost,
           }));
           
           // Insert tasks into database
