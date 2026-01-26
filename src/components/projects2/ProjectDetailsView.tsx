@@ -17,7 +17,8 @@ import {
   MessageSquare,
   CheckCircle2,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Map
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,9 @@ import { WeatherWidget } from "@/components/WeatherWidget";
 import ActiveProjectTimeline from "@/components/ActiveProjectTimeline";
 import ProjectSynthesis, { DualEngineOutput, SynthesisResult } from "./ProjectSynthesis";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
+import ConflictStatusIndicator from "./ConflictStatusIndicator";
+import TeamMapWidget from "./TeamMapWidget";
+import DocumentsPane from "./DocumentsPane";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -155,6 +159,8 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     return null;
   }
 
+  const isTeamMode = summary?.mode === "team";
+
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
@@ -175,7 +181,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                 variant="outline" 
                 className={cn(
                   "capitalize",
-                  summary?.mode === "team" 
+                  isTeamMode 
                     ? "border-cyan-500 text-cyan-600 dark:text-cyan-400"
                     : "border-amber-500 text-amber-600 dark:text-amber-400"
                 )}
@@ -209,6 +215,13 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             </div>
           </div>
         </div>
+
+        {/* Conflict Status Indicator - Always visible in header */}
+        <ConflictStatusIndicator
+          synthesisResult={synthesisResult}
+          dualEngineOutput={dualEngineOutput}
+          size="md"
+        />
       </div>
 
       {/* Quick Status Cards */}
@@ -241,7 +254,10 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+        <TabsList className={cn(
+          "grid w-full bg-muted/50",
+          isTeamMode ? "grid-cols-5" : "grid-cols-4"
+        )}>
           <TabsTrigger value="overview" className="gap-2">
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -250,6 +266,12 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Documents</span>
           </TabsTrigger>
+          {isTeamMode && (
+            <TabsTrigger value="map" className="gap-2">
+              <Map className="h-4 w-4" />
+              <span className="hidden sm:inline">Site Map</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="timeline" className="gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Timeline</span>
@@ -360,43 +382,33 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           )}
         </TabsContent>
 
-        {/* Documents Tab */}
+        {/* Documents Tab - Enhanced with Materials */}
         <TabsContent value="documents" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                Project Documents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {project.site_images && project.site_images.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {project.site_images.map((path, i) => (
-                    <div 
-                      key={i}
-                      className="aspect-square rounded-lg bg-muted/50 border flex items-center justify-center overflow-hidden"
-                    >
-                      <img 
-                        src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${path}`}
-                        alt={`Site image ${i + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-12 text-center">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-                  <p className="text-muted-foreground">No documents uploaded yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <DocumentsPane
+            projectId={projectId}
+            siteImages={project.site_images}
+            aiAnalysis={aiAnalysis}
+          />
         </TabsContent>
+
+        {/* Team Map Tab - Only for Team Mode */}
+        {isTeamMode && (
+          <TabsContent value="map" className="mt-6">
+            {project.address ? (
+              <TeamMapWidget
+                projectAddress={project.address}
+                projectName={project.name}
+              />
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <Map className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                  <p className="text-muted-foreground">Add a project address to view site map</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        )}
 
         {/* Timeline Tab */}
         <TabsContent value="timeline" className="mt-6">
