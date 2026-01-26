@@ -14,10 +14,20 @@ import DataMergeDialog from "@/components/DataMergeDialog";
 import AuthGateModal from "@/components/AuthGateModal";
 import GuestProgressBar from "@/components/GuestProgressBar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowLeft, FileSpreadsheet, Sparkles, FileUp, Crown, Lock, ClipboardSignature } from "lucide-react";
+import { Camera, LayoutTemplate, Calculator, FileText, Zap, ArrowLeft, FileSpreadsheet, Sparkles, FileUp, Crown, Lock, ClipboardSignature, AlertTriangle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -101,6 +111,8 @@ const BuildUnionQuickMode = () => {
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [authGateFeature, setAuthGateFeature] = useState<"blueprints" | "templates" | "quote" | "summary">("blueprints");
   const [showDraftResume, setShowDraftResume] = useState(false);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [contractMode, setContractMode] = useState<ContractMode>("selector");
   
   // Quote data to pass to contract path selector
@@ -314,6 +326,63 @@ const BuildUnionQuickMode = () => {
     }
   }, [activeTab]); // Only trigger on tab change
 
+  // Check if there's unsaved data
+  const hasUnsavedData = useCallback(() => {
+    return (
+      collectedData.photoEstimate ||
+      collectedData.calculatorResults.length > 0 ||
+      collectedData.templateItems.length > 0 ||
+      quoteProgress.clientName ||
+      quoteProgress.clientEmail ||
+      contractProgress.clientName ||
+      contractProgress.totalAmount > 0
+    );
+  }, [collectedData, quoteProgress, contractProgress]);
+
+  // Browser beforeunload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedData()) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedData]);
+
+  // Safe navigation with warning
+  const safeNavigate = useCallback((path: string) => {
+    if (hasUnsavedData()) {
+      setPendingNavigation(path);
+      setShowLeaveWarning(true);
+    } else {
+      navigate(path);
+    }
+  }, [hasUnsavedData, navigate]);
+
+  // Confirm leave - save draft and navigate
+  const handleConfirmLeave = async () => {
+    if (user) {
+      await saveDraft(buildFullDraftData());
+      toast.success("Your progress has been saved");
+    }
+    setShowLeaveWarning(false);
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+  };
+
+  // Leave without saving
+  const handleLeaveWithoutSaving = () => {
+    setShowLeaveWarning(false);
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+  };
+
   // Handle resuming from draft - restore ALL data
   const handleResumeDraft = () => {
     if (draftData) {
@@ -509,7 +578,7 @@ const BuildUnionQuickMode = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/buildunion")}
+              onClick={() => safeNavigate("/buildunion")}
               className="gap-2 text-muted-foreground hover:text-foreground mb-4"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -738,7 +807,39 @@ const BuildUnionQuickMode = () => {
         }
       />
 
-      {/* Draft Resume Dialog - removed as per user request */}
+      {/* Leave Warning Dialog */}
+      <AlertDialog open={showLeaveWarning} onOpenChange={setShowLeaveWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Unsaved Changes
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved progress in Quick Mode. Would you like to save your work before leaving?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => setShowLeaveWarning(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={handleLeaveWithoutSaving}
+              className="border-destructive text-destructive hover:bg-destructive/10"
+            >
+              Leave Without Saving
+            </Button>
+            <AlertDialogAction
+              onClick={handleConfirmLeave}
+              className="gap-2 bg-amber-500 hover:bg-amber-600"
+            >
+              <Save className="w-4 h-4" />
+              Save & Leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
