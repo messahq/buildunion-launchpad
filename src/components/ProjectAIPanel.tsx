@@ -75,6 +75,8 @@ interface Task {
   assigned_to: string;
 }
 
+type BlueprintTab = "ai" | "documents" | "facts" | "requirements" | "team" | "contracts";
+
 interface ProjectAIPanelProps {
   projectId: string;
   projectName: string;
@@ -87,6 +89,7 @@ interface ProjectAIPanelProps {
   tasks?: Task[];
   isOwner?: boolean;
   isPremium?: boolean;
+  onTabChange?: (tab: BlueprintTab) => void;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-messa`;
@@ -161,7 +164,8 @@ const ProjectAIPanel = ({
   teamMembers = [],
   tasks = [],
   isOwner = false,
-  isPremium = false
+  isPremium = false,
+  onTabChange
 }: ProjectAIPanelProps) => {
   const [messages, setMessages] = useState<MessaMessage[]>([]);
   const [input, setInput] = useState("");
@@ -347,101 +351,123 @@ const ProjectAIPanel = ({
         
         {/* 8 Elements Grid */}
         <div className="grid grid-cols-4 gap-1.5">
-          {/* 1. Photo Estimate */}
-          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-            projectSummary?.photo_estimate && Object.keys(projectSummary.photo_estimate).length > 0
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-slate-200 text-slate-500"
-          }`}>
+          {/* 1. Photo Estimate - Links to Quick Mode */}
+          <button
+            onClick={() => !projectSummary?.photo_estimate && onTabChange?.("documents")}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
+              projectSummary?.photo_estimate && Object.keys(projectSummary.photo_estimate).length > 0
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-slate-200 text-slate-500 hover:bg-slate-300 cursor-pointer"
+            }`}
+            title={projectSummary?.photo_estimate ? "Photo analysis complete" : "Click to upload photos"}
+          >
             {projectSummary?.photo_estimate && Object.keys(projectSummary.photo_estimate).length > 0
               ? <CheckCircle2 className="h-3 w-3" />
               : <XCircle className="h-3 w-3" />}
             <span className="truncate">1. Photo</span>
-          </div>
+          </button>
           
-          {/* 2. Templates */}
+          {/* 2. Templates - Info only */}
           <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
             projectSummary?.template_items && projectSummary.template_items.length > 0
               ? "bg-emerald-100 text-emerald-700"
               : "bg-slate-200 text-slate-500"
-          }`}>
+          }`}
+            title={projectSummary?.template_items?.length ? "Templates applied" : "No templates used"}
+          >
             {projectSummary?.template_items && projectSummary.template_items.length > 0
               ? <CheckCircle2 className="h-3 w-3" />
               : <XCircle className="h-3 w-3" />}
             <span className="truncate">2. Template</span>
           </div>
           
-          {/* 3. Calculator */}
+          {/* 3. Calculator - Info only */}
           <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
             projectSummary?.calculator_results && projectSummary.calculator_results.length > 0
               ? "bg-emerald-100 text-emerald-700"
               : "bg-slate-200 text-slate-500"
-          }`}>
+          }`}
+            title={projectSummary?.calculator_results?.length ? "Calculator data present" : "No calculator data"}
+          >
             {projectSummary?.calculator_results && projectSummary.calculator_results.length > 0
               ? <CheckCircle2 className="h-3 w-3" />
               : <XCircle className="h-3 w-3" />}
             <span className="truncate">3. Calc</span>
           </div>
           
-          {/* 4. Quote Items */}
+          {/* 4. Quote Items - Info only */}
           <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
             projectSummary?.line_items && projectSummary.line_items.length > 0
               ? "bg-emerald-100 text-emerald-700"
               : "bg-slate-200 text-slate-500"
-          }`}>
+          }`}
+            title={projectSummary?.line_items?.length ? `${projectSummary.line_items.length} items` : "No quote items"}
+          >
             {projectSummary?.line_items && projectSummary.line_items.length > 0
               ? <CheckCircle2 className="h-3 w-3" />
               : <XCircle className="h-3 w-3" />}
             <span className="truncate">4. Quote</span>
           </div>
           
-          {/* 5. Client Info */}
+          {/* 5. Client Info - Info only */}
           <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
             projectSummary?.client_name || projectSummary?.client_email
               ? "bg-emerald-100 text-emerald-700"
               : "bg-slate-200 text-slate-500"
-          }`}>
+          }`}
+            title={projectSummary?.client_name || "No client info"}
+          >
             {projectSummary?.client_name || projectSummary?.client_email
               ? <CheckCircle2 className="h-3 w-3" />
               : <XCircle className="h-3 w-3" />}
             <span className="truncate">5. Client</span>
           </div>
           
-          {/* 6. Quote Total */}
+          {/* 6. Quote Total - Info only */}
           <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
             projectSummary?.total_cost && projectSummary.total_cost > 0
               ? "bg-emerald-100 text-emerald-700"
               : "bg-slate-200 text-slate-500"
-          }`}>
+          }`}
+            title={projectSummary?.total_cost ? `$${projectSummary.total_cost.toLocaleString()}` : "No total"}
+          >
             {projectSummary?.total_cost && projectSummary.total_cost > 0
               ? <CheckCircle2 className="h-3 w-3" />
               : <XCircle className="h-3 w-3" />}
             <span className="truncate">6. Total</span>
           </div>
           
-          {/* 7. Contract Preview */}
-          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-            projectContracts.length > 0
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-amber-100 text-amber-700"
-          }`}>
+          {/* 7. Contract Preview - Navigates to Contracts tab */}
+          <button
+            onClick={() => onTabChange?.("contracts")}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all hover:ring-1 hover:ring-cyan-300 ${
+              projectContracts.length > 0
+                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                : "bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer"
+            }`}
+            title={projectContracts.length > 0 ? "View contracts" : "Click to create contract"}
+          >
             {projectContracts.length > 0
               ? <CheckCircle2 className="h-3 w-3" />
               : <AlertCircle className="h-3 w-3" />}
             <span className="truncate">7. Contract</span>
-          </div>
+          </button>
           
-          {/* 8. Contract PDF (Signed) */}
-          <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-            projectContracts.some(c => c.status === 'complete' || c.status === 'signed')
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-amber-100 text-amber-700"
-          }`}>
+          {/* 8. Contract PDF (Signed) - Navigates to Contracts tab */}
+          <button
+            onClick={() => onTabChange?.("contracts")}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all hover:ring-1 hover:ring-cyan-300 ${
+              projectContracts.some(c => c.status === 'complete' || c.status === 'signed')
+                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                : "bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer"
+            }`}
+            title={projectContracts.some(c => c.status === 'complete' || c.status === 'signed') ? "Contract signed" : "Click to sign contract"}
+          >
             {projectContracts.some(c => c.status === 'complete' || c.status === 'signed')
               ? <CheckCircle2 className="h-3 w-3" />
               : <AlertCircle className="h-3 w-3" />}
             <span className="truncate">8. Signed</span>
-          </div>
+          </button>
         </div>
       </div>
 
