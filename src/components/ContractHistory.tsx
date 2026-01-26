@@ -107,6 +107,7 @@ interface ContractHistoryProps {
   showTitle?: boolean;
   onNavigateToAI?: () => void;
   templateItems?: TemplateItem[];
+  onContractSaved?: () => void; // Callback to refresh contracts in parent
 }
 
 type ContractTemplateType = "custom" | "residential" | "commercial" | "renovation";
@@ -150,7 +151,7 @@ interface TeamMember {
   fullName?: string;
 }
 
-const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI, templateItems = [] }: ContractHistoryProps) => {
+const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI, templateItems = [], onContractSaved }: ContractHistoryProps) => {
   const { user } = useAuth();
   const { formatCurrency, config } = useRegionSettings();
   const { profile } = useBuProfile();
@@ -351,6 +352,8 @@ const handleContractGenerated = () => {
     setEditingContract(null);
     setDuplicatingContract(null);
     fetchContracts();
+    // Notify parent to refresh contracts in Operational Truth
+    onContractSaved?.();
   };
 
   const handleBackToList = () => {
