@@ -33,7 +33,9 @@
     "optionalNote": "Note (optional)",
     "initialNotePlaceholder": "e.g. Initial baseline based on AI analysis",
     "setProjectDates": "Set Project Timeline",
-    "datesRequired": "Both dates are required to lock baseline"
+    "datesRequired": "Both dates are required to lock baseline",
+    "projectTimeline": "Project Timeline",
+    "notSet": "Not set"
   },
   "timeline": {
     "ganttView": "Gantt Timeline",

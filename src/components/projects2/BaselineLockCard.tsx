@@ -360,6 +360,28 @@ const BaselineLockCard = ({
       <CardContent className="space-y-4">
         {isLocked ? (
           <>
+            {/* Project Timeline Display - ALWAYS VISIBLE when locked */}
+            <div className="p-3 rounded-lg bg-green-50/50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-green-700 dark:text-green-400">
+                <CalendarIcon className="h-4 w-4" />
+                {t("baseline.projectTimeline", "Project Timeline")}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("baseline.startDate", "Project Start")}</p>
+                  <p className="text-sm font-medium">
+                    {projectStartDate ? format(projectStartDate, "MMM d, yyyy") : t("baseline.notSet", "Not set")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("baseline.endDate", "Target End")}</p>
+                  <p className="text-sm font-medium">
+                    {projectEndDate ? format(projectEndDate, "MMM d, yyyy") : t("baseline.notSet", "Not set")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Locked info */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -484,6 +506,73 @@ const BaselineLockCard = ({
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
+                      {/* Project Timeline Dates */}
+                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/30 space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                          <CalendarIcon className="h-4 w-4" />
+                          {t("baseline.setProjectDates", "Set Project Timeline")}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{t("baseline.startDate", "Project Start")}</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal h-9",
+                                    !projectStartDate && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-3 w-3" />
+                                  {projectStartDate ? format(projectStartDate, "MMM d, yyyy") : t("baseline.pickDate", "Pick")}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={projectStartDate}
+                                  onSelect={setProjectStartDate}
+                                  initialFocus
+                                  className="p-3 pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <Label className="text-xs">{t("baseline.endDate", "Target End")}</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal h-9",
+                                    !projectEndDate && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-3 w-3" />
+                                  {projectEndDate ? format(projectEndDate, "MMM d, yyyy") : t("baseline.pickDate", "Pick")}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={projectEndDate}
+                                  onSelect={setProjectEndDate}
+                                  disabled={(date) => projectStartDate ? date < projectStartDate : false}
+                                  initialFocus
+                                  className="p-3 pointer-events-auto"
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Editable Area */}
                       <div className="space-y-2">
                         <Label htmlFor="area">{t("baseline.confirmedArea", "Confirmed Area")}</Label>
