@@ -81,7 +81,14 @@ export function WeatherWidget({
   }
 
   if (error) {
-    const isInvalidAddress = error.includes("valid project address") || error.includes("Invalid location");
+    // Detect various address-related errors
+    const isInvalidAddress = 
+      error.includes("valid project address") || 
+      error.includes("Invalid location") ||
+      error.includes("Location not found") ||
+      error.includes("more specific address") ||
+      error.includes("No results");
+    
     return (
       <Card className={cn(isInvalidAddress ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20" : "border-destructive/50", className)}>
         <CardContent className="py-4">
@@ -91,17 +98,17 @@ export function WeatherWidget({
               isInvalidAddress ? "text-amber-700 dark:text-amber-400" : "text-destructive"
             )}>
               {isInvalidAddress ? (
-                <Cloud className="h-4 w-4" />
+                <MapPin className="h-4 w-4" />
               ) : (
                 <AlertTriangle className="h-4 w-4" />
               )}
               <div className="text-sm">
                 <p className="font-medium">
-                  {isInvalidAddress ? "Weather unavailable" : "Could not load weather"}
+                  {isInvalidAddress ? "Address needs more detail" : "Could not load weather"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {isInvalidAddress 
-                    ? "Enter a complete address (e.g., 123 Main St, Toronto, ON)" 
+                    ? "Add city & province (e.g., 15 Norton Ave, Toronto, ON)" 
                     : error}
                 </p>
               </div>
