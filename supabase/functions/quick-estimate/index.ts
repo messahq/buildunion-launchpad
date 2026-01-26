@@ -69,12 +69,22 @@ interface GPTEstimateData {
   raw_response?: string;
 }
 
-// OpenAI OBC Validation Output (Placeholder for future OPENAI_API_KEY integration)
+// OpenAI OBC Validation Output - Full regulatory analysis
 interface OpenAIOBCData {
-  obcReferences: string[];
+  obcReferences: Array<{
+    code: string;
+    title: string;
+    relevance: "direct" | "related" | "informational";
+    summary: string;
+  }>;
   regulatoryNotes: string[];
   permitRequired: boolean;
+  permitType: "building" | "electrical" | "plumbing" | "hvac" | "none";
+  inspectionRequired: boolean;
+  estimatedPermitCost: number | null;
   validationStatus: "validated" | "warning" | "pending";
+  complianceScore: number; // 0-100
+  recommendations: string[];
   raw_response?: string;
 }
 
@@ -573,43 +583,208 @@ RESPOND IN JSON:
 }
 
 // ============================================
-// OPENAI OBC VALIDATION PLACEHOLDER
-// Future: Use OPENAI_API_KEY for regulatory validation
+// OPENAI OBC VALIDATION - GPT-5 REGULATORY ENGINE
+// Uses Lovable AI Gateway with OpenAI GPT-5 for 
+// Ontario Building Code analysis
 // ============================================
 
 async function openaiOBCValidation(
   filterAnswers: FilterAnswers | null,
   aiTriggers: AITriggers | null,
-  _apiKey: string
+  apiKey: string,
+  projectDescription?: string,
+  projectArea?: number
 ): Promise<OpenAIOBCData> {
-  // PLACEHOLDER: This will be implemented when OPENAI_API_KEY is configured
-  // For now, return pending status based on filter answers
-  
   const requiresOBC = aiTriggers?.obcSearch || false;
   const affectsStructure = filterAnswers?.technicalFilter?.affectsStructure || false;
   const affectsMechanical = filterAnswers?.technicalFilter?.affectsMechanical || false;
+  const affectsFacade = filterAnswers?.technicalFilter?.affectsFacade || false;
   
-  // Generate placeholder OBC references based on work type
-  const obcReferences: string[] = [];
-  if (affectsStructure) {
-    obcReferences.push("OBC 9.10.14 - Structural Requirements");
-    obcReferences.push("OBC 4.1.5 - Load-Bearing Walls");
+  console.log("OBC Validation START:", { requiresOBC, affectsStructure, affectsMechanical, affectsFacade });
+  
+  // Build work scope description for AI
+  const workScope: string[] = [];
+  if (affectsStructure) workScope.push("structural modifications (load-bearing walls, foundations)");
+  if (affectsMechanical) workScope.push("mechanical/plumbing work (HVAC, plumbing stacks, electrical)");
+  if (affectsFacade) workScope.push("exterior/facade modifications (windows, doors, cladding)");
+  if (workScope.length === 0) workScope.push("general interior renovation");
+  
+  const obcPrompt = `You are an Ontario Building Code (OBC 2024) regulatory expert. Analyze this construction project and provide compliance guidance.
+
+=== PROJECT DETAILS ===
+Description: ${projectDescription || "General construction/renovation project"}
+Area: ${projectArea ? `${projectArea} sq ft` : "Not specified"}
+Work Scope: ${workScope.join(", ")}
+Affects Structure: ${affectsStructure ? "YES" : "No"}
+Affects Mechanical: ${affectsMechanical ? "YES" : "No"}
+Affects Facade: ${affectsFacade ? "YES" : "No"}
+
+=== YOUR TASK ===
+1. Identify ALL relevant OBC sections that apply
+2. Determine permit requirements
+3. List required inspections
+4. Estimate permit costs (Ontario 2024 rates)
+5. Provide compliance recommendations
+
+=== RESPONSE FORMAT (JSON) ===
+{
+  "obcReferences": [
+    {
+      "code": "OBC Section Number (e.g., 9.10.14)",
+      "title": "Section Title",
+      "relevance": "direct/related/informational",
+      "summary": "Brief explanation of how this applies"
+    }
+  ],
+  "regulatoryNotes": ["Important note 1", "Important note 2"],
+  "permitRequired": true/false,
+  "permitType": "building/electrical/plumbing/hvac/none",
+  "inspectionRequired": true/false,
+  "estimatedPermitCost": NUMBER_OR_NULL,
+  "complianceScore": 0-100,
+  "recommendations": ["Action item 1", "Action item 2"]
+}
+
+=== OBC REFERENCE GUIDELINES ===
+- Part 9 (Housing/Small Buildings): Most residential renovations
+- Part 3 (Fire Protection): Multi-unit or commercial
+- Part 4 (Structural Design): Load-bearing modifications
+- Part 6 (HVAC): Heating/cooling changes
+- Part 7 (Plumbing): Plumbing modifications
+- Part 10 (Change of Use): Occupancy changes
+
+Be specific with OBC section numbers. If structural work is involved, ALWAYS require permits.`;
+
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-5-mini", // Using GPT-5 for regulatory reasoning
+        messages: [{
+          role: "system",
+          content: "You are an Ontario Building Code expert providing regulatory compliance analysis for construction projects. Always cite specific OBC sections."
+        }, {
+          role: "user",
+          content: obcPrompt
+        }],
+        max_tokens: 1500,
+        temperature: 0.3, // Lower temperature for more consistent regulatory advice
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("OBC Validation API error:", response.status);
+      throw new Error(`OBC API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const rawContent = result.choices?.[0]?.message?.content || "";
+    console.log("OBC raw response:", rawContent.substring(0, 500));
+
+    // Parse JSON response
+    let cleanContent = rawContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const jsonStart = cleanContent.indexOf("{");
+    const jsonEnd = cleanContent.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+    }
+    
+    const parsed = JSON.parse(cleanContent);
+    console.log("OBC parsed successfully:", { 
+      referencesCount: parsed.obcReferences?.length, 
+      permitRequired: parsed.permitRequired,
+      complianceScore: parsed.complianceScore
+    });
+
+    return {
+      obcReferences: parsed.obcReferences || [],
+      regulatoryNotes: parsed.regulatoryNotes || [],
+      permitRequired: parsed.permitRequired ?? (affectsStructure || affectsMechanical),
+      permitType: parsed.permitType || "none",
+      inspectionRequired: parsed.inspectionRequired ?? (affectsStructure || affectsMechanical),
+      estimatedPermitCost: parsed.estimatedPermitCost || null,
+      validationStatus: "validated",
+      complianceScore: parsed.complianceScore ?? 75,
+      recommendations: parsed.recommendations || [],
+      raw_response: rawContent.substring(0, 800),
+    };
+  } catch (error) {
+    console.error("OBC Validation error:", error);
+    
+    // Fallback with basic logic-based analysis
+    const fallbackReferences: OpenAIOBCData["obcReferences"] = [];
+    
+    if (affectsStructure) {
+      fallbackReferences.push({
+        code: "OBC 9.10.14",
+        title: "Structural Requirements",
+        relevance: "direct",
+        summary: "Load-bearing wall modifications require engineering review"
+      });
+      fallbackReferences.push({
+        code: "OBC 4.1.5",
+        title: "Dead Loads",
+        relevance: "direct",
+        summary: "Structural load calculations required"
+      });
+    }
+    if (affectsMechanical) {
+      fallbackReferences.push({
+        code: "OBC 9.31",
+        title: "Mechanical Systems",
+        relevance: "direct",
+        summary: "HVAC modifications require permit and inspection"
+      });
+      fallbackReferences.push({
+        code: "OBC 9.33",
+        title: "Plumbing Systems",
+        relevance: "direct",
+        summary: "Plumbing changes require plumbing permit"
+      });
+    }
+    if (affectsFacade) {
+      fallbackReferences.push({
+        code: "OBC 9.27",
+        title: "Windows and Doors",
+        relevance: "direct",
+        summary: "Exterior openings must meet energy and egress requirements"
+      });
+    }
+    
+    // Add general reference if no specific work type
+    if (fallbackReferences.length === 0) {
+      fallbackReferences.push({
+        code: "OBC Part 9",
+        title: "Housing and Small Buildings",
+        relevance: "informational",
+        summary: "General requirements for residential renovations"
+      });
+    }
+    
+    return {
+      obcReferences: fallbackReferences,
+      regulatoryNotes: [
+        affectsStructure ? "Structural work requires building permit" : "",
+        affectsMechanical ? "Mechanical/plumbing work may require separate permits" : "",
+        "Consult local building authority for specific requirements"
+      ].filter(Boolean),
+      permitRequired: affectsStructure || affectsMechanical,
+      permitType: affectsStructure ? "building" : (affectsMechanical ? "plumbing" : "none"),
+      inspectionRequired: affectsStructure || affectsMechanical,
+      estimatedPermitCost: affectsStructure ? 500 : (affectsMechanical ? 200 : null),
+      validationStatus: "warning", // Warning because AI failed, using fallback
+      complianceScore: 60,
+      recommendations: [
+        "Verify requirements with local building department",
+        "Consider consulting a licensed contractor"
+      ],
+      raw_response: `Fallback analysis due to: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
   }
-  if (affectsMechanical) {
-    obcReferences.push("OBC 9.31 - Mechanical Systems");
-    obcReferences.push("OBC 9.33 - Plumbing Stacks");
-  }
-  
-  console.log("OBC Validation:", { requiresOBC, affectsStructure, affectsMechanical, obcReferences });
-  
-  return {
-    obcReferences,
-    regulatoryNotes: requiresOBC 
-      ? ["Building permit may be required", "Consult local building authority"]
-      : [],
-    permitRequired: affectsStructure || affectsMechanical,
-    validationStatus: "pending", // Will be "validated" when OPENAI_API_KEY is active
-  };
 }
 
 // ============================================
@@ -644,9 +819,20 @@ serve(async (req) => {
       ? await dualEngineAnalysis(image, description, apiKey, premiumMode)
       : await standardAnalysis(image, description, apiKey);
     
-    // If OBC search is triggered, add regulatory data
-    if (aiTriggers?.obcSearch) {
-      const obcData = await openaiOBCValidation(filterAnswers, aiTriggers, apiKey);
+    // If OBC search is triggered OR structural/mechanical work detected, add regulatory data
+    const shouldRunOBC = aiTriggers?.obcSearch || 
+      filterAnswers?.technicalFilter?.affectsStructure || 
+      filterAnswers?.technicalFilter?.affectsMechanical;
+      
+    if (shouldRunOBC) {
+      console.log("Running OBC Validation...");
+      const obcData = await openaiOBCValidation(
+        filterAnswers, 
+        aiTriggers, 
+        apiKey,
+        description,
+        result.estimate?.area
+      );
       
       // Merge OBC data into result
       if (result.estimate) {
@@ -654,10 +840,15 @@ serve(async (req) => {
         result.estimate.dualEngine = result.estimate.dualEngine || {};
         result.estimate.dualEngine.openai = {
           role: "Regulatory Validator",
-          model: "gpt-5-mini (pending)",
+          model: "gpt-5-mini",
           findings: obcData,
+          rawExcerpt: obcData.raw_response,
         };
       }
+      console.log("OBC Validation complete:", { 
+        status: obcData.validationStatus, 
+        permitRequired: obcData.permitRequired 
+      });
     }
 
     return new Response(JSON.stringify(result), {

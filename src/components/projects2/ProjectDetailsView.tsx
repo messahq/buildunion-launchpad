@@ -412,6 +412,19 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             detectedArea={aiAnalysis?.area}
             blueprintArea={blueprintAnalysis?.detectedArea}
             materials={aiAnalysis?.materials}
+            obcDetails={dualEngineOutput?.openai ? {
+              status: (dualEngineOutput.openai.validationStatus as "validated" | "warning" | "pending" | "clear" | "permit_required") || "pending",
+              permitRequired: dualEngineOutput.openai.permitRequired || false,
+              permitType: (dualEngineOutput.openai.permitType as "building" | "electrical" | "plumbing" | "hvac" | "none") || "none",
+              inspectionRequired: dualEngineOutput.openai.inspectionRequired || false,
+              estimatedPermitCost: dualEngineOutput.openai.estimatedPermitCost || null,
+              complianceScore: dualEngineOutput.openai.complianceScore || 0,
+              references: (dualEngineOutput.openai.obcReferences || []).map((ref: any) => 
+                typeof ref === "string" ? { code: ref, title: ref, relevance: "informational" as const, summary: "" } : ref
+              ),
+              recommendations: dualEngineOutput.openai.recommendations || [],
+              notes: dualEngineOutput.openai.regulatoryNotes || [],
+            } : undefined}
             isPro={isPro}
           />
 

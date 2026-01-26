@@ -36,10 +36,15 @@ export interface DualEngineOutput {
   openai: {
     role: string;
     model: string;
-    obcReferences: string[];
+    obcReferences: (string | { code: string; title: string; relevance: string; summary: string })[];
     regulatoryNotes: string[];
     permitRequired: boolean;
     validationStatus: "validated" | "warning" | "pending";
+    permitType?: "building" | "electrical" | "plumbing" | "hvac" | "none";
+    inspectionRequired?: boolean;
+    estimatedPermitCost?: number | null;
+    complianceScore?: number;
+    recommendations?: string[];
     rawExcerpt?: string;
   };
 }

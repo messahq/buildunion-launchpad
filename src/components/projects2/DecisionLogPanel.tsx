@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { 
   Brain, 
   Eye, 
@@ -15,10 +16,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  Sparkles
+  Sparkles,
+  Shield,
+  FileCheck,
+  DollarSign,
+  ClipboardList
 } from "lucide-react";
 import { ProBadge } from "@/components/ui/pro-badge";
 import { cn } from "@/lib/utils";
+import type { OBCValidationDetails, OBCReference } from "@/types/operationalTruth";
 
 interface EngineOutput {
   engine: "gemini" | "openai";
@@ -39,6 +45,7 @@ interface DecisionLogPanelProps {
   detectedArea?: number | null;
   blueprintArea?: number | null;
   materials?: any[];
+  obcDetails?: OBCValidationDetails | null;
   isPro?: boolean;
   className?: string;
 }
@@ -50,6 +57,7 @@ export function DecisionLogPanel({
   detectedArea,
   blueprintArea,
   materials = [],
+  obcDetails,
   isPro = false,
   className,
 }: DecisionLogPanelProps) {
@@ -196,6 +204,184 @@ export function DecisionLogPanel({
                         </div>
                       )}
                     </div>
+                  </>
+                )}
+
+                {/* OBC Regulatory Analysis Section */}
+                {obcDetails && (
+                  <>
+                    <Separator />
+                    <Collapsible
+                      open={expandedSections["obc"]}
+                      onOpenChange={() => toggleSection("obc")}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center justify-between cursor-pointer p-2 rounded-md hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <Shield className={cn(
+                              "h-4 w-4",
+                              obcDetails.status === "validated" ? "text-green-500" :
+                              obcDetails.status === "warning" ? "text-amber-500" :
+                              obcDetails.status === "permit_required" ? "text-blue-500" :
+                              "text-muted-foreground"
+                            )} />
+                            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              {t("decisionLog.obcAnalysis", "OBC Regulatory Analysis")}
+                            </h4>
+                            <Badge 
+                              variant={obcDetails.permitRequired ? "default" : "secondary"}
+                              className={cn(
+                                "text-[10px] px-1.5",
+                                obcDetails.permitRequired && "bg-amber-500 hover:bg-amber-600"
+                              )}
+                            >
+                              {obcDetails.permitRequired 
+                                ? t("decisionLog.permitRequired", "Permit Required") 
+                                : t("decisionLog.noPermit", "No Permit")}
+                            </Badge>
+                          </div>
+                          {expandedSections["obc"] ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 space-y-3">
+                          {/* Compliance Score */}
+                          {obcDetails.complianceScore > 0 && (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">
+                                  {t("decisionLog.complianceScore", "Compliance Score")}
+                                </span>
+                                <span className={cn(
+                                  "font-medium",
+                                  obcDetails.complianceScore >= 80 ? "text-green-600" :
+                                  obcDetails.complianceScore >= 60 ? "text-amber-600" :
+                                  "text-red-600"
+                                )}>
+                                  {obcDetails.complianceScore}%
+                                </span>
+                              </div>
+                              <Progress 
+                                value={obcDetails.complianceScore} 
+                                className="h-1.5"
+                              />
+                            </div>
+                          )}
+
+                          {/* Permit Details */}
+                          {obcDetails.permitRequired && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 text-xs">
+                                <FileCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                                <div>
+                                  <span className="text-muted-foreground block">
+                                    {t("decisionLog.permitType", "Type")}
+                                  </span>
+                                  <span className="font-medium capitalize">
+                                    {obcDetails.permitType || "Building"}
+                                  </span>
+                                </div>
+                              </div>
+                              {obcDetails.estimatedPermitCost && (
+                                <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 text-xs">
+                                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <div>
+                                    <span className="text-muted-foreground block">
+                                      {t("decisionLog.estimatedCost", "Est. Cost")}
+                                    </span>
+                                    <span className="font-medium">
+                                      ${obcDetails.estimatedPermitCost.toLocaleString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* OBC References */}
+                          {obcDetails.references && obcDetails.references.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-xs">
+                                <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="font-medium">
+                                  {t("decisionLog.obcReferences", "OBC References")} ({obcDetails.references.length})
+                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                {obcDetails.references.map((ref: OBCReference, index: number) => (
+                                  <div 
+                                    key={index}
+                                    className={cn(
+                                      "p-2 rounded-md text-xs",
+                                      ref.relevance === "direct" ? "bg-blue-50 dark:bg-blue-950/30 border-l-2 border-blue-500" :
+                                      ref.relevance === "related" ? "bg-amber-50 dark:bg-amber-950/30 border-l-2 border-amber-500" :
+                                      "bg-muted/30"
+                                    )}
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-mono font-medium text-foreground">
+                                        {ref.code}
+                                      </span>
+                                      <Badge 
+                                        variant="outline" 
+                                        className={cn(
+                                          "text-[9px] px-1",
+                                          ref.relevance === "direct" ? "border-blue-500 text-blue-600" :
+                                          ref.relevance === "related" ? "border-amber-500 text-amber-600" :
+                                          ""
+                                        )}
+                                      >
+                                        {ref.relevance}
+                                      </Badge>
+                                    </div>
+                                    <p className="font-medium text-foreground/90">{ref.title}</p>
+                                    <p className="text-muted-foreground mt-0.5">{ref.summary}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Recommendations */}
+                          {obcDetails.recommendations && obcDetails.recommendations.length > 0 && (
+                            <div className="space-y-1">
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {t("decisionLog.recommendations", "Recommendations")}
+                              </span>
+                              <ul className="space-y-1">
+                                {obcDetails.recommendations.map((rec: string, index: number) => (
+                                  <li key={index} className="flex items-start gap-2 text-xs">
+                                    <CheckCircle2 className="h-3 w-3 mt-0.5 text-green-500 flex-shrink-0" />
+                                    <span>{rec}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Regulatory Notes */}
+                          {obcDetails.notes && obcDetails.notes.length > 0 && (
+                            <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 text-xs">
+                              <div className="flex items-center gap-2 mb-1">
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                                <span className="font-medium text-amber-800 dark:text-amber-400">
+                                  {t("decisionLog.regulatoryNotes", "Important Notes")}
+                                </span>
+                              </div>
+                              <ul className="space-y-0.5 text-amber-700 dark:text-amber-300">
+                                {obcDetails.notes.map((note: string, index: number) => (
+                                  <li key={index}>• {note}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </>
                 )}
 

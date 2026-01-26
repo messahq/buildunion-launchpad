@@ -193,5 +193,27 @@
     "goHome": "Főoldalra",
     "pageNotFound": "Az oldal nem található",
     "reloadPage": "Oldal Újratöltése"
+  },
+  "decisionLog": {
+    "title": "AI Döntési Napló",
+    "upgradeMessage": "Frissíts Pro-ra a részletes AI indoklás és motor kimenetek megtekintéséhez.",
+    "conflictDetected": "KONFLIKTUS",
+    "enginesUsed": "Használt Motorok",
+    "areaComparison": "Terület Összehasonlítás",
+    "photoDetected": "Fotó AI",
+    "blueprint": "Tervrajz",
+    "areaConflictWarning": "A területmérések több mint 10%-kal eltérnek. Manuális ellenőrzés ajánlott.",
+    "rawOutputs": "Motor Kimenetek",
+    "synthesis": "Szintézis Eredmény",
+    "materialsDetected": "Észlelt Anyagok",
+    "obcAnalysis": "OBC Szabályozási Elemzés",
+    "permitRequired": "Engedély Szükséges",
+    "noPermit": "Nincs Engedély",
+    "complianceScore": "Megfelelőségi Pontszám",
+    "permitType": "Engedély Típusa",
+    "estimatedCost": "Becsült Költség",
+    "obcReferences": "OBC Hivatkozások",
+    "recommendations": "Javaslatok",
+    "regulatoryNotes": "Fontos Megjegyzések"
   }
 }

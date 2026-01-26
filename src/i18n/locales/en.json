@@ -193,5 +193,27 @@
     "goHome": "Go Home",
     "pageNotFound": "Page not found",
     "reloadPage": "Reload Page"
+  },
+  "decisionLog": {
+    "title": "AI Decision Log",
+    "upgradeMessage": "Upgrade to Pro to see detailed AI reasoning and engine outputs.",
+    "conflictDetected": "CONFLICT",
+    "enginesUsed": "Engines Used",
+    "areaComparison": "Area Comparison",
+    "photoDetected": "Photo AI",
+    "blueprint": "Blueprint",
+    "areaConflictWarning": "Area measurements differ by more than 10%. Manual verification recommended.",
+    "rawOutputs": "Engine Outputs",
+    "synthesis": "Synthesis Result",
+    "materialsDetected": "Materials Detected",
+    "obcAnalysis": "OBC Regulatory Analysis",
+    "permitRequired": "Permit Required",
+    "noPermit": "No Permit",
+    "complianceScore": "Compliance Score",
+    "permitType": "Permit Type",
+    "estimatedCost": "Est. Cost",
+    "obcReferences": "OBC References",
+    "recommendations": "Recommendations",
+    "regulatoryNotes": "Important Notes"
   }
 }

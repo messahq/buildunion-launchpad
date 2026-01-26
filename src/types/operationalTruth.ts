@@ -2,6 +2,27 @@
 // OPERATIONAL TRUTH - 8 PILLARS TYPE DEFINITIONS
 // ============================================
 
+// OBC Reference Detail Type
+export interface OBCReference {
+  code: string;
+  title: string;
+  relevance: "direct" | "related" | "informational";
+  summary: string;
+}
+
+// OBC Validation Details
+export interface OBCValidationDetails {
+  status: "validated" | "warning" | "pending" | "clear" | "permit_required";
+  permitRequired: boolean;
+  permitType: "building" | "electrical" | "plumbing" | "hvac" | "none";
+  inspectionRequired: boolean;
+  estimatedPermitCost: number | null;
+  complianceScore: number;
+  references: OBCReference[];
+  recommendations: string[];
+  notes: string[];
+}
+
 export interface OperationalTruth {
   // 8 Pillars of Operational Truth
   confirmedArea: number | null;
@@ -13,6 +34,9 @@ export interface OperationalTruth {
   projectMode: "solo" | "team";
   projectSize: "small" | "medium" | "large";
   confidenceLevel: "high" | "medium" | "low";
+
+  // OBC Validation Details (Pro+ feature)
+  obcDetails?: OBCValidationDetails;
 
   // Verification Metrics
   verifiedPillars: number;
@@ -39,6 +63,14 @@ export interface BuildOperationalTruthParams {
     openai?: {
       permitRequired: boolean;
       validationStatus: string;
+      permitType?: string;
+      inspectionRequired?: boolean;
+      estimatedPermitCost?: number | null;
+      complianceScore?: number;
+      // Accept flexible OBC reference format from API
+      obcReferences?: Array<string | { code: string; title: string; relevance: string; summary: string }>;
+      recommendations?: string[];
+      regulatoryNotes?: string[];
     };
   };
   synthesisResult?: {
@@ -55,6 +87,43 @@ export interface BuildOperationalTruthParams {
     };
   };
   projectSize?: string;
+}
+
+// Helper function to normalize OBC references (handle both string and object formats)
+function normalizeOBCReferences(refs?: Array<string | { code: string; title: string; relevance: string; summary: string }>): OBCReference[] {
+  if (!refs || refs.length === 0) return [];
+  
+  return refs.map((ref, index) => {
+    if (typeof ref === "string") {
+      // Parse legacy string format like "OBC 9.10.14 - Structural Requirements"
+      const match = ref.match(/^(OBC\s+[\d.]+)\s*[-–]\s*(.+)$/i);
+      if (match) {
+        return {
+          code: match[1],
+          title: match[2],
+          relevance: "direct" as const,
+          summary: match[2],
+        };
+      }
+      return {
+        code: `REF-${index + 1}`,
+        title: ref,
+        relevance: "informational" as const,
+        summary: ref,
+      };
+    }
+    // Normalize relevance to valid type
+    const validRelevance = (["direct", "related", "informational"].includes(ref.relevance) 
+      ? ref.relevance 
+      : "informational") as "direct" | "related" | "informational";
+    
+    return {
+      code: ref.code,
+      title: ref.title,
+      relevance: validRelevance,
+      summary: ref.summary,
+    };
+  });
 }
 
 export function buildOperationalTruth(params: BuildOperationalTruthParams): OperationalTruth {
@@ -93,10 +162,26 @@ export function buildOperationalTruth(params: BuildOperationalTruthParams): Oper
     blueprintStatus = "none";
   }
 
-  // OBC Compliance
+  // OBC Compliance and Details
   let obcCompliance: OperationalTruth["obcCompliance"] = "pending";
+  let obcDetails: OBCValidationDetails | undefined = undefined;
+  
   if (dualEngineOutput?.openai) {
-    obcCompliance = dualEngineOutput.openai.permitRequired ? "permit_required" : "clear";
+    const openai = dualEngineOutput.openai;
+    obcCompliance = openai.permitRequired ? "permit_required" : "clear";
+    
+    // Build detailed OBC validation info
+    obcDetails = {
+      status: openai.validationStatus as OBCValidationDetails["status"] || (openai.permitRequired ? "permit_required" : "clear"),
+      permitRequired: openai.permitRequired || false,
+      permitType: (openai.permitType as OBCValidationDetails["permitType"]) || "none",
+      inspectionRequired: openai.inspectionRequired || false,
+      estimatedPermitCost: openai.estimatedPermitCost || null,
+      complianceScore: openai.complianceScore || 0,
+      references: normalizeOBCReferences(openai.obcReferences),
+      recommendations: openai.recommendations || [],
+      notes: openai.regulatoryNotes || [],
+    };
   }
 
   // Conflict Status
@@ -150,6 +235,7 @@ export function buildOperationalTruth(params: BuildOperationalTruthParams): Oper
     projectMode,
     projectSize: projectSizeValue,
     confidenceLevel,
+    obcDetails,
     verifiedPillars,
     totalPillars: 8,
     verificationRate,
