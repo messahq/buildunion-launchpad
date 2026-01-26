@@ -183,21 +183,7 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       tier: "FREE",
     });
 
-    // 2. Templates Step (12.5%)
-    const templatesComplete = data.templates.hasData;
-    if (templatesComplete) {
-      totalPercentage += STEP_WEIGHTS.templates;
-    }
-    steps.push({
-      id: "templates",
-      name: "Templates",
-      weight: STEP_WEIGHTS.templates,
-      isComplete: templatesComplete,
-      isSkipped: false,
-      tier: "FREE",
-    });
-
-    // 3. Calculator Step (12.5%)
+    // 2. Calculator Step (12.5%)
     const calculatorComplete = data.calculator.hasData;
     if (calculatorComplete) {
       totalPercentage += STEP_WEIGHTS.calculator;
@@ -347,6 +333,20 @@ export const useQuickModeProgress = (data: QuickModeProgressData) => {
       weight: STEP_WEIGHTS.contract,
       subSteps: contractSubSteps,
       isComplete: contractComplete,
+      isSkipped: false,
+      tier: "FREE",
+    });
+
+    // 5. Templates Step (12.5%) - Final step to close project
+    const templatesComplete = data.templates.hasData;
+    if (templatesComplete) {
+      totalPercentage += STEP_WEIGHTS.templates;
+    }
+    steps.push({
+      id: "templates",
+      name: "Templates",
+      weight: STEP_WEIGHTS.templates,
+      isComplete: templatesComplete,
       isSkipped: false,
       tier: "FREE",
     });
