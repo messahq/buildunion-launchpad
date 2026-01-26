@@ -885,16 +885,21 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
             onTaskClick={(task) => console.log("Task clicked:", task)}
             onTaskStatusChange={async (taskId, newStatus) => {
-              // Update task status in database
-              const { error } = await supabase
-                .from("project_tasks")
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .eq("id", taskId);
+              // Check if this is a demo task (not in DB)
+              const isDemoTask = taskId.startsWith("demo-");
               
-              if (error) {
-                console.error("Failed to update task status:", error);
-                toast.error(t("timeline.updateFailed", "Failed to update task"));
-                return;
+              if (!isDemoTask) {
+                // Update task status in database
+                const { error } = await supabase
+                  .from("project_tasks")
+                  .update({ status: newStatus, updated_at: new Date().toISOString() })
+                  .eq("id", taskId);
+                
+                if (error) {
+                  console.error("Failed to update task status:", error);
+                  toast.error(t("timeline.updateFailed", "Failed to update task"));
+                  return;
+                }
               }
               
               // Update local state immediately for instant UI feedback
@@ -910,19 +915,24 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               setTotalTaskBudget(newTotal);
             }}
             onBulkStatusChange={async (taskIds, newStatus) => {
-              // Update all tasks in the database
-              const { error } = await supabase
-                .from("project_tasks")
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .in("id", taskIds);
+              // Filter out demo tasks for DB update
+              const realTaskIds = taskIds.filter(id => !id.startsWith("demo-"));
               
-              if (error) {
-                console.error("Failed to bulk update tasks:", error);
-                toast.error(t("timeline.updateFailed", "Failed to update tasks"));
-                return;
+              if (realTaskIds.length > 0) {
+                // Update real tasks in the database
+                const { error } = await supabase
+                  .from("project_tasks")
+                  .update({ status: newStatus, updated_at: new Date().toISOString() })
+                  .in("id", realTaskIds);
+                
+                if (error) {
+                  console.error("Failed to bulk update tasks:", error);
+                  toast.error(t("timeline.updateFailed", "Failed to update tasks"));
+                  return;
+                }
               }
               
-              // Update local state immediately for instant UI feedback
+              // Update local state immediately for instant UI feedback (all tasks including demo)
               setTasks(prev => prev.map(t => 
                 taskIds.includes(t.id) ? { ...t, status: newStatus } : t
               ));
