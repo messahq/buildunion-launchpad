@@ -481,6 +481,7 @@ const handleContractGenerated = () => {
             contractor_signature: null
           }}
           onContractGenerated={handleContractGenerated}
+          onContinue={onNavigateToAI}
         />
       </div>
     );
@@ -502,6 +503,7 @@ const handleContractGenerated = () => {
         <ContractGenerator
           existingContract={editingContract}
           onContractGenerated={handleContractGenerated}
+          onContinue={onNavigateToAI}
         />
       </div>
     );
@@ -522,6 +524,7 @@ const handleContractGenerated = () => {
         </Button>
         <ContractGenerator
           onContractGenerated={handleContractGenerated}
+          onContinue={onNavigateToAI}
         />
       </div>
     );

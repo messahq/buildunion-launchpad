@@ -1526,6 +1526,7 @@ const BuildUnionProjectDetails = () => {
                           <ProjectAIPanel
                             projectId={project.id}
                             projectName={project.name}
+                            projectAddress={project.address}
                             userId={user.id}
                             documents={documents}
                             siteImages={project.site_images || []}
