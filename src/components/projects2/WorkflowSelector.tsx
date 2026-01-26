@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { SubscriptionTier, TEAM_LIMITS } from "@/hooks/useSubscription";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
 import ProjectSynthesis, { DualEngineOutput, SynthesisResult } from "./ProjectSynthesis";
+import ProjectTimelineBar from "./ProjectTimelineBar";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -216,8 +217,21 @@ export default function WorkflowSelector({
     onSelectWorkflow(mode, editedData);
   };
 
+  // Extract dates from filter answers
+  const projectStartDate = filterAnswers?.technicalFilter.projectStartDate || null;
+  const projectEndDate = filterAnswers?.technicalFilter.projectEndDate || null;
+
   return (
     <div className="space-y-0">
+      {/* Project Timeline Bar - The Main Clock */}
+      {filterAnswers && (projectStartDate || projectEndDate) && (
+        <ProjectTimelineBar
+          projectStartDate={projectStartDate}
+          projectEndDate={projectEndDate}
+          isEditable={false}
+        />
+      )}
+
       {/* Project Synthesis Bridge - Only show if we have filter data */}
       {filterAnswers && aiTriggers && (
         <ProjectSynthesis
