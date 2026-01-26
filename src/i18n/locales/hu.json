@@ -37,6 +37,7 @@
     "projectTimeline": "Projekt Időtartam",
     "notSet": "Nincs beállítva",
     "datesSaved": "Projekt dátumok elmentve",
+    "datesSynced": "Projekt dátumok szinkronizálva az összes idővonallal",
     "startDate": "Projekt kezdete",
     "endDate": "Célzott befejezés",
     "pickDate": "Válassz dátumot"
