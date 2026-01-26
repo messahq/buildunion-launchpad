@@ -11,7 +11,8 @@ import {
   Wrench, 
   Users,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -350,7 +351,7 @@ function TeamStep({ answers, onUpdate, onNext, onBack }: StepProps) {
 }
 
 // Step 6: Summary & Recommendation
-function SummaryStep({ answers, onBack, onStart }: StepProps & { onStart: () => void }) {
+function SummaryStep({ answers, onBack, onStart, saving }: StepProps & { onStart: () => void; saving?: boolean }) {
   const recommendation = determineWorkflow(answers);
   
   const modeLabels = {
@@ -417,16 +418,26 @@ function SummaryStep({ answers, onBack, onStart }: StepProps & { onStart: () => 
       </Card>
 
       <div className="flex gap-3 max-w-lg mx-auto">
-        <Button variant="outline" onClick={onBack} className="flex-1 h-12">
+        <Button variant="outline" onClick={onBack} disabled={saving} className="flex-1 h-12">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
         <Button 
           onClick={onStart}
+          disabled={saving}
           className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
         >
-          Start Project
-          <ArrowRight className="ml-2 h-4 w-4" />
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              Start Project
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -440,9 +451,10 @@ function SummaryStep({ answers, onBack, onStart }: StepProps & { onStart: () => 
 interface ProjectQuestionnaireProps {
   onComplete: (answers: ProjectAnswers, workflow: WorkflowRecommendation) => void;
   onCancel: () => void;
+  saving?: boolean;
 }
 
-export default function ProjectQuestionnaire({ onComplete, onCancel }: ProjectQuestionnaireProps) {
+export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: ProjectQuestionnaireProps) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<ProjectAnswers>({
     name: "",
@@ -529,6 +541,7 @@ export default function ProjectQuestionnaire({ onComplete, onCancel }: ProjectQu
             onNext={() => {}}
             onBack={() => setStep(4)}
             onStart={handleStart}
+            saving={saving}
           />
         )}
       </div>
