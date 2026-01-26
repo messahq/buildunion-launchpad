@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
@@ -38,11 +38,15 @@ interface TemplateData {
   materials: string[];
 }
 
-// Collected data state type
+// Collected data state type - includes all Quick Mode data for persistence
 interface CollectedData {
   photoEstimate: any | null;
   calculatorResults: any[];
   templateItems: any[];
+  quoteProgress?: QuoteProgressData;
+  contractProgress?: ContractProgressData;
+  quoteData?: any;
+  activeTab?: string;
 }
 
 // Quote data for progress tracking
@@ -237,6 +241,9 @@ const BuildUnionQuickMode = () => {
   // Photo estimate pre-fill data for calculator
   const [photoEstimatePreFill, setPhotoEstimatePreFill] = useState<PhotoEstimatePreFill | null>(null);
 
+  // Auto-save interval ref
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Check for draft data on mount (for returning users)
   useEffect(() => {
     if (user && hasDraft && draftData) {
@@ -244,17 +251,98 @@ const BuildUnionQuickMode = () => {
     }
   }, [user, hasDraft, draftData]);
 
-  // Auto-save draft for authenticated users
-  useEffect(() => {
-    if (user && (collectedData.photoEstimate || collectedData.calculatorResults.length > 0 || collectedData.templateItems.length > 0)) {
-      saveDraft(collectedData);
-    }
-  }, [user, collectedData, saveDraft]);
+  // Build full draft data including all progress
+  const buildFullDraftData = useCallback((): CollectedData => {
+    return {
+      photoEstimate: collectedData.photoEstimate,
+      calculatorResults: collectedData.calculatorResults,
+      templateItems: collectedData.templateItems,
+      quoteProgress,
+      contractProgress,
+      quoteData,
+      activeTab,
+    };
+  }, [collectedData, quoteProgress, contractProgress, quoteData, activeTab]);
 
-  // Handle resuming from draft
+  // Auto-save draft every 30 seconds for authenticated users
+  useEffect(() => {
+    if (!user) return;
+
+    // Clear any existing interval
+    if (autoSaveIntervalRef.current) {
+      clearInterval(autoSaveIntervalRef.current);
+    }
+
+    // Set up 30-second auto-save
+    autoSaveIntervalRef.current = setInterval(() => {
+      const hasAnyData = 
+        collectedData.photoEstimate || 
+        collectedData.calculatorResults.length > 0 || 
+        collectedData.templateItems.length > 0 ||
+        quoteProgress.clientName ||
+        quoteProgress.clientEmail ||
+        contractProgress.clientName ||
+        contractProgress.totalAmount > 0;
+
+      if (hasAnyData) {
+        saveDraft(buildFullDraftData());
+        console.log("Auto-saved draft data");
+      }
+    }, 30000); // 30 seconds
+
+    // Cleanup on unmount
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
+    };
+  }, [user, collectedData, quoteProgress, contractProgress, quoteData, activeTab, saveDraft, buildFullDraftData]);
+
+  // Also save on tab change
+  useEffect(() => {
+    if (user) {
+      const hasAnyData = 
+        collectedData.photoEstimate || 
+        collectedData.calculatorResults.length > 0 || 
+        collectedData.templateItems.length > 0 ||
+        quoteProgress.clientName ||
+        contractProgress.clientName;
+
+      if (hasAnyData) {
+        saveDraft(buildFullDraftData());
+      }
+    }
+  }, [activeTab]); // Only trigger on tab change
+
+  // Handle resuming from draft - restore ALL data
   const handleResumeDraft = () => {
     if (draftData) {
-      setCollectedData(draftData);
+      setCollectedData({
+        photoEstimate: draftData.photoEstimate || null,
+        calculatorResults: draftData.calculatorResults || [],
+        templateItems: draftData.templateItems || [],
+      });
+      
+      // Restore quote progress
+      if (draftData.quoteProgress) {
+        setQuoteProgress(draftData.quoteProgress);
+      }
+      
+      // Restore contract progress
+      if (draftData.contractProgress) {
+        setContractProgress(draftData.contractProgress);
+      }
+      
+      // Restore quote data
+      if (draftData.quoteData) {
+        setQuoteData(draftData.quoteData);
+      }
+      
+      // Restore active tab
+      if (draftData.activeTab) {
+        setActiveTab(draftData.activeTab);
+      }
+      
       toast.success("Welcome back! Your progress has been restored.");
     }
     setShowDraftResume(false);
