@@ -9,14 +9,9 @@ import {
   Wrench, 
   Calendar, 
   FileText, 
-  Users, 
   Sparkles,
   Cloud,
-  ClipboardList,
-  FileSignature,
   MessageSquare,
-  CheckCircle2,
-  AlertTriangle,
   Loader2,
   Map
 } from "lucide-react";
@@ -31,6 +26,8 @@ import { FilterAnswers, AITriggers } from "./FilterQuestions";
 import ConflictStatusIndicator from "./ConflictStatusIndicator";
 import TeamMapWidget from "./TeamMapWidget";
 import DocumentsPane from "./DocumentsPane";
+import OperationalTruthCards from "./OperationalTruthCards";
+import { buildOperationalTruth } from "@/types/operationalTruth";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -224,33 +221,16 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         />
       </div>
 
-      {/* Quick Status Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatusCard 
-          icon={<Sparkles className="h-4 w-4" />}
-          label="Photo Analysis"
-          value={hasPhotoEstimate ? "Complete" : "Pending"}
-          active={hasPhotoEstimate}
-        />
-        <StatusCard 
-          icon={<ClipboardList className="h-4 w-4" />}
-          label="Line Items"
-          value={hasLineItems ? `${(summary?.line_items || []).length} items` : "None"}
-          active={hasLineItems}
-        />
-        <StatusCard 
-          icon={<Users className="h-4 w-4" />}
-          label="Client Info"
-          value={hasClientInfo ? summary?.client_name || "Added" : "Missing"}
-          active={hasClientInfo}
-        />
-        <StatusCard 
-          icon={<FileSignature className="h-4 w-4" />}
-          label="Total"
-          value={totalCost > 0 ? `$${totalCost.toLocaleString()}` : "$0"}
-          active={totalCost > 0}
-        />
-      </div>
+      {/* Operational Truth Cards - 8 Pillars */}
+      <OperationalTruthCards 
+        operationalTruth={buildOperationalTruth({
+          aiAnalysis,
+          dualEngineOutput,
+          synthesisResult,
+          filterAnswers,
+          projectSize: aiConfig?.projectSize,
+        })} 
+      />
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -438,48 +418,5 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     </div>
   );
 };
-
-// ============================================
-// SUB-COMPONENTS
-// ============================================
-
-interface StatusCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  active: boolean;
-}
-
-const StatusCard = ({ icon, label, value, active }: StatusCardProps) => (
-  <Card className={cn(
-    "transition-colors",
-    active ? "border-green-500/50 bg-green-500/5" : "border-muted"
-  )}>
-    <CardContent className="p-4">
-      <div className="flex items-center gap-2 mb-1">
-        <span className={cn(
-          "transition-colors",
-          active ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
-        )}>
-          {icon}
-        </span>
-        <span className="text-xs text-muted-foreground">{label}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        {active ? (
-          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-        ) : (
-          <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground/50" />
-        )}
-        <span className={cn(
-          "text-sm font-medium truncate",
-          active ? "text-foreground" : "text-muted-foreground"
-        )}>
-          {value}
-        </span>
-      </div>
-    </CardContent>
-  </Card>
-);
 
 export default ProjectDetailsView;
