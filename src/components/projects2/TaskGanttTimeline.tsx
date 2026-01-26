@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import {
   format,
   differenceInDays,
@@ -21,18 +21,21 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  ChevronLeft,
-  ChevronRight,
   Calendar as CalendarIcon,
   DollarSign,
   CheckCircle2,
   AlertTriangle,
   GripVertical,
   Loader2,
+  Bot,
+  User,
+  Edit3,
+  Move,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import TaskEditDialog from "./TaskEditDialog";
 
 interface Task {
   id: string;
@@ -51,15 +54,35 @@ interface Task {
   total_cost?: number;
   assignee_name?: string;
   assignee_avatar?: string;
+  is_user_modified?: boolean;
+}
+
+interface TeamMember {
+  user_id: string;
+  name: string;
+  avatar_url?: string;
+  role: string;
+}
+
+interface DependentTask {
+  taskId: string;
+  title: string;
+  currentDueDate: string;
+  newDueDate: string;
+  shiftDays: number;
 }
 
 interface TaskGanttTimelineProps {
   tasks: Task[];
   isOwner: boolean;
+  teamMembers?: TeamMember[];
   onTaskClick?: (task: Task) => void;
   onBudgetUpdate?: (taskId: string, unitPrice: number, quantity: number) => void;
+  onTaskUpdated?: (updatedTask: Task, shiftedTasks?: DependentTask[]) => void;
+  onBaselineUnlock?: () => void;
   projectStartDate?: Date;
   projectEndDate?: Date;
+  projectId: string;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -78,16 +101,30 @@ const STATUS_COLORS: Record<string, string> = {
 const TaskGanttTimeline = ({
   tasks,
   isOwner,
+  teamMembers = [],
   onTaskClick,
   onBudgetUpdate,
+  onTaskUpdated,
+  onBaselineUnlock,
   projectStartDate,
   projectEndDate,
+  projectId,
 }: TaskGanttTimelineProps) => {
   const { t } = useTranslation();
   const [editingBudget, setEditingBudget] = useState<string | null>(null);
   const [tempUnitPrice, setTempUnitPrice] = useState<number>(0);
   const [tempQuantity, setTempQuantity] = useState<number>(1);
   const [saving, setSaving] = useState(false);
+  
+  // Drag state
+  const [draggingTask, setDraggingTask] = useState<Task | null>(null);
+  const [dragStartX, setDragStartX] = useState<number>(0);
+  const [dragCurrentX, setDragCurrentX] = useState<number>(0);
+  const timelineRef = useRef<HTMLDivElement>(null);
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Calculate timeline range
   const { timelineStart, timelineEnd, totalDays, dayWidth } = useMemo(() => {
@@ -133,6 +170,79 @@ const TaskGanttTimeline = ({
     [timelineStart, dayWidth]
   );
 
+  // Convert X position to date
+  const getDateFromPosition = useCallback(
+    (xPos: number) => {
+      const days = Math.round(xPos / dayWidth);
+      return addDays(timelineStart, days);
+    },
+    [timelineStart, dayWidth]
+  );
+
+  // Handle drag start
+  const handleDragStart = (e: React.MouseEvent, task: Task) => {
+    if (!isOwner || !task.due_date) return;
+    e.preventDefault();
+    setDraggingTask(task);
+    setDragStartX(e.clientX);
+    setDragCurrentX(e.clientX);
+  };
+
+  // Handle drag move
+  const handleDragMove = useCallback((e: React.MouseEvent) => {
+    if (!draggingTask) return;
+    setDragCurrentX(e.clientX);
+  }, [draggingTask]);
+
+  // Handle drag end
+  const handleDragEnd = async () => {
+    if (!draggingTask || !draggingTask.due_date) {
+      setDraggingTask(null);
+      return;
+    }
+
+    const deltaX = dragCurrentX - dragStartX;
+    const deltaDays = Math.round(deltaX / dayWidth);
+
+    if (deltaDays === 0) {
+      setDraggingTask(null);
+      return;
+    }
+
+    const originalDate = new Date(draggingTask.due_date);
+    const newDate = addDays(originalDate, deltaDays);
+
+    try {
+      const { error } = await supabase
+        .from("project_tasks")
+        .update({ due_date: newDate.toISOString() })
+        .eq("id", draggingTask.id);
+
+      if (error) throw error;
+
+      // Mark as user modified and trigger baseline unlock
+      if (onBaselineUnlock) {
+        onBaselineUnlock();
+      }
+
+      if (onTaskUpdated) {
+        onTaskUpdated({
+          ...draggingTask,
+          due_date: newDate.toISOString(),
+          is_user_modified: true,
+        });
+      }
+
+      toast.success(t("timeline.taskMoved", "Task moved to {{date}}", {
+        date: format(newDate, "MMM d"),
+      }));
+    } catch (err: any) {
+      toast.error(err.message || t("timeline.moveFailed", "Failed to move task"));
+    } finally {
+      setDraggingTask(null);
+    }
+  };
+
   // Handle budget save
   const handleBudgetSave = async (taskId: string) => {
     setSaving(true);
@@ -154,6 +264,19 @@ const TaskGanttTimeline = ({
       toast.error(err.message || "Failed to update budget");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Handle task edit
+  const handleEditClick = (task: Task) => {
+    setSelectedTask(task);
+    setEditDialogOpen(true);
+  };
+
+  // Handle task updated from dialog
+  const handleTaskDialogUpdate = (updatedTask: Task, shiftedTasks?: DependentTask[]) => {
+    if (onTaskUpdated) {
+      onTaskUpdated(updatedTask, shiftedTasks);
     }
   };
 
@@ -188,6 +311,18 @@ const TaskGanttTimeline = ({
 
   return (
     <div className="space-y-4">
+      {/* Task Edit Dialog */}
+      <TaskEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        task={selectedTask}
+        allTasks={tasks}
+        teamMembers={teamMembers}
+        projectId={projectId}
+        onTaskUpdated={handleTaskDialogUpdate}
+        onBaselineUnlock={onBaselineUnlock}
+      />
+
       {/* Header with Total Budget */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -195,6 +330,12 @@ const TaskGanttTimeline = ({
           <h3 className="font-semibold text-foreground">
             {t("timeline.ganttView", "Gantt Timeline")}
           </h3>
+          {isOwner && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Move className="h-3 w-3" />
+              {t("timeline.dragToMove", "Drag to move")}
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <Badge
@@ -230,16 +371,30 @@ const TaskGanttTimeline = ({
           <div className="w-6 h-2 rounded bg-red-500" />
           <span className="text-muted-foreground">Urgent</span>
         </div>
+        <div className="flex items-center gap-1.5 ml-4">
+          <Bot className="h-3.5 w-3.5 text-cyan-500" />
+          <span className="text-muted-foreground">{t("timeline.aiDraft", "AI Draft")}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <User className="h-3.5 w-3.5 text-amber-500" />
+          <span className="text-muted-foreground">{t("timeline.userModified", "User Modified")}</span>
+        </div>
       </div>
 
       {/* Gantt Chart Container */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card">
+      <div 
+        className="border border-border rounded-lg overflow-hidden bg-card"
+        ref={timelineRef}
+        onMouseMove={draggingTask ? handleDragMove : undefined}
+        onMouseUp={draggingTask ? handleDragEnd : undefined}
+        onMouseLeave={draggingTask ? handleDragEnd : undefined}
+      >
         <div className="overflow-x-auto">
-          <div style={{ minWidth: totalDays * dayWidth + 280 }}>
+          <div style={{ minWidth: totalDays * dayWidth + 320 }}>
             {/* Date Header Row */}
             <div className="flex border-b border-border bg-muted/30">
               {/* Task info column */}
-              <div className="w-[280px] flex-shrink-0 px-3 py-2 font-medium text-sm border-r border-border">
+              <div className="w-[320px] flex-shrink-0 px-3 py-2 font-medium text-sm border-r border-border">
                 {t("timeline.tasks", "Tasks")} ({tasks.length})
               </div>
               
@@ -278,22 +433,53 @@ const TaskGanttTimeline = ({
                 !isToday(new Date(task.due_date)) &&
                 task.status !== "completed";
 
+              const isDragging = draggingTask?.id === task.id;
+              const dragOffset = isDragging ? dragCurrentX - dragStartX : 0;
+
               const barPosition = task.due_date
-                ? getDatePosition(new Date(task.due_date))
+                ? getDatePosition(new Date(task.due_date)) + dragOffset
                 : 0;
 
               return (
                 <div
                   key={task.id}
-                  className="flex border-b border-border/50 hover:bg-muted/20 transition-colors group"
+                  className={cn(
+                    "flex border-b border-border/50 hover:bg-muted/20 transition-colors group",
+                    isDragging && "bg-blue-50/50 dark:bg-blue-950/20"
+                  )}
                 >
                   {/* Task Info Column */}
-                  <div className="w-[280px] flex-shrink-0 px-3 py-2 border-r border-border flex items-center gap-2">
+                  <div className="w-[320px] flex-shrink-0 px-3 py-2 border-r border-border flex items-center gap-2">
                     {/* Drag handle */}
-                    {isOwner && (
-                      <GripVertical className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground cursor-grab" />
+                    {isOwner && task.due_date && (
+                      <GripVertical 
+                        className={cn(
+                          "h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground cursor-grab",
+                          isDragging && "cursor-grabbing text-blue-500"
+                        )}
+                        onMouseDown={(e) => handleDragStart(e, task)}
+                      />
                     )}
                     
+                    {/* AI/User Modified indicator */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          {task.is_user_modified ? (
+                            <User className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+                          ) : (
+                            <Bot className="h-3.5 w-3.5 text-cyan-500 flex-shrink-0" />
+                          )}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {task.is_user_modified 
+                            ? t("timeline.userModifiedTooltip", "User modified task")
+                            : t("timeline.aiDraftTooltip", "AI generated draft")
+                          }
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
                     {/* Avatar */}
                     <Avatar className="h-6 w-6 flex-shrink-0">
                       <AvatarImage src={task.assignee_avatar} />
@@ -311,6 +497,18 @@ const TaskGanttTimeline = ({
                         {task.title}
                       </button>
                     </div>
+
+                    {/* Edit button */}
+                    {isOwner && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleEditClick(task)}
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </Button>
+                    )}
 
                     {/* Budget Edit */}
                     {editingBudget === task.id ? (
@@ -409,16 +607,22 @@ const TaskGanttTimeline = ({
                     {task.due_date && (
                       <div
                         className={cn(
-                          "absolute top-1/2 -translate-y-1/2 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium px-3 shadow-sm transition-all cursor-pointer hover:scale-105",
+                          "absolute top-1/2 -translate-y-1/2 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium px-3 shadow-sm transition-all",
                           PRIORITY_COLORS[task.priority] || "bg-slate-500",
                           STATUS_COLORS[task.status],
-                          isOverdue && "ring-2 ring-red-500"
+                          isOverdue && "ring-2 ring-red-500",
+                          isDragging 
+                            ? "cursor-grabbing scale-105 shadow-lg ring-2 ring-blue-400" 
+                            : isOwner 
+                              ? "cursor-grab hover:scale-105" 
+                              : "cursor-pointer"
                         )}
                         style={{
-                          left: barPosition,
+                          left: Math.max(0, barPosition),
                           minWidth: dayWidth * 2,
                         }}
-                        onClick={() => onTaskClick?.(task)}
+                        onClick={() => !isDragging && onTaskClick?.(task)}
+                        onMouseDown={(e) => handleDragStart(e, task)}
                       >
                         {isOverdue && (
                           <AlertTriangle className="h-3 w-3 mr-1" />
@@ -461,9 +665,14 @@ const TaskGanttTimeline = ({
                 <Badge
                   key={task.id}
                   variant="outline"
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => onTaskClick?.(task)}
+                  className="cursor-pointer hover:bg-muted gap-1"
+                  onClick={() => handleEditClick(task)}
                 >
+                  {task.is_user_modified ? (
+                    <User className="h-3 w-3 text-amber-500" />
+                  ) : (
+                    <Bot className="h-3 w-3 text-cyan-500" />
+                  )}
                   {task.title}
                 </Badge>
               ))}
