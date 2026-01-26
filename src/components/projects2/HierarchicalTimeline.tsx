@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
@@ -46,6 +47,7 @@ import {
   MapPin,
   Users,
   Zap,
+  Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -112,6 +114,7 @@ interface HierarchicalTimelineProps {
   projectAddress?: string;
   teamLocations?: TeamMemberLocation[];
   onTaskClick?: (task: Task) => void;
+  onTaskStatusChange?: (taskId: string, newStatus: string) => void;
   onAutoShift?: (shiftedTasks: Array<{ taskId: string; newDueDate: string; shiftDays: number }>) => void;
   // Project timeline integration
   projectStartDate?: Date | null;
@@ -226,6 +229,7 @@ const HierarchicalTimeline = ({
   projectAddress,
   teamLocations = [],
   onTaskClick,
+  onTaskStatusChange,
   onAutoShift,
   projectStartDate,
   projectEndDate,
@@ -341,23 +345,31 @@ const HierarchicalTimeline = ({
       tasksByPhase[phase].push(task);
     });
 
-    // Calculate verification progress for each phase
-    const getVerificationProgress = (phaseTasks: Task[]): number => {
-      const verificationTasks = phaseTasks.filter(t => 
-        t.title.toLowerCase().includes("verify") || 
-        t.title.toLowerCase().includes("inspect") ||
-        t.title.toLowerCase().includes("check") ||
-        t.title.toLowerCase().includes("final")
-      );
+    // Calculate phase dates from project timeline
+    // Divide project duration into 3 phases: Preparation (40%), Execution (40%), Verification (20%)
+    const getPhaseDate = (phaseIndex: number, isEnd: boolean): Date | null => {
+      if (!projectStartDate || !projectEndDate) return null;
       
-      if (verificationTasks.length === 0) {
-        // If no verification tasks, use overall completion
-        const completed = phaseTasks.filter(t => t.status === "completed").length;
-        return phaseTasks.length > 0 ? Math.round((completed / phaseTasks.length) * 100) : 0;
+      const totalDays = differenceInDays(projectEndDate, projectStartDate);
+      const phaseDurations = [0.4, 0.4, 0.2]; // 40%, 40%, 20%
+      
+      let startOffset = 0;
+      for (let i = 0; i < phaseIndex; i++) {
+        startOffset += phaseDurations[i];
       }
       
-      const completedVerif = verificationTasks.filter(t => t.status === "completed").length;
-      return Math.round((completedVerif / verificationTasks.length) * 100);
+      const endOffset = startOffset + phaseDurations[phaseIndex];
+      const startDay = Math.floor(totalDays * startOffset);
+      const endDay = Math.floor(totalDays * endOffset);
+      
+      return isEnd ? addDays(projectStartDate, endDay) : addDays(projectStartDate, startDay);
+    };
+
+    // Calculate verification progress for each phase
+    const getVerificationProgress = (phaseTasks: Task[]): number => {
+      // For checklist mode, simply use overall completion
+      const completed = phaseTasks.filter(t => t.status === "completed").length;
+      return phaseTasks.length > 0 ? Math.round((completed / phaseTasks.length) * 100) : 0;
     };
 
     // Create material categories
@@ -482,10 +494,9 @@ const HierarchicalTimeline = ({
         });
       }
 
-      // Calculate phase dates and progress
-      const allSubDates = subTimelines.flatMap(s => [s.startDate, s.endDate].filter(Boolean) as Date[]);
-      const phaseStart = allSubDates.length > 0 ? min(allSubDates) : null;
-      const phaseEnd = allSubDates.length > 0 ? max(allSubDates) : null;
+      // Use project dates for phase timeline instead of task dates
+      const phaseStart = getPhaseDate(phaseIndex, false);
+      const phaseEnd = getPhaseDate(phaseIndex, true);
       
       const totalTasks = phaseTasks.length;
       const completedTasks = phaseTasks.filter(t => t.status === "completed").length;
@@ -508,7 +519,7 @@ const HierarchicalTimeline = ({
         lockReason,
       };
     });
-  }, [tasks, materials, weatherForecast, teamLocations, t]);
+  }, [tasks, materials, weatherForecast, teamLocations, t, projectStartDate, projectEndDate]);
 
   // Detect delays and calculate auto-shift
   useEffect(() => {
@@ -856,72 +867,88 @@ const HierarchicalTimeline = ({
                         </CollapsibleTrigger>
 
                         <CollapsibleContent>
-                          <div className="ml-5 mt-1 space-y-1">
+                          <div className="ml-5 mt-2 space-y-1.5">
                             {sub.tasks.map(task => {
                               const weatherAlert = hasWeatherIssue(task);
-                              const isOverdue = task.due_date && 
-                                isPast(startOfDay(new Date(task.due_date))) && 
-                                !isToday(new Date(task.due_date)) && 
-                                task.status !== "completed";
+                              const isCompleted = task.status === "completed";
+
+                              const handleCheckboxChange = (checked: boolean) => {
+                                const newStatus = checked ? "completed" : "pending";
+                                if (onTaskStatusChange) {
+                                  onTaskStatusChange(task.id, newStatus);
+                                  toast.success(
+                                    checked 
+                                      ? t("timeline.taskChecked", "Task completed!") 
+                                      : t("timeline.taskUnchecked", "Task unchecked")
+                                  );
+                                }
+                              };
 
                               return (
-                                <TooltipProvider key={task.id}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => onTaskClick?.(task)}
-                                        className={cn(
-                                          "w-full flex items-center justify-between p-2 rounded text-sm text-left transition-colors",
-                                          task.status === "completed" 
-                                            ? "bg-green-50/50 dark:bg-green-950/20 text-muted-foreground line-through"
-                                            : weatherAlert
-                                            ? "bg-red-100/70 dark:bg-red-950/40 border-l-2 border-red-500"
-                                            : isOverdue
-                                            ? "bg-amber-50/50 dark:bg-amber-950/20 border-l-2 border-amber-500"
-                                            : "bg-muted/20 hover:bg-muted/40"
-                                        )}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          {task.status === "completed" ? (
-                                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                                          ) : weatherAlert ? (
-                                            <AlertOctagon className="h-3.5 w-3.5 text-red-500" />
-                                          ) : isOverdue ? (
-                                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                                          ) : (
-                                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                          )}
-                                          <span className="truncate max-w-[200px]">{task.title}</span>
-                                          {weatherAlert && (
-                                            <Cloud className="h-3.5 w-3.5 text-red-500" />
-                                          )}
-                                        </div>
-                                        {task.due_date && (
-                                          <span className={cn(
-                                            "text-xs",
-                                            weatherAlert ? "text-red-600 font-medium" : "text-muted-foreground"
-                                          )}>
-                                            {format(new Date(task.due_date), "MMM d")}
-                                          </span>
-                                        )}
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <div className="space-y-1">
-                                        <p className="font-medium">{task.title}</p>
-                                        {task.description && (
-                                          <p className="text-xs text-muted-foreground max-w-[250px]">{task.description}</p>
-                                        )}
-                                        {weatherAlert && (
-                                          <div className="flex items-center gap-1 text-red-600 text-xs font-medium">
-                                            <AlertOctagon className="h-3 w-3" />
-                                            <span>⚠ {weatherAlert.message}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                                <div 
+                                  key={task.id}
+                                  className={cn(
+                                    "flex items-center gap-3 p-2.5 rounded-lg transition-all cursor-pointer group",
+                                    isCompleted 
+                                      ? "bg-green-50/70 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
+                                      : weatherAlert
+                                      ? "bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-700"
+                                      : "bg-muted/30 border border-transparent hover:bg-muted/50 hover:border-border"
+                                  )}
+                                  onClick={() => handleCheckboxChange(!isCompleted)}
+                                >
+                                  {/* Checkbox */}
+                                  <Checkbox
+                                    checked={isCompleted}
+                                    onCheckedChange={handleCheckboxChange}
+                                    className={cn(
+                                      "h-5 w-5 rounded-full border-2 transition-all",
+                                      isCompleted 
+                                        ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500" 
+                                        : "border-muted-foreground/50 group-hover:border-primary"
+                                    )}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  
+                                  {/* Task Content */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className={cn(
+                                        "text-sm font-medium truncate",
+                                        isCompleted && "line-through text-muted-foreground"
+                                      )}>
+                                        {task.title}
+                                      </span>
+                                      {weatherAlert && (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger>
+                                              <Cloud className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p className="text-red-600">⚠ {weatherAlert.message}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      )}
+                                    </div>
+                                    {task.description && (
+                                      <p className={cn(
+                                        "text-xs truncate mt-0.5",
+                                        isCompleted ? "text-muted-foreground/50" : "text-muted-foreground"
+                                      )}>
+                                        {task.description}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  {/* Status indicator */}
+                                  {isCompleted ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                  ) : (
+                                    <Circle className="h-4 w-4 text-muted-foreground/30 flex-shrink-0 group-hover:text-muted-foreground/50" />
+                                  )}
+                                </div>
                               );
                             })}
                           </div>

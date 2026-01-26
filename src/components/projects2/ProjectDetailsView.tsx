@@ -871,6 +871,31 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
             projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
             onTaskClick={(task) => console.log("Task clicked:", task)}
+            onTaskStatusChange={async (taskId, newStatus) => {
+              // Update task status in database
+              const { error } = await supabase
+                .from("project_tasks")
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .eq("id", taskId);
+              
+              if (error) {
+                console.error("Failed to update task status:", error);
+                toast.error(t("timeline.updateFailed", "Failed to update task"));
+                return;
+              }
+              
+              // Update local state immediately for instant UI feedback
+              setTasks(prev => prev.map(t => 
+                t.id === taskId ? { ...t, status: newStatus } : t
+              ));
+              
+              // Recalculate total budget
+              const updatedTasks = tasks.map(t => 
+                t.id === taskId ? { ...t, status: newStatus } : t
+              );
+              const newTotal = updatedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+              setTotalTaskBudget(newTotal);
+            }}
             onAutoShift={(shiftedTasks) => {
               console.log("Auto-shift tasks:", shiftedTasks);
             }}

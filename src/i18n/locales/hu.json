@@ -86,7 +86,10 @@
     "userModifiedTask": "Feladat módosítva - az alapállapot felülvizsgálata szükséges lehet",
     "movedNotice": "Az idővonal most már integrálva van fent",
     "movedDescription": "A projekt idővonal most mindig látható közvetlenül a Projekt Idősor sáv alatt az oldal tetején.",
-    "scrollToTop": "Görgetés az idővonalhoz"
+    "scrollToTop": "Görgetés az idővonalhoz",
+    "taskChecked": "Feladat teljesítve!",
+    "taskUnchecked": "Feladat visszavonva",
+    "updateFailed": "Nem sikerült frissíteni a feladatot"
   },
   "taskEdit": {
     "title": "Feladat szerkesztése",
