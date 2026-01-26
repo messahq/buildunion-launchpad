@@ -1525,6 +1525,7 @@ const BuildUnionProjectDetails = () => {
                           }))}
                           isOwner={project.user_id === user.id}
                           isPremium={isPremium}
+                          onTabChange={(tab) => setBlueprintTab(tab)}
                         />
                       )}
 
