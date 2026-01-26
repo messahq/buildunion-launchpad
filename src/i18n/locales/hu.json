@@ -71,7 +71,10 @@
     "phaseLocked": "Ez a fázis zárolva van",
     "myTasks": "Feladataim",
     "teamMemberView": "Csapattag nézet",
-    "verificationUpdated": "Ellenőrzési arány frissítve!"
+    "verificationUpdated": "Ellenőrzési arány frissítve!",
+    "projectDatesChanged": "Projekt idősor megváltozott: Eltolod a(z) {{count}} feladatot {{days}} nappal?",
+    "shiftAll": "Összes feladat eltolása",
+    "tasksShifted": "Összes feladat eltolva {{days}} nappal"
   },
   "memberTimeline": {
     "myTasks": "Feladataim",
@@ -157,7 +160,11 @@
     "complete": "Kész",
     "active": "Aktív",
     "inactive": "Inaktív",
-    "getDirections": "Útvonaltervezés"
+    "getDirections": "Útvonaltervezés",
+    "dismiss": "Elvetés",
+    "keepOriginal": "Eredeti megtartása",
+    "tasks": "feladat",
+    "materials": "anyag"
   },
   "conflicts": {
     "high": "Magas",
