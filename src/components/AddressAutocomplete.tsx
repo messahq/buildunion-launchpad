@@ -5,7 +5,7 @@ import { MapPin, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 
-const libraries: ("places")[] = ["places"];
+const libraries: ("places" | "maps")[] = ["places", "maps"];
 
 interface AddressAutocompleteProps {
   value: string;
