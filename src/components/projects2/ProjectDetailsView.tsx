@@ -871,7 +871,21 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         );
       })()}
 
-      {/* INTEGRATED TIMELINE SECTION - Directly below Project Timeline */}
+      {/* Documents & Materials Hub - Between Timeline Bar and Phases */}
+      <DocumentsPane
+        projectId={projectId}
+        siteImages={project.site_images || null}
+        aiAnalysis={aiAnalysis ? {
+          area: aiAnalysis.area,
+          areaUnit: aiAnalysis.areaUnit,
+          materials: aiAnalysis.materials,
+          hasBlueprint: aiAnalysis.hasBlueprint,
+          confidence: aiAnalysis.confidence,
+        } : null}
+        className="border-b pb-4"
+      />
+
+      {/* INTEGRATED TIMELINE SECTION - Directly below Documents */}
       <div className="space-y-4">
         {/* Timeline View Toggle - Only My Tasks for team members */}
         {!isOwner && user && (
