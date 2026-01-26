@@ -769,6 +769,18 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         })} 
       />
 
+      {/* Baseline Lock Card - ALWAYS VISIBLE */}
+      {summary && (
+        <BaselineLockCard
+          projectId={projectId}
+          summaryId={summary.id}
+          operationalTruth={operationalTruth}
+          currentBaseline={baselineState}
+          isOwner={isOwner}
+          onBaselineLocked={handleBaselineLocked}
+        />
+      )}
+
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn(
@@ -983,18 +995,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
         {/* Timeline Tab */}
         <TabsContent value="timeline" className="mt-6 space-y-6">
-          {/* Baseline Lock Card */}
-          {summary && (
-            <BaselineLockCard
-              projectId={projectId}
-              summaryId={summary.id}
-              operationalTruth={operationalTruth}
-              currentBaseline={baselineState}
-              isOwner={isOwner}
-              onBaselineLocked={handleBaselineLocked}
-            />
-          )}
-
           {/* Timeline View Toggle - Always show */}
           <div className="flex items-center justify-between gap-2">
             {/* My Tasks indicator for team members */}
