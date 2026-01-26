@@ -1,36 +1,155 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
   WorkflowRecommendation 
 } from "@/components/projects2/ProjectQuestionnaire";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SavedProject {
+  id: string;
+  name: string;
+  address: string | null;
+  trade: string | null;
+  status: string;
+  description: string | null;
+  created_at: string;
+}
 
 const BuildUnionProjects2 = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
-  const [createdProjects, setCreatedProjects] = useState<Array<{
-    answers: ProjectAnswers;
-    workflow: WorkflowRecommendation;
-    createdAt: Date;
-  }>>([]);
+  const [projects, setProjects] = useState<SavedProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleQuestionnaireComplete = (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
-    console.log("Project Created:", { answers, workflow });
-    
-    // Add to local state for now (later: save to database)
-    setCreatedProjects(prev => [...prev, { 
-      answers, 
-      workflow, 
-      createdAt: new Date() 
-    }]);
-    
-    setShowQuestionnaire(false);
-    toast.success(`Project "${answers.name}" created with ${workflow.mode} workflow!`);
+  // Load projects from database
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const loadProjects = async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, address, trade, status, description, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading projects:", error);
+        toast.error("Failed to load projects");
+      } else {
+        setProjects(data || []);
+      }
+      setLoading(false);
+    };
+
+    loadProjects();
+  }, [user, authLoading]);
+
+  const handleQuestionnaireComplete = async (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
+    if (!user) {
+      toast.error("Please sign in to create a project");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Map work type to trade
+      const tradeMap: Record<string, string> = {
+        painting: "painter",
+        flooring: "flooring_specialist",
+        renovation: "general_contractor",
+        new_construction: "general_contractor",
+        repair: "general_contractor",
+        other: "other"
+      };
+
+      // Create project description from workflow
+      const description = `${workflow.mode} workflow with ${workflow.estimatedSteps} steps. Features: ${workflow.features.join(", ")}`;
+
+      // Insert into projects table
+      const { data: projectData, error: projectError } = await supabase
+        .from("projects")
+        .insert({
+          user_id: user.id,
+          name: answers.name,
+          address: answers.location,
+          trade: answers.workType ? tradeMap[answers.workType] : null,
+          description,
+          status: "draft"
+        })
+        .select()
+        .single();
+
+      if (projectError) throw projectError;
+
+      // Also create a project_summaries entry with the workflow mode
+      const { error: summaryError } = await supabase
+        .from("project_summaries")
+        .insert({
+          user_id: user.id,
+          project_id: projectData.id,
+          mode: workflow.teamEnabled ? "team" : "solo",
+          status: "draft",
+          // Store workflow metadata in calculator_results as JSON
+          calculator_results: [{
+            type: "workflow_config",
+            workflowMode: workflow.mode,
+            calculator: workflow.calculator,
+            teamEnabled: workflow.teamEnabled,
+            estimatedSteps: workflow.estimatedSteps,
+            features: workflow.features,
+            projectSize: answers.size,
+            workType: answers.workType,
+            teamNeed: answers.teamNeed
+          }]
+        });
+
+      if (summaryError) {
+        console.error("Error creating summary:", summaryError);
+        // Non-critical, continue
+      }
+
+      // Update local state
+      setProjects(prev => [{
+        id: projectData.id,
+        name: projectData.name,
+        address: projectData.address,
+        trade: projectData.trade,
+        status: projectData.status,
+        description: projectData.description,
+        created_at: projectData.created_at
+      }, ...prev]);
+
+      setShowQuestionnaire(false);
+      toast.success(`Project "${answers.name}" created!`);
+
+    } catch (error) {
+      console.error("Error saving project:", error);
+      toast.error("Failed to save project");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Extract workflow info from description for display
+  const getWorkflowMode = (description: string | null): string => {
+    if (!description) return "standard";
+    if (description.includes("quick workflow")) return "quick";
+    if (description.includes("full workflow")) return "full";
+    return "standard";
   };
 
   return (
@@ -68,6 +187,7 @@ const BuildUnionProjects2 = () => {
                 </div>
                 <Button 
                   onClick={() => setShowQuestionnaire(true)}
+                  disabled={!user}
                   className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                 >
                   <Plus className="h-4 w-4" />
@@ -75,63 +195,79 @@ const BuildUnionProjects2 = () => {
                 </Button>
               </div>
 
-              {/* Projects List or Empty State */}
-              {createdProjects.length === 0 ? (
+              {/* Auth check */}
+              {!authLoading && !user && (
                 <div className="min-h-[400px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
                   <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
                   <div className="text-center">
-                    <p className="text-lg font-medium text-foreground">No projects yet</p>
-                    <p className="text-muted-foreground">Start by answering a few questions</p>
+                    <p className="text-lg font-medium text-foreground">Sign in to view projects</p>
+                    <p className="text-muted-foreground">Create an account to start managing your projects</p>
                   </div>
                   <Button 
-                    onClick={() => setShowQuestionnaire(true)}
+                    onClick={() => navigate("/login")}
                     className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
-                    <Plus className="h-4 w-4" />
-                    New Project
+                    Sign In
                   </Button>
                 </div>
-              ) : (
-                <div className="grid gap-4">
-                  {createdProjects.map((project, index) => (
-                    <div 
-                      key={index}
-                      className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-lg font-semibold text-foreground">{project.answers.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {project.answers.location} • {project.answers.workType?.replace("_", " ")} • {project.answers.size}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 capitalize">
-                            {project.workflow.mode}
-                          </span>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {project.workflow.estimatedSteps} steps
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {project.workflow.features.slice(0, 4).map((feature) => (
-                          <span 
-                            key={feature}
-                            className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground"
-                          >
-                            {feature}
-                          </span>
-                        ))}
-                        {project.workflow.features.length > 4 && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">
-                            +{project.workflow.features.length - 4} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              )}
+
+              {/* Loading state */}
+              {(authLoading || loading) && user && (
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
                 </div>
+              )}
+
+              {/* Projects List or Empty State */}
+              {!authLoading && !loading && user && (
+                <>
+                  {projects.length === 0 ? (
+                    <div className="min-h-[400px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                      <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
+                      <div className="text-center">
+                        <p className="text-lg font-medium text-foreground">No projects yet</p>
+                        <p className="text-muted-foreground">Start by answering a few questions</p>
+                      </div>
+                      <Button 
+                        onClick={() => setShowQuestionnaire(true)}
+                        className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                      >
+                        <Plus className="h-4 w-4" />
+                        New Project
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {projects.map((project) => (
+                        <div 
+                          key={project.id}
+                          onClick={() => navigate(`/buildunion/project/${project.id}`)}
+                          className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {project.address || "No location"} • {project.trade?.replace("_", " ") || "General"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 capitalize">
+                                {project.status}
+                              </span>
+                            </div>
+                          </div>
+                          {project.description && (
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </>
           ) : (
@@ -139,6 +275,7 @@ const BuildUnionProjects2 = () => {
             <ProjectQuestionnaire
               onComplete={handleQuestionnaireComplete}
               onCancel={() => setShowQuestionnaire(false)}
+              saving={saving}
             />
           )}
         </div>
