@@ -412,7 +412,7 @@ const BaselineLockCard = ({
                     </div>
                   </div>
 
-                  <DialogFooter>
+                  <div className="flex justify-end gap-2 pt-4">
                     <Button
                       variant="outline"
                       onClick={() => setDialogOpen(false)}
@@ -432,7 +432,7 @@ const BaselineLockCard = ({
                       )}
                       {t("baseline.confirmLock", "Lock Baseline")}
                     </Button>
-                  </DialogFooter>
+                  </div>
                 </DialogContent>
               </Dialog>
             )}
