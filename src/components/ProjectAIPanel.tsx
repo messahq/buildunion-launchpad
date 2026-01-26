@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { 
   Send, Loader2, Brain, Sparkles, ShieldCheck, AlertCircle, 
   BookOpen, Zap, Crown, Users, Mail, FileText, Calculator,
   FileCheck, CheckCircle2, XCircle, Camera, ClipboardList, 
-  ScrollText, DollarSign, Contact, Image, Download, Eye, FolderOpen
+  ScrollText, DollarSign, Contact, Image, Download, Eye, FolderOpen,
+  ExternalLink, ChevronLeft, ChevronRight, X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -172,6 +174,47 @@ const ProjectAIPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Lightbox state for image gallery
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  
+  // Combine site images with image documents for gallery
+  const imageDocuments = documents.filter(doc => 
+    /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(doc.file_name)
+  );
+  const allImages = [
+    ...siteImages.map((img, idx) => ({
+      url: img.startsWith('http') ? img : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${img}`,
+      name: `Site Photo ${idx + 1}`,
+      type: 'site' as const
+    })),
+    ...imageDocuments.map(doc => ({
+      url: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${doc.file_path}`,
+      name: doc.file_name,
+      type: 'document' as const
+    }))
+  ];
+
+  // Open document in new tab
+  const openDocument = (doc: ProjectDocument) => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${doc.file_path}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Open lightbox with specific image
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const nextImage = () => {
+    setLightboxIndex((prev) => (prev + 1) % allImages.length);
+  };
+
+  const prevImage = () => {
+    setLightboxIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -493,45 +536,75 @@ const ProjectAIPanel = ({
               </div>
               {documents.length > 0 ? (
                 <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center gap-2 text-xs text-slate-600 bg-white rounded px-2 py-1.5 border border-slate-100">
-                      <FileCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      <span className="truncate flex-1">{doc.file_name}</span>
-                    </div>
-                  ))}
+                  {documents.map((doc) => {
+                    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(doc.file_name);
+                    const imageIndex = isImage ? allImages.findIndex(img => img.name === doc.file_name) : -1;
+                    
+                    return (
+                      <button
+                        key={doc.id}
+                        onClick={() => isImage && imageIndex >= 0 ? openLightbox(imageIndex) : openDocument(doc)}
+                        className="flex items-center gap-2 text-xs text-slate-600 bg-white rounded px-2 py-1.5 border border-slate-100 w-full text-left hover:bg-cyan-50 hover:border-cyan-200 transition-colors group"
+                        title={isImage ? "Click to view in gallery" : "Click to open in new tab"}
+                      >
+                        {isImage ? (
+                          <Image className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        ) : (
+                          <FileCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        )}
+                        <span className="truncate flex-1">{doc.file_name}</span>
+                        {isImage ? (
+                          <Eye className="h-3 w-3 text-slate-400 group-hover:text-cyan-600" />
+                        ) : (
+                          <ExternalLink className="h-3 w-3 text-slate-400 group-hover:text-cyan-600" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-xs text-slate-400 italic">No documents uploaded</p>
               )}
             </div>
 
-            {/* Site Photos Section */}
+            {/* Site Photos & Images Gallery */}
             <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
               <div className="flex items-center gap-2 mb-2">
                 <Camera className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-medium text-slate-700">Site Photos</span>
-                <Badge variant="outline" className="ml-auto text-xs">{siteImages.length}</Badge>
+                <span className="text-sm font-medium text-slate-700">Photos & Images</span>
+                <Badge variant="outline" className="ml-auto text-xs">{allImages.length}</Badge>
               </div>
-              {siteImages.length > 0 ? (
+              {allImages.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {siteImages.slice(0, 6).map((img, idx) => (
-                    <div key={idx} className="w-12 h-12 rounded bg-slate-200 overflow-hidden border border-slate-200">
+                  {allImages.slice(0, 6).map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => openLightbox(idx)}
+                      className="w-12 h-12 rounded bg-slate-200 overflow-hidden border border-slate-200 hover:border-cyan-400 hover:ring-2 hover:ring-cyan-200 transition-all cursor-pointer group relative"
+                      title={img.name}
+                    >
                       <img 
-                        src={img.startsWith('http') ? img : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${img}`} 
-                        alt={`Site ${idx + 1}`}
+                        src={img.url} 
+                        alt={img.name}
                         className="w-full h-full object-cover"
                         onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                       />
-                    </div>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <Eye className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </button>
                   ))}
-                  {siteImages.length > 6 && (
-                    <div className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center text-xs text-slate-500 border border-slate-200">
-                      +{siteImages.length - 6}
-                    </div>
+                  {allImages.length > 6 && (
+                    <button
+                      onClick={() => openLightbox(6)}
+                      className="w-12 h-12 rounded bg-slate-100 flex items-center justify-center text-xs text-slate-500 border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50 transition-colors cursor-pointer"
+                    >
+                      +{allImages.length - 6}
+                    </button>
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 italic">No site photos</p>
+                <p className="text-xs text-slate-400 italic">No photos or images</p>
               )}
             </div>
 
@@ -738,6 +811,88 @@ const ProjectAIPanel = ({
           </Button>
         </div>
       </div>
+
+      {/* Lightbox Gallery Dialog */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-4xl w-full h-[80vh] p-0 bg-black/95 border-none">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="h-5 w-5 text-white" />
+            </button>
+
+            {/* Navigation - Previous */}
+            {allImages.length > 1 && (
+              <button
+                onClick={prevImage}
+                className="absolute left-4 z-50 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              >
+                <ChevronLeft className="h-6 w-6 text-white" />
+              </button>
+            )}
+
+            {/* Image */}
+            {allImages[lightboxIndex] && (
+              <div className="flex flex-col items-center gap-4 max-h-full p-8">
+                <img
+                  src={allImages[lightboxIndex].url}
+                  alt={allImages[lightboxIndex].name}
+                  className="max-w-full max-h-[65vh] object-contain rounded-lg"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                />
+                <div className="text-center">
+                  <p className="text-white font-medium">{allImages[lightboxIndex].name}</p>
+                  <p className="text-white/60 text-sm">
+                    {lightboxIndex + 1} of {allImages.length}
+                    {allImages[lightboxIndex].type === 'document' && (
+                      <span className="ml-2 px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded text-xs">
+                        Document
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation - Next */}
+            {allImages.length > 1 && (
+              <button
+                onClick={nextImage}
+                className="absolute right-4 z-50 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              >
+                <ChevronRight className="h-6 w-6 text-white" />
+              </button>
+            )}
+
+            {/* Thumbnail strip */}
+            {allImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 p-2 bg-black/50 rounded-lg max-w-md overflow-x-auto">
+                {allImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setLightboxIndex(idx)}
+                    className={`w-12 h-12 rounded overflow-hidden shrink-0 transition-all ${
+                      idx === lightboxIndex 
+                        ? 'ring-2 ring-cyan-400 scale-110' 
+                        : 'opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={img.url}
+                      alt={img.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
