@@ -117,6 +117,7 @@ const BuildUnionProjectDetails = () => {
   const [siteImageUrls, setSiteImageUrls] = useState<string[]>([]);
   const [projectSummary, setProjectSummary] = useState<any>(null);
   const [projectContracts, setProjectContracts] = useState<ProjectContract[]>([]);
+  const [projectTasks, setProjectTasks] = useState<any[]>([]);
   const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
   const [viewingContractId, setViewingContractId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -247,6 +248,17 @@ const BuildUnionProjectDetails = () => {
 
         if (contractsData) {
           setProjectContracts(contractsData);
+        }
+
+        // Fetch project tasks for Timeline view
+        const { data: tasksData } = await supabase
+          .from("project_tasks")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false });
+
+        if (tasksData) {
+          setProjectTasks(tasksData);
         }
       } catch (error) {
         console.error("Error fetching project:", error);
@@ -1535,7 +1547,18 @@ const BuildUnionProjectDetails = () => {
                               id: c.id,
                               contract_number: c.contract_number,
                               status: c.status,
-                              total_amount: c.total_amount
+                              total_amount: c.total_amount,
+                              start_date: c.start_date,
+                              estimated_end_date: c.estimated_end_date,
+                              created_at: c.contract_date
+                            }))}
+                            tasks={projectTasks.map(t => ({
+                              id: t.id,
+                              title: t.title,
+                              status: t.status,
+                              due_date: t.due_date,
+                              priority: t.priority,
+                              assigned_to: t.assigned_to
                             }))}
                             isOwner={project.user_id === user.id}
                             isPremium={isPremium}
