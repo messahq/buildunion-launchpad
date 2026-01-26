@@ -223,73 +223,74 @@ const BaselineLockCard = ({
   };
 
   // Calculate differences between baseline and current
+  // Shows "original detected value → user confirmed/locked value"
   const getDifferences = () => {
     if (!baselineData) return [];
-    const diffs: { pillar: string; baseline: string; current: string; changed: boolean }[] = [];
+    const diffs: { pillar: string; original: string; locked: string; changed: boolean }[] = [];
 
-    // Area
-    const baseArea = baselineData.confirmedArea?.toString() || "N/A";
-    const currArea = operationalTruth.confirmedArea?.toString() || "N/A";
+    // Area - original (operationalTruth/detected) → locked (baseline/user confirmed)
+    const origArea = operationalTruth.confirmedArea?.toString() || "N/A";
+    const lockedArea = baselineData.confirmedArea?.toString() || "N/A";
     diffs.push({
       pillar: t("pillars.area", "Confirmed Area"),
-      baseline: `${baseArea} ${baselineData.areaUnit}`,
-      current: `${currArea} ${operationalTruth.areaUnit}`,
-      changed: baseArea !== currArea,
+      original: `${origArea} ${operationalTruth.areaUnit}`,
+      locked: `${lockedArea} ${baselineData.areaUnit}`,
+      changed: origArea !== lockedArea,
     });
 
     // Materials
     diffs.push({
       pillar: t("pillars.materials", "Materials"),
-      baseline: `${baselineData.materialsCount} items`,
-      current: `${operationalTruth.materialsCount} items`,
+      original: `${operationalTruth.materialsCount} items`,
+      locked: `${baselineData.materialsCount} items`,
       changed: baselineData.materialsCount !== operationalTruth.materialsCount,
     });
 
     // Blueprint
     diffs.push({
       pillar: t("pillars.blueprint", "Blueprint"),
-      baseline: baselineData.blueprintStatus,
-      current: operationalTruth.blueprintStatus,
+      original: operationalTruth.blueprintStatus,
+      locked: baselineData.blueprintStatus,
       changed: baselineData.blueprintStatus !== operationalTruth.blueprintStatus,
     });
 
     // OBC
     diffs.push({
       pillar: t("pillars.obc", "OBC Compliance"),
-      baseline: baselineData.obcCompliance,
-      current: operationalTruth.obcCompliance,
+      original: operationalTruth.obcCompliance,
+      locked: baselineData.obcCompliance,
       changed: baselineData.obcCompliance !== operationalTruth.obcCompliance,
     });
 
     // Conflicts
     diffs.push({
       pillar: t("pillars.conflicts", "Conflict Status"),
-      baseline: baselineData.conflictStatus,
-      current: operationalTruth.conflictStatus,
+      original: operationalTruth.conflictStatus,
+      locked: baselineData.conflictStatus,
       changed: baselineData.conflictStatus !== operationalTruth.conflictStatus,
     });
 
     // Mode
     diffs.push({
       pillar: t("pillars.mode", "Project Mode"),
-      baseline: baselineData.projectMode,
-      current: operationalTruth.projectMode,
+      original: operationalTruth.projectMode,
+      locked: baselineData.projectMode,
       changed: baselineData.projectMode !== operationalTruth.projectMode,
     });
 
     // Size
     diffs.push({
       pillar: t("pillars.size", "Project Size"),
-      baseline: baselineData.projectSize,
-      current: operationalTruth.projectSize,
+      original: operationalTruth.projectSize,
+      locked: baselineData.projectSize,
       changed: baselineData.projectSize !== operationalTruth.projectSize,
     });
 
     // Confidence
     diffs.push({
       pillar: t("pillars.confidence", "Confidence"),
-      baseline: baselineData.confidenceLevel,
-      current: operationalTruth.confidenceLevel,
+      original: operationalTruth.confidenceLevel,
+      locked: baselineData.confidenceLevel,
       changed: baselineData.confidenceLevel !== operationalTruth.confidenceLevel,
     });
 
@@ -427,8 +428,8 @@ const BaselineLockCard = ({
                     .map((d, i) => (
                       <div key={i} className="text-xs text-amber-700 dark:text-amber-400">
                         <span className="font-medium">{d.pillar}:</span>{" "}
-                        <span className="line-through opacity-60">{d.baseline}</span> →{" "}
-                        <span>{d.current}</span>
+                        <span className="line-through opacity-60">{d.original}</span> →{" "}
+                        <span>{d.locked}</span>
                       </div>
                     ))}
                   {changedCount > 3 && (
@@ -590,13 +591,13 @@ const BaselineLockCard = ({
                                   : "bg-green-100 dark:bg-green-900/50"
                               )}
                             >
-                              {d.baseline}
+                              {d.original}
                             </span>
                             {d.changed && (
                               <>
                                 <span className="text-muted-foreground">→</span>
                                 <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 font-medium">
-                                  {d.current}
+                                  {d.locked}
                                 </span>
                               </>
                             )}
