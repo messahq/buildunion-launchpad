@@ -8,6 +8,7 @@ import ProjectQuestionnaire, {
   ProjectAnswers, 
   WorkflowRecommendation 
 } from "@/components/projects2/ProjectQuestionnaire";
+import FilterQuestions, { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
 import AIAnalysisProgress from "@/components/projects2/AIAnalysisProgress";
 import WorkflowSelector, { AIAnalysisResult, EditedAnalysisData } from "@/components/projects2/WorkflowSelector";
 import { toast } from "sonner";
@@ -26,11 +27,21 @@ interface SavedProject {
   created_at: string;
 }
 
+// Questionnaire data stored for filter step
+interface QuestionnaireData {
+  answers: ProjectAnswers;
+  workflow: WorkflowRecommendation;
+}
+
 const BuildUnionProjects2 = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { subscription } = useSubscription();
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [showFilterQuestions, setShowFilterQuestions] = useState(false);
+  const [questionnaireData, setQuestionnaireData] = useState<QuestionnaireData | null>(null);
+  const [filterAnswers, setFilterAnswers] = useState<FilterAnswers | null>(null);
+  const [aiTriggers, setAiTriggers] = useState<AITriggers | null>(null);
   const [projects, setProjects] = useState<SavedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,11 +114,12 @@ const BuildUnionProjects2 = () => {
     };
   };
 
-  // Trigger AI analysis after project creation
+  // Trigger AI analysis after project creation AND filter completion
   useEffect(() => {
     const hasContent = pendingImages.length > 0 || pendingDocuments.length > 0;
-    if (createdProjectId && hasContent && !analyzing) {
-      // Start AI analysis
+    // Only start if we have filterAnswers (filter questions completed)
+    if (createdProjectId && hasContent && !analyzing && filterAnswers) {
+      // Start AI analysis with filter context
       analyzeProject({
         projectId: createdProjectId,
         images: pendingImages,
@@ -121,24 +133,28 @@ const BuildUnionProjects2 = () => {
           if (selectorData) {
             setAiAnalysisForSelector(selectorData);
             
-            // Update project_summaries with AI-determined workflow
+            // Update project_summaries with AI-determined workflow + filter data
+            const workflowConfigData = JSON.parse(JSON.stringify({
+              filterAnswers,
+              aiTriggers,
+              projectSize: selectorData.projectSize,
+              projectSizeReason: selectorData.projectSizeReason,
+              tierAtCreation: subscription.tier,
+              teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
+              aiAnalysis: {
+                area: selectorData.area,
+                areaUnit: selectorData.areaUnit,
+                materials: selectorData.materials,
+                hasBlueprint: selectorData.hasBlueprint,
+                confidence: selectorData.confidence,
+              },
+              analyzedAt: new Date().toISOString(),
+            }));
+
             supabase
               .from("project_summaries")
               .update({
-                ai_workflow_config: {
-                  projectSize: selectorData.projectSize,
-                  projectSizeReason: selectorData.projectSizeReason,
-                  tierAtCreation: subscription.tier,
-                  teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
-                  aiAnalysis: {
-                    area: selectorData.area,
-                    areaUnit: selectorData.areaUnit,
-                    materials: selectorData.materials,
-                    hasBlueprint: selectorData.hasBlueprint,
-                    confidence: selectorData.confidence,
-                  },
-                  analyzedAt: new Date().toISOString(),
-                }
+                ai_workflow_config: workflowConfigData
               })
               .eq("project_id", createdProjectId)
               .then(() => {
@@ -155,18 +171,20 @@ const BuildUnionProjects2 = () => {
         setPendingDescription("");
       });
     }
-  }, [createdProjectId, pendingImages, pendingDocuments, analyzing, subscription.tier]);
+  }, [createdProjectId, pendingImages, pendingDocuments, analyzing, subscription.tier, filterAnswers]);
 
   // Handle workflow selection from WorkflowSelector
   const handleWorkflowSelect = async (mode: "solo" | "team", editedData?: EditedAnalysisData) => {
     if (!createdProjectId || !aiAnalysisForSelector) return;
 
     try {
-      // Build workflow config object
-      const workflowConfig = {
+      // Build workflow config object with filter data (JSON-safe)
+      const workflowConfig = JSON.parse(JSON.stringify({
+        filterAnswers,
+        aiTriggers,
         projectSize: aiAnalysisForSelector.projectSize,
         projectSizeReason: aiAnalysisForSelector.projectSizeReason,
-        recommendedMode: aiAnalysisForSelector.projectSize === "small" ? "solo" : "team",
+        recommendedMode: aiTriggers?.recommendTeamMode ? "team" : "solo",
         selectedMode: mode,
         tierAtCreation: subscription.tier,
         teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
@@ -183,7 +201,7 @@ const BuildUnionProjects2 = () => {
           editedAt: editedData.editedAt,
         }} : {}),
         selectedAt: new Date().toISOString(),
-      };
+      }));
 
       // Build photo estimate object
       const photoEstimate = {
@@ -234,14 +252,33 @@ const BuildUnionProjects2 = () => {
     navigate("/buildunion/pricing");
   };
 
-  const handleQuestionnaireComplete = async (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
+  // Step 1: Questionnaire complete -> go to FilterQuestions
+  const handleQuestionnaireComplete = (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
     if (!user) {
       toast.error("Please sign in to create a project");
       return;
     }
 
+    // Store data and move to filter step
+    setQuestionnaireData({ answers, workflow });
+    setShowQuestionnaire(false);
+    setShowFilterQuestions(true);
+  };
+
+  // Step 2: FilterQuestions complete -> create project and start AI analysis
+  const handleFilterComplete = async (filters: FilterAnswers, triggers: AITriggers) => {
+    if (!user || !questionnaireData) {
+      toast.error("Missing project data");
+      return;
+    }
+
+    setFilterAnswers(filters);
+    setAiTriggers(triggers);
+    setShowFilterQuestions(false);
     setSaving(true);
     resetAnalysis();
+
+    const { answers, workflow } = questionnaireData;
 
     try {
       // Map work type to trade
@@ -261,7 +298,7 @@ const BuildUnionProjects2 = () => {
         other: "other"
       };
 
-      // Create project description - use user's description or generate from workflow
+      // Create project description
       const description = answers.description.trim() || 
         `${workflow.mode} workflow with ${workflow.estimatedSteps} steps. Features: ${workflow.features.join(", ")}`;
 
@@ -297,7 +334,6 @@ const BuildUnionProjects2 = () => {
           }
         }
 
-        // Update project with site_images if uploads succeeded
         if (uploadedImagePaths.length > 0) {
           await supabase
             .from("projects")
@@ -306,15 +342,22 @@ const BuildUnionProjects2 = () => {
         }
       }
 
-      // Create a project_summaries entry with the workflow mode
+      // Create project_summaries with filter answers
+      const initialWorkflowConfig = JSON.parse(JSON.stringify({
+        filterAnswers: filters,
+        aiTriggers: triggers,
+        tierAtCreation: subscription.tier,
+        teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
+        createdAt: new Date().toISOString(),
+      }));
+
       const { error: summaryError } = await supabase
         .from("project_summaries")
         .insert({
           user_id: user.id,
           project_id: projectData.id,
-          mode: workflow.teamEnabled ? "team" : "solo",
+          mode: triggers.recommendTeamMode ? "team" : "solo",
           status: answers.images.length > 0 ? "analyzing" : "draft",
-          // Store workflow metadata in calculator_results as JSON
           calculator_results: [{
             type: "workflow_config",
             workflowMode: workflow.mode,
@@ -327,12 +370,7 @@ const BuildUnionProjects2 = () => {
             imageCount: uploadedImagePaths.length,
             documentCount: answers.documents?.length || 0
           }],
-          // Initialize ai_workflow_config with tier info
-          ai_workflow_config: {
-            tierAtCreation: subscription.tier,
-            teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
-            createdAt: new Date().toISOString(),
-          }
+          ai_workflow_config: initialWorkflowConfig
         });
 
       if (summaryError) {
@@ -350,8 +388,6 @@ const BuildUnionProjects2 = () => {
         created_at: projectData.created_at
       }, ...prev]);
 
-      setShowQuestionnaire(false);
-
       // If images or documents were uploaded, trigger AI analysis
       const hasContent = answers.images.length > 0 || answers.documents.length > 0;
       if (hasContent) {
@@ -363,7 +399,7 @@ const BuildUnionProjects2 = () => {
           description: `Starting AI analysis of ${contentDesc.join(" and ")}...`
         });
         
-        // Store pending data for AI analysis
+        // Store pending data for AI analysis (useEffect will pick this up)
         setCreatedProjectId(projectData.id);
         setPendingImages(answers.images);
         setPendingDocuments(answers.documents);
@@ -371,9 +407,11 @@ const BuildUnionProjects2 = () => {
         setPendingDescription(answers.description);
       } else {
         toast.success(`Project "${answers.name}" created!`);
-        // No AI analysis needed, go directly to project
         navigate(`/buildunion/project/${projectData.id}`);
       }
+
+      // Clear questionnaire data
+      setQuestionnaireData(null);
 
     } catch (error) {
       console.error("Error saving project:", error);
@@ -381,6 +419,12 @@ const BuildUnionProjects2 = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Go back from FilterQuestions to Questionnaire
+  const handleFilterBack = () => {
+    setShowFilterQuestions(false);
+    setShowQuestionnaire(true);
   };
 
   return (
@@ -400,10 +444,38 @@ const BuildUnionProjects2 = () => {
         </Button>
       </div>
 
-      {/* Main Content Area */}
       <section className="py-12 px-6">
         <div className="max-w-4xl mx-auto">
-          {!showQuestionnaire ? (
+          {/* Step 1: Questionnaire */}
+          {showQuestionnaire && (
+            <div className="bg-card rounded-xl border shadow-lg">
+              <ProjectQuestionnaire 
+                onComplete={handleQuestionnaireComplete}
+                onCancel={() => setShowQuestionnaire(false)}
+                saving={saving}
+                tierConfig={tierConfig}
+              />
+            </div>
+          )}
+
+          {/* Step 2: Filter Questions */}
+          {showFilterQuestions && questionnaireData && (
+            <div className="bg-card rounded-xl border shadow-lg">
+              <FilterQuestions
+                projectData={{
+                  name: questionnaireData.answers.name,
+                  workType: questionnaireData.answers.workType,
+                  hasImages: questionnaireData.answers.images.length > 0,
+                  hasDocuments: questionnaireData.answers.documents.length > 0,
+                }}
+                onComplete={handleFilterComplete}
+                onBack={handleFilterBack}
+              />
+            </div>
+          )}
+
+          {/* Main Dashboard - shown when not in questionnaire or filter mode */}
+          {!showQuestionnaire && !showFilterQuestions && (
             <>
               {/* Header */}
               <div className="flex items-center justify-between mb-8">
@@ -543,14 +615,6 @@ const BuildUnionProjects2 = () => {
                 </>
               )}
             </>
-          ) : (
-            /* Questionnaire */
-            <ProjectQuestionnaire
-              onComplete={handleQuestionnaireComplete}
-              onCancel={() => setShowQuestionnaire(false)}
-              saving={saving}
-              tierConfig={tierConfig}
-            />
           )}
         </div>
       </section>
