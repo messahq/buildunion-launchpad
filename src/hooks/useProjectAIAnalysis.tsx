@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, SubscriptionTier } from "@/hooks/useSubscription";
 import { toast } from "sonner";
+import { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
+import { DualEngineOutput, SynthesisResult } from "@/components/projects2/ProjectSynthesis";
 
 // Project size type - determined by AI
 export type ProjectSize = "small" | "medium" | "large";
@@ -59,6 +61,9 @@ export interface AIAnalysisResult {
   projectSizeReason: string;
   processingTime?: number;
   tier?: string;
+  // Dual-engine structured output for Synthesis Bridge
+  dualEngineOutput?: DualEngineOutput;
+  synthesisResult?: SynthesisResult;
 }
 
 interface AnalyzeProjectParams {
@@ -67,6 +72,9 @@ interface AnalyzeProjectParams {
   documents?: File[]; // PDF files
   description: string;
   workType: string | null;
+  // NEW: Filter answers for targeted AI analysis
+  filterAnswers?: FilterAnswers;
+  aiTriggers?: AITriggers;
 }
 
 // Tier-based analysis depth
@@ -112,6 +120,8 @@ export const useProjectAIAnalysis = () => {
     documents = [],
     description,
     workType,
+    filterAnswers,
+    aiTriggers,
   }: AnalyzeProjectParams): Promise<AIAnalysisResult | null> => {
     if (!session?.access_token) {
       toast.error("Please sign in to use AI analysis");
@@ -154,6 +164,11 @@ export const useProjectAIAnalysis = () => {
         setProgress(25);
         setCurrentStep(tierConfig.isPremium ? "Running deep AI analysis on photos..." : "Running AI analysis on photos...");
 
+        // Add OBC search step indicator if triggered
+        if (aiTriggers?.obcSearch) {
+          setCurrentStep("Running dual-engine analysis (Visual + OBC validation)...");
+        }
+
         const enhancedDescription = workType 
           ? `${workType} project: ${description || "No additional details"}`
           : description || "";
@@ -163,6 +178,9 @@ export const useProjectAIAnalysis = () => {
             image: base64Image,
             description: enhancedDescription,
             isPremium: tierConfig.isPremium,
+            // Pass filter data for targeted analysis
+            filterAnswers: filterAnswers || null,
+            aiTriggers: aiTriggers || null,
           },
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -274,6 +292,47 @@ export const useProjectAIAnalysis = () => {
         documents.length
       );
 
+      // Build dual-engine structured output for Synthesis Bridge
+      const dualEngineOutput: DualEngineOutput | undefined = imageAnalysisResult?.dualEngine ? {
+        gemini: {
+          role: imageAnalysisResult.dualEngine.gemini?.role || "Visual Specialist",
+          model: imageAnalysisResult.dualEngine.gemini?.model || "gemini-2.5-flash",
+          area: imageAnalysisResult.area,
+          areaUnit: imageAnalysisResult.areaUnit || "sq ft",
+          confidence: imageAnalysisResult.areaConfidence || "medium",
+          surfaceType: imageAnalysisResult.surfaceType || "unknown",
+          roomType: imageAnalysisResult.roomType || "unknown",
+          visualFindings: imageAnalysisResult.dualEngine.gemini?.findings?.visible_features as string[] || [],
+          rawExcerpt: imageAnalysisResult.dualEngine.gemini?.rawExcerpt,
+        },
+        openai: {
+          role: "Regulatory Validator",
+          model: "gpt-5-mini",
+          obcReferences: aiTriggers?.obcSearch ? ["Pending OBC validation"] : [],
+          regulatoryNotes: [],
+          permitRequired: filterAnswers?.technicalFilter?.affectsStructure || filterAnswers?.technicalFilter?.affectsMechanical || false,
+          validationStatus: "pending",
+          rawExcerpt: imageAnalysisResult.dualEngine.gpt?.rawExcerpt,
+        }
+      } : undefined;
+
+      // Build synthesis result
+      const synthesisResult: SynthesisResult | undefined = {
+        operationalTruth: {
+          confirmedArea: imageAnalysisResult?.area || blueprintAnalysis?.detectedArea || null,
+          areaUnit: imageAnalysisResult?.areaUnit || "sq ft",
+          materialsCount: imageAnalysisResult?.materials?.length || 0,
+          hasBlueprint: !!blueprintAnalysis?.extractedText,
+        },
+        conflicts: imageAnalysisResult?.conflicts?.map(c => ({
+          field: c.field,
+          geminiValue: c.geminiValue,
+          openaiValue: c.gptValue,
+          severity: c.severity,
+        })) || [],
+        verificationStatus: imageAnalysisResult?.conflicts?.length ? "conflicts_detected" : "verified",
+      };
+
       const analysisResult: AIAnalysisResult = {
         estimate: imageAnalysisResult || {
           materials: [],
@@ -291,6 +350,8 @@ export const useProjectAIAnalysis = () => {
         projectSizeReason,
         processingTime: Date.now() - startTime,
         tier: subscription.tier,
+        dualEngineOutput,
+        synthesisResult,
       };
 
       setCurrentStep("Saving results...");
