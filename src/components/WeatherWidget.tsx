@@ -81,15 +81,32 @@ export function WeatherWidget({
   }
 
   if (error) {
+    const isInvalidAddress = error.includes("valid project address") || error.includes("Invalid location");
     return (
-      <Card className={cn("border-destructive/50", className)}>
+      <Card className={cn(isInvalidAddress ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20" : "border-destructive/50", className)}>
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm">Weather unavailable</span>
+            <div className={cn(
+              "flex items-center gap-2",
+              isInvalidAddress ? "text-amber-700 dark:text-amber-400" : "text-destructive"
+            )}>
+              {isInvalidAddress ? (
+                <Cloud className="h-4 w-4" />
+              ) : (
+                <AlertTriangle className="h-4 w-4" />
+              )}
+              <div className="text-sm">
+                <p className="font-medium">
+                  {isInvalidAddress ? "Weather unavailable" : "Could not load weather"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isInvalidAddress 
+                    ? "Enter a complete address (e.g., 123 Main St, Toronto, ON)" 
+                    : error}
+                </p>
+              </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={refetch}>
+            <Button variant="ghost" size="sm" onClick={refetch} title="Retry">
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
