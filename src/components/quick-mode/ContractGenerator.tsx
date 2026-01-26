@@ -216,6 +216,15 @@ interface ContractProgressUpdate {
   clientSignature?: boolean;
 }
 
+// Project data to pre-fill contract
+interface ProjectData {
+  name?: string;
+  address?: string;
+  description?: string;
+  totalAmount?: number;
+  scopeOfWork?: string;
+}
+
 interface ContractGeneratorProps {
   quoteData?: any;
   collectedData?: CollectedData | null;
@@ -223,9 +232,10 @@ interface ContractGeneratorProps {
   onContractGenerated?: (contractData: any) => void;
   onProgressUpdate?: (data: ContractProgressUpdate) => void;
   onContinue?: () => void;
+  projectData?: ProjectData;
 }
 
-const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate, onContinue }: ContractGeneratorProps) => {
+const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate, onContinue, projectData }: ContractGeneratorProps) => {
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
@@ -431,7 +441,19 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
           sum + (item.quantity * item.unitPrice), 0) || 0,
       }));
     }
-  }, [existingContract, profile, user, quoteData]);
+    
+    // Pre-fill from project data if available (from project details page)
+    if (projectData) {
+      setContract(prev => ({
+        ...prev,
+        projectName: projectData.name || prev.projectName,
+        projectAddress: projectData.address || prev.projectAddress,
+        projectDescription: projectData.description || prev.projectDescription,
+        scopeOfWork: projectData.scopeOfWork || prev.scopeOfWork,
+        totalAmount: projectData.totalAmount || prev.totalAmount,
+      }));
+    }
+  }, [existingContract, profile, user, quoteData, projectData]);
 
   // Pre-fill from collected synthesis data (dual-engine results)
   useEffect(() => {
@@ -584,6 +606,18 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
         setSavedContractId(data.id);
         toast.success("Contract saved!");
       }
+      
+      // Notify parent to refresh contracts list (syncs Operational Truth)
+      onContractGenerated?.({
+        id: savedContractId,
+        contract_number: contract.contractNumber,
+        total_amount: contract.totalAmount,
+        status: contractorSignature && clientSignature ? 'signed' : contractorSignature ? 'pending_client' : 'draft',
+        contractor_signature: contractorSignature,
+        client_signature: clientSignature,
+        start_date: contract.startDate,
+        estimated_end_date: contract.estimatedEndDate,
+      });
     } catch (error) {
       console.error("Error saving contract:", error);
       toast.error("Failed to save contract");
