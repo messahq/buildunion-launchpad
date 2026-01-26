@@ -1367,7 +1367,11 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                                 <span className="text-xs font-medium text-green-700">Start</span>
                               </div>
                               <span className="text-xs text-muted-foreground mt-0.5">
-                                {contract.startDate ? new Date(contract.startDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : 'Not set'}
+                                {contract.startDate ? (() => {
+                                  const [year, month, day] = contract.startDate.split('-').map(Number);
+                                  const date = new Date(year, month - 1, day);
+                                  return date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+                                })() : 'Not set'}
                               </span>
                             </div>
                             
@@ -1377,7 +1381,11 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                                 <div className="w-3 h-3 rounded-full bg-purple-500" />
                               </div>
                               <span className="text-xs text-muted-foreground mt-0.5">
-                                {contract.estimatedEndDate ? new Date(contract.estimatedEndDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : 'Not set'}
+                                {contract.estimatedEndDate ? (() => {
+                                  const [year, month, day] = contract.estimatedEndDate.split('-').map(Number);
+                                  const date = new Date(year, month - 1, day);
+                                  return date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+                                })() : 'Not set'}
                               </span>
                             </div>
                           </div>
