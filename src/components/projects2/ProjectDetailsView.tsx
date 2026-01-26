@@ -915,28 +915,10 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6 mt-6">
-          {/* Editable AI Analysis Summary - Primary display for AI data */}
-          {summary && (
-            <EditableAIAnalysisSummary
-              projectId={projectId}
-              summaryId={summary.id}
-              area={aiAnalysis?.area || null}
-              areaUnit={aiAnalysis?.areaUnit || "sq ft"}
-              materials={aiAnalysis?.materials || []}
-              surfaceType={photoEstimate?.surfaceType}
-              surfaceCondition={photoEstimate?.surfaceCondition}
-              roomType={photoEstimate?.roomType}
-              projectSize={photoEstimate?.projectSize || aiConfig?.projectSize}
-              confidence={aiAnalysis?.confidence}
-              summary={photoEstimate?.summary}
-              recommendations={photoEstimate?.recommendations}
-              hasBlueprint={aiAnalysis?.hasBlueprint}
-              onUpdate={() => {
-                // Reload project data after update
-                window.location.reload();
-              }}
-            />
-          )}
+          {/* Operational Truth Verification Cards */}
+          <OperationalTruthCards
+            operationalTruth={operationalTruth}
+          />
 
           {/* Project Description */}
           {project.description && (
