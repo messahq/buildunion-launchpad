@@ -89,7 +89,17 @@
     "scrollToTop": "Scroll to Timeline",
     "taskChecked": "Task completed!",
     "taskUnchecked": "Task unchecked",
-    "updateFailed": "Failed to update task"
+    "updateFailed": "Failed to update task",
+    "completeAll": "Complete All",
+    "resetAll": "Reset",
+    "completeAllTooltip": "Mark all tasks complete",
+    "resetAllTooltip": "Reset all tasks in this phase",
+    "phaseCompleted": "All {{count}} tasks in {{phase}} marked complete!",
+    "phaseReset": "All tasks in {{phase}} reset",
+    "completeCategory": "Complete all {{category}} tasks",
+    "resetCategory": "Reset all {{category}} tasks",
+    "categoryCompleted": "All {{count}} {{category}} tasks complete!",
+    "categoryReset": "{{category}} tasks reset"
   },
   "taskEdit": {
     "title": "Edit Task",

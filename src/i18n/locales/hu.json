@@ -89,7 +89,17 @@
     "scrollToTop": "Görgetés az idővonalhoz",
     "taskChecked": "Feladat teljesítve!",
     "taskUnchecked": "Feladat visszavonva",
-    "updateFailed": "Nem sikerült frissíteni a feladatot"
+    "updateFailed": "Nem sikerült frissíteni a feladatot",
+    "completeAll": "Mind kész",
+    "resetAll": "Visszaállítás",
+    "completeAllTooltip": "Összes feladat teljesítése",
+    "resetAllTooltip": "Összes feladat visszaállítása ebben a fázisban",
+    "phaseCompleted": "Mind a(z) {{count}} feladat a(z) {{phase}} fázisban teljesítve!",
+    "phaseReset": "Összes feladat a(z) {{phase}} fázisban visszaállítva",
+    "completeCategory": "Összes {{category}} feladat teljesítése",
+    "resetCategory": "Összes {{category}} feladat visszaállítása",
+    "categoryCompleted": "Mind a(z) {{count}} {{category}} feladat teljesítve!",
+    "categoryReset": "{{category}} feladatok visszaállítva"
   },
   "taskEdit": {
     "title": "Feladat szerkesztése",

@@ -48,6 +48,8 @@ import {
   Users,
   Zap,
   Circle,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -115,6 +117,7 @@ interface HierarchicalTimelineProps {
   teamLocations?: TeamMemberLocation[];
   onTaskClick?: (task: Task) => void;
   onTaskStatusChange?: (taskId: string, newStatus: string) => void;
+  onBulkStatusChange?: (taskIds: string[], newStatus: string) => void;
   onAutoShift?: (shiftedTasks: Array<{ taskId: string; newDueDate: string; shiftDays: number }>) => void;
   // Project timeline integration
   projectStartDate?: Date | null;
@@ -230,6 +233,7 @@ const HierarchicalTimeline = ({
   teamLocations = [],
   onTaskClick,
   onTaskStatusChange,
+  onBulkStatusChange,
   onAutoShift,
   projectStartDate,
   projectEndDate,
@@ -595,6 +599,43 @@ const HierarchicalTimeline = ({
     setShowAutoShiftAlert(false);
   };
 
+  // Bulk complete all tasks in a phase
+  const handleBulkCompletePhase = (phaseId: string, complete: boolean) => {
+    const phase = phases.find(p => p.id === phaseId);
+    if (!phase || phase.locked) return;
+    
+    const taskIds = phase.subTimelines.flatMap(sub => sub.tasks.map(t => t.id));
+    const newStatus = complete ? "completed" : "pending";
+    
+    if (onBulkStatusChange && taskIds.length > 0) {
+      onBulkStatusChange(taskIds, newStatus);
+      toast.success(
+        complete 
+          ? t("timeline.phaseCompleted", "All {{count}} tasks in {{phase}} marked complete!", { count: taskIds.length, phase: phase.name })
+          : t("timeline.phaseReset", "All tasks in {{phase}} reset", { phase: phase.name })
+      );
+    }
+  };
+
+  // Bulk complete all tasks in a material category
+  const handleBulkCompleteCategory = (subId: string, phaseId: string, complete: boolean) => {
+    const phase = phases.find(p => p.id === phaseId);
+    const sub = phase?.subTimelines.find(s => s.id === subId);
+    if (!sub || phase?.locked) return;
+    
+    const taskIds = sub.tasks.map(t => t.id);
+    const newStatus = complete ? "completed" : "pending";
+    
+    if (onBulkStatusChange && taskIds.length > 0) {
+      onBulkStatusChange(taskIds, newStatus);
+      toast.success(
+        complete 
+          ? t("timeline.categoryCompleted", "All {{count}} {{category}} tasks complete!", { count: taskIds.length, category: sub.name })
+          : t("timeline.categoryReset", "{{category}} tasks reset", { category: sub.name })
+      );
+    }
+  };
+
   if (tasks.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -778,9 +819,48 @@ const HierarchicalTimeline = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     {!phase.locked && (
                       <>
+                        {/* Bulk Action Button */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={cn(
+                                  "h-7 px-2 gap-1",
+                                  phase.progress === 100 
+                                    ? "text-green-600 hover:text-amber-600" 
+                                    : "text-muted-foreground hover:text-green-600"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBulkCompletePhase(phase.id, phase.progress < 100);
+                                }}
+                              >
+                                {phase.progress === 100 ? (
+                                  <>
+                                    <Square className="h-3.5 w-3.5" />
+                                    <span className="text-xs hidden sm:inline">{t("timeline.resetAll", "Reset")}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckSquare className="h-3.5 w-3.5" />
+                                    <span className="text-xs hidden sm:inline">{t("timeline.completeAll", "Complete All")}</span>
+                                  </>
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {phase.progress === 100 
+                                ? t("timeline.resetAllTooltip", "Reset all tasks in this phase")
+                                : t("timeline.completeAllTooltip", "Mark all tasks complete")}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
                         <div className="w-24">
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="text-muted-foreground">{t("common.progress", "Progress")}</span>
@@ -857,7 +937,40 @@ const HierarchicalTimeline = ({
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              {/* Bulk Action for Category */}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className={cn(
+                                        "h-6 w-6 p-0",
+                                        sub.progress === 100 
+                                          ? "text-green-600 hover:text-amber-600" 
+                                          : "text-muted-foreground hover:text-green-600"
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleBulkCompleteCategory(sub.id, phase.id, sub.progress < 100);
+                                      }}
+                                    >
+                                      {sub.progress === 100 ? (
+                                        <Square className="h-3.5 w-3.5" />
+                                      ) : (
+                                        <CheckSquare className="h-3.5 w-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {sub.progress === 100 
+                                      ? t("timeline.resetCategory", "Reset all {{category}} tasks", { category: sub.name })
+                                      : t("timeline.completeCategory", "Complete all {{category}} tasks", { category: sub.name })}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
                               <Progress value={sub.progress} className="h-1 w-16" />
                               <Badge variant="outline" className="text-xs">
                                 {sub.tasks.length}

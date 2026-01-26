@@ -21,6 +21,12 @@ export interface ProjectTimelineBarProps {
   onDatesChange?: (startDate: Date | null, endDate: Date | null) => void;
   isEditable?: boolean;
   className?: string;
+  /** Task-based completion progress (0-100) - overrides time-based calculation */
+  taskProgress?: number;
+  /** Number of completed tasks */
+  completedTasks?: number;
+  /** Total number of tasks */
+  totalTasks?: number;
 }
 
 export default function ProjectTimelineBar({
@@ -29,6 +35,9 @@ export default function ProjectTimelineBar({
   onDatesChange,
   isEditable = false,
   className,
+  taskProgress,
+  completedTasks = 0,
+  totalTasks = 0,
 }: ProjectTimelineBarProps) {
   const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date | null>(projectStartDate);
@@ -45,7 +54,10 @@ export default function ProjectTimelineBar({
   const totalDays = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
   const daysElapsed = startDate ? Math.max(0, differenceInDays(today, startDate)) : 0;
   const daysRemaining = endDate ? Math.max(0, differenceInDays(endDate, today)) : 0;
-  const progressPercent = totalDays > 0 ? Math.min(100, Math.max(0, (daysElapsed / totalDays) * 100)) : 0;
+  
+  // Use task progress if provided, otherwise fall back to time-based progress
+  const timeBasedProgress = totalDays > 0 ? Math.min(100, Math.max(0, (daysElapsed / totalDays) * 100)) : 0;
+  const progressPercent = taskProgress !== undefined ? taskProgress : timeBasedProgress;
   
   const isOverdue = endDate && isAfter(today, endDate);
   const isNotStarted = startDate && isBefore(today, startDate);
@@ -144,14 +156,33 @@ export default function ProjectTimelineBar({
         {startDate && endDate && (
           <div className="flex-1 max-w-md hidden md:block">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span>{daysElapsed} {t("projectTimeline.daysElapsed", "days elapsed")}</span>
-              <span>{daysRemaining} {t("projectTimeline.daysRemaining", "remaining")}</span>
+              {totalTasks > 0 ? (
+                <>
+                  <span>{completedTasks} / {totalTasks} {t("common.tasks", "tasks")}</span>
+                  <span>{daysRemaining} {t("projectTimeline.daysRemaining", "remaining")}</span>
+                </>
+              ) : (
+                <>
+                  <span>{daysElapsed} {t("projectTimeline.daysElapsed", "days elapsed")}</span>
+                  <span>{daysRemaining} {t("projectTimeline.daysRemaining", "remaining")}</span>
+                </>
+              )}
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-3 bg-muted rounded-full overflow-hidden relative">
               <div 
-                className={cn("h-full rounded-full transition-all", getProgressColor())}
+                className={cn("h-full rounded-full transition-all duration-500 ease-out", getProgressColor())}
                 style={{ width: `${progressPercent}%` }}
               />
+              {/* Tick marks for visual reference */}
+              <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                {[25, 50, 75].map((tick) => (
+                  <div 
+                    key={tick} 
+                    className="w-px h-full bg-background/30" 
+                    style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
+                  />
+                ))}
+              </div>
             </div>
             <div className="flex items-center justify-center mt-1">
               <span className="text-xs font-medium text-foreground">
