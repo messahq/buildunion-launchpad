@@ -2,19 +2,19 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
   WorkflowRecommendation 
 } from "@/components/projects2/ProjectQuestionnaire";
 import AIAnalysisProgress from "@/components/projects2/AIAnalysisProgress";
+import WorkflowSelector, { AIAnalysisResult, EditedAnalysisData } from "@/components/projects2/WorkflowSelector";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjectAIAnalysis } from "@/hooks/useProjectAIAnalysis";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription, TEAM_LIMITS } from "@/hooks/useSubscription";
 
 interface SavedProject {
   id: string;
@@ -78,102 +78,29 @@ const BuildUnionProjects2 = () => {
     loadProjects();
   }, [user, authLoading]);
 
-  // AI-determined workflow state with full analysis data
-  const [aiWorkflowRecommendation, setAiWorkflowRecommendation] = useState<{
-    mode: "quick" | "standard" | "full";
-    reason: string;
-    projectSize: "small" | "medium" | "large";
-    features: string[];
-    // Analysis details for transparency
-    analysisDetails: {
-      area: number | null;
-      areaUnit: string;
-      materials: Array<{ item: string; quantity: number; unit: string }>;
-      hasBlueprint: boolean;
-      surfaceType: string;
-      roomType: string;
-    };
-  } | null>(null);
+  // AI-determined workflow state for WorkflowSelector
+  const [aiAnalysisForSelector, setAiAnalysisForSelector] = useState<AIAnalysisResult | null>(null);
 
-  // Editable state for user modifications
-  const [editableArea, setEditableArea] = useState<number | null>(null);
-  const [editableMaterials, setEditableMaterials] = useState<Array<{ item: string; quantity: number; unit: string }>>([]);
-  const [isEditingArea, setIsEditingArea] = useState(false);
-  const [editingMaterialIndex, setEditingMaterialIndex] = useState<number | null>(null);
-  const [hasUserEdits, setHasUserEdits] = useState(false);
-
-  // Initialize editable state when recommendation changes
-  useEffect(() => {
-    if (aiWorkflowRecommendation) {
-      setEditableArea(aiWorkflowRecommendation.analysisDetails.area);
-      setEditableMaterials([...aiWorkflowRecommendation.analysisDetails.materials]);
-      setHasUserEdits(false);
-    }
-  }, [aiWorkflowRecommendation]);
-
-  // Update area handler
-  const handleAreaChange = (newArea: number) => {
-    setEditableArea(newArea);
-    setHasUserEdits(true);
-    setIsEditingArea(false);
-  };
-
-  // Update material quantity handler
-  const handleMaterialQuantityChange = (index: number, newQuantity: number) => {
-    const updated = [...editableMaterials];
-    updated[index].quantity = newQuantity;
-    setEditableMaterials(updated);
-    setHasUserEdits(true);
-    setEditingMaterialIndex(null);
-  };
-
-  // Determine workflow from AI analysis results (now uses AI-determined projectSize)
-  const determineAIWorkflow = (result: typeof analysisResult, tier: string) => {
+  // Transform analysis result to WorkflowSelector format
+  const transformToSelectorFormat = (result: typeof analysisResult): AIAnalysisResult | null => {
     if (!result) return null;
 
     const { projectSize, projectSizeReason } = result;
-    const area = result.estimate.area || 0;
+    const area = result.estimate.area || null;
     const materials = result.estimate.materials || [];
     const hasBlueprint = !!result.blueprintAnalysis?.extractedText;
-    const isPremium = tier === "premium" || tier === "enterprise";
-    const isPro = tier === "pro" || isPremium;
 
-    // Determine workflow mode based on AI-determined project size + tier
-    let mode: "quick" | "standard" | "full" = "quick";
-    let reason = "";
-    let features: string[] = [];
-
-    if (projectSize === "large" || hasBlueprint) {
-      if (isPro) {
-        mode = "full";
-        reason = `${projectSizeReason}. Full project management recommended.`;
-        features = ["AI Estimation", "Blueprint Analysis", "Team Management", "Document Hub", "Contract Generator"];
-      } else {
-        mode = "standard";
-        reason = `${projectSizeReason}. Upgrade to Pro for team features.`;
-        features = ["AI Estimation", "Quote Generator", "Contract"];
-      }
-    } else if (projectSize === "medium") {
-      mode = "standard";
-      reason = `${projectSizeReason}. Standard workflow covers your needs.`;
-      features = ["AI Estimation", "Calculator", "Quote", "Contract"];
-    } else {
-      mode = "quick";
-      reason = `${projectSizeReason}. Quick estimate ready!`;
-      features = ["Photo Estimate", "Quote", "Contract"];
-    }
-
-    // Include analysis details for UI transparency
-    const analysisDetails = {
-      area: result.estimate.area,
+    return {
+      area,
       areaUnit: result.estimate.areaUnit || "sq ft",
-      materials: materials.slice(0, 6).map(m => ({ item: m.item, quantity: m.quantity, unit: m.unit })),
+      materials: materials.slice(0, 10).map(m => ({ item: m.item, quantity: m.quantity, unit: m.unit })),
       hasBlueprint,
       surfaceType: result.estimate.surfaceType || "unknown",
       roomType: result.estimate.roomType || "unknown",
+      projectSize: projectSize as "small" | "medium" | "large",
+      projectSizeReason: projectSizeReason || "AI analysis complete",
+      confidence: materials.length > 3 ? "high" : area ? "medium" : "low",
     };
-
-    return { mode, reason, projectSize, features, analysisDetails };
   };
 
   // Trigger AI analysis after project creation
@@ -189,30 +116,34 @@ const BuildUnionProjects2 = () => {
         workType: pendingWorkType,
       }).then((result) => {
         if (result) {
-          // AI determines the workflow based on analysis
-          const workflow = determineAIWorkflow(result, subscription.tier);
-          if (workflow) {
-            setAiWorkflowRecommendation(workflow);
+          // Transform for WorkflowSelector
+          const selectorData = transformToSelectorFormat(result);
+          if (selectorData) {
+            setAiAnalysisForSelector(selectorData);
             
             // Update project_summaries with AI-determined workflow
             supabase
               .from("project_summaries")
               .update({
-                calculator_results: [{
-                  type: "ai_workflow_recommendation",
-                  ...workflow,
+                ai_workflow_config: {
+                  projectSize: selectorData.projectSize,
+                  projectSizeReason: selectorData.projectSizeReason,
+                  tierAtCreation: subscription.tier,
+                  teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
                   aiAnalysis: {
-                    area: result.estimate.area,
-                    areaUnit: result.estimate.areaUnit,
-                    materialsCount: result.estimate.materials.length,
-                    hasBlueprint: !!result.blueprintAnalysis?.extractedText
-                  }
-                }]
+                    area: selectorData.area,
+                    areaUnit: selectorData.areaUnit,
+                    materials: selectorData.materials,
+                    hasBlueprint: selectorData.hasBlueprint,
+                    confidence: selectorData.confidence,
+                  },
+                  analyzedAt: new Date().toISOString(),
+                }
               })
               .eq("project_id", createdProjectId)
               .then(() => {
                 toast.success("AI analysis complete!", {
-                  description: workflow.reason
+                  description: selectorData.projectSizeReason
                 });
               });
           }
@@ -226,57 +157,81 @@ const BuildUnionProjects2 = () => {
     }
   }, [createdProjectId, pendingImages, pendingDocuments, analyzing, subscription.tier]);
 
-  // Handle workflow selection after AI recommendation
-  const handleWorkflowSelect = async (mode: "quick" | "standard" | "full") => {
-    if (!createdProjectId) return;
+  // Handle workflow selection from WorkflowSelector
+  const handleWorkflowSelect = async (mode: "solo" | "team", editedData?: EditedAnalysisData) => {
+    if (!createdProjectId || !aiAnalysisForSelector) return;
 
-    // Save user edits to database before navigating
-    if (hasUserEdits && aiWorkflowRecommendation) {
-      try {
-        await supabase
-          .from("project_summaries")
-          .update({
-            photo_estimate: {
-              ...aiWorkflowRecommendation.analysisDetails,
-              area: editableArea,
-              materials: editableMaterials,
-              userEdited: true,
-              editedAt: new Date().toISOString(),
-            },
-            calculator_results: [{
-              type: "ai_workflow_recommendation",
-              mode,
-              projectSize: aiWorkflowRecommendation.projectSize,
-              features: aiWorkflowRecommendation.features,
-              userEditedArea: editableArea,
-              userEditedMaterials: editableMaterials.length,
-              originalArea: aiWorkflowRecommendation.analysisDetails.area,
-            }],
-          })
-          .eq("project_id", createdProjectId);
-        
+    try {
+      // Build workflow config object
+      const workflowConfig = {
+        projectSize: aiAnalysisForSelector.projectSize,
+        projectSizeReason: aiAnalysisForSelector.projectSizeReason,
+        recommendedMode: aiAnalysisForSelector.projectSize === "small" ? "solo" : "team",
+        selectedMode: mode,
+        tierAtCreation: subscription.tier,
+        teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
+        aiAnalysis: {
+          area: aiAnalysisForSelector.area,
+          areaUnit: aiAnalysisForSelector.areaUnit,
+          materials: aiAnalysisForSelector.materials,
+          hasBlueprint: aiAnalysisForSelector.hasBlueprint,
+          confidence: aiAnalysisForSelector.confidence,
+        },
+        ...(editedData ? { userEdits: {
+          editedArea: editedData.editedArea,
+          editedMaterials: editedData.editedMaterials,
+          editedAt: editedData.editedAt,
+        }} : {}),
+        selectedAt: new Date().toISOString(),
+      };
+
+      // Build photo estimate object
+      const photoEstimate = {
+        ...aiAnalysisForSelector,
+        ...(editedData ? {
+          area: editedData.editedArea,
+          materials: editedData.editedMaterials,
+          userEdited: true,
+          editedAt: editedData.editedAt,
+        } : {}),
+      };
+
+      // Save workflow selection and any user edits
+      await supabase
+        .from("project_summaries")
+        .update({
+          mode,
+          status: "active",
+          photo_estimate: JSON.parse(JSON.stringify(photoEstimate)),
+          ai_workflow_config: JSON.parse(JSON.stringify(workflowConfig)),
+        })
+        .eq("project_id", createdProjectId);
+
+      if (editedData) {
         toast.success("Your edits have been saved!");
-      } catch (error) {
-        console.error("Error saving edits:", error);
       }
-    }
 
-    // Navigate based on selected workflow
-    if (mode === "quick") {
-      // Go to Quick Mode with pre-filled data
-      navigate(`/buildunion/quick-mode?projectId=${createdProjectId}`);
-    } else if (mode === "full" && (subscription.tier === "pro" || subscription.tier === "premium")) {
-      // Go to full project details
-      navigate(`/buildunion/project/${createdProjectId}`);
-    } else {
-      // Standard mode - go to project with focus on estimate
-      navigate(`/buildunion/project/${createdProjectId}?tab=synthesis`);
-    }
+      // Navigate based on selected workflow
+      if (mode === "solo") {
+        // Go to Quick Mode with pre-filled data
+        navigate(`/buildunion/quick-mode?projectId=${createdProjectId}`);
+      } else {
+        // Go to full project details (Team Mode)
+        navigate(`/buildunion/project/${createdProjectId}`);
+      }
 
-    // Reset state
-    setAiWorkflowRecommendation(null);
-    setCreatedProjectId(null);
-    setHasUserEdits(false);
+      // Reset state
+      setAiAnalysisForSelector(null);
+      setCreatedProjectId(null);
+    } catch (error) {
+      console.error("Error saving workflow selection:", error);
+      toast.error("Failed to save workflow selection");
+    }
+  };
+
+  // Handle upgrade click
+  const handleUpgradeClick = () => {
+    navigate("/buildunion/pricing");
   };
 
   const handleQuestionnaireComplete = async (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
@@ -367,13 +322,17 @@ const BuildUnionProjects2 = () => {
             teamEnabled: workflow.teamEnabled,
             estimatedSteps: workflow.estimatedSteps,
             features: workflow.features,
-            projectSize: answers.size,
             workType: answers.workType,
-            teamNeed: answers.teamNeed,
             userDescription: answers.description,
             imageCount: uploadedImagePaths.length,
             documentCount: answers.documents?.length || 0
-          }]
+          }],
+          // Initialize ai_workflow_config with tier info
+          ai_workflow_config: {
+            tierAtCreation: subscription.tier,
+            teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
+            createdAt: new Date().toISOString(),
+          }
         });
 
       if (summaryError) {
@@ -412,6 +371,8 @@ const BuildUnionProjects2 = () => {
         setPendingDescription(answers.description);
       } else {
         toast.success(`Project "${answers.name}" created!`);
+        // No AI analysis needed, go directly to project
+        navigate(`/buildunion/project/${projectData.id}`);
       }
 
     } catch (error) {
@@ -451,15 +412,15 @@ const BuildUnionProjects2 = () => {
                     <Wrench className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-foreground">Projects</h1>
-                    <p className="text-muted-foreground">Smart workflow based on your needs</p>
+                    <h1 className="text-3xl font-bold text-foreground">Projects 2.0</h1>
+                    <p className="text-muted-foreground">Smart workflow based on AI analysis</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Tier indicator */}
                   {subscription.tier !== "free" && (
                     <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400">
-                      {subscription.tier.toUpperCase()} • Up to {tierConfig.maxImages} photos
+                      {subscription.tier.toUpperCase()} • Up to {TEAM_LIMITS[subscription.tier] === Infinity ? "∞" : TEAM_LIMITS[subscription.tier]} team members
                     </span>
                   )}
                   <Button 
@@ -488,235 +449,16 @@ const BuildUnionProjects2 = () => {
                 </div>
               )}
 
-              {/* AI Workflow Recommendation (after analysis) */}
-              {aiWorkflowRecommendation && !analyzing && (
-                <div className="mb-6 p-6 rounded-xl border bg-card">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                      <Sparkles className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground">AI Recommendation</h3>
-                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
-                          aiWorkflowRecommendation.projectSize === "large" 
-                            ? "bg-blue-500/20 text-blue-600" 
-                            : aiWorkflowRecommendation.projectSize === "medium"
-                            ? "bg-cyan-500/20 text-cyan-600"
-                            : "bg-amber-500/20 text-amber-600"
-                        }`}>
-                          {aiWorkflowRecommendation.projectSize.toUpperCase()} PROJECT
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{aiWorkflowRecommendation.reason}</p>
-                    </div>
-                  </div>
-
-                  {/* AI Detection Results - Editable */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 rounded-lg bg-muted/30">
-                    {/* Area Detection - Editable */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-muted-foreground">📐 Area</span>
-                        {!isEditingArea && (
-                          <button 
-                            onClick={() => setIsEditingArea(true)}
-                            className="p-1 hover:bg-muted rounded transition-colors"
-                            title="Edit area"
-                          >
-                            <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                          </button>
-                        )}
-                      </div>
-                      {isEditingArea ? (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={editableArea || ""}
-                            onChange={(e) => setEditableArea(Number(e.target.value))}
-                            className="h-8 w-24 text-sm"
-                            autoFocus
-                          />
-                          <span className="text-sm text-muted-foreground">{aiWorkflowRecommendation.analysisDetails.areaUnit}</span>
-                          <button 
-                            onClick={() => handleAreaChange(editableArea || 0)}
-                            className="p-1 hover:bg-green-500/20 rounded text-green-600"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setEditableArea(aiWorkflowRecommendation.analysisDetails.area);
-                              setIsEditingArea(false);
-                            }}
-                            className="p-1 hover:bg-red-500/20 rounded text-red-600"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          {editableArea ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-semibold text-foreground">
-                                {editableArea.toLocaleString()} {aiWorkflowRecommendation.analysisDetails.areaUnit}
-                              </span>
-                              {hasUserEdits && editableArea !== aiWorkflowRecommendation.analysisDetails.area && (
-                                <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-600 rounded">edited</span>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-sm text-muted-foreground">Click edit to add area</div>
-                          )}
-                        </>
-                      )}
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {aiWorkflowRecommendation.analysisDetails.surfaceType !== "unknown" && (
-                          <span>Surface: {aiWorkflowRecommendation.analysisDetails.surfaceType}</span>
-                        )}
-                        {aiWorkflowRecommendation.analysisDetails.roomType !== "unknown" && (
-                          <span className="ml-2">• {aiWorkflowRecommendation.analysisDetails.roomType}</span>
-                        )}
-                      </div>
-                      {aiWorkflowRecommendation.analysisDetails.hasBlueprint && (
-                        <div className="text-xs text-primary mt-1">📄 Blueprint data included</div>
-                      )}
-                    </div>
-
-                    {/* Materials List - Editable */}
-                    <div>
-                      <div className="text-xs font-medium text-muted-foreground mb-2">
-                        🧱 Materials ({editableMaterials.length})
-                        {hasUserEdits && <span className="ml-1 text-amber-600">(editable)</span>}
-                      </div>
-                      {editableMaterials.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {editableMaterials.slice(0, 4).map((m, i) => (
-                            <div key={i} className="text-xs flex items-center justify-between group">
-                              <span className="text-foreground truncate max-w-[120px]">{m.item}</span>
-                              {editingMaterialIndex === i ? (
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    value={editableMaterials[i].quantity}
-                                    onChange={(e) => {
-                                      const updated = [...editableMaterials];
-                                      updated[i].quantity = Number(e.target.value);
-                                      setEditableMaterials(updated);
-                                    }}
-                                    className="h-6 w-16 text-xs"
-                                    autoFocus
-                                  />
-                                  <span className="text-muted-foreground">{m.unit}</span>
-                                  <button 
-                                    onClick={() => handleMaterialQuantityChange(i, editableMaterials[i].quantity)}
-                                    className="p-0.5 hover:bg-green-500/20 rounded text-green-600"
-                                  >
-                                    <Check className="h-3 w-3" />
-                                  </button>
-                                  <button 
-                                    onClick={() => setEditingMaterialIndex(null)}
-                                    className="p-0.5 hover:bg-red-500/20 rounded text-red-600"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-muted-foreground">{m.quantity} {m.unit}</span>
-                                  <button 
-                                    onClick={() => setEditingMaterialIndex(i)}
-                                    className="p-0.5 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <Pencil className="h-3 w-3 text-muted-foreground" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          {editableMaterials.length > 4 && (
-                            <div className="text-xs text-muted-foreground">
-                              +{editableMaterials.length - 4} more...
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-muted-foreground">No materials detected</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Workflow Options */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <button
-                      onClick={() => handleWorkflowSelect("quick")}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        aiWorkflowRecommendation.mode === "quick"
-                          ? "border-amber-500 bg-amber-500/10"
-                          : "border-border hover:border-amber-300"
-                      }`}
-                    >
-                      <div className="font-medium text-foreground">Quick Mode</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Photo → Quote → Contract
-                      </div>
-                      {aiWorkflowRecommendation.mode === "quick" && (
-                        <span className="inline-block mt-2 text-xs font-medium text-amber-600">✓ Recommended</span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => handleWorkflowSelect("standard")}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        aiWorkflowRecommendation.mode === "standard"
-                          ? "border-cyan-500 bg-cyan-500/10"
-                          : "border-border hover:border-cyan-300"
-                      }`}
-                    >
-                      <div className="font-medium text-foreground">Standard</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Estimate + Calculator + Docs
-                      </div>
-                      {aiWorkflowRecommendation.mode === "standard" && (
-                        <span className="inline-block mt-2 text-xs font-medium text-cyan-600">✓ Recommended</span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => handleWorkflowSelect("full")}
-                      disabled={subscription.tier === "free"}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        aiWorkflowRecommendation.mode === "full"
-                          ? "border-blue-500 bg-blue-500/10"
-                          : subscription.tier === "free"
-                          ? "border-border opacity-50 cursor-not-allowed"
-                          : "border-border hover:border-blue-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground">Full Project</span>
-                        {subscription.tier === "free" && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
-                            PRO
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Team + Tasks + Full Management
-                      </div>
-                      {aiWorkflowRecommendation.mode === "full" && subscription.tier !== "free" && (
-                        <span className="inline-block mt-2 text-xs font-medium text-blue-600">✓ Recommended</span>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Features preview */}
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-medium">Selected features: </span>
-                      {aiWorkflowRecommendation.features.join(" → ")}
-                    </div>
-                  </div>
+              {/* AI Workflow Selector (after analysis) */}
+              {aiAnalysisForSelector && !analyzing && createdProjectId && (
+                <div className="mb-6">
+                  <WorkflowSelector
+                    projectId={createdProjectId}
+                    analysisResult={aiAnalysisForSelector}
+                    tier={subscription.tier}
+                    onSelectWorkflow={handleWorkflowSelect}
+                    onUpgradeClick={handleUpgradeClick}
+                  />
                 </div>
               )}
 
@@ -812,7 +554,7 @@ const BuildUnionProjects2 = () => {
           )}
         </div>
       </section>
-
+      
       <BuildUnionFooter />
     </main>
   );
