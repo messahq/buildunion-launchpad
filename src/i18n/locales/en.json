@@ -99,7 +99,8 @@
     "completeCategory": "Complete all {{category}} tasks",
     "resetCategory": "Reset all {{category}} tasks",
     "categoryCompleted": "All {{count}} {{category}} tasks complete!",
-    "categoryReset": "{{category}} tasks reset"
+    "categoryReset": "{{category}} tasks reset",
+    "tasksCreated": "{{count}} tasks created for this project"
   },
   "taskEdit": {
     "title": "Edit Task",

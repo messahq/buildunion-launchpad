@@ -99,7 +99,8 @@
     "completeCategory": "Összes {{category}} feladat teljesítése",
     "resetCategory": "Összes {{category}} feladat visszaállítása",
     "categoryCompleted": "Mind a(z) {{count}} {{category}} feladat teljesítve!",
-    "categoryReset": "{{category}} feladatok visszaállítva"
+    "categoryReset": "{{category}} feladatok visszaállítva",
+    "tasksCreated": "{{count}} feladat létrehozva ehhez a projekthez"
   },
   "taskEdit": {
     "title": "Feladat szerkesztése",
