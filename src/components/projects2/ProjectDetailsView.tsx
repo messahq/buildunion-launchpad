@@ -762,30 +762,43 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
       </div>
 
       {/* Main Project Timeline Bar - THE CLOCKWORK */}
-      <ProjectTimelineBar
-        projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
-        projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
-        onDatesChange={async (startDate, endDate) => {
-          // Update summary state
-          setSummary(prev => prev ? {
-            ...prev,
-            project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
-            project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
-          } : null);
-          
-          // Persist to database
-          if (summary?.id) {
-            await supabase
-              .from("project_summaries")
-              .update({
+      {(() => {
+        // Calculate task-based progress for the main timeline
+        const activeTasks = tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || []);
+        const completedCount = activeTasks.filter(t => t.status === "completed").length;
+        const totalCount = activeTasks.length;
+        const taskProgressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        
+        return (
+          <ProjectTimelineBar
+            projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+            projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+            onDatesChange={async (startDate, endDate) => {
+              // Update summary state
+              setSummary(prev => prev ? {
+                ...prev,
                 project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
                 project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
-              })
-              .eq("id", summary.id);
-          }
-        }}
-        isEditable={isOwner}
-      />
+              } : null);
+              
+              // Persist to database
+              if (summary?.id) {
+                await supabase
+                  .from("project_summaries")
+                  .update({
+                    project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+                    project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+                  })
+                  .eq("id", summary.id);
+              }
+            }}
+            isEditable={isOwner}
+            taskProgress={taskProgressPercent}
+            completedTasks={completedCount}
+            totalTasks={totalCount}
+          />
+        );
+      })()}
 
       {/* INTEGRATED TIMELINE SECTION - Directly below Project Timeline */}
       <div className="space-y-4">
@@ -892,6 +905,31 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               // Recalculate total budget
               const updatedTasks = tasks.map(t => 
                 t.id === taskId ? { ...t, status: newStatus } : t
+              );
+              const newTotal = updatedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+              setTotalTaskBudget(newTotal);
+            }}
+            onBulkStatusChange={async (taskIds, newStatus) => {
+              // Update all tasks in the database
+              const { error } = await supabase
+                .from("project_tasks")
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .in("id", taskIds);
+              
+              if (error) {
+                console.error("Failed to bulk update tasks:", error);
+                toast.error(t("timeline.updateFailed", "Failed to update tasks"));
+                return;
+              }
+              
+              // Update local state immediately for instant UI feedback
+              setTasks(prev => prev.map(t => 
+                taskIds.includes(t.id) ? { ...t, status: newStatus } : t
+              ));
+              
+              // Recalculate total budget
+              const updatedTasks = tasks.map(t => 
+                taskIds.includes(t.id) ? { ...t, status: newStatus } : t
               );
               const newTotal = updatedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
               setTotalTaskBudget(newTotal);
