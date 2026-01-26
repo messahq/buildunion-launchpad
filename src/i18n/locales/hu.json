@@ -31,7 +31,9 @@
     "initialLock": "Kezdeti alapállapot rögzítés",
     "adjustBeforeLock": "Értékek módosítása rögzítés előtt",
     "optionalNote": "Megjegyzés (opcionális)",
-    "initialNotePlaceholder": "pl. Kezdeti alapállapot AI elemzés alapján"
+    "initialNotePlaceholder": "pl. Kezdeti alapállapot AI elemzés alapján",
+    "setProjectDates": "Projekt időtartam beállítása",
+    "datesRequired": "Mindkét dátum megadása szükséges a rögzítéshez"
   },
   "timeline": {
     "ganttView": "Gantt Idősor",
