@@ -32,6 +32,7 @@ import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
+import EditableAIAnalysisSummary from "./EditableAIAnalysisSummary";
 
 import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
@@ -939,66 +940,27 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             </Card>
           )}
 
-          {/* AI Analysis Summary */}
-          {aiAnalysis && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
-                  AI Analysis Results
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="text-xs text-muted-foreground">Detected Area</div>
-                    <div className="text-lg font-semibold">
-                      {aiAnalysis.area 
-                        ? `${aiAnalysis.area.toLocaleString()} ${aiAnalysis.areaUnit}`
-                        : "N/A"
-                      }
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="text-xs text-muted-foreground">Materials</div>
-                    <div className="text-lg font-semibold">
-                      {aiAnalysis.materials?.length || 0} items
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="text-xs text-muted-foreground">Project Size</div>
-                    <div className="text-lg font-semibold capitalize">
-                      {aiConfig?.projectSize || "Unknown"}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="text-xs text-muted-foreground">Confidence</div>
-                    <div className="text-lg font-semibold capitalize">
-                      {aiAnalysis.confidence || "N/A"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Materials List */}
-                {aiAnalysis.materials && aiAnalysis.materials.length > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm font-medium mb-2">Detected Materials</div>
-                    <div className="flex flex-wrap gap-2">
-                      {aiAnalysis.materials.slice(0, 8).map((m, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {m.item}: {m.quantity} {m.unit}
-                        </Badge>
-                      ))}
-                      {aiAnalysis.materials.length > 8 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{aiAnalysis.materials.length - 8} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {/* Editable AI Analysis Summary */}
+          {summary && (
+            <EditableAIAnalysisSummary
+              projectId={projectId}
+              summaryId={summary.id}
+              area={aiAnalysis?.area || null}
+              areaUnit={aiAnalysis?.areaUnit || "sq ft"}
+              materials={aiAnalysis?.materials || []}
+              surfaceType={photoEstimate?.surfaceType}
+              surfaceCondition={photoEstimate?.surfaceCondition}
+              roomType={photoEstimate?.roomType}
+              projectSize={photoEstimate?.projectSize || aiConfig?.projectSize}
+              confidence={aiAnalysis?.confidence}
+              summary={photoEstimate?.summary}
+              recommendations={photoEstimate?.recommendations}
+              hasBlueprint={aiAnalysis?.hasBlueprint}
+              onUpdate={() => {
+                // Reload project data after update
+                window.location.reload();
+              }}
+            />
           )}
 
           {/* AI Decision Log Panel - Pro+ feature */}
