@@ -1,4 +1,40 @@
 {
+  "baseline": {
+    "title": "Project Baseline",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "lockedOn": "Locked on",
+    "changesDetected": "changes since baseline",
+    "noChanges": "No changes from baseline",
+    "viewComparison": "View Full Comparison",
+    "comparisonTitle": "Baseline vs Current State",
+    "comparisonDesc": "Compare the locked baseline values with the current operational truth",
+    "lockDescription": "Lock the current 8 pillars as a baseline before work begins. This allows tracking changes throughout the project.",
+    "lockButton": "Lock Baseline",
+    "confirmTitle": "Lock Project Baseline?",
+    "confirmDesc": "This will save the current state of all 8 operational truth pillars. You can track changes against this baseline as the project progresses.",
+    "willBeLocked": "The following values will be locked:",
+    "confirmLock": "Lock Baseline"
+  },
+  "timeline": {
+    "ganttView": "Gantt Timeline",
+    "tasks": "Tasks",
+    "noTasks": "No tasks to display on timeline",
+    "budgetUpdated": "Budget updated",
+    "clickToAddBudget": "Click to add budget",
+    "noBudget": "No budget set",
+    "unscheduled": "Unscheduled Tasks"
+  },
+  "pillars": {
+    "area": "Confirmed Area",
+    "materials": "Materials",
+    "blueprint": "Blueprint",
+    "obc": "OBC Compliance",
+    "conflicts": "Conflict Status",
+    "mode": "Project Mode",
+    "size": "Project Size",
+    "confidence": "Confidence"
+  },
   "team": {
     "members": "Team Members",
     "manageTeam": "Team",

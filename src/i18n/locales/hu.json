@@ -1,4 +1,40 @@
 {
+  "baseline": {
+    "title": "Projekt Alapállapot",
+    "locked": "Rögzítve",
+    "unlocked": "Nincs rögzítve",
+    "lockedOn": "Rögzítve",
+    "changesDetected": "változás az alapállapothoz képest",
+    "noChanges": "Nincs változás az alapállapothoz képest",
+    "viewComparison": "Teljes összehasonlítás",
+    "comparisonTitle": "Alapállapot vs Jelenlegi állapot",
+    "comparisonDesc": "Hasonlítsd össze a rögzített alapértékeket a jelenlegi operatív igazsággal",
+    "lockDescription": "Rögzítsd a jelenlegi 8 pillért alapállapotként a munka megkezdése előtt. Ez lehetővé teszi a változások nyomon követését.",
+    "lockButton": "Alapállapot rögzítése",
+    "confirmTitle": "Projekt alapállapot rögzítése?",
+    "confirmDesc": "Ez elmenti a jelenlegi állapotát mind a 8 operatív igazság pillérnek. Nyomon követheted a változásokat ehhez az alapállapothoz képest.",
+    "willBeLocked": "A következő értékek lesznek rögzítve:",
+    "confirmLock": "Alapállapot rögzítése"
+  },
+  "timeline": {
+    "ganttView": "Gantt Idősor",
+    "tasks": "Feladatok",
+    "noTasks": "Nincsenek feladatok az idősoron",
+    "budgetUpdated": "Költségvetés frissítve",
+    "clickToAddBudget": "Kattints a költségvetés hozzáadásához",
+    "noBudget": "Nincs költségvetés beállítva",
+    "unscheduled": "Ütemezetlen feladatok"
+  },
+  "pillars": {
+    "area": "Megerősített terület",
+    "materials": "Anyagok",
+    "blueprint": "Tervrajz",
+    "obc": "OBC megfelelőség",
+    "conflicts": "Konfliktus állapot",
+    "mode": "Projekt mód",
+    "size": "Projekt méret",
+    "confidence": "Megbízhatóság"
+  },
   "team": {
     "members": "Csapattagok",
     "manageTeam": "Csapat",
