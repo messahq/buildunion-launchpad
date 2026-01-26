@@ -185,15 +185,28 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const photoEstimate = summary?.photo_estimate;
   const blueprintAnalysis = summary?.blueprint_analysis;
   
+  // Helper to extract area from materials (same logic as buildOperationalTruth)
+  const extractAreaFromMaterials = (materials: Array<{ item: string; quantity: number; unit: string }> | undefined): number | null => {
+    if (!materials?.length) return null;
+    const areaBasedMaterial = materials.find(
+      m => m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft")
+    );
+    return areaBasedMaterial?.quantity || null;
+  };
+
   // Build unified aiAnalysis from photo_estimate (actual AI results)
-  // Priority: photo_estimate.area > blueprint_analysis.detectedArea > ai_workflow_config.aiAnalysis
-  const aiAnalysis = photoEstimate ? {
-    area: photoEstimate.area ?? blueprintAnalysis?.detectedArea ?? null,
-    areaUnit: photoEstimate.areaUnit || blueprintAnalysis?.areaUnit || "sq ft",
-    materials: photoEstimate.materials || [],
-    hasBlueprint: !!blueprintAnalysis?.extractedText || !!photoEstimate.blueprintAnalysis?.extractedText,
-    confidence: photoEstimate.areaConfidence || "medium",
-  } : aiConfig?.aiAnalysis;
+  // Priority: photo_estimate.area > blueprint_analysis.detectedArea > materials fallback > ai_workflow_config.aiAnalysis
+  const rawArea = photoEstimate?.area ?? blueprintAnalysis?.detectedArea ?? null;
+  const materialsData = photoEstimate?.materials || aiConfig?.aiAnalysis?.materials || [];
+  const fallbackArea = extractAreaFromMaterials(materialsData);
+  
+  const aiAnalysis = photoEstimate || aiConfig?.aiAnalysis ? {
+    area: rawArea ?? fallbackArea,
+    areaUnit: photoEstimate?.areaUnit || blueprintAnalysis?.areaUnit || "sq ft",
+    materials: materialsData,
+    hasBlueprint: !!blueprintAnalysis?.extractedText || !!photoEstimate?.blueprintAnalysis?.extractedText,
+    confidence: photoEstimate?.areaConfidence || aiConfig?.aiAnalysis?.confidence || "medium",
+  } : null;
 
   // Status indicators
   const hasPhotoEstimate = !!summary?.photo_estimate && Object.keys(summary.photo_estimate).length > 0;
