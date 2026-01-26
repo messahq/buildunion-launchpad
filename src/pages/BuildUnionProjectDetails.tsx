@@ -271,6 +271,21 @@ const BuildUnionProjectDetails = () => {
     fetchProjectData();
   }, [user, projectId, navigate]);
 
+  // Refresh contracts for Operational Truth sync
+  const refreshContracts = async () => {
+    if (!projectId) return;
+    
+    const { data: contractsData } = await supabase
+      .from("contracts")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (contractsData) {
+      setProjectContracts(contractsData);
+    }
+  };
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -1743,6 +1758,7 @@ const BuildUnionProjectDetails = () => {
                             showTitle={false}
                             onNavigateToAI={() => setBlueprintTab("ai")}
                             templateItems={projectSummary?.template_items as any[] || []}
+                            onContractSaved={refreshContracts}
                           />
                         </div>
                       )}

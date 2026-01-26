@@ -1673,15 +1673,43 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                 </p>
               </div>
 
-              {/* Continue Button */}
+              {/* Continue Button - Save and Continue */}
               {onContinue && (
                 <div className="pt-4 border-t border-slate-200">
                   <Button
-                    onClick={onContinue}
+                    onClick={async () => {
+                      // Save contract first if not already saved
+                      if (!savedContractId) {
+                        await saveContractToDatabase();
+                      }
+                      // Notify parent about the contract
+                      onContractGenerated?.({
+                        id: savedContractId,
+                        contract_number: contract.contractNumber,
+                        total_amount: contract.totalAmount,
+                        status: contractorSignature && clientSignature ? 'signed' : contractorSignature ? 'pending_client' : 'draft',
+                        contractor_signature: contractorSignature,
+                        client_signature: clientSignature,
+                        start_date: contract.startDate,
+                        estimated_end_date: contract.estimatedEndDate,
+                      });
+                      // Navigate to AI
+                      onContinue();
+                    }}
+                    disabled={isSaving}
                     className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
                   >
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        Save & Continue
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
