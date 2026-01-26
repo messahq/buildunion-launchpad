@@ -8,9 +8,12 @@ import {
   Loader2, 
   AlertCircle,
   Maximize2,
-  Navigation
+  Navigation,
+  AlertTriangle,
+  Lock,
+  Info
 } from "lucide-react";
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
 import {
   Dialog,
   DialogContent,
@@ -20,11 +23,17 @@ import {
 } from "@/components/ui/dialog";
 import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { ProjectConflict } from "@/hooks/useSingleProjectConflicts";
+import { ConflictMarkerLegend } from "./ConflictMarkerLegend";
+import { ProBadge } from "@/components/ui/pro-badge";
 
 interface TeamMapWidgetProps {
   projectAddress: string;
   projectName: string;
   className?: string;
+  conflicts?: ProjectConflict[];
+  isPremium?: boolean;
 }
 
 const mapContainerStyle = {
@@ -55,15 +64,46 @@ const defaultCenter = {
 
 const libraries: ("places" | "geocoding")[] = ["places", "geocoding"];
 
+// Conflict marker colors
+const getSeverityColor = (severity: "high" | "medium" | "low") => {
+  switch (severity) {
+    case "high":
+      return "#ef4444"; // red-500
+    case "medium":
+      return "#f59e0b"; // amber-500
+    case "low":
+      return "#3b82f6"; // blue-500
+    default:
+      return "#6b7280"; // gray-500
+  }
+};
+
+const getSeverityIcon = (severity: "high" | "medium" | "low") => {
+  switch (severity) {
+    case "high":
+      return google.maps.SymbolPath.BACKWARD_CLOSED_ARROW;
+    case "medium":
+      return google.maps.SymbolPath.FORWARD_CLOSED_ARROW;
+    case "low":
+      return google.maps.SymbolPath.CIRCLE;
+    default:
+      return google.maps.SymbolPath.CIRCLE;
+  }
+};
+
 export default function TeamMapWidget({ 
   projectAddress, 
   projectName,
-  className 
+  className,
+  conflicts = [],
+  isPremium = false,
 }: TeamMapWidgetProps) {
+  const { t } = useTranslation();
   const { apiKey, isLoading: isLoadingKey, error: keyError } = useGoogleMapsApi();
   const [projectLocation, setProjectLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [geocodeError, setGeocodeError] = useState(false);
+  const [selectedConflict, setSelectedConflict] = useState<ProjectConflict | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey || "",
@@ -98,6 +138,26 @@ export default function TeamMapWidget({
       map.setZoom(15);
     }
   }, [projectLocation]);
+
+  // Count conflicts by severity
+  const highCount = conflicts.filter(c => c.severity === "high").length;
+  const mediumCount = conflicts.filter(c => c.severity === "medium").length;
+  const lowCount = conflicts.filter(c => c.severity === "low").length;
+  const hasConflicts = conflicts.length > 0;
+
+  // Generate offset positions for conflict markers (clustered around project location)
+  const getConflictPosition = (index: number) => {
+    if (!projectLocation) return null;
+    
+    // Create a small offset for each conflict marker
+    const angle = (index * 60) * (Math.PI / 180); // 60 degrees apart
+    const radius = 0.0003; // Small radius offset
+    
+    return {
+      lat: projectLocation.lat + (Math.cos(angle) * radius),
+      lng: projectLocation.lng + (Math.sin(angle) * radius),
+    };
+  };
 
   // Loading state for API key
   if (isLoadingKey) {
@@ -154,13 +214,72 @@ export default function TeamMapWidget({
               icon={{
                 path: google.maps.SymbolPath.CIRCLE,
                 scale: 12,
-                fillColor: "#f59e0b",
+                fillColor: hasConflicts && isPremium ? "#22c55e" : "#f59e0b", // green if has conflicts, amber otherwise
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
                 strokeWeight: 3,
               }}
               title={projectName}
             />
+          )}
+
+          {/* Conflict markers - Premium only */}
+          {isPremium && projectLocation && conflicts.map((conflict, index) => {
+            const position = getConflictPosition(index);
+            if (!position) return null;
+
+            return (
+              <Marker
+                key={conflict.id}
+                position={position}
+                icon={{
+                  path: getSeverityIcon(conflict.severity),
+                  scale: conflict.severity === "high" ? 8 : 6,
+                  fillColor: getSeverityColor(conflict.severity),
+                  fillOpacity: 0.9,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 2,
+                }}
+                title={`${conflict.conflictType}: ${conflict.description}`}
+                onClick={() => setSelectedConflict(conflict)}
+              />
+            );
+          })}
+
+          {/* Info window for selected conflict */}
+          {selectedConflict && projectLocation && (
+            <InfoWindow
+              position={projectLocation}
+              onCloseClick={() => setSelectedConflict(null)}
+            >
+              <div className="p-2 min-w-[200px]">
+                <div className="flex items-center gap-2 mb-2">
+                  {selectedConflict.severity === "high" ? (
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                  ) : selectedConflict.severity === "medium" ? (
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                  ) : (
+                    <Info className="h-4 w-4 text-blue-500" />
+                  )}
+                  <span className="font-semibold text-sm capitalize">
+                    {t(`conflicts.types.${selectedConflict.conflictType}`, selectedConflict.conflictType)} {t("conflicts.conflict", "Conflict")}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  {selectedConflict.description}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 p-1.5 rounded">
+                    <span className="text-muted-foreground">{t("conflicts.photoAI", "Photo AI")}:</span>
+                    <span className="ml-1 font-medium">{selectedConflict.photoValue}</span>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-950/30 p-1.5 rounded">
+                    <span className="text-muted-foreground">{t("conflicts.blueprint", "Blueprint")}:</span>
+                    <span className="ml-1 font-medium">{selectedConflict.blueprintValue}</span>
+                  </div>
+                </div>
+              </div>
+            </InfoWindow>
           )}
         </GoogleMap>
       )}
@@ -170,6 +289,19 @@ export default function TeamMapWidget({
           <div className="text-center">
             <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Could not locate address</p>
+          </div>
+        </div>
+      )}
+
+      {/* Locked overlay for non-premium users with conflicts */}
+      {!isPremium && hasConflicts && (
+        <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg p-2">
+          <div className="flex items-center gap-2">
+            <Lock className="h-4 w-4 text-amber-500" />
+            <span className="text-xs text-muted-foreground flex-1">
+              {conflicts.length} {t("conflicts.detectedUpgrade", "conflicts detected")}
+            </span>
+            <ProBadge tier="premium" size="sm" />
           </div>
         </div>
       )}
@@ -183,8 +315,14 @@ export default function TeamMapWidget({
           <div className="flex items-center gap-2">
             <Map className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
             <CardTitle className="text-lg font-semibold">
-              Project Site
+              {t("projects.siteMap", "Project Site")}
             </CardTitle>
+            {isPremium && hasConflicts && (
+              <Badge variant="outline" className="bg-red-50 border-red-300 text-red-700 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400 text-xs">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                {conflicts.length}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
@@ -197,11 +335,20 @@ export default function TeamMapWidget({
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Map className="h-5 w-5 text-cyan-600" />
-                    {projectName} - Site Location
+                    {projectName} - {t("projects.siteLocation", "Site Location")}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 h-full min-h-[500px]">
                   <MapContent height="h-[500px]" />
+                  {isPremium && hasConflicts && (
+                    <div className="mt-4">
+                      <ConflictMarkerLegend
+                        highCount={highCount}
+                        mediumCount={mediumCount}
+                        lowCount={lowCount}
+                      />
+                    </div>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
@@ -219,6 +366,17 @@ export default function TeamMapWidget({
         </div>
 
         <MapContent />
+
+        {/* Conflict legend for premium users */}
+        {isPremium && hasConflicts && (
+          <div className="mt-3">
+            <ConflictMarkerLegend
+              highCount={highCount}
+              mediumCount={mediumCount}
+              lowCount={lowCount}
+            />
+          </div>
+        )}
 
         {/* Quick navigation hint */}
         {projectLocation && (
@@ -238,7 +396,7 @@ export default function TeamMapWidget({
                 );
               }}
             >
-              Get Directions
+              {t("common.getDirections", "Get Directions")}
             </Button>
           </div>
         )}

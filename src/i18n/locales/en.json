@@ -26,7 +26,23 @@
     "pending": "Pending",
     "complete": "Complete",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "getDirections": "Get Directions"
+  },
+  "conflicts": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "conflict": "Conflict",
+    "detectedUpgrade": "conflicts detected - Upgrade to Premium to view",
+    "photoAI": "Photo AI",
+    "blueprint": "Blueprint",
+    "types": {
+      "area": "Area",
+      "cost": "Cost",
+      "materials": "Materials",
+      "facts": "Facts"
+    }
   },
   "nav": {
     "home": "Home",

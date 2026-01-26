@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +50,7 @@ interface DecisionLogPanelProps {
   className?: string;
 }
 
-export function DecisionLogPanel({
+export const DecisionLogPanel = forwardRef<HTMLDivElement, DecisionLogPanelProps>(({
   geminiOutput,
   openaiOutput,
   synthesisResult,
@@ -60,7 +60,7 @@ export function DecisionLogPanel({
   obcDetails,
   isPro = false,
   className,
-}: DecisionLogPanelProps) {
+}, ref) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -499,4 +499,6 @@ export function DecisionLogPanel({
       </Card>
     </Collapsible>
   );
-}
+});
+
+DecisionLogPanel.displayName = "DecisionLogPanel";

@@ -26,7 +26,23 @@
     "pending": "Függőben",
     "complete": "Kész",
     "active": "Aktív",
-    "inactive": "Inaktív"
+    "inactive": "Inaktív",
+    "getDirections": "Útvonaltervezés"
+  },
+  "conflicts": {
+    "high": "Magas",
+    "medium": "Közepes",
+    "low": "Alacsony",
+    "conflict": "Konfliktus",
+    "detectedUpgrade": "konfliktus észlelve - Frissíts Premiumra a megtekintéshez",
+    "photoAI": "Fotó AI",
+    "blueprint": "Tervrajz",
+    "types": {
+      "area": "Terület",
+      "cost": "Költség",
+      "materials": "Anyagok",
+      "facts": "Adatok"
+    }
   },
   "nav": {
     "home": "Főoldal",

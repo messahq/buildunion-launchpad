@@ -31,6 +31,7 @@ import { DecisionLogPanel } from "./DecisionLogPanel";
 import { buildOperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useSingleProjectConflicts } from "@/hooks/useSingleProjectConflicts";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -122,6 +123,14 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     subscription?.tier === "pro" || 
     subscription?.tier === "premium" || 
     subscription?.tier === "enterprise";
+  
+  // Check for Premium (for conflict visualization)
+  const isPremium = isDevOverride || 
+    subscription?.tier === "premium" || 
+    subscription?.tier === "enterprise";
+
+  // Fetch single project conflicts for map visualization
+  const { conflicts: projectConflicts } = useSingleProjectConflicts(projectId);
 
   // Load project data
   useEffect(() => {
@@ -455,6 +464,8 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               <TeamMapWidget
                 projectAddress={project.address}
                 projectName={project.name}
+                conflicts={projectConflicts}
+                isPremium={isPremium}
               />
             ) : (
               <Card className="border-dashed">
