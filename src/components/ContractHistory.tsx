@@ -14,6 +14,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
@@ -41,7 +50,9 @@ import {
   Copy,
   ArrowRight,
   Brain,
-  Info
+  Info,
+  Users,
+  Send
 } from "lucide-react";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
 
@@ -127,6 +138,18 @@ const CONTRACT_TEMPLATES = [
   },
 ];
 
+interface TeamMember {
+  id: string;
+  user_id: string;
+  role: string;
+  profile?: {
+    company_name: string | null;
+    primary_trade: string | null;
+    avatar_url: string | null;
+  };
+  fullName?: string;
+}
+
 const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI, templateItems = [] }: ContractHistoryProps) => {
   const { user } = useAuth();
   const { formatCurrency, config } = useRegionSettings();
@@ -139,6 +162,14 @@ const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI, template
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType | null>(null);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [duplicatingContract, setDuplicatingContract] = useState<Contract | null>(null);
+  
+  // Send to Team state
+  const [showSendToTeamDialog, setShowSendToTeamDialog] = useState(false);
+  const [selectedContractForTeam, setSelectedContractForTeam] = useState<Contract | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+  const [sendingToTeam, setSendingToTeam] = useState(false);
 
 const fetchContracts = async () => {
     if (!user) return;
@@ -169,6 +200,103 @@ const fetchContracts = async () => {
   useEffect(() => {
     fetchContracts();
   }, [user, projectId]);
+
+  // Fetch team members when dialog opens
+  const fetchTeamMembers = async () => {
+    if (!projectId || !user) return;
+    
+    setLoadingTeam(true);
+    try {
+      const { data: members, error } = await supabase
+        .from("project_members")
+        .select("id, user_id, role")
+        .eq("project_id", projectId);
+
+      if (error) throw error;
+
+      // Fetch profiles for each member
+      const membersWithProfiles: TeamMember[] = [];
+      for (const member of members || []) {
+        const { data: profileData } = await supabase
+          .from("bu_profiles")
+          .select("company_name, primary_trade, avatar_url")
+          .eq("user_id", member.user_id)
+          .maybeSingle();
+
+        const { data: userData } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", member.user_id)
+          .maybeSingle();
+
+        membersWithProfiles.push({
+          ...member,
+          profile: profileData || undefined,
+          fullName: userData?.full_name || 'Team Member'
+        });
+      }
+
+      setTeamMembers(membersWithProfiles);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      toast.error("Failed to load team members");
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+
+  const handleOpenSendToTeam = (contract: Contract) => {
+    setSelectedContractForTeam(contract);
+    setSelectedMembers([]);
+    setShowSendToTeamDialog(true);
+    fetchTeamMembers();
+  };
+
+  const handleSendToTeam = async () => {
+    if (!selectedContractForTeam || selectedMembers.length === 0 || !user) return;
+
+    setSendingToTeam(true);
+    try {
+      const contractInfo = `📋 Contract #${selectedContractForTeam.contract_number}\n` +
+        `Project: ${selectedContractForTeam.project_name || 'N/A'}\n` +
+        `Amount: ${formatCurrency(selectedContractForTeam.total_amount || 0)}\n` +
+        `Status: ${selectedContractForTeam.contractor_signature ? 'Awaiting Client Signature' : 'Draft'}\n\n` +
+        `Please review and provide your feedback.`;
+
+      // Send message to each selected member
+      for (const memberId of selectedMembers) {
+        const member = teamMembers.find(m => m.user_id === memberId);
+        if (!member) continue;
+
+        await supabase
+          .from("team_messages")
+          .insert({
+            sender_id: user.id,
+            recipient_id: member.user_id,
+            message: contractInfo,
+            is_read: false
+          });
+      }
+
+      toast.success(`Contract sent to ${selectedMembers.length} team member(s)`);
+      setShowSendToTeamDialog(false);
+      setSelectedContractForTeam(null);
+      setSelectedMembers([]);
+    } catch (error) {
+      console.error("Error sending to team:", error);
+      toast.error("Failed to send contract to team");
+    } finally {
+      setSendingToTeam(false);
+    }
+  };
+
+  const toggleMemberSelection = (userId: string) => {
+    setSelectedMembers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
 
 const handleDelete = async (contractId: string) => {
     setDeletingId(contractId);
@@ -654,6 +782,19 @@ const handleContractGenerated = () => {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2">
+                  {/* Send to Team Button */}
+                  {projectId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenSendToTeam(contract)}
+                      className="gap-1 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 border-cyan-200"
+                      title="Send to Team"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span className="hidden sm:inline">Team</span>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -743,6 +884,94 @@ const handleContractGenerated = () => {
           </Button>
         </div>
       )}
+
+      {/* Send to Team Dialog */}
+      <Dialog open={showSendToTeamDialog} onOpenChange={setShowSendToTeamDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-cyan-500" />
+              Send Contract to Team
+            </DialogTitle>
+            <DialogDescription>
+              Select team members to send this contract for review. They will receive a personalized message.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedContractForTeam && (
+            <div className="bg-slate-50 rounded-lg p-3 border">
+              <p className="font-medium text-sm">#{selectedContractForTeam.contract_number}</p>
+              <p className="text-xs text-muted-foreground">{selectedContractForTeam.project_name}</p>
+              <p className="text-sm font-semibold text-amber-600 mt-1">
+                {formatCurrency(selectedContractForTeam.total_amount || 0)}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {loadingTeam ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : teamMembers.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No team members found</p>
+                <p className="text-xs mt-1">Add team members first to share contracts</p>
+              </div>
+            ) : (
+              teamMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    selectedMembers.includes(member.user_id)
+                      ? "bg-cyan-50 border-cyan-300"
+                      : "bg-white hover:bg-slate-50"
+                  }`}
+                  onClick={() => toggleMemberSelection(member.user_id)}
+                >
+                  <Checkbox
+                    checked={selectedMembers.includes(member.user_id)}
+                    onCheckedChange={() => toggleMemberSelection(member.user_id)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{member.fullName}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {member.role}
+                      </Badge>
+                      {member.profile?.company_name && (
+                        <span className="truncate">{member.profile.company_name}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowSendToTeamDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendToTeam}
+              disabled={selectedMembers.length === 0 || sendingToTeam}
+              className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+            >
+              {sendingToTeam ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              Send to {selectedMembers.length > 0 ? `${selectedMembers.length} Member(s)` : 'Team'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
