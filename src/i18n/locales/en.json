@@ -35,7 +35,11 @@
     "setProjectDates": "Set Project Timeline",
     "datesRequired": "Both dates are required to lock baseline",
     "projectTimeline": "Project Timeline",
-    "notSet": "Not set"
+    "notSet": "Not set",
+    "datesSaved": "Project dates saved",
+    "startDate": "Project Start",
+    "endDate": "Target End",
+    "pickDate": "Pick date"
   },
   "timeline": {
     "ganttView": "Gantt Timeline",

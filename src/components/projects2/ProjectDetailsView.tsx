@@ -230,6 +230,9 @@ interface ProjectSummaryData {
   baseline_snapshot: OperationalTruth | null;
   baseline_locked_at: string | null;
   baseline_locked_by: string | null;
+  // Project timeline dates
+  project_start_date: string | null;
+  project_end_date: string | null;
 }
 
 interface TaskWithBudget {
@@ -778,6 +781,16 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           currentBaseline={baselineState}
           isOwner={isOwner}
           onBaselineLocked={handleBaselineLocked}
+          initialStartDate={summary.project_start_date}
+          initialEndDate={summary.project_end_date}
+          onDatesChanged={(startDate, endDate) => {
+            // Update local summary state
+            setSummary(prev => prev ? {
+              ...prev,
+              project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+              project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+            } : null);
+          }}
         />
       )}
 

@@ -533,7 +533,9 @@ export type Database = {
           mode: string
           notes: string | null
           photo_estimate: Json | null
+          project_end_date: string | null
           project_id: string | null
+          project_start_date: string | null
           status: string
           template_items: Json | null
           total_cost: number | null
@@ -564,7 +566,9 @@ export type Database = {
           mode?: string
           notes?: string | null
           photo_estimate?: Json | null
+          project_end_date?: string | null
           project_id?: string | null
+          project_start_date?: string | null
           status?: string
           template_items?: Json | null
           total_cost?: number | null
@@ -595,7 +599,9 @@ export type Database = {
           mode?: string
           notes?: string | null
           photo_estimate?: Json | null
+          project_end_date?: string | null
           project_id?: string | null
+          project_start_date?: string | null
           status?: string
           template_items?: Json | null
           total_cost?: number | null

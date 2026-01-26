@@ -67,6 +67,10 @@ interface BaselineLockCardProps {
   };
   isOwner: boolean;
   onBaselineLocked: (baseline: OperationalTruth, lockedAt: string) => void;
+  // Initial dates from database
+  initialStartDate?: string | null;
+  initialEndDate?: string | null;
+  onDatesChanged?: (startDate: Date | null, endDate: Date | null) => void;
 }
 
 const BaselineLockCard = ({
@@ -76,6 +80,9 @@ const BaselineLockCard = ({
   currentBaseline,
   isOwner,
   onBaselineLocked,
+  initialStartDate,
+  initialEndDate,
+  onDatesChanged,
 }: BaselineLockCardProps) => {
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -91,9 +98,63 @@ const BaselineLockCard = ({
   const [editedArea, setEditedArea] = useState<number | null>(operationalTruth.confirmedArea);
   const [editMode, setEditMode] = useState(false);
   
-  // Project timeline dates
-  const [projectStartDate, setProjectStartDate] = useState<Date | undefined>(() => addDays(new Date(), 1));
-  const [projectEndDate, setProjectEndDate] = useState<Date | undefined>(() => addDays(new Date(), 30));
+  // Project timeline dates - initialize from database or default
+  const [projectStartDate, setProjectStartDate] = useState<Date | undefined>(() => 
+    initialStartDate ? new Date(initialStartDate) : undefined
+  );
+  const [projectEndDate, setProjectEndDate] = useState<Date | undefined>(() => 
+    initialEndDate ? new Date(initialEndDate) : undefined
+  );
+  const [savingDates, setSavingDates] = useState(false);
+
+  // Update dates when initial values change
+  useEffect(() => {
+    if (initialStartDate) {
+      setProjectStartDate(new Date(initialStartDate));
+    }
+    if (initialEndDate) {
+      setProjectEndDate(new Date(initialEndDate));
+    }
+  }, [initialStartDate, initialEndDate]);
+
+  // Save dates to database when changed
+  const saveDatesToDatabase = async (startDate?: Date, endDate?: Date) => {
+    setSavingDates(true);
+    try {
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({
+          project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+          project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+        })
+        .eq("id", summaryId);
+
+      if (error) throw error;
+      
+      onDatesChanged?.(startDate || null, endDate || null);
+      toast.success(t("baseline.datesSaved", "Project dates saved"));
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save dates");
+    } finally {
+      setSavingDates(false);
+    }
+  };
+
+  // Handle start date change with auto-save
+  const handleStartDateChange = (date: Date | undefined) => {
+    setProjectStartDate(date);
+    if (date && projectEndDate) {
+      saveDatesToDatabase(date, projectEndDate);
+    }
+  };
+
+  // Handle end date change with auto-save
+  const handleEndDateChange = (date: Date | undefined) => {
+    setProjectEndDate(date);
+    if (projectStartDate && date) {
+      saveDatesToDatabase(projectStartDate, date);
+    }
+  };
 
   const isLocked = !!currentBaseline.lockedAt;
   const baselineData = currentBaseline.snapshot;
@@ -534,7 +595,7 @@ const BaselineLockCard = ({
                                 <Calendar
                                   mode="single"
                                   selected={projectStartDate}
-                                  onSelect={setProjectStartDate}
+                                  onSelect={handleStartDateChange}
                                   initialFocus
                                   className="p-3 pointer-events-auto"
                                 />
@@ -562,7 +623,7 @@ const BaselineLockCard = ({
                                 <Calendar
                                   mode="single"
                                   selected={projectEndDate}
-                                  onSelect={setProjectEndDate}
+                                  onSelect={handleEndDateChange}
                                   disabled={(date) => projectStartDate ? date < projectStartDate : false}
                                   initialFocus
                                   className="p-3 pointer-events-auto"
@@ -748,7 +809,7 @@ const BaselineLockCard = ({
                       <Calendar
                         mode="single"
                         selected={projectStartDate}
-                        onSelect={setProjectStartDate}
+                        onSelect={handleStartDateChange}
                         initialFocus
                         className="p-3 pointer-events-auto"
                       />
@@ -777,7 +838,7 @@ const BaselineLockCard = ({
                       <Calendar
                         mode="single"
                         selected={projectEndDate}
-                        onSelect={setProjectEndDate}
+                        onSelect={handleEndDateChange}
                         disabled={(date) => projectStartDate ? date < projectStartDate : false}
                         initialFocus
                         className="p-3 pointer-events-auto"
