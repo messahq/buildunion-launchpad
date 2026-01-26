@@ -1186,9 +1186,12 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
                       <div className="space-y-2">
                         <Label>Total Amount ($)</Label>
                         <Input
-                          type="number"
-                          value={contract.totalAmount}
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="Enter amount"
+                          value={contract.totalAmount === 0 ? "" : contract.totalAmount}
                           onChange={(e) => updateContract("totalAmount", parseFloat(e.target.value) || 0)}
+                          className="[appearance:textfield]"
                         />
                         {collectedData && (collectedData.calculatorResults.length > 0 || collectedData.templateItems.length > 0) && contract.totalAmount > 0 && (
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
