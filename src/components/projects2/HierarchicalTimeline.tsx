@@ -989,11 +989,7 @@ const HierarchicalTimeline = ({
                                 const newStatus = checked ? "completed" : "pending";
                                 if (onTaskStatusChange) {
                                   onTaskStatusChange(task.id, newStatus);
-                                  toast.success(
-                                    checked 
-                                      ? t("timeline.taskChecked", "Task completed!") 
-                                      : t("timeline.taskUnchecked", "Task unchecked")
-                                  );
+                                  // Toast moved to parent for proper state sync feedback
                                 }
                               };
 

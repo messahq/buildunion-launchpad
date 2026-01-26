@@ -420,7 +420,33 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           assignee_avatar: memberProfiles[task.assigned_to]?.avatar_url,
         }));
 
-        setTasks(enrichedTasks);
+        // If no tasks from DB, use demo tasks so they persist in state
+        if (enrichedTasks.length === 0 && user?.id) {
+          // Get materials from summary for demo task generation
+          const { data: summaryForMaterials } = await supabase
+            .from("project_summaries")
+            .select("photo_estimate, ai_workflow_config")
+            .eq("project_id", projectId)
+            .maybeSingle();
+          
+          const aiMaterials = 
+            (summaryForMaterials?.ai_workflow_config as any)?.aiAnalysis?.materials ||
+            (summaryForMaterials?.photo_estimate as any)?.materials ||
+            [];
+          
+          const demoTasks = generateDemoTasks(projectId, user.id, aiMaterials);
+          setTasks(demoTasks);
+          
+          // Calculate total budget for demo tasks
+          const total = demoTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+          setTotalTaskBudget(total);
+        } else {
+          setTasks(enrichedTasks);
+          
+          // Calculate total budget
+          const total = enrichedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+          setTotalTaskBudget(total);
+        }
         
         // Calculate total budget
         const total = enrichedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
@@ -454,7 +480,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId]);
+  }, [projectId, user?.id]);
 
   // Handle budget update callback
   const handleBudgetUpdate = useCallback((taskId: string, unitPrice: number, quantity: number) => {
@@ -763,10 +789,9 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
       {/* Main Project Timeline Bar - THE CLOCKWORK */}
       {(() => {
-        // Calculate task-based progress for the main timeline
-        const activeTasks = tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || []);
-        const completedCount = activeTasks.filter(t => t.status === "completed").length;
-        const totalCount = activeTasks.length;
+        // Calculate task-based progress for the main timeline - tasks now always includes demo tasks when DB is empty
+        const completedCount = tasks.filter(t => t.status === "completed").length;
+        const totalCount = tasks.length;
         const taskProgressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
         
         return (
@@ -853,7 +878,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           </div>
         ) : timelineView === "myTasks" && user ? (
           <TeamMemberTimeline
-            tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+            tasks={tasks}
             currentUserId={user.id}
             currentUserName={members.find(m => m.user_id === user.id)?.full_name || user.email?.split('@')[0] || "You"}
             projectId={projectId}
@@ -866,7 +891,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           />
         ) : timelineView === "hierarchical" ? (
           <HierarchicalTimeline
-            tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+            tasks={tasks}
             materials={aiAnalysis?.materials || [
               { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
               { item: "Underlayment", quantity: 1400, unit: "sq ft" },
@@ -906,6 +931,13 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               setTasks(prev => prev.map(t => 
                 t.id === taskId ? { ...t, status: newStatus } : t
               ));
+              
+              // Show success toast after state update
+              toast.success(
+                newStatus === "completed" 
+                  ? t("timeline.taskChecked", "Task completed!") 
+                  : t("timeline.taskUnchecked", "Task unchecked")
+              );
               
               // Recalculate total budget
               const updatedTasks = tasks.map(t => 
@@ -977,7 +1009,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           />
         ) : (
           <TaskGanttTimeline
-            tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+            tasks={tasks}
             isOwner={isOwner}
             projectId={projectId}
             teamMembers={members.map(m => ({
