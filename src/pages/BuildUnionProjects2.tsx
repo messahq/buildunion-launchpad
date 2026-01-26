@@ -1,7 +1,7 @@
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench } from "lucide-react";
+import { ArrowLeft, Wrench, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const BuildUnionProjects2 = () => {
@@ -38,8 +38,12 @@ const BuildUnionProjects2 = () => {
           </div>
 
           {/* Empty container for future content */}
-          <div className="min-h-[400px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex items-center justify-center">
-            <p className="text-muted-foreground">Content coming soon...</p>
+          <div className="min-h-[400px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+            <p className="text-muted-foreground">No projects yet</p>
+            <Button className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
+              <Plus className="h-4 w-4" />
+              New Project
+            </Button>
           </div>
         </div>
       </section>
