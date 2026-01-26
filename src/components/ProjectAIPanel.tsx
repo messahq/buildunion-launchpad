@@ -10,10 +10,11 @@ import {
   BookOpen, Zap, Crown, Users, Mail, FileText, Calculator,
   FileCheck, CheckCircle2, XCircle, Camera, ClipboardList, 
   ScrollText, DollarSign, Contact, Image, Download, Eye, FolderOpen,
-  ExternalLink, ChevronLeft, ChevronRight, X
+  ExternalLink, ChevronLeft, ChevronRight, X, Calendar
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ProjectTimelineView from "./ProjectTimelineView";
 
 type VerificationStatus = "verified" | "not-verified" | "gemini-only" | "openai-only" | "error";
 
@@ -60,6 +61,9 @@ interface ProjectContract {
   contract_number: string;
   status: string;
   total_amount?: number | null;
+  start_date?: string | null;
+  estimated_end_date?: string | null;
+  created_at?: string;
 }
 
 interface TeamMember {
@@ -75,6 +79,8 @@ interface Task {
   title: string;
   status: string;
   assigned_to: string;
+  due_date?: string | null;
+  priority?: string;
 }
 
 type BlueprintTab = "ai" | "documents" | "facts" | "requirements" | "team" | "contracts";
@@ -776,6 +782,17 @@ const ProjectAIPanel = ({
                   Templates applied from Quick Mode workflow
                 </p>
               </div>
+            )}
+
+            {/* Project Timeline View - Contracts, Tasks, Weather Integration */}
+            {(projectContracts.length > 0 || tasks.length > 0 || projectAddress) && (
+              <ProjectTimelineView
+                projectId={projectId}
+                projectAddress={projectAddress}
+                tasks={tasks}
+                contracts={projectContracts}
+                daysToShow={14}
+              />
             )}
 
             {/* Quick Actions */}
