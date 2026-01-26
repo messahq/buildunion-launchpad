@@ -148,13 +148,23 @@ export function determineWorkflow(answers: ProjectAnswers): WorkflowRecommendati
 // MAIN QUESTIONNAIRE COMPONENT
 // ============================================
 
+interface TierConfig {
+  isPremium: boolean;
+  maxImages: number;
+  analysisDepth: string;
+  features: string[];
+}
+
 interface ProjectQuestionnaireProps {
   onComplete: (answers: ProjectAnswers, workflow: WorkflowRecommendation) => void;
   onCancel: () => void;
   saving?: boolean;
+  tierConfig?: TierConfig;
 }
 
-export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: ProjectQuestionnaireProps) {
+export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tierConfig }: ProjectQuestionnaireProps) {
+  const maxImages = tierConfig?.maxImages || 2;
+  
   const [answers, setAnswers] = useState<ProjectAnswers>({
     name: "",
     size: null,
@@ -176,10 +186,20 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: P
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
+    // Check tier limit
+    const currentCount = answers.images.length;
+    const remaining = maxImages - currentCount;
+    
+    if (remaining <= 0) {
+      return; // Already at limit
+    }
+    
+    const filesToAdd = files.slice(0, remaining);
+    
     // Create previews
-    const newPreviews = files.map(file => URL.createObjectURL(file));
+    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
-    updateAnswers({ images: [...answers.images, ...files] });
+    updateAnswers({ images: [...answers.images, ...filesToAdd] });
   };
 
   const removeImage = (index: number) => {
@@ -306,8 +326,18 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: P
 
         {/* Image Upload */}
         <div className="space-y-2">
-          <Label className="text-foreground">Photos (optional)</Label>
-          <p className="text-xs text-muted-foreground">Upload site photos for AI analysis</p>
+          <div className="flex items-center justify-between">
+            <Label className="text-foreground">Photos for AI Analysis</Label>
+            <span className="text-xs text-muted-foreground">
+              {answers.images.length}/{maxImages} photos
+              {tierConfig?.isPremium && (
+                <span className="ml-1 text-primary">({tierConfig.analysisDepth} analysis)</span>
+              )}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Upload site photos - AI will analyze and estimate materials automatically
+          </p>
           
           <div className="flex flex-wrap gap-2">
             {imagePreviews.map((preview, index) => (
@@ -323,20 +353,22 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: P
               </div>
             ))}
             
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-20 h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Camera className="h-5 w-5" />
-              <span className="text-xs">Add</span>
-            </button>
+            {answers.images.length < maxImages && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-20 h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Camera className="h-5 w-5" />
+                <span className="text-xs">Add</span>
+              </button>
+            )}
           </div>
           
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,application/pdf"
             multiple
             className="hidden"
             onChange={handleImageUpload}
@@ -361,7 +393,7 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: P
         {/* AI Recommendation Preview */}
         {recommendation && (
           <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-4">
+            <CardContent className="p-4 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -376,6 +408,14 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving }: P
                   </div>
                 </div>
               </div>
+              
+              {/* AI Analysis Info */}
+              {answers.images.length > 0 && (
+                <div className="text-xs text-primary bg-primary/10 rounded-lg p-2">
+                  <strong>AI will analyze:</strong> {answers.images.length} photo(s) for area measurement, surface detection, and material estimation
+                  {tierConfig?.isPremium && " with deep structural analysis"}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

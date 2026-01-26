@@ -2,15 +2,18 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2 } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
   WorkflowRecommendation 
 } from "@/components/projects2/ProjectQuestionnaire";
+import AIAnalysisProgress from "@/components/projects2/AIAnalysisProgress";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useProjectAIAnalysis } from "@/hooks/useProjectAIAnalysis";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface SavedProject {
   id: string;
@@ -25,10 +28,26 @@ interface SavedProject {
 const BuildUnionProjects2 = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { subscription } = useSubscription();
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [projects, setProjects] = useState<SavedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [pendingWorkType, setPendingWorkType] = useState<string | null>(null);
+  const [pendingDescription, setPendingDescription] = useState<string>("");
+
+  const { 
+    analyzeProject, 
+    analyzing, 
+    progress, 
+    currentStep, 
+    result: analysisResult,
+    error: analysisError,
+    reset: resetAnalysis,
+    tierConfig
+  } = useProjectAIAnalysis();
 
   // Load projects from database
   useEffect(() => {
@@ -57,6 +76,34 @@ const BuildUnionProjects2 = () => {
     loadProjects();
   }, [user, authLoading]);
 
+  // Trigger AI analysis after project creation
+  useEffect(() => {
+    if (createdProjectId && pendingImages.length > 0 && !analyzing) {
+      // Start AI analysis
+      analyzeProject({
+        projectId: createdProjectId,
+        images: pendingImages,
+        description: pendingDescription,
+        workType: pendingWorkType,
+      }).then((result) => {
+        if (result) {
+          toast.success("AI analysis complete!", {
+            description: `Detected ${result.estimate.area || "unknown"} ${result.estimate.areaUnit} with ${result.estimate.materials.length} materials`,
+            action: {
+              label: "View Project",
+              onClick: () => navigate(`/buildunion/project/${createdProjectId}`),
+            },
+          });
+        }
+        // Reset pending state
+        setPendingImages([]);
+        setPendingWorkType(null);
+        setPendingDescription("");
+        setCreatedProjectId(null);
+      });
+    }
+  }, [createdProjectId, pendingImages, analyzing]);
+
   const handleQuestionnaireComplete = async (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
     if (!user) {
       toast.error("Please sign in to create a project");
@@ -64,6 +111,7 @@ const BuildUnionProjects2 = () => {
     }
 
     setSaving(true);
+    resetAnalysis();
 
     try {
       // Map work type to trade
@@ -128,7 +176,7 @@ const BuildUnionProjects2 = () => {
           user_id: user.id,
           project_id: projectData.id,
           mode: workflow.teamEnabled ? "team" : "solo",
-          status: "draft",
+          status: answers.images.length > 0 ? "analyzing" : "draft",
           // Store workflow metadata in calculator_results as JSON
           calculator_results: [{
             type: "workflow_config",
@@ -161,11 +209,21 @@ const BuildUnionProjects2 = () => {
       }, ...prev]);
 
       setShowQuestionnaire(false);
-      toast.success(`Project "${answers.name}" created!`, {
-        description: uploadedImagePaths.length > 0 
-          ? `${uploadedImagePaths.length} photo(s) uploaded for AI analysis`
-          : undefined
-      });
+
+      // If images were uploaded, trigger AI analysis
+      if (answers.images.length > 0) {
+        toast.success(`Project "${answers.name}" created!`, {
+          description: "Starting AI analysis of uploaded photos..."
+        });
+        
+        // Store pending data for AI analysis
+        setCreatedProjectId(projectData.id);
+        setPendingImages(answers.images);
+        setPendingWorkType(answers.workType);
+        setPendingDescription(answers.description);
+      } else {
+        toast.success(`Project "${answers.name}" created!`);
+      }
 
     } catch (error) {
       console.error("Error saving project:", error);
@@ -173,14 +231,6 @@ const BuildUnionProjects2 = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  // Extract workflow info from description for display
-  const getWorkflowMode = (description: string | null): string => {
-    if (!description) return "standard";
-    if (description.includes("quick workflow")) return "quick";
-    if (description.includes("full workflow")) return "full";
-    return "standard";
   };
 
   return (
@@ -216,15 +266,36 @@ const BuildUnionProjects2 = () => {
                     <p className="text-muted-foreground">Smart workflow based on your needs</p>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => setShowQuestionnaire(true)}
-                  disabled={!user}
-                  className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Project
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* Tier indicator */}
+                  {subscription.tier !== "free" && (
+                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400">
+                      {subscription.tier.toUpperCase()} • Up to {tierConfig.maxImages} photos
+                    </span>
+                  )}
+                  <Button 
+                    onClick={() => setShowQuestionnaire(true)}
+                    disabled={!user}
+                    className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Project
+                  </Button>
+                </div>
               </div>
+
+              {/* AI Analysis Progress (if running) */}
+              {(analyzing || analysisResult || analysisError) && (
+                <div className="mb-6">
+                  <AIAnalysisProgress
+                    progress={progress}
+                    currentStep={currentStep}
+                    analyzing={analyzing}
+                    error={analysisError}
+                    tier={subscription.tier}
+                  />
+                </div>
+              )}
 
               {/* Auth check */}
               {!authLoading && !user && (
@@ -283,7 +354,13 @@ const BuildUnionProjects2 = () => {
                                 {project.address || "No location"} • {project.trade?.replace("_", " ") || "General"}
                               </p>
                             </div>
-                            <div className="text-right">
+                            <div className="flex items-center gap-2">
+                              {project.id === createdProjectId && analyzing && (
+                                <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                                  <Sparkles className="h-3 w-3 animate-pulse" />
+                                  Analyzing...
+                                </span>
+                              )}
                               <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 capitalize">
                                 {project.status}
                               </span>
@@ -307,6 +384,7 @@ const BuildUnionProjects2 = () => {
               onComplete={handleQuestionnaireComplete}
               onCancel={() => setShowQuestionnaire(false)}
               saving={saving}
+              tierConfig={tierConfig}
             />
           )}
         </div>
