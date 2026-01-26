@@ -1072,10 +1072,11 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                       <Label>Unit Price ($)</Label>
                       <Input
                         type="number"
-                        value={item.unitPrice}
+                        value={item.unitPrice === 0 ? "" : item.unitPrice}
                         onChange={(e) =>
                           updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
                         }
+                        placeholder="Enter price"
                       />
                     </div>
                   </div>
@@ -1171,10 +1172,11 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                             <Label>Unit Price ($)</Label>
                             <Input
                               type="number"
-                              value={item.unitPrice}
+                              value={item.unitPrice === 0 ? "" : item.unitPrice}
                               onChange={(e) =>
                                 updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
                               }
+                              placeholder="Enter price"
                             />
                           </div>
                         </div>
