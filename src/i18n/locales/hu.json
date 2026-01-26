@@ -35,7 +35,11 @@
     "setProjectDates": "Projekt időtartam beállítása",
     "datesRequired": "Mindkét dátum megadása szükséges a rögzítéshez",
     "projectTimeline": "Projekt Időtartam",
-    "notSet": "Nincs beállítva"
+    "notSet": "Nincs beállítva",
+    "datesSaved": "Projekt dátumok elmentve",
+    "startDate": "Projekt kezdete",
+    "endDate": "Célzott befejezés",
+    "pickDate": "Válassz dátumot"
   },
   "timeline": {
     "ganttView": "Gantt Idősor",
