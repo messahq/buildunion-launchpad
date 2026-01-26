@@ -77,12 +77,21 @@ const BuildUnionProjects2 = () => {
     loadProjects();
   }, [user, authLoading]);
 
-  // AI-determined workflow state
+  // AI-determined workflow state with full analysis data
   const [aiWorkflowRecommendation, setAiWorkflowRecommendation] = useState<{
     mode: "quick" | "standard" | "full";
     reason: string;
     projectSize: "small" | "medium" | "large";
     features: string[];
+    // Analysis details for transparency
+    analysisDetails: {
+      area: number | null;
+      areaUnit: string;
+      materials: Array<{ item: string; quantity: number; unit: string }>;
+      hasBlueprint: boolean;
+      surfaceType: string;
+      roomType: string;
+    };
   } | null>(null);
 
   // Determine workflow from AI analysis results (now uses AI-determined projectSize)
@@ -91,7 +100,7 @@ const BuildUnionProjects2 = () => {
 
     const { projectSize, projectSizeReason } = result;
     const area = result.estimate.area || 0;
-    const materialsCount = result.estimate.materials.length;
+    const materials = result.estimate.materials || [];
     const hasBlueprint = !!result.blueprintAnalysis?.extractedText;
     const isPremium = tier === "premium" || tier === "enterprise";
     const isPro = tier === "pro" || isPremium;
@@ -121,7 +130,17 @@ const BuildUnionProjects2 = () => {
       features = ["Photo Estimate", "Quote", "Contract"];
     }
 
-    return { mode, reason, projectSize, features };
+    // Include analysis details for UI transparency
+    const analysisDetails = {
+      area: result.estimate.area,
+      areaUnit: result.estimate.areaUnit || "sq ft",
+      materials: materials.slice(0, 6).map(m => ({ item: m.item, quantity: m.quantity, unit: m.unit })),
+      hasBlueprint,
+      surfaceType: result.estimate.surfaceType || "unknown",
+      roomType: result.estimate.roomType || "unknown",
+    };
+
+    return { mode, reason, projectSize, features, analysisDetails };
   };
 
   // Trigger AI analysis after project creation
@@ -411,14 +430,73 @@ const BuildUnionProjects2 = () => {
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                       <Sparkles className="h-5 w-5 text-primary-foreground" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">AI Recommendation</h3>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">AI Recommendation</h3>
+                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                          aiWorkflowRecommendation.projectSize === "large" 
+                            ? "bg-blue-500/20 text-blue-600" 
+                            : aiWorkflowRecommendation.projectSize === "medium"
+                            ? "bg-cyan-500/20 text-cyan-600"
+                            : "bg-amber-500/20 text-amber-600"
+                        }`}>
+                          {aiWorkflowRecommendation.projectSize.toUpperCase()} PROJECT
+                        </span>
+                      </div>
                       <p className="text-sm text-muted-foreground">{aiWorkflowRecommendation.reason}</p>
                     </div>
                   </div>
 
+                  {/* AI Detection Results */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 rounded-lg bg-muted/30">
+                    {/* Area Detection */}
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">📐 Detected Area</div>
+                      {aiWorkflowRecommendation.analysisDetails.area ? (
+                        <div className="text-lg font-semibold text-foreground">
+                          {aiWorkflowRecommendation.analysisDetails.area.toLocaleString()} {aiWorkflowRecommendation.analysisDetails.areaUnit}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Not detected</div>
+                      )}
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {aiWorkflowRecommendation.analysisDetails.surfaceType !== "unknown" && (
+                          <span>Surface: {aiWorkflowRecommendation.analysisDetails.surfaceType}</span>
+                        )}
+                        {aiWorkflowRecommendation.analysisDetails.roomType !== "unknown" && (
+                          <span className="ml-2">• {aiWorkflowRecommendation.analysisDetails.roomType}</span>
+                        )}
+                      </div>
+                      {aiWorkflowRecommendation.analysisDetails.hasBlueprint && (
+                        <div className="text-xs text-primary mt-1">📄 Blueprint data included</div>
+                      )}
+                    </div>
+
+                    {/* Materials List */}
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">🧱 Materials ({aiWorkflowRecommendation.analysisDetails.materials.length})</div>
+                      {aiWorkflowRecommendation.analysisDetails.materials.length > 0 ? (
+                        <div className="space-y-1">
+                          {aiWorkflowRecommendation.analysisDetails.materials.slice(0, 4).map((m, i) => (
+                            <div key={i} className="text-xs flex justify-between">
+                              <span className="text-foreground truncate max-w-[140px]">{m.item}</span>
+                              <span className="text-muted-foreground">{m.quantity} {m.unit}</span>
+                            </div>
+                          ))}
+                          {aiWorkflowRecommendation.analysisDetails.materials.length > 4 && (
+                            <div className="text-xs text-muted-foreground">
+                              +{aiWorkflowRecommendation.analysisDetails.materials.length - 4} more...
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">No materials detected</div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Workflow Options */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <button
                       onClick={() => handleWorkflowSelect("quick")}
                       className={`p-4 rounded-lg border-2 text-left transition-all ${
