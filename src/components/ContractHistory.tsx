@@ -468,14 +468,16 @@ const handleContractGenerated = () => {
       </div>
 
       {/* Empty State */}
-      {contracts.length === 0 ? (
+      {contracts.length === 0 && (
         <div className="text-center py-8 text-muted-foreground bg-slate-50 rounded-lg border border-dashed">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p className="font-medium">No contracts yet</p>
           <p className="text-sm mt-1">Click "New Contract" to create your first one</p>
         </div>
-      ) : (
-        /* Contract List */
+      )}
+
+      {/* Contract List */}
+      {contracts.length > 0 && (
         <div className="space-y-3">
           {contracts.map((contract, index) => {
             // Calculate contract status for progress tracker
