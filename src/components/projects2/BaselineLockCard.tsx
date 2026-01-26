@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +40,7 @@ import {
   ChevronDown,
   ChevronUp,
   Save,
+  CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -83,11 +90,14 @@ const BaselineLockCard = ({
   // Editable values
   const [editedArea, setEditedArea] = useState<number | null>(operationalTruth.confirmedArea);
   const [editMode, setEditMode] = useState(false);
+  
+  // Project timeline dates
+  const [projectStartDate, setProjectStartDate] = useState<Date | undefined>(() => addDays(new Date(), 1));
+  const [projectEndDate, setProjectEndDate] = useState<Date | undefined>(() => addDays(new Date(), 30));
 
   const isLocked = !!currentBaseline.lockedAt;
   const baselineData = currentBaseline.snapshot;
 
-  // Fetch version history
   useEffect(() => {
     const fetchVersions = async () => {
       if (!historyOpen) return;
@@ -619,6 +629,72 @@ const BaselineLockCard = ({
                 "Lock the current 8 pillars as a baseline before work begins. This allows tracking changes throughout the project."
               )}
             </p>
+
+            {/* Date Pickers for Project Timeline */}
+            <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/30 border border-dashed">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarIcon className="h-3 w-3" />
+                  {t("baseline.startDate", "Project Start")}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-9",
+                        !projectStartDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {projectStartDate ? format(projectStartDate, "MMM d, yyyy") : t("baseline.pickDate", "Pick date")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={projectStartDate}
+                      onSelect={setProjectStartDate}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarIcon className="h-3 w-3" />
+                  {t("baseline.endDate", "Target End")}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-9",
+                        !projectEndDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {projectEndDate ? format(projectEndDate, "MMM d, yyyy") : t("baseline.pickDate", "Pick date")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={projectEndDate}
+                      onSelect={setProjectEndDate}
+                      disabled={(date) => projectStartDate ? date < projectStartDate : false}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
 
             {/* Preview of current values */}
             <div className="grid grid-cols-4 gap-2 text-xs">

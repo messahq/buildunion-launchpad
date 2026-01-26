@@ -47,6 +47,120 @@ import { generateProjectReport, ConflictData } from "@/lib/pdfGenerator";
 import { ProBadge } from "@/components/ui/pro-badge";
 
 // ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+// Generate demo tasks for the 4 material categories
+function generateDemoTasks(
+  projectId: string,
+  userId: string,
+  materials: Array<{ item: string; quantity: number; unit: string }>
+): TaskWithBudget[] {
+  const now = new Date();
+  const addDays = (date: Date, days: number) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result.toISOString();
+  };
+
+  // Default material categories if none provided
+  const defaultMaterials = [
+    { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
+    { item: "Underlayment", quantity: 1400, unit: "sq ft" },
+    { item: "Baseboard Trim", quantity: 280, unit: "linear ft" },
+    { item: "Adhesive & Supplies", quantity: 15, unit: "units" }
+  ];
+
+  const materialsToUse = materials.length > 0 ? materials : defaultMaterials;
+
+  const demoTasks: TaskWithBudget[] = [];
+  let taskCounter = 0;
+
+  // Generate tasks for each material with 3 phases: Preparation, Execution, Verification
+  materialsToUse.forEach((material, materialIndex) => {
+    const materialName = material.item.split(" ")[0];
+    const baseDay = materialIndex * 5; // Stagger each material by 5 days
+
+    // Phase 1: Preparation (Order & Deliver)
+    demoTasks.push({
+      id: `demo-${++taskCounter}`,
+      project_id: projectId,
+      assigned_to: userId,
+      assigned_by: userId,
+      title: `Order ${material.item}`,
+      description: `Order ${material.quantity} ${material.unit} of ${material.item}`,
+      priority: "high",
+      status: materialIndex === 0 ? "completed" : "pending",
+      due_date: addDays(now, baseDay),
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      unit_price: materialIndex === 0 ? 3.5 : 2.0,
+      quantity: material.quantity,
+      total_cost: (materialIndex === 0 ? 3.5 : 2.0) * material.quantity,
+      assignee_name: "Project Owner",
+    });
+
+    demoTasks.push({
+      id: `demo-${++taskCounter}`,
+      project_id: projectId,
+      assigned_to: userId,
+      assigned_by: userId,
+      title: `Deliver ${materialName} to site`,
+      description: `Receive delivery of ${material.item}`,
+      priority: "medium",
+      status: materialIndex === 0 ? "completed" : "pending",
+      due_date: addDays(now, baseDay + 2),
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      unit_price: 50,
+      quantity: 1,
+      total_cost: 50,
+      assignee_name: "Project Owner",
+    });
+
+    // Phase 2: Execution (Install)
+    demoTasks.push({
+      id: `demo-${++taskCounter}`,
+      project_id: projectId,
+      assigned_to: userId,
+      assigned_by: userId,
+      title: `Install ${material.item}`,
+      description: `Install ${material.quantity} ${material.unit} of ${material.item}`,
+      priority: "high",
+      status: materialIndex === 0 ? "in_progress" : "pending",
+      due_date: addDays(now, baseDay + 4),
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      unit_price: 1.5,
+      quantity: material.quantity,
+      total_cost: 1.5 * material.quantity,
+      assignee_name: "Project Owner",
+    });
+
+    // Phase 3: Verification (Inspect)
+    demoTasks.push({
+      id: `demo-${++taskCounter}`,
+      project_id: projectId,
+      assigned_to: userId,
+      assigned_by: userId,
+      title: `Verify ${materialName} installation`,
+      description: `Final inspection of ${material.item} work`,
+      priority: "medium",
+      status: "pending",
+      due_date: addDays(now, baseDay + 6),
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      unit_price: 75,
+      quantity: 1,
+      total_cost: 75,
+      assignee_name: "Project Owner",
+    });
+  });
+
+  return demoTasks;
+}
+
+// ============================================
 // TYPE DEFINITIONS
 // ============================================
 
@@ -881,99 +995,95 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             />
           )}
 
-          {/* Timeline View Toggle */}
-          {tasks.length > 0 && (
-            <div className="flex items-center justify-between gap-2">
-              {/* My Tasks indicator for team members */}
-              {!isOwner && user && (
-                <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50/50 dark:bg-cyan-950/30">
-                  <Users className="h-3 w-3 mr-1" />
-                  {t("timeline.teamMemberView", "Team Member View")}
-                </Badge>
-              )}
-              
-              <div className="flex items-center gap-2 ml-auto">
-                <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
-                <div className="flex border rounded-md overflow-hidden">
-                  {/* My Tasks view for team members */}
-                  {!isOwner && user && (
-                    <Button
-                      variant={timelineView === "myTasks" ? "default" : "ghost"}
-                      size="sm"
-                      className="rounded-none h-8 text-xs"
-                      onClick={() => setTimelineView("myTasks")}
-                    >
-                      {t("timeline.myTasks", "My Tasks")}
-                    </Button>
-                  )}
+          {/* Timeline View Toggle - Always show */}
+          <div className="flex items-center justify-between gap-2">
+            {/* My Tasks indicator for team members */}
+            {!isOwner && user && (
+              <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50/50 dark:bg-cyan-950/30">
+                <Users className="h-3 w-3 mr-1" />
+                {t("timeline.teamMemberView", "Team Member View")}
+              </Badge>
+            )}
+            
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
+              <div className="flex border rounded-md overflow-hidden">
+                {/* My Tasks view for team members */}
+                {!isOwner && user && (
                   <Button
-                    variant={timelineView === "hierarchical" ? "default" : "ghost"}
+                    variant={timelineView === "myTasks" ? "default" : "ghost"}
                     size="sm"
                     className="rounded-none h-8 text-xs"
-                    onClick={() => setTimelineView("hierarchical")}
+                    onClick={() => setTimelineView("myTasks")}
                   >
-                    {t("timeline.phases", "Phases")}
+                    {t("timeline.myTasks", "My Tasks")}
                   </Button>
-                  <Button
-                    variant={timelineView === "gantt" ? "default" : "ghost"}
-                    size="sm"
-                    className="rounded-none h-8 text-xs"
-                    onClick={() => setTimelineView("gantt")}
-                  >
-                    {t("timeline.gantt", "Gantt")}
-                  </Button>
-                </div>
+                )}
+                <Button
+                  variant={timelineView === "hierarchical" ? "default" : "ghost"}
+                  size="sm"
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setTimelineView("hierarchical")}
+                >
+                  {t("timeline.phases", "Phases")}
+                </Button>
+                <Button
+                  variant={timelineView === "gantt" ? "default" : "ghost"}
+                  size="sm"
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setTimelineView("gantt")}
+                >
+                  {t("timeline.gantt", "Gantt")}
+                </Button>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Timeline Content */}
+          {/* Timeline Content - Always show HierarchicalTimeline with demo data if no tasks */}
           {tasksLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
             </div>
-          ) : tasks.length > 0 ? (
-            timelineView === "myTasks" && user ? (
-              <TeamMemberTimeline
-                tasks={tasks}
-                currentUserId={user.id}
-                currentUserName={members.find(m => m.user_id === user.id)?.full_name || user.email?.split('@')[0] || "You"}
-                projectId={projectId}
-                onTaskComplete={handleTaskComplete}
-                onVerificationSubmit={(taskId, photoUrl) => {
-                  console.log("Verification submitted:", taskId, photoUrl);
-                  handleTaskComplete(taskId);
-                }}
-                globalVerificationRate={globalVerificationRate}
-              />
-            ) : timelineView === "hierarchical" ? (
-              <HierarchicalTimeline
-                tasks={tasks}
-                materials={aiAnalysis?.materials}
-                weatherForecast={weatherForecast}
-                projectAddress={project.address || undefined}
-                teamLocations={teamMembersForMap.map(m => ({
-                  userId: m.user_id,
-                  name: m.full_name,
-                  isOnSite: m.status === "on_site",
-                  lastSeen: undefined,
-                }))}
-                onTaskClick={(task) => console.log("Task clicked:", task)}
-                onAutoShift={(shiftedTasks) => {
-                  console.log("Auto-shift tasks:", shiftedTasks);
-                }}
-              />
-            ) : (
-              <TaskGanttTimeline
-                tasks={tasks}
-                isOwner={isOwner}
-                onBudgetUpdate={handleBudgetUpdate}
-              />
-            )
-          ) : (
-            <ActiveProjectTimeline 
+          ) : timelineView === "myTasks" && user ? (
+            <TeamMemberTimeline
+              tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+              currentUserId={user.id}
+              currentUserName={members.find(m => m.user_id === user.id)?.full_name || user.email?.split('@')[0] || "You"}
               projectId={projectId}
-              projectName={project.name}
+              onTaskComplete={handleTaskComplete}
+              onVerificationSubmit={(taskId, photoUrl) => {
+                console.log("Verification submitted:", taskId, photoUrl);
+                handleTaskComplete(taskId);
+              }}
+              globalVerificationRate={globalVerificationRate}
+            />
+          ) : timelineView === "hierarchical" ? (
+            <HierarchicalTimeline
+              tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+              materials={aiAnalysis?.materials || [
+                { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
+                { item: "Underlayment", quantity: 1400, unit: "sq ft" },
+                { item: "Baseboard Trim", quantity: 280, unit: "linear ft" },
+                { item: "Adhesive & Supplies", quantity: 15, unit: "units" }
+              ]}
+              weatherForecast={weatherForecast}
+              projectAddress={project.address || undefined}
+              teamLocations={teamMembersForMap.map(m => ({
+                userId: m.user_id,
+                name: m.full_name,
+                isOnSite: m.status === "on_site",
+                lastSeen: undefined,
+              }))}
+              onTaskClick={(task) => console.log("Task clicked:", task)}
+              onAutoShift={(shiftedTasks) => {
+                console.log("Auto-shift tasks:", shiftedTasks);
+              }}
+            />
+          ) : (
+            <TaskGanttTimeline
+              tasks={tasks.length > 0 ? tasks : generateDemoTasks(projectId, user?.id || "", aiAnalysis?.materials || [])}
+              isOwner={isOwner}
+              onBudgetUpdate={handleBudgetUpdate}
             />
           )}
         </TabsContent>
