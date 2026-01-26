@@ -377,5 +377,11 @@
       "materials": "AI-Detected Materials",
       "aiAnalysis": "Dual-Engine AI Analysis"
     }
+  },
+  "filterQuestions": {
+    "projectTimeline": "Project Timeline",
+    "projectStart": "Project Start",
+    "targetEnd": "Target End",
+    "pickDate": "Pick a date"
   }
 }
