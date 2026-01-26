@@ -68,6 +68,17 @@ export function useWeather(options: UseWeatherOptions = {}) {
     if (!enabled) return;
     if (!location && (!lat || !lon)) return;
     
+    // Validate location string - skip obvious placeholders
+    if (location) {
+      const invalidLocations = ['test', 'example', 'placeholder', 'n/a', 'na', 'tbd', 'xxx', ''];
+      const normalizedLocation = location.toString().toLowerCase().trim();
+      
+      if (invalidLocations.includes(normalizedLocation) || normalizedLocation.length < 3) {
+        setError("Please provide a valid project address for weather data");
+        return;
+      }
+    }
+    
     setLoading(true);
     setError(null);
     
@@ -77,7 +88,14 @@ export function useWeather(options: UseWeatherOptions = {}) {
       });
       
       if (fnError) throw fnError;
-      if (result.error) throw new Error(result.error);
+      if (result.error) {
+        // Handle specific error codes gracefully
+        if (result.code === 'INVALID_LOCATION' || result.code === 'LOCATION_NOT_FOUND') {
+          setError(result.message || "Invalid location");
+          return;
+        }
+        throw new Error(result.message || result.error);
+      }
       
       setData(result);
     } catch (err: any) {
