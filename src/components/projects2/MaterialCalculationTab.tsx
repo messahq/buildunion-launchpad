@@ -299,16 +299,16 @@ export function MaterialCalculationTab({
       const totalTax = gstAmount + pstAmount + hstAmount;
       const grandTotalWithTax = subtotal + totalTax;
 
-      // Build cost breakdown items HTML
+      // Build cost breakdown items HTML - Compact
       const buildItemsHtml = (items: CostItem[], colorClass: string) => {
         if (items.length === 0) return '';
         return items.map(item => `
           <tr>
-            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0;">${item.item}</td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity.toLocaleString()}</td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.unit}</td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatCurrency(item.unitPrice)}</td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: ${colorClass};">${formatCurrency(item.totalPrice)}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 9px;">${item.item}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 9px;">${item.quantity.toLocaleString()}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 9px;">${item.unit}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 9px;">${formatCurrency(item.unitPrice)}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; font-size: 9px; color: ${colorClass};">${formatCurrency(item.totalPrice)}</td>
           </tr>
         `).join('');
       };
@@ -320,61 +320,57 @@ export function MaterialCalculationTab({
           <meta charset="utf-8">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.4; font-size: 11px; }
-            @page { margin: 10mm; }
-            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.3; font-size: 10px; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            td, th { word-wrap: break-word; overflow: hidden; }
           </style>
         </head>
         <body>
-          <div style="max-width: 100%; margin: 0 auto; padding: 20px;">
-            <!-- Header with Company Branding -->
-            <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 12px; margin-bottom: 32px;">
+          <div style="width: 100%; padding: 15px;">
+            <!-- Header with Company Branding - Compact -->
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
                   ${companyLogoUrl ? `
-                    <img src="${companyLogoUrl}" alt="Company Logo" style="height: 56px; width: auto; max-width: 140px; object-fit: contain; background: white; padding: 6px; border-radius: 8px;" />
+                    <img src="${companyLogoUrl}" alt="Logo" style="height: 40px; width: auto; max-width: 100px; object-fit: contain; background: white; padding: 4px; border-radius: 6px;" />
                   ` : ''}
                   <div>
-                    <h1 style="font-size: ${companyName ? '20px' : '28px'}; font-weight: 700; margin-bottom: 4px;">${companyName || 'Cost Breakdown'}</h1>
-                    ${companyName ? `<p style="font-size: 14px; opacity: 0.9;">Cost Breakdown</p>` : ''}
-                    <p style="font-size: 14px; opacity: 0.9; margin-top: 4px;">${projectName}</p>
-                    ${projectAddress ? `<p style="font-size: 12px; opacity: 0.7; margin-top: 4px;">📍 ${projectAddress}</p>` : ''}
+                    <h1 style="font-size: 16px; font-weight: 700; margin-bottom: 2px;">${companyName || 'Cost Breakdown'}</h1>
+                    ${companyName ? `<p style="font-size: 11px; opacity: 0.9;">Cost Breakdown</p>` : ''}
+                    <p style="font-size: 11px; opacity: 0.8; margin-top: 2px;">${projectName}</p>
+                    ${projectAddress ? `<p style="font-size: 9px; opacity: 0.7; margin-top: 2px;">📍 ${projectAddress}</p>` : ''}
                   </div>
                 </div>
-                <div style="text-align: right;">
-                  <p style="font-size: 12px; opacity: 0.8;">Generated: ${currentDate}</p>
-                  <div style="margin-top: 8px; background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 6px; display: inline-block;">
-                    <span style="font-size: 11px; opacity: 0.9;">Tax Region: </span>
-                    <span style="font-size: 12px; font-weight: 600;">${taxInfo.provinceName} (${taxInfo.provinceCode})</span>
+                <div style="text-align: right; font-size: 9px;">
+                  <p style="opacity: 0.8;">${currentDate}</p>
+                  <div style="margin-top: 4px; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; display: inline-block;">
+                    <span style="font-weight: 600;">${taxInfo.provinceCode}</span>
                   </div>
+                  ${(companyPhone || companyEmail) ? `
+                    <p style="margin-top: 6px; opacity: 0.8;">
+                      ${companyPhone ? `📞 ${companyPhone}` : ''}
+                    </p>
+                  ` : ''}
                 </div>
               </div>
-              
-              <!-- Company Contact Info Bar -->
-              ${(companyPhone || companyEmail || companyWebsite) ? `
-                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; gap: 24px; flex-wrap: wrap; font-size: 12px; opacity: 0.9;">
-                  ${companyPhone ? `<span>📞 ${companyPhone}</span>` : ''}
-                  ${companyEmail ? `<span>✉️ ${companyEmail}</span>` : ''}
-                  ${companyWebsite ? `<span>🌐 ${companyWebsite}</span>` : ''}
-                </div>
-              ` : ''}
+            </div>
 
-            <!-- Materials Section -->
+            <!-- Materials Section - Compact -->
             ${materialItems.length > 0 ? `
-              <div style="margin-bottom: 24px;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                  <div style="width: 24px; height: 24px; background: #3b82f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">📦</div>
-                  <h2 style="font-size: 18px; font-weight: 600; color: #1e40af;">Materials</h2>
-                  <span style="margin-left: auto; font-weight: 600; color: #1e40af;">${formatCurrency(materialsTotal)}</span>
+              <div style="margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                  <span style="font-size: 12px;">📦</span>
+                  <h2 style="font-size: 12px; font-weight: 600; color: #1e40af;">Materials</h2>
+                  <span style="margin-left: auto; font-weight: 600; color: #1e40af; font-size: 11px;">${formatCurrency(materialsTotal)}</span>
                 </div>
-                <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <table style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden;">
                   <thead>
                     <tr style="background: #f8fafc;">
-                      <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
-                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Qty</th>
-                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit</th>
-                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit Price</th>
-                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Total</th>
+                      <th style="padding: 6px 8px; text-align: left; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
+                      <th style="padding: 6px 8px; text-align: center; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 50px;">Qty</th>
+                      <th style="padding: 6px 8px; text-align: center; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 40px;">Unit</th>
+                      <th style="padding: 6px 8px; text-align: right; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 70px;">Price</th>
+                      <th style="padding: 6px 8px; text-align: right; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 80px;">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -384,22 +380,22 @@ export function MaterialCalculationTab({
               </div>
             ` : ''}
 
-            <!-- Labor Section -->
+            <!-- Labor Section - Compact -->
             ${laborItems.length > 0 ? `
-              <div style="margin-bottom: 24px;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                  <div style="width: 24px; height: 24px; background: #f59e0b; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">🔨</div>
-                  <h2 style="font-size: 18px; font-weight: 600; color: #b45309;">Labor</h2>
-                  <span style="margin-left: auto; font-weight: 600; color: #b45309;">${formatCurrency(laborTotal)}</span>
+              <div style="margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                  <span style="font-size: 12px;">🔨</span>
+                  <h2 style="font-size: 12px; font-weight: 600; color: #b45309;">Labor</h2>
+                  <span style="margin-left: auto; font-weight: 600; color: #b45309; font-size: 11px;">${formatCurrency(laborTotal)}</span>
                 </div>
-                <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <table style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden;">
                   <thead>
                     <tr style="background: #f8fafc;">
-                      <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
-                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Qty</th>
-                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit</th>
-                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit Price</th>
-                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Total</th>
+                      <th style="padding: 6px 8px; text-align: left; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
+                      <th style="padding: 6px 8px; text-align: center; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 50px;">Qty</th>
+                      <th style="padding: 6px 8px; text-align: center; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 40px;">Unit</th>
+                      <th style="padding: 6px 8px; text-align: right; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 70px;">Price</th>
+                      <th style="padding: 6px 8px; text-align: right; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 80px;">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -409,22 +405,22 @@ export function MaterialCalculationTab({
               </div>
             ` : ''}
 
-            <!-- Other Section -->
+            <!-- Other Section - Compact -->
             ${otherItems.length > 0 ? `
-              <div style="margin-bottom: 24px;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                  <div style="width: 24px; height: 24px; background: #8b5cf6; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">⋯</div>
-                  <h2 style="font-size: 18px; font-weight: 600; color: #7c3aed;">Other</h2>
-                  <span style="margin-left: auto; font-weight: 600; color: #7c3aed;">${formatCurrency(otherTotal)}</span>
+              <div style="margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                  <span style="font-size: 12px;">⋯</span>
+                  <h2 style="font-size: 12px; font-weight: 600; color: #7c3aed;">Other</h2>
+                  <span style="margin-left: auto; font-weight: 600; color: #7c3aed; font-size: 11px;">${formatCurrency(otherTotal)}</span>
                 </div>
-                <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <table style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden;">
                   <thead>
                     <tr style="background: #f8fafc;">
-                      <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
-                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Qty</th>
-                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit</th>
-                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit Price</th>
-                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Total</th>
+                      <th style="padding: 6px 8px; text-align: left; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
+                      <th style="padding: 6px 8px; text-align: center; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 50px;">Qty</th>
+                      <th style="padding: 6px 8px; text-align: center; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 40px;">Unit</th>
+                      <th style="padding: 6px 8px; text-align: right; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 70px;">Price</th>
+                      <th style="padding: 6px 8px; text-align: right; font-size: 9px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 80px;">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -434,127 +430,122 @@ export function MaterialCalculationTab({
               </div>
             ` : ''}
 
-            <!-- Summary & Grand Total with Tax - Light neutral styling -->
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 24px;">
+            <!-- Summary & Grand Total with Tax - Beige styling -->
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 6px; padding: 14px; margin-top: 16px;">
               <!-- Subtotals -->
-              <div style="margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
-                  <span style="color: #64748b; font-size: 12px;">📦 Materials</span>
-                  <span style="font-weight: 500; font-size: 12px;">${formatCurrency(materialsTotal)}</span>
+              <div style="margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 10px;">
+                  <span style="color: #78716c;">📦 Materials</span>
+                  <span style="font-weight: 500;">${formatCurrency(materialsTotal)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
-                  <span style="color: #64748b; font-size: 12px;">🔨 Labor</span>
-                  <span style="font-weight: 500; font-size: 12px;">${formatCurrency(laborTotal)}</span>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 10px;">
+                  <span style="color: #78716c;">🔨 Labor</span>
+                  <span style="font-weight: 500;">${formatCurrency(laborTotal)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
-                  <span style="color: #64748b; font-size: 12px;">⋯ Other</span>
-                  <span style="font-weight: 500; font-size: 12px;">${formatCurrency(otherTotal)}</span>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 10px;">
+                  <span style="color: #78716c;">⋯ Other</span>
+                  <span style="font-weight: 500;">${formatCurrency(otherTotal)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 600; font-size: 13px;">
-                  <span style="color: #1e293b;">Subtotal</span>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; font-weight: 600; font-size: 11px;">
+                  <span style="color: #78350f;">Subtotal</span>
                   <span>${formatCurrency(subtotal)}</span>
                 </div>
               </div>
 
               <!-- Tax Section -->
-              <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
-                <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 6px;">📋 Tax (${taxInfo.provinceName})</div>
+              <div style="background: rgba(255,255,255,0.6); border-radius: 4px; padding: 8px; margin-bottom: 10px;">
+                <div style="font-size: 9px; font-weight: 600; color: #78350f; margin-bottom: 4px;">📋 Tax (${taxInfo.provinceName})</div>
                 ${taxInfo.hst > 0 ? `
-                  <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px;">
-                    <span style="color: #64748b;">HST (${(taxInfo.hst * 100).toFixed(0)}%)</span>
+                  <div style="display: flex; justify-content: space-between; padding: 2px 0; font-size: 9px;">
+                    <span style="color: #78716c;">HST (${(taxInfo.hst * 100).toFixed(0)}%)</span>
                     <span style="font-weight: 500;">${formatCurrency(hstAmount)}</span>
                   </div>
                 ` : ''}
                 ${taxInfo.gst > 0 ? `
-                  <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px;">
-                    <span style="color: #64748b;">GST (${(taxInfo.gst * 100).toFixed(0)}%)</span>
+                  <div style="display: flex; justify-content: space-between; padding: 2px 0; font-size: 9px;">
+                    <span style="color: #78716c;">GST (${(taxInfo.gst * 100).toFixed(0)}%)</span>
                     <span style="font-weight: 500;">${formatCurrency(gstAmount)}</span>
                   </div>
                 ` : ''}
                 ${taxInfo.pst > 0 ? `
-                  <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px;">
-                    <span style="color: #64748b;">${taxInfo.provinceCode === 'QC' ? 'QST' : 'PST'} (${(taxInfo.pst * 100).toFixed(taxInfo.provinceCode === 'QC' ? 3 : 0)}%)</span>
+                  <div style="display: flex; justify-content: space-between; padding: 2px 0; font-size: 9px;">
+                    <span style="color: #78716c;">${taxInfo.provinceCode === 'QC' ? 'QST' : 'PST'} (${(taxInfo.pst * 100).toFixed(taxInfo.provinceCode === 'QC' ? 3 : 0)}%)</span>
                     <span style="font-weight: 500;">${formatCurrency(pstAmount)}</span>
                   </div>
                 ` : ''}
-                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-top: 1px dashed #e2e8f0; margin-top: 4px; font-size: 11px;">
-                  <span style="color: #475569; font-weight: 600;">Total Tax</span>
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px dashed rgba(0,0,0,0.15); margin-top: 3px; font-size: 9px;">
+                  <span style="color: #78350f; font-weight: 600;">Total Tax</span>
                   <span style="font-weight: 600;">${formatCurrency(totalTax)}</span>
                 </div>
               </div>
 
               <!-- Grand Total -->
-              <div style="border-top: 2px solid #1e293b; padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="border-top: 2px solid #b45309; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <span style="font-size: 16px; font-weight: 700; color: #1e293b;">Grand Total</span>
-                  <span style="font-size: 10px; color: #64748b; display: block;">(incl. tax)</span>
+                  <span style="font-size: 14px; font-weight: 700; color: #78350f;">Grand Total</span>
+                  <span style="font-size: 8px; color: #78716c; display: block;">(incl. tax)</span>
                 </div>
-                <span style="font-size: 22px; font-weight: 800; color: #1e293b;">${formatCurrency(grandTotalWithTax)}</span>
+                <span style="font-size: 18px; font-weight: 800; color: #78350f;">${formatCurrency(grandTotalWithTax)}</span>
               </div>
             </div>
 
-            <!-- Client Signature Section -->
-            <div style="margin-top: 32px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px;">
-              <h3 style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 16px;">Client Approval</h3>
-              <p style="font-size: 11px; color: #64748b; margin-bottom: 20px;">
-                By signing below, the client acknowledges and approves this cost breakdown for the project: <strong>${projectName}</strong>
+            <!-- Client Signature Section - Compact -->
+            <div style="margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px;">
+              <h3 style="font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Client Approval</h3>
+              <p style="font-size: 8px; color: #64748b; margin-bottom: 12px;">
+                By signing below, client approves this cost breakdown for: <strong>${projectName}</strong>
               </p>
               
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <div style="display: flex; gap: 20px;">
                 <!-- Client Signature -->
-                <div>
-                  <p style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Client Signature</p>
-                  <div style="border-bottom: 2px solid #1e293b; height: 50px; margin-bottom: 8px;"></div>
-                  <div style="display: flex; justify-content: space-between;">
+                <div style="flex: 1;">
+                  <p style="font-size: 8px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Client Signature</p>
+                  <div style="border-bottom: 1px solid #1e293b; height: 35px; margin-bottom: 4px;"></div>
+                  <div style="display: flex; justify-content: space-between; font-size: 8px;">
                     <div>
-                      <p style="font-size: 10px; color: #64748b;">Name:</p>
-                      <div style="border-bottom: 1px solid #94a3b8; width: 140px; height: 18px;"></div>
+                      <span style="color: #64748b;">Name: </span>
+                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 80px;"></span>
                     </div>
                     <div>
-                      <p style="font-size: 10px; color: #64748b;">Date:</p>
-                      <div style="border-bottom: 1px solid #94a3b8; width: 80px; height: 18px;"></div>
+                      <span style="color: #64748b;">Date: </span>
+                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 50px;"></span>
                     </div>
                   </div>
                 </div>
                 
                 <!-- Contractor Signature -->
-                <div>
-                  <p style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Contractor Signature</p>
-                  <div style="border-bottom: 2px solid #1e293b; height: 50px; margin-bottom: 8px;"></div>
-                  <div style="display: flex; justify-content: space-between;">
+                <div style="flex: 1;">
+                  <p style="font-size: 8px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Contractor Signature</p>
+                  <div style="border-bottom: 1px solid #1e293b; height: 35px; margin-bottom: 4px;"></div>
+                  <div style="display: flex; justify-content: space-between; font-size: 8px;">
                     <div>
-                      <p style="font-size: 10px; color: #64748b;">Name:</p>
-                      <div style="border-bottom: 1px solid #94a3b8; width: 140px; height: 18px;"></div>
+                      <span style="color: #64748b;">Name: </span>
+                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 80px;"></span>
                     </div>
                     <div>
-                      <p style="font-size: 10px; color: #64748b;">Date:</p>
-                      <div style="border-bottom: 1px solid #94a3b8; width: 80px; height: 18px;"></div>
+                      <span style="color: #64748b;">Date: </span>
+                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 50px;"></span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Footer with Company Branding -->
-            <div style="margin-top: 24px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 16px; border-radius: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- Footer with Company Branding - Compact -->
+            <div style="margin-top: 16px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 12px; border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
                   ${companyLogoUrl ? `
-                    <img src="${companyLogoUrl}" alt="Company Logo" style="height: 32px; width: auto; max-width: 80px; object-fit: contain; background: white; padding: 3px; border-radius: 4px;" />
+                    <img src="${companyLogoUrl}" alt="Logo" style="height: 24px; width: auto; max-width: 60px; object-fit: contain; background: white; padding: 2px; border-radius: 3px;" />
                   ` : ''}
                   <div>
-                    <p style="font-weight: 600; font-size: 12px;">${companyName || 'BuildUnion'}</p>
-                    ${(companyPhone || companyEmail) ? `
-                      <p style="font-size: 10px; opacity: 0.8; margin-top: 1px;">
-                        ${companyPhone ? `📞 ${companyPhone}` : ''} ${companyPhone && companyEmail ? ' • ' : ''} ${companyEmail ? `✉️ ${companyEmail}` : ''}
-                      </p>
-                    ` : ''}
-                    ${companyWebsite ? `<p style="font-size: 10px; opacity: 0.8;">🌐 ${companyWebsite}</p>` : ''}
+                    <p style="font-weight: 600; font-size: 10px;">${companyName || 'BuildUnion'}</p>
+                    ${companyPhone ? `<p style="font-size: 8px; opacity: 0.8;">📞 ${companyPhone}</p>` : ''}
                   </div>
                 </div>
-                <div style="text-align: right; font-size: 10px; opacity: 0.8;">
+                <div style="text-align: right; font-size: 8px; opacity: 0.8;">
                   <p style="font-style: italic;">Licensed & Insured</p>
-                  <p style="margin-top: 2px;">Generated: ${currentDate}</p>
+                  <p>${currentDate}</p>
                 </div>
               </div>
             </div>
