@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  ArrowLeft, FileText, Calendar, Loader2, Plus, Trash2,
+  ArrowLeft, ArrowRight, FileText, Calendar, Loader2, Plus, Trash2,
   AlertCircle, Sparkles,
   Pencil, X, Check,
   Users, User, Image, FileCheck, Briefcase, MapPin,
@@ -1538,15 +1538,37 @@ const BuildUnionProjectDetails = () => {
                             onDocumentsChange={setDocuments}
                             isOwner={project.user_id === user.id}
                           />
+                          {/* Continue to Operational Truth */}
+                          <div className="flex justify-end mt-6">
+                            <Button
+                              onClick={() => setBlueprintTab("ai")}
+                              className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+                            >
+                              Continue
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       )}
 
                       {blueprintTab === "requirements" && (
-                        <RequirementsTab 
-                          project={project}
-                          onProjectUpdate={setProject}
-                          TRADE_LABELS={TRADE_LABELS}
-                        />
+                        <div className="p-4">
+                          <RequirementsTab 
+                            project={project}
+                            onProjectUpdate={setProject}
+                            TRADE_LABELS={TRADE_LABELS}
+                          />
+                          {/* Continue to Operational Truth */}
+                          <div className="flex justify-end mt-6">
+                            <Button
+                              onClick={() => setBlueprintTab("ai")}
+                              className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+                            >
+                              Continue
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
                       )}
 
                       {blueprintTab === "team" && (
