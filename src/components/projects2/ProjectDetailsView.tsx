@@ -1073,6 +1073,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             })()}
             projectTotal={totalTaskBudget}
             projectName={project.name}
+            projectAddress={project.address || ""}
           />
         </TabsContent>
 

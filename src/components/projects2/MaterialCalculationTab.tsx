@@ -46,16 +46,74 @@ interface MaterialCalculationTabProps {
   labor: TaskBasedEntry[];
   projectTotal: number;
   projectName?: string;
+  projectAddress?: string;
   companyName?: string;
   onCostsChange?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[] }) => void;
   currency?: string;
 }
+
+// Canadian provincial tax rates
+const getCanadianTaxRates = (address: string): { gst: number; pst: number; hst: number; provinceName: string; provinceCode: string } => {
+  const addressLower = address.toLowerCase();
+  
+  // Ontario - HST 13%
+  if (addressLower.includes('ontario') || addressLower.includes(', on') || addressLower.includes('toronto') || 
+      addressLower.includes('ottawa') || addressLower.includes('mississauga') || addressLower.includes('hamilton') ||
+      addressLower.includes('brampton') || addressLower.includes('london') || addressLower.includes('markham')) {
+    return { gst: 0, pst: 0, hst: 0.13, provinceName: 'Ontario', provinceCode: 'ON' };
+  }
+  // British Columbia - GST 5% + PST 7%
+  if (addressLower.includes('british columbia') || addressLower.includes(', bc') || addressLower.includes('vancouver') || 
+      addressLower.includes('victoria') || addressLower.includes('surrey') || addressLower.includes('burnaby')) {
+    return { gst: 0.05, pst: 0.07, hst: 0, provinceName: 'British Columbia', provinceCode: 'BC' };
+  }
+  // Alberta - GST 5% only
+  if (addressLower.includes('alberta') || addressLower.includes(', ab') || addressLower.includes('calgary') || 
+      addressLower.includes('edmonton') || addressLower.includes('red deer')) {
+    return { gst: 0.05, pst: 0, hst: 0, provinceName: 'Alberta', provinceCode: 'AB' };
+  }
+  // Quebec - GST 5% + QST 9.975%
+  if (addressLower.includes('quebec') || addressLower.includes('québec') || addressLower.includes(', qc') || 
+      addressLower.includes('montreal') || addressLower.includes('montréal') || addressLower.includes('laval')) {
+    return { gst: 0.05, pst: 0.09975, hst: 0, provinceName: 'Quebec', provinceCode: 'QC' };
+  }
+  // Manitoba - GST 5% + PST 7%
+  if (addressLower.includes('manitoba') || addressLower.includes(', mb') || addressLower.includes('winnipeg')) {
+    return { gst: 0.05, pst: 0.07, hst: 0, provinceName: 'Manitoba', provinceCode: 'MB' };
+  }
+  // Saskatchewan - GST 5% + PST 6%
+  if (addressLower.includes('saskatchewan') || addressLower.includes(', sk') || addressLower.includes('saskatoon') || 
+      addressLower.includes('regina')) {
+    return { gst: 0.05, pst: 0.06, hst: 0, provinceName: 'Saskatchewan', provinceCode: 'SK' };
+  }
+  // Nova Scotia - HST 15%
+  if (addressLower.includes('nova scotia') || addressLower.includes(', ns') || addressLower.includes('halifax')) {
+    return { gst: 0, pst: 0, hst: 0.15, provinceName: 'Nova Scotia', provinceCode: 'NS' };
+  }
+  // New Brunswick - HST 15%
+  if (addressLower.includes('new brunswick') || addressLower.includes(', nb') || addressLower.includes('moncton') || 
+      addressLower.includes('saint john')) {
+    return { gst: 0, pst: 0, hst: 0.15, provinceName: 'New Brunswick', provinceCode: 'NB' };
+  }
+  // Newfoundland and Labrador - HST 15%
+  if (addressLower.includes('newfoundland') || addressLower.includes('labrador') || addressLower.includes(', nl') || 
+      addressLower.includes("st. john's")) {
+    return { gst: 0, pst: 0, hst: 0.15, provinceName: 'Newfoundland and Labrador', provinceCode: 'NL' };
+  }
+  // Prince Edward Island - HST 15%
+  if (addressLower.includes('prince edward island') || addressLower.includes(', pe') || addressLower.includes('charlottetown')) {
+    return { gst: 0, pst: 0, hst: 0.15, provinceName: 'Prince Edward Island', provinceCode: 'PE' };
+  }
+  // Default to Ontario HST
+  return { gst: 0, pst: 0, hst: 0.13, provinceName: 'Ontario', provinceCode: 'ON' };
+};
 
 export function MaterialCalculationTab({
   materials: initialMaterials,
   labor: initialLabor,
   projectTotal,
   projectName = "Project",
+  projectAddress = "",
   companyName,
   onCostsChange,
   currency = "CAD"
@@ -206,6 +264,32 @@ export function MaterialCalculationTab({
         day: "numeric"
       });
 
+      // Get tax rates based on project address
+      const taxInfo = getCanadianTaxRates(projectAddress);
+      const subtotal = grandTotal;
+      
+      // Calculate taxes
+      let gstAmount = 0;
+      let pstAmount = 0;
+      let hstAmount = 0;
+      let taxLabel = '';
+      
+      if (taxInfo.hst > 0) {
+        hstAmount = subtotal * taxInfo.hst;
+        taxLabel = `HST (${(taxInfo.hst * 100).toFixed(0)}%)`;
+      } else {
+        if (taxInfo.gst > 0) {
+          gstAmount = subtotal * taxInfo.gst;
+        }
+        if (taxInfo.pst > 0) {
+          pstAmount = subtotal * taxInfo.pst;
+          taxLabel = taxInfo.provinceCode === 'QC' ? 'QST' : 'PST';
+        }
+      }
+      
+      const totalTax = gstAmount + pstAmount + hstAmount;
+      const grandTotalWithTax = subtotal + totalTax;
+
       // Build cost breakdown items HTML
       const buildItemsHtml = (items: CostItem[], colorClass: string) => {
         if (items.length === 0) return '';
@@ -234,14 +318,19 @@ export function MaterialCalculationTab({
           <div style="max-width: 800px; margin: 0 auto; padding: 40px;">
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 12px; margin-bottom: 32px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                   <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">Cost Breakdown</h1>
                   <p style="font-size: 14px; opacity: 0.9;">${projectName}</p>
+                  ${projectAddress ? `<p style="font-size: 12px; opacity: 0.7; margin-top: 4px;">📍 ${projectAddress}</p>` : ''}
                 </div>
                 <div style="text-align: right;">
                   ${companyName ? `<p style="font-size: 16px; font-weight: 600;">${companyName}</p>` : ''}
                   <p style="font-size: 12px; opacity: 0.8;">Generated: ${currentDate}</p>
+                  <div style="margin-top: 8px; background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 6px; display: inline-block;">
+                    <span style="font-size: 11px; opacity: 0.9;">Tax Region: </span>
+                    <span style="font-size: 12px; font-weight: 600;">${taxInfo.provinceName} (${taxInfo.provinceCode})</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -321,9 +410,10 @@ export function MaterialCalculationTab({
               </div>
             ` : ''}
 
-            <!-- Summary & Grand Total -->
+            <!-- Summary & Grand Total with Tax -->
             <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 24px; margin-top: 32px;">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Subtotals -->
+              <div style="margin-bottom: 16px;">
                 <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
                   <span style="color: #78716c;">📦 Materials</span>
                   <span style="font-weight: 600;">${formatCurrency(materialsTotal)}</span>
@@ -332,20 +422,59 @@ export function MaterialCalculationTab({
                   <span style="color: #78716c;">🔨 Labor</span>
                   <span style="font-weight: 600;">${formatCurrency(laborTotal)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
                   <span style="color: #78716c;">⋯ Other</span>
                   <span style="font-weight: 600;">${formatCurrency(otherTotal)}</span>
                 </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.15); font-weight: 600;">
+                  <span style="color: #78350f;">Subtotal</span>
+                  <span>${formatCurrency(subtotal)}</span>
+                </div>
               </div>
+
+              <!-- Tax Section -->
+              <div style="background: rgba(255,255,255,0.5); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <span style="font-size: 12px; font-weight: 600; color: #78350f;">📋 Tax (${taxInfo.provinceName})</span>
+                </div>
+                ${taxInfo.hst > 0 ? `
+                  <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                    <span style="color: #78716c; font-size: 13px;">HST (${(taxInfo.hst * 100).toFixed(0)}%)</span>
+                    <span style="font-weight: 500;">${formatCurrency(hstAmount)}</span>
+                  </div>
+                ` : ''}
+                ${taxInfo.gst > 0 ? `
+                  <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                    <span style="color: #78716c; font-size: 13px;">GST (${(taxInfo.gst * 100).toFixed(0)}%)</span>
+                    <span style="font-weight: 500;">${formatCurrency(gstAmount)}</span>
+                  </div>
+                ` : ''}
+                ${taxInfo.pst > 0 ? `
+                  <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                    <span style="color: #78716c; font-size: 13px;">${taxInfo.provinceCode === 'QC' ? 'QST' : 'PST'} (${(taxInfo.pst * 100).toFixed(taxInfo.provinceCode === 'QC' ? 3 : 0)}%)</span>
+                    <span style="font-weight: 500;">${formatCurrency(pstAmount)}</span>
+                  </div>
+                ` : ''}
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px dashed rgba(0,0,0,0.2); margin-top: 4px;">
+                  <span style="color: #78350f; font-weight: 600; font-size: 13px;">Total Tax</span>
+                  <span style="font-weight: 600;">${formatCurrency(totalTax)}</span>
+                </div>
+              </div>
+
+              <!-- Grand Total -->
               <div style="border-top: 2px solid #b45309; padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 20px; font-weight: 700; color: #78350f;">Grand Total</span>
-                <span style="font-size: 28px; font-weight: 800; color: #78350f;">${formatCurrency(grandTotal)}</span>
+                <div>
+                  <span style="font-size: 20px; font-weight: 700; color: #78350f;">Grand Total</span>
+                  <span style="font-size: 11px; color: #78716c; display: block;">(incl. tax)</span>
+                </div>
+                <span style="font-size: 28px; font-weight: 800; color: #78350f;">${formatCurrency(grandTotalWithTax)}</span>
               </div>
             </div>
 
             <!-- Footer -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px;">
               <p>This is a cost breakdown generated for project estimation purposes.</p>
+              <p style="margin-top: 4px;">Tax rates applicable for ${taxInfo.provinceName}, Canada</p>
               <p style="margin-top: 4px;">Generated on ${currentDate}</p>
             </div>
           </div>
