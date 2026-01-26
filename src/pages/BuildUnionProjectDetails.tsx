@@ -1510,23 +1510,47 @@ const BuildUnionProjectDetails = () => {
                     {/* Tab Content */}
                     <div className="min-h-[500px]">
                       {blueprintTab === "ai" && (
-                        <ProjectAIPanel
-                          projectId={project.id}
-                          projectName={project.name}
-                          userId={user.id}
-                          documents={documents}
-                          siteImages={project.site_images || []}
-                          projectSummary={projectSummary}
-                          projectContracts={projectContracts.map(c => ({
-                            id: c.id,
-                            contract_number: c.contract_number,
-                            status: c.status,
-                            total_amount: c.total_amount
-                          }))}
-                          isOwner={project.user_id === user.id}
-                          isPremium={isPremium}
-                          onTabChange={(tab) => setBlueprintTab(tab)}
-                        />
+                        <div className="p-4">
+                          {/* Back button */}
+                          <div className="flex justify-start mb-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBlueprintTab("contracts")}
+                              className="gap-2 text-slate-600 hover:text-slate-900"
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                              Back
+                            </Button>
+                          </div>
+                          <ProjectAIPanel
+                            projectId={project.id}
+                            projectName={project.name}
+                            userId={user.id}
+                            documents={documents}
+                            siteImages={project.site_images || []}
+                            projectSummary={projectSummary}
+                            projectContracts={projectContracts.map(c => ({
+                              id: c.id,
+                              contract_number: c.contract_number,
+                              status: c.status,
+                              total_amount: c.total_amount
+                            }))}
+                            isOwner={project.user_id === user.id}
+                            isPremium={isPremium}
+                            onTabChange={(tab) => setBlueprintTab(tab)}
+                          />
+                          {/* Continue to Facts */}
+                          <div className="flex justify-end mt-6">
+                            <Button
+                              onClick={() => setBlueprintTab("facts")}
+                              className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+                            >
+                              Continue
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
                       )}
 
                       {blueprintTab === "documents" && (
@@ -1538,10 +1562,10 @@ const BuildUnionProjectDetails = () => {
                             onDocumentsChange={setDocuments}
                             isOwner={project.user_id === user.id}
                           />
-                          {/* Continue to Operational Truth */}
+                          {/* Continue to Requirements */}
                           <div className="flex justify-end mt-6">
                             <Button
-                              onClick={() => setBlueprintTab("ai")}
+                              onClick={() => setBlueprintTab("requirements")}
                               className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
                             >
                               Continue
@@ -1553,15 +1577,27 @@ const BuildUnionProjectDetails = () => {
 
                       {blueprintTab === "requirements" && (
                         <div className="p-4">
+                          {/* Back button */}
+                          <div className="flex justify-start mb-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBlueprintTab("documents")}
+                              className="gap-2 text-slate-600 hover:text-slate-900"
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                              Back
+                            </Button>
+                          </div>
                           <RequirementsTab 
                             project={project}
                             onProjectUpdate={setProject}
                             TRADE_LABELS={TRADE_LABELS}
                           />
-                          {/* Continue to Operational Truth */}
+                          {/* Continue to Contracts */}
                           <div className="flex justify-end mt-6">
                             <Button
-                              onClick={() => setBlueprintTab("ai")}
+                              onClick={() => setBlueprintTab("contracts")}
                               className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
                             >
                               Continue
@@ -1585,6 +1621,18 @@ const BuildUnionProjectDetails = () => {
 
                       {blueprintTab === "facts" && (
                         <div className="p-4">
+                          {/* Back button */}
+                          <div className="flex justify-start mb-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBlueprintTab("ai")}
+                              className="gap-2 text-slate-600 hover:text-slate-900"
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                              Back
+                            </Button>
+                          </div>
                           {/* Summary Card */}
                           <OperationalTruthSummaryCard 
                             facts={projectSummary?.verified_facts as any[] || []} 
@@ -1654,6 +1702,18 @@ const BuildUnionProjectDetails = () => {
 
                       {blueprintTab === "contracts" && (
                         <div className="p-4">
+                          {/* Back button */}
+                          <div className="flex justify-start mb-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBlueprintTab("requirements")}
+                              className="gap-2 text-slate-600 hover:text-slate-900"
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                              Back
+                            </Button>
+                          </div>
                           <ContractHistory 
                             projectId={project.id} 
                             showTitle={false}
