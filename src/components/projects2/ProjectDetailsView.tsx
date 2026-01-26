@@ -281,6 +281,13 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     lockedAt: string | null;
     lockedBy: string | null;
   }>({ snapshot: null, lockedAt: null, lockedBy: null });
+  const [companyBranding, setCompanyBranding] = useState<{
+    name?: string;
+    logoUrl?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+  }>({});
   const { t } = useTranslation();
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
@@ -371,6 +378,35 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
     loadProject();
   }, [projectId, onBack]);
+
+  // Fetch user's company branding from bu_profiles
+  useEffect(() => {
+    const fetchCompanyBranding = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data: buProfile } = await supabase
+          .from("bu_profiles")
+          .select("company_name, company_logo_url, phone, company_website")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (buProfile) {
+          setCompanyBranding({
+            name: buProfile.company_name || undefined,
+            logoUrl: buProfile.company_logo_url,
+            phone: buProfile.phone,
+            email: user.email || undefined,
+            website: buProfile.company_website,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching company branding:", error);
+      }
+    };
+
+    fetchCompanyBranding();
+  }, [user?.id, user?.email]);
 
   // Fetch tasks with budget data
   useEffect(() => {
@@ -1074,6 +1110,11 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             projectTotal={totalTaskBudget}
             projectName={project.name}
             projectAddress={project.address || ""}
+            companyName={companyBranding.name}
+            companyLogoUrl={companyBranding.logoUrl}
+            companyPhone={companyBranding.phone}
+            companyEmail={companyBranding.email}
+            companyWebsite={companyBranding.website}
           />
         </TabsContent>
 
