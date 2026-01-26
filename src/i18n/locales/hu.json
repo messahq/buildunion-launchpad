@@ -377,5 +377,11 @@
       "materials": "AI-Észlelt Anyagok",
       "aiAnalysis": "Kettős Motor AI Elemzés"
     }
+  },
+  "filterQuestions": {
+    "projectTimeline": "Projekt Ütemezés",
+    "projectStart": "Projekt Kezdete",
+    "targetEnd": "Tervezett Befejezés",
+    "pickDate": "Válassz dátumot"
   }
 }

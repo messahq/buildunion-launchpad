@@ -355,6 +355,14 @@ const BuildUnionProjects2 = () => {
         createdAt: new Date().toISOString(),
       }));
 
+      // Format dates for database
+      const projectStartDate = filters.technicalFilter.projectStartDate 
+        ? new Date(filters.technicalFilter.projectStartDate).toISOString().split('T')[0]
+        : null;
+      const projectEndDate = filters.technicalFilter.projectEndDate 
+        ? new Date(filters.technicalFilter.projectEndDate).toISOString().split('T')[0]
+        : null;
+
       const { error: summaryError } = await supabase
         .from("project_summaries")
         .insert({
@@ -362,6 +370,8 @@ const BuildUnionProjects2 = () => {
           project_id: projectData.id,
           mode: triggers.recommendTeamMode ? "team" : "solo",
           status: answers.images.length > 0 ? "analyzing" : "draft",
+          project_start_date: projectStartDate,
+          project_end_date: projectEndDate,
           calculator_results: [{
             type: "workflow_config",
             workflowMode: workflow.mode,

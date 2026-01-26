@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   FileText, 
   Settings, 
@@ -12,9 +14,12 @@ import {
   ArrowLeft,
   Sparkles,
   SkipForward,
-  CheckCircle2
+  CheckCircle2,
+  CalendarIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -30,6 +35,8 @@ export interface FilterAnswers {
     affectsMechanical: boolean;
     affectsFacade: boolean;
     hasProjectManager: "yes_pm" | "yes_technical" | "no" | "self";
+    projectStartDate: Date | null;
+    projectEndDate: Date | null;
   };
   workflowFilter: {
     subcontractorCount: "1-2" | "3-5" | "6+" | "not_applicable";
@@ -68,6 +75,8 @@ const DEFAULT_ANSWERS: FilterAnswers = {
     affectsMechanical: false,
     affectsFacade: false,
     hasProjectManager: "no",
+    projectStartDate: null,
+    projectEndDate: null,
   },
   workflowFilter: {
     subcontractorCount: "1-2",
@@ -422,6 +431,8 @@ interface TechnicalFilterStepProps {
 }
 
 function TechnicalFilterStep({ answers, onChange }: TechnicalFilterStepProps) {
+  const { t } = useTranslation();
+  
   const pmOptions = [
     { value: "yes_pm", label: "Yes, Project Manager", description: "Dedicated PM assigned" },
     { value: "yes_technical", label: "Yes, Technical Lead", description: "Site supervisor or foreman" },
@@ -508,6 +519,88 @@ function TechnicalFilterStep({ answers, onChange }: TechnicalFilterStepProps) {
               <div className="text-xs text-muted-foreground">{option.description}</div>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Project Timeline - Date Pickers */}
+      <div className="space-y-3 p-4 rounded-lg border-2 border-amber-500/30 bg-amber-500/5">
+        <div className="flex items-center gap-2">
+          <CalendarIcon className="h-4 w-4 text-amber-500" />
+          <Label className="text-sm font-medium text-foreground">
+            {t("filterQuestions.projectTimeline", "Project Timeline")}
+          </Label>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Project Start Date */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              {t("filterQuestions.projectStart", "Project Start")}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !answers.projectStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {answers.projectStartDate ? (
+                    format(answers.projectStartDate, "PPP")
+                  ) : (
+                    <span>{t("filterQuestions.pickDate", "Pick a date")}</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-50" align="start">
+                <Calendar
+                  mode="single"
+                  selected={answers.projectStartDate || undefined}
+                  onSelect={(date) => onChange({ projectStartDate: date || null })}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Target End Date */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              {t("filterQuestions.targetEnd", "Target End")}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !answers.projectEndDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {answers.projectEndDate ? (
+                    format(answers.projectEndDate, "PPP")
+                  ) : (
+                    <span>{t("filterQuestions.pickDate", "Pick a date")}</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-50" align="start">
+                <Calendar
+                  mode="single"
+                  selected={answers.projectEndDate || undefined}
+                  onSelect={(date) => onChange({ projectEndDate: date || null })}
+                  disabled={(date) => 
+                    answers.projectStartDate ? date < answers.projectStartDate : false
+                  }
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </div>
     </div>
