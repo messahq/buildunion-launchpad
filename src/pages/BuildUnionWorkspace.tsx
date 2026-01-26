@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
@@ -8,6 +9,7 @@ import TeamMapView from "@/components/TeamMapView";
 import TeamChat from "@/components/TeamChat";
 import TeamMemberDashboard from "@/components/TeamMemberDashboard";
 import PendingInvitations from "@/components/PendingInvitations";
+import ActiveProjectTimeline from "@/components/ActiveProjectTimeline";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,6 +55,7 @@ const processSteps = [
 
 const BuildUnionWorkspace = () => {
   const navigate = useNavigate();
+  const [activeProject, setActiveProject] = useState<{ id: string; name: string } | null>(null);
 
   return (
     <main className="bg-background min-h-screen transition-colors">
@@ -96,12 +99,15 @@ const BuildUnionWorkspace = () => {
             <TabsContent value="my-projects">
               <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                  <ProjectList />
+                  <ProjectList onProjectSelect={(id, name) => setActiveProject({ id, name })} />
                 </div>
                 <div className="lg:col-span-1 space-y-6">
                   <ProjectDashboardWidget />
+                  <ActiveProjectTimeline 
+                    projectId={activeProject?.id || null} 
+                    projectName={activeProject?.name}
+                  />
                   <OnlineTeamWidget />
-                  <TeamMapView />
                   <TeamChat />
                 </div>
               </div>
