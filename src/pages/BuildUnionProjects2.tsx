@@ -85,25 +85,18 @@ const BuildUnionProjects2 = () => {
     features: string[];
   } | null>(null);
 
-  // Determine workflow from AI analysis results
+  // Determine workflow from AI analysis results (now uses AI-determined projectSize)
   const determineAIWorkflow = (result: typeof analysisResult, tier: string) => {
     if (!result) return null;
 
+    const { projectSize, projectSizeReason } = result;
     const area = result.estimate.area || 0;
     const materialsCount = result.estimate.materials.length;
-    const hasBlueprint = result.blueprintAnalysis?.extractedText;
+    const hasBlueprint = !!result.blueprintAnalysis?.extractedText;
     const isPremium = tier === "premium" || tier === "enterprise";
     const isPro = tier === "pro" || isPremium;
 
-    // Determine project size from AI analysis
-    let projectSize: "small" | "medium" | "large" = "small";
-    if (area > 2000 || materialsCount > 10) {
-      projectSize = "large";
-    } else if (area > 500 || materialsCount > 5) {
-      projectSize = "medium";
-    }
-
-    // Determine workflow mode based on analysis + tier
+    // Determine workflow mode based on AI-determined project size + tier
     let mode: "quick" | "standard" | "full" = "quick";
     let reason = "";
     let features: string[] = [];
@@ -111,20 +104,20 @@ const BuildUnionProjects2 = () => {
     if (projectSize === "large" || hasBlueprint) {
       if (isPro) {
         mode = "full";
-        reason = `Large project detected (${area} sq ft). Full project management recommended for team coordination.`;
+        reason = `${projectSizeReason}. Full project management recommended.`;
         features = ["AI Estimation", "Blueprint Analysis", "Team Management", "Document Hub", "Contract Generator"];
       } else {
         mode = "standard";
-        reason = `Large project detected. Upgrade to Pro for full team management features.`;
+        reason = `${projectSizeReason}. Upgrade to Pro for team features.`;
         features = ["AI Estimation", "Quote Generator", "Contract"];
       }
     } else if (projectSize === "medium") {
       mode = "standard";
-      reason = `Medium project (${area} sq ft) with ${materialsCount} materials. Standard workflow covers your needs.`;
+      reason = `${projectSizeReason}. Standard workflow covers your needs.`;
       features = ["AI Estimation", "Calculator", "Quote", "Contract"];
     } else {
       mode = "quick";
-      reason = `Quick estimate ready! ${area} sq ft detected with ${materialsCount} materials.`;
+      reason = `${projectSizeReason}. Quick estimate ready!`;
       features = ["Photo Estimate", "Quote", "Contract"];
     }
 
