@@ -1026,14 +1026,6 @@ export function MaterialCalculationTab({
                     {formatCurrency(grandTotalWithTax)}
                   </div>
                 </div>
-
-                {/* Comparison with project total */}
-                {Math.abs(grandTotalWithTax - projectTotal) > 0.01 && projectTotal > 0 && (
-                  <div className="flex items-center justify-between text-xs text-amber-700/70 dark:text-amber-400/70 pt-2 border-t border-dashed border-amber-300 dark:border-amber-700">
-                    <span>Project Total (from tasks)</span>
-                    <span className="font-medium">{formatCurrency(projectTotal)}</span>
-                  </div>
-                )}
               </div>
             );
           })()}
