@@ -383,5 +383,16 @@
     "projectStart": "Project Start",
     "targetEnd": "Target End",
     "pickDate": "Pick a date"
+  },
+  "projectTimeline": {
+    "title": "Project Timeline",
+    "days": "days",
+    "startsIn": "Starts in",
+    "active": "ACTIVE",
+    "daysElapsed": "days elapsed",
+    "daysRemaining": "remaining",
+    "complete": "complete",
+    "noDateSet": "No timeline set",
+    "adjustDates": "Adjust Timeline"
   }
 }
