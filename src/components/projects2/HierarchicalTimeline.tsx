@@ -64,6 +64,9 @@ interface Task {
   status: string;
   due_date: string | null;
   material_category?: string;
+  assigned_to?: string;
+  assignee_name?: string;
+  assignee_avatar?: string;
 }
 
 interface TimelinePhase {
