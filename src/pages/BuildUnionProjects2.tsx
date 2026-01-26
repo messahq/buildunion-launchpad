@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Pencil, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
@@ -93,6 +94,38 @@ const BuildUnionProjects2 = () => {
       roomType: string;
     };
   } | null>(null);
+
+  // Editable state for user modifications
+  const [editableArea, setEditableArea] = useState<number | null>(null);
+  const [editableMaterials, setEditableMaterials] = useState<Array<{ item: string; quantity: number; unit: string }>>([]);
+  const [isEditingArea, setIsEditingArea] = useState(false);
+  const [editingMaterialIndex, setEditingMaterialIndex] = useState<number | null>(null);
+  const [hasUserEdits, setHasUserEdits] = useState(false);
+
+  // Initialize editable state when recommendation changes
+  useEffect(() => {
+    if (aiWorkflowRecommendation) {
+      setEditableArea(aiWorkflowRecommendation.analysisDetails.area);
+      setEditableMaterials([...aiWorkflowRecommendation.analysisDetails.materials]);
+      setHasUserEdits(false);
+    }
+  }, [aiWorkflowRecommendation]);
+
+  // Update area handler
+  const handleAreaChange = (newArea: number) => {
+    setEditableArea(newArea);
+    setHasUserEdits(true);
+    setIsEditingArea(false);
+  };
+
+  // Update material quantity handler
+  const handleMaterialQuantityChange = (index: number, newQuantity: number) => {
+    const updated = [...editableMaterials];
+    updated[index].quantity = newQuantity;
+    setEditableMaterials(updated);
+    setHasUserEdits(true);
+    setEditingMaterialIndex(null);
+  };
 
   // Determine workflow from AI analysis results (now uses AI-determined projectSize)
   const determineAIWorkflow = (result: typeof analysisResult, tier: string) => {
@@ -197,6 +230,37 @@ const BuildUnionProjects2 = () => {
   const handleWorkflowSelect = async (mode: "quick" | "standard" | "full") => {
     if (!createdProjectId) return;
 
+    // Save user edits to database before navigating
+    if (hasUserEdits && aiWorkflowRecommendation) {
+      try {
+        await supabase
+          .from("project_summaries")
+          .update({
+            photo_estimate: {
+              ...aiWorkflowRecommendation.analysisDetails,
+              area: editableArea,
+              materials: editableMaterials,
+              userEdited: true,
+              editedAt: new Date().toISOString(),
+            },
+            calculator_results: [{
+              type: "ai_workflow_recommendation",
+              mode,
+              projectSize: aiWorkflowRecommendation.projectSize,
+              features: aiWorkflowRecommendation.features,
+              userEditedArea: editableArea,
+              userEditedMaterials: editableMaterials.length,
+              originalArea: aiWorkflowRecommendation.analysisDetails.area,
+            }],
+          })
+          .eq("project_id", createdProjectId);
+        
+        toast.success("Your edits have been saved!");
+      } catch (error) {
+        console.error("Error saving edits:", error);
+      }
+    }
+
     // Navigate based on selected workflow
     if (mode === "quick") {
       // Go to Quick Mode with pre-filled data
@@ -212,6 +276,7 @@ const BuildUnionProjects2 = () => {
     // Reset state
     setAiWorkflowRecommendation(null);
     setCreatedProjectId(null);
+    setHasUserEdits(false);
   };
 
   const handleQuestionnaireComplete = async (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
@@ -447,17 +512,63 @@ const BuildUnionProjects2 = () => {
                     </div>
                   </div>
 
-                  {/* AI Detection Results */}
+                  {/* AI Detection Results - Editable */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 rounded-lg bg-muted/30">
-                    {/* Area Detection */}
+                    {/* Area Detection - Editable */}
                     <div>
-                      <div className="text-xs font-medium text-muted-foreground mb-2">📐 Detected Area</div>
-                      {aiWorkflowRecommendation.analysisDetails.area ? (
-                        <div className="text-lg font-semibold text-foreground">
-                          {aiWorkflowRecommendation.analysisDetails.area.toLocaleString()} {aiWorkflowRecommendation.analysisDetails.areaUnit}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-muted-foreground">📐 Area</span>
+                        {!isEditingArea && (
+                          <button 
+                            onClick={() => setIsEditingArea(true)}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Edit area"
+                          >
+                            <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                          </button>
+                        )}
+                      </div>
+                      {isEditingArea ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={editableArea || ""}
+                            onChange={(e) => setEditableArea(Number(e.target.value))}
+                            className="h-8 w-24 text-sm"
+                            autoFocus
+                          />
+                          <span className="text-sm text-muted-foreground">{aiWorkflowRecommendation.analysisDetails.areaUnit}</span>
+                          <button 
+                            onClick={() => handleAreaChange(editableArea || 0)}
+                            className="p-1 hover:bg-green-500/20 rounded text-green-600"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setEditableArea(aiWorkflowRecommendation.analysisDetails.area);
+                              setIsEditingArea(false);
+                            }}
+                            className="p-1 hover:bg-red-500/20 rounded text-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
                       ) : (
-                        <div className="text-sm text-muted-foreground">Not detected</div>
+                        <>
+                          {editableArea ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-semibold text-foreground">
+                                {editableArea.toLocaleString()} {aiWorkflowRecommendation.analysisDetails.areaUnit}
+                              </span>
+                              {hasUserEdits && editableArea !== aiWorkflowRecommendation.analysisDetails.area && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-600 rounded">edited</span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">Click edit to add area</div>
+                          )}
+                        </>
                       )}
                       <div className="text-xs text-muted-foreground mt-1">
                         {aiWorkflowRecommendation.analysisDetails.surfaceType !== "unknown" && (
@@ -472,20 +583,60 @@ const BuildUnionProjects2 = () => {
                       )}
                     </div>
 
-                    {/* Materials List */}
+                    {/* Materials List - Editable */}
                     <div>
-                      <div className="text-xs font-medium text-muted-foreground mb-2">🧱 Materials ({aiWorkflowRecommendation.analysisDetails.materials.length})</div>
-                      {aiWorkflowRecommendation.analysisDetails.materials.length > 0 ? (
-                        <div className="space-y-1">
-                          {aiWorkflowRecommendation.analysisDetails.materials.slice(0, 4).map((m, i) => (
-                            <div key={i} className="text-xs flex justify-between">
-                              <span className="text-foreground truncate max-w-[140px]">{m.item}</span>
-                              <span className="text-muted-foreground">{m.quantity} {m.unit}</span>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">
+                        🧱 Materials ({editableMaterials.length})
+                        {hasUserEdits && <span className="ml-1 text-amber-600">(editable)</span>}
+                      </div>
+                      {editableMaterials.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {editableMaterials.slice(0, 4).map((m, i) => (
+                            <div key={i} className="text-xs flex items-center justify-between group">
+                              <span className="text-foreground truncate max-w-[120px]">{m.item}</span>
+                              {editingMaterialIndex === i ? (
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    value={editableMaterials[i].quantity}
+                                    onChange={(e) => {
+                                      const updated = [...editableMaterials];
+                                      updated[i].quantity = Number(e.target.value);
+                                      setEditableMaterials(updated);
+                                    }}
+                                    className="h-6 w-16 text-xs"
+                                    autoFocus
+                                  />
+                                  <span className="text-muted-foreground">{m.unit}</span>
+                                  <button 
+                                    onClick={() => handleMaterialQuantityChange(i, editableMaterials[i].quantity)}
+                                    className="p-0.5 hover:bg-green-500/20 rounded text-green-600"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </button>
+                                  <button 
+                                    onClick={() => setEditingMaterialIndex(null)}
+                                    className="p-0.5 hover:bg-red-500/20 rounded text-red-600"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">{m.quantity} {m.unit}</span>
+                                  <button 
+                                    onClick={() => setEditingMaterialIndex(i)}
+                                    className="p-0.5 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           ))}
-                          {aiWorkflowRecommendation.analysisDetails.materials.length > 4 && (
+                          {editableMaterials.length > 4 && (
                             <div className="text-xs text-muted-foreground">
-                              +{aiWorkflowRecommendation.analysisDetails.materials.length - 4} more...
+                              +{editableMaterials.length - 4} more...
                             </div>
                           )}
                         </div>
