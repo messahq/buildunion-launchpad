@@ -35,6 +35,7 @@ const BuildUnionProjects2 = () => {
   const [saving, setSaving] = useState(false);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
   const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [pendingDocuments, setPendingDocuments] = useState<File[]>([]);
   const [pendingWorkType, setPendingWorkType] = useState<string | null>(null);
   const [pendingDescription, setPendingDescription] = useState<string>("");
 
@@ -78,17 +79,26 @@ const BuildUnionProjects2 = () => {
 
   // Trigger AI analysis after project creation
   useEffect(() => {
-    if (createdProjectId && pendingImages.length > 0 && !analyzing) {
+    const hasContent = pendingImages.length > 0 || pendingDocuments.length > 0;
+    if (createdProjectId && hasContent && !analyzing) {
       // Start AI analysis
       analyzeProject({
         projectId: createdProjectId,
         images: pendingImages,
+        documents: pendingDocuments,
         description: pendingDescription,
         workType: pendingWorkType,
       }).then((result) => {
         if (result) {
+          const areaText = result.estimate.area 
+            ? `Detected ${result.estimate.area} ${result.estimate.areaUnit}` 
+            : "Analysis complete";
+          const docText = result.blueprintAnalysis?.documentCount 
+            ? ` from ${result.blueprintAnalysis.documentCount} document(s)` 
+            : "";
+          
           toast.success("AI analysis complete!", {
-            description: `Detected ${result.estimate.area || "unknown"} ${result.estimate.areaUnit} with ${result.estimate.materials.length} materials`,
+            description: `${areaText}${docText} with ${result.estimate.materials.length} materials`,
             action: {
               label: "View Project",
               onClick: () => navigate(`/buildunion/project/${createdProjectId}`),
@@ -97,12 +107,13 @@ const BuildUnionProjects2 = () => {
         }
         // Reset pending state
         setPendingImages([]);
+        setPendingDocuments([]);
         setPendingWorkType(null);
         setPendingDescription("");
         setCreatedProjectId(null);
       });
     }
-  }, [createdProjectId, pendingImages, analyzing]);
+  }, [createdProjectId, pendingImages, pendingDocuments, analyzing]);
 
   const handleQuestionnaireComplete = async (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
     if (!user) {
@@ -189,7 +200,8 @@ const BuildUnionProjects2 = () => {
             workType: answers.workType,
             teamNeed: answers.teamNeed,
             userDescription: answers.description,
-            imageCount: uploadedImagePaths.length
+            imageCount: uploadedImagePaths.length,
+            documentCount: answers.documents?.length || 0
           }]
         });
 
@@ -210,15 +222,21 @@ const BuildUnionProjects2 = () => {
 
       setShowQuestionnaire(false);
 
-      // If images were uploaded, trigger AI analysis
-      if (answers.images.length > 0) {
+      // If images or documents were uploaded, trigger AI analysis
+      const hasContent = answers.images.length > 0 || answers.documents.length > 0;
+      if (hasContent) {
+        const contentDesc = [];
+        if (answers.images.length > 0) contentDesc.push(`${answers.images.length} photo(s)`);
+        if (answers.documents.length > 0) contentDesc.push(`${answers.documents.length} PDF(s)`);
+        
         toast.success(`Project "${answers.name}" created!`, {
-          description: "Starting AI analysis of uploaded photos..."
+          description: `Starting AI analysis of ${contentDesc.join(" and ")}...`
         });
         
         // Store pending data for AI analysis
         setCreatedProjectId(projectData.id);
         setPendingImages(answers.images);
+        setPendingDocuments(answers.documents);
         setPendingWorkType(answers.workType);
         setPendingDescription(answers.description);
       } else {
@@ -293,6 +311,8 @@ const BuildUnionProjects2 = () => {
                     analyzing={analyzing}
                     error={analysisError}
                     tier={subscription.tier}
+                    imageCount={pendingImages.length}
+                    documentCount={pendingDocuments.length}
                   />
                 </div>
               )}

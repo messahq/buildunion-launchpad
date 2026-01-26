@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Sparkles, CheckCircle2, AlertCircle, Loader2, FileText, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AIAnalysisProgressProps {
@@ -9,6 +9,8 @@ interface AIAnalysisProgressProps {
   analyzing: boolean;
   error: string | null;
   tier?: string;
+  imageCount?: number;
+  documentCount?: number;
 }
 
 export default function AIAnalysisProgress({
@@ -17,8 +19,11 @@ export default function AIAnalysisProgress({
   analyzing,
   error,
   tier = "free",
+  imageCount = 0,
+  documentCount = 0,
 }: AIAnalysisProgressProps) {
   const isPremium = tier === "pro" || tier === "premium" || tier === "enterprise";
+  const hasDocuments = documentCount > 0 || currentStep.toLowerCase().includes("blueprint") || currentStep.toLowerCase().includes("pdf");
   
   return (
     <Card className={cn(
@@ -49,7 +54,7 @@ export default function AIAnalysisProgress({
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-foreground">
-                {error ? "Analysis Failed" : progress === 100 ? "Analysis Complete" : "AI Photo Analysis"}
+                {error ? "Analysis Failed" : progress === 100 ? "Analysis Complete" : "AI Analysis"}
               </h3>
               {isPremium && (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400">
@@ -62,6 +67,24 @@ export default function AIAnalysisProgress({
             </p>
           </div>
         </div>
+
+        {/* Content type indicators */}
+        {analyzing && (imageCount > 0 || documentCount > 0) && (
+          <div className="flex gap-3 text-xs">
+            {imageCount > 0 && (
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <Camera className="h-3 w-3" />
+                {imageCount} photo{imageCount > 1 ? "s" : ""}
+              </span>
+            )}
+            {documentCount > 0 && (
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <FileText className="h-3 w-3" />
+                {documentCount} PDF{documentCount > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Progress bar */}
         {analyzing && (
@@ -76,7 +99,7 @@ export default function AIAnalysisProgress({
 
         {/* Analysis steps indicator */}
         {analyzing && (
-          <div className="flex gap-2 text-xs">
+          <div className="flex flex-wrap gap-2 text-xs">
             <span className={cn(
               "px-2 py-1 rounded-full",
               progress >= 10 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
@@ -85,21 +108,29 @@ export default function AIAnalysisProgress({
             </span>
             <span className={cn(
               "px-2 py-1 rounded-full",
-              progress >= 30 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+              progress >= 25 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
             )}>
-              2. Visual AI
+              2. Photo AI
+            </span>
+            {hasDocuments && (
+              <span className={cn(
+                "px-2 py-1 rounded-full",
+                progress >= 50 ? "bg-amber-500/20 text-amber-600 dark:text-amber-400" : "bg-muted text-muted-foreground"
+              )}>
+                3. PDF Extract
+              </span>
+            )}
+            <span className={cn(
+              "px-2 py-1 rounded-full",
+              progress >= 65 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+            )}>
+              {hasDocuments ? "4." : "3."} Estimate
             </span>
             <span className={cn(
               "px-2 py-1 rounded-full",
-              progress >= 60 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+              progress >= 85 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
             )}>
-              3. Estimate
-            </span>
-            <span className={cn(
-              "px-2 py-1 rounded-full",
-              progress >= 90 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-            )}>
-              4. Save
+              {hasDocuments ? "5." : "4."} Save
             </span>
           </div>
         )}

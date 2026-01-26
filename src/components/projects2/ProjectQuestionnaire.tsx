@@ -13,7 +13,8 @@ import {
   Upload,
   User,
   Users,
-  Building2
+  Building2,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,12 @@ export type ProjectSize = "small" | "medium" | "large";
 export type WorkType = "painting" | "flooring" | "renovation" | "new_construction" | "repair" | "other";
 export type TeamNeed = "solo" | "with_team";
 
+export interface UploadedFile {
+  file: File;
+  type: "image" | "pdf";
+  preview?: string;
+}
+
 export interface ProjectAnswers {
   name: string;
   size: ProjectSize | null;
@@ -33,6 +40,7 @@ export interface ProjectAnswers {
   teamNeed: TeamNeed | null;
   description: string;
   images: File[];
+  documents: File[]; // PDF/blueprints
 }
 
 export interface WorkflowRecommendation {
@@ -164,6 +172,7 @@ interface ProjectQuestionnaireProps {
 
 export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tierConfig }: ProjectQuestionnaireProps) {
   const maxImages = tierConfig?.maxImages || 2;
+  const maxDocuments = 3; // PDF limit
   
   const [answers, setAnswers] = useState<ProjectAnswers>({
     name: "",
@@ -173,9 +182,11 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
     teamNeed: null,
     description: "",
     images: [],
+    documents: [],
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const updateAnswers = (updates: Partial<ProjectAnswers>) => {
@@ -186,26 +197,56 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Check tier limit
-    const currentCount = answers.images.length;
-    const remaining = maxImages - currentCount;
-    
-    if (remaining <= 0) {
-      return; // Already at limit
+    // Separate images and PDFs
+    const imageFiles = files.filter(f => f.type.startsWith("image/"));
+    const pdfFiles = files.filter(f => f.type === "application/pdf");
+
+    // Handle images
+    if (imageFiles.length > 0) {
+      const currentCount = answers.images.length;
+      const remaining = maxImages - currentCount;
+      
+      if (remaining > 0) {
+        const filesToAdd = imageFiles.slice(0, remaining);
+        const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
+        setImagePreviews(prev => [...prev, ...newPreviews]);
+        updateAnswers({ images: [...answers.images, ...filesToAdd] });
+      }
     }
+
+    // Handle PDFs
+    if (pdfFiles.length > 0) {
+      const currentPdfCount = answers.documents.length;
+      const remainingPdfs = maxDocuments - currentPdfCount;
+      
+      if (remainingPdfs > 0) {
+        const pdfsToAdd = pdfFiles.slice(0, remainingPdfs);
+        updateAnswers({ documents: [...answers.documents, ...pdfsToAdd] });
+      }
+    }
+  };
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const currentCount = answers.documents.length;
+    const remaining = maxDocuments - currentCount;
+    
+    if (remaining <= 0) return;
     
     const filesToAdd = files.slice(0, remaining);
-    
-    // Create previews
-    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
-    setImagePreviews(prev => [...prev, ...newPreviews]);
-    updateAnswers({ images: [...answers.images, ...filesToAdd] });
+    updateAnswers({ documents: [...answers.documents, ...filesToAdd] });
   };
 
   const removeImage = (index: number) => {
     URL.revokeObjectURL(imagePreviews[index]);
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
     updateAnswers({ images: answers.images.filter((_, i) => i !== index) });
+  };
+
+  const removeDocument = (index: number) => {
+    updateAnswers({ documents: answers.documents.filter((_, i) => i !== index) });
   };
 
   const handleSubmit = () => {
@@ -360,7 +401,7 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
                 className="w-20 h-20 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Camera className="h-5 w-5" />
-                <span className="text-xs">Add</span>
+                <span className="text-xs">Photo</span>
               </button>
             )}
           </div>
@@ -368,10 +409,65 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,application/pdf"
+            accept="image/*"
             multiple
             className="hidden"
             onChange={handleImageUpload}
+          />
+        </div>
+
+        {/* PDF/Blueprint Upload */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-foreground">PDF / Blueprint (optional)</Label>
+            <span className="text-xs text-muted-foreground">
+              {answers.documents.length}/{maxDocuments} documents
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Upload blueprints or floor plans - AI will extract area measurements and dimensions
+          </p>
+          
+          <div className="flex flex-wrap gap-2">
+            {answers.documents.map((doc, index) => (
+              <div 
+                key={index} 
+                className="relative flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/30"
+              >
+                <FileText className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate max-w-[120px]">{doc.name}</div>
+                  <div className="text-[10px] text-muted-foreground">Ready for analysis</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeDocument(index)}
+                  className="w-5 h-5 rounded-full bg-background/80 flex items-center justify-center hover:bg-background flex-shrink-0"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            
+            {answers.documents.length < maxDocuments && (
+              <button
+                type="button"
+                onClick={() => pdfInputRef.current?.click()}
+                className="h-12 px-4 rounded-lg border-2 border-dashed border-border hover:border-amber-500/50 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="text-xs">Add PDF</span>
+              </button>
+            )}
+          </div>
+          
+          <input
+            ref={pdfInputRef}
+            type="file"
+            accept="application/pdf"
+            multiple
+            className="hidden"
+            onChange={handlePdfUpload}
           />
         </div>
 
@@ -410,10 +506,18 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
               </div>
               
               {/* AI Analysis Info */}
-              {answers.images.length > 0 && (
-                <div className="text-xs text-primary bg-primary/10 rounded-lg p-2">
-                  <strong>AI will analyze:</strong> {answers.images.length} photo(s) for area measurement, surface detection, and material estimation
-                  {tierConfig?.isPremium && " with deep structural analysis"}
+              {(answers.images.length > 0 || answers.documents.length > 0) && (
+                <div className="text-xs text-primary bg-primary/10 rounded-lg p-2 space-y-1">
+                  <strong>AI will analyze:</strong>
+                  {answers.images.length > 0 && (
+                    <div>📷 {answers.images.length} photo(s) for surface detection & material estimation</div>
+                  )}
+                  {answers.documents.length > 0 && (
+                    <div>📄 {answers.documents.length} PDF(s) for area measurements & dimensions</div>
+                  )}
+                  {tierConfig?.isPremium && (
+                    <div className="text-primary font-medium">✨ Deep structural analysis enabled</div>
+                  )}
                 </div>
               )}
             </CardContent>
