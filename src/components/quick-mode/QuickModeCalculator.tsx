@@ -130,19 +130,32 @@ const calculators: CalculatorType[] = [
       { id: "height", label: "Wall Height", unit: "ft", defaultValue: 8 },
       { id: "doors", label: "# of Doors", unit: "", defaultValue: 1 },
       { id: "windows", label: "# of Windows", unit: "", defaultValue: 2 },
+      { id: "prefillArea", label: "AI Detected Area (override)", unit: "sq ft", defaultValue: 0 },
     ],
     calculate: (inputs) => {
-      const perimeter = (inputs.length + inputs.width) * 2;
-      const wallArea = perimeter * inputs.height;
-      const doorArea = inputs.doors * 21; // avg door ~21 sq ft
-      const windowArea = inputs.windows * 15; // avg window ~15 sq ft
-      const paintableArea = wallArea - doorArea - windowArea;
+      let paintableArea: number;
+      let breakdown: string;
+      
+      // If AI prefill area is provided, use it directly instead of calculating from dimensions
+      if (inputs.prefillArea && inputs.prefillArea > 0) {
+        paintableArea = inputs.prefillArea;
+        breakdown = `AI Detected: ${paintableArea} sq ft paintable surface (×2 coats)`;
+      } else {
+        const perimeter = (inputs.length + inputs.width) * 2;
+        const wallArea = perimeter * inputs.height;
+        const doorArea = inputs.doors * 21; // avg door ~21 sq ft
+        const windowArea = inputs.windows * 15; // avg window ~15 sq ft
+        paintableArea = wallArea - doorArea - windowArea;
+        breakdown = `Walls: ${wallArea} sq ft - Doors: ${doorArea} sq ft - Windows: ${windowArea} sq ft = ${paintableArea} sq ft (×2 coats)`;
+      }
+      
       const twoCoats = paintableArea * 2;
       const gallonsNeeded = Math.ceil(twoCoats / 350); // ~350 sq ft per gallon
+      const perimeter = (inputs.length + inputs.width) * 2;
       
       return {
         result: paintableArea,
-        breakdown: `Walls: ${wallArea} sq ft - Doors: ${doorArea} sq ft - Windows: ${windowArea} sq ft = ${paintableArea} sq ft (×2 coats)`,
+        breakdown,
         materials: [
           { item: "Paint", quantity: gallonsNeeded, unit: "gallons" },
           { item: "Primer", quantity: Math.ceil(gallonsNeeded / 2), unit: "gallons" },
@@ -419,10 +432,15 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
     
     // Pre-fill with area from photo estimate if available
     if (prefillArea) {
-      // For tile calculator: calculate length and width from area (assume square-ish room)
-      const sqRoot = Math.sqrt(prefillArea);
-      initial["length"] = Math.round(sqRoot);
-      initial["width"] = Math.round(prefillArea / Math.round(sqRoot));
+      // For paint calculator: use prefillArea input directly
+      if (initialCalc.id === "paint") {
+        initial["prefillArea"] = prefillArea;
+      } else {
+        // For other calculators: calculate length and width from area (assume square-ish room)
+        const sqRoot = Math.sqrt(prefillArea);
+        initial["length"] = Math.round(sqRoot);
+        initial["width"] = Math.round(prefillArea / Math.round(sqRoot));
+      }
     }
     
     return initial;
@@ -451,9 +469,15 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
           });
           // Apply prefill area if available
           if (prefillArea) {
-            const sqRoot = Math.sqrt(prefillArea);
-            newInputs["length"] = Math.round(sqRoot);
-            newInputs["width"] = Math.round(prefillArea / Math.round(sqRoot));
+            // For paint calculator: use prefillArea input directly
+            if (matched.id === "paint") {
+              newInputs["prefillArea"] = prefillArea;
+            } else {
+              // For other calculators: calculate length and width from area
+              const sqRoot = Math.sqrt(prefillArea);
+              newInputs["length"] = Math.round(sqRoot);
+              newInputs["width"] = Math.round(prefillArea / Math.round(sqRoot));
+            }
           }
           setInputs(newInputs);
           setResults(null);
