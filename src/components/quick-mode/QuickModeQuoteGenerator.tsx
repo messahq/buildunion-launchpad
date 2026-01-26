@@ -1416,15 +1416,25 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
             <Separator />
 
-            {/* Skip to Summary */}
-            <Button
-              variant="ghost"
-              onClick={onSkipToSummary}
-              className="w-full gap-2 text-muted-foreground"
-            >
-              <SkipForward className="w-4 h-4" />
-              Skip (No Quote)
-            </Button>
+            {/* Skip to Summary or Continue to Contracts */}
+            {hasGeneratedPDF ? (
+              <Button
+                onClick={onContinueToContracts}
+                className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <FileSignature className="w-4 h-4" />
+                Continue to Contracts
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={onSkipToSummary}
+                className="w-full gap-2 text-muted-foreground"
+              >
+                <SkipForward className="w-4 h-4" />
+                Skip (No Quote)
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
