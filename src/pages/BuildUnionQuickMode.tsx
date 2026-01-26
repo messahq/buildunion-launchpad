@@ -600,6 +600,12 @@ const BuildUnionQuickMode = () => {
                   onContractGenerated={(contractData) => {
                     toast.success("Contract generated successfully!");
                   }}
+                  onSaveToProjects={(projectId) => {
+                    // Clear draft data after saving
+                    clearDraft();
+                    // Navigate to project details with summary view
+                    navigate(`/buildunion/workspace/project/${projectId}`);
+                  }}
                 />
               )}
             </TabsContent>
