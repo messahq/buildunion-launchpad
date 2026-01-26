@@ -18,13 +18,15 @@ import {
   ChevronUp,
   Download,
   Loader2,
-  MapPin
+  MapPin,
+  PenLine
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { downloadPDF } from "@/lib/pdfGenerator";
 import { toast } from "sonner";
+import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 
 interface CostItem {
   id: string;
@@ -171,6 +173,10 @@ export function MaterialCalculationTab({
   const [materialsOpen, setMaterialsOpen] = useState(true);
   const [laborOpen, setLaborOpen] = useState(true);
   const [otherOpen, setOtherOpen] = useState(true);
+  
+  // Signature state
+  const [clientSignature, setClientSignature] = useState<SignatureData | null>(null);
+  const [signatureOpen, setSignatureOpen] = useState(true);
 
   // Calculate section totals
   const materialsTotal = materialItems.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -500,17 +506,39 @@ export function MaterialCalculationTab({
                 <!-- Client Signature -->
                 <div style="flex: 1;">
                   <p style="font-size: 8px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Client Signature</p>
-                  <div style="border-bottom: 1px solid #1e293b; height: 35px; margin-bottom: 4px;"></div>
-                  <div style="display: flex; justify-content: space-between; font-size: 8px;">
-                    <div>
-                      <span style="color: #64748b;">Name: </span>
-                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 80px;"></span>
+                  ${clientSignature ? `
+                    ${clientSignature.type === 'drawn' ? `
+                      <div style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px; margin-bottom: 4px; background: white;">
+                        <img src="${clientSignature.data}" alt="Client Signature" style="height: 40px; max-width: 100%; object-fit: contain;" />
+                      </div>
+                    ` : `
+                      <div style="border-bottom: 1px solid #1e293b; padding: 8px 0; margin-bottom: 4px; font-family: 'Dancing Script', cursive; font-size: 20px; color: #1e293b;">
+                        ${clientSignature.data}
+                      </div>
+                    `}
+                    <div style="display: flex; justify-content: space-between; font-size: 8px;">
+                      <div>
+                        <span style="color: #64748b;">Name: </span>
+                        <span style="font-weight: 500;">${clientSignature.name || clientSignature.data}</span>
+                      </div>
+                      <div>
+                        <span style="color: #64748b;">Date: </span>
+                        <span style="font-weight: 500;">${new Date(clientSignature.signedAt).toLocaleDateString('en-CA')}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span style="color: #64748b;">Date: </span>
-                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 50px;"></span>
+                  ` : `
+                    <div style="border-bottom: 1px solid #1e293b; height: 35px; margin-bottom: 4px;"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 8px;">
+                      <div>
+                        <span style="color: #64748b;">Name: </span>
+                        <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 80px;"></span>
+                      </div>
+                      <div>
+                        <span style="color: #64748b;">Date: </span>
+                        <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 50px;"></span>
+                      </div>
                     </div>
-                  </div>
+                  `}
                 </div>
                 
                 <!-- Contractor Signature -->
@@ -942,6 +970,49 @@ export function MaterialCalculationTab({
                     </Button>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {/* Client Signature Section */}
+      <Collapsible open={signatureOpen} onOpenChange={setSignatureOpen}>
+        <Card className="border-green-200 dark:border-green-800">
+          <CardHeader className="pb-3">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center justify-between w-full text-left">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <PenLine className="h-4 w-4 text-green-600" />
+                  {t("materials.clientSignature", "Client Signature")}
+                  {clientSignature && (
+                    <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                      <Check className="h-3 w-3 mr-1" />
+                      Signed
+                    </Badge>
+                  )}
+                </CardTitle>
+                <div className="flex items-center gap-3">
+                  {signatureOpen ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="bg-green-50/50 dark:bg-green-950/20 rounded-lg p-4 border border-green-100 dark:border-green-900">
+                <p className="text-xs text-muted-foreground mb-4">
+                  {t("materials.signatureHint", "Capture client signature for cost breakdown approval. Draw or type a signature below.")}
+                </p>
+                <SignatureCapture
+                  onSignatureChange={setClientSignature}
+                  label={t("materials.clientApproval", "Client Approval Signature")}
+                  placeholder={t("materials.typeFullName", "Type client's full name")}
+                />
               </div>
             </CardContent>
           </CollapsibleContent>
