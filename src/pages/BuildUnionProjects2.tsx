@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
@@ -606,7 +606,7 @@ const BuildUnionProjects2 = () => {
                         <div 
                           key={project.id}
                           onClick={() => setSelectedProjectId(project.id)}
-                          className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer"
+                          className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer group"
                         >
                           <div className="flex items-start justify-between">
                             <div>
@@ -625,6 +625,29 @@ const BuildUnionProjects2 = () => {
                               <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 capitalize">
                                 {project.status}
                               </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+                                  
+                                  const { error } = await supabase
+                                    .from("projects")
+                                    .delete()
+                                    .eq("id", project.id);
+                                  
+                                  if (error) {
+                                    toast.error("Failed to delete project");
+                                  } else {
+                                    setProjects(prev => prev.filter(p => p.id !== project.id));
+                                    toast.success("Project deleted");
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
                           {project.description && (
