@@ -687,18 +687,14 @@ const handleContractGenerated = () => {
 
       {/* Continue to Operational Truth */}
       {onNavigateToAI && (
-        <div className="mt-6 pt-4 border-t border-slate-200">
+        <div className="flex justify-end mt-6">
           <Button
             onClick={onNavigateToAI}
-            className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+            className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
           >
-            <Brain className="w-4 h-4" />
-            Continue to Operational Truth
-            <ArrowRight className="w-4 h-4 ml-auto" />
+            Continue
+            <ArrowRight className="w-4 h-4" />
           </Button>
-          <p className="text-xs text-slate-500 text-center mt-2">
-            Review all 8 elements and verify project data with AI
-          </p>
         </div>
       )}
     </div>
