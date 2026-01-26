@@ -102,12 +102,22 @@ interface TemplateItem {
   materials?: string[];
 }
 
+// Project data to pre-fill contract generator
+interface ProjectData {
+  name?: string;
+  address?: string;
+  description?: string;
+  totalAmount?: number;
+  scopeOfWork?: string;
+}
+
 interface ContractHistoryProps {
   projectId?: string;
   showTitle?: boolean;
   onNavigateToAI?: () => void;
   templateItems?: TemplateItem[];
   onContractSaved?: () => void; // Callback to refresh contracts in parent
+  projectData?: ProjectData; // Project data for pre-filling contracts
 }
 
 type ContractTemplateType = "custom" | "residential" | "commercial" | "renovation";
@@ -151,7 +161,7 @@ interface TeamMember {
   fullName?: string;
 }
 
-const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI, templateItems = [], onContractSaved }: ContractHistoryProps) => {
+const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI, templateItems = [], onContractSaved, projectData }: ContractHistoryProps) => {
   const { user } = useAuth();
   const { formatCurrency, config } = useRegionSettings();
   const { profile } = useBuProfile();
@@ -485,6 +495,7 @@ const handleContractGenerated = () => {
           }}
           onContractGenerated={handleContractGenerated}
           onContinue={onNavigateToAI}
+          projectData={projectData}
         />
       </div>
     );
@@ -507,6 +518,7 @@ const handleContractGenerated = () => {
           existingContract={editingContract}
           onContractGenerated={handleContractGenerated}
           onContinue={onNavigateToAI}
+          projectData={projectData}
         />
       </div>
     );
@@ -528,6 +540,7 @@ const handleContractGenerated = () => {
         <ContractGenerator
           onContractGenerated={handleContractGenerated}
           onContinue={onNavigateToAI}
+          projectData={projectData}
         />
       </div>
     );

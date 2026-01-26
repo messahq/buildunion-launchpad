@@ -1759,6 +1759,13 @@ const BuildUnionProjectDetails = () => {
                             onNavigateToAI={() => setBlueprintTab("ai")}
                             templateItems={projectSummary?.template_items as any[] || []}
                             onContractSaved={refreshContracts}
+                            projectData={{
+                              name: project.name,
+                              address: project.address || undefined,
+                              description: project.description || undefined,
+                              totalAmount: projectSummary?.total_cost || 0,
+                              scopeOfWork: project.description || undefined,
+                            }}
                           />
                         </div>
                       )}
