@@ -71,7 +71,10 @@
     "phaseLocked": "This phase is locked",
     "myTasks": "My Tasks",
     "teamMemberView": "Team Member View",
-    "verificationUpdated": "Verification rate updated!"
+    "verificationUpdated": "Verification rate updated!",
+    "projectDatesChanged": "Project timeline changed: Shift {{count}} tasks by {{days}} days?",
+    "shiftAll": "Shift All Tasks",
+    "tasksShifted": "All tasks shifted by {{days}} days"
   },
   "memberTimeline": {
     "myTasks": "My Tasks",
@@ -157,7 +160,11 @@
     "complete": "Complete",
     "active": "Active",
     "inactive": "Inactive",
-    "getDirections": "Get Directions"
+    "getDirections": "Get Directions",
+    "dismiss": "Dismiss",
+    "keepOriginal": "Keep Original",
+    "tasks": "tasks",
+    "materials": "materials"
   },
   "conflicts": {
     "high": "High",

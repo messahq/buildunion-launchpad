@@ -113,6 +113,10 @@ interface HierarchicalTimelineProps {
   teamLocations?: TeamMemberLocation[];
   onTaskClick?: (task: Task) => void;
   onAutoShift?: (shiftedTasks: Array<{ taskId: string; newDueDate: string; shiftDays: number }>) => void;
+  // Project timeline integration
+  projectStartDate?: Date | null;
+  projectEndDate?: Date | null;
+  onProjectDatesChange?: (startDate: Date | null, endDate: Date | null, tasksToShift: Array<{ taskId: string; newDueDate: string; shiftDays: number }>) => void;
 }
 
 // ============================================
@@ -223,6 +227,9 @@ const HierarchicalTimeline = ({
   teamLocations = [],
   onTaskClick,
   onAutoShift,
+  projectStartDate,
+  projectEndDate,
+  onProjectDatesChange,
 }: HierarchicalTimelineProps) => {
   const { t } = useTranslation();
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
@@ -233,7 +240,93 @@ const HierarchicalTimeline = ({
   const [expandedSubTimelines, setExpandedSubTimelines] = useState<Record<string, boolean>>({});
   const [autoShiftPending, setAutoShiftPending] = useState<Array<{ taskId: string; newDueDate: string; shiftDays: number }>>([]);
   const [showAutoShiftAlert, setShowAutoShiftAlert] = useState(false);
+  const [projectDateShiftPending, setProjectDateShiftPending] = useState<{
+    startDate: Date | null;
+    endDate: Date | null;
+    shiftDays: number;
+    tasksToShift: Array<{ taskId: string; newDueDate: string; shiftDays: number }>;
+  } | null>(null);
+  const [showProjectDateShiftAlert, setShowProjectDateShiftAlert] = useState(false);
 
+  // Track previous dates to detect changes
+  const [prevProjectDates, setPrevProjectDates] = useState<{ start: Date | null; end: Date | null }>({
+    start: projectStartDate || null,
+    end: projectEndDate || null,
+  });
+
+  // Detect project date changes and calculate task shifts
+  useEffect(() => {
+    if (!projectStartDate || !prevProjectDates.start) {
+      setPrevProjectDates({ start: projectStartDate || null, end: projectEndDate || null });
+      return;
+    }
+
+    const startChanged = prevProjectDates.start && 
+      format(projectStartDate, "yyyy-MM-dd") !== format(prevProjectDates.start, "yyyy-MM-dd");
+    
+    if (startChanged) {
+      const shiftDays = differenceInDays(projectStartDate, prevProjectDates.start);
+      
+      if (shiftDays !== 0 && tasks.length > 0) {
+        // Calculate new dates for all tasks
+        const tasksToShift = tasks
+          .filter(task => task.due_date && task.status !== "completed")
+          .map(task => {
+            const currentDate = new Date(task.due_date!);
+            const newDate = addDays(currentDate, shiftDays);
+            return {
+              taskId: task.id,
+              newDueDate: format(newDate, "yyyy-MM-dd"),
+              shiftDays,
+            };
+          });
+
+        if (tasksToShift.length > 0) {
+          setProjectDateShiftPending({
+            startDate: projectStartDate,
+            endDate: projectEndDate || null,
+            shiftDays,
+            tasksToShift,
+          });
+          setShowProjectDateShiftAlert(true);
+        }
+      }
+    }
+
+    setPrevProjectDates({ start: projectStartDate, end: projectEndDate || null });
+  }, [projectStartDate, projectEndDate, tasks]);
+
+  // Handle applying project date shift to tasks
+  const handleApplyProjectDateShift = useCallback(() => {
+    if (!projectDateShiftPending) return;
+
+    if (onProjectDatesChange) {
+      onProjectDatesChange(
+        projectDateShiftPending.startDate,
+        projectDateShiftPending.endDate,
+        projectDateShiftPending.tasksToShift
+      );
+      toast.success(t("timeline.tasksShifted", "All tasks shifted by {{days}} days", {
+        days: projectDateShiftPending.shiftDays > 0 
+          ? `+${projectDateShiftPending.shiftDays}` 
+          : projectDateShiftPending.shiftDays
+      }));
+    } else if (onAutoShift) {
+      // Fallback to onAutoShift if onProjectDatesChange not provided
+      onAutoShift(projectDateShiftPending.tasksToShift);
+      toast.success(t("timeline.tasksShifted", "All tasks shifted by {{days}} days", {
+        days: projectDateShiftPending.shiftDays
+      }));
+    }
+
+    setProjectDateShiftPending(null);
+    setShowProjectDateShiftAlert(false);
+  }, [projectDateShiftPending, onProjectDatesChange, onAutoShift, t]);
+
+  const handleDismissProjectDateShift = useCallback(() => {
+    setProjectDateShiftPending(null);
+    setShowProjectDateShiftAlert(false);
+  }, []);
   // Build hierarchical structure with dependency locks
   const phases = useMemo<TimelinePhase[]>(() => {
     // Group tasks by phase
@@ -502,7 +595,33 @@ const HierarchicalTimeline = ({
 
   return (
     <div className="space-y-4">
-      {/* Auto-Shift Alert */}
+      {/* Project Date Shift Alert - triggered when project timeline changes */}
+      {showProjectDateShiftAlert && projectDateShiftPending && (
+        <Alert className="border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/30">
+          <CalendarIcon className="h-4 w-4 text-cyan-600" />
+          <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-cyan-800 dark:text-cyan-200">
+              {t("timeline.projectDatesChanged", "Project timeline changed: Shift {{count}} tasks by {{days}} days?", { 
+                count: projectDateShiftPending.tasksToShift.length,
+                days: projectDateShiftPending.shiftDays > 0 
+                  ? `+${projectDateShiftPending.shiftDays}` 
+                  : projectDateShiftPending.shiftDays
+              })}
+            </span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={handleDismissProjectDateShift}>
+                {t("common.keepOriginal", "Keep Original")}
+              </Button>
+              <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white" onClick={handleApplyProjectDateShift}>
+                <ArrowRight className="h-3 w-3 mr-1" />
+                {t("timeline.shiftAll", "Shift All Tasks")}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Auto-Shift Alert - triggered by task delays */}
       {showAutoShiftAlert && autoShiftPending.length > 0 && (
         <Alert className="border-amber-500 bg-amber-50/50 dark:bg-amber-950/30">
           <Zap className="h-4 w-4 text-amber-600" />

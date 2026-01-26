@@ -1087,9 +1087,38 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                 isOnSite: m.status === "on_site",
                 lastSeen: undefined,
               }))}
+              projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+              projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
               onTaskClick={(task) => console.log("Task clicked:", task)}
               onAutoShift={(shiftedTasks) => {
                 console.log("Auto-shift tasks:", shiftedTasks);
+              }}
+              onProjectDatesChange={async (startDate, endDate, tasksToShift) => {
+                // Update all task due dates in database
+                for (const taskShift of tasksToShift) {
+                  await supabase
+                    .from("project_tasks")
+                    .update({ due_date: taskShift.newDueDate })
+                    .eq("id", taskShift.taskId);
+                }
+                
+                // Refresh tasks
+                const { data } = await supabase
+                  .from("project_tasks")
+                  .select("*")
+                  .eq("project_id", projectId)
+                  .order("due_date", { ascending: true });
+                
+                if (data) {
+                  setTasks(data.map(t => ({
+                    ...t,
+                    unit_price: t.unit_price || 0,
+                    quantity: t.quantity || 1,
+                    total_cost: t.total_cost || 0,
+                  })));
+                }
+                
+                toast.success(`${tasksToShift.length} tasks updated`);
               }}
             />
           ) : (
