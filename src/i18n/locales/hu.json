@@ -1,4 +1,26 @@
 {
+  "team": {
+    "members": "Csapattagok",
+    "manageTeam": "Csapat",
+    "tasks": "Feladatok",
+    "proFeature": "A Team Mód Pro Funkció",
+    "upgradeToUnlock": "Frissíts Pro-ra csapattagok meghívásához és projekt koordinációhoz",
+    "limitReached": "Limit elérve"
+  },
+  "tasks": {
+    "generateFromAI": "Feladatok generálása AI-ból",
+    "generateFromMaterials": "Feladatok generálása AI anyagokból",
+    "generateDescription": "Az AI anyagokat észlelt ehhez a projekthez. Generálj kezdeti feladatokat ezekből az anyagokból és oszd ki a csapattagoknak.",
+    "detectedMaterials": "Észlelt anyagok",
+    "willAssignTo": "A feladatok kiosztásra kerülnek",
+    "teamMembers": "csapattag(ok) között",
+    "generate": "Generálás",
+    "tasksLower": "feladat",
+    "generatedSuccess": "Feladatok sikeresen generálva",
+    "generateError": "Feladatok generálása sikertelen",
+    "addMembersFirst": "Először adj hozzá csapattagokat",
+    "noMaterials": "Nincs AI által észlelt anyag a feladatgeneráláshoz"
+  },
   "common": {
     "loading": "Betöltés...",
     "save": "Mentés",

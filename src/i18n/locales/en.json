@@ -1,4 +1,26 @@
 {
+  "team": {
+    "members": "Team Members",
+    "manageTeam": "Team",
+    "tasks": "Tasks",
+    "proFeature": "Team Mode is a Pro Feature",
+    "upgradeToUnlock": "Upgrade to Pro to invite team members and coordinate your project",
+    "limitReached": "Limit reached"
+  },
+  "tasks": {
+    "generateFromAI": "Generate Tasks from AI",
+    "generateFromMaterials": "Generate Tasks from AI Materials",
+    "generateDescription": "The AI has detected materials for this project. Generate initial tasks based on these materials and assign them to your team members.",
+    "detectedMaterials": "Detected Materials",
+    "willAssignTo": "Tasks will be distributed among",
+    "teamMembers": "team member(s)",
+    "generate": "Generate",
+    "tasksLower": "Tasks",
+    "generatedSuccess": "Tasks generated successfully",
+    "generateError": "Failed to generate tasks",
+    "addMembersFirst": "Add team members first",
+    "noMaterials": "No AI-detected materials to generate tasks from"
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",

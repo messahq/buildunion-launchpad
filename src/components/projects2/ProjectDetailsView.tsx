@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Loader2,
   Map,
-  Download
+  Download,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,10 +30,13 @@ import TeamMapWidget from "./TeamMapWidget";
 import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
+import TeamTab from "./TeamTab";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useSingleProjectConflicts } from "@/hooks/useSingleProjectConflicts";
+import { useProjectTeam } from "@/hooks/useProjectTeam";
+import { useAuth } from "@/hooks/useAuth";
 import { generateProjectReport, ConflictData } from "@/lib/pdfGenerator";
 import { ProBadge } from "@/components/ui/pro-badge";
 
@@ -50,6 +54,7 @@ interface ProjectData {
   created_at: string;
   updated_at: string;
   site_images: string[] | null;
+  user_id: string;
 }
 
 interface PhotoEstimateData {
@@ -120,7 +125,9 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
+  const { members } = useProjectTeam(projectId);
   
   // Derive tier status - check for Pro or higher
   const isPro = isDevOverride || 
@@ -135,8 +142,21 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
   // Fetch single project conflicts for map visualization
   const { conflicts: projectConflicts } = useSingleProjectConflicts(projectId);
-
-  // Load project data
+  
+  // Determine if current user is owner
+  const isOwner = project?.user_id === user?.id;
+  
+  // Map team members for the map widget
+  const teamMembersForMap = members.map(m => ({
+    user_id: m.user_id,
+    full_name: m.full_name || "Team Member",
+    avatar_url: (m as any).avatar_url,
+    role: m.role,
+    // Note: Real location would come from bu_profiles if implemented
+    latitude: undefined,
+    longitude: undefined,
+    status: undefined as "on_site" | "en_route" | "away" | undefined,
+  }));
   useEffect(() => {
     const loadProject = async () => {
       setLoading(true);
@@ -406,7 +426,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn(
           "grid w-full bg-muted/50",
-          isTeamMode ? "grid-cols-5" : "grid-cols-4"
+          isTeamMode ? "grid-cols-6" : "grid-cols-4"
         )}>
           <TabsTrigger value="overview" className="gap-2">
             <Sparkles className="h-4 w-4" />
@@ -417,10 +437,21 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             <span className="hidden sm:inline">{t("projects.documents")}</span>
           </TabsTrigger>
           {isTeamMode && (
-            <TabsTrigger value="map" className="gap-2">
-              <Map className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("projects.siteMap")}</span>
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="team" className="gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("projects.team", "Team")}</span>
+                {members.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full">
+                    {members.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="map" className="gap-2">
+                <Map className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("projects.siteMap")}</span>
+              </TabsTrigger>
+            </>
           )}
           <TabsTrigger value="timeline" className="gap-2">
             <Calendar className="h-4 w-4" />
@@ -569,6 +600,18 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           />
         </TabsContent>
 
+        {/* Team Tab - Only for Team Mode */}
+        {isTeamMode && (
+          <TabsContent value="team" className="mt-6">
+            <TeamTab
+              projectId={projectId}
+              isOwner={isOwner}
+              projectAddress={project.address || undefined}
+              aiMaterials={aiAnalysis?.materials}
+            />
+          </TabsContent>
+        )}
+
         {/* Team Map Tab - Only for Team Mode */}
         {isTeamMode && (
           <TabsContent value="map" className="mt-6">
@@ -578,6 +621,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                 projectName={project.name}
                 conflicts={projectConflicts}
                 isPremium={isPremium}
+                teamMembers={teamMembersForMap}
               />
             ) : (
               <Card className="border-dashed">

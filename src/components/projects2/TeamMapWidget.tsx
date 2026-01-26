@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Map, 
   MapPin, 
@@ -11,9 +12,10 @@ import {
   Navigation,
   AlertTriangle,
   Lock,
-  Info
+  Info,
+  User
 } from "lucide-react";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, OverlayView } from "@react-google-maps/api";
 import {
   Dialog,
   DialogContent,
@@ -28,12 +30,23 @@ import { ProjectConflict } from "@/hooks/useSingleProjectConflicts";
 import { ConflictMarkerLegend } from "./ConflictMarkerLegend";
 import { ProBadge } from "@/components/ui/pro-badge";
 
+interface TeamMemberLocation {
+  user_id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  role: string;
+  latitude?: number;
+  longitude?: number;
+  status?: "on_site" | "en_route" | "away";
+}
+
 interface TeamMapWidgetProps {
   projectAddress: string;
   projectName: string;
   className?: string;
   conflicts?: ProjectConflict[];
   isPremium?: boolean;
+  teamMembers?: TeamMemberLocation[];
 }
 
 const mapContainerStyle = {
@@ -91,12 +104,27 @@ const getSeverityIcon = (severity: "high" | "medium" | "low") => {
   }
 };
 
+// Get status color for team member
+const getStatusColor = (status?: string) => {
+  switch (status) {
+    case "on_site":
+      return "#22c55e"; // green-500
+    case "en_route":
+      return "#3b82f6"; // blue-500
+    case "away":
+      return "#6b7280"; // gray-500
+    default:
+      return "#f59e0b"; // amber-500
+  }
+};
+
 export default function TeamMapWidget({ 
   projectAddress, 
   projectName,
   className,
   conflicts = [],
   isPremium = false,
+  teamMembers = [],
 }: TeamMapWidgetProps) {
   const { t } = useTranslation();
   const { apiKey, isLoading: isLoadingKey, error: keyError } = useGoogleMapsApi();
@@ -104,6 +132,7 @@ export default function TeamMapWidget({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [geocodeError, setGeocodeError] = useState(false);
   const [selectedConflict, setSelectedConflict] = useState<ProjectConflict | null>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMemberLocation | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey || "",
@@ -246,6 +275,35 @@ export default function TeamMapWidget({
             );
           })}
 
+          {/* Team member markers */}
+          {projectLocation && teamMembers.map((member, index) => {
+            // If member has real location, use it; otherwise position around project
+            const memberPosition = member.latitude && member.longitude
+              ? { lat: member.latitude, lng: member.longitude }
+              : {
+                  // Position around the project in a circle
+                  lat: projectLocation.lat + (Math.cos((index * 72 + 30) * (Math.PI / 180)) * 0.0005),
+                  lng: projectLocation.lng + (Math.sin((index * 72 + 30) * (Math.PI / 180)) * 0.0005),
+                };
+
+            return (
+              <Marker
+                key={member.user_id}
+                position={memberPosition}
+                icon={{
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 10,
+                  fillColor: getStatusColor(member.status),
+                  fillOpacity: 1,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 2,
+                }}
+                title={member.full_name}
+                onClick={() => setSelectedMember(member)}
+              />
+            );
+          })}
+
           {/* Info window for selected conflict */}
           {selectedConflict && projectLocation && (
             <InfoWindow
@@ -278,6 +336,53 @@ export default function TeamMapWidget({
                     <span className="ml-1 font-medium">{selectedConflict.blueprintValue}</span>
                   </div>
                 </div>
+              </div>
+            </InfoWindow>
+          )}
+
+          {/* Info window for selected team member */}
+          {selectedMember && projectLocation && (
+            <InfoWindow
+              position={
+                selectedMember.latitude && selectedMember.longitude
+                  ? { lat: selectedMember.latitude, lng: selectedMember.longitude }
+                  : projectLocation
+              }
+              onCloseClick={() => setSelectedMember(null)}
+            >
+              <div className="p-2 min-w-[180px]">
+                <div className="flex items-center gap-2 mb-2">
+                  {selectedMember.avatar_url ? (
+                    <img 
+                      src={selectedMember.avatar_url} 
+                      alt={selectedMember.full_name}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center">
+                      <User className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-semibold text-sm">{selectedMember.full_name}</div>
+                    <div className="text-xs text-muted-foreground capitalize">{selectedMember.role}</div>
+                  </div>
+                </div>
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "text-xs w-full justify-center",
+                    selectedMember.status === "on_site" && "bg-green-50 border-green-300 text-green-700",
+                    selectedMember.status === "en_route" && "bg-blue-50 border-blue-300 text-blue-700",
+                    selectedMember.status === "away" && "bg-slate-50 border-slate-300 text-slate-700",
+                    !selectedMember.status && "bg-amber-50 border-amber-300 text-amber-700"
+                  )}
+                >
+                  {selectedMember.status === "on_site" && "On Site"}
+                  {selectedMember.status === "en_route" && "En Route"}
+                  {selectedMember.status === "away" && "Away"}
+                  {!selectedMember.status && "Status Unknown"}
+                </Badge>
               </div>
             </InfoWindow>
           )}
