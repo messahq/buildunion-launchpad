@@ -36,6 +36,7 @@ import TaskGanttTimeline from "./TaskGanttTimeline";
 import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
 import BaselineLockCard from "./BaselineLockCard";
+import ProjectTimelineBar from "./ProjectTimelineBar";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "@/hooks/useWeather";
@@ -760,6 +761,32 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         </div>
       </div>
 
+      {/* Main Project Timeline Bar - THE CLOCKWORK */}
+      <ProjectTimelineBar
+        projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+        projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+        onDatesChange={async (startDate, endDate) => {
+          // Update summary state
+          setSummary(prev => prev ? {
+            ...prev,
+            project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+            project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+          } : null);
+          
+          // Persist to database
+          if (summary?.id) {
+            await supabase
+              .from("project_summaries")
+              .update({
+                project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+                project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+              })
+              .eq("id", summary.id);
+          }
+        }}
+        isEditable={isOwner}
+      />
+
       {/* Operational Truth Cards - 8 Pillars */}
       <OperationalTruthCards 
         operationalTruth={buildOperationalTruth({
@@ -1008,6 +1035,33 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
         {/* Timeline Tab */}
         <TabsContent value="timeline" className="mt-6 space-y-6">
+          {/* Synced Project Timeline Bar in Timeline Tab */}
+          <ProjectTimelineBar
+            projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+            projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+            onDatesChange={async (startDate, endDate) => {
+              // Update summary state
+              setSummary(prev => prev ? {
+                ...prev,
+                project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+                project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+              } : null);
+              
+              // Persist to database
+              if (summary?.id) {
+                await supabase
+                  .from("project_summaries")
+                  .update({
+                    project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+                    project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+                  })
+                  .eq("id", summary.id);
+              }
+            }}
+            isEditable={isOwner}
+            className="mb-2"
+          />
+
           {/* Timeline View Toggle - Always show */}
           <div className="flex items-center justify-between gap-2">
             {/* My Tasks indicator for team members */}
