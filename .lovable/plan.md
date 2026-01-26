@@ -1,126 +1,174 @@
 
-# Ideális Projekt Workflow Architektúra - Projects 2
+# Projects 2 - Teljes Újratervezés a Filter Questions Integrációval
 
-## Fő Elvek
+## Jelenlegi Állapot Áttekintése
 
-A rendszer **"egy lépéssel a felhasználó előtt"** jár:
-- Minimális kézi bevitel (csak projekt név + work type + feltöltések)
-- AI automatikusan detektálja a projekt komplexitást
-- Tier alapján a **csapatméret** korlátoz, NEM a projekt méret
-- A workflow ajánlás automatikus, de a felhasználó módosíthatja
+A meglévő rendszer:
+- `ProjectQuestionnaire.tsx` - alapvető projekt adatok gyűjtése
+- `AIAnalysisProgress.tsx` - elemzési progress bar
+- `WorkflowSelector.tsx` - AI eredmények megjelenítése és workflow választás
+- `useProjectAIAnalysis.tsx` - dual-engine AI hook
+- `quick-estimate` edge function - Gemini/GPT elemzés
 
----
-
-## Tier Struktúra (Létszám Alapú)
+## Új Architektúra - "Filter Questions" Lépéssel
 
 ```text
-+-------------+------------------+------------------------+
-| Tier        | Team Limit       | Features               |
-+-------------+------------------+------------------------+
-| FREE        | 0 (Solo only)    | Quick Mode only        |
-|             |                  | 3 AI estimate trial    |
-+-------------+------------------+------------------------+
-| PRO         | 10 members       | Solo + Team Mode       |
-| $19.99/mo   |                  | Unlimited AI estimates |
-|             |                  | Documents, Tasks       |
-+-------------+------------------+------------------------+
-| PREMIUM     | 50 members       | All PRO features       |
-| $49.99/mo   |                  | Conflict Visualization |
-|             |                  | Priority AI, Reporting |
-+-------------+------------------+------------------------+
-| ENTERPRISE  | Unlimited        | All features           |
-|             |                  | Custom integrations    |
-+-------------+------------------+------------------------+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     PROJECTS 2 - ÚJ WORKFLOW                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  [1] ProjectQuestionnaire (Megmarad, egyszerűsítve)                     │
+│      └─ Projekt név, Work Type, Location, Uploads, Description          │
+│                                                                          │
+│  [2] FilterQuestions (ÚJ KOMPONENS)                                     │
+│      ├─ INPUT Filter: Adatforrás és Hitelesség                          │
+│      │   • "Rendelkezésre állnak-e végleges PDF tervrajzok?"            │
+│      │   • "Történt-e módosítás a helyszínen a tervek óta?"             │
+│      │                                                                   │
+│      ├─ TECHNICAL Filter: Komplexitás és Szabályozás                    │
+│      │   • "Érint-e tartószerkezetet, gépészeti fővezetéket?"           │
+│      │   • "Van-e kijelölt műszaki vezető?"                             │
+│      │                                                                   │
+│      └─ WORKFLOW Filter: Erőforrás és Idő                               │
+│          • "Hány szakág összehangolása szükséges?"                      │
+│          • "Mi a kritikus határidő és van-e kötött költségkeret?"       │
+│                                                                          │
+│  [3] AI Analysis (Dual-Engine + Filter-Aware)                           │
+│      ├─ Gemini: Vizuális elemzés + blueprint összehasonlítás            │
+│      ├─ OpenAI: OBC szabályok keresése (ha struktúrális)                │
+│      └─ Synthesis: Conflict detection + AI üzenet                        │
+│                                                                          │
+│  [4] WorkflowSelector (Frissítve)                                        │
+│      ├─ AI Detection Results (szerkeszthető)                            │
+│      ├─ AI Explanation Message (a Gemini-féle szöveg)                   │
+│      ├─ Filter-Based Recommendations                                     │
+│      └─ Solo/Team mode választás (tier-gated)                           │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Workflow Fázisok
+## Részletes Komponens Terv
 
-### Fázis 1: Minimális Input (Kérdőív)
-**Amit kérünk:**
-- Projekt név (kötelező)
-- Work Type (opcionális, de segít az AI-nak)
-- Location (opcionális)
-- Képek/PDF feltöltés (opcionális)
-- Rövid leírás (opcionális)
+### 1. ÚJ: FilterQuestions Komponens
 
-**Amit NEM kérünk:**
-- Projekt méret (AI határozza meg)
-- Team szükséglet (tier alapján automatikus)
-- Workflow típus (AI ajánl)
+**Fájl:** `src/components/projects2/FilterQuestions.tsx`
 
-### Fázis 2: AI Analízis
-**Dual-Engine működés:**
-1. **Gemini (Visual Specialist)**: Kép/PDF elemzés - terület, felület, állapot
-2. **GPT (Estimation Specialist)**: Anyaglista, mennyiségek, költségbecslés
-
-**Automatikus Project Size meghatározás:**
-```text
-SMALL:  < 500 sq ft VAGY < 5 anyag
-MEDIUM: 500-2000 sq ft VAGY 5-10 anyag VAGY 1 blueprint
-LARGE:  > 2000 sq ft VAGY > 10 anyag VAGY 2+ blueprint
-```
-
-### Fázis 3: Workflow Ajánlás (Tier-Guided)
-
-A rendszer a **TIER-t** veszi alapul, nem a projekt méretet:
+**Három szűrő kategória:**
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    WORKFLOW DÖNTÉSI FA                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  User Tier = FREE?                                           │
-│  ├─ YES → SOLO MODE (Quick Workflow)                        │
-│  │         Features: Photo Estimate, Calculator, Quote,     │
-│  │                   Contract (max 3 AI uses)               │
-│  │                                                          │
-│  └─ NO → User Tier = PRO/PREMIUM/ENTERPRISE?                │
-│          │                                                  │
-│          └─ AI Project Size = ?                             │
-│              ├─ SMALL  → Recommend SOLO (but offer TEAM)    │
-│              ├─ MEDIUM → Recommend TEAM (Standard features) │
-│              └─ LARGE  → Recommend TEAM (Full features)     │
-│                                                              │
-│  TEAM MODE csak tier limit-ig enged meghívni:               │
-│  PRO: 10 | PREMIUM: 50 | ENTERPRISE: ∞                      │
-└─────────────────────────────────────────────────────────────┘
+INPUT FILTER (Adatforrás Validáció)
+┌────────────────────────────────────────────────────────────┐
+│ 1. "Rendelkezésre állnak-e a végleges, pecséttel ellátott │
+│     PDF tervrajzok és a jelenlegi helyszíni fotók?"        │
+│     [ ] Igen, mindkettő   [ ] Csak tervrajz                │
+│     [ ] Csak fotók        [ ] Egyik sem                    │
+│                                                             │
+│ 2. "Történt-e bármilyen módosítás a helyszínen a tervek   │
+│     kiadása óta?"                                          │
+│     [ ] Igen, jelentős    [ ] Kisebb módosítások           │
+│     [ ] Nem               [ ] Nem tudom                    │
+└────────────────────────────────────────────────────────────┘
+
+TECHNICAL FILTER (Komplexitás + OBC Trigger)
+┌────────────────────────────────────────────────────────────┐
+│ 3. "A munka érint-e tartószerkezetet, gépészeti            │
+│     fővezetéket vagy külső homlokzatot?"                   │
+│     [ ] Tartószerkezet    [ ] Gépészeti fővezeték          │
+│     [ ] Külső homlokzat   [ ] Egyik sem                    │
+│                                                             │
+│ 4. "Van-e kijelölt felelős műszaki vezető vagy             │
+│     Project Manager a helyszínen?"                          │
+│     [ ] Igen, van PM      [ ] Igen, van műszaki vezető     │
+│     [ ] Nincs kijelölve   [ ] Én vagyok az                 │
+└────────────────────────────────────────────────────────────┘
+
+WORKFLOW FILTER (Erőforrás + Idő)
+┌────────────────────────────────────────────────────────────┐
+│ 5. "Hány különböző szakág összehangolása a feladat?"       │
+│     [ ] 1-2 szakág        [ ] 3-5 szakág                   │
+│     [ ] 6+ szakág         [ ] Nem releváns                 │
+│                                                             │
+│ 6. "Mi a kritikus átadási határidő és van-e kötött        │
+│     költségkeret?"                                          │
+│     [ ] Szigorú határidő + fix budget                      │
+│     [ ] Rugalmas határidő + fix budget                     │
+│     [ ] Szigorú határidő + rugalmas budget                 │
+│     [ ] Mindkettő rugalmas                                 │
+└────────────────────────────────────────────────────────────┘
 ```
 
-### Fázis 4: Workflow Selector UI
+**Filter válaszok hatásai:**
 
-Az AI elemzés után megjelenik:
-1. **AI Detection Results** (szerkeszthető)
-   - Detektált terület (inline edit)
-   - Anyaglista (mennyiség edit)
-   - Projekt méret badge (Small/Medium/Large)
-
-2. **Workflow Options** (3 kártya)
-   - **Solo Mode** - Mindig elérhető
-   - **Team Mode** - PRO+ tierhez (vagy upgrade prompt)
-   - Mindkettőnél: feature lista, becsült lépések
-
-3. **Team Limit Indicator**
-   - "Your tier: PRO - Up to 10 team members"
-   - Ha FREE: "Upgrade to PRO for team features"
+| Válasz | Trigger | Eredmény |
+|--------|---------|----------|
+| Pecsételt tervrajz + fotó | RAG engedélyezés | Gemini vizuális összehasonlítás aktív |
+| Módosítás történt | Conflict Detection | Sárga/piros marker a térképen |
+| Tartószerkezet/gépészet | OBC keresés | OpenAI beazonosítja az engedélyeket |
+| Van PM | Team Mode ajánlás | PRO/PREMIUM workflow trigger |
+| 6+ szakág | Team Map scaling | AI Synthesis mélység növelése |
+| Szigorú határidő | Project Reports | Költségbecslés generálás |
 
 ---
 
-## Adatmodell Változások
+### 2. AI Analysis Message (Gemini válasz)
 
-### project_summaries tábla bővítése (ajánlott):
-```sql
--- Új mezők hozzáadása
-ALTER TABLE project_summaries ADD COLUMN IF NOT EXISTS 
-  ai_workflow_config JSONB DEFAULT '{}'::jsonb;
+Az AI elemzés után megjelenő üzenet dinamikusan épül fel a filter válaszok alapján:
 
--- ai_workflow_config struktúra:
+```text
+"Azért kérdeztem ezeket, mert a BuildUnion nem becsül, hanem elemez.
+
+A válaszai alapján:
+✓ Az OpenAI beazonosította a szükséges engedélyeket: [OBC 9.10.14 - Tartószerkezet]
+✓ A Gemini előkészítette a tervrajzok és fotók vizuális összevetését
+✓ [X] db szakág koordinációját igényli a projekt
+
+Most aktiválom a [PRO] workflow-t, ahol a Conflict Visualization 
+segít elkerülni a hibákat.
+
+📐 Detektált terület: 1,350 sq ft
+🧱 Anyagok: 12 tétel azonosítva
+⚠️ 1 eltérés észlelve a tervek és fotók között"
+```
+
+---
+
+### 3. Adatbázis Struktúra Bővítése
+
+Az `ai_workflow_config` JSONB mező kiterjesztése:
+
+```json
 {
+  "filterAnswers": {
+    "inputFilter": {
+      "hasStampedBlueprints": true,
+      "hasCurrentPhotos": true,
+      "siteModifications": "minor"
+    },
+    "technicalFilter": {
+      "structural": false,
+      "mechanical": true,
+      "facade": false,
+      "hasProjectManager": true
+    },
+    "workflowFilter": {
+      "subcontractorCount": "3-5",
+      "deadlineType": "strict",
+      "budgetType": "fixed"
+    }
+  },
+  "aiTriggers": {
+    "ragEnabled": true,
+    "conflictDetection": true,
+    "obcSearch": true,
+    "teamMapDepth": "standard",
+    "reportGeneration": true
+  },
   "projectSize": "medium",
   "projectSizeReason": "AI detected 1200 sq ft with 7 materials",
   "recommendedMode": "team",
-  "selectedMode": "solo",  -- amit a user választott
+  "selectedMode": "solo",
   "tierAtCreation": "pro",
   "teamLimitAtCreation": 10,
   "aiAnalysis": {
@@ -128,177 +176,154 @@ ALTER TABLE project_summaries ADD COLUMN IF NOT EXISTS
     "areaUnit": "sq ft",
     "materials": [...],
     "hasBlueprint": true,
-    "confidence": "high"
+    "confidence": "high",
+    "obcReferences": ["9.10.14", "3.1.5"],
+    "conflictsDetected": 1
   },
-  "userEdits": {
-    "editedArea": 1350,
-    "editedMaterials": [...],
-    "editedAt": "2026-01-26T..."
-  }
+  "aiExplanationMessage": "Azért kérdeztem ezeket, mert..."
 }
 ```
 
 ---
 
-## Komponens Struktúra
+### 4. Komponens Hierarchia és Flow
 
 ```text
-BuildUnionProjects2.tsx
-├── ProjectQuestionnaire.tsx (egyszerűsített)
-│   └── Csak: név, work type, location, uploads, description
+BuildUnionProjects2.tsx (Fő Orchestrator)
 │
-├── AIAnalysisProgress.tsx (meglévő)
-│   └── Progress bar az elemzés alatt
+├── showQuestionnaire === true
+│   └── ProjectQuestionnaire.tsx
+│       └── onComplete → setShowFilterQuestions(true)
 │
-├── WorkflowSelector.tsx (ÚJ komponens)
-│   ├── AIDetectionResults (szerkeszthető terület/anyagok)
-│   ├── TierInfoBanner (team limit info)
-│   ├── WorkflowCard (Solo) 
-│   └── WorkflowCard (Team) - tier-gated
+├── showFilterQuestions === true (ÚJ ÁLLAPOT)
+│   └── FilterQuestions.tsx (ÚJ)
+│       └── onComplete → triggerAIAnalysis()
 │
-└── ProjectList.tsx (meglévő projektek)
+├── analyzing === true
+│   └── AIAnalysisProgress.tsx (frissítve)
+│       └── Filter-aware lépések megjelenítése
+│
+├── aiAnalysisForSelector !== null
+│   └── WorkflowSelector.tsx (frissítve)
+│       ├── AI Explanation Message (ÚJ)
+│       ├── Filter-Based Recommendations (ÚJ)
+│       ├── AI Detection Results (szerkeszthető)
+│       └── Solo/Team Mode választás
+│
+└── Projekt Lista (ha nincs aktív folyamat)
 ```
 
 ---
 
-## Implementációs Terv
+### 5. Implementációs Lépések
 
-### 1. Kérdőív Egyszerűsítése
-- Eltávolítani: `size` és `teamNeed` mezőket
-- Megtartani: `name`, `workType`, `location`, `images`, `documents`, `description`
-- Az AI elemzés után határozzuk meg a workflow-t
+**Fázis 1: FilterQuestions Komponens Létrehozása**
+- Új fájl: `src/components/projects2/FilterQuestions.tsx`
+- Három szűrő kategória UI implementálása
+- Válaszok state kezelése és validáció
+- Animált átmenetek a szűrők között
 
-### 2. Új WorkflowSelector Komponens
-Létrehozni: `src/components/projects2/WorkflowSelector.tsx`
-- AI eredmények megjelenítése (terület, anyagok, méret)
-- Inline szerkesztés (terület, mennyiségek)
-- Solo/Team mode választás tier-gating-gel
-- Team limit kijelzés
+**Fázis 2: BuildUnionProjects2.tsx Frissítése**
+- Új state: `showFilterQuestions`, `filterAnswers`
+- Flow módosítás: Questionnaire → FilterQuestions → AI Analysis
+- Filter válaszok átadása az AI hook-nak
 
-### 3. Tier-Based Workflow Logic
-Módosítani: `BuildUnionProjects2.tsx`
-- `determineAIWorkflow` függvény átírása:
-  - FREE tier → mindig Solo ajánlás
-  - PRO+ tier → projekt méret alapján ajánlás, de mindkét opció elérhető
-  - Team limit kijelzése a UI-ban
+**Fázis 3: useProjectAIAnalysis Hook Bővítése**
+- Filter válaszok fogadása paraméterként
+- OBC keresés trigger ha structural === true
+- Conflict detection fokozása ha modifications !== "none"
+- AI Explanation Message generálása
 
-### 4. Adatbázis Frissítés
-Migráció: `ai_workflow_config` mező hozzáadása
-- Tier információ mentése a projekt létrehozásakor
-- User edits külön tárolása
+**Fázis 4: WorkflowSelector Frissítése**
+- AI Explanation Message megjelenítése
+- Filter-Based Recommendations szekció
+- Vizuális jelzések a triggerelt funkciókhoz
 
-### 5. Mode Toggle Frissítés
-- Solo → Team váltás: tier ellenőrzés
-- Team → Solo váltás: mindig engedélyezett
-- Upgrade prompt ha FREE user próbál Team-re váltani
+**Fázis 5: AIAnalysisProgress Frissítése**
+- Filter-aware lépések megjelenítése
+- OBC keresés progress ha aktív
+- Conflict detection progress ha aktív
 
 ---
 
-## Felhasználói Folyamat Összefoglaló
+### 6. TypeScript Interfészek
 
-```text
-1. User: "New Project" gomb
-   
-2. Kérdőív: név + work type + képek feltöltése
-   
-3. AI elemzés fut (15-30 sec)
-   ├── Visual analysis (Gemini)
-   ├── Material estimation (GPT)
-   └── Project size determination
-   
-4. Workflow Selector megjelenik:
-   ┌────────────────────────────────────────┐
-   │ 🎯 AI Detection Results               │
-   │ Area: [1,200 sq ft] ✏️                │
-   │ Materials: Drywall (45), Paint (12)...│
-   │ Size: MEDIUM 🟡                        │
-   ├────────────────────────────────────────┤
-   │ 👤 Your Tier: PRO (10 team members)   │
-   ├────────────────────────────────────────┤
-   │ Choose Your Workflow:                  │
-   │                                        │
-   │ [Solo Mode]        [Team Mode] ⭐      │
-   │  Quick estimates    Full management   │
-   │  Calculator         Documents         │
-   │  Quote & Contract   Team & Tasks      │
-   │                     Recommended!       │
-   └────────────────────────────────────────┘
-
-5. User választ → navigáció a megfelelő flow-ba
-   - Solo → /buildunion/quick?projectId=...
-   - Team → /buildunion/project/{id}
-```
-
----
-
-## Technikai Részletek
-
-### WorkflowSelector Props Interface
 ```typescript
-interface WorkflowSelectorProps {
-  projectId: string;
-  analysisResult: AIAnalysisResult;
-  tier: SubscriptionTier;
-  teamLimit: number;
-  onSelectWorkflow: (mode: "solo" | "team", editedData?: EditedAnalysisData) => void;
-  onUpgradeClick: () => void;
+// Filter válaszok
+interface FilterAnswers {
+  inputFilter: {
+    dataAvailability: "both" | "blueprints_only" | "photos_only" | "none";
+    siteModifications: "significant" | "minor" | "none" | "unknown";
+  };
+  technicalFilter: {
+    affectsStructure: boolean;
+    affectsMechanical: boolean;
+    affectsFacade: boolean;
+    hasProjectManager: "yes_pm" | "yes_technical" | "no" | "self";
+  };
+  workflowFilter: {
+    subcontractorCount: "1-2" | "3-5" | "6+" | "not_applicable";
+    deadline: "strict_fixed" | "flexible_fixed" | "strict_flexible" | "both_flexible";
+  };
+}
+
+// AI Triggers (filter válaszokból számított)
+interface AITriggers {
+  ragEnabled: boolean;           // Ha van blueprint + fotó
+  conflictDetection: boolean;    // Ha van módosítás
+  obcSearch: boolean;            // Ha strukturális/gépészeti
+  teamMapDepth: "basic" | "standard" | "deep";  // Szakágak száma alapján
+  reportGeneration: boolean;     // Ha szigorú határidő/budget
+  recommendTeamMode: boolean;    // Ha van PM vagy 3+ szakág
+}
+
+// FilterQuestions props
+interface FilterQuestionsProps {
+  projectData: {
+    name: string;
+    workType: string | null;
+    hasImages: boolean;
+    hasDocuments: boolean;
+  };
+  onComplete: (answers: FilterAnswers) => void;
+  onBack: () => void;
 }
 ```
 
-### Tier-Based Feature Map
-```typescript
-const TIER_FEATURES = {
-  free: {
-    modes: ["solo"],
-    teamLimit: 0,
-    aiTrials: 3,
-    features: ["Photo Estimate", "Calculator", "Quote", "Contract"]
-  },
-  pro: {
-    modes: ["solo", "team"],
-    teamLimit: 10,
-    aiTrials: Infinity,
-    features: ["All Solo", "Documents", "Team", "Tasks", "Messaging"]
-  },
-  premium: {
-    modes: ["solo", "team"],
-    teamLimit: 50,
-    aiTrials: Infinity,
-    features: ["All Pro", "Conflict Viz", "Priority AI", "Reports"]
-  }
-};
-```
+---
 
-### Navigációs Logika
-```typescript
-const handleWorkflowSelect = (mode: "solo" | "team") => {
-  if (mode === "team" && tier === "free") {
-    // Upgrade modal megnyitása
-    setShowUpgradeModal(true);
-    return;
-  }
-  
-  // Adatok mentése
-  await saveWorkflowConfig(projectId, mode, editedData);
-  
-  // Navigáció
-  if (mode === "solo") {
-    navigate(`/buildunion/quick?projectId=${projectId}`);
-  } else {
-    navigate(`/buildunion/project/${projectId}`);
-  }
-};
-```
+### 7. UI/UX Design Irányelvek
+
+**FilterQuestions UI:**
+- Kártya alapú design, egy kérdés per kártya
+- Animált átmenetek (slide) a kártyák között
+- Progress indicator (1/6, 2/6, stb.)
+- Visszalépés lehetősége
+- "Skip All" opció (alapértelmezett válaszokkal)
+- Ikonok és színek a kategóriákhoz:
+  - Input Filter: 📁 Kék
+  - Technical Filter: ⚙️ Narancs
+  - Workflow Filter: 📊 Zöld
+
+**AI Explanation Message UI:**
+- Disztinktív kártya a WorkflowSelector-ban
+- Gemini/OpenAI logók a megfelelő részeknél
+- Animált "typewriter" effekt az üzenethez
+- Expandálható "Decision Log" részletek
 
 ---
 
-## Összefoglalás
+### 8. Összefoglalás
 
-Ez az architektúra:
-1. **Minimalizálja a user inputot** - csak név és feltöltések kellenek
-2. **AI-ra bízza a komplexitás detektálást** - projekt méret automatikus
-3. **Tier alapján korlátoz** - létszám limit, nem projekt méret
-4. **Mindkét opciót kínálja** - Solo és Team, de tier-gated
-5. **Szerkeszthető AI eredmények** - user felülbírálhatja
-6. **Elkülönített Projects 2** - nem érinti a régi workspace-t
+Ez a terv ötvözi:
+1. **Az eredeti Gemini tervet** - három szűrő kategória, AI magyarázó üzenet
+2. **A meglévő kódot** - ProjectQuestionnaire, WorkflowSelector, AI hook
+3. **A tier-based architektúrát** - létszám korlátok, nem projekt méret
+4. **A dual-engine AI-t** - Gemini vizuális + OpenAI szabályozási elemzés
 
+Az új workflow:
+1. Minimális input (név, work type, feltöltések)
+2. Intelligens szűrő kérdések (RAG, OBC, Team triggers)
+3. AI elemzés a filter válaszok alapján
+4. Átlátható magyarázat ("Azért kérdeztem...")
+5. Szerkeszthető eredmények és workflow választás
