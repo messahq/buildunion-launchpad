@@ -231,5 +231,21 @@
     "obcReferences": "OBC Hivatkozások",
     "recommendations": "Javaslatok",
     "regulatoryNotes": "Fontos Megjegyzések"
+  },
+  "report": {
+    "title": "Projekt Jelentés",
+    "generateReport": "Jelentés Generálása",
+    "generating": "Jelentés generálása...",
+    "success": "Jelentés sikeresen elkészült!",
+    "error": "Jelentés generálása sikertelen",
+    "premiumRequired": "Premium előfizetés szükséges",
+    "downloadComplete": "Jelentés letöltve",
+    "sections": {
+      "operationalTruth": "Működési Igazság - 8 Pillér",
+      "obc": "OBC Szabályozási Megfelelőség",
+      "conflicts": "Konfliktus Jelentés",
+      "materials": "AI-Észlelt Anyagok",
+      "aiAnalysis": "Kettős Motor AI Elemzés"
+    }
   }
 }

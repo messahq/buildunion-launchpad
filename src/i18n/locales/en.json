@@ -231,5 +231,21 @@
     "obcReferences": "OBC References",
     "recommendations": "Recommendations",
     "regulatoryNotes": "Important Notes"
+  },
+  "report": {
+    "title": "Project Report",
+    "generateReport": "Generate Report",
+    "generating": "Generating report...",
+    "success": "Report generated successfully!",
+    "error": "Failed to generate report",
+    "premiumRequired": "Premium subscription required",
+    "downloadComplete": "Report downloaded",
+    "sections": {
+      "operationalTruth": "Operational Truth - 8 Pillars",
+      "obc": "OBC Regulatory Compliance",
+      "conflicts": "Conflict Report",
+      "materials": "AI-Detected Materials",
+      "aiAnalysis": "Dual-Engine AI Analysis"
+    }
   }
 }
