@@ -46,11 +46,35 @@ interface ProjectData {
   site_images: string[] | null;
 }
 
+interface PhotoEstimateData {
+  area?: number | null;
+  areaUnit?: string;
+  areaConfidence?: string;
+  materials?: Array<{ item: string; quantity: number; unit: string; notes?: string }>;
+  summary?: string;
+  recommendations?: string[];
+  surfaceType?: string;
+  surfaceCondition?: string;
+  roomType?: string;
+  projectSize?: string;
+  projectSizeReason?: string;
+  blueprintAnalysis?: {
+    detectedArea?: number | null;
+    areaUnit?: string;
+    extractedText?: string;
+  };
+}
+
 interface ProjectSummaryData {
   id: string;
   mode: string;
   status: string;
-  photo_estimate: Record<string, unknown> | null;
+  photo_estimate: PhotoEstimateData | null;
+  blueprint_analysis: {
+    detectedArea?: number | null;
+    areaUnit?: string;
+    extractedText?: string;
+  } | null;
   calculator_results: unknown[];
   ai_workflow_config: {
     filterAnswers?: FilterAnswers;
@@ -136,9 +160,22 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const aiConfig = summary?.ai_workflow_config;
   const filterAnswers = aiConfig?.filterAnswers;
   const aiTriggers = aiConfig?.aiTriggers;
-  const aiAnalysis = aiConfig?.aiAnalysis;
   const dualEngineOutput = aiConfig?.dualEngineOutput;
   const synthesisResult = aiConfig?.synthesisResult;
+  
+  // Extract photo_estimate data - this contains the actual AI analysis results
+  const photoEstimate = summary?.photo_estimate;
+  const blueprintAnalysis = summary?.blueprint_analysis;
+  
+  // Build unified aiAnalysis from photo_estimate (actual AI results)
+  // Priority: photo_estimate.area > blueprint_analysis.detectedArea > ai_workflow_config.aiAnalysis
+  const aiAnalysis = photoEstimate ? {
+    area: photoEstimate.area ?? blueprintAnalysis?.detectedArea ?? null,
+    areaUnit: photoEstimate.areaUnit || blueprintAnalysis?.areaUnit || "sq ft",
+    materials: photoEstimate.materials || [],
+    hasBlueprint: !!blueprintAnalysis?.extractedText || !!photoEstimate.blueprintAnalysis?.extractedText,
+    confidence: photoEstimate.areaConfidence || "medium",
+  } : aiConfig?.aiAnalysis;
 
   // Status indicators
   const hasPhotoEstimate = !!summary?.photo_estimate && Object.keys(summary.photo_estimate).length > 0;
@@ -227,10 +264,11 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
       <OperationalTruthCards 
         operationalTruth={buildOperationalTruth({
           aiAnalysis,
+          blueprintAnalysis: blueprintAnalysis ? { analyzed: !!blueprintAnalysis.extractedText } : undefined,
           dualEngineOutput,
           synthesisResult,
           filterAnswers,
-          projectSize: aiConfig?.projectSize,
+          projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
         })} 
       />
 

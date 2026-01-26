@@ -67,8 +67,21 @@ export function buildOperationalTruth(params: BuildOperationalTruthParams): Oper
     projectSize,
   } = params;
 
-  // Calculate each pillar
-  const confirmedArea = aiAnalysis?.area || null;
+  // Calculate confirmed area - prioritize direct area, then try to extract from materials
+  let confirmedArea = aiAnalysis?.area || null;
+  
+  // If no direct area but we have materials with sq ft quantities, extract from first material
+  if (confirmedArea === null && aiAnalysis?.materials?.length) {
+    const areaBasedMaterial = aiAnalysis.materials.find(m => 
+      m.unit?.toLowerCase().includes('sq ft') || 
+      m.unit?.toLowerCase().includes('sq m') ||
+      m.unit?.toLowerCase().includes('m²')
+    );
+    if (areaBasedMaterial && areaBasedMaterial.quantity > 0) {
+      confirmedArea = areaBasedMaterial.quantity;
+    }
+  }
+  
   const areaUnit = aiAnalysis?.areaUnit || "sq ft";
   const materialsCount = aiAnalysis?.materials?.length || 0;
 

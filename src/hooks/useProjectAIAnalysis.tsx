@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, SubscriptionTier } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
 import { DualEngineOutput, SynthesisResult } from "@/components/projects2/ProjectSynthesis";
+import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 
 // Project size type - determined by AI
 export type ProjectSize = "small" | "medium" | "large";
@@ -437,6 +438,27 @@ export const useProjectAIAnalysis = () => {
     setError(null);
   };
 
+  // Build operational truth from result - automatically syncs with AI analysis
+  const operationalTruth: OperationalTruth | null = useMemo(() => {
+    if (!result) return null;
+    
+    return buildOperationalTruth({
+      aiAnalysis: {
+        area: result.estimate.area,
+        areaUnit: result.estimate.areaUnit,
+        materials: result.estimate.materials,
+        hasBlueprint: !!result.blueprintAnalysis?.extractedText,
+        confidence: result.estimate.areaConfidence,
+      },
+      blueprintAnalysis: result.blueprintAnalysis ? {
+        analyzed: !!result.blueprintAnalysis.extractedText,
+      } : undefined,
+      dualEngineOutput: result.dualEngineOutput,
+      synthesisResult: result.synthesisResult,
+      projectSize: result.projectSize,
+    });
+  }, [result]);
+
   return {
     analyzeProject,
     analyzing,
@@ -446,6 +468,8 @@ export const useProjectAIAnalysis = () => {
     error,
     reset,
     tierConfig: getTierAnalysisConfig(subscription.tier),
+    // NEW: Direct access to operational truth from AI analysis
+    operationalTruth,
   };
 };
 
