@@ -1072,6 +1072,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               return Object.values(laborMap);
             })()}
             projectTotal={totalTaskBudget}
+            projectName={project.name}
           />
         </TabsContent>
 

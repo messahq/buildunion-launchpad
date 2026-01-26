@@ -15,11 +15,15 @@ import {
   Hammer,
   MoreHorizontal,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Download,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { downloadPDF } from "@/lib/pdfGenerator";
+import { toast } from "sonner";
 
 interface CostItem {
   id: string;
@@ -41,18 +45,23 @@ interface MaterialCalculationTabProps {
   materials: TaskBasedEntry[];
   labor: TaskBasedEntry[];
   projectTotal: number;
+  projectName?: string;
+  companyName?: string;
   onCostsChange?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[] }) => void;
   currency?: string;
 }
 
-export function MaterialCalculationTab({ 
+export function MaterialCalculationTab({
   materials: initialMaterials,
   labor: initialLabor,
   projectTotal,
+  projectName = "Project",
+  companyName,
   onCostsChange,
   currency = "CAD"
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
+  const [isExporting, setIsExporting] = useState(false);
   
   // Material items
   const [materialItems, setMaterialItems] = useState<CostItem[]>(() => 
@@ -185,6 +194,178 @@ export function MaterialCalculationTab({
       currency: currency,
       minimumFractionDigits: 2,
     }).format(amount);
+  };
+
+  // Generate and download PDF cost breakdown
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const currentDate = new Date().toLocaleDateString("en-CA", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+
+      // Build cost breakdown items HTML
+      const buildItemsHtml = (items: CostItem[], colorClass: string) => {
+        if (items.length === 0) return '';
+        return items.map(item => `
+          <tr>
+            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0;">${item.item}</td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity.toLocaleString()}</td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.unit}</td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formatCurrency(item.unitPrice)}</td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; color: ${colorClass};">${formatCurrency(item.totalPrice)}</td>
+          </tr>
+        `).join('');
+      };
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.5; }
+          </style>
+        </head>
+        <body>
+          <div style="max-width: 800px; margin: 0 auto; padding: 40px;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 12px; margin-bottom: 32px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">Cost Breakdown</h1>
+                  <p style="font-size: 14px; opacity: 0.9;">${projectName}</p>
+                </div>
+                <div style="text-align: right;">
+                  ${companyName ? `<p style="font-size: 16px; font-weight: 600;">${companyName}</p>` : ''}
+                  <p style="font-size: 12px; opacity: 0.8;">Generated: ${currentDate}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Materials Section -->
+            ${materialItems.length > 0 ? `
+              <div style="margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                  <div style="width: 24px; height: 24px; background: #3b82f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">📦</div>
+                  <h2 style="font-size: 18px; font-weight: 600; color: #1e40af;">Materials</h2>
+                  <span style="margin-left: auto; font-weight: 600; color: #1e40af;">${formatCurrency(materialsTotal)}</span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                  <thead>
+                    <tr style="background: #f8fafc;">
+                      <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
+                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Qty</th>
+                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit</th>
+                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit Price</th>
+                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${buildItemsHtml(materialItems, '#1e40af')}
+                  </tbody>
+                </table>
+              </div>
+            ` : ''}
+
+            <!-- Labor Section -->
+            ${laborItems.length > 0 ? `
+              <div style="margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                  <div style="width: 24px; height: 24px; background: #f59e0b; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">🔨</div>
+                  <h2 style="font-size: 18px; font-weight: 600; color: #b45309;">Labor</h2>
+                  <span style="margin-left: auto; font-weight: 600; color: #b45309;">${formatCurrency(laborTotal)}</span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                  <thead>
+                    <tr style="background: #f8fafc;">
+                      <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
+                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Qty</th>
+                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit</th>
+                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit Price</th>
+                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${buildItemsHtml(laborItems, '#b45309')}
+                  </tbody>
+                </table>
+              </div>
+            ` : ''}
+
+            <!-- Other Section -->
+            ${otherItems.length > 0 ? `
+              <div style="margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                  <div style="width: 24px; height: 24px; background: #8b5cf6; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">⋯</div>
+                  <h2 style="font-size: 18px; font-weight: 600; color: #7c3aed;">Other</h2>
+                  <span style="margin-left: auto; font-weight: 600; color: #7c3aed;">${formatCurrency(otherTotal)}</span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                  <thead>
+                    <tr style="background: #f8fafc;">
+                      <th style="padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Description</th>
+                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Qty</th>
+                      <th style="padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit</th>
+                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Unit Price</th>
+                      <th style="padding: 12px; text-align: right; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${buildItemsHtml(otherItems, '#7c3aed')}
+                  </tbody>
+                </table>
+              </div>
+            ` : ''}
+
+            <!-- Summary & Grand Total -->
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 24px; margin-top: 32px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                  <span style="color: #78716c;">📦 Materials</span>
+                  <span style="font-weight: 600;">${formatCurrency(materialsTotal)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                  <span style="color: #78716c;">🔨 Labor</span>
+                  <span style="font-weight: 600;">${formatCurrency(laborTotal)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                  <span style="color: #78716c;">⋯ Other</span>
+                  <span style="font-weight: 600;">${formatCurrency(otherTotal)}</span>
+                </div>
+              </div>
+              <div style="border-top: 2px solid #b45309; padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 20px; font-weight: 700; color: #78350f;">Grand Total</span>
+                <span style="font-size: 28px; font-weight: 800; color: #78350f;">${formatCurrency(grandTotal)}</span>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px;">
+              <p>This is a cost breakdown generated for project estimation purposes.</p>
+              <p style="margin-top: 4px;">Generated on ${currentDate}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await downloadPDF(htmlContent, {
+        filename: `cost-breakdown-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`,
+        pageFormat: 'a4',
+        margin: 10
+      });
+
+      toast.success(t("materials.pdfExported", "Cost breakdown exported to PDF"));
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error(t("materials.pdfError", "Failed to export PDF"));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Reusable item row component
@@ -339,6 +520,21 @@ export function MaterialCalculationTab({
           >
             Project: {formatCurrency(projectTotal)}
           </Badge>
+          {/* Export PDF Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="gap-2"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{t("materials.exportPdf", "Export PDF")}</span>
+          </Button>
         </div>
       </div>
 
@@ -551,8 +747,8 @@ export function MaterialCalculationTab({
         </Card>
       </Collapsible>
 
-      {/* Grand Total - matching project total */}
-      <Card className="bg-primary/5 border-primary/20">
+      {/* Grand Total - matching project total with beige background */}
+      <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
         <CardContent className="py-4">
           <div className="space-y-3">
             {/* Section subtotals */}
@@ -577,24 +773,24 @@ export function MaterialCalculationTab({
             </div>
             
             {/* Divider */}
-            <div className="border-t border-primary/20" />
+            <div className="border-t border-amber-300 dark:border-amber-700" />
             
             {/* Grand Total */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                <span className="font-semibold text-lg">
+                <DollarSign className="h-5 w-5 text-amber-700 dark:text-amber-400" />
+                <span className="font-semibold text-lg text-amber-900 dark:text-amber-200">
                   {t("materials.grandTotal", "Grand Total")}
                 </span>
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-amber-800 dark:text-amber-300">
                 {formatCurrency(grandTotal)}
               </div>
             </div>
 
             {/* Comparison with project total */}
             {Math.abs(grandTotal - projectTotal) > 0.01 && projectTotal > 0 && (
-              <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-dashed">
+              <div className="flex items-center justify-between text-xs text-amber-700/70 dark:text-amber-400/70 pt-2 border-t border-dashed border-amber-300 dark:border-amber-700">
                 <span>Project Total (from tasks)</span>
                 <span className="font-medium">{formatCurrency(projectTotal)}</span>
               </div>
