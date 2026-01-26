@@ -99,8 +99,11 @@ const TeamMapViewContent = ({
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const libraries: ("places" | "maps")[] = ["places", "maps"];
+  
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
+    libraries,
   });
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
