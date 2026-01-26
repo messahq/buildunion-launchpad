@@ -37,6 +37,7 @@
     "projectTimeline": "Project Timeline",
     "notSet": "Not set",
     "datesSaved": "Project dates saved",
+    "datesSynced": "Project dates synced across all timelines",
     "startDate": "Project Start",
     "endDate": "Target End",
     "pickDate": "Pick date"
