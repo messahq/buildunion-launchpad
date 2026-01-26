@@ -4,6 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, SubscriptionTier } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
+// Project size type - determined by AI
+export type ProjectSize = "small" | "medium" | "large";
+
 export interface AIAnalysisResult {
   estimate: {
     materials: Array<{
@@ -51,6 +54,9 @@ export interface AIAnalysisResult {
     }>;
     documentCount: number;
   };
+  // AI-determined project size
+  projectSize: ProjectSize;
+  projectSizeReason: string;
   processingTime?: number;
   tier?: string;
 }
@@ -259,7 +265,14 @@ export const useProjectAIAnalysis = () => {
       }
 
       setProgress(85);
-      setCurrentStep("Saving results...");
+      setCurrentStep("Determining project size...");
+
+      // Determine project size based on AI analysis
+      const { projectSize, projectSizeReason } = determineProjectSize(
+        imageAnalysisResult,
+        blueprintAnalysis,
+        documents.length
+      );
 
       const analysisResult: AIAnalysisResult = {
         estimate: imageAnalysisResult || {
@@ -274,9 +287,13 @@ export const useProjectAIAnalysis = () => {
           roomType: "unknown",
         },
         blueprintAnalysis,
+        projectSize,
+        projectSizeReason,
         processingTime: Date.now() - startTime,
         tier: subscription.tier,
       };
+
+      setCurrentStep("Saving results...");
 
       // Save to project_summaries - convert to JSON-safe format
       const photoEstimateData = JSON.parse(JSON.stringify({
@@ -294,15 +311,31 @@ export const useProjectAIAnalysis = () => {
         tier: subscription.tier,
         imageCount: imagesToAnalyze.length,
         documentCount: documents.length,
+        // Include AI-determined project size
+        projectSize,
+        projectSizeReason,
       }));
 
       const blueprintData = blueprintAnalysis ? JSON.parse(JSON.stringify(blueprintAnalysis)) : null;
+
+      // Include project size in calculator_results for workflow recommendations
+      const calculatorResultsWithSize = [{
+        type: "ai_project_analysis",
+        projectSize,
+        projectSizeReason,
+        detectedArea: analysisResult.estimate.area,
+        areaUnit: analysisResult.estimate.areaUnit,
+        materialsCount: analysisResult.estimate.materials.length,
+        hasBlueprint: !!blueprintAnalysis?.extractedText,
+        analyzedAt: new Date().toISOString(),
+      }];
 
       const { error: updateError } = await supabase
         .from("project_summaries")
         .update({
           photo_estimate: photoEstimateData,
           blueprint_analysis: blueprintData,
+          calculator_results: calculatorResultsWithSize,
           status: "analyzed",
           updated_at: new Date().toISOString(),
         })
@@ -366,6 +399,71 @@ async function fileToBase64(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// Helper: Determine project size based on AI analysis
+function determineProjectSize(
+  imageAnalysis: any,
+  blueprintAnalysis: AIAnalysisResult["blueprintAnalysis"] | undefined,
+  documentCount: number
+): { projectSize: ProjectSize; projectSizeReason: string } {
+  // Priority: blueprint area > image analysis area
+  const area = blueprintAnalysis?.detectedArea || imageAnalysis?.area || 0;
+  const areaUnit = blueprintAnalysis?.areaUnit || imageAnalysis?.areaUnit || "sq ft";
+  const materialsCount = imageAnalysis?.materials?.length || 0;
+  const hasBlueprint = !!blueprintAnalysis?.extractedText;
+  const dimensionsCount = blueprintAnalysis?.dimensions?.length || 0;
+
+  // Convert to sq ft for consistent comparison if needed
+  let normalizedArea = area;
+  if (areaUnit === "m²") {
+    normalizedArea = area * 10.764; // Convert m² to sq ft
+  }
+
+  // Determine size based on multiple factors
+  let projectSize: ProjectSize = "small";
+  let reasons: string[] = [];
+
+  // Area-based determination (primary factor)
+  if (normalizedArea > 0) {
+    if (normalizedArea >= 2000) {
+      projectSize = "large";
+      reasons.push(`Large area: ${area} ${areaUnit}`);
+    } else if (normalizedArea >= 500) {
+      projectSize = "medium";
+      reasons.push(`Medium area: ${area} ${areaUnit}`);
+    } else {
+      reasons.push(`Small area: ${area} ${areaUnit}`);
+    }
+  }
+
+  // Complexity indicators can upgrade the size
+  if (materialsCount > 10 && projectSize !== "large") {
+    projectSize = projectSize === "small" ? "medium" : "large";
+    reasons.push(`${materialsCount} materials detected`);
+  } else if (materialsCount > 5 && projectSize === "small") {
+    projectSize = "medium";
+    reasons.push(`${materialsCount} materials`);
+  }
+
+  // Blueprint presence indicates complexity
+  if (hasBlueprint && documentCount > 1) {
+    if (projectSize === "small") projectSize = "medium";
+    reasons.push(`${documentCount} blueprint(s)`);
+  }
+
+  // Multiple room dimensions indicate complexity
+  if (dimensionsCount > 3 && projectSize !== "large") {
+    projectSize = projectSize === "small" ? "medium" : "large";
+    reasons.push(`${dimensionsCount} room dimensions`);
+  }
+
+  // Build reason string
+  const projectSizeReason = reasons.length > 0 
+    ? `AI determined ${projectSize} project: ${reasons.join(", ")}`
+    : `Default: ${projectSize} project (limited data)`;
+
+  return { projectSize, projectSizeReason };
 }
 
 // Helper: Parse area and dimensions from extracted PDF text
