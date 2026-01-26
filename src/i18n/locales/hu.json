@@ -6,7 +6,7 @@
     "lockedOn": "Rögzítve",
     "changesDetected": "változás az alapállapothoz képest",
     "noChanges": "Nincs változás az alapállapothoz képest",
-    "viewComparison": "Teljes összehasonlítás",
+    "viewComparison": "Részletek",
     "comparisonTitle": "Alapállapot vs Jelenlegi állapot",
     "comparisonDesc": "Hasonlítsd össze a rögzített alapértékeket a jelenlegi operatív igazsággal",
     "lockDescription": "Rögzítsd a jelenlegi 8 pillért alapállapotként a munka megkezdése előtt. Ez lehetővé teszi a változások nyomon követését.",
@@ -14,7 +14,24 @@
     "confirmTitle": "Projekt alapállapot rögzítése?",
     "confirmDesc": "Ez elmenti a jelenlegi állapotát mind a 8 operatív igazság pillérnek. Nyomon követheted a változásokat ehhez az alapállapothoz képest.",
     "willBeLocked": "A következő értékek lesznek rögzítve:",
-    "confirmLock": "Alapállapot rögzítése"
+    "confirmLock": "Alapállapot rögzítése",
+    "history": "Előzmények",
+    "noHistory": "Nincs verzió előzmény",
+    "unlockModify": "Feloldás és módosítás",
+    "modifyTitle": "Alapállapot módosítása",
+    "modifyDesc": "A változtatások új alapállapot verziót hoznak létre. A korábbi verziók megmaradnak az audit naplóban.",
+    "confirmedArea": "Megerősített terület",
+    "previous": "Előző",
+    "changeReason": "Változtatás oka",
+    "reasonRequired": "Kérlek add meg a változtatás okát",
+    "reasonPlaceholder": "pl. A helyszíni újramérés nagyobb területet mutatott",
+    "reasonNote": "Ez rögzítésre kerül a Döntési Naplóban audit célból.",
+    "saveNewVersion": "Új verzió mentése",
+    "versionCreated": "Új alapállapot verzió létrehozva",
+    "initialLock": "Kezdeti alapállapot rögzítés",
+    "adjustBeforeLock": "Értékek módosítása rögzítés előtt",
+    "optionalNote": "Megjegyzés (opcionális)",
+    "initialNotePlaceholder": "pl. Kezdeti alapállapot AI elemzés alapján"
   },
   "timeline": {
     "ganttView": "Gantt Idősor",
@@ -23,7 +40,11 @@
     "budgetUpdated": "Költségvetés frissítve",
     "clickToAddBudget": "Kattints a költségvetés hozzáadásához",
     "noBudget": "Nincs költségvetés beállítva",
-    "unscheduled": "Ütemezetlen feladatok"
+    "unscheduled": "Ütemezetlen feladatok",
+    "viewMode": "Nézet",
+    "phases": "Fázisok",
+    "gantt": "Gantt",
+    "hierarchical": "Projekt fázisok"
   },
   "pillars": {
     "area": "Megerősített terület",

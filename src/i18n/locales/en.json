@@ -6,7 +6,7 @@
     "lockedOn": "Locked on",
     "changesDetected": "changes since baseline",
     "noChanges": "No changes from baseline",
-    "viewComparison": "View Full Comparison",
+    "viewComparison": "View Details",
     "comparisonTitle": "Baseline vs Current State",
     "comparisonDesc": "Compare the locked baseline values with the current operational truth",
     "lockDescription": "Lock the current 8 pillars as a baseline before work begins. This allows tracking changes throughout the project.",
@@ -14,7 +14,24 @@
     "confirmTitle": "Lock Project Baseline?",
     "confirmDesc": "This will save the current state of all 8 operational truth pillars. You can track changes against this baseline as the project progresses.",
     "willBeLocked": "The following values will be locked:",
-    "confirmLock": "Lock Baseline"
+    "confirmLock": "Lock Baseline",
+    "history": "History",
+    "noHistory": "No version history",
+    "unlockModify": "Unlock & Modify",
+    "modifyTitle": "Modify Baseline",
+    "modifyDesc": "Changes will create a new baseline version. Previous versions are preserved in the audit log.",
+    "confirmedArea": "Confirmed Area",
+    "previous": "Previous",
+    "changeReason": "Reason for Change",
+    "reasonRequired": "Please provide a reason for the change",
+    "reasonPlaceholder": "e.g. Site re-measurement revealed larger area",
+    "reasonNote": "This will be recorded in the Decision Log for audit purposes.",
+    "saveNewVersion": "Save New Version",
+    "versionCreated": "New baseline version created",
+    "initialLock": "Initial baseline lock",
+    "adjustBeforeLock": "Adjust values before locking",
+    "optionalNote": "Note (optional)",
+    "initialNotePlaceholder": "e.g. Initial baseline based on AI analysis"
   },
   "timeline": {
     "ganttView": "Gantt Timeline",
@@ -23,7 +40,11 @@
     "budgetUpdated": "Budget updated",
     "clickToAddBudget": "Click to add budget",
     "noBudget": "No budget set",
-    "unscheduled": "Unscheduled Tasks"
+    "unscheduled": "Unscheduled Tasks",
+    "viewMode": "View",
+    "phases": "Phases",
+    "gantt": "Gantt",
+    "hierarchical": "Project Phases"
   },
   "pillars": {
     "area": "Confirmed Area",
