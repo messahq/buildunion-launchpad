@@ -38,7 +38,9 @@ import {
   ArrowLeft,
   Pencil,
   Download,
-  Copy
+  Copy,
+  ArrowRight,
+  Brain
 } from "lucide-react";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
 
@@ -83,6 +85,7 @@ interface Contract {
 interface ContractHistoryProps {
   projectId?: string;
   showTitle?: boolean;
+  onNavigateToAI?: () => void;
 }
 
 type ContractTemplateType = "custom" | "residential" | "commercial" | "renovation";
@@ -114,7 +117,7 @@ const CONTRACT_TEMPLATES = [
   },
 ];
 
-const ContractHistory = ({ projectId, showTitle = true }: ContractHistoryProps) => {
+const ContractHistory = ({ projectId, showTitle = true, onNavigateToAI }: ContractHistoryProps) => {
   const { user } = useAuth();
   const { formatCurrency, config } = useRegionSettings();
   const { profile } = useBuProfile();
@@ -677,6 +680,23 @@ const handleContractGenerated = () => {
             </div>
           );
           })}
+        </div>
+      )}
+
+      {/* Continue to Operational Truth */}
+      {onNavigateToAI && (
+        <div className="mt-6 pt-4 border-t border-slate-200">
+          <Button
+            onClick={onNavigateToAI}
+            className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+          >
+            <Brain className="w-4 h-4" />
+            Continue to Operational Truth
+            <ArrowRight className="w-4 h-4 ml-auto" />
+          </Button>
+          <p className="text-xs text-slate-500 text-center mt-2">
+            Review all 8 elements and verify project data with AI
+          </p>
         </div>
       )}
     </div>

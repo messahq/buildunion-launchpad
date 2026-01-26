@@ -1632,7 +1632,11 @@ const BuildUnionProjectDetails = () => {
 
                       {blueprintTab === "contracts" && (
                         <div className="p-4">
-                          <ContractHistory projectId={project.id} showTitle={false} />
+                          <ContractHistory 
+                            projectId={project.id} 
+                            showTitle={false}
+                            onNavigateToAI={() => setBlueprintTab("ai")}
+                          />
                         </div>
                       )}
                     </div>
