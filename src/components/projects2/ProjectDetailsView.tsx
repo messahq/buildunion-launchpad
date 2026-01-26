@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { WeatherWidget } from "@/components/WeatherWidget";
-import ActiveProjectTimeline from "@/components/ActiveProjectTimeline";
+
 import ProjectSynthesis, { DualEngineOutput, SynthesisResult } from "./ProjectSynthesis";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
 import ConflictStatusIndicator from "./ConflictStatusIndicator";
@@ -32,7 +32,7 @@ import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
-import TaskGanttTimeline from "./TaskGanttTimeline";
+
 import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
 import BaselineLockCard from "./BaselineLockCard";
@@ -273,7 +273,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
   const [tasks, setTasks] = useState<TaskWithBudget[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [totalTaskBudget, setTotalTaskBudget] = useState(0);
-  const [timelineView, setTimelineView] = useState<"gantt" | "hierarchical" | "myTasks">("hierarchical");
+  const [timelineView, setTimelineView] = useState<"hierarchical" | "myTasks">("hierarchical");
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -420,7 +420,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           assignee_avatar: memberProfiles[task.assigned_to]?.avatar_url,
         }));
 
-        // If no tasks from DB, use demo tasks so they persist in state
+        // If no tasks from DB, generate and SAVE demo tasks to the database
         if (enrichedTasks.length === 0 && user?.id) {
           // Get materials from summary for demo task generation
           const { data: summaryForMaterials } = await supabase
@@ -435,11 +435,52 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             [];
           
           const demoTasks = generateDemoTasks(projectId, user.id, aiMaterials);
-          setTasks(demoTasks);
           
-          // Calculate total budget for demo tasks
-          const total = demoTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
-          setTotalTaskBudget(total);
+          // Prepare tasks for database insertion (remove demo- prefix and use real UUIDs)
+          const tasksToInsert = demoTasks.map(task => ({
+            project_id: task.project_id,
+            assigned_to: task.assigned_to,
+            assigned_by: task.assigned_by,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            status: task.status,
+            due_date: task.due_date,
+            unit_price: task.unit_price,
+            quantity: task.quantity,
+            total_cost: task.total_cost,
+          }));
+          
+          // Insert tasks into database
+          const { data: insertedTasks, error: insertError } = await supabase
+            .from("project_tasks")
+            .insert(tasksToInsert)
+            .select();
+          
+          if (insertError) {
+            console.error("Failed to save tasks to database:", insertError);
+            // Fallback to local demo tasks if insert fails
+            setTasks(demoTasks);
+            const total = demoTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+            setTotalTaskBudget(total);
+          } else if (insertedTasks) {
+            // Use the inserted tasks with real IDs
+            const savedTasks = insertedTasks.map(task => ({
+              ...task,
+              unit_price: task.unit_price || 0,
+              quantity: task.quantity || 1,
+              total_cost: task.total_cost || 0,
+              assignee_name: "Project Owner",
+              assignee_avatar: undefined,
+            }));
+            setTasks(savedTasks);
+            
+            // Calculate total budget
+            const total = savedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+            setTotalTaskBudget(total);
+            
+            toast.success(t("timeline.tasksCreated", "{{count}} tasks created for this project", { count: savedTasks.length }));
+          }
         } else {
           setTasks(enrichedTasks);
           
@@ -447,10 +488,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           const total = enrichedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
           setTotalTaskBudget(total);
         }
-        
-        // Calculate total budget
-        const total = enrichedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
-        setTotalTaskBudget(total);
       } catch (err) {
         console.error("Error fetching tasks:", err);
       } finally {
@@ -482,22 +519,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     };
   }, [projectId, user?.id]);
 
-  // Handle budget update callback
-  const handleBudgetUpdate = useCallback((taskId: string, unitPrice: number, quantity: number) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId
-          ? { ...t, unit_price: unitPrice, quantity, total_cost: unitPrice * quantity }
-          : t
-      )
-    );
-    // Recalculate total
-    setTotalTaskBudget((prev) => {
-      const oldTask = tasks.find((t) => t.id === taskId);
-      const oldCost = oldTask?.total_cost || 0;
-      return prev - oldCost + unitPrice * quantity;
-    });
-  }, [tasks]);
 
   // Calculate global verification rate based on completed verification tasks
   const globalVerificationRate = useMemo(() => {
@@ -827,21 +848,17 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
       {/* INTEGRATED TIMELINE SECTION - Directly below Project Timeline */}
       <div className="space-y-4">
-        {/* Timeline View Toggle */}
-        <div className="flex items-center justify-between gap-2">
-          {/* My Tasks indicator for team members */}
-          {!isOwner && user && (
+        {/* Timeline View Toggle - Only My Tasks for team members */}
+        {!isOwner && user && (
+          <div className="flex items-center justify-between gap-2">
             <Badge variant="outline" className="border-cyan-300 text-cyan-700 bg-cyan-50/50 dark:bg-cyan-950/30">
               <Users className="h-3 w-3 mr-1" />
               {t("timeline.teamMemberView", "Team Member View")}
             </Badge>
-          )}
-          
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
-            <div className="flex border rounded-md overflow-hidden">
-              {/* My Tasks view for team members */}
-              {!isOwner && user && (
+            
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-sm text-muted-foreground">{t("timeline.viewMode", "View")}:</span>
+              <div className="flex border rounded-md overflow-hidden">
                 <Button
                   variant={timelineView === "myTasks" ? "default" : "ghost"}
                   size="sm"
@@ -850,26 +867,18 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                 >
                   {t("timeline.myTasks", "My Tasks")}
                 </Button>
-              )}
-              <Button
-                variant={timelineView === "hierarchical" ? "default" : "ghost"}
-                size="sm"
-                className="rounded-none h-8 text-xs"
-                onClick={() => setTimelineView("hierarchical")}
-              >
-                {t("timeline.phases", "Phases")}
-              </Button>
-              <Button
-                variant={timelineView === "gantt" ? "default" : "ghost"}
-                size="sm"
-                className="rounded-none h-8 text-xs"
-                onClick={() => setTimelineView("gantt")}
-              >
-                {t("timeline.gantt", "Gantt")}
-              </Button>
+                <Button
+                  variant={timelineView === "hierarchical" ? "default" : "ghost"}
+                  size="sm"
+                  className="rounded-none h-8 text-xs"
+                  onClick={() => setTimelineView("hierarchical")}
+                >
+                  {t("timeline.phases", "Phases")}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Timeline Content */}
         {tasksLoading ? (
@@ -889,7 +898,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             }}
             globalVerificationRate={globalVerificationRate}
           />
-        ) : timelineView === "hierarchical" ? (
+        ) : (
           <HierarchicalTimeline
             tasks={tasks}
             materials={aiAnalysis?.materials || [
@@ -910,21 +919,16 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
             onTaskClick={(task) => console.log("Task clicked:", task)}
             onTaskStatusChange={async (taskId, newStatus) => {
-              // Check if this is a demo task (not in DB)
-              const isDemoTask = taskId.startsWith("demo-");
+              // Update task status in database
+              const { error } = await supabase
+                .from("project_tasks")
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .eq("id", taskId);
               
-              if (!isDemoTask) {
-                // Update task status in database
-                const { error } = await supabase
-                  .from("project_tasks")
-                  .update({ status: newStatus, updated_at: new Date().toISOString() })
-                  .eq("id", taskId);
-                
-                if (error) {
-                  console.error("Failed to update task status:", error);
-                  toast.error(t("timeline.updateFailed", "Failed to update task"));
-                  return;
-                }
+              if (error) {
+                console.error("Failed to update task status:", error);
+                toast.error(t("timeline.updateFailed", "Failed to update task"));
+                return;
               }
               
               // Update local state immediately for instant UI feedback
@@ -947,24 +951,19 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               setTotalTaskBudget(newTotal);
             }}
             onBulkStatusChange={async (taskIds, newStatus) => {
-              // Filter out demo tasks for DB update
-              const realTaskIds = taskIds.filter(id => !id.startsWith("demo-"));
+              // Update tasks in the database
+              const { error } = await supabase
+                .from("project_tasks")
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .in("id", taskIds);
               
-              if (realTaskIds.length > 0) {
-                // Update real tasks in the database
-                const { error } = await supabase
-                  .from("project_tasks")
-                  .update({ status: newStatus, updated_at: new Date().toISOString() })
-                  .in("id", realTaskIds);
-                
-                if (error) {
-                  console.error("Failed to bulk update tasks:", error);
-                  toast.error(t("timeline.updateFailed", "Failed to update tasks"));
-                  return;
-                }
+              if (error) {
+                console.error("Failed to bulk update tasks:", error);
+                toast.error(t("timeline.updateFailed", "Failed to update tasks"));
+                return;
               }
               
-              // Update local state immediately for instant UI feedback (all tasks including demo)
+              // Update local state immediately for instant UI feedback
               setTasks(prev => prev.map(t => 
                 taskIds.includes(t.id) ? { ...t, status: newStatus } : t
               ));
@@ -1005,37 +1004,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               }
               
               toast.success(`${tasksToShift.length} tasks updated`);
-            }}
-          />
-        ) : (
-          <TaskGanttTimeline
-            tasks={tasks}
-            isOwner={isOwner}
-            projectId={projectId}
-            teamMembers={members.map(m => ({
-              user_id: m.user_id,
-              name: m.full_name || "Unknown",
-              avatar_url: (m as any).avatar_url,
-              role: m.role,
-            }))}
-            onBudgetUpdate={handleBudgetUpdate}
-            onTaskUpdated={(updatedTask, shiftedTasks) => {
-              // Refresh tasks after update
-              setTasks(prev => prev.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t));
-              if (shiftedTasks && shiftedTasks.length > 0) {
-                // Also update shifted tasks
-                setTasks(prev => prev.map(t => {
-                  const shifted = shiftedTasks.find(st => st.taskId === t.id);
-                  if (shifted) {
-                    return { ...t, due_date: shifted.newDueDate };
-                  }
-                  return t;
-                }));
-              }
-            }}
-            onBaselineUnlock={() => {
-              // Mark that user has modified tasks - could trigger baseline unlock
-              toast.info(t("timeline.userModifiedTask", "Task modified - baseline may need review"));
             }}
           />
         )}
