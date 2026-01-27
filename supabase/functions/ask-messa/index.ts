@@ -1253,7 +1253,22 @@ serve(async (req) => {
     // Override dual engine if frontend specifically disabled it
     const dualEngine = requestedDualEngine && modelConfig.runDualEngine;
     
-    console.log(`Messa Config: Tier=${tier}, Gemini=${modelConfig.geminiModel}, DualEngine=${dualEngine}`);
+    // === STRUCTURED LOGGING FOR MONITORING ===
+    const logEntry = {
+      event: dualEngine ? "dual_engine_call" : "single_engine_call",
+      tier: tier,
+      timestamp: new Date().toISOString(),
+      models: {
+        gemini: modelConfig.geminiModel,
+        openai: dualEngine ? modelConfig.openaiModel : null,
+      },
+      context: {
+        hasDocuments: hasComplexDocuments,
+        documentCount: documentNames.length,
+        imageCount: imageUrls.length,
+      },
+    };
+    console.log(`[AI_CALL] ${JSON.stringify(logEntry)}`);
 
     // Build SPECIALIZED prompts for each engine
     const hasDocContent = projectContext?.projectId && systemPrompt !== SYSTEM_PROMPT;

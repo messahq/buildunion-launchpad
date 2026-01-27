@@ -915,7 +915,24 @@ serve(async (req) => {
 
     // Select models based on tier and filter answers
     const modelConfig = selectModelsForTier(userTier, filterAnswers);
-    console.log(`Model Config: Visual=${modelConfig.visualModel}, Est=${modelConfig.estimationModel}, DualEngine=${modelConfig.runDualEngine}`);
+    
+    // === STRUCTURED LOGGING FOR MONITORING ===
+    const logEntry = {
+      event: modelConfig.runDualEngine ? "dual_engine_call" : "single_engine_call",
+      tier: userTier,
+      timestamp: new Date().toISOString(),
+      models: {
+        visual: modelConfig.visualModel,
+        estimation: modelConfig.estimationModel,
+        validation: modelConfig.runDualEngine ? modelConfig.validationModel : null,
+      },
+      config: {
+        dualEngine: modelConfig.runDualEngine,
+        obcValidation: modelConfig.runOBCValidation,
+        maxTokens: modelConfig.maxTokensVisual,
+      },
+    };
+    console.log(`[AI_CALL] ${JSON.stringify(logEntry)}`);
 
     // Run analysis with tier-optimized models
     const result = type === "photo_estimate" 
@@ -926,7 +943,7 @@ serve(async (req) => {
     const shouldRunOBC = modelConfig.runOBCValidation || aiTriggers?.obcSearch;
       
     if (shouldRunOBC) {
-      console.log("Running OBC Validation...");
+      console.log(`[AI_CALL] ${JSON.stringify({ event: "obc_validation_call", tier: userTier, timestamp: new Date().toISOString() })}`);
       const obcData = await openaiOBCValidation(
         filterAnswers, 
         aiTriggers, 

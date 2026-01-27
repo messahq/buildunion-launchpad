@@ -188,7 +188,15 @@ export const useProjectAIAnalysis = () => {
         const cachedResult = await getCachedAIResult(projectId, cacheHash);
         
         if (cachedResult) {
-          console.log("[AI Cache] Using cached result, hash:", cacheHash);
+          // === STRUCTURED LOGGING: CACHE HIT ===
+          console.log(`[AI_CALL] ${JSON.stringify({
+            event: "cache_hit",
+            tier: tierConfig.tierName,
+            timestamp: new Date().toISOString(),
+            hash: cacheHash,
+            projectId,
+          })}`);
+          
           setProgress(100);
           setCurrentStep("Loaded from cache!");
           
