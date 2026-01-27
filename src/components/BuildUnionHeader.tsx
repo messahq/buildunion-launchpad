@@ -541,10 +541,50 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   View Profile
                 </DropdownMenuItem>
                 {isAdmin && (
-                  <DropdownMenuItem onClick={() => navigate("/admin")} className="text-red-600 dark:text-red-400">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Admin Dashboard
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={() => navigate("/admin")} className="text-red-600 dark:text-red-400">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                    {/* Dev Tier Selector - Admin only */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <DropdownMenuItem className="text-amber-600 dark:text-amber-400 cursor-pointer">
+                          <Crown className="h-4 w-4 mr-2" />
+                          Dev Tier: {localStorage.getItem("dev_tier_override") || "none"}
+                          <ChevronDown className="h-3 w-3 ml-auto" />
+                        </DropdownMenuItem>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="left" align="start" className="w-40 bg-popover border border-border">
+                        {(["free", "pro", "premium", "enterprise"] as const).map((tier) => (
+                          <DropdownMenuItem
+                            key={tier}
+                            onClick={() => {
+                              localStorage.setItem("dev_tier_override", tier);
+                              window.location.reload();
+                            }}
+                            className={`capitalize ${localStorage.getItem("dev_tier_override") === tier ? "bg-accent font-medium" : ""}`}
+                          >
+                            {tier === "free" && "🆓 Free"}
+                            {tier === "pro" && "⚡ Pro"}
+                            {tier === "premium" && "👑 Premium"}
+                            {tier === "enterprise" && "🏢 Enterprise"}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            localStorage.removeItem("dev_tier_override");
+                            window.location.reload();
+                          }}
+                          className="text-muted-foreground"
+                        >
+                          Clear Override
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <DropdownMenuSeparator />
+                  </>
                 )}
                 {subscription.subscribed && (
                   <>
