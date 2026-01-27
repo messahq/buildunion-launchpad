@@ -54,48 +54,17 @@ const BuildUnionCommunity = () => {
       <BuildUnionHeader />
       
       <main className="flex-1">
-        {/* Community Section */}
-        <section className="container mx-auto px-4 py-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Community</h1>
-            <p className="text-muted-foreground">
-              Connect with fellow construction professionals, share knowledge, and grow your network
-            </p>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-              <TabsTrigger value="forum" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Forum
-              </TabsTrigger>
-              <TabsTrigger value="members" className="gap-2">
-                <Users className="h-4 w-4" />
-                Members
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="forum">
-              <CommunityForum />
-            </TabsContent>
-
-            <TabsContent value="members">
-              <MemberDirectory />
-            </TabsContent>
-          </Tabs>
-        </section>
-
-        {/* News & Updates Section */}
-        <section className="py-20 px-6">
+        {/* News & Updates Section - At the top */}
+        <section className="py-12 px-6 bg-gradient-to-b from-amber-50/50 to-background dark:from-amber-900/10 dark:to-background">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
+            <div className="text-center mb-10">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Newspaper className="h-5 w-5 text-amber-600" />
                 <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">Latest</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-display font-light text-foreground mb-4">
+              <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
                 News & Updates
-              </h2>
+              </h1>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Stay informed about the latest developments, features, and partnerships at BuildUnion.
               </p>
@@ -132,6 +101,37 @@ const BuildUnionCommunity = () => {
           </div>
         </section>
 
+        {/* Community Forum & Members Section */}
+        <section className="container mx-auto px-4 py-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-foreground mb-2">Community Hub</h2>
+            <p className="text-muted-foreground">
+              Connect with fellow construction professionals, share knowledge, and grow your network
+            </p>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+              <TabsTrigger value="forum" className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Forum
+              </TabsTrigger>
+              <TabsTrigger value="members" className="gap-2">
+                <Users className="h-4 w-4" />
+                Members
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="forum">
+              <CommunityForum />
+            </TabsContent>
+
+            <TabsContent value="members">
+              <MemberDirectory />
+            </TabsContent>
+          </Tabs>
+        </section>
+
         {/* Industry Headlines Section */}
         <section className="py-16 px-6 bg-muted/50">
           <div className="max-w-6xl mx-auto">
@@ -145,12 +145,9 @@ const BuildUnionCommunity = () => {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              {/* Card 1 */}
               <div className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">
-                    TORONTO
-                  </span>
+                  <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">TORONTO</span>
                   <span className="text-xs text-muted-foreground">January 23, 2025</span>
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-3 leading-tight">
@@ -165,12 +162,9 @@ const BuildUnionCommunity = () => {
                 </div>
               </div>
 
-              {/* Card 2 */}
               <div className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">
-                    ONTARIO
-                  </span>
+                  <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">ONTARIO</span>
                   <span className="text-xs text-muted-foreground">January 23, 2025</span>
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-3 leading-tight">
@@ -185,12 +179,9 @@ const BuildUnionCommunity = () => {
                 </div>
               </div>
 
-              {/* Card 3 */}
               <div className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">
-                    CANADA
-                  </span>
+                  <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">CANADA</span>
                   <span className="text-xs text-muted-foreground">January 23, 2025</span>
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-3 leading-tight">
@@ -212,16 +203,13 @@ const BuildUnionCommunity = () => {
         <section className="py-16 px-6 bg-muted/30">
           <div className="max-w-6xl mx-auto">
             <div className="bg-card rounded-xl shadow-sm border border-border p-5 flex flex-col md:flex-row gap-6 items-start transition-all duration-300 hover:shadow-lg hover:border-amber-200">
-              {/* Gradient Orb Icon */}
               <div className="flex-shrink-0">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 shadow-md flex items-center justify-center">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
                 </div>
               </div>
 
-              {/* Content */}
               <div className="flex-1">
-                {/* Label */}
                 <div className="flex items-center gap-2 mb-3">
                   <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                   <span className="text-amber-600 font-semibold text-xs uppercase tracking-widest">
@@ -229,12 +217,10 @@ const BuildUnionCommunity = () => {
                   </span>
                 </div>
 
-                {/* Title */}
                 <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
                   Multi-Engine Smart Synthesis Agents
                 </h2>
 
-                {/* Description */}
                 <p className="text-muted-foreground text-sm leading-relaxed mb-3">
                   Our system leverages industry-leading AI reasoning engines, like{" "}
                   <span className="text-cyan-600 font-medium">OpenAI</span> and{" "}
@@ -244,12 +230,9 @@ const BuildUnionCommunity = () => {
                 <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                   Rather than relying on a single model, MESSA operates a dual-engine reasoning and
                   verification workflow, designed to reduce uncertainty, surface discrepancies, and
-                  prioritize grounded, source-linked outputs. MESSA is designed to support real-world
-                  construction workflows — not by replacing professionals, but by structuring information,
-                  reducing noise, and enabling clearer decisions.
+                  prioritize grounded, source-linked outputs.
                 </p>
 
-                {/* Features */}
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
@@ -285,13 +268,11 @@ const BuildUnionCommunity = () => {
             <div className="grid md:grid-cols-3 gap-8">
               {processSteps.map((step, index) => (
                 <div key={step.step} className="relative">
-                  {/* Connector line */}
                   {index < processSteps.length - 1 && (
                     <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-amber-300 to-amber-100" />
                   )}
                   
                   <div className="text-center">
-                    {/* Step number */}
                     <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border border-amber-200 dark:border-amber-700 mb-6 relative">
                       <step.icon className="h-10 w-10 text-amber-600" />
                       <span className="absolute -top-2 -right-2 w-8 h-8 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">
@@ -324,14 +305,10 @@ const BuildUnionCommunity = () => {
               </p>
             </div>
 
-            {/* Horizontal Timeline */}
             <div className="relative">
-              {/* Horizontal line */}
               <div className="absolute left-0 right-0 top-6 h-px bg-border hidden md:block" />
 
-              {/* Phases Grid */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                {/* Phase 1 */}
                 <div className="relative">
                   <div className="hidden md:flex justify-center mb-4">
                     <div className="w-4 h-4 rounded-full bg-amber-500 border-4 border-background shadow z-10" />
@@ -339,18 +316,13 @@ const BuildUnionCommunity = () => {
                   <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm text-muted-foreground">Phase 1</span>
-                      <span className="text-xs font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded">
-                        ~65%
-                      </span>
+                      <span className="text-xs font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded">~65%</span>
                     </div>
                     <h3 className="text-base font-bold text-foreground mb-2">Public MVP</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Core platform features enabling collaboration between professionals.
-                    </p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">Core platform features enabling collaboration.</p>
                   </div>
                 </div>
 
-                {/* Phase 2 */}
                 <div className="relative">
                   <div className="hidden md:flex justify-center mb-4">
                     <div className="w-4 h-4 rounded-full bg-amber-400 border-4 border-background shadow z-10" />
@@ -358,18 +330,13 @@ const BuildUnionCommunity = () => {
                   <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm text-muted-foreground">Phase 2</span>
-                      <span className="text-xs font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded">
-                        ~30%
-                      </span>
+                      <span className="text-xs font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded">~30%</span>
                     </div>
                     <h3 className="text-base font-bold text-foreground mb-2">Verified Professionals</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Professional verification with credential and certification checks.
-                    </p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">Professional verification with credentials.</p>
                   </div>
                 </div>
 
-                {/* Phase 3 */}
                 <div className="relative">
                   <div className="hidden md:flex justify-center mb-4">
                     <div className="w-4 h-4 rounded-full bg-muted-foreground/30 border-4 border-background shadow z-10" />
@@ -377,18 +344,13 @@ const BuildUnionCommunity = () => {
                   <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm text-muted-foreground">Phase 3</span>
-                      <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded">
-                        PLANNED
-                      </span>
+                      <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded">PLANNED</span>
                     </div>
                     <h3 className="text-base font-bold text-foreground mb-2">Union Collaborations</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Strategic partnerships with major unions for coordinated workflows.
-                    </p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">Strategic partnerships with major unions.</p>
                   </div>
                 </div>
 
-                {/* Phase 4 */}
                 <div className="relative">
                   <div className="hidden md:flex justify-center mb-4">
                     <div className="w-4 h-4 rounded-full bg-muted-foreground/30 border-4 border-background shadow z-10" />
@@ -396,14 +358,10 @@ const BuildUnionCommunity = () => {
                   <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm text-muted-foreground">Phase 4</span>
-                      <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded">
-                        PLANNED
-                      </span>
+                      <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded">PLANNED</span>
                     </div>
                     <h3 className="text-base font-bold text-foreground mb-2">City-by-City Expansion</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Phased rollout across key metropolitan areas with local partnerships.
-                    </p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">Phased rollout across metropolitan areas.</p>
                   </div>
                 </div>
               </div>
@@ -424,93 +382,63 @@ const BuildUnionCommunity = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Construction FAQ */}
               <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
                 <div className="w-12 h-12 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
                   <HelpCircle className="h-6 w-6 text-cyan-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">
-                    Construction FAQ
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Common questions about permits, safety, and contracts.
-                  </p>
+                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Construction FAQ</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Common questions about permits, safety, and contracts.</p>
                 </div>
               </a>
 
-              {/* Union Benefits */}
               <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
                 <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                   <Shield className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">
-                    Union Benefits
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Guide to wages, health coverage, and job security.
-                  </p>
+                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Union Benefits</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Guide to wages, health coverage, and job security.</p>
                 </div>
               </a>
 
-              {/* Ontario Certifications */}
               <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
                 <div className="w-12 h-12 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
                   <FileText className="h-6 w-6 text-cyan-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">
-                    Ontario Certifications
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Mandatory and recommended certifications guide.
-                  </p>
+                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Ontario Certifications</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Mandatory and recommended certifications guide.</p>
                 </div>
               </a>
 
-              {/* Quick Start Guide */}
               <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
                 <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                   <Link2 className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">
-                    Quick Start Guide
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Get your profile and portfolio ready in minutes.
-                  </p>
+                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Quick Start Guide</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Get your profile and portfolio ready in minutes.</p>
                 </div>
               </a>
 
-              {/* Join the Community */}
               <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
                 <div className="w-12 h-12 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
                   <Users className="h-6 w-6 text-cyan-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">
-                    Join the Community
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Connect with other professionals in our Facebook Group.
-                  </p>
+                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Join the Community</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Connect with other professionals.</p>
                 </div>
               </a>
 
-              {/* Ask Messa */}
               <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
                 <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                   <MessageSquare className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">
-                    Ask Messa
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Need specific help? Chat with our AI assistant.
-                  </p>
+                  <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Ask Messa</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Need specific help? Chat with our AI assistant.</p>
                 </div>
               </a>
             </div>
@@ -521,13 +449,10 @@ const BuildUnionCommunity = () => {
         <section className="py-20 px-6 bg-card border-y border-border">
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left - Content */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Scale className="h-5 w-5 text-amber-600" />
-                  <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">
-                    Industry Standards
-                  </span>
+                  <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">Industry Standards</span>
                 </div>
                 <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
                   Ontario Building Code
@@ -535,7 +460,7 @@ const BuildUnionCommunity = () => {
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-6">
                   Stay compliant with the latest OBC amendments. Our platform automatically cross-references 
-                  your documents against current building codes, ensuring your projects meet all regulatory requirements.
+                  your documents against current building codes.
                 </p>
                 
                 <div className="space-y-4">
@@ -545,7 +470,7 @@ const BuildUnionCommunity = () => {
                     </div>
                     <div>
                       <h4 className="font-semibold text-foreground">Fire Safety Updates</h4>
-                      <p className="text-muted-foreground text-sm">New requirements for high-rise residential buildings effective March 2024</p>
+                      <p className="text-muted-foreground text-sm">New requirements for high-rise residential buildings</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -563,13 +488,12 @@ const BuildUnionCommunity = () => {
                     </div>
                     <div>
                       <h4 className="font-semibold text-foreground">Energy Efficiency</h4>
-                      <p className="text-muted-foreground text-sm">Updated insulation and HVAC requirements for net-zero targets</p>
+                      <p className="text-muted-foreground text-sm">Updated insulation and HVAC requirements</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right - Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-muted/50 rounded-xl p-6 border border-border">
                   <div className="text-3xl font-bold text-amber-600 mb-1">2,847</div>
@@ -598,66 +522,49 @@ const BuildUnionCommunity = () => {
             <div className="text-center mb-12">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Users className="h-5 w-5 text-amber-600" />
-                <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">
-                  Stronger Together
-                </span>
+                <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">Stronger Together</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
                 Union & Community
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Join 4.6 million skilled professionals building a stronger future. Union membership means 
-                better wages, comprehensive benefits, and a voice in the industry.
+                Join 4.6 million skilled professionals building a stronger future.
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-5 mb-8">
-              {/* Higher Wages */}
               <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
                 <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
                   <DollarSign className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="text-2xl font-bold text-foreground mb-1">+27%</div>
                 <h3 className="text-base font-bold text-foreground mb-2">Higher Wages</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Union workers earn on average 27% more than non-union counterparts in the same trade.
-                </p>
+                <p className="text-muted-foreground text-sm leading-relaxed">Union workers earn 27% more on average.</p>
               </div>
 
-              {/* Health Coverage */}
               <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
                 <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-3">
                   <Heart className="h-6 w-6 text-red-500" />
                 </div>
                 <div className="text-2xl font-bold text-foreground mb-1">94%</div>
                 <h3 className="text-base font-bold text-foreground mb-2">Health Coverage</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Union members with employer-sponsored health insurance coverage for families.
-                </p>
+                <p className="text-muted-foreground text-sm leading-relaxed">Employer-sponsored health insurance coverage.</p>
               </div>
 
-              {/* Job Security */}
               <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
                 <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
                   <Briefcase className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="text-2xl font-bold text-foreground mb-1">3.2x</div>
                 <h3 className="text-base font-bold text-foreground mb-2">Job Security</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Union workers are 3.2x more likely to have pension plans and retirement benefits.
-                </p>
+                <p className="text-muted-foreground text-sm leading-relaxed">More likely to have pension plans.</p>
               </div>
             </div>
 
-            {/* CTA Banner */}
             <div className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-200 dark:border-amber-700">
               <div className="text-center md:text-left">
-                <h3 className="text-xl font-semibold text-foreground mb-1">
-                  Ready to Join the Movement?
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  Connect with local unions and access exclusive training programs.
-                </p>
+                <h3 className="text-xl font-semibold text-foreground mb-1">Ready to Join the Movement?</h3>
+                <p className="text-muted-foreground text-sm">Connect with local unions and access exclusive training programs.</p>
               </div>
               <Button className="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 whitespace-nowrap">
                 Find Your Local Union
@@ -673,13 +580,9 @@ const BuildUnionCommunity = () => {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <BookOpen className="h-5 w-5 text-amber-600" />
-                  <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">
-                    Stay Informed
-                  </span>
+                  <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">Stay Informed</span>
                 </div>
-                <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">
-                  Latest News Feed
-                </h2>
+                <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">Latest News Feed</h2>
               </div>
               <a href="#" className="text-amber-600 hover:text-amber-700 font-medium hidden sm:flex items-center gap-1">
                 View all news <ArrowRight className="h-4 w-4" />
@@ -687,7 +590,6 @@ const BuildUnionCommunity = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* News Card 1 */}
               <Card className="bg-card border-border hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between mb-2">
@@ -698,20 +600,16 @@ const BuildUnionCommunity = () => {
                     </div>
                   </div>
                   <CardTitle className="text-base font-semibold text-foreground group-hover:text-amber-600 transition-colors leading-tight">
-                    Ontario Announces $3.2B Transit Expansion for GTA
+                    Ontario Announces $3.2B Transit Expansion
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-muted-foreground text-sm leading-relaxed">
-                    Provincial government commits to building 15 new transit stations across Toronto, Mississauga, and Brampton by 2030. Project expected to create 45,000 construction jobs.
+                    15 new transit stations across GTA by 2030. Expected to create 45,000 jobs.
                   </CardDescription>
-                  <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read more <ArrowRight className="h-4 w-4 ml-1" />
-                  </div>
                 </CardContent>
               </Card>
 
-              {/* News Card 2 */}
               <Card className="bg-card border-border hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between mb-2">
@@ -722,20 +620,16 @@ const BuildUnionCommunity = () => {
                     </div>
                   </div>
                   <CardTitle className="text-base font-semibold text-foreground group-hover:text-amber-600 transition-colors leading-tight">
-                    Electricians See 12% Wage Increase in New Collective Agreement
+                    Electricians See 12% Wage Increase
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-muted-foreground text-sm leading-relaxed">
-                    IBEW Local 353 secures historic contract with 12% wage increase over 3 years, plus enhanced pension contributions and improved safety standards on job sites.
+                    IBEW Local 353 secures historic contract with enhanced benefits.
                   </CardDescription>
-                  <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read more <ArrowRight className="h-4 w-4 ml-1" />
-                  </div>
                 </CardContent>
               </Card>
 
-              {/* News Card 3 */}
               <Card className="bg-card border-border hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between mb-2">
@@ -746,20 +640,16 @@ const BuildUnionCommunity = () => {
                     </div>
                   </div>
                   <CardTitle className="text-base font-semibold text-foreground group-hover:text-amber-600 transition-colors leading-tight">
-                    Skilled Trades Colleges Report Record Enrollment Numbers
+                    Record Enrollment in Trades Colleges
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-muted-foreground text-sm leading-relaxed">
-                    George Brown and Mohawk Colleges report 34% increase in trades program applications. Plumbing, HVAC, and electrical programs see highest demand.
+                    34% increase in trades program applications across Ontario.
                   </CardDescription>
-                  <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read more <ArrowRight className="h-4 w-4 ml-1" />
-                  </div>
                 </CardContent>
               </Card>
 
-              {/* News Card 4 */}
               <Card className="bg-card border-border hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between mb-2">
@@ -770,24 +660,15 @@ const BuildUnionCommunity = () => {
                     </div>
                   </div>
                   <CardTitle className="text-base font-semibold text-foreground group-hover:text-amber-600 transition-colors leading-tight">
-                    Ministry of Labour Introduces Enhanced Worksite Safety Protocols
+                    Enhanced Worksite Safety Protocols
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-muted-foreground text-sm leading-relaxed">
-                    New regulations require mandatory heat stress breaks during summer months and updated fall protection equipment for all high-rise construction projects.
+                    New regulations for heat stress breaks and fall protection.
                   </CardDescription>
-                  <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read more <ArrowRight className="h-4 w-4 ml-1" />
-                  </div>
                 </CardContent>
               </Card>
-            </div>
-
-            <div className="text-center mt-8 sm:hidden">
-              <a href="#" className="text-amber-600 hover:text-amber-700 font-medium inline-flex items-center gap-1">
-                View all news <ArrowRight className="h-4 w-4" />
-              </a>
             </div>
           </div>
         </section>
