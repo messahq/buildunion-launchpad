@@ -45,6 +45,8 @@ interface TeamTabProps {
   aiMaterials?: Material[];
   projectStartDate?: Date | null;
   projectEndDate?: Date | null;
+  forceCalendarView?: boolean;
+  onCalendarViewActivated?: () => void;
 }
 
 // Map materials to task titles
@@ -69,7 +71,7 @@ const materialToTaskDescription = (material: Material): string => {
   return `${material.quantity} ${material.unit} of ${material.item}${material.notes ? ` - ${material.notes}` : ""}`;
 };
 
-const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate }: TeamTabProps) => {
+const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate, forceCalendarView, onCalendarViewActivated }: TeamTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
@@ -80,7 +82,12 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   const [existingTaskCount, setExistingTaskCount] = useState(0);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
-  // Handle member click - show their tasks
+  // Auto-switch to tasks tab when forceCalendarView is triggered
+  useEffect(() => {
+    if (forceCalendarView) {
+      setActiveSubTab("tasks");
+    }
+  }, [forceCalendarView]);
   const handleMemberClick = (memberId: string, memberName: string) => {
     setSelectedMemberId(memberId);
     setActiveSubTab("tasks");
@@ -330,6 +337,8 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
             projectAddress={projectAddress}
             filterByMemberId={selectedMemberId}
             onClearFilter={handleClearMemberFilter}
+            forceCalendarView={forceCalendarView}
+            onCalendarViewActivated={onCalendarViewActivated}
           />
         </TabsContent>
       </Tabs>
