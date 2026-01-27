@@ -39,7 +39,8 @@ import {
   AlertTriangle,
   Bell,
   CalendarDays,
-  List
+  List,
+  UserPlus
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -291,6 +292,22 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentPr
     }
   };
 
+  const handleUpdateAssignee = async (taskId: string, newAssigneeId: string) => {
+    try {
+      const { error } = await supabase
+        .from("project_tasks")
+        .update({ assigned_to: newAssigneeId })
+        .eq("id", taskId);
+
+      if (error) throw error;
+      
+      const member = members.find(m => m.user_id === newAssigneeId);
+      toast.success(`Task assigned to ${member?.full_name || 'team member'}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update assignee");
+    }
+  };
+
   const getPriorityBadge = (priorityValue: string) => {
     const p = PRIORITIES.find((pr) => pr.value === priorityValue) || PRIORITIES[1];
     return (
@@ -459,9 +476,11 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentPr
                         key={task.id}
                         task={task}
                         isOwner={isOwner}
+                        members={members}
                         onEdit={() => openEditDialog(task)}
                         onDelete={() => handleDeleteTask(task.id)}
                         onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
                         getPriorityBadge={getPriorityBadge}
                         getStatusInfo={getStatusInfo}
                         getDueDateInfo={getDueDateInfo}
@@ -484,9 +503,11 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentPr
                         key={task.id}
                         task={task}
                         isOwner={isOwner}
+                        members={members}
                         onEdit={() => openEditDialog(task)}
                         onDelete={() => handleDeleteTask(task.id)}
                         onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
                         getPriorityBadge={getPriorityBadge}
                         getStatusInfo={getStatusInfo}
                         getDueDateInfo={getDueDateInfo}
@@ -509,9 +530,11 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentPr
                         key={task.id}
                         task={task}
                         isOwner={isOwner}
+                        members={members}
                         onEdit={() => openEditDialog(task)}
                         onDelete={() => handleDeleteTask(task.id)}
                         onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
                         getPriorityBadge={getPriorityBadge}
                         getStatusInfo={getStatusInfo}
                         getDueDateInfo={getDueDateInfo}
@@ -534,9 +557,11 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentPr
                         key={task.id}
                         task={task}
                         isOwner={isOwner}
+                        members={members}
                         onEdit={() => openEditDialog(task)}
                         onDelete={() => handleDeleteTask(task.id)}
                         onStatusChange={(status) => handleUpdateStatus(task.id, status)}
+                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
                         getPriorityBadge={getPriorityBadge}
                         getStatusInfo={getStatusInfo}
                         getDueDateInfo={getDueDateInfo}
@@ -700,19 +725,22 @@ interface DueDateInfo {
 interface TaskItemProps {
   task: Task;
   isOwner: boolean;
+  members: TeamMember[];
   onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (status: string) => void;
+  onAssigneeChange: (newAssigneeId: string) => void;
   getPriorityBadge: (priority: string) => JSX.Element;
   getStatusInfo: (status: string) => { value: string; label: string; icon: any; color: string };
   getDueDateInfo?: (dueDateStr: string | null) => DueDateInfo | null;
 }
 
-const TaskItem = ({ task, isOwner, onEdit, onDelete, onStatusChange, getPriorityBadge, getStatusInfo, getDueDateInfo }: TaskItemProps) => {
+const TaskItem = ({ task, isOwner, members, onEdit, onDelete, onStatusChange, onAssigneeChange, getPriorityBadge, getStatusInfo, getDueDateInfo }: TaskItemProps) => {
   const statusInfo = getStatusInfo(task.status);
   const StatusIcon = statusInfo.icon;
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "completed";
   const dueDateInfo = getDueDateInfo ? getDueDateInfo(task.due_date) : null;
+  const [assignPopoverOpen, setAssignPopoverOpen] = useState(false);
 
   return (
     <div className={`
@@ -747,15 +775,64 @@ const TaskItem = ({ task, isOwner, onEdit, onDelete, onStatusChange, getPriority
         )}
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           {getPriorityBadge(task.priority)}
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Avatar className="h-4 w-4">
-              <AvatarImage src={task.assignee_avatar || undefined} />
-              <AvatarFallback className="text-[8px]">
-                {(task.assignee_name || "?").slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span>{task.assignee_name}</span>
-          </div>
+          
+          {/* Assignee with reassign popover */}
+          <Popover open={assignPopoverOpen} onOpenChange={setAssignPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button 
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-600 transition-colors group"
+                disabled={!isOwner}
+              >
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src={task.assignee_avatar || undefined} />
+                  <AvatarFallback className="text-[8px]">
+                    {(task.assignee_name || "?").slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{task.assignee_name}</span>
+                {isOwner && members.length > 1 && (
+                  <UserPlus className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-amber-600" />
+                )}
+              </button>
+            </PopoverTrigger>
+            {isOwner && members.length > 0 && (
+              <PopoverContent className="w-56 p-2" align="start">
+                <p className="text-xs font-medium text-slate-500 mb-2 px-2">Reassign to:</p>
+                <div className="space-y-1">
+                  {members.map((member) => (
+                    <button
+                      key={member.user_id}
+                      onClick={() => {
+                        onAssigneeChange(member.user_id);
+                        setAssignPopoverOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 p-2 rounded-md text-sm transition-colors",
+                        task.assigned_to === member.user_id 
+                          ? "bg-amber-100 text-amber-800" 
+                          : "hover:bg-slate-100"
+                      )}
+                    >
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={member.avatar_url || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {(member.full_name || "?").slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium">{member.full_name}</p>
+                        <p className="text-xs text-slate-500 capitalize">{member.role}</p>
+                      </div>
+                      {task.assigned_to === member.user_id && (
+                        <CheckCircle2 className="h-4 w-4 text-amber-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            )}
+          </Popover>
+          
           {task.due_date && (
             <div className={`flex items-center gap-1 text-xs ${dueDateInfo?.color || (isOverdue ? "text-red-600" : "text-slate-500")}`}>
               {isOverdue || dueDateInfo?.urgent ? <AlertCircle className="h-3 w-3" /> : <CalendarIcon className="h-3 w-3" />}
