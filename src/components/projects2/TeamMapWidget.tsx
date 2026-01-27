@@ -97,6 +97,14 @@ function TeamMapWidgetInner({
   const [currentStatus, setCurrentStatus] = useState<"on_site" | "en_route" | "away">("away");
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [mapLoaded, setMapLoaded] = useState(false);
+  
+  // Local team members state for instant status sync
+  const [localTeamMembers, setLocalTeamMembers] = useState<TeamMemberLocation[]>(teamMembers);
+  
+  // Sync with prop changes
+  useState(() => {
+    setLocalTeamMembers(teamMembers);
+  });
 
   // Fetch current user's status on mount
   const fetchCurrentStatus = useCallback(async () => {
@@ -233,6 +241,16 @@ function TeamMapWidgetInner({
       if (error) throw error;
 
       setCurrentStatus(newStatus);
+      
+      // Sync status in local team members list for instant UI update
+      setLocalTeamMembers(prev => 
+        prev.map(member => 
+          member.user_id === user.id 
+            ? { ...member, status: newStatus }
+            : member
+        )
+      );
+      
       toast.success(t("location.statusUpdated", "Status updated to {{status}}", { 
         status: getStatusLabel(newStatus) 
       }));
@@ -281,7 +299,7 @@ function TeamMapWidgetInner({
         <Marker position={mapCenter} title={projectName} />
 
         {/* Team member markers */}
-        {teamMembers
+        {localTeamMembers
           .filter((m) => m.latitude && m.longitude)
           .map((member) => (
             <Marker
@@ -442,15 +460,15 @@ function TeamMapWidgetInner({
         )}
 
         {/* Team members list */}
-        {teamMembers.length > 0 && (
+        {localTeamMembers.length > 0 && (
           <div className="mt-4 space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <User className="h-4 w-4" />
               <span>{t("projects.teamMembers", "Team Members")}</span>
-              <Badge variant="secondary" className="text-xs">{teamMembers.length}</Badge>
+              <Badge variant="secondary" className="text-xs">{localTeamMembers.length}</Badge>
             </div>
             <div className="grid gap-2">
-              {teamMembers.slice(0, 4).map((member) => (
+              {localTeamMembers.slice(0, 4).map((member) => (
                 <div
                   key={member.user_id}
                   className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 border border-border hover:bg-muted transition-colors"
@@ -471,9 +489,9 @@ function TeamMapWidgetInner({
                   </div>
                 </div>
               ))}
-              {teamMembers.length > 4 && (
+              {localTeamMembers.length > 4 && (
                 <div className="text-xs text-muted-foreground text-center py-1">
-                  +{teamMembers.length - 4} {t("common.more", "more")}
+                  +{localTeamMembers.length - 4} {t("common.more", "more")}
                 </div>
               )}
             </div>
