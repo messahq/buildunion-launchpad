@@ -36,15 +36,17 @@ interface UpcomingTask {
 
 interface ProjectDashboardWidgetProps {
   onTaskClick?: (projectId: string, navigateToTasks?: boolean) => void;
+  selectedProjectId?: string | null;
 }
 
-const ProjectDashboardWidget = ({ onTaskClick }: ProjectDashboardWidgetProps = {}) => {
+const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId }: ProjectDashboardWidgetProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<ProjectStats>({ total: 0, draft: 0, active: 0, completed: 0 });
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedProjectName, setSelectedProjectName] = useState<string | null>(null);
 
   // Update time every minute
   useEffect(() => {
@@ -56,19 +58,32 @@ const ProjectDashboardWidget = ({ onTaskClick }: ProjectDashboardWidgetProps = {
     if (user) {
       fetchData();
     }
-  }, [user]);
+  }, [user, selectedProjectId]);
 
   const fetchData = async () => {
     if (!user) return;
 
     try {
-      // Fetch project stats
-      const { data: projects, error: projectsError } = await supabase
+      // Fetch all projects for stats (or single project if selected)
+      let projectsQuery = supabase
         .from("projects")
         .select("id, name, status")
         .eq("user_id", user.id);
+      
+      if (selectedProjectId) {
+        projectsQuery = projectsQuery.eq("id", selectedProjectId);
+      }
+
+      const { data: projects, error: projectsError } = await projectsQuery;
 
       if (projectsError) throw projectsError;
+
+      // Set selected project name
+      if (selectedProjectId && projects && projects.length > 0) {
+        setSelectedProjectName(projects[0].name);
+      } else {
+        setSelectedProjectName(null);
+      }
 
       const projectStats: ProjectStats = {
         total: projects?.length || 0,
@@ -98,6 +113,8 @@ const ProjectDashboardWidget = ({ onTaskClick }: ProjectDashboardWidgetProps = {
             project_name: projectMap[t.project_id] || "Unknown"
           })));
         }
+      } else {
+        setUpcomingTasks([]);
       }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -136,17 +153,17 @@ const ProjectDashboardWidget = ({ onTaskClick }: ProjectDashboardWidgetProps = {
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
   return (
-    <Card className="bg-white border-slate-200 overflow-hidden">
+    <Card className="bg-white dark:bg-card border-slate-200 dark:border-border overflow-hidden">
       {/* Header with Clock */}
-      <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 via-amber-100 to-orange-50 border-b border-amber-200">
+      <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 via-amber-100 to-orange-50 dark:from-amber-900/20 dark:via-amber-800/20 dark:to-orange-900/20 border-b border-amber-200 dark:border-amber-800/30">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800 dark:text-foreground">
               <Briefcase className="h-5 w-5 text-amber-600" />
-              Project Overview
+              {selectedProjectName ? selectedProjectName : "Project Overview"}
             </CardTitle>
-            <p className="text-slate-500 text-xs mt-1">
-              {format(currentTime, "EEEE, MMMM d, yyyy")}
+            <p className="text-slate-500 dark:text-muted-foreground text-xs mt-1">
+              {selectedProjectId ? "Selected project stats" : format(currentTime, "EEEE, MMMM d, yyyy")}
             </p>
           </div>
           <div className="text-right">

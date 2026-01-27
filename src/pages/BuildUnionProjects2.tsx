@@ -757,9 +757,9 @@ const BuildUnionProjects2 = () => {
                             ))}
                           </div>
 
-                          {/* Sidebar with Project Dashboard Widget */}
                           <div className="lg:col-span-1">
                             <ProjectDashboardWidget 
+                              selectedProjectId={null}
                               onTaskClick={(projectId, navigateToTasks) => {
                                 setSelectedProjectId(projectId);
                                 if (navigateToTasks) {
@@ -834,6 +834,7 @@ const BuildUnionProjects2 = () => {
                           {/* Sidebar with Project Dashboard Widget */}
                           <div className="lg:col-span-1">
                             <ProjectDashboardWidget 
+                              selectedProjectId={null}
                               onTaskClick={(projectId, navigateToTasks) => {
                                 setSelectedProjectId(projectId);
                                 if (navigateToTasks) {
