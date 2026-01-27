@@ -460,21 +460,19 @@ const TaskEditDialog = ({
             <div className="space-y-2">
               <Label>{t("taskEdit.unitPrice", "Unit Price ($)")}</Label>
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
-                min={0}
-                step={0.01}
               />
             </div>
             <div className="space-y-2">
               <Label>{t("taskEdit.quantity", "Quantity")}</Label>
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={quantity}
                 onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)}
-                min={1}
-                step={1}
               />
             </div>
             <div className="space-y-2">

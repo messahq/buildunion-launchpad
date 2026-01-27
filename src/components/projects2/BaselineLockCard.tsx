@@ -640,7 +640,8 @@ const BaselineLockCard = ({
                         <div className="flex gap-2">
                           <Input
                             id="area"
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             value={editedArea || ""}
                             onChange={(e) => setEditedArea(parseFloat(e.target.value) || null)}
                             placeholder="e.g. 1302"
@@ -925,7 +926,8 @@ const BaselineLockCard = ({
                         <div className="flex gap-2">
                           <Input
                             id="editArea"
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             value={editedArea || ""}
                             onChange={(e) => setEditedArea(parseFloat(e.target.value) || null)}
                             placeholder="e.g. 1302"

@@ -1049,7 +1049,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                     <div className="space-y-2">
                       <Label>Quantity</Label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={item.quantity}
                         onChange={(e) =>
                           updateLineItem(item.id, "quantity", parseFloat(e.target.value) || 0)
@@ -1077,7 +1078,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                     <div className="space-y-2">
                       <Label>Unit Price ($)</Label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={item.unitPrice === 0 ? "" : item.unitPrice}
                         onChange={(e) =>
                           updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
@@ -1149,7 +1151,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                           <div className="space-y-2">
                             <Label>Quantity</Label>
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               value={item.quantity}
                               onChange={(e) =>
                                 updateLineItem(item.id, "quantity", parseFloat(e.target.value) || 0)
@@ -1177,7 +1180,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                           <div className="space-y-2">
                             <Label>Unit Price ($)</Label>
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               value={item.unitPrice === 0 ? "" : item.unitPrice}
                               onChange={(e) =>
                                 updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)

@@ -1944,7 +1944,8 @@ export function ProjectSummary({
                     <td className="py-3 text-center">
                       {editMode ? (
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={item.quantity}
                           onChange={(e) => updateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
                           className="h-8 w-20 text-center mx-auto"
@@ -1967,7 +1968,8 @@ export function ProjectSummary({
                     <td className="py-3 text-right">
                       {editMode ? (
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={item.unit_price}
                           onChange={(e) => updateLineItem(index, "unit_price", parseFloat(e.target.value) || 0)}
                           className="h-8 w-28 text-right ml-auto"

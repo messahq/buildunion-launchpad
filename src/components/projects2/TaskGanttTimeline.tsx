@@ -514,7 +514,8 @@ const TaskGanttTimeline = ({
                     {editingBudget === task.id ? (
                       <div className="flex items-center gap-1">
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={tempUnitPrice}
                           onChange={(e) =>
                             setTempUnitPrice(parseFloat(e.target.value) || 0)
@@ -524,7 +525,8 @@ const TaskGanttTimeline = ({
                         />
                         <span className="text-xs text-muted-foreground">×</span>
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={tempQuantity}
                           onChange={(e) =>
                             setTempQuantity(parseFloat(e.target.value) || 1)

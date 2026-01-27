@@ -705,7 +705,8 @@ Estimated Labor: ${results.laborHours} hours
                   </Label>
                   <Input
                     id={input.id}
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={inputs[input.id] || ""}
                     onChange={(e) => handleInputChange(input.id, e.target.value)}
                     className="text-lg"
@@ -807,7 +808,8 @@ Estimated Labor: ${results.laborHours} hours
                               className="flex-1 h-8"
                             />
                             <Input
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               value={material.quantity}
                               onChange={(e) => updateMaterialQuantity(index, parseFloat(e.target.value) || 0)}
                               className="w-20 h-8 text-center"

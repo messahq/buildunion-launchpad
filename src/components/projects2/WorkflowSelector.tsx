@@ -311,9 +311,10 @@ export default function WorkflowSelector({
           {isEditingArea ? (
             <div className="flex items-center gap-2">
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={editableArea || ""}
-                onChange={(e) => setEditableArea(Number(e.target.value))}
+                onChange={(e) => setEditableArea(Number(e.target.value) || 0)}
                 className="h-8 w-24 text-sm"
                 autoFocus
               />
@@ -425,11 +426,12 @@ export default function WorkflowSelector({
                   {editingMaterialIndex === i ? (
                     <div className="flex items-center gap-1">
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={editableMaterials[i].quantity}
                         onChange={(e) => {
                           const updated = [...editableMaterials];
-                          updated[i].quantity = Number(e.target.value);
+                          updated[i].quantity = Number(e.target.value) || 0;
                           setEditableMaterials(updated);
                         }}
                         className="h-6 w-16 text-xs"
