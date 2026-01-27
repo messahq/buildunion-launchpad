@@ -310,7 +310,10 @@
     "noneDetected": "None detected",
     "rescheduleTasks": "Reschedule Tasks",
     "navigatedToTimeline": "User navigated to Timeline to reschedule tasks",
-    "navigatedToTimelineDetails": "Opening task calendar for drag-and-drop rescheduling"
+    "navigatedToTimelineDetails": "Opening task calendar for drag-and-drop rescheduling",
+    "iUnderstood": "I Understood",
+    "acknowledged": "Acknowledged - Thank you for reviewing",
+    "reviewedAndAcknowledged": "Reviewed and acknowledged by user"
   },
   "synthesis": {
     "title": "Project Synthesis",
