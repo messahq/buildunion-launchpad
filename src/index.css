@@ -132,6 +132,23 @@ All colors MUST be HSL.
   }
 }
 
+/* Safe area for mobile bottom navigation */
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  .pb-mobile-nav {
+    padding-bottom: 4rem; /* 64px for bottom nav height */
+  }
+  
+  @media (min-width: 768px) {
+    .pb-mobile-nav {
+      padding-bottom: 0;
+    }
+  }
+}
+
 /* Progress bar shimmer animation */
 @keyframes shimmer {
   0% {
