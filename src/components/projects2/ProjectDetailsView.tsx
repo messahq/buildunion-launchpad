@@ -1574,6 +1574,12 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             companyPhone={companyBranding.phone}
             companyEmail={companyBranding.email}
             companyWebsite={companyBranding.website}
+            clientInfo={{
+              name: summary?.client_name || undefined,
+              email: summary?.client_email || undefined,
+              phone: summary?.client_phone || undefined,
+              address: summary?.client_address || undefined,
+            }}
             onGrandTotalChange={(newTotal) => setTotalTaskBudget(newTotal)}
             onSave={async (costs) => {
               if (!summary) return;
