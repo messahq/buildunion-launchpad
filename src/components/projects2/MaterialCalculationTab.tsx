@@ -32,9 +32,11 @@ interface CostItem {
   id: string;
   item: string;
   quantity: number;
+  baseQuantity?: number; // Original quantity before waste
   unit: string;
   unitPrice: number;
   totalPrice: number;
+  isEssential?: boolean; // Whether 10% waste applies
 }
 
 interface TaskBasedEntry {
@@ -58,6 +60,20 @@ interface MaterialCalculationTabProps {
   onCostsChange?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[] }) => void;
   currency?: string;
 }
+
+// Essential material patterns that get 10% waste calculation
+const ESSENTIAL_PATTERNS = [
+  /laminate|flooring/i,
+  /underlayment/i,
+  /baseboard|trim/i,
+  /adhesive|glue|supplies/i,
+];
+
+const isEssentialMaterial = (itemName: string): boolean => {
+  return ESSENTIAL_PATTERNS.some(pattern => pattern.test(itemName));
+};
+
+const WASTE_PERCENTAGE = 0.10;
 
 // Canadian provincial tax rates
 const getCanadianTaxRates = (address: string): { gst: number; pst: number; hst: number; provinceName: string; provinceCode: string } => {
@@ -132,17 +148,38 @@ export function MaterialCalculationTab({
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
   
-  // Material items
-  const [materialItems, setMaterialItems] = useState<CostItem[]>(() => 
-    initialMaterials.map((m, idx) => ({
-      id: `material-${idx}`,
-      item: m.item,
-      quantity: m.quantity,
-      unit: m.unit,
-      unitPrice: m.unitPrice || 0,
-      totalPrice: m.quantity * (m.unitPrice || 0),
-    }))
-  );
+  // Material items with waste calculation
+  const [materialItems, setMaterialItems] = useState<CostItem[]>(() => {
+    // First pass: find laminate quantity for syncing underlayment
+    const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
+    const laminateQty = laminateEntry?.quantity || 0;
+    
+    return initialMaterials.map((m, idx) => {
+      const isEssential = isEssentialMaterial(m.item);
+      let baseQty = m.quantity;
+      
+      // Sync underlayment with laminate flooring
+      if (/^underlayment$/i.test(m.item.trim()) && laminateQty > 0) {
+        baseQty = laminateQty;
+      }
+      
+      // Apply 10% waste for essential materials
+      const quantityWithWaste = isEssential 
+        ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE)) 
+        : baseQty;
+      
+      return {
+        id: `material-${idx}`,
+        item: m.item,
+        baseQuantity: baseQty,
+        quantity: quantityWithWaste,
+        unit: m.unit,
+        unitPrice: m.unitPrice || 0,
+        totalPrice: quantityWithWaste * (m.unitPrice || 0),
+        isEssential,
+      };
+    });
+  });
 
   // Labor items
   const [laborItems, setLaborItems] = useState<CostItem[]>(() => 
@@ -155,6 +192,37 @@ export function MaterialCalculationTab({
       totalPrice: l.quantity * (l.unitPrice || 0),
     }))
   );
+  
+  // Get laminate base quantity for sync dependency
+  const laminateBaseQty = materialItems.find(m => /laminate|flooring/i.test(m.item))?.baseQuantity;
+  
+  // Sync underlayment when laminate changes
+  useEffect(() => {
+    const laminateItem = materialItems.find(m => /laminate|flooring/i.test(m.item));
+    const underlaymentItem = materialItems.find(m => /^underlayment$/i.test(m.item.trim()));
+    
+    if (laminateItem && underlaymentItem) {
+      const laminateBase = laminateItem.baseQuantity || laminateItem.quantity / (1 + WASTE_PERCENTAGE);
+      const underlaymentBase = underlaymentItem.baseQuantity || underlaymentItem.quantity / (1 + WASTE_PERCENTAGE);
+      
+      // Only sync if they're different
+      if (Math.abs(laminateBase - underlaymentBase) > 1) {
+        const newQuantityWithWaste = Math.ceil(laminateBase * (1 + WASTE_PERCENTAGE));
+        setMaterialItems(prev => prev.map(item => {
+          if (/^underlayment$/i.test(item.item.trim())) {
+            return {
+              ...item,
+              baseQuantity: laminateBase,
+              quantity: newQuantityWithWaste,
+              totalPrice: newQuantityWithWaste * item.unitPrice,
+            };
+          }
+          return item;
+        }));
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [laminateBaseQty]);
   
   // Other/custom items
   const [otherItems, setOtherItems] = useState<CostItem[]>([]);
@@ -708,11 +776,23 @@ export function MaterialCalculationTab({
         </>
       ) : (
         <>
-          <div className="col-span-4 font-medium text-sm truncate" title={item.item}>
+          <div className="col-span-4 font-medium text-sm truncate flex items-center gap-2" title={item.item}>
             {item.item}
+            {item.isEssential && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800">
+                +10%
+              </Badge>
+            )}
           </div>
           <div className="col-span-2 text-center text-sm text-muted-foreground">
-            {item.quantity.toLocaleString()}
+            {item.isEssential && item.baseQuantity ? (
+              <span className="flex flex-col items-center leading-tight">
+                <span className="text-xs text-muted-foreground/60 line-through">{item.baseQuantity.toLocaleString()}</span>
+                <span className="font-medium text-amber-700 dark:text-amber-400">{item.quantity.toLocaleString()}</span>
+              </span>
+            ) : (
+              item.quantity.toLocaleString()
+            )}
           </div>
           <div className="col-span-1 text-center text-xs text-muted-foreground">
             {item.unit}
