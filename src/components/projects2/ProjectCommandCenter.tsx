@@ -323,8 +323,13 @@ export const ProjectCommandCenter = ({
       id: "contracts",
       name: "Contracts",
       category: "workflow",
-      status: info.contractCount > 0 ? (info.signedContracts > 0 ? "complete" : "partial") : "pending",
-      value: info.contractCount > 0 ? `${info.signedContracts}/${info.contractCount} signed` : undefined,
+      // Consider contracts as complete if any exist (even if not signed)
+      status: info.contractCount > 0 ? "complete" : "pending",
+      value: info.contractCount > 0 
+        ? (info.signedContracts > 0 
+            ? `${info.signedContracts}/${info.contractCount} signed` 
+            : `${info.contractCount} created`)
+        : undefined,
       icon: FileSignature,
     });
     

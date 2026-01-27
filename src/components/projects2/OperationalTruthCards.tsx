@@ -35,6 +35,8 @@ interface OperationalTruthCardsProps {
   projectId?: string;
   projectAddress?: string | null;
   onUpdate?: () => void;
+  // Callback when blueprint is manually validated
+  onBlueprintValidated?: (validated: boolean) => void;
   // Data source origins for each pillar
   dataSourceOrigins?: {
     area?: DataSourceOrigin;
@@ -160,6 +162,7 @@ export default function OperationalTruthCards({
   projectId,
   projectAddress,
   onUpdate,
+  onBlueprintValidated,
   dataSourceOrigins = {},
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
@@ -929,6 +932,7 @@ export default function OperationalTruthCards({
           onClick={() => {
             if (effectiveBlueprintStatus !== "analyzed") {
               setManuallyValidatedBlueprint(true);
+              onBlueprintValidated?.(true);
               addReport({
                 pillar: "Blueprint",
                 engine: "dual",
