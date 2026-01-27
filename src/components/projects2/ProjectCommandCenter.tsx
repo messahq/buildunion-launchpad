@@ -20,8 +20,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import {
   Sparkles,
   Printer,
@@ -36,6 +42,7 @@ import {
   Users,
   BarChart3,
   ChevronDown,
+  ChevronRight,
   Copy,
   Brain,
   Zap,
@@ -44,6 +51,22 @@ import {
   ExternalLink,
   Keyboard,
   Save,
+  Activity,
+  Database,
+  MapPin,
+  FileText,
+  CloudSun,
+  Calendar,
+  Shield,
+  AlertTriangle,
+  Ruler,
+  Package,
+  FileCheck,
+  UserCheck,
+  Clock,
+  CircleCheck,
+  CircleDashed,
+  CircleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -55,6 +78,30 @@ import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ReactMarkdown from "react-markdown";
 import { saveDocumentToProject, saveAIBriefToProject, saveReportToProject } from "@/lib/documentUtils";
+
+// ============================================
+// DATA SOURCE STATUS TYPES
+// ============================================
+
+interface DataSourceStatus {
+  id: string;
+  name: string;
+  category: "pillar" | "workflow";
+  status: "complete" | "partial" | "pending";
+  value?: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface DataSourcesInfo {
+  taskCount: number;
+  completedTasks: number;
+  documentCount: number;
+  contractCount: number;
+  signedContracts: number;
+  teamSize: number;
+  hasTimeline: boolean;
+  hasClientInfo: boolean;
+}
 
 // ============================================
 // TYPES
@@ -92,6 +139,8 @@ interface ProjectCommandCenterProps {
   conflicts?: ConflictData[];
   isPremium?: boolean;
   onNavigateToTab?: (tabId: string) => void;
+  // Extended data sources info
+  dataSourcesInfo?: DataSourcesInfo;
 }
 
 // ============================================
@@ -109,6 +158,7 @@ export const ProjectCommandCenter = ({
   conflicts = [],
   isPremium = false,
   onNavigateToTab,
+  dataSourcesInfo,
 }: ProjectCommandCenterProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -122,6 +172,7 @@ export const ProjectCommandCenter = ({
   const [isTeamReportDialogOpen, setIsTeamReportDialogOpen] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(true);
   const [activeDocumentCategory, setActiveDocumentCategory] = useState<string>("all");
+  const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
   
   // Preview state
   const [previewDocument, setPreviewDocument] = useState<DocumentAction | null>(null);
@@ -132,6 +183,184 @@ export const ProjectCommandCenter = ({
   
   // Double-tap detection for mobile
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
+
+  // ============================================
+  // BUILD 16 DATA SOURCES STATUS
+  // ============================================
+  
+  const buildDataSourcesStatus = useCallback((): DataSourceStatus[] => {
+    const sources: DataSourceStatus[] = [];
+    
+    // 8 PILLARS OF OPERATIONAL TRUTH
+    sources.push({
+      id: "area",
+      name: "Confirmed Area",
+      category: "pillar",
+      status: operationalTruth.confirmedArea !== null ? "complete" : "pending",
+      value: operationalTruth.confirmedArea ? `${operationalTruth.confirmedArea} ${operationalTruth.areaUnit}` : undefined,
+      icon: Ruler,
+    });
+    
+    sources.push({
+      id: "materials",
+      name: "Materials Count",
+      category: "pillar",
+      status: operationalTruth.materialsCount > 0 ? "complete" : "pending",
+      value: operationalTruth.materialsCount > 0 ? `${operationalTruth.materialsCount} items` : undefined,
+      icon: Package,
+    });
+    
+    sources.push({
+      id: "blueprint",
+      name: "Blueprint Status",
+      category: "pillar",
+      status: operationalTruth.blueprintStatus === "analyzed" ? "complete" : operationalTruth.blueprintStatus === "none" ? "partial" : "pending",
+      value: operationalTruth.blueprintStatus,
+      icon: FileCheck,
+    });
+    
+    sources.push({
+      id: "obc",
+      name: "OBC Compliance",
+      category: "pillar",
+      status: operationalTruth.obcCompliance !== "pending" ? "complete" : "pending",
+      value: operationalTruth.obcCompliance,
+      icon: Shield,
+    });
+    
+    sources.push({
+      id: "conflict",
+      name: "Conflict Status",
+      category: "pillar",
+      status: operationalTruth.conflictStatus !== "pending" ? "complete" : "pending",
+      value: operationalTruth.conflictStatus,
+      icon: AlertTriangle,
+    });
+    
+    sources.push({
+      id: "mode",
+      name: "Project Mode",
+      category: "pillar",
+      status: "complete",
+      value: operationalTruth.projectMode,
+      icon: UserCheck,
+    });
+    
+    sources.push({
+      id: "size",
+      name: "Project Size",
+      category: "pillar",
+      status: "complete",
+      value: operationalTruth.projectSize,
+      icon: Activity,
+    });
+    
+    sources.push({
+      id: "confidence",
+      name: "AI Confidence",
+      category: "pillar",
+      status: operationalTruth.confidenceLevel !== "low" ? "complete" : "partial",
+      value: operationalTruth.confidenceLevel,
+      icon: Brain,
+    });
+    
+    // 8 WORKFLOW DATA SOURCES
+    const info = dataSourcesInfo || {
+      taskCount: 0,
+      completedTasks: 0,
+      documentCount: 0,
+      contractCount: 0,
+      signedContracts: 0,
+      teamSize: 1,
+      hasTimeline: false,
+      hasClientInfo: false,
+    };
+    
+    sources.push({
+      id: "tasks",
+      name: "Tasks",
+      category: "workflow",
+      status: info.taskCount > 0 ? (info.completedTasks > 0 ? "complete" : "partial") : "pending",
+      value: info.taskCount > 0 ? `${info.completedTasks}/${info.taskCount}` : undefined,
+      icon: ClipboardList,
+    });
+    
+    sources.push({
+      id: "documents",
+      name: "Documents",
+      category: "workflow",
+      status: info.documentCount > 0 ? "complete" : "pending",
+      value: info.documentCount > 0 ? `${info.documentCount} files` : undefined,
+      icon: FileText,
+    });
+    
+    sources.push({
+      id: "contracts",
+      name: "Contracts",
+      category: "workflow",
+      status: info.contractCount > 0 ? (info.signedContracts > 0 ? "complete" : "partial") : "pending",
+      value: info.contractCount > 0 ? `${info.signedContracts}/${info.contractCount} signed` : undefined,
+      icon: FileSignature,
+    });
+    
+    sources.push({
+      id: "team",
+      name: "Team",
+      category: "workflow",
+      status: info.teamSize > 1 ? "complete" : "partial",
+      value: `${info.teamSize} member${info.teamSize > 1 ? "s" : ""}`,
+      icon: Users,
+    });
+    
+    sources.push({
+      id: "sitemap",
+      name: "Site Map",
+      category: "workflow",
+      status: projectAddress ? "complete" : "pending",
+      value: projectAddress ? "Located" : undefined,
+      icon: MapPin,
+    });
+    
+    sources.push({
+      id: "timeline",
+      name: "Timeline",
+      category: "workflow",
+      status: info.hasTimeline ? "complete" : "pending",
+      value: info.hasTimeline ? "Set" : undefined,
+      icon: Calendar,
+    });
+    
+    sources.push({
+      id: "client",
+      name: "Client Info",
+      category: "workflow",
+      status: info.hasClientInfo ? "complete" : "pending",
+      value: info.hasClientInfo ? "Complete" : undefined,
+      icon: UserCheck,
+    });
+    
+    sources.push({
+      id: "weather",
+      name: "Weather",
+      category: "workflow",
+      status: projectAddress ? "complete" : "pending",
+      value: projectAddress ? "Available" : undefined,
+      icon: CloudSun,
+    });
+    
+    return sources;
+  }, [operationalTruth, dataSourcesInfo, projectAddress]);
+
+  const dataSources = buildDataSourcesStatus();
+  
+  // Calculate Project Health Score
+  const healthScore = Math.round(
+    (dataSources.filter(s => s.status === "complete").length / dataSources.length) * 100
+  );
+  
+  const partialCount = dataSources.filter(s => s.status === "partial").length;
+  const pendingCount = dataSources.filter(s => s.status === "pending").length;
+  const completeCount = dataSources.filter(s => s.status === "complete").length;
 
   // Generate AI Brief and save to documents
   const generateAIBrief = useCallback(async (saveToDocuments = true) => {
@@ -592,10 +821,155 @@ export const ProjectCommandCenter = ({
                 </CardDescription>
               </div>
             </div>
+            
+            {/* Project Health Score */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border cursor-help">
+                  <div className={cn(
+                    "text-2xl font-bold",
+                    healthScore >= 75 && "text-emerald-600",
+                    healthScore >= 50 && healthScore < 75 && "text-amber-600",
+                    healthScore < 50 && "text-red-600"
+                  )}>
+                    {healthScore}%
+                  </div>
+                  <div className="text-xs text-muted-foreground leading-tight">
+                    <div className="font-medium">Health</div>
+                    <div>{completeCount}/16</div>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-xs">
+                <p className="font-medium mb-1">Project Health Score</p>
+                <p className="text-xs text-muted-foreground">
+                  {completeCount} complete, {partialCount} partial, {pendingCount} pending data sources
+                </p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* Data Sources Status Panel */}
+          <Collapsible open={isDataSourcesOpen} onOpenChange={setIsDataSourcesOpen}>
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between h-auto py-3 border-dashed hover:border-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
+              >
+                <div className="flex items-center gap-3">
+                  <Database className="h-4 w-4 text-amber-600" />
+                  <span className="font-medium">16 Data Sources</span>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
+                      <CircleCheck className="h-2.5 w-2.5" />
+                      {completeCount}
+                    </Badge>
+                    {partialCount > 0 && (
+                      <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                        <CircleDashed className="h-2.5 w-2.5" />
+                        {partialCount}
+                      </Badge>
+                    )}
+                    {pendingCount > 0 && (
+                      <Badge variant="outline" className="gap-1 bg-slate-50 text-slate-500 border-slate-200 text-[10px]">
+                        <CircleAlert className="h-2.5 w-2.5" />
+                        {pendingCount}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Progress value={healthScore} className="w-20 h-2" />
+                  {isDataSourcesOpen ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </Button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="pt-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 8 Pillars of Operational Truth */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                    <Shield className="h-3.5 w-3.5" />
+                    8 Pillars of Operational Truth
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {dataSources.filter(s => s.category === "pillar").map((source) => {
+                      const Icon = source.icon;
+                      return (
+                        <Tooltip key={source.id}>
+                          <TooltipTrigger asChild>
+                            <div className={cn(
+                              "flex items-center gap-2 p-2 rounded-md text-xs transition-colors cursor-help",
+                              source.status === "complete" && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400",
+                              source.status === "partial" && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
+                              source.status === "pending" && "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                            )}>
+                              <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{source.name}</span>
+                              {source.status === "complete" && <CircleCheck className="h-3 w-3 ml-auto flex-shrink-0" />}
+                              {source.status === "partial" && <CircleDashed className="h-3 w-3 ml-auto flex-shrink-0" />}
+                              {source.status === "pending" && <CircleAlert className="h-3 w-3 ml-auto flex-shrink-0" />}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <p className="font-medium">{source.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {source.value || (source.status === "pending" ? "Not yet verified" : "Partially verified")}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* 8 Workflow Data Sources */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-medium text-cyan-700 dark:text-cyan-400">
+                    <Activity className="h-3.5 w-3.5" />
+                    8 Workflow Data Sources
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {dataSources.filter(s => s.category === "workflow").map((source) => {
+                      const Icon = source.icon;
+                      return (
+                        <Tooltip key={source.id}>
+                          <TooltipTrigger asChild>
+                            <div className={cn(
+                              "flex items-center gap-2 p-2 rounded-md text-xs transition-colors cursor-help",
+                              source.status === "complete" && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400",
+                              source.status === "partial" && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
+                              source.status === "pending" && "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                            )}>
+                              <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{source.name}</span>
+                              {source.status === "complete" && <CircleCheck className="h-3 w-3 ml-auto flex-shrink-0" />}
+                              {source.status === "partial" && <CircleDashed className="h-3 w-3 ml-auto flex-shrink-0" />}
+                              {source.status === "pending" && <CircleAlert className="h-3 w-3 ml-auto flex-shrink-0" />}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <p className="font-medium">{source.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {source.value || (source.status === "pending" ? "Not yet configured" : "Partially complete")}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
           {/* Quick Action: AI Brief */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
