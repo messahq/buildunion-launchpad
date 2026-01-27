@@ -1,61 +1,501 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
-import ProjectList from "@/components/ProjectList";
-import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
-import OnlineTeamWidget from "@/components/OnlineTeamWidget";
-import TeamMapView from "@/components/TeamMapView";
-import TeamChat from "@/components/TeamChat";
-import TeamMemberDashboard from "@/components/TeamMemberDashboard";
-import PendingInvitations from "@/components/PendingInvitations";
-import ActiveProjectTimeline from "@/components/ActiveProjectTimeline";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Users, MessageSquare, Building2, Scale, TrendingUp, Award, Heart, DollarSign, Briefcase, Clock, BookOpen, AlertTriangle, ArrowLeft, FolderOpen, UserCheck } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users } from "lucide-react";
+import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
+import { useNavigate } from "react-router-dom";
+import ProjectQuestionnaire, { 
+  ProjectAnswers, 
+  WorkflowRecommendation 
+} from "@/components/projects2/ProjectQuestionnaire";
+import FilterQuestions, { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
+import AIAnalysisProgress from "@/components/projects2/AIAnalysisProgress";
+import WorkflowSelector, { AIAnalysisResult, EditedAnalysisData } from "@/components/projects2/WorkflowSelector";
+import ProjectDetailsView from "@/components/projects2/ProjectDetailsView";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useProjectAIAnalysis } from "@/hooks/useProjectAIAnalysis";
+import { useSubscription, TEAM_LIMITS } from "@/hooks/useSubscription";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
-const newsItems = [
-  {
-    id: 1,
-    title: "BuildUnion Launches Beta Program",
-    description: "We're excited to announce our beta program for early adopters. Join now to shape the future of construction project management.",
-    date: "Jan 15, 2026",
-    category: "Product",
-  },
-  {
-    id: 2,
-    title: "Partnership with Leading Construction Firms",
-    description: "BuildUnion partners with top construction companies to bring enterprise-grade solutions to teams of all sizes.",
-    date: "Jan 5, 2026",
-    category: "News",
-  },
-];
+interface SavedProject {
+  id: string;
+  name: string;
+  address: string | null;
+  trade: string | null;
+  status: string;
+  description: string | null;
+  created_at: string;
+  owner_name?: string;
+  is_shared?: boolean;
+}
 
-const processSteps = [
-  {
-    step: 1,
-    title: "Upload Documents",
-    description: "Simply upload your PDFs, blueprints, contracts, and project files. Our system accepts all standard construction document formats.",
-    icon: FileUp,
-  },
-  {
-    step: 2,
-    title: "Dual-Engine Analysis",
-    description: "OpenAI and Gemini work in parallel to analyze your documents, cross-referencing data for maximum accuracy and reliability.",
-    icon: Brain,
-  },
-  {
-    step: 3,
-    title: "Operational Truth",
-    description: "Receive fact-based answers with clear source citations. Every insight is traceable back to your original documents.",
-    icon: CheckCircle,
-  },
-];
+// Questionnaire data stored for filter step
+interface QuestionnaireData {
+  answers: ProjectAnswers;
+  workflow: WorkflowRecommendation;
+}
 
-const BuildUnionWorkspace = () => {
+const BuildUnionProjects2 = () => {
   const navigate = useNavigate();
-  const [activeProject, setActiveProject] = useState<{ id: string; name: string } | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const { subscription } = useSubscription();
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [showFilterQuestions, setShowFilterQuestions] = useState(false);
+  const [questionnaireData, setQuestionnaireData] = useState<QuestionnaireData | null>(null);
+  const [filterAnswers, setFilterAnswers] = useState<FilterAnswers | null>(null);
+  const [aiTriggers, setAiTriggers] = useState<AITriggers | null>(null);
+  const [projects, setProjects] = useState<SavedProject[]>([]);
+  const [sharedProjects, setSharedProjects] = useState<SavedProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [pendingDocuments, setPendingDocuments] = useState<File[]>([]);
+  const [pendingWorkType, setPendingWorkType] = useState<string | null>(null);
+  const [pendingDescription, setPendingDescription] = useState<string>("");
+  
+  // Selected project for details view
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+  
+  // Tab state for My Projects / Shared With Me
+  const [projectsTab, setProjectsTab] = useState<"my" | "shared">("my");
+
+  const { 
+    analyzeProject, 
+    analyzing, 
+    progress, 
+    currentStep, 
+    result: analysisResult,
+    error: analysisError,
+    reset: resetAnalysis,
+    tierConfig
+  } = useProjectAIAnalysis();
+
+  // Load projects from database (my projects + shared projects)
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const loadProjects = async () => {
+      // Load my projects
+      const { data: myProjectsData, error: myError } = await supabase
+        .from("projects")
+        .select("id, name, address, trade, status, description, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (myError) {
+        console.error("Error loading projects:", myError);
+        toast.error("Failed to load projects");
+      } else {
+        setProjects(myProjectsData || []);
+      }
+
+      // Load shared projects (where user is a team member but not owner)
+      const { data: memberData, error: memberError } = await supabase
+        .from("project_members")
+        .select(`
+          project_id,
+          role,
+          projects!inner(id, name, address, trade, status, description, created_at, user_id)
+        `)
+        .eq("user_id", user.id);
+
+      if (memberError) {
+        console.error("Error loading shared projects:", memberError);
+      } else if (memberData) {
+        // Filter out projects where user is owner and format data
+        const sharedProjectsFormatted: SavedProject[] = [];
+        
+        for (const member of memberData) {
+          const project = member.projects as any;
+          if (project && project.user_id !== user.id) {
+            // Get owner profile
+            const { data: ownerProfile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("user_id", project.user_id)
+              .single();
+            
+            sharedProjectsFormatted.push({
+              id: project.id,
+              name: project.name,
+              address: project.address,
+              trade: project.trade,
+              status: project.status,
+              description: project.description,
+              created_at: project.created_at,
+              owner_name: ownerProfile?.full_name || "Unknown",
+              is_shared: true,
+            });
+          }
+        }
+        
+        setSharedProjects(sharedProjectsFormatted);
+      }
+
+      setLoading(false);
+    };
+
+    loadProjects();
+  }, [user, authLoading]);
+
+  // AI-determined workflow state for WorkflowSelector
+  const [aiAnalysisForSelector, setAiAnalysisForSelector] = useState<AIAnalysisResult | null>(null);
+
+  // Transform analysis result to WorkflowSelector format
+  const transformToSelectorFormat = (result: typeof analysisResult): AIAnalysisResult | null => {
+    if (!result) return null;
+
+    const { projectSize, projectSizeReason } = result;
+    const area = result.estimate.area || null;
+    const materials = result.estimate.materials || [];
+    const hasBlueprint = !!result.blueprintAnalysis?.extractedText;
+
+    return {
+      area,
+      areaUnit: result.estimate.areaUnit || "sq ft",
+      materials: materials.slice(0, 10).map(m => ({ item: m.item, quantity: m.quantity, unit: m.unit })),
+      hasBlueprint,
+      surfaceType: result.estimate.surfaceType || "unknown",
+      roomType: result.estimate.roomType || "unknown",
+      projectSize: projectSize as "small" | "medium" | "large",
+      projectSizeReason: projectSizeReason || "AI analysis complete",
+      confidence: materials.length > 3 ? "high" : area ? "medium" : "low",
+    };
+  };
+
+  // Trigger AI analysis after project creation AND filter completion
+  useEffect(() => {
+    const hasContent = pendingImages.length > 0 || pendingDocuments.length > 0;
+    // Only start if we have filterAnswers (filter questions completed)
+    if (createdProjectId && hasContent && !analyzing && filterAnswers) {
+      // Start AI analysis with filter context
+      analyzeProject({
+        projectId: createdProjectId,
+        images: pendingImages,
+        documents: pendingDocuments,
+        description: pendingDescription,
+        workType: pendingWorkType,
+      }).then((result) => {
+        if (result) {
+          // Transform for WorkflowSelector
+          const selectorData = transformToSelectorFormat(result);
+          if (selectorData) {
+            setAiAnalysisForSelector(selectorData);
+            
+            // Update project_summaries with AI-determined workflow + filter data
+            const workflowConfigData = JSON.parse(JSON.stringify({
+              filterAnswers,
+              aiTriggers,
+              projectSize: selectorData.projectSize,
+              projectSizeReason: selectorData.projectSizeReason,
+              tierAtCreation: subscription.tier,
+              teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
+              aiAnalysis: {
+                area: selectorData.area,
+                areaUnit: selectorData.areaUnit,
+                materials: selectorData.materials,
+                hasBlueprint: selectorData.hasBlueprint,
+                confidence: selectorData.confidence,
+              },
+              analyzedAt: new Date().toISOString(),
+            }));
+
+            supabase
+              .from("project_summaries")
+              .update({
+                ai_workflow_config: workflowConfigData
+              })
+              .eq("project_id", createdProjectId)
+              .then(() => {
+                toast.success("AI analysis complete!", {
+                  description: selectorData.projectSizeReason
+                });
+              });
+          }
+        }
+        // Reset pending state but keep createdProjectId for workflow selection
+        setPendingImages([]);
+        setPendingDocuments([]);
+        setPendingWorkType(null);
+        setPendingDescription("");
+      });
+    }
+  }, [createdProjectId, pendingImages, pendingDocuments, analyzing, subscription.tier, filterAnswers]);
+
+  // Handle workflow selection from WorkflowSelector
+  const handleWorkflowSelect = async (mode: "solo" | "team", editedData?: EditedAnalysisData) => {
+    if (!createdProjectId || !aiAnalysisForSelector) return;
+
+    try {
+      // Build workflow config object with filter data (JSON-safe)
+      const workflowConfig = JSON.parse(JSON.stringify({
+        filterAnswers,
+        aiTriggers,
+        projectSize: aiAnalysisForSelector.projectSize,
+        projectSizeReason: aiAnalysisForSelector.projectSizeReason,
+        recommendedMode: aiTriggers?.recommendTeamMode ? "team" : "solo",
+        selectedMode: mode,
+        tierAtCreation: subscription.tier,
+        teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
+        aiAnalysis: {
+          area: aiAnalysisForSelector.area,
+          areaUnit: aiAnalysisForSelector.areaUnit,
+          materials: aiAnalysisForSelector.materials,
+          hasBlueprint: aiAnalysisForSelector.hasBlueprint,
+          confidence: aiAnalysisForSelector.confidence,
+        },
+        ...(editedData ? { userEdits: {
+          editedArea: editedData.editedArea,
+          editedMaterials: editedData.editedMaterials,
+          editedAt: editedData.editedAt,
+        }} : {}),
+        selectedAt: new Date().toISOString(),
+      }));
+
+      // Build photo estimate object
+      const photoEstimate = {
+        ...aiAnalysisForSelector,
+        ...(editedData ? {
+          area: editedData.editedArea,
+          materials: editedData.editedMaterials,
+          userEdited: true,
+          editedAt: editedData.editedAt,
+        } : {}),
+      };
+
+      // Save workflow selection and any user edits
+      await supabase
+        .from("project_summaries")
+        .update({
+          mode,
+          status: "active",
+          photo_estimate: JSON.parse(JSON.stringify(photoEstimate)),
+          ai_workflow_config: JSON.parse(JSON.stringify(workflowConfig)),
+        })
+        .eq("project_id", createdProjectId);
+
+      if (editedData) {
+        toast.success("Your edits have been saved!");
+      }
+
+      // Navigate based on selected workflow
+      if (mode === "solo") {
+        // Go to Quick Mode with pre-filled data
+        navigate(`/buildunion/quick-mode?projectId=${createdProjectId}`);
+      } else {
+        // Go to project details view (Team Mode) - stay in Projects2
+        setSelectedProjectId(createdProjectId);
+      }
+
+      // Reset state
+      setAiAnalysisForSelector(null);
+      setCreatedProjectId(null);
+    } catch (error) {
+      console.error("Error saving workflow selection:", error);
+      toast.error("Failed to save workflow selection");
+    }
+  };
+
+  // Handle upgrade click
+  const handleUpgradeClick = () => {
+    navigate("/buildunion/pricing");
+  };
+
+  // Step 1: Questionnaire complete -> go to FilterQuestions
+  const handleQuestionnaireComplete = (answers: ProjectAnswers, workflow: WorkflowRecommendation) => {
+    if (!user) {
+      toast.error("Please sign in to create a project");
+      return;
+    }
+
+    // Store data and move to filter step
+    setQuestionnaireData({ answers, workflow });
+    setShowQuestionnaire(false);
+    setShowFilterQuestions(true);
+  };
+
+  // Step 2: FilterQuestions complete -> create project and start AI analysis
+  const handleFilterComplete = async (filters: FilterAnswers, triggers: AITriggers) => {
+    if (!user || !questionnaireData) {
+      toast.error("Missing project data");
+      return;
+    }
+
+    setFilterAnswers(filters);
+    setAiTriggers(triggers);
+    setShowFilterQuestions(false);
+    setSaving(true);
+    resetAnalysis();
+
+    const { answers, workflow } = questionnaireData;
+
+    try {
+      // Map work type to trade
+      const tradeMap: Record<string, string> = {
+        painting: "painter",
+        flooring: "flooring_specialist",
+        drywall: "drywall_installer",
+        electrical: "electrician",
+        plumbing: "plumber",
+        hvac: "hvac_technician",
+        roofing: "roofer",
+        carpentry: "carpenter",
+        concrete: "concrete_worker",
+        renovation: "general_contractor",
+        new_construction: "general_contractor",
+        repair: "general_contractor",
+        other: "other"
+      };
+
+      // Create project description
+      const description = answers.description.trim() || 
+        `${workflow.mode} workflow with ${workflow.estimatedSteps} steps. Features: ${workflow.features.join(", ")}`;
+
+      // Insert into projects table
+      const { data: projectData, error: projectError } = await supabase
+        .from("projects")
+        .insert({
+          user_id: user.id,
+          name: answers.name,
+          address: answers.location,
+          trade: answers.workType ? tradeMap[answers.workType] : null,
+          description,
+          status: "draft"
+        })
+        .select()
+        .single();
+
+      if (projectError) throw projectError;
+
+      // Upload images to storage if any
+      const uploadedImagePaths: string[] = [];
+      if (answers.images.length > 0) {
+        for (const image of answers.images) {
+          const fileExt = image.name.split('.').pop();
+          const fileName = `${projectData.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from("project-documents")
+            .upload(fileName, image);
+          
+          if (!uploadError) {
+            uploadedImagePaths.push(fileName);
+          }
+        }
+
+        if (uploadedImagePaths.length > 0) {
+          await supabase
+            .from("projects")
+            .update({ site_images: uploadedImagePaths })
+            .eq("id", projectData.id);
+        }
+      }
+
+      // Create project_summaries with filter answers
+      const initialWorkflowConfig = JSON.parse(JSON.stringify({
+        filterAnswers: filters,
+        aiTriggers: triggers,
+        tierAtCreation: subscription.tier,
+        teamLimitAtCreation: TEAM_LIMITS[subscription.tier],
+        createdAt: new Date().toISOString(),
+      }));
+
+      // Format dates for database
+      const projectStartDate = filters.technicalFilter.projectStartDate 
+        ? new Date(filters.technicalFilter.projectStartDate).toISOString().split('T')[0]
+        : null;
+      const projectEndDate = filters.technicalFilter.projectEndDate 
+        ? new Date(filters.technicalFilter.projectEndDate).toISOString().split('T')[0]
+        : null;
+
+      const { error: summaryError } = await supabase
+        .from("project_summaries")
+        .insert({
+          user_id: user.id,
+          project_id: projectData.id,
+          mode: triggers.recommendTeamMode ? "team" : "solo",
+          status: answers.images.length > 0 ? "analyzing" : "draft",
+          project_start_date: projectStartDate,
+          project_end_date: projectEndDate,
+          calculator_results: [{
+            type: "workflow_config",
+            workflowMode: workflow.mode,
+            calculator: workflow.calculator,
+            teamEnabled: workflow.teamEnabled,
+            estimatedSteps: workflow.estimatedSteps,
+            features: workflow.features,
+            workType: answers.workType,
+            userDescription: answers.description,
+            imageCount: uploadedImagePaths.length,
+            documentCount: answers.documents?.length || 0
+          }],
+          ai_workflow_config: initialWorkflowConfig
+        });
+
+      if (summaryError) {
+        console.error("Error creating summary:", summaryError);
+      }
+
+      // Update local state
+      setProjects(prev => [{
+        id: projectData.id,
+        name: projectData.name,
+        address: projectData.address,
+        trade: projectData.trade,
+        status: projectData.status,
+        description: projectData.description,
+        created_at: projectData.created_at
+      }, ...prev]);
+
+      // If images or documents were uploaded, trigger AI analysis
+      const hasContent = answers.images.length > 0 || answers.documents.length > 0;
+      if (hasContent) {
+        const contentDesc = [];
+        if (answers.images.length > 0) contentDesc.push(`${answers.images.length} photo(s)`);
+        if (answers.documents.length > 0) contentDesc.push(`${answers.documents.length} PDF(s)`);
+        
+        toast.success(`Project "${answers.name}" created!`, {
+          description: `Starting AI analysis of ${contentDesc.join(" and ")}...`
+        });
+        
+        // Store pending data for AI analysis (useEffect will pick this up)
+        setCreatedProjectId(projectData.id);
+        setPendingImages(answers.images);
+        setPendingDocuments(answers.documents);
+        setPendingWorkType(answers.workType);
+        setPendingDescription(answers.description);
+      } else {
+        toast.success(`Project "${answers.name}" created!`);
+        setSelectedProjectId(projectData.id);
+      }
+
+      // Clear questionnaire data
+      setQuestionnaireData(null);
+
+    } catch (error) {
+      console.error("Error saving project:", error);
+      toast.error("Failed to save project");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Go back from FilterQuestions to Questionnaire
+  const handleFilterBack = () => {
+    setShowFilterQuestions(false);
+    setShowQuestionnaire(true);
+  };
 
   return (
     <main className="bg-background min-h-screen transition-colors">
@@ -74,762 +514,349 @@ const BuildUnionWorkspace = () => {
         </Button>
       </div>
 
-      {/* Pending Invitations */}
-      <section className="px-6 pt-4">
-        <div className="max-w-6xl mx-auto">
-          <PendingInvitations />
-        </div>
-      </section>
-      
-      {/* My Projects Section */}
-      <section className="py-12 px-6 bg-card border-b border-border">
-        <div className="max-w-6xl mx-auto">
-          <Tabs defaultValue="my-projects" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="my-projects" className="gap-2">
-                <FolderOpen className="h-4 w-4" />
-                My Projects
-              </TabsTrigger>
-              <TabsTrigger value="shared" className="gap-2">
-                <UserCheck className="h-4 w-4" />
-                Shared With Me
-              </TabsTrigger>
-            </TabsList>
+      <section className="py-12 px-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Step 1: Questionnaire */}
+          {showQuestionnaire && (
+            <div className="bg-card rounded-xl border shadow-lg">
+              <ProjectQuestionnaire 
+                onComplete={handleQuestionnaireComplete}
+                onCancel={() => setShowQuestionnaire(false)}
+                saving={saving}
+                tierConfig={tierConfig}
+              />
+            </div>
+          )}
 
-            <TabsContent value="my-projects">
-              <div className="grid lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                  <ProjectList onProjectSelect={(id, name) => setActiveProject({ id, name })} />
+          {/* Step 2: Filter Questions */}
+          {showFilterQuestions && questionnaireData && (
+            <div className="bg-card rounded-xl border shadow-lg">
+              <FilterQuestions
+                projectData={{
+                  name: questionnaireData.answers.name,
+                  workType: questionnaireData.answers.workType,
+                  hasImages: questionnaireData.answers.images.length > 0,
+                  hasDocuments: questionnaireData.answers.documents.length > 0,
+                }}
+                onComplete={handleFilterComplete}
+                onBack={handleFilterBack}
+              />
+            </div>
+          )}
+
+          {/* Project Details View - when a project is selected */}
+          {!showQuestionnaire && !showFilterQuestions && selectedProjectId && (
+            <ProjectDetailsView
+              projectId={selectedProjectId}
+              onBack={() => {
+                setSelectedProjectId(null);
+                setInitialTab(undefined);
+              }}
+              initialTab={initialTab}
+            />
+          )}
+
+          {/* Main Dashboard - shown when not in questionnaire, filter mode, or viewing project */}
+          {!showQuestionnaire && !showFilterQuestions && !selectedProjectId && (
+            <>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                    <Wrench className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">Projects 2.0</h1>
+                    <p className="text-muted-foreground">Smart workflow based on AI analysis</p>
+                  </div>
                 </div>
-                <div className="lg:col-span-1 space-y-6">
-                  <ProjectDashboardWidget />
-                  <ActiveProjectTimeline 
-                    projectId={activeProject?.id || null} 
-                    projectName={activeProject?.name}
+                <div className="flex items-center gap-2">
+                  {/* Tier indicator */}
+                  {subscription.tier !== "free" && (
+                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400">
+                      {subscription.tier.toUpperCase()} • Up to {TEAM_LIMITS[subscription.tier] === Infinity ? "∞" : TEAM_LIMITS[subscription.tier]} team members
+                    </span>
+                  )}
+                  <Button 
+                    onClick={() => setShowQuestionnaire(true)}
+                    disabled={!user}
+                    className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Project
+                  </Button>
+                </div>
+              </div>
+
+              {/* AI Analysis Progress (if running) */}
+              {analyzing && (
+                <div className="mb-6">
+                  <AIAnalysisProgress
+                    progress={progress}
+                    currentStep={currentStep}
+                    analyzing={analyzing}
+                    error={analysisError}
+                    tier={subscription.tier}
+                    imageCount={pendingImages.length}
+                    documentCount={pendingDocuments.length}
                   />
-                  <OnlineTeamWidget />
-                  <TeamChat />
                 </div>
-              </div>
-            </TabsContent>
+              )}
 
-            <TabsContent value="shared">
-              <TeamMemberDashboard />
-            </TabsContent>
-          </Tabs>
+              {/* AI Workflow Selector (after analysis) */}
+              {aiAnalysisForSelector && !analyzing && createdProjectId && (
+                <div className="mb-6">
+                  <WorkflowSelector
+                    projectId={createdProjectId}
+                    analysisResult={aiAnalysisForSelector}
+                    tier={subscription.tier}
+                    filterAnswers={filterAnswers || undefined}
+                    aiTriggers={aiTriggers || undefined}
+                    onSelectWorkflow={handleWorkflowSelect}
+                    onUpgradeClick={handleUpgradeClick}
+                  />
+                </div>
+              )}
+
+              {/* Auth check */}
+              {!authLoading && !user && (
+                <div className="min-h-[400px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                  <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
+                  <div className="text-center">
+                    <p className="text-lg font-medium text-foreground">Sign in to view projects</p>
+                    <p className="text-muted-foreground">Create an account to start managing your projects</p>
+                  </div>
+                  <Button 
+                    onClick={() => navigate("/login")}
+                    className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  >
+                    Sign In
+                  </Button>
+                </div>
+              )}
+
+              {/* Loading state */}
+              {(authLoading || loading) && user && (
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+                </div>
+              )}
+
+              {/* Projects List or Empty State */}
+              {!authLoading && !loading && user && (
+                <>
+                  {/* Tab Switcher */}
+                  <Tabs value={projectsTab} onValueChange={(v) => setProjectsTab(v as "my" | "shared")} className="mb-6">
+                    <TabsList className="bg-muted/50">
+                      <TabsTrigger value="my" className="gap-2 data-[state=active]:bg-background">
+                        <FolderOpen className="h-4 w-4" />
+                        My Projects
+                      </TabsTrigger>
+                      <TabsTrigger value="shared" className="gap-2 data-[state=active]:bg-background">
+                        <Users className="h-4 w-4" />
+                        Shared With Me
+                        {sharedProjects.length > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                            {sharedProjects.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+
+                  {/* My Projects Tab */}
+                  {projectsTab === "my" && (
+                    <>
+                      {/* Header with count */}
+                      <div className="mb-4">
+                        <h2 className="text-xl font-bold text-foreground">My Projects</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {projects.length} project{projects.length !== 1 ? "s" : ""}{sharedProjects.length > 0 ? ` • ${sharedProjects.length} shared` : ""}
+                        </p>
+                      </div>
+
+                      {projects.length === 0 ? (
+                        <div className="min-h-[300px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                          <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
+                          <div className="text-center">
+                            <p className="text-lg font-medium text-foreground">No projects yet</p>
+                            <p className="text-muted-foreground">Start by answering a few questions</p>
+                          </div>
+                          <Button 
+                            onClick={() => setShowQuestionnaire(true)}
+                            className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                          >
+                            <Plus className="h-4 w-4" />
+                            New Project
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid lg:grid-cols-3 gap-6">
+                          {/* Projects List */}
+                          <div className="lg:col-span-2 space-y-4">
+                            {projects.map((project) => (
+                              <div 
+                                key={project.id}
+                                onClick={() => setSelectedProjectId(project.id)}
+                                className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer group"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                                      <FolderOpen className="h-5 w-5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
+                                        <Badge variant="outline" className="capitalize">
+                                          {project.status}
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">
+                                        {project.description || project.address || "No description"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {project.id === createdProjectId && analyzing && (
+                                      <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                                        <Sparkles className="h-3 w-3 animate-pulse" />
+                                        Analyzing...
+                                      </span>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+                                        
+                                        const { error } = await supabase
+                                          .from("projects")
+                                          .delete()
+                                          .eq("id", project.id);
+                                        
+                                        if (error) {
+                                          toast.error("Failed to delete project");
+                                        } else {
+                                          setProjects(prev => prev.filter(p => p.id !== project.id));
+                                          toast.success("Project deleted");
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                                  <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
+                                  {project.address && <span>📍 {project.address}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="lg:col-span-1">
+                            <ProjectDashboardWidget 
+                              selectedProjectId={null}
+                              onTaskClick={(projectId, navigateToTasks) => {
+                                setSelectedProjectId(projectId);
+                                if (navigateToTasks) {
+                                  setInitialTab("team");
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Shared With Me Tab */}
+                  {projectsTab === "shared" && (
+                    <>
+                      {/* Header */}
+                      <div className="mb-4">
+                        <h2 className="text-xl font-bold text-foreground">Shared With Me</h2>
+                        <p className="text-sm text-muted-foreground">
+                          Projects where you are a team member
+                        </p>
+                      </div>
+
+                      {sharedProjects.length === 0 ? (
+                        <div className="min-h-[300px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                          <Users className="h-16 w-16 text-muted-foreground/40" />
+                          <div className="text-center">
+                            <p className="text-lg font-medium text-foreground">No shared projects</p>
+                            <p className="text-muted-foreground">Projects shared with you will appear here</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid lg:grid-cols-3 gap-6">
+                          <div className="lg:col-span-2 space-y-4">
+                            {sharedProjects.map((project) => (
+                              <div 
+                                key={project.id}
+                                onClick={() => setSelectedProjectId(project.id)}
+                                className="p-6 rounded-xl border bg-card hover:border-cyan-300 transition-colors cursor-pointer group"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
+                                      <Users className="h-5 w-5 text-cyan-600" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
+                                        <Badge variant="outline" className="capitalize">
+                                          {project.status}
+                                        </Badge>
+                                        <Badge variant="secondary" className="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300">
+                                          Shared
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">
+                                        {project.description || project.address || "No description"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                                  <span>👤 {project.owner_name}</span>
+                                  <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
+                                  {project.address && <span>📍 {project.address}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Sidebar with Project Dashboard Widget */}
+                          <div className="lg:col-span-1">
+                            <ProjectDashboardWidget 
+                              selectedProjectId={null}
+                              onTaskClick={(projectId, navigateToTasks) => {
+                                setSelectedProjectId(projectId);
+                                if (navigateToTasks) {
+                                  setInitialTab("team");
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
       </section>
       
-      {/* News & Updates Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Newspaper className="h-5 w-5 text-amber-600" />
-              <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">Latest</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-display font-light text-slate-900 mb-4">
-              News & Updates
-            </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
-              Stay informed about the latest developments, features, and partnerships at BuildUnion.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {newsItems.map((item) => (
-              <Card key={item.id} className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                      {item.category}
-                    </span>
-                    <div className="flex items-center gap-1 text-slate-400 text-xs">
-                      <Calendar className="h-3 w-3" />
-                      {item.date}
-                    </div>
-                  </div>
-                  <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-amber-700 transition-colors">
-                    {item.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-slate-600 leading-relaxed">
-                    {item.description}
-                  </CardDescription>
-                  <div className="mt-4 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read more <ArrowRight className="h-4 w-4 ml-1" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Industry Headlines Section */}
-      <section className="py-16 px-6 bg-slate-100/50">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-display font-semibold text-slate-900">
-              Industry Headlines
-            </h2>
-            <a href="#" className="text-cyan-600 hover:text-cyan-700 text-sm font-medium transition-colors">
-              View all updates →
-            </a>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Card 1 */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-semibold text-slate-600 border border-slate-300 px-2 py-1 rounded">
-                  TORONTO
-                </span>
-                <span className="text-xs text-slate-400">January 23, 2025</span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3 leading-tight">
-                Toronto Announces $500M Infrastructure Investment
-              </h3>
-              <p className="text-slate-500 text-sm leading-relaxed mb-4">
-                City-wide upgrades across transit, roads and public facilities through 2025.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-xs text-slate-400">#infrastructure</span>
-                <span className="text-xs text-slate-400">#investment</span>
-              </div>
-            </div>
-
-            {/* Card 2 */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-semibold text-slate-600 border border-slate-300 px-2 py-1 rounded">
-                  ONTARIO
-                </span>
-                <span className="text-xs text-slate-400">January 23, 2025</span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3 leading-tight">
-                Ontario Skilled Trades Shortage Reaches Critical Levels
-              </h3>
-              <p className="text-slate-500 text-sm leading-relaxed mb-4">
-                Province reports 80,000 vacancies amid sustained construction boom.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-xs text-slate-400">#skilled-trades</span>
-                <span className="text-xs text-slate-400">#labor</span>
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-semibold text-slate-600 border border-slate-300 px-2 py-1 rounded">
-                  CANADA
-                </span>
-                <span className="text-xs text-slate-400">January 23, 2025</span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3 leading-tight">
-                New Safety Regulations Take Effect in 2025
-              </h3>
-              <p className="text-slate-500 text-sm leading-relaxed mb-4">
-                Mandatory PPE standards and refresher training introduced across worksites.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-xs text-slate-400">#safety</span>
-                <span className="text-xs text-slate-400">#regulation</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* M.E.S.S.A. Section */}
-      <section className="py-16 px-6 bg-slate-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex flex-col md:flex-row gap-6 items-start transition-all duration-300 hover:shadow-lg hover:border-amber-200">
-            {/* Gradient Orb Icon */}
-            <div className="flex-shrink-0">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 shadow-md flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1">
-              {/* Label */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-amber-600 font-semibold text-xs uppercase tracking-widest">
-                  Core Intelligence: M.E.S.S.A.
-                </span>
-              </div>
-
-              {/* Title */}
-              <h2 className="text-xl md:text-2xl font-display font-bold text-slate-900 mb-3">
-                Multi-Engine Smart Synthesis Agents
-              </h2>
-
-              {/* Description */}
-              <p className="text-slate-500 text-sm leading-relaxed mb-3">
-                Our system leverages industry-leading AI reasoning engines, like{" "}
-                <span className="text-cyan-600 font-medium">OpenAI</span> and{" "}
-                <span className="text-amber-600 font-medium">Google Gemini</span>, orchestrated through
-                the MESSA synthesis layer to support complex, construction-grade decision making.
-              </p>
-              <p className="text-slate-500 text-sm leading-relaxed mb-4">
-                Rather than relying on a single model, MESSA operates a dual-engine reasoning and
-                verification workflow, designed to reduce uncertainty, surface discrepancies, and
-                prioritize grounded, source-linked outputs. MESSA is designed to support real-world
-                construction workflows — not by replacing professionals, but by structuring information,
-                reducing noise, and enabling clearer decisions.
-              </p>
-
-              {/* Features */}
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Verified Data Retrieval</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Dual-Model Consensus</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Source-Linked Proof</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The Process Section */}
-      <section className="py-20 px-6 bg-white border-y border-slate-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">How It Works</span>
-            <h2 className="text-3xl md:text-4xl font-display font-light text-slate-900 mt-4 mb-4">
-              The Process
-            </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
-              From document upload to actionable insights — three simple steps to transform your construction workflows.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {processSteps.map((step, index) => (
-              <div key={step.step} className="relative">
-                {/* Connector line */}
-                {index < processSteps.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-amber-300 to-amber-100" />
-                )}
-                
-                <div className="text-center">
-                  {/* Step number */}
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 mb-6 relative">
-                    <step.icon className="h-10 w-10 text-amber-600" />
-                    <span className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                      {step.step}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-xl font-semibold text-slate-900 mb-3">
-                    {step.title}
-                  </h3>
-                  <p className="text-slate-600 leading-relaxed">
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Roadmap Section */}
-      <section className="py-16 px-6 bg-slate-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
-              Roadmap
-            </h2>
-            <p className="text-slate-500">
-              What's coming next to BuildUnion.
-            </p>
-          </div>
-
-          {/* Horizontal Timeline */}
-          <div className="relative">
-            {/* Horizontal line */}
-            <div className="absolute left-0 right-0 top-6 h-px bg-slate-200 hidden md:block" />
-
-            {/* Phases Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-              {/* Phase 1 */}
-              <div className="relative">
-                <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-4 h-4 rounded-full bg-amber-500 border-4 border-white shadow z-10" />
-                </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-slate-500">Phase 1</span>
-                    <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded">
-                      ~65%
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 mb-2">Public MVP</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Core platform features enabling collaboration between professionals.
-                  </p>
-                </div>
-              </div>
-
-              {/* Phase 2 */}
-              <div className="relative">
-                <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-4 h-4 rounded-full bg-cyan-500 border-4 border-white shadow z-10" />
-                </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-slate-500">Phase 2</span>
-                    <span className="text-xs font-semibold text-cyan-700 bg-cyan-100 px-2 py-1 rounded">
-                      SOON
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 mb-2">Verified Professionals</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Professional verification with credential and certification checks.
-                  </p>
-                </div>
-              </div>
-
-              {/* Phase 3 */}
-              <div className="relative">
-                <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
-                </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-slate-500">Phase 3</span>
-                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                      PLANNED
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 mb-2">Union Collaborations</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Strategic partnerships with major unions for coordinated workflows.
-                  </p>
-                </div>
-              </div>
-
-              {/* Phase 4 */}
-              <div className="relative">
-                <div className="hidden md:flex justify-center mb-4">
-                  <div className="w-4 h-4 rounded-full bg-slate-300 border-4 border-white shadow z-10" />
-                </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-slate-500">Phase 4</span>
-                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                      PLANNED
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 mb-2">City-by-City Expansion</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Phased rollout across key metropolitan areas with local partnerships.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Resources Hub Section */}
-      <section className="py-16 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
-              Resources Hub
-            </h2>
-            <p className="text-slate-500">
-              Everything you need to navigate the construction industry.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* Construction FAQ */}
-            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
-              <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
-                <HelpCircle className="h-6 w-6 text-cyan-600" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
-                  Construction FAQ
-                </h3>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Common questions about permits, safety, and contracts.
-                </p>
-              </div>
-            </a>
-
-            {/* Union Benefits */}
-            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
-              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <Shield className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
-                  Union Benefits
-                </h3>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Guide to wages, health coverage, and job security.
-                </p>
-              </div>
-            </a>
-
-            {/* Ontario Certifications */}
-            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
-              <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
-                <FileText className="h-6 w-6 text-cyan-600" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
-                  Ontario Certifications
-                </h3>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Mandatory and recommended certifications guide.
-                </p>
-              </div>
-            </a>
-
-            {/* Quick Start Guide */}
-            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
-              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <Link2 className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
-                  Quick Start Guide
-                </h3>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Get your profile and portfolio ready in minutes.
-                </p>
-              </div>
-            </a>
-
-            {/* Join the Community */}
-            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
-              <div className="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0">
-                <Users className="h-6 w-6 text-cyan-600" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
-                  Join the Community
-                </h3>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Connect with other professionals in our Facebook Group.
-                </p>
-              </div>
-            </a>
-
-            {/* Ask Messa */}
-            <a href="#" className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
-              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <MessageSquare className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors mb-1">
-                  Ask Messa
-                </h3>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  Need specific help? Chat with our AI assistant.
-                </p>
-              </div>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Industry Standards & OBC Section */}
-      <section className="py-20 px-6 bg-white border-y border-slate-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left - Content */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Scale className="h-5 w-5 text-amber-600" />
-                <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">
-                  Industry Standards
-                </span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-6">
-                Ontario Building Code
-                <span className="block text-amber-600">2024 Updates</span>
-              </h2>
-              <p className="text-slate-600 leading-relaxed mb-6">
-                Stay compliant with the latest OBC amendments. Our platform automatically cross-references 
-                your documents against current building codes, ensuring your projects meet all regulatory requirements.
-              </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900">Fire Safety Updates</h4>
-                    <p className="text-slate-500 text-sm">New requirements for high-rise residential buildings effective March 2024</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Building2 className="h-4 w-4 text-cyan-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900">Accessibility Standards</h4>
-                    <p className="text-slate-500 text-sm">Enhanced AODA compliance for commercial structures</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900">Energy Efficiency</h4>
-                    <p className="text-slate-500 text-sm">Updated insulation and HVAC requirements for net-zero targets</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right - Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                <div className="text-3xl font-bold text-amber-600 mb-1">2,847</div>
-                <div className="text-slate-500 text-sm">Code sections analyzed</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                <div className="text-3xl font-bold text-cyan-600 mb-1">99.2%</div>
-                <div className="text-slate-500 text-sm">Compliance accuracy</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                <div className="text-3xl font-bold text-green-600 mb-1">24h</div>
-                <div className="text-slate-500 text-sm">Update cycle</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                <div className="text-3xl font-bold text-cyan-600 mb-1">156</div>
-                <div className="text-slate-500 text-sm">Amendments tracked</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Union & Community Section */}
-      <section className="py-20 px-6 bg-slate-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Users className="h-5 w-5 text-amber-600" />
-              <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">
-                Stronger Together
-              </span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
-              Union & Community
-            </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
-              Join 4.6 million skilled professionals building a stronger future. Union membership means 
-              better wages, comprehensive benefits, and a voice in the industry.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-5 mb-8">
-            {/* Higher Wages */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mx-auto mb-3">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">+27%</div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Higher Wages</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                Union workers earn on average 27% more than non-union counterparts in the same trade.
-              </p>
-            </div>
-
-            {/* Health Coverage */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
-              <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center mx-auto mb-3">
-                <Heart className="h-6 w-6 text-red-500" />
-              </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">94%</div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Health Coverage</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                Union members with employer-sponsored health insurance coverage for families.
-              </p>
-            </div>
-
-            {/* Job Security */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
-              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-3">
-                <Briefcase className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">3.2x</div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Job Security</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                Union workers are 3.2x more likely to have pension plans and retirement benefits.
-              </p>
-            </div>
-          </div>
-
-          {/* CTA Banner */}
-          <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-200">
-            <div className="text-center md:text-left">
-              <h3 className="text-xl font-semibold text-slate-900 mb-1">
-                Ready to Join the Movement?
-              </h3>
-              <p className="text-slate-600 text-sm">
-                Connect with local unions and access exclusive training programs.
-              </p>
-            </div>
-            <Button className="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 whitespace-nowrap">
-              Find Your Local Union
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Latest News Feed Section */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-12">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-5 w-5 text-amber-600" />
-                <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">
-                  Stay Informed
-                </span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900">
-                Latest News Feed
-              </h2>
-            </div>
-            <a href="#" className="text-amber-600 hover:text-amber-700 font-medium hidden sm:flex items-center gap-1">
-              View all news <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* News Card 1 */}
-            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">Investment</span>
-                  <div className="flex items-center gap-1 text-slate-400 text-xs">
-                    <Calendar className="h-3 w-3" />
-                    Jan 18, 2026
-                  </div>
-                </div>
-                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
-                  Ontario Announces $3.2B Transit Expansion for GTA
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-slate-600 text-sm leading-relaxed">
-                  Provincial government commits to building 15 new transit stations across Toronto, Mississauga, and Brampton by 2030. Project expected to create 45,000 construction jobs.
-                </CardDescription>
-                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Read more <ArrowRight className="h-4 w-4 ml-1" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* News Card 2 */}
-            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">Wages</span>
-                  <div className="flex items-center gap-1 text-slate-400 text-xs">
-                    <Calendar className="h-3 w-3" />
-                    Jan 15, 2026
-                  </div>
-                </div>
-                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
-                  Electricians See 12% Wage Increase in New Collective Agreement
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-slate-600 text-sm leading-relaxed">
-                  IBEW Local 353 secures historic contract with 12% wage increase over 3 years, plus enhanced pension contributions and improved safety standards on job sites.
-                </CardDescription>
-                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Read more <ArrowRight className="h-4 w-4 ml-1" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* News Card 3 */}
-            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-cyan-600 bg-cyan-50 px-2 py-1 rounded">Training</span>
-                  <div className="flex items-center gap-1 text-slate-400 text-xs">
-                    <Calendar className="h-3 w-3" />
-                    Jan 12, 2026
-                  </div>
-                </div>
-                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
-                  Skilled Trades Colleges Report Record Enrollment Numbers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-slate-600 text-sm leading-relaxed">
-                  George Brown and Mohawk Colleges report 34% increase in trades program applications. Plumbing, HVAC, and electrical programs see highest demand.
-                </CardDescription>
-                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Read more <ArrowRight className="h-4 w-4 ml-1" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* News Card 4 */}
-            <Card className="bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">Safety</span>
-                  <div className="flex items-center gap-1 text-slate-400 text-xs">
-                    <Calendar className="h-3 w-3" />
-                    Jan 10, 2026
-                  </div>
-                </div>
-                <CardTitle className="text-base font-semibold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
-                  Ministry of Labour Introduces Enhanced Worksite Safety Protocols
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-slate-600 text-sm leading-relaxed">
-                  New regulations require mandatory heat stress breaks during summer months and updated fall protection equipment for all high-rise construction projects.
-                </CardDescription>
-                <div className="mt-3 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Read more <ArrowRight className="h-4 w-4 ml-1" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center mt-8 sm:hidden">
-            <a href="#" className="text-amber-600 hover:text-amber-700 font-medium inline-flex items-center gap-1">
-              View all news <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-        </div>
-      </section>
-
       <BuildUnionFooter />
     </main>
   );
 };
 
-export default BuildUnionWorkspace;
+export default BuildUnionProjects2;

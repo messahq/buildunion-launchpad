@@ -124,7 +124,7 @@ const UpcomingDeadlinesWidget = ({ projectId, onTaskClick }: UpcomingDeadlinesWi
     if (onTaskClick) {
       onTaskClick(projectId, true);
     } else {
-      navigate(`/buildunion/projects2?project=${projectId}&tab=tasks`);
+      navigate(`/buildunion/workspace?project=${projectId}&tab=tasks`);
     }
   };
 
