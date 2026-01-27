@@ -342,26 +342,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     return STATUSES.find((s) => s.value === statusValue) || STATUSES[0];
   };
 
-  if (loading) {
-    return (
-      <Card className="border-slate-200">
-        <CardContent className="py-8 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Filter tasks by member if selected
-  const filteredTasks = filterByMemberId 
-    ? tasks.filter(t => t.assigned_to === filterByMemberId)
-    : tasks;
-
-  const filteredMemberInfo = filterByMemberId 
-    ? members.find(m => m.user_id === filterByMemberId)
-    : null;
-
-  // Categorize tasks by phase
+  // Helper function - must be before useMemo
   const getPhaseForTask = (task: Task): "preparation" | "execution" | "verification" => {
     const titleLower = task.title.toLowerCase();
     if (titleLower.includes("prep") || titleLower.includes("order") || titleLower.includes("measure") || titleLower.includes("deliver")) {
@@ -376,7 +357,16 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     return "execution"; // Default
   };
 
-  // Memoize phase calculations
+  // Filter tasks by member if selected - moved before useMemo
+  const filteredTasks = filterByMemberId 
+    ? tasks.filter(t => t.assigned_to === filterByMemberId)
+    : tasks;
+
+  const filteredMemberInfo = filterByMemberId 
+    ? members.find(m => m.user_id === filterByMemberId)
+    : null;
+
+  // Memoize phase calculations - MUST be before loading return
   const phaseData = useMemo(() => {
     const preparation = filteredTasks.filter(t => getPhaseForTask(t) === "preparation");
     const execution = filteredTasks.filter(t => getPhaseForTask(t) === "execution");
@@ -392,7 +382,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
       execution: { tasks: execution, progress: calcProgress(execution) },
       verification: { tasks: verification, progress: calcProgress(verification) },
     };
-  }, [filteredTasks]);
+  }, [filteredTasks, filterByMemberId, tasks]);
 
   // Calculate if phases are locked
   const isExecutionLocked = phaseData.preparation.progress < 100;
@@ -407,6 +397,16 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     !isToday(new Date(t.due_date)) &&
     t.status !== "completed"
   );
+
+  if (loading) {
+    return (
+      <Card className="border-slate-200">
+        <CardContent className="py-8 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+        </CardContent>
+      </Card>
+    );
+  }
 
 
   // Helper to get due date display info
