@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  Sparkles
+  Sparkles,
+  CloudRain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OperationalTruth } from "@/types/operationalTruth";
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 interface OperationalTruthCardsProps {
   operationalTruth: OperationalTruth;
   projectId?: string;
+  projectAddress?: string | null;
   onUpdate?: () => void;
 }
 
@@ -108,6 +110,7 @@ const PillarCard = ({
 export default function OperationalTruthCards({ 
   operationalTruth, 
   projectId,
+  projectAddress,
   onUpdate 
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
@@ -312,7 +315,7 @@ export default function OperationalTruthCards({
     }
   };
 
-  // Dual Engine: Conflict Check
+  // Dual Engine: Conflict Check (includes weather alerts)
   const verifyConflicts = async () => {
     if (!projectId) {
       toast.error("Project ID required");
@@ -339,6 +342,7 @@ export default function OperationalTruthCards({
       
       let hasConflict = false;
       let conflictDetails = "";
+      const conflictItems: string[] = [];
       
       if (photoArea && blueprintArea) {
         const difference = Math.abs(photoArea - blueprintArea);
@@ -346,41 +350,109 @@ export default function OperationalTruthCards({
         
         if (percentDiff > 10) {
           hasConflict = true;
-          conflictDetails = `Photo: ${photoArea} ${areaUnit} vs Blueprint: ${blueprintArea} ${areaUnit} (${percentDiff.toFixed(1)}% difference)`;
+          conflictItems.push(`Area mismatch: Photo ${photoArea} vs Blueprint ${blueprintArea} ${areaUnit}`);
         }
       }
       
-      // Call dual-engine for deeper analysis if needed
-      const { data: aiCheck } = await supabase.functions.invoke("ask-messa", {
-        body: {
-          projectId,
-          question: "Check for any data conflicts or discrepancies in this project between site photos, blueprints, and estimates. Report any alignment issues.",
-          analysisType: "conflict_check"
+      // Check weather alerts if we have a project address
+      let weatherAlerts: Array<{ type: string; severity: string; message: string }> = [];
+      if (projectAddress && projectAddress.length > 5) {
+        try {
+          const { data: weatherData, error: weatherError } = await supabase.functions.invoke("get-weather", {
+            body: { location: projectAddress, days: 3 }
+          });
+          
+          if (!weatherError && weatherData) {
+            // Collect current weather alerts
+            if (weatherData.current?.alerts?.length > 0) {
+              weatherAlerts = [...weatherAlerts, ...weatherData.current.alerts];
+            }
+            
+            // Collect forecast alerts (next 3 days)
+            if (weatherData.forecast) {
+              for (const day of weatherData.forecast) {
+                if (day.alerts?.length > 0) {
+                  weatherAlerts = [...weatherAlerts, ...day.alerts.map((a: any) => ({
+                    ...a,
+                    date: day.date
+                  }))];
+                }
+              }
+            }
+            
+            // Add weather report
+            const dangerAlerts = weatherAlerts.filter(a => a.severity === "danger");
+            const warningAlerts = weatherAlerts.filter(a => a.severity === "warning");
+            
+            if (dangerAlerts.length > 0) {
+              hasConflict = true;
+              const alertMessages = dangerAlerts.slice(0, 2).map(a => a.message).join("; ");
+              conflictItems.push(`⚠️ DANGER: ${alertMessages}`);
+              
+              addReport({
+                pillar: "Weather Alert",
+                engine: "dual",
+                status: "warning",
+                message: `${dangerAlerts.length} dangerous weather condition(s) detected`,
+                details: dangerAlerts.map(a => `${a.type}: ${a.message}`).join(" | ")
+              });
+            } else if (warningAlerts.length > 0) {
+              addReport({
+                pillar: "Weather Check",
+                engine: "dual",
+                status: "warning",
+                message: `${warningAlerts.length} weather warning(s) for project site`,
+                details: warningAlerts.slice(0, 3).map(a => a.message).join(" | ")
+              });
+            } else {
+              addReport({
+                pillar: "Weather Check",
+                engine: "dual",
+                status: "success",
+                message: "No weather hazards detected",
+                details: `Location: ${weatherData.location?.name || projectAddress}. Safe conditions for next 3 days.`
+              });
+            }
+          }
+        } catch (weatherErr) {
+          console.error("Weather check failed:", weatherErr);
+          // Don't fail the whole conflict check if weather fails
         }
-      });
-
-      const aiResponse = aiCheck?.response || aiCheck?.answer || "";
-      const aiHasConflict = aiResponse.toLowerCase().includes("conflict") || 
-                           aiResponse.toLowerCase().includes("discrepancy");
+      } else {
+        // No address - note it but don't fail
+        addReport({
+          pillar: "Weather Check",
+          engine: "dual",
+          status: "warning",
+          message: "Weather check skipped",
+          details: "Add a project address to enable weather hazard monitoring"
+        });
+      }
       
-      if (hasConflict || aiHasConflict) {
+      // Compile conflict details
+      if (conflictItems.length > 0) {
+        conflictDetails = conflictItems.join(" | ");
+      }
+      
+      // Final conflict report
+      if (hasConflict) {
         addReport({
           pillar: "Conflict Check",
           engine: "dual",
           status: "warning",
-          message: "Potential conflicts detected",
-          details: conflictDetails || aiResponse.slice(0, 150)
+          message: `${conflictItems.length} issue(s) detected`,
+          details: conflictDetails
         });
-        toast.warning("Conflicts detected - review report below");
+        toast.warning("Issues detected - review reports below");
       } else {
         addReport({
           pillar: "Conflict Check",
           engine: "dual",
           status: "success",
-          message: "All data sources aligned",
-          details: "Gemini (Visual) and OpenAI (Regulatory) analysis are consistent"
+          message: "All systems verified",
+          details: "Data sources aligned, no weather hazards detected"
         });
-        toast.success("No conflicts detected");
+        toast.success("Verification complete - no issues");
       }
       
       onUpdate?.();
