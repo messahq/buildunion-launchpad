@@ -55,12 +55,17 @@ import { ProBadge } from "@/components/ui/pro-badge";
 // HELPER FUNCTIONS
 // ============================================
 
-// Generate demo tasks for the 4 material categories
-function generateDemoTasks(
+// Generate tasks from AI-analyzed materials ONLY - no demo/fallback data
+function generateTasksFromMaterials(
   projectId: string,
   userId: string,
   materials: Array<{ item: string; quantity: number; unit: string }>
 ): TaskWithBudget[] {
+  // CRITICAL: If no real materials from AI analysis, return empty - NO demo data
+  if (!materials || materials.length === 0) {
+    return [];
+  }
+
   const now = new Date();
   const addDays = (date: Date, days: number) => {
     const result = new Date(date);
@@ -68,101 +73,73 @@ function generateDemoTasks(
     return result.toISOString();
   };
 
-  // Default material categories if none provided
-  const defaultMaterials = [
-    { item: "Laminate Flooring", quantity: 1302, unit: "sq ft" },
-    { item: "Underlayment", quantity: 1400, unit: "sq ft" },
-    { item: "Baseboard Trim", quantity: 280, unit: "linear ft" },
-    { item: "Adhesive & Supplies", quantity: 15, unit: "units" }
-  ];
-
-  const materialsToUse = materials.length > 0 ? materials : defaultMaterials;
-
-  const demoTasks: TaskWithBudget[] = [];
+  const tasks: TaskWithBudget[] = [];
   let taskCounter = 0;
 
-  // Generate tasks for each material with 3 phases: Preparation, Execution, Verification
-  materialsToUse.forEach((material, materialIndex) => {
+  // Generate tasks for each AI-detected material with 3 phases
+  materials.forEach((material, materialIndex) => {
     const materialName = material.item.split(" ")[0];
-    const baseDay = materialIndex * 5; // Stagger each material by 5 days
+    const baseDay = materialIndex * 5;
 
-    // Phase 1: Preparation (Order & Deliver)
-    demoTasks.push({
-      id: `demo-${++taskCounter}`,
+    // Phase 1: Order
+    tasks.push({
+      id: `task-${++taskCounter}`,
       project_id: projectId,
       assigned_to: userId,
       assigned_by: userId,
       title: `Order ${material.item}`,
       description: `Order ${material.quantity} ${material.unit} of ${material.item}`,
       priority: "high",
-      status: materialIndex === 0 ? "completed" : "pending",
+      status: "pending",
       due_date: addDays(now, baseDay),
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
-      unit_price: materialIndex === 0 ? 3.5 : 2.0,
+      unit_price: 0,
       quantity: material.quantity,
-      total_cost: (materialIndex === 0 ? 3.5 : 2.0) * material.quantity,
+      total_cost: 0,
       assignee_name: "Project Owner",
     });
 
-    demoTasks.push({
-      id: `demo-${++taskCounter}`,
-      project_id: projectId,
-      assigned_to: userId,
-      assigned_by: userId,
-      title: `Deliver ${materialName} to site`,
-      description: `Receive delivery of ${material.item}`,
-      priority: "medium",
-      status: materialIndex === 0 ? "completed" : "pending",
-      due_date: addDays(now, baseDay + 2),
-      created_at: now.toISOString(),
-      updated_at: now.toISOString(),
-      unit_price: 50,
-      quantity: 1,
-      total_cost: 50,
-      assignee_name: "Project Owner",
-    });
-
-    // Phase 2: Execution (Install)
-    demoTasks.push({
-      id: `demo-${++taskCounter}`,
+    // Phase 2: Install
+    tasks.push({
+      id: `task-${++taskCounter}`,
       project_id: projectId,
       assigned_to: userId,
       assigned_by: userId,
       title: `Install ${material.item}`,
       description: `Install ${material.quantity} ${material.unit} of ${material.item}`,
       priority: "high",
-      status: materialIndex === 0 ? "in_progress" : "pending",
-      due_date: addDays(now, baseDay + 4),
+      status: "pending",
+      due_date: addDays(now, baseDay + 3),
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
-      unit_price: 1.5,
+      unit_price: 0,
       quantity: material.quantity,
-      total_cost: 1.5 * material.quantity,
+      total_cost: 0,
       assignee_name: "Project Owner",
     });
 
-    // Phase 3: Verification (Inspect)
-    demoTasks.push({
-      id: `demo-${++taskCounter}`,
+    // Phase 3: Verify
+    tasks.push({
+      id: `task-${++taskCounter}`,
       project_id: projectId,
       assigned_to: userId,
       assigned_by: userId,
       title: `Verify ${materialName} installation`,
-      description: `Final inspection of ${material.item} work`,
+      description: `Final inspection of ${material.item}`,
       priority: "medium",
       status: "pending",
-      due_date: addDays(now, baseDay + 6),
+      due_date: addDays(now, baseDay + 5),
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
-      unit_price: 75,
+      unit_price: 0,
       quantity: 1,
-      total_cost: 75,
+      total_cost: 0,
       assignee_name: "Project Owner",
     });
   });
 
-  return demoTasks;
+  return tasks;
 }
 
 // ============================================
@@ -485,67 +462,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           assignee_avatar: memberProfiles[task.assigned_to]?.avatar_url,
         }));
 
-        // If no tasks from DB, generate and SAVE demo tasks to the database
-        if (enrichedTasks.length === 0 && user?.id) {
-          // Get materials from summary for demo task generation
-          const { data: summaryForMaterials } = await supabase
-            .from("project_summaries")
-            .select("photo_estimate, ai_workflow_config")
-            .eq("project_id", projectId)
-            .maybeSingle();
-          
-          const aiMaterials = 
-            (summaryForMaterials?.ai_workflow_config as any)?.aiAnalysis?.materials ||
-            (summaryForMaterials?.photo_estimate as any)?.materials ||
-            [];
-          
-          const demoTasks = generateDemoTasks(projectId, user.id, aiMaterials);
-          
-          // Prepare tasks for database insertion (remove demo- prefix and use real UUIDs)
-          // NOTE: Do NOT include total_cost - it's a generated column (unit_price * quantity)
-          const tasksToInsert = demoTasks.map(task => ({
-            project_id: task.project_id,
-            assigned_to: task.assigned_to,
-            assigned_by: task.assigned_by,
-            title: task.title,
-            description: task.description,
-            priority: task.priority,
-            status: task.status,
-            due_date: task.due_date,
-            unit_price: task.unit_price,
-            quantity: task.quantity,
-          }));
-          
-          // Insert tasks into database
-          const { data: insertedTasks, error: insertError } = await supabase
-            .from("project_tasks")
-            .insert(tasksToInsert)
-            .select();
-          
-          if (insertError) {
-            console.error("Failed to save tasks to database:", insertError);
-            // Fallback to local demo tasks if insert fails
-            setTasks(demoTasks);
-            const total = demoTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
-            setTotalTaskBudget(total);
-          } else if (insertedTasks) {
-            // Use the inserted tasks with real IDs
-            const savedTasks = insertedTasks.map(task => ({
-              ...task,
-              unit_price: task.unit_price || 0,
-              quantity: task.quantity || 1,
-              total_cost: task.total_cost || 0,
-              assignee_name: "Project Owner",
-              assignee_avatar: undefined,
-            }));
-            setTasks(savedTasks);
-            
-            // Calculate total budget
-            const total = savedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
-            setTotalTaskBudget(total);
-            
-            toast.success(t("timeline.tasksCreated", "{{count}} tasks created for this project", { count: savedTasks.length }));
-          }
+        // If no tasks from DB, set empty array - NO demo data
+        // Tasks will be generated when user clicks "Generate Tasks from AI" button after analysis
+        if (enrichedTasks.length === 0) {
+          setTasks([]);
+          setTotalTaskBudget(0);
         } else {
           setTasks(enrichedTasks);
           
