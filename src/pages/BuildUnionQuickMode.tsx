@@ -33,6 +33,7 @@ import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useDraftData } from "@/hooks/useDraftData";
 import { useQuickModeProgress, QuickModeProgressData } from "@/hooks/useQuickModeProgress";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Contract mode: selector shows the path choice, simple shows ContractGenerator
@@ -105,15 +106,32 @@ const BuildUnionQuickMode = () => {
   const isCreateFlow = searchParams.get("flow") === "create";
   const isPremium = subscription?.subscribed === true;
   
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "photo");
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  // Check for projectId and template params from Contracts tab
+  const projectIdFromUrl = searchParams.get("projectId");
+  const templateFromUrl = searchParams.get("template") as "custom" | "residential" | "commercial" | "renovation" | null;
+  
+  const [activeTab, setActiveTab] = useState(
+    // If coming from Contracts tab with template, go directly to contract
+    templateFromUrl ? "contract" : (searchParams.get("tab") || "photo")
+  );
+  const [showOnboarding, setShowOnboarding] = useState(!templateFromUrl); // Skip onboarding if template selected
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [authGateFeature, setAuthGateFeature] = useState<"blueprints" | "templates" | "quote" | "summary">("blueprints");
   const [showDraftResume, setShowDraftResume] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const [contractMode, setContractMode] = useState<ContractMode>("selector");
+  // If coming with template, skip selector and go directly to simple contract mode
+  const [contractMode, setContractMode] = useState<ContractMode>(templateFromUrl ? "simple" : "selector");
+  
+  // Project data loaded from URL parameter
+  const [loadedProjectData, setLoadedProjectData] = useState<{
+    id?: string;
+    name?: string;
+    address?: string;
+    description?: string;
+    totalAmount?: number;
+  } | null>(null);
   
   // Quote data to pass to contract path selector
   const [quoteData, setQuoteData] = useState<{
@@ -256,12 +274,57 @@ const BuildUnionQuickMode = () => {
   // Auto-save interval ref
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check for draft data on mount (for returning users)
+  // Check for draft data on mount (for returning users) - skip if coming from project
   useEffect(() => {
-    if (user && hasDraft && draftData) {
+    if (user && hasDraft && draftData && !projectIdFromUrl) {
       setShowDraftResume(true);
     }
-  }, [user, hasDraft, draftData]);
+  }, [user, hasDraft, draftData, projectIdFromUrl]);
+
+  // Load project data if projectId is provided in URL
+  useEffect(() => {
+    const loadProjectData = async () => {
+      if (!projectIdFromUrl) return;
+      
+      try {
+        // Fetch project and summary data
+        const [projectResult, summaryResult] = await Promise.all([
+          supabase
+            .from("projects")
+            .select("id, name, address, description")
+            .eq("id", projectIdFromUrl)
+            .maybeSingle(),
+          supabase
+            .from("project_summaries")
+            .select("total_cost, line_items, photo_estimate")
+            .eq("project_id", projectIdFromUrl)
+            .maybeSingle()
+        ]);
+
+        if (projectResult.data) {
+          setLoadedProjectData({
+            id: projectResult.data.id,
+            name: projectResult.data.name,
+            address: projectResult.data.address || undefined,
+            description: projectResult.data.description || undefined,
+            totalAmount: summaryResult.data?.total_cost || 0,
+          });
+          
+          // Also load photo estimate if available
+          if (summaryResult.data?.photo_estimate && Object.keys(summaryResult.data.photo_estimate).length > 0) {
+            setCollectedData(prev => ({
+              ...prev,
+              photoEstimate: summaryResult.data.photo_estimate
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error loading project data:", error);
+      }
+    };
+
+    loadProjectData();
+  }, [projectIdFromUrl]);
 
   // Build full draft data including all progress
   const buildFullDraftData = useCallback((): CollectedData => {
@@ -739,6 +802,14 @@ const BuildUnionQuickMode = () => {
                 <ContractGenerator 
                   quoteData={quoteData}
                   collectedData={collectedData}
+                  initialTemplate={templateFromUrl || undefined}
+                  linkedProjectId={projectIdFromUrl || undefined}
+                  projectData={loadedProjectData ? {
+                    name: loadedProjectData.name,
+                    address: loadedProjectData.address,
+                    description: loadedProjectData.description,
+                    totalAmount: loadedProjectData.totalAmount,
+                  } : undefined}
                   onProgressUpdate={(data) => {
                     setContractProgress({
                       contractorName: data.contractorName || "",
