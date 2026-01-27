@@ -192,7 +192,7 @@ export const ProjectCommandCenter = ({
   const [isTeamReportDialogOpen, setIsTeamReportDialogOpen] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(true);
   const [activeDocumentCategory, setActiveDocumentCategory] = useState<string>("all");
-  const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
+  
   
   // Client Info Dialog state
   const [isClientInfoDialogOpen, setIsClientInfoDialogOpen] = useState(false);
@@ -1311,48 +1311,37 @@ export const ProjectCommandCenter = ({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Data Sources Status Panel */}
-          <Collapsible open={isDataSourcesOpen} onOpenChange={setIsDataSourcesOpen}>
-            <CollapsibleTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="w-full justify-between h-auto py-3 border-dashed hover:border-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
-              >
-                <div className="flex items-center gap-3">
-                  <Database className="h-4 w-4 text-amber-600" />
-                  <span className="font-medium">16 Data Sources</span>
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="outline" className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                      <CircleCheck className="h-2.5 w-2.5" />
-                      {completeCount}
+          {/* Data Sources Status Panel - Always Open */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-3">
+                <Database className="h-4 w-4 text-amber-600" />
+                <span className="font-medium">16 Data Sources</span>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
+                    <CircleCheck className="h-2.5 w-2.5" />
+                    {completeCount}
+                  </Badge>
+                  {partialCount > 0 && (
+                    <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                      <CircleDashed className="h-2.5 w-2.5" />
+                      {partialCount}
                     </Badge>
-                    {partialCount > 0 && (
-                      <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
-                        <CircleDashed className="h-2.5 w-2.5" />
-                        {partialCount}
-                      </Badge>
-                    )}
-                    {pendingCount > 0 && (
-                      <Badge variant="outline" className="gap-1 bg-slate-50 text-slate-500 border-slate-200 text-[10px]">
-                        <CircleAlert className="h-2.5 w-2.5" />
-                        {pendingCount}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Progress value={healthScore} className="w-20 h-2" />
-                  {isDataSourcesOpen ? (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  {pendingCount > 0 && (
+                    <Badge variant="outline" className="gap-1 bg-slate-50 text-slate-500 border-slate-200 text-[10px]">
+                      <CircleAlert className="h-2.5 w-2.5" />
+                      {pendingCount}
+                    </Badge>
                   )}
                 </div>
-              </Button>
-            </CollapsibleTrigger>
+              </div>
+              <div className="flex items-center gap-2">
+                <Progress value={healthScore} className="w-20 h-2" />
+              </div>
+            </div>
             
-            <CollapsibleContent className="pt-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 8 Pillars of Operational Truth */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-400">
@@ -1470,8 +1459,7 @@ export const ProjectCommandCenter = ({
                   </div>
                 </div>
               </div>
-            </CollapsibleContent>
-          </Collapsible>
+          </div>
 
           {/* Conflict Monitor Warning Banner */}
           {conflictMonitorData.hasConflict && (
