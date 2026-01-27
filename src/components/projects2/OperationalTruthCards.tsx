@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,9 @@ import {
   Clock,
   Loader2,
   Sparkles,
-  CloudRain
+  CloudRain,
+  Play,
+  RotateCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OperationalTruth } from "@/types/operationalTruth";
@@ -115,6 +117,8 @@ export default function OperationalTruthCards({
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
   const [loadingPillar, setLoadingPillar] = useState<string | null>(null);
+  const [isRunningAll, setIsRunningAll] = useState(false);
+  const [runAllProgress, setRunAllProgress] = useState(0);
   const [reports, setReports] = useState<VerificationReport[]>([]);
   
   const {
@@ -473,27 +477,193 @@ export default function OperationalTruthCards({
 
   const clearReports = () => {
     setReports([]);
+    setRunAllProgress(0);
   };
+
+  // Run All Verifications - Sequential execution of all pending checks
+  const runAllVerifications = useCallback(async () => {
+    if (!projectId) {
+      toast.error("Project ID required for verification");
+      return;
+    }
+    
+    if (isRunningAll) return;
+    
+    setIsRunningAll(true);
+    setRunAllProgress(0);
+    setReports([]); // Clear previous reports
+    
+    const pendingChecks: Array<{ 
+      name: string; 
+      key: string;
+      fn: () => Promise<void>;
+      isPending: boolean;
+    }> = [
+      { 
+        name: "Confirmed Area", 
+        key: "area",
+        fn: verifyConfirmedArea, 
+        isPending: !confirmedArea 
+      },
+      { 
+        name: "Materials", 
+        key: "materials",
+        fn: verifyMaterials, 
+        isPending: materialsCount === 0 
+      },
+      { 
+        name: "OBC Status", 
+        key: "obc",
+        fn: verifyOBCStatus, 
+        isPending: obcCompliance === "pending" 
+      },
+      { 
+        name: "Conflict Check", 
+        key: "conflict",
+        fn: verifyConflicts, 
+        isPending: conflictStatus === "pending" 
+      },
+    ];
+    
+    // Filter only pending checks
+    const checksToRun = pendingChecks.filter(check => check.isPending);
+    
+    if (checksToRun.length === 0) {
+      toast.info("All verifications already complete");
+      setIsRunningAll(false);
+      return;
+    }
+    
+    toast.info(`Running ${checksToRun.length} verification(s)...`);
+    
+    let completed = 0;
+    const totalChecks = checksToRun.length;
+    
+    for (const check of checksToRun) {
+      try {
+        setLoadingPillar(check.key);
+        await check.fn();
+        completed++;
+        setRunAllProgress(Math.round((completed / totalChecks) * 100));
+        
+        // Small delay between checks for visual feedback
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (error) {
+        console.error(`Verification failed for ${check.name}:`, error);
+        addReport({
+          pillar: check.name,
+          engine: "dual",
+          status: "error",
+          message: `Verification failed for ${check.name}`,
+          details: error instanceof Error ? error.message : "Unknown error"
+        });
+      }
+    }
+    
+    setLoadingPillar(null);
+    setIsRunningAll(false);
+    
+    // Generate summary report
+    const successCount = reports.filter(r => r.status === "success").length;
+    const warningCount = reports.filter(r => r.status === "warning").length;
+    const errorCount = reports.filter(r => r.status === "error").length;
+    
+    addReport({
+      pillar: "📋 Verification Summary",
+      engine: "dual",
+      status: errorCount > 0 ? "error" : warningCount > 0 ? "warning" : "success",
+      message: `Completed: ${successCount} passed, ${warningCount} warnings, ${errorCount} failed`,
+      details: `${checksToRun.length} pillar(s) verified. Overall status: ${
+        errorCount > 0 ? "Issues require attention" : 
+        warningCount > 0 ? "Review warnings before proceeding" : 
+        "All systems verified"
+      }`
+    });
+    
+    if (errorCount === 0 && warningCount === 0) {
+      toast.success("All verifications passed!");
+    } else if (errorCount > 0) {
+      toast.error(`${errorCount} verification(s) failed`);
+    } else {
+      toast.warning(`${warningCount} warning(s) detected`);
+    }
+    
+    onUpdate?.();
+  }, [
+    projectId, isRunningAll, confirmedArea, materialsCount, 
+    obcCompliance, conflictStatus, onUpdate
+  ]);
+
+  // Calculate pending checks count
+  const pendingChecksCount = [
+    !confirmedArea,
+    materialsCount === 0,
+    obcCompliance === "pending",
+    conflictStatus === "pending"
+  ].filter(Boolean).length;
 
   return (
     <div className="space-y-4">
-      {/* Verification Progress */}
+      {/* Verification Progress + Run All Button */}
       <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
         <Brain className="h-5 w-5 text-primary" />
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium">{t("operationalTruth.title")}</span>
-            <span className="text-sm text-muted-foreground">{verificationRate}%</span>
+            <span className="text-sm text-muted-foreground">
+              {isRunningAll ? `${runAllProgress}%` : `${verificationRate}%`}
+            </span>
           </div>
-          <Progress value={verificationRate} className="h-2" />
+          <Progress 
+            value={isRunningAll ? runAllProgress : verificationRate} 
+            className={cn("h-2", isRunningAll && "animate-pulse")} 
+          />
         </div>
+        
+        {/* Run All Verifications Button */}
+        <Button
+          size="sm"
+          variant={pendingChecksCount > 0 ? "default" : "outline"}
+          onClick={runAllVerifications}
+          disabled={isRunningAll || !projectId || pendingChecksCount === 0}
+          className="gap-2 min-w-[140px]"
+        >
+          {isRunningAll ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Verifying...
+            </>
+          ) : pendingChecksCount > 0 ? (
+            <>
+              <Play className="h-4 w-4" />
+              Run All ({pendingChecksCount})
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4" />
+              All Complete
+            </>
+          )}
+        </Button>
       </div>
 
-      {/* Click hint */}
-      <p className="text-xs text-muted-foreground flex items-center gap-1">
-        <Sparkles className="h-3 w-3" />
-        Click pending pillars to trigger AI verification
-      </p>
+      {/* Run All progress indicator when running */}
+      {isRunningAll && (
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span className="text-sm text-primary">
+            Running verification checks... {runAllProgress}% complete
+          </span>
+        </div>
+      )}
+
+      {/* Click hint - only show when not running */}
+      {!isRunningAll && pendingChecksCount > 0 && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Sparkles className="h-3 w-3" />
+          Click individual pillars or use "Run All" to trigger AI verification
+        </p>
+      )}
 
       {/* 8 Pillars Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -583,12 +753,27 @@ export default function OperationalTruthCards({
               <h4 className="text-sm font-semibold flex items-center gap-2">
                 <Brain className="h-4 w-4 text-primary" />
                 Verification Reports
+                <span className="text-xs text-muted-foreground font-normal">
+                  ({reports.length} result{reports.length !== 1 ? 's' : ''})
+                </span>
               </h4>
-              <Button variant="ghost" size="sm" onClick={clearReports}>
-                Clear
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={runAllVerifications}
+                  disabled={isRunningAll || pendingChecksCount === 0}
+                  className="gap-1"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Re-run
+                </Button>
+                <Button variant="ghost" size="sm" onClick={clearReports}>
+                  Clear
+                </Button>
+              </div>
             </div>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
+            <div className="space-y-3 max-h-80 overflow-y-auto">
               {reports.map((report, index) => (
                 <div 
                   key={index}
