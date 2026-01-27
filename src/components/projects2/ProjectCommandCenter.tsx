@@ -1022,7 +1022,7 @@ export const ProjectCommandCenter = ({
       documents: () => onNavigateToTab?.("documents"),
       contracts: () => onNavigateToTab?.("contracts"),
       team: () => onNavigateToTab?.("team"),
-      sitemap: () => onNavigateToTab?.("sitemap"),
+      sitemap: () => onNavigateToTab?.("map"),
       timeline: () => onNavigateToTab?.("team"),
       client: openClientInfoDialog,
       weather: () => onNavigateToTab?.("weather"),
