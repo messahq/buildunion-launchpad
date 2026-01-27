@@ -6,6 +6,12 @@ import { toast } from "sonner";
 import { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
 import { DualEngineOutput, SynthesisResult } from "@/components/projects2/ProjectSynthesis";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
+import { 
+  generateCacheHash, 
+  getCachedAIResult,
+  setCachedAIResult,
+} from "@/lib/aiCacheUtils";
+import { Json } from "@/integrations/supabase/types";
 
 // Project size type - determined by AI
 export type ProjectSize = "small" | "medium" | "large";
@@ -65,6 +71,9 @@ export interface AIAnalysisResult {
   // Dual-engine structured output for Synthesis Bridge
   dualEngineOutput?: DualEngineOutput;
   synthesisResult?: SynthesisResult;
+  // Cache metadata
+  fromCache?: boolean;
+  cacheHash?: string;
 }
 
 interface AnalyzeProjectParams {
@@ -76,32 +85,43 @@ interface AnalyzeProjectParams {
   // NEW: Filter answers for targeted AI analysis
   filterAnswers?: FilterAnswers;
   aiTriggers?: AITriggers;
+  // Force skip cache
+  forceRefresh?: boolean;
 }
 
-// Tier-based analysis depth
+// Tier-based analysis depth with model selection
 const getTierAnalysisConfig = (tier: SubscriptionTier) => {
   switch (tier) {
     case "premium":
     case "enterprise":
       return {
         isPremium: true,
+        tierName: "premium" as const,
         maxImages: 10,
         analysisDepth: "deep",
         features: ["dual_engine", "conflict_detection", "premium_insights"],
+        // Premium: always dual engine
+        forceDualEngine: true,
       };
     case "pro":
       return {
         isPremium: true,
+        tierName: "pro" as const,
         maxImages: 5,
         analysisDepth: "standard",
         features: ["dual_engine", "conflict_detection"],
+        // Pro: dual engine only on conflicts
+        forceDualEngine: false,
       };
     default: // free
       return {
         isPremium: false,
+        tierName: "free" as const,
         maxImages: 2,
         analysisDepth: "basic",
         features: ["basic_estimate"],
+        // Free: never dual engine
+        forceDualEngine: false,
       };
   }
 };
@@ -123,6 +143,7 @@ export const useProjectAIAnalysis = () => {
     workType,
     filterAnswers,
     aiTriggers,
+    forceRefresh = false,
   }: AnalyzeProjectParams): Promise<AIAnalysisResult | null> => {
     if (!session?.access_token) {
       toast.error("Please sign in to use AI analysis");
@@ -131,7 +152,6 @@ export const useProjectAIAnalysis = () => {
 
     const hasContent = images.length > 0 || documents.length > 0;
     if (!hasContent) {
-      // No content to analyze
       return null;
     }
 
@@ -154,7 +174,52 @@ export const useProjectAIAnalysis = () => {
         toast.info(`Analyzing first ${tierConfig.maxImages} images (${subscription.tier} tier limit)`);
       }
 
-      // Step 1: Analyze images if present
+      // Step 1: Check cache before making API call
+      let cacheHash: string | null = null;
+      if (imagesToAnalyze.length > 0 && !forceRefresh) {
+        setProgress(5);
+        setCurrentStep("Checking cached results...");
+
+        const firstImage = imagesToAnalyze[0];
+        const imageUrl = firstImage.name; // Use filename as identifier
+        cacheHash = generateCacheHash(imageUrl, description || "", tierConfig.tierName);
+
+        // Try to get cached result using the utility function
+        const cachedResult = await getCachedAIResult(projectId, cacheHash);
+        
+        if (cachedResult) {
+          console.log("[AI Cache] Using cached result, hash:", cacheHash);
+          setProgress(100);
+          setCurrentStep("Loaded from cache!");
+          
+          const cachedData = cachedResult as Record<string, any>;
+          const cachedAnalysis: AIAnalysisResult = {
+            estimate: cachedData.estimate || {
+              materials: [],
+              summary: "Cached result",
+              recommendations: [],
+              area: null,
+              areaUnit: "sq ft",
+              areaConfidence: "low",
+              surfaceType: "unknown",
+              surfaceCondition: "unknown",
+              roomType: "unknown",
+            },
+            blueprintAnalysis: cachedData.blueprintAnalysis,
+            projectSize: cachedData.projectSize || "small",
+            projectSizeReason: cachedData.projectSizeReason || "From cache",
+            fromCache: true,
+            cacheHash,
+            processingTime: Date.now() - startTime,
+            tier: cachedData.tier,
+          };
+          setResult(cachedAnalysis);
+          setAnalyzing(false);
+          return cachedAnalysis;
+        }
+      }
+
+      // Step 2: Analyze images if present
       if (imagesToAnalyze.length > 0) {
         setProgress(10);
         setCurrentStep("Converting images...");
@@ -174,11 +239,14 @@ export const useProjectAIAnalysis = () => {
           ? `${workType} project: ${description || "No additional details"}`
           : description || "";
 
+        // Pass tier info to edge function for model selection
         const { data, error: fnError } = await supabase.functions.invoke("quick-estimate", {
           body: {
             image: base64Image,
             description: enhancedDescription,
             isPremium: tierConfig.isPremium,
+            tier: tierConfig.tierName, // NEW: explicit tier for model selection
+            forceDualEngine: tierConfig.forceDualEngine, // NEW: premium always dual
             // Pass filter data for targeted analysis
             filterAnswers: filterAnswers || null,
             aiTriggers: aiTriggers || null,
@@ -392,6 +460,25 @@ export const useProjectAIAnalysis = () => {
         analyzedAt: new Date().toISOString(),
       }];
 
+      // Save cache entry for this analysis
+      if (cacheHash) {
+        const cacheData: Json = {
+          estimate: analysisResult.estimate,
+          blueprintAnalysis: blueprintAnalysis || null,
+          projectSize,
+          projectSizeReason,
+          tier: subscription.tier,
+        } as unknown as Json;
+        
+        await setCachedAIResult(
+          projectId,
+          cacheHash,
+          cacheData,
+          tierConfig.isPremium ? "gemini-2.5-flash" : "gemini-2.5-flash-lite",
+          tierConfig.tierName
+        );
+      }
+
       const { error: updateError } = await supabase
         .from("project_summaries")
         .update({
@@ -409,9 +496,16 @@ export const useProjectAIAnalysis = () => {
 
       setProgress(100);
       setCurrentStep("Analysis complete!");
-      setResult(analysisResult);
+      
+      // Add cache metadata to result
+      const finalResult: AIAnalysisResult = {
+        ...analysisResult,
+        fromCache: false,
+        cacheHash: cacheHash || undefined,
+      };
+      setResult(finalResult);
 
-      return analysisResult;
+      return finalResult;
     } catch (err) {
       console.error("AI analysis error:", err);
       const errorMessage = err instanceof Error ? err.message : "Analysis failed";
