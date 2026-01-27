@@ -598,13 +598,25 @@ export const ProjectCommandCenter = ({
 
   // Generate Project Report PDF and save to documents
   const generateFullReport = useCallback(async (saveToDocuments = true) => {
-    toast.loading("Generating Project Report...", { id: "report" });
+    toast.loading("Generating Full Project Report...", { id: "report" });
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error("Please sign in to generate reports", { id: "report" });
         return;
       }
+
+      // Build data sources info for the report
+      const info = dataSourcesInfo || {
+        taskCount: 0,
+        completedTasks: 0,
+        documentCount: 0,
+        contractCount: 0,
+        signedContracts: 0,
+        teamSize: 1,
+        hasTimeline: false,
+        hasClientInfo: false,
+      };
 
       const params: ProjectReportParams = {
         projectInfo: {
@@ -616,12 +628,28 @@ export const ProjectCommandCenter = ({
         operationalTruth,
         conflicts,
         companyBranding,
+        // Include 8 workflow data sources
+        workflowData: {
+          tasks: { count: info.taskCount, completed: info.completedTasks },
+          documents: { count: info.documentCount },
+          contracts: { count: info.contractCount, signed: info.signedContracts },
+          team: { size: info.teamSize },
+          timeline: { 
+            startDate: undefined, // Would need to pass from parent
+            endDate: undefined 
+          },
+          clientInfo: clientInfo || { name: undefined, email: undefined, phone: undefined, address: undefined },
+          weather: { 
+            available: !!projectAddress,
+            location: projectAddress 
+          },
+        },
       };
 
       // Generate HTML and convert to PDF blob
       const html = buildProjectReportHTML(params);
       const pdfBlob = await generatePDFBlob(html, {
-        filename: `${projectName.replace(/\s+/g, "_")}_Report.pdf`,
+        filename: `${projectName.replace(/\s+/g, "_")}_FullReport.pdf`,
         pageFormat: 'a4'
       });
 
@@ -629,7 +657,7 @@ export const ProjectCommandCenter = ({
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${projectName.replace(/\s+/g, "_")}_Report_${Date.now()}.pdf`;
+      a.download = `${projectName.replace(/\s+/g, "_")}_FullReport_${Date.now()}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -645,18 +673,18 @@ export const ProjectCommandCenter = ({
           projectName
         );
         if (result.success) {
-          toast.success("Report downloaded & saved to Documents!", { id: "report" });
+          toast.success("Full Report downloaded & saved to Documents!", { id: "report" });
         } else {
-          toast.success("Report downloaded!", { id: "report" });
+          toast.success("Full Report downloaded!", { id: "report" });
         }
       } else {
-        toast.success("Report downloaded!", { id: "report" });
+        toast.success("Full Report downloaded!", { id: "report" });
       }
     } catch (error) {
       console.error("Report generation error:", error);
       toast.error("Failed to generate report", { id: "report" });
     }
-  }, [projectId, projectName, projectAddress, projectTrade, projectCreatedAt, operationalTruth, conflicts, companyBranding]);
+  }, [projectId, projectName, projectAddress, projectTrade, projectCreatedAt, operationalTruth, conflicts, companyBranding, dataSourcesInfo, clientInfo]);
 
   // Copy Brief to Clipboard
   const copyBriefToClipboard = useCallback(async () => {

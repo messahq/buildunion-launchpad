@@ -22,6 +22,16 @@ export interface ConflictData {
   blueprintValue?: string | number;
 }
 
+export interface WorkflowDataSources {
+  tasks: { count: number; completed: number };
+  documents: { count: number };
+  contracts: { count: number; signed: number };
+  team: { size: number };
+  timeline: { startDate?: string; endDate?: string };
+  clientInfo: { name?: string; email?: string; phone?: string; address?: string };
+  weather?: { location?: string; available: boolean };
+}
+
 export interface ProjectReportParams {
   projectInfo: {
     name: string;
@@ -45,6 +55,8 @@ export interface ProjectReportParams {
     email?: string;
     website?: string;
   };
+  // Extended 8 Workflow Data Sources
+  workflowData?: WorkflowDataSources;
 }
 
 // HTML escape function to prevent XSS attacks
@@ -849,7 +861,8 @@ export const buildProjectReportHTML = (params: ProjectReportParams): string => {
     obcDetails,
     conflicts,
     dualEngineOutput,
-    companyBranding
+    companyBranding,
+    workflowData
   } = params;
 
   const currentDate = new Date().toLocaleDateString('en-CA', {
@@ -1105,6 +1118,137 @@ export const buildProjectReportHTML = (params: ProjectReportParams): string => {
     </div>
   ` : '';
 
+  // Build 8 Workflow Data Sources Section
+  const getWorkflowStatus = (isComplete: boolean) => 
+    isComplete 
+      ? { bg: '#dcfce7', border: '#86efac', text: '#166534', icon: '✅' }
+      : { bg: '#f1f5f9', border: '#e2e8f0', text: '#64748b', icon: '⏳' };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Not set';
+    return new Date(dateStr).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const workflowHTML = workflowData ? `
+    <h3 style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 24px 0 16px 0; padding-bottom: 8px; border-bottom: 3px solid #0891b2;">
+      📋 Workflow Data Sources - 8 Elements
+    </h3>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+      <!-- Tasks -->
+      <div style="background: ${getWorkflowStatus(workflowData.tasks.count > 0).bg}; border: 1px solid ${getWorkflowStatus(workflowData.tasks.count > 0).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">📋 Tasks</div>
+        <div style="font-size: 16px; font-weight: 700; color: ${getWorkflowStatus(workflowData.tasks.count > 0).text};">
+          ${workflowData.tasks.count > 0 ? `${workflowData.tasks.completed}/${workflowData.tasks.count}` : 'None'}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${workflowData.tasks.count > 0 ? `${Math.round((workflowData.tasks.completed / workflowData.tasks.count) * 100)}% complete` : 'No tasks'}
+        </div>
+      </div>
+      
+      <!-- Documents -->
+      <div style="background: ${getWorkflowStatus(workflowData.documents.count > 0).bg}; border: 1px solid ${getWorkflowStatus(workflowData.documents.count > 0).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">📄 Documents</div>
+        <div style="font-size: 16px; font-weight: 700; color: ${getWorkflowStatus(workflowData.documents.count > 0).text};">
+          ${workflowData.documents.count > 0 ? `${workflowData.documents.count} files` : 'None'}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${workflowData.documents.count > 0 ? 'Uploaded' : 'No files'}
+        </div>
+      </div>
+      
+      <!-- Contracts -->
+      <div style="background: ${getWorkflowStatus(workflowData.contracts.count > 0).bg}; border: 1px solid ${getWorkflowStatus(workflowData.contracts.count > 0).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">📝 Contracts</div>
+        <div style="font-size: 16px; font-weight: 700; color: ${getWorkflowStatus(workflowData.contracts.count > 0).text};">
+          ${workflowData.contracts.count > 0 ? `${workflowData.contracts.signed}/${workflowData.contracts.count}` : 'None'}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${workflowData.contracts.count > 0 ? 'Signed' : 'No contracts'}
+        </div>
+      </div>
+      
+      <!-- Team -->
+      <div style="background: ${getWorkflowStatus(workflowData.team.size > 1).bg}; border: 1px solid ${getWorkflowStatus(workflowData.team.size > 1).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">👥 Team</div>
+        <div style="font-size: 16px; font-weight: 700; color: ${getWorkflowStatus(workflowData.team.size > 1).text};">
+          ${workflowData.team.size} member${workflowData.team.size > 1 ? 's' : ''}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${workflowData.team.size > 1 ? 'Team Mode' : 'Solo Mode'}
+        </div>
+      </div>
+      
+      <!-- Timeline -->
+      <div style="background: ${getWorkflowStatus(!!workflowData.timeline.startDate).bg}; border: 1px solid ${getWorkflowStatus(!!workflowData.timeline.startDate).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">📅 Timeline</div>
+        <div style="font-size: 12px; font-weight: 600; color: ${getWorkflowStatus(!!workflowData.timeline.startDate).text};">
+          ${workflowData.timeline.startDate ? formatDate(workflowData.timeline.startDate) : 'Not Set'}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${workflowData.timeline.endDate ? `→ ${formatDate(workflowData.timeline.endDate)}` : 'End date pending'}
+        </div>
+      </div>
+      
+      <!-- Client Info -->
+      <div style="background: ${getWorkflowStatus(!!workflowData.clientInfo.name).bg}; border: 1px solid ${getWorkflowStatus(!!workflowData.clientInfo.name).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">👤 Client Info</div>
+        <div style="font-size: 12px; font-weight: 600; color: ${getWorkflowStatus(!!workflowData.clientInfo.name).text}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${workflowData.clientInfo.name ? escapeHtml(workflowData.clientInfo.name) : 'Not Set'}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${workflowData.clientInfo.email ? escapeHtml(workflowData.clientInfo.email.slice(0, 20)) + (workflowData.clientInfo.email.length > 20 ? '...' : '') : 'No email'}
+        </div>
+      </div>
+      
+      <!-- Site Map -->
+      <div style="background: ${getWorkflowStatus(!!projectInfo.address).bg}; border: 1px solid ${getWorkflowStatus(!!projectInfo.address).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">📍 Site Map</div>
+        <div style="font-size: 12px; font-weight: 600; color: ${getWorkflowStatus(!!projectInfo.address).text};">
+          ${projectInfo.address ? 'Located' : 'Not Set'}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${projectInfo.address ? 'GPS Available' : 'Add address'}
+        </div>
+      </div>
+      
+      <!-- Weather -->
+      <div style="background: ${getWorkflowStatus(workflowData.weather?.available || false).bg}; border: 1px solid ${getWorkflowStatus(workflowData.weather?.available || false).border}; border-radius: 8px; padding: 12px; text-align: center;">
+        <div style="font-size: 9px; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">🌤️ Weather</div>
+        <div style="font-size: 12px; font-weight: 600; color: ${getWorkflowStatus(workflowData.weather?.available || false).text};">
+          ${workflowData.weather?.available ? 'Available' : 'Pending'}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+          ${workflowData.weather?.location ? escapeHtml(workflowData.weather.location.slice(0, 15)) : 'Add location'}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Client Details Card -->
+    ${workflowData.clientInfo.name ? `
+      <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #86efac; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <h4 style="font-size: 13px; font-weight: 600; color: #166534; margin: 0 0 12px 0;">👤 Client Information</h4>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #64748b;">Name</div>
+            <div style="font-size: 13px; font-weight: 600; color: #1e293b; margin-top: 2px;">${escapeHtml(workflowData.clientInfo.name || 'Not provided')}</div>
+          </div>
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #64748b;">Email</div>
+            <div style="font-size: 13px; color: #1e293b; margin-top: 2px;">${escapeHtml(workflowData.clientInfo.email || 'Not provided')}</div>
+          </div>
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #64748b;">Phone</div>
+            <div style="font-size: 13px; color: #1e293b; margin-top: 2px;">${escapeHtml(workflowData.clientInfo.phone || 'Not provided')}</div>
+          </div>
+          <div>
+            <div style="font-size: 10px; text-transform: uppercase; color: #64748b;">Address</div>
+            <div style="font-size: 13px; color: #1e293b; margin-top: 2px;">${escapeHtml(workflowData.clientInfo.address || 'Not provided')}</div>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+  ` : '';
+
   return `
     <!DOCTYPE html>
     <html>
@@ -1178,6 +1322,9 @@ export const buildProjectReportHTML = (params: ProjectReportParams): string => {
 
         <!-- Materials Section -->
         ${materialsHTML}
+
+        <!-- 8 Workflow Data Sources -->
+        ${workflowHTML}
 
         <!-- Signature Section -->
         <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
