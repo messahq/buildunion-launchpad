@@ -4,6 +4,7 @@ import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2 } from "lucide-react";
 import UpcomingDeadlinesWidget from "@/components/UpcomingDeadlinesWidget";
+import CalendarPreviewWidget from "@/components/CalendarPreviewWidget";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
@@ -662,8 +663,12 @@ const BuildUnionProjects2 = () => {
                         ))}
                       </div>
 
-                      {/* Sidebar with Upcoming Deadlines */}
-                      <div className="lg:col-span-1">
+                      {/* Sidebar with Calendar Preview and Upcoming Deadlines */}
+                      <div className="lg:col-span-1 space-y-4">
+                        <CalendarPreviewWidget 
+                          projectId={selectedProjectId}
+                          projectAddress={projects.find(p => p.id === selectedProjectId)?.address}
+                        />
                         <UpcomingDeadlinesWidget 
                           projectId={selectedProjectId}
                           onTaskClick={(projectId) => setSelectedProjectId(projectId)}
