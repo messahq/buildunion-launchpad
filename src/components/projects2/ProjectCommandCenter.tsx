@@ -43,16 +43,18 @@ import {
   Pencil,
   ExternalLink,
   Keyboard,
+  Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { generateProjectReport, ProjectReportParams, ConflictData } from "@/lib/pdfGenerator";
+import { generateProjectReport, generatePDFBlob, ProjectReportParams, ConflictData, buildProjectReportHTML } from "@/lib/pdfGenerator";
 import { OperationalTruth } from "@/types/operationalTruth";
 import { ProBadge } from "@/components/ui/pro-badge";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ReactMarkdown from "react-markdown";
+import { saveDocumentToProject, saveAIBriefToProject, saveReportToProject } from "@/lib/documentUtils";
 
 // ============================================
 // TYPES
@@ -110,9 +112,13 @@ export const ProjectCommandCenter = ({
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
+  const [isGeneratingTeamReport, setIsGeneratingTeamReport] = useState(false);
   const [briefContent, setBriefContent] = useState<string | null>(null);
   const [briefMetadata, setBriefMetadata] = useState<any>(null);
+  const [teamReportContent, setTeamReportContent] = useState<string | null>(null);
+  const [teamReportMetadata, setTeamReportMetadata] = useState<any>(null);
   const [isBriefDialogOpen, setIsBriefDialogOpen] = useState(false);
+  const [isTeamReportDialogOpen, setIsTeamReportDialogOpen] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(true);
   const [activeDocumentCategory, setActiveDocumentCategory] = useState<string>("all");
   
@@ -126,8 +132,8 @@ export const ProjectCommandCenter = ({
   // Double-tap detection for mobile
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
-  // Generate AI Brief
-  const generateAIBrief = useCallback(async () => {
+  // Generate AI Brief and save to documents
+  const generateAIBrief = useCallback(async (saveToDocuments = true) => {
     setIsGeneratingBrief(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -148,8 +154,24 @@ export const ProjectCommandCenter = ({
         setBriefContent(response.data.brief);
         setBriefMetadata(response.data.metadata);
         setIsBriefDialogOpen(true);
-        setIsPreviewMode(false); // Full view when generated
-        toast.success("AI Brief generated successfully!");
+        setIsPreviewMode(false);
+
+        // Save to documents
+        if (saveToDocuments) {
+          const result = await saveAIBriefToProject(
+            projectId,
+            session.user.id,
+            response.data.brief,
+            projectName
+          );
+          if (result.success) {
+            toast.success("AI Brief generated & saved to Documents!");
+          } else {
+            toast.success("AI Brief generated!");
+          }
+        } else {
+          toast.success("AI Brief generated!");
+        }
       }
     } catch (error) {
       console.error("Brief generation error:", error);
@@ -157,12 +179,72 @@ export const ProjectCommandCenter = ({
     } finally {
       setIsGeneratingBrief(false);
     }
-  }, [projectId]);
+  }, [projectId, projectName]);
 
-  // Generate Project Report PDF
-  const generateFullReport = useCallback(async () => {
+  // Generate Team Report and save to documents
+  const generateTeamReport = useCallback(async (saveToDocuments = true) => {
+    setIsGeneratingTeamReport(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to generate reports");
+        return;
+      }
+
+      const response = await supabase.functions.invoke("generate-team-report", {
+        body: { projectId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.report) {
+        setTeamReportContent(response.data.report);
+        setTeamReportMetadata(response.data.metadata);
+        setIsTeamReportDialogOpen(true);
+
+        // Save to documents
+        if (saveToDocuments) {
+          const timestamp = new Date().toISOString().split('T')[0];
+          const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.md`;
+          const blob = new Blob([response.data.report], { type: 'text/markdown' });
+          
+          const result = await saveDocumentToProject({
+            projectId,
+            userId: session.user.id,
+            fileName,
+            fileBlob: blob,
+            documentType: 'team-report'
+          });
+          
+          if (result.success) {
+            toast.success("Team Report generated & saved to Documents!");
+          } else {
+            toast.success("Team Report generated!");
+          }
+        } else {
+          toast.success("Team Report generated!");
+        }
+      }
+    } catch (error) {
+      console.error("Team report generation error:", error);
+      toast.error("Failed to generate team report. Please try again.");
+    } finally {
+      setIsGeneratingTeamReport(false);
+    }
+  }, [projectId, projectName]);
+
+  // Generate Project Report PDF and save to documents
+  const generateFullReport = useCallback(async (saveToDocuments = true) => {
     toast.loading("Generating Project Report...", { id: "report" });
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to generate reports", { id: "report" });
+        return;
+      }
+
       const params: ProjectReportParams = {
         projectInfo: {
           name: projectName,
@@ -175,17 +257,45 @@ export const ProjectCommandCenter = ({
         companyBranding,
       };
 
-      await generateProjectReport(params, {
-        download: true,
-        filename: `${projectName.replace(/\s+/g, "_")}_Report_${Date.now()}.pdf`,
+      // Generate HTML and convert to PDF blob
+      const html = buildProjectReportHTML(params);
+      const pdfBlob = await generatePDFBlob(html, {
+        filename: `${projectName.replace(/\s+/g, "_")}_Report.pdf`,
+        pageFormat: 'a4'
       });
 
-      toast.success("Report downloaded!", { id: "report" });
+      // Download the PDF
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${projectName.replace(/\s+/g, "_")}_Report_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Save to documents
+      if (saveToDocuments) {
+        const result = await saveReportToProject(
+          projectId,
+          session.user.id,
+          pdfBlob,
+          'project-report',
+          projectName
+        );
+        if (result.success) {
+          toast.success("Report downloaded & saved to Documents!", { id: "report" });
+        } else {
+          toast.success("Report downloaded!", { id: "report" });
+        }
+      } else {
+        toast.success("Report downloaded!", { id: "report" });
+      }
     } catch (error) {
       console.error("Report generation error:", error);
       toast.error("Failed to generate report", { id: "report" });
     }
-  }, [projectName, projectAddress, projectTrade, projectCreatedAt, operationalTruth, conflicts, companyBranding]);
+  }, [projectId, projectName, projectAddress, projectTrade, projectCreatedAt, operationalTruth, conflicts, companyBranding]);
 
   // Copy Brief to Clipboard
   const copyBriefToClipboard = useCallback(async () => {
@@ -266,13 +376,19 @@ export const ProjectCommandCenter = ({
       } else {
         generateAIBrief();
       }
+    } else if (action.id === "team-report") {
+      if (teamReportContent) {
+        setIsTeamReportDialogOpen(true);
+      } else {
+        generateTeamReport();
+      }
     } else if (action.navigateTo && onNavigateToTab) {
       onNavigateToTab(action.navigateTo);
       toast.success(`Navigating to ${action.name}...`);
     } else {
       action.action();
     }
-  }, [briefContent, generateAIBrief, onNavigateToTab]);
+  }, [briefContent, teamReportContent, generateAIBrief, generateTeamReport, onNavigateToTab]);
 
   // Handle mobile touch with double-tap detection
   const handleTouchEnd = useCallback((action: DocumentAction) => {
@@ -381,8 +497,10 @@ export const ProjectCommandCenter = ({
       icon: Users,
       category: "team",
       isPremium: true,
-      previewContent: "**Team Report Preview**\n\n• Team size and roles\n• Task assignments per member\n• Completion rates\n• Activity timeline\n\n*Coming soon*",
-      action: async () => { toast.info("Team reports coming soon"); },
+      previewContent: teamReportContent 
+        ? `**Team Report**\n\n${teamReportContent.substring(0, 500)}...` 
+        : "**Team Report Preview**\n\n• Team size and roles\n• Task assignments per member\n• Completion rates\n• Activity timeline\n• Performance metrics\n• Workload distribution",
+      action: async () => { generateTeamReport(); },
     },
   ];
 
@@ -480,7 +598,7 @@ export const ProjectCommandCenter = ({
           {/* Quick Action: AI Brief */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
-              onClick={generateAIBrief}
+              onClick={() => generateAIBrief()}
               disabled={isGeneratingBrief}
               className="flex-1 h-auto py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-cyan-500 hover:from-amber-600 hover:via-amber-500 hover:to-cyan-600 text-white shadow-md"
             >
@@ -509,7 +627,7 @@ export const ProjectCommandCenter = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={generateFullReport}>
+                <DropdownMenuItem onClick={() => generateFullReport()}>
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Full Project Report (PDF)
                 </DropdownMenuItem>
@@ -857,6 +975,82 @@ export const ProjectCommandCenter = ({
                 Generated {new Date(briefMetadata.generatedAt).toLocaleString()} • BuildUnion AI
               </div>
             )
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Team Report Dialog */}
+      <Dialog open={isTeamReportDialogOpen} onOpenChange={setIsTeamReportDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh]">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-purple-500" />
+                  Team Report
+                  <Badge className="gap-1 ml-2 bg-gradient-to-r from-purple-500 to-pink-500">
+                    <Pencil className="h-3 w-3" />
+                    Full View
+                  </Badge>
+                </DialogTitle>
+                <DialogDescription>
+                  {projectName} • Team Performance Analysis
+                </DialogDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  if (teamReportContent) {
+                    navigator.clipboard.writeText(teamReportContent);
+                    toast.success("Report copied!");
+                  }
+                }}>
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copy
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  if (!teamReportContent) return;
+                  const subject = encodeURIComponent(`Team Report: ${projectName}`);
+                  const body = encodeURIComponent(`Team Report for ${projectName}\n\n${teamReportContent}\n\n---\nGenerated with BuildUnion AI`);
+                  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                }}>
+                  <Mail className="h-4 w-4 mr-1" />
+                  Email
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[60vh] pr-4">
+            {teamReportMetadata && (
+              <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
+                <Badge variant="secondary">
+                  👥 {teamReportMetadata.teamSize} Members
+                </Badge>
+                <Badge variant="secondary">
+                  📋 {teamReportMetadata.totalTasks} Tasks
+                </Badge>
+                <Badge variant="secondary">
+                  ✅ {teamReportMetadata.completionRate}% Complete
+                </Badge>
+                <Badge variant="secondary">
+                  💰 ${teamReportMetadata.totalBudget?.toLocaleString()} CAD
+                </Badge>
+              </div>
+            )}
+
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              {teamReportContent ? (
+                <ReactMarkdown>{teamReportContent}</ReactMarkdown>
+              ) : (
+                <p className="text-muted-foreground">No content available</p>
+              )}
+            </div>
+          </ScrollArea>
+
+          {teamReportMetadata && (
+            <div className="pt-4 border-t text-xs text-muted-foreground text-center">
+              Generated {new Date(teamReportMetadata.generatedAt).toLocaleString()} • BuildUnion AI
+            </div>
           )}
         </DialogContent>
       </Dialog>

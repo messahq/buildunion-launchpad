@@ -1,11 +1,23 @@
 // Utility functions for automatic document management
 import { supabase } from "@/integrations/supabase/client";
 
+export type GeneratedDocumentType = 
+  | 'ai-brief'
+  | 'project-report'
+  | 'quote'
+  | 'invoice'
+  | 'contract'
+  | 'task-list'
+  | 'team-report'
+  | 'cost-breakdown'
+  | 'other';
+
 interface SaveDocumentOptions {
   projectId: string;
   userId: string;
   fileName: string;
   fileBlob: Blob;
+  documentType?: GeneratedDocumentType;
   onSuccess?: (doc: any) => void;
   onError?: (error: Error) => void;
 }
@@ -18,6 +30,7 @@ export const saveDocumentToProject = async ({
   userId,
   fileName,
   fileBlob,
+  documentType = 'other',
   onSuccess,
   onError
 }: SaveDocumentOptions): Promise<{ success: boolean; document?: any; error?: Error }> => {
@@ -38,7 +51,7 @@ export const saveDocumentToProject = async ({
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    // Create document record
+    // Create document record with type prefix for easy filtering
     const { data: docData, error: dbError } = await supabase
       .from("project_documents")
       .insert({
@@ -64,6 +77,28 @@ export const saveDocumentToProject = async ({
 };
 
 /**
+ * Saves an AI Brief as a markdown document to project documents
+ */
+export const saveAIBriefToProject = async (
+  projectId: string,
+  userId: string,
+  briefContent: string,
+  projectName: string
+): Promise<{ success: boolean; document?: any }> => {
+  const timestamp = new Date().toISOString().split('T')[0];
+  const fileName = `AI_Brief_${projectName.replace(/\s+/g, '_')}_${timestamp}.md`;
+  const blob = new Blob([briefContent], { type: 'text/markdown' });
+  
+  return saveDocumentToProject({
+    projectId,
+    userId,
+    fileName,
+    fileBlob: blob,
+    documentType: 'ai-brief'
+  });
+};
+
+/**
  * Saves an invoice/PDF copy to the project documents when saving summary
  */
 export const saveInvoiceCopyToProject = async (
@@ -78,8 +113,32 @@ export const saveInvoiceCopyToProject = async (
     projectId,
     userId,
     fileName,
-    fileBlob: pdfBlob
+    fileBlob: pdfBlob,
+    documentType: 'invoice'
   });
 
   return result.success;
+};
+
+/**
+ * Saves a generated PDF report to project documents
+ */
+export const saveReportToProject = async (
+  projectId: string,
+  userId: string,
+  pdfBlob: Blob,
+  reportType: GeneratedDocumentType,
+  projectName: string
+): Promise<{ success: boolean; document?: any }> => {
+  const timestamp = new Date().toISOString().split('T')[0];
+  const typeLabel = reportType.replace(/-/g, '_').replace(/\b\w/g, c => c.toUpperCase());
+  const fileName = `${typeLabel}_${projectName.replace(/\s+/g, '_')}_${timestamp}.pdf`;
+  
+  return saveDocumentToProject({
+    projectId,
+    userId,
+    fileName,
+    fileBlob: pdfBlob,
+    documentType: reportType
+  });
 };
