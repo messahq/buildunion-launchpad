@@ -8,7 +8,9 @@ import {
   User,
   Clock,
   Check,
-  CheckCheck
+  CheckCheck,
+  Crown,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,7 @@ import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -70,6 +73,7 @@ const tradeLabels: Record<string, string> = {
 export default function BuildUnionMessages() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { subscription } = useSubscription();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -80,6 +84,9 @@ export default function BuildUnionMessages() {
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Premium access check
+  const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
 
   useEffect(() => {
     if (!user) {
@@ -322,6 +329,17 @@ export default function BuildUnionMessages() {
   const sendMessage = async () => {
     if (!user || !selectedConversation || !newMessage.trim()) return;
 
+    // Check premium access before sending
+    if (!hasPremiumAccess) {
+      toast.error("Direct messaging is a Premium feature", {
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate("/buildunion/pricing"),
+        },
+      });
+      return;
+    }
+
     setIsSending(true);
     const messageText = newMessage.trim();
 
@@ -396,15 +414,23 @@ export default function BuildUnionMessages() {
             Back
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <MessageSquare className="h-6 w-6 text-cyan-500" />
-              Messages
-              {totalUnread > 0 && (
-                <Badge variant="destructive" className="ml-2">
-                  {totalUnread}
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                <MessageSquare className="h-6 w-6 text-cyan-500" />
+                Messages
+                {totalUnread > 0 && (
+                  <Badge variant="destructive" className="ml-2">
+                    {totalUnread}
+                  </Badge>
+                )}
+              </h1>
+              {!hasPremiumAccess && (
+                <Badge variant="outline" className="bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950 dark:border-cyan-800 dark:text-cyan-300">
+                  <Crown className="h-3 w-3 mr-1" />
+                  Premium Feature
                 </Badge>
               )}
-            </h1>
+            </div>
             <p className="text-sm text-muted-foreground">
               Direct messages with your connections
             </p>
@@ -590,23 +616,42 @@ export default function BuildUnionMessages() {
 
                 {/* Message Input */}
                 <div className="p-4 border-t">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      disabled={isSending}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={sendMessage}
-                      disabled={isSending || !newMessage.trim()}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {hasPremiumAccess ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type a message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        disabled={isSending}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={sendMessage}
+                        disabled={isSending || !newMessage.trim()}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-4 p-3 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4 text-cyan-600" />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">
+                          Direct messaging is a Premium feature
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => navigate("/buildunion/pricing")}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                      >
+                        <Crown className="h-4 w-4 mr-1" />
+                        Upgrade
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
