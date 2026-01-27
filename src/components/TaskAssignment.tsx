@@ -1030,22 +1030,21 @@ const PhaseSection = ({
   const completedCount = tasks.filter(t => t.status === "completed").length;
 
   return (
-    <Collapsible open={isExpanded && !isLocked}>
+    <Collapsible open={isExpanded}>
       <div
         className={cn(
           "rounded-lg border transition-colors",
-          isLocked && "opacity-60",
+          isLocked && "opacity-75",
           colors.bg
         )}
       >
         {/* Phase Header */}
         <CollapsibleTrigger asChild>
           <div
-            onClick={isLocked ? undefined : onToggle}
+            onClick={onToggle}
             className={cn(
               "flex items-center justify-between p-3 cursor-pointer",
-              !isLocked && colors.hover,
-              isLocked && "cursor-not-allowed"
+              colors.hover
             )}
           >
             <div className="flex items-center gap-3">
