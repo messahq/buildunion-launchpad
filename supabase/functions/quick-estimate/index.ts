@@ -767,6 +767,30 @@ function buildAuditReport(
   };
 }
 
+// Helper: Extract area from description text
+function extractAreaFromDescription(description: string): number | null {
+  if (!description) return null;
+  
+  const patterns = [
+    /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*ft|square\s*feet?|sqft)/i,
+    /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*m|m²|square\s*meters?)/i,
+    /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:négyzetláb|nm|m2)/i,
+    /total\s*(?:area|size)?\s*[:\-=]?\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = description.match(pattern);
+    if (match?.[1]) {
+      const value = parseFloat(match[1].replace(/,/g, ""));
+      if (value > 10 && value < 100000) { // Sanity check
+        console.log(`[AREA] Extracted from description: ${value} sq ft`);
+        return value;
+      }
+    }
+  }
+  return null;
+}
+
 // Main dual-engine analysis - MESSA AUDIT PROTOCOL
 async function dualEngineAnalysis(
   image: string, 
@@ -779,6 +803,12 @@ async function dualEngineAnalysis(
   const tier = modelConfig.visualModel === AI_MODELS.GEMINI_PRO ? "premium" as const : 
                modelConfig.visualModel === AI_MODELS.GEMINI_FLASH ? "pro" as const : "free" as const;
   console.log(`=== MESSA DUAL ENGINE AUDIT START === (Tier: ${tier.toUpperCase()}) - DualEngine: ${modelConfig.runDualEngine}`);
+  
+  // STEP 0: Try to extract area from description first (user-provided data)
+  const descriptionArea = extractAreaFromDescription(description);
+  if (descriptionArea) {
+    console.log(`[AREA] User provided area in description: ${descriptionArea} sq ft`);
+  }
   
   // STEP 1: GEMINI VISUAL EXTRACTION
   // Role: Spatial analysis of blueprints, dimensions, site photos
@@ -797,6 +827,34 @@ async function dualEngineAnalysis(
     materialsCount: gptData.materials.length,
     areaUsed: gptData.total_material_area
   });
+  
+  // STEP 2.5: AREA FALLBACK CHAIN
+  // Priority: 1. Gemini visual detection, 2. User description, 3. Estimation engine area
+  let finalArea = geminiData.total_area;
+  let areaSource = "gemini_visual";
+  let areaConfidence = geminiData.confidence;
+  
+  if (!finalArea && descriptionArea) {
+    finalArea = descriptionArea;
+    areaSource = "user_description";
+    areaConfidence = "high"; // User-provided data is high confidence
+    console.log(`[AREA] Using user-provided area: ${finalArea} sq ft`);
+  }
+  
+  if (!finalArea && gptData.total_material_area && gptData.total_material_area > 10) {
+    finalArea = gptData.total_material_area;
+    areaSource = "estimation_engine";
+    areaConfidence = "medium";
+    console.log(`[AREA] Using estimation engine area: ${finalArea} sq ft`);
+  }
+  
+  // Update geminiData with final area for downstream processing
+  if (finalArea && !geminiData.total_area) {
+    geminiData.total_area = finalArea;
+    geminiData.confidence = areaConfidence;
+  }
+  
+  console.log(`[AREA] Final resolved area: ${finalArea} sq ft (source: ${areaSource}, confidence: ${areaConfidence})`);
   
   // STEP 3: ENGINEERING HANDSHAKE - Cross-Validation
   console.log("[CROSS-VALIDATION] Performing engineering handshake...");
@@ -821,10 +879,11 @@ async function dualEngineAnalysis(
       summary: gptData.summary,
       recommendations: gptData.recommendations,
       
-      // Area information
-      area: geminiData.total_area,
+      // Area information - use resolved final area
+      area: finalArea,
       areaUnit: geminiData.unit,
-      areaConfidence: geminiData.confidence,
+      areaConfidence: areaConfidence,
+      areaSource: areaSource,
       
       // Surface analysis from Gemini
       surfaceType: geminiData.surface_type,
@@ -840,10 +899,11 @@ async function dualEngineAnalysis(
           role: "Visual Specialist (Spatial Analysis)",
           model: modelConfig.visualModel,
           findings: {
-            area: geminiData.total_area,
+            area: finalArea,
+            areaSource: areaSource,
             surface: geminiData.surface_type,
             condition: geminiData.surface_condition,
-            confidence: geminiData.confidence,
+            confidence: areaConfidence,
             roomType: geminiData.room_type,
             features: geminiData.visible_features,
           },
