@@ -1729,6 +1729,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
               forceCalendarView={forceCalendarView}
               onCalendarViewActivated={() => setForceCalendarView(false)}
+              existingTaskCount={tasks.length}
             />
           </TabsContent>
         )}

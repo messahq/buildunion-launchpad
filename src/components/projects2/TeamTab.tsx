@@ -47,6 +47,7 @@ interface TeamTabProps {
   projectEndDate?: Date | null;
   forceCalendarView?: boolean;
   onCalendarViewActivated?: () => void;
+  existingTaskCount?: number;
 }
 
 // Map materials to task titles
@@ -71,7 +72,7 @@ const materialToTaskDescription = (material: Material): string => {
   return `${material.quantity} ${material.unit} of ${material.item}${material.notes ? ` - ${material.notes}` : ""}`;
 };
 
-const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate, forceCalendarView, onCalendarViewActivated }: TeamTabProps) => {
+const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate, forceCalendarView, onCalendarViewActivated, existingTaskCount = 0 }: TeamTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
@@ -79,7 +80,6 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   const [activeSubTab, setActiveSubTab] = useState<"team" | "tasks">("team");
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
   const [generateTasksDialogOpen, setGenerateTasksDialogOpen] = useState(false);
-  const [existingTaskCount, setExistingTaskCount] = useState(0);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   // Auto-switch to tasks tab when forceCalendarView is triggered
@@ -110,17 +110,7 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   const spotsRemaining = teamLimit === Infinity ? Infinity : Math.max(0, teamLimit - spotsUsed);
   const nextTier = getNextTier(currentTier);
 
-  // Check existing tasks
-  useEffect(() => {
-    const fetchTaskCount = async () => {
-      const { count } = await supabase
-        .from("project_tasks")
-        .select("*", { count: "exact", head: true })
-        .eq("project_id", projectId);
-      setExistingTaskCount(count || 0);
-    };
-    fetchTaskCount();
-  }, [projectId]);
+  // existingTaskCount now comes from props, synced with parent's task state
 
   // Generate tasks from AI materials
   const handleGenerateTasksFromMaterials = async () => {
