@@ -1120,6 +1120,63 @@ function extractSources(content: string): Array<{ document: string; page?: numbe
   return sources;
 }
 
+// ============================================
+// MODEL SELECTION - COST OPTIMIZED
+// ============================================
+
+const ASK_MESSA_MODELS = {
+  // Visual analysis models (ordered by cost: low → high)
+  GEMINI_FLASH_LITE: "google/gemini-2.5-flash-lite",
+  GEMINI_FLASH: "google/gemini-2.5-flash",
+  GEMINI_PRO: "google/gemini-2.5-pro",
+  
+  // Text/validation models
+  GEMINI_3_FLASH: "google/gemini-3-flash-preview",
+  GPT5: "openai/gpt-5",
+  GPT5_MINI: "openai/gpt-5-mini",
+};
+
+interface MessaModelConfig {
+  geminiModel: string;
+  openaiModel: string;
+  maxTokens: number;
+  runDualEngine: boolean;
+}
+
+function selectMessaModels(
+  tier: "free" | "pro" | "premium",
+  hasComplexDocuments: boolean,
+  hasConflicts?: boolean
+): MessaModelConfig {
+  // Premium: Full power, always dual engine
+  if (tier === "premium") {
+    return {
+      geminiModel: ASK_MESSA_MODELS.GEMINI_PRO,
+      openaiModel: ASK_MESSA_MODELS.GPT5,
+      maxTokens: 4096,
+      runDualEngine: true,
+    };
+  }
+  
+  // Pro: Flash models, dual engine only on conflicts or complex docs
+  if (tier === "pro") {
+    return {
+      geminiModel: ASK_MESSA_MODELS.GEMINI_FLASH,
+      openaiModel: ASK_MESSA_MODELS.GEMINI_3_FLASH, // Use Gemini for cost savings
+      maxTokens: 2048,
+      runDualEngine: hasComplexDocuments || hasConflicts === true,
+    };
+  }
+  
+  // Free: Flash-Lite only, single engine
+  return {
+    geminiModel: ASK_MESSA_MODELS.GEMINI_FLASH_LITE,
+    openaiModel: ASK_MESSA_MODELS.GEMINI_FLASH_LITE,
+    maxTokens: 1024,
+    runDualEngine: false,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -1130,7 +1187,8 @@ serve(async (req) => {
     
     // Support both old format (messages + projectContext) and new format (projectId + question)
     let messages = requestBody.messages;
-    const dualEngine = requestBody.dualEngine ?? true;
+    const requestedDualEngine = requestBody.dualEngine ?? true;
+    const tier = requestBody.tier || "free"; // Accept tier from frontend
     
     // Handle new simplified format: { projectId, question, analysisType }
     let projectContext = requestBody.projectContext;
@@ -1182,8 +1240,20 @@ serve(async (req) => {
       }
     }
 
-    const geminiModel = "google/gemini-2.5-pro";
-    const openaiModel = "openai/gpt-5";
+    // Determine if we have complex documents (PDFs, blueprints)
+    const hasComplexDocuments = documentNames.some(d => 
+      d.toLowerCase().endsWith('.pdf') || 
+      d.toLowerCase().includes('blueprint') ||
+      d.toLowerCase().includes('drawing')
+    );
+
+    // Select models based on tier
+    const modelConfig = selectMessaModels(tier as "free" | "pro" | "premium", hasComplexDocuments);
+    
+    // Override dual engine if frontend specifically disabled it
+    const dualEngine = requestedDualEngine && modelConfig.runDualEngine;
+    
+    console.log(`Messa Config: Tier=${tier}, Gemini=${modelConfig.geminiModel}, DualEngine=${dualEngine}`);
 
     // Build SPECIALIZED prompts for each engine
     const hasDocContent = projectContext?.projectId && systemPrompt !== SYSTEM_PROMPT;
@@ -1198,21 +1268,21 @@ serve(async (req) => {
       // PHASE 1: Run Gemini first for visual analysis
       const geminiMessages = buildMessagesWithImages(messages, geminiPrompt, imageUrls);
       
-      console.log(`Phase 1: Gemini visual analysis... (${geminiPrompt.length} chars prompt)`);
-      const geminiResponse = await callAIModel(LOVABLE_API_KEY, geminiModel, geminiMessages);
+      console.log(`Phase 1: ${modelConfig.geminiModel} visual analysis... (${geminiPrompt.length} chars prompt)`);
+      const geminiResponse = await callAIModel(LOVABLE_API_KEY, modelConfig.geminiModel, geminiMessages);
       
-      // PHASE 2: Run OpenAI with Gemini's findings for cross-verification
+      // PHASE 2: Run second engine with Gemini's findings for cross-verification
       let openaiPromptWithContext = openaiPrompt;
       if (geminiResponse.success && hasDocContent) {
         const geminiFindings = extractVisualFindings(geminiResponse.content);
         openaiPromptWithContext = buildOpenAIPrompt(systemPrompt, documentNames, imageUrls.length > 0, geminiFindings);
-        console.log(`Phase 2: OpenAI cross-verification with ${geminiFindings.split('\n').length} visual findings`);
+        console.log(`Phase 2: ${modelConfig.openaiModel} cross-verification with ${geminiFindings.split('\n').length} visual findings`);
       } else {
-        console.log(`Phase 2: OpenAI analysis (no visual findings to cross-verify)`);
+        console.log(`Phase 2: ${modelConfig.openaiModel} analysis (no visual findings to cross-verify)`);
       }
       
       const openaiMessages = buildMessagesWithImages(messages, openaiPromptWithContext, imageUrls);
-      const openaiResponse = await callAIModel(LOVABLE_API_KEY, openaiModel, openaiMessages);
+      const openaiResponse = await callAIModel(LOVABLE_API_KEY, modelConfig.openaiModel, openaiMessages);
 
       console.log(`Gemini success: ${geminiResponse.success}, OpenAI success: ${openaiResponse.success}`);
 
@@ -1346,7 +1416,7 @@ ${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 15
       );
     }
 
-    // Single engine mode (streaming) - text only
+    // Single engine mode (streaming) - text only, using tier-selected model
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -1354,12 +1424,13 @@ ${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 15
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: geminiModel,
+        model: modelConfig.geminiModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
+        max_tokens: modelConfig.maxTokens,
       }),
     });
 

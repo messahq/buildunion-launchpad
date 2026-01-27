@@ -96,8 +96,88 @@ interface ConflictItem {
   severity: "high" | "medium" | "low";
 }
 
-// STEP 1: Gemini Pro - The Visual Specialist
-async function geminiVisualAnalysis(image: string, description: string, apiKey: string, isPremium: boolean): Promise<GeminiVisualData> {
+// ============================================
+// MODEL SELECTION - COST OPTIMIZED
+// ============================================
+
+// Model tiers for cost optimization
+const AI_MODELS = {
+  // Visual analysis models (ordered by cost: low → high)
+  GEMINI_FLASH_LITE: "google/gemini-2.5-flash-lite", // Cheapest - simple tasks
+  GEMINI_FLASH: "google/gemini-2.5-flash",           // Mid-tier - standard tasks
+  GEMINI_PRO: "google/gemini-2.5-pro",               // Premium - complex tasks
+  
+  // Text/validation models
+  GEMINI_3_FLASH: "google/gemini-3-flash-preview",   // Fast text validation
+  GPT5_MINI: "openai/gpt-5-mini",                    // OpenAI alternative
+};
+
+interface ModelSelection {
+  visualModel: string;
+  estimationModel: string;
+  validationModel: string;
+  maxTokensVisual: number;
+  maxTokensEstimation: number;
+  runDualEngine: boolean;
+  runOBCValidation: boolean;
+}
+
+function selectModelsForTier(
+  tier: "free" | "pro" | "premium",
+  filterAnswers?: FilterAnswers | null,
+  hasConflict?: boolean
+): ModelSelection {
+  const affectsStructure = filterAnswers?.technicalFilter?.affectsStructure || false;
+  const affectsMechanical = filterAnswers?.technicalFilter?.affectsMechanical || false;
+  const isComplex = affectsStructure || affectsMechanical;
+  
+  // Premium: Full power, always dual engine
+  if (tier === "premium") {
+    return {
+      visualModel: AI_MODELS.GEMINI_PRO,
+      estimationModel: AI_MODELS.GEMINI_FLASH,
+      validationModel: AI_MODELS.GPT5_MINI,
+      maxTokensVisual: 1500,
+      maxTokensEstimation: 1200,
+      runDualEngine: true,
+      runOBCValidation: isComplex,
+    };
+  }
+  
+  // Pro: Flash for most, dual engine only on conflicts or complex work
+  if (tier === "pro") {
+    return {
+      visualModel: AI_MODELS.GEMINI_FLASH,
+      estimationModel: AI_MODELS.GEMINI_FLASH_LITE,
+      validationModel: AI_MODELS.GEMINI_3_FLASH,
+      maxTokensVisual: 800,
+      maxTokensEstimation: 600,
+      runDualEngine: isComplex || hasConflict === true,
+      runOBCValidation: isComplex,
+    };
+  }
+  
+  // Free: Flash-Lite only, single engine, no OBC
+  return {
+    visualModel: AI_MODELS.GEMINI_FLASH_LITE,
+    estimationModel: AI_MODELS.GEMINI_FLASH_LITE,
+    validationModel: AI_MODELS.GEMINI_FLASH_LITE,
+    maxTokensVisual: 400,
+    maxTokensEstimation: 400,
+    runDualEngine: false,
+    runOBCValidation: false,
+  };
+}
+
+// STEP 1: Gemini Visual Analysis - Model selected by tier
+async function geminiVisualAnalysis(
+  image: string, 
+  description: string, 
+  apiKey: string, 
+  modelConfig: ModelSelection
+): Promise<GeminiVisualData> {
+  const isPremium = modelConfig.visualModel === AI_MODELS.GEMINI_PRO;
+  
   const basePrompt = `You are a VISUAL ANALYSIS specialist for construction. Your job is to LOOK at the image and extract what you SEE.
 
 ANALYZE THE IMAGE AND EXTRACT:
@@ -139,7 +219,7 @@ RESPOND IN THIS EXACT JSON FORMAT:
 CRITICAL: Read ANY visible measurements EXACTLY as written. If you see "Total Area = 1350 sq ft", return 1350.
 If no area measurement is visible, estimate based on room proportions and set confidence to "low".`;
 
-  console.log("GEMINI: Starting", isPremium ? "DEEP" : "STANDARD", "visual analysis...");
+  console.log(`GEMINI: Using ${modelConfig.visualModel} (max_tokens: ${modelConfig.maxTokensVisual})`);
   
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -148,7 +228,7 @@ If no area measurement is visible, estimate based on room proportions and set co
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: isPremium ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
+      model: modelConfig.visualModel,
       messages: [{
         role: "user",
         content: [
@@ -156,7 +236,7 @@ If no area measurement is visible, estimate based on room proportions and set co
           { type: "image_url", image_url: { url: image } }
         ]
       }],
-      max_tokens: isPremium ? 1500 : 800,
+      max_tokens: modelConfig.maxTokensVisual,
     }),
   });
 
@@ -213,13 +293,13 @@ If no area measurement is visible, estimate based on room proportions and set co
   }
 }
 
-// STEP 2: GPT-5 - The Estimation Specialist (Materials Only - no labor calc)
+// STEP 2: Estimation - Model selected by tier
 async function gptEstimationAnalysis(
   image: string, 
   description: string, 
   geminiData: GeminiVisualData, 
   apiKey: string,
-  isPremium: boolean
+  modelConfig: ModelSelection
 ): Promise<GPTEstimateData> {
   const areaValue = geminiData.total_area;
   
@@ -305,7 +385,11 @@ ${materialsExample}
 
 CRITICAL: Match materials to the PROJECT TYPE. If user says "paint", provide PAINT materials, NOT tiles!`;
 
-  console.log("GPT-5: Starting estimation with area:", areaValue);
+  // Use model from config for cost optimization
+  const estimationModel = modelConfig?.estimationModel || AI_MODELS.GEMINI_FLASH_LITE;
+  const maxTokens = modelConfig?.maxTokensEstimation || 600;
+  
+  console.log(`ESTIMATION: Using ${estimationModel} with area: ${areaValue} (max_tokens: ${maxTokens})`);
   
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -314,12 +398,12 @@ CRITICAL: Match materials to the PROJECT TYPE. If user says "paint", provide PAI
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: estimationModel,
       messages: [{
         role: "user",
         content: gptPrompt
       }],
-      max_tokens: 1500,
+      max_tokens: maxTokens,
     }),
   });
 
@@ -458,23 +542,31 @@ function detectConflicts(gemini: GeminiVisualData, gpt: GPTEstimateData): Confli
   return conflicts;
 }
 
-// Main dual-engine analysis
-async function dualEngineAnalysis(image: string, description: string, apiKey: string, isPremium: boolean) {
-  console.log("=== DUAL ENGINE ANALYSIS START ===", isPremium ? "(PREMIUM)" : "(STANDARD)");
+// Main dual-engine analysis - now with tier-based model selection
+async function dualEngineAnalysis(
+  image: string, 
+  description: string, 
+  apiKey: string, 
+  modelConfig: ModelSelection,
+  filterAnswers?: FilterAnswers | null
+) {
+  const tierName = modelConfig.visualModel === AI_MODELS.GEMINI_PRO ? "PREMIUM" : 
+                   modelConfig.visualModel === AI_MODELS.GEMINI_FLASH ? "PRO" : "FREE";
+  console.log(`=== DUAL ENGINE ANALYSIS START === (${tierName}) - DualEngine: ${modelConfig.runDualEngine}`);
   
   // Step 1: Gemini visual analysis
-  const geminiData = await geminiVisualAnalysis(image, description, apiKey, isPremium);
+  const geminiData = await geminiVisualAnalysis(image, description, apiKey, modelConfig);
   console.log("Gemini complete:", { area: geminiData.total_area, confidence: geminiData.confidence });
   
-  // Step 2: GPT estimation based on Gemini data
-  const gptData = await gptEstimationAnalysis(image, description, geminiData, apiKey, isPremium);
-  console.log("GPT complete:", { materials: gptData.materials.length, laborHours: gptData.labor.hours });
+  // Step 2: Estimation based on Gemini data
+  const gptData = await gptEstimationAnalysis(image, description, geminiData, apiKey, modelConfig);
+  console.log("Estimation complete:", { materials: gptData.materials.length });
   
   // Step 3: Conflict detection
   const conflicts = detectConflicts(geminiData, gptData);
   console.log("Conflicts detected:", conflicts.length);
   
-  // Build final response
+  // Build final response with tier info
   return {
     estimate: {
       // Core estimate data
@@ -496,7 +588,7 @@ async function dualEngineAnalysis(image: string, description: string, apiKey: st
       dualEngine: {
         gemini: {
           role: "Visual Specialist",
-          model: "gemini-2.5-pro",
+          model: modelConfig.visualModel,
           findings: {
             area: geminiData.total_area,
             surface: geminiData.surface_type,
@@ -505,9 +597,9 @@ async function dualEngineAnalysis(image: string, description: string, apiKey: st
           },
           rawExcerpt: geminiData.raw_response
         },
-        gpt: {
+        estimation: {
           role: "Estimation Specialist", 
-          model: "gpt-5-mini",
+          model: modelConfig.estimationModel,
           findings: {
             materialsCount: gptData.materials.length,
             laborHours: gptData.labor.hours,
@@ -797,14 +889,21 @@ serve(async (req) => {
   }
 
   try {
-    const { image, description, type, isPremium, filterAnswers, aiTriggers } = await req.json();
+    const { image, description, type, isPremium, tier, filterAnswers, aiTriggers } = await req.json();
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
     if (!image) throw new Error("No image provided");
 
-    const premiumMode = isPremium === true;
-    console.log(`Processing ${type} request... (Premium: ${premiumMode})`);
+    // Determine tier: explicit tier > isPremium flag > default to free
+    let userTier: "free" | "pro" | "premium" = "free";
+    if (tier === "premium" || tier === "pro" || tier === "free") {
+      userTier = tier;
+    } else if (isPremium === true) {
+      userTier = "premium";
+    }
+    
+    console.log(`Processing ${type} request... (Tier: ${userTier})`);
     
     // Log filter data if provided
     if (filterAnswers) {
@@ -814,15 +913,17 @@ serve(async (req) => {
       console.log("AI Triggers:", JSON.stringify(aiTriggers));
     }
 
-    // Run dual-engine analysis
+    // Select models based on tier and filter answers
+    const modelConfig = selectModelsForTier(userTier, filterAnswers);
+    console.log(`Model Config: Visual=${modelConfig.visualModel}, Est=${modelConfig.estimationModel}, DualEngine=${modelConfig.runDualEngine}`);
+
+    // Run analysis with tier-optimized models
     const result = type === "photo_estimate" 
-      ? await dualEngineAnalysis(image, description, apiKey, premiumMode)
+      ? await dualEngineAnalysis(image, description, apiKey, modelConfig, filterAnswers)
       : await standardAnalysis(image, description, apiKey);
     
-    // If OBC search is triggered OR structural/mechanical work detected, add regulatory data
-    const shouldRunOBC = aiTriggers?.obcSearch || 
-      filterAnswers?.technicalFilter?.affectsStructure || 
-      filterAnswers?.technicalFilter?.affectsMechanical;
+    // OBC validation only if enabled by model config OR explicitly triggered
+    const shouldRunOBC = modelConfig.runOBCValidation || aiTriggers?.obcSearch;
       
     if (shouldRunOBC) {
       console.log("Running OBC Validation...");
@@ -840,7 +941,7 @@ serve(async (req) => {
         result.estimate.dualEngine = result.estimate.dualEngine || {};
         result.estimate.dualEngine.openai = {
           role: "Regulatory Validator",
-          model: "gpt-5-mini",
+          model: modelConfig.validationModel,
           findings: obcData,
           rawExcerpt: obcData.raw_response,
         };
@@ -849,6 +950,20 @@ serve(async (req) => {
         status: obcData.validationStatus, 
         permitRequired: obcData.permitRequired 
       });
+    }
+
+    // Add tier info to response for transparency
+    if (result.estimate) {
+      result.estimate.tierInfo = {
+        tier: userTier,
+        modelsUsed: {
+          visual: modelConfig.visualModel,
+          estimation: modelConfig.estimationModel,
+          validation: modelConfig.validationModel,
+        },
+        dualEngineEnabled: modelConfig.runDualEngine,
+        obcEnabled: shouldRunOBC,
+      };
     }
 
     return new Response(JSON.stringify(result), {
