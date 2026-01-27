@@ -40,6 +40,7 @@ import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
 import BaselineLockCard from "./BaselineLockCard";
 import ProjectTimelineBar from "./ProjectTimelineBar";
+import VerificationSynthesisPanel from "./VerificationSynthesisPanel";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "@/hooks/useWeather";
@@ -1018,6 +1019,50 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           {/* Operational Truth Verification Cards */}
           <OperationalTruthCards
             operationalTruth={operationalTruth}
+          />
+
+          {/* Dual-Engine Verification Synthesis Panel */}
+          <VerificationSynthesisPanel
+            operationalTruth={operationalTruth}
+            projectName={project.name}
+            projectTabData={{
+              overview: {
+                hasDescription: !!project.description,
+                descriptionLength: project.description?.length || 0,
+              },
+              team: {
+                memberCount: teamMembersForMap.length,
+                hasAssignedTasks: tasks.some(t => t.assigned_to !== user?.id),
+              },
+              documents: {
+                documentCount: project.site_images?.length || 0,
+                hasBlueprint: !!blueprintAnalysis?.extractedText,
+                hasPhotos: (project.site_images?.length || 0) > 0,
+              },
+              contracts: {
+                contractCount: 0, // Will be populated from contracts query if needed
+                signedCount: 0,
+                pendingCount: 0,
+              },
+              siteMap: {
+                hasAddress: !!project.address,
+                hasConflicts: projectConflicts.length > 0,
+                conflictCount: projectConflicts.length,
+              },
+              weather: {
+                hasWeatherData: !!project.address,
+                hasAlerts: false,
+              },
+              materials: {
+                totalMaterialCost: tasks
+                  .filter(t => t.title.toLowerCase().startsWith('order'))
+                  .reduce((sum, t) => sum + (t.total_cost || 0), 0),
+                totalLaborCost: tasks
+                  .filter(t => t.title.toLowerCase().startsWith('install'))
+                  .reduce((sum, t) => sum + (t.total_cost || 0), 0),
+                grandTotal: totalTaskBudget,
+              },
+            }}
           />
 
           {/* Project Description */}
