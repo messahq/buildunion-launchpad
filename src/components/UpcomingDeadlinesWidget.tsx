@@ -19,10 +19,11 @@ interface UpcomingTask {
 }
 
 interface UpcomingDeadlinesWidgetProps {
+  projectId?: string | null;
   onTaskClick?: (projectId: string) => void;
 }
 
-const UpcomingDeadlinesWidget = ({ onTaskClick }: UpcomingDeadlinesWidgetProps) => {
+const UpcomingDeadlinesWidget = ({ projectId, onTaskClick }: UpcomingDeadlinesWidgetProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
@@ -32,39 +33,66 @@ const UpcomingDeadlinesWidget = ({ onTaskClick }: UpcomingDeadlinesWidgetProps) 
     if (user) {
       fetchUpcomingTasks();
     }
-  }, [user]);
+  }, [user, projectId]);
 
   const fetchUpcomingTasks = async () => {
     if (!user) return;
 
     try {
-      // Fetch projects
-      const { data: projects, error: projectsError } = await supabase
-        .from("projects")
-        .select("id, name, status")
-        .eq("user_id", user.id);
+      // If projectId is provided, fetch only that project's tasks
+      if (projectId) {
+        const { data: project } = await supabase
+          .from("projects")
+          .select("id, name")
+          .eq("id", projectId)
+          .single();
 
-      if (projectsError) throw projectsError;
+        if (project) {
+          const { data: tasks, error: tasksError } = await supabase
+            .from("project_tasks")
+            .select("id, title, due_date, priority, project_id, status")
+            .eq("project_id", projectId)
+            .not("due_date", "is", null)
+            .neq("status", "completed")
+            .order("due_date", { ascending: true })
+            .limit(5);
 
-      // Fetch upcoming tasks with due dates
-      if (projects && projects.length > 0) {
-        const projectIds = projects.map(p => p.id);
-        const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]));
+          if (!tasksError && tasks) {
+            setUpcomingTasks(tasks.map(t => ({
+              ...t,
+              project_name: project.name
+            })));
+          }
+        }
+      } else {
+        // Fetch all projects
+        const { data: projects, error: projectsError } = await supabase
+          .from("projects")
+          .select("id, name, status")
+          .eq("user_id", user.id);
 
-        const { data: tasks, error: tasksError } = await supabase
-          .from("project_tasks")
-          .select("id, title, due_date, priority, project_id, status")
-          .in("project_id", projectIds)
-          .not("due_date", "is", null)
-          .neq("status", "completed")
-          .order("due_date", { ascending: true })
-          .limit(5);
+        if (projectsError) throw projectsError;
 
-        if (!tasksError && tasks) {
-          setUpcomingTasks(tasks.map(t => ({
-            ...t,
-            project_name: projectMap[t.project_id] || "Unknown"
-          })));
+        // Fetch upcoming tasks with due dates
+        if (projects && projects.length > 0) {
+          const projectIds = projects.map(p => p.id);
+          const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]));
+
+          const { data: tasks, error: tasksError } = await supabase
+            .from("project_tasks")
+            .select("id, title, due_date, priority, project_id, status")
+            .in("project_id", projectIds)
+            .not("due_date", "is", null)
+            .neq("status", "completed")
+            .order("due_date", { ascending: true })
+            .limit(5);
+
+          if (!tasksError && tasks) {
+            setUpcomingTasks(tasks.map(t => ({
+              ...t,
+              project_name: projectMap[t.project_id] || "Unknown"
+            })));
+          }
         }
       }
     } catch (err) {

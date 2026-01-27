@@ -665,6 +665,7 @@ const BuildUnionProjects2 = () => {
                       {/* Sidebar with Upcoming Deadlines */}
                       <div className="lg:col-span-1">
                         <UpcomingDeadlinesWidget 
+                          projectId={selectedProjectId}
                           onTaskClick={(projectId) => setSelectedProjectId(projectId)}
                         />
                       </div>
