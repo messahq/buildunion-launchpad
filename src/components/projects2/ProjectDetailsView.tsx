@@ -1078,6 +1078,33 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const photoEstimate = summary?.photo_estimate;
   const blueprintAnalysis = summary?.blueprint_analysis;
   
+  // Helper to extract area from project description (explicit user-provided area)
+  const extractAreaFromDescription = (description: string | null | undefined): number | null => {
+    if (!description) return null;
+    
+    // Patterns to extract area - support both comma-separated (1,350) and plain numbers (1350)
+    const patterns = [
+      // Match numbers with optional comma thousands separator + unit
+      /(\d[\d,]*(?:\.\d+)?)\s*(?:sq\.?\s*ft|square\s*feet?|sqft)/i,
+      /(\d[\d,]*(?:\.\d+)?)\s*(?:sq\.?\s*m|m²|square\s*meters?|nm|m2)/i,
+      /(\d[\d,]*(?:\.\d+)?)\s*(?:négyzetláb)/i,
+      // Match "total area: 1350" or "area is 1350"
+      /(?:total\s*)?(?:area|size|terület)\s*(?:is|=|:|-|of)?\s*(\d[\d,]*(?:\.\d+)?)/i,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = description.match(pattern);
+      if (match?.[1]) {
+        const value = parseFloat(match[1].replace(/,/g, ""));
+        if (value > 10 && value < 100000) { // Sanity check
+          console.log(`[Area Detection] Extracted from project description: ${value} sq ft`);
+          return value;
+        }
+      }
+    }
+    return null;
+  };
+
   // Helper to extract area from materials (same logic as buildOperationalTruth)
   const extractAreaFromMaterials = (materials: Array<{ item: string; quantity: number; unit: string }> | undefined): number | null => {
     if (!materials?.length) return null;
@@ -1150,8 +1177,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   };
 
   // Build unified aiAnalysis from photo_estimate (actual AI results)
-  // Priority: photo_estimate.area > blueprint_analysis.detectedArea > calculator_results > tasks fallback > materials fallback
+  // Priority: photo_estimate.area > blueprint_analysis.detectedArea > description_area > calculator_results > tasks fallback > materials fallback
   const rawArea = photoEstimate?.area ?? blueprintAnalysis?.detectedArea ?? null;
+  
+  // Extract area from project description (user-provided explicit area - HIGH PRIORITY)
+  const descriptionArea = extractAreaFromDescription(project?.description);
   
   // Also check calculator_results for detected area
   const calculatorResults = Array.isArray(summary?.calculator_results) ? summary.calculator_results : [];
@@ -1167,8 +1197,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const taskBasedArea = extractAreaFromTasks(tasks);
   const taskBasedMaterials = extractMaterialsFromTasks(tasks);
   
-  // Final area with all fallbacks (including +10% waste consideration)
-  const finalArea = rawArea ?? calculatorArea ?? fallbackArea ?? taskBasedArea;
+  // Final area with all fallbacks - description area is HIGH priority (user explicitly said it)
+  // Priority: AI-detected > User description > Calculator > Materials > Tasks
+  const finalArea = rawArea ?? descriptionArea ?? calculatorArea ?? fallbackArea ?? taskBasedArea;
   const finalMaterials = materialsData.length > 0 ? materialsData : taskBasedMaterials;
   
   const aiAnalysis = (photoEstimate || aiConfig?.aiAnalysis || finalArea !== null || finalMaterials.length > 0) ? {
