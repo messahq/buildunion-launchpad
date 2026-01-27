@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
@@ -221,6 +221,9 @@ export function MaterialCalculationTab({
   // Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
+  // Auto-save timer ref
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Get laminate base quantity for sync dependency
   const laminateBaseQty = materialItems.find(m => /laminate|flooring/i.test(m.item))?.baseQuantity;
   
@@ -296,6 +299,38 @@ export function MaterialCalculationTab({
       onGrandTotalChange(grandTotalWithTax);
     }
   }, [grandTotal, projectAddress, onGrandTotalChange]);
+
+  // Auto-save when items change (debounced)
+  useEffect(() => {
+    if (!hasUnsavedChanges || !onSave) return;
+    
+    // Clear any existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    
+    // Set new timer for auto-save after 1 second of inactivity
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        await onSave({
+          materials: materialItems,
+          labor: laborItems,
+          other: otherItems,
+          grandTotal,
+        });
+        setHasUnsavedChanges(false);
+        toast.success(t("materials.autoSaved", "Saved"));
+      } catch (error) {
+        console.error("Auto-save error:", error);
+      }
+    }, 1000);
+    
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, materialItems, laborItems, otherItems, grandTotal, onSave, t]);
 
   // Handle base quantity change for essential materials (auto-updates waste)
   const handleBaseQuantityChange = (id: string, newBaseQty: number) => {
