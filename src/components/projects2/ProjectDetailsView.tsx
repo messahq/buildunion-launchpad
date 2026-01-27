@@ -487,6 +487,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [summary, setSummary] = useState<ProjectSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(initialTab || "overview");
+  const [flashingTab, setFlashingTab] = useState<string | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [tasks, setTasks] = useState<TaskWithBudget[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -1643,13 +1644,25 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           "grid w-full bg-muted/50",
           isTeamMode ? "grid-cols-7" : "grid-cols-4"
         )}>
-          <TabsTrigger value="overview" className="gap-2">
+          <TabsTrigger 
+            value="overview" 
+            className={cn(
+              "gap-2 transition-all duration-300",
+              flashingTab === "overview" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+            )}
+          >
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.overview")}</span>
           </TabsTrigger>
           {isTeamMode && (
             <>
-              <TabsTrigger value="team" className="gap-2">
+              <TabsTrigger 
+                value="team" 
+                className={cn(
+                  "gap-2 transition-all duration-300",
+                  flashingTab === "team" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+                )}
+              >
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("projects.teamAndTasks", "Team & Tasks")}</span>
                 {members.length > 0 && (
@@ -1658,25 +1671,55 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-2">
+              <TabsTrigger 
+                value="documents" 
+                className={cn(
+                  "gap-2 transition-all duration-300",
+                  flashingTab === "documents" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+                )}
+              >
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("projects.documents")}</span>
               </TabsTrigger>
-              <TabsTrigger value="contracts" className="gap-2">
+              <TabsTrigger 
+                value="contracts" 
+                className={cn(
+                  "gap-2 transition-all duration-300",
+                  flashingTab === "contracts" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+                )}
+              >
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">Contracts</span>
               </TabsTrigger>
-              <TabsTrigger value="map" className="gap-2">
+              <TabsTrigger 
+                value="map" 
+                className={cn(
+                  "gap-2 transition-all duration-300",
+                  flashingTab === "map" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+                )}
+              >
                 <Map className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("projects.siteMap")}</span>
               </TabsTrigger>
             </>
           )}
-          <TabsTrigger value="materials" className="gap-2">
+          <TabsTrigger 
+            value="materials" 
+            className={cn(
+              "gap-2 transition-all duration-300",
+              flashingTab === "materials" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+            )}
+          >
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.materials", "Materials")}</span>
           </TabsTrigger>
-          <TabsTrigger value="weather" className="gap-2">
+          <TabsTrigger 
+            value="weather" 
+            className={cn(
+              "gap-2 transition-all duration-300",
+              flashingTab === "weather" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+            )}
+          >
             <Cloud className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.weather")}</span>
           </TabsTrigger>
@@ -1737,7 +1780,14 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               description: c.description,
             }))}
             isPremium={isPremium}
-            onNavigateToTab={(tabId) => setActiveTab(tabId)}
+            onNavigateToTab={(tabId) => {
+              // Flash effect before navigating
+              setFlashingTab(tabId);
+              setTimeout(() => {
+                setActiveTab(tabId);
+                setFlashingTab(null);
+              }, 300);
+            }}
             dataSourcesInfo={{
               taskCount: tasks.length,
               completedTasks: tasks.filter(t => t.status === "completed").length,
