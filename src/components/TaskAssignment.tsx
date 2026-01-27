@@ -113,6 +113,11 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
+    preparation: true,
+    execution: true,
+    verification: false,
+  });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -403,12 +408,6 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     t.status !== "completed"
   );
 
-  // Expanded states for phases
-  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
-    preparation: true,
-    execution: true,
-    verification: false,
-  });
 
   // Helper to get due date display info
   const getDueDateInfo = (dueDateStr: string | null) => {
