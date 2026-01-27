@@ -32,6 +32,7 @@ import DocumentsPane from "./DocumentsPane";
 import OperationalTruthCards from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
+import ContractsTab from "./ContractsTab";
 import EditableAIAnalysisSummary from "./EditableAIAnalysisSummary";
 import { MaterialCalculationTab } from "./MaterialCalculationTab";
 
@@ -971,15 +972,11 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn(
           "grid w-full bg-muted/50",
-          isTeamMode ? "grid-cols-6" : "grid-cols-4"
+          isTeamMode ? "grid-cols-7" : "grid-cols-4"
         )}>
           <TabsTrigger value="overview" className="gap-2">
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.overview")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="gap-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("projects.documents")}</span>
           </TabsTrigger>
           {isTeamMode && (
             <>
@@ -991,6 +988,14 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
                     {members.length}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("projects.documents")}</span>
+              </TabsTrigger>
+              <TabsTrigger value="contracts" className="gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Contracts</span>
               </TabsTrigger>
               <TabsTrigger value="map" className="gap-2">
                 <Map className="h-4 w-4" />
@@ -1031,15 +1036,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           )}
         </TabsContent>
 
-        {/* Documents Tab - Enhanced with Materials */}
-        <TabsContent value="documents" className="mt-6">
-          <DocumentsPane
-            projectId={projectId}
-            siteImages={project.site_images}
-            aiAnalysis={aiAnalysis}
-          />
-        </TabsContent>
-
         {/* Team Tab - Only for Team Mode */}
         {isTeamMode && (
           <TabsContent value="team" className="mt-6">
@@ -1050,6 +1046,27 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               aiMaterials={aiAnalysis?.materials}
               projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
               projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+            />
+          </TabsContent>
+        )}
+
+        {/* Documents Tab - After Team */}
+        {isTeamMode && (
+          <TabsContent value="documents" className="mt-6">
+            <DocumentsPane
+              projectId={projectId}
+              siteImages={project.site_images}
+              aiAnalysis={aiAnalysis}
+            />
+          </TabsContent>
+        )}
+
+        {/* Contracts Tab - Only for Team Mode */}
+        {isTeamMode && (
+          <TabsContent value="contracts" className="mt-6">
+            <ContractsTab
+              projectId={projectId}
+              isOwner={isOwner}
             />
           </TabsContent>
         )}
