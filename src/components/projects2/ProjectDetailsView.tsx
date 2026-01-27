@@ -230,6 +230,7 @@ interface ProjectSummaryData {
   client_name: string | null;
   client_email: string | null;
   client_phone: string | null;
+  client_address: string | null;
   total_cost: number | null;
   line_items: unknown[];
   baseline_snapshot: OperationalTruth | null;
@@ -684,6 +685,49 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     };
   }, [projectId]);
 
+  // ============================================
+  // CLIENT INFO MANAGEMENT
+  // ============================================
+  
+  const handleClientInfoUpdate = useCallback(async (newClientInfo: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  }) => {
+    if (!summary?.id) {
+      toast.error("No summary available to update");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({
+          client_name: newClientInfo.name || null,
+          client_email: newClientInfo.email || null,
+          client_phone: newClientInfo.phone || null,
+          client_address: newClientInfo.address || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", summary.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setSummary(prev => prev ? {
+        ...prev,
+        client_name: newClientInfo.name || null,
+        client_email: newClientInfo.email || null,
+        client_phone: newClientInfo.phone || null,
+        client_address: newClientInfo.address || null,
+      } : null);
+      
+    } catch (error) {
+      console.error("Error updating client info:", error);
+      throw error;
+    }
+  }, [summary?.id]);
 
   // Calculate global verification rate based on completed verification tasks
   const globalVerificationRate = useMemo(() => {
@@ -1285,6 +1329,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               hasTimeline: !!(summary?.project_start_date && summary?.project_end_date),
               hasClientInfo: !!(summary?.client_name || summary?.client_email),
             }}
+            clientInfo={{
+              name: summary?.client_name || "",
+              email: summary?.client_email || "",
+              phone: summary?.client_phone || "",
+              address: summary?.client_address || "",
+            }}
+            onClientInfoUpdate={handleClientInfoUpdate}
           />
         </TabsContent>
 
