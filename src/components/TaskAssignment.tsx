@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format, differenceInDays, isPast, isToday, isTomorrow, startOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { 
   ListTodo, 
@@ -42,7 +48,12 @@ import {
   List,
   UserPlus,
   X,
-  ArrowLeft
+  ArrowLeft,
+  ClipboardCheck,
+  Wrench,
+  Lock,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -345,6 +356,43 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     ? members.find(m => m.user_id === filterByMemberId)
     : null;
 
+  // Categorize tasks by phase
+  const getPhaseForTask = (task: Task): "preparation" | "execution" | "verification" => {
+    const titleLower = task.title.toLowerCase();
+    if (titleLower.includes("prep") || titleLower.includes("order") || titleLower.includes("measure") || titleLower.includes("deliver")) {
+      return "preparation";
+    }
+    if (titleLower.includes("install") || titleLower.includes("lay") || titleLower.includes("apply") || titleLower.includes("cut")) {
+      return "execution";
+    }
+    if (titleLower.includes("inspect") || titleLower.includes("verify") || titleLower.includes("clean") || titleLower.includes("final")) {
+      return "verification";
+    }
+    return "execution"; // Default
+  };
+
+  // Memoize phase calculations
+  const phaseData = useMemo(() => {
+    const preparation = filteredTasks.filter(t => getPhaseForTask(t) === "preparation");
+    const execution = filteredTasks.filter(t => getPhaseForTask(t) === "execution");
+    const verification = filteredTasks.filter(t => getPhaseForTask(t) === "verification");
+
+    const calcProgress = (tasks: Task[]) => {
+      if (tasks.length === 0) return 0;
+      return Math.round((tasks.filter(t => t.status === "completed").length / tasks.length) * 100);
+    };
+
+    return {
+      preparation: { tasks: preparation, progress: calcProgress(preparation) },
+      execution: { tasks: execution, progress: calcProgress(execution) },
+      verification: { tasks: verification, progress: calcProgress(verification) },
+    };
+  }, [filteredTasks]);
+
+  // Calculate if phases are locked
+  const isExecutionLocked = phaseData.preparation.progress < 100;
+  const isVerificationLocked = phaseData.execution.progress < 100;
+
   const pendingTasks = filteredTasks.filter((t) => t.status === "pending");
   const inProgressTasks = filteredTasks.filter((t) => t.status === "in_progress");
   const completedTasks = filteredTasks.filter((t) => t.status === "completed");
@@ -354,6 +402,13 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     !isToday(new Date(t.due_date)) &&
     t.status !== "completed"
   );
+
+  // Expanded states for phases
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
+    preparation: true,
+    execution: true,
+    verification: false,
+  });
 
   // Helper to get due date display info
   const getDueDateInfo = (dueDateStr: string | null) => {
@@ -485,7 +540,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
               projectAddress={projectAddress}
             />
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Overdue Alert Banner */}
               {overdueTasks.length > 0 && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
@@ -507,113 +562,95 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                 </div>
               )}
 
-              {/* Overdue Tasks */}
-              {overdueTasks.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-red-600 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    Overdue ({overdueTasks.length})
-                  </p>
-                  <div className="space-y-2">
-                    {overdueTasks.map((task) => (
-                      <TaskItem
-                        key={task.id}
-                        task={task}
-                        isOwner={isOwner}
-                        members={members}
-                        onEdit={() => openEditDialog(task)}
-                        onDelete={() => handleDeleteTask(task.id)}
-                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
-                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
-                        getPriorityBadge={getPriorityBadge}
-                        getStatusInfo={getStatusInfo}
-                        getDueDateInfo={getDueDateInfo}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Phase-based Task Groups */}
+              {/* Preparation Phase */}
+              <PhaseSection
+                phaseId="preparation"
+                phaseName="Preparation"
+                phaseIcon={<ClipboardCheck className="h-4 w-4" />}
+                phaseColor="blue"
+                tasks={phaseData.preparation.tasks}
+                progress={phaseData.preparation.progress}
+                isLocked={false}
+                lockReason=""
+                isExpanded={expandedPhases.preparation}
+                onToggle={() => setExpandedPhases(prev => ({ ...prev, preparation: !prev.preparation }))}
+                isOwner={isOwner}
+                members={members}
+                onEdit={openEditDialog}
+                onDelete={handleDeleteTask}
+                onStatusChange={handleUpdateStatus}
+                onAssigneeChange={handleUpdateAssignee}
+                getPriorityBadge={getPriorityBadge}
+                getStatusInfo={getStatusInfo}
+                getDueDateInfo={getDueDateInfo}
+              />
 
-              {/* In Progress */}
-              {inProgressTasks.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <PlayCircle className="h-3 w-3" />
-                    In Progress ({inProgressTasks.length})
-                  </p>
-                  <div className="space-y-2">
-                    {inProgressTasks.filter(t => !overdueTasks.find(o => o.id === t.id)).map((task) => (
-                      <TaskItem
-                        key={task.id}
-                        task={task}
-                        isOwner={isOwner}
-                        members={members}
-                        onEdit={() => openEditDialog(task)}
-                        onDelete={() => handleDeleteTask(task.id)}
-                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
-                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
-                        getPriorityBadge={getPriorityBadge}
-                        getStatusInfo={getStatusInfo}
-                        getDueDateInfo={getDueDateInfo}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Execution Phase */}
+              <PhaseSection
+                phaseId="execution"
+                phaseName="Execution"
+                phaseIcon={<Wrench className="h-4 w-4" />}
+                phaseColor="amber"
+                tasks={phaseData.execution.tasks}
+                progress={phaseData.execution.progress}
+                isLocked={isExecutionLocked}
+                lockReason={`Previous phase verification not complete (${phaseData.preparation.progress}%)`}
+                isExpanded={expandedPhases.execution}
+                onToggle={() => setExpandedPhases(prev => ({ ...prev, execution: !prev.execution }))}
+                isOwner={isOwner}
+                members={members}
+                onEdit={openEditDialog}
+                onDelete={handleDeleteTask}
+                onStatusChange={handleUpdateStatus}
+                onAssigneeChange={handleUpdateAssignee}
+                getPriorityBadge={getPriorityBadge}
+                getStatusInfo={getStatusInfo}
+                getDueDateInfo={getDueDateInfo}
+              />
 
-              {/* Pending */}
-              {pendingTasks.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <Circle className="h-3 w-3" />
-                    Pending ({pendingTasks.filter(t => !overdueTasks.find(o => o.id === t.id)).length})
-                  </p>
-                  <div className="space-y-2">
-                    {pendingTasks.filter(t => !overdueTasks.find(o => o.id === t.id)).map((task) => (
-                      <TaskItem
-                        key={task.id}
-                        task={task}
-                        isOwner={isOwner}
-                        members={members}
-                        onEdit={() => openEditDialog(task)}
-                        onDelete={() => handleDeleteTask(task.id)}
-                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
-                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
-                        getPriorityBadge={getPriorityBadge}
-                        getStatusInfo={getStatusInfo}
-                        getDueDateInfo={getDueDateInfo}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Verification Phase */}
+              <PhaseSection
+                phaseId="verification"
+                phaseName="Verification"
+                phaseIcon={<CheckCircle2 className="h-4 w-4" />}
+                phaseColor="green"
+                tasks={phaseData.verification.tasks}
+                progress={phaseData.verification.progress}
+                isLocked={isVerificationLocked}
+                lockReason={`Previous phase verification not complete (${phaseData.execution.progress}%)`}
+                isExpanded={expandedPhases.verification}
+                onToggle={() => setExpandedPhases(prev => ({ ...prev, verification: !prev.verification }))}
+                isOwner={isOwner}
+                members={members}
+                onEdit={openEditDialog}
+                onDelete={handleDeleteTask}
+                onStatusChange={handleUpdateStatus}
+                onAssigneeChange={handleUpdateAssignee}
+                getPriorityBadge={getPriorityBadge}
+                getStatusInfo={getStatusInfo}
+                getDueDateInfo={getDueDateInfo}
+              />
 
-              {/* Completed */}
-              {completedTasks.length > 0 && (
-                <details>
-                  <summary className="text-xs font-medium text-green-600 uppercase tracking-wider mb-2 cursor-pointer hover:text-green-700 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Completed ({completedTasks.length})
-                  </summary>
-                  <div className="space-y-2 mt-2">
-                    {completedTasks.map((task) => (
-                      <TaskItem
-                        key={task.id}
-                        task={task}
-                        isOwner={isOwner}
-                        members={members}
-                        onEdit={() => openEditDialog(task)}
-                        onDelete={() => handleDeleteTask(task.id)}
-                        onStatusChange={(status) => handleUpdateStatus(task.id, status)}
-                        onAssigneeChange={(assigneeId) => handleUpdateAssignee(task.id, assigneeId)}
-                        getPriorityBadge={getPriorityBadge}
-                        getStatusInfo={getStatusInfo}
-                        getDueDateInfo={getDueDateInfo}
-                      />
-                    ))}
-                  </div>
-                </details>
-              )}
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 text-xs pt-3 border-t">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                  <span className="text-muted-foreground">Preparation</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-amber-500" />
+                  <span className="text-muted-foreground">Execution</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <span className="text-muted-foreground">Verification</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Lock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Dependency Lock</span>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
@@ -907,6 +944,175 @@ const TaskItem = ({ task, isOwner, members, onEdit, onDelete, onStatusChange, on
         </div>
       )}
     </div>
+  );
+};
+
+// Phase Section Component
+interface PhaseSectionProps {
+  phaseId: string;
+  phaseName: string;
+  phaseIcon: React.ReactNode;
+  phaseColor: "blue" | "amber" | "green";
+  tasks: Task[];
+  progress: number;
+  isLocked: boolean;
+  lockReason: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  isOwner: boolean;
+  members: TeamMember[];
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
+  onStatusChange: (taskId: string, status: string) => void;
+  onAssigneeChange: (taskId: string, assigneeId: string) => void;
+  getPriorityBadge: (priority: string) => JSX.Element;
+  getStatusInfo: (status: string) => { value: string; label: string; icon: any; color: string };
+  getDueDateInfo?: (dueDateStr: string | null) => DueDateInfo | null;
+}
+
+const PhaseSection = ({
+  phaseId,
+  phaseName,
+  phaseIcon,
+  phaseColor,
+  tasks,
+  progress,
+  isLocked,
+  lockReason,
+  isExpanded,
+  onToggle,
+  isOwner,
+  members,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onAssigneeChange,
+  getPriorityBadge,
+  getStatusInfo,
+  getDueDateInfo,
+}: PhaseSectionProps) => {
+  if (tasks.length === 0) return null;
+
+  const colorClasses = {
+    blue: {
+      bg: "bg-blue-50/50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800",
+      hover: "hover:bg-blue-100/50",
+      icon: "bg-blue-200 text-blue-700 dark:bg-blue-800 dark:text-blue-200",
+      progress: "bg-blue-500",
+      text: "text-blue-700 dark:text-blue-300",
+    },
+    amber: {
+      bg: "bg-amber-50/50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800",
+      hover: "hover:bg-amber-100/50",
+      icon: "bg-amber-200 text-amber-700 dark:bg-amber-800 dark:text-amber-200",
+      progress: "bg-amber-500",
+      text: "text-amber-700 dark:text-amber-300",
+    },
+    green: {
+      bg: "bg-green-50/50 border-green-200 dark:bg-green-950/30 dark:border-green-800",
+      hover: "hover:bg-green-100/50",
+      icon: "bg-green-200 text-green-700 dark:bg-green-800 dark:text-green-200",
+      progress: "bg-green-500",
+      text: "text-green-700 dark:text-green-300",
+    },
+  };
+
+  const colors = colorClasses[phaseColor];
+  const completedCount = tasks.filter(t => t.status === "completed").length;
+
+  return (
+    <Collapsible open={isExpanded && !isLocked}>
+      <div
+        className={cn(
+          "rounded-lg border transition-colors",
+          isLocked && "opacity-60",
+          colors.bg
+        )}
+      >
+        {/* Phase Header */}
+        <CollapsibleTrigger asChild>
+          <div
+            onClick={isLocked ? undefined : onToggle}
+            className={cn(
+              "flex items-center justify-between p-3 cursor-pointer",
+              !isLocked && colors.hover,
+              isLocked && "cursor-not-allowed"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              {isLocked ? (
+                <Lock className="h-4 w-4 text-muted-foreground" />
+              ) : isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+              <div className={cn("p-1.5 rounded", colors.icon)}>
+                {phaseIcon}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{phaseName}</span>
+                  {isLocked && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      <Lock className="h-3 w-3 mr-0.5" />
+                      Locked
+                    </Badge>
+                  )}
+                </div>
+                {isLocked && (
+                  <p className="text-xs text-muted-foreground">{lockReason}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Right side: Progress info */}
+            <div className="flex items-center gap-4">
+              <div className="text-right text-xs text-muted-foreground">
+                Progress
+              </div>
+              <div className="text-right font-medium">
+                {progress}%
+              </div>
+              <div className="text-right text-xs text-muted-foreground">
+                {tasks.length} tasks
+              </div>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+
+        {/* Progress bar */}
+        <div className="px-3 pb-3">
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className={cn("h-full rounded-full transition-all duration-500", colors.progress)}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Tasks list */}
+        <CollapsibleContent>
+          <div className="px-3 pb-3 space-y-2">
+            {tasks.map((task) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                isOwner={isOwner}
+                members={members}
+                onEdit={() => onEdit(task)}
+                onDelete={() => onDelete(task.id)}
+                onStatusChange={(status) => onStatusChange(task.id, status)}
+                onAssigneeChange={(assigneeId) => onAssigneeChange(task.id, assigneeId)}
+                getPriorityBadge={getPriorityBadge}
+                getStatusInfo={getStatusInfo}
+                getDueDateInfo={getDueDateInfo}
+              />
+            ))}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 };
 
