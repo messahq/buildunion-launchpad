@@ -326,10 +326,24 @@ export function MaterialCalculationTab({
         <head>
           <meta charset="utf-8">
           <style>
+            @page { 
+              size: A4; 
+              margin: 20mm; 
+            }
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.3; font-size: 10px; }
+            body { 
+              font-family: 'Segoe UI', Arial, sans-serif; 
+              color: #1e293b; 
+              line-height: 1.3; 
+              font-size: 10px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
             td, th { word-wrap: break-word; overflow: hidden; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
           </style>
         </head>
         <body>
