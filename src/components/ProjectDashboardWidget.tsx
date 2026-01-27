@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Clock, 
   CheckCircle2, 
@@ -13,10 +14,12 @@ import {
   TrendingUp,
   Loader2,
   Briefcase,
-  Timer
+  Timer,
+  ChevronDown
 } from "lucide-react";
 import { format, formatDistanceToNow, isAfter, isBefore, addDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface ProjectStats {
   total: number;
@@ -195,54 +198,94 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId }: ProjectDashb
           </div>
         </div>
 
-        {/* Progress Ring */}
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <div className="flex items-center gap-4">
-            <div className="relative w-16 h-16">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="28"
-                  stroke="currentColor"
-                  strokeWidth="6"
-                  fill="none"
-                  className="text-slate-200"
-                />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="28"
-                  stroke="currentColor"
-                  strokeWidth="6"
-                  fill="none"
-                  strokeDasharray={`${completionRate * 1.76} 176`}
-                  strokeLinecap="round"
-                  className="text-green-500 transition-all duration-500"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-bold text-slate-700">{completionRate}%</span>
-              </div>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-slate-700">Completion Rate</p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {stats.completed} of {stats.total} projects completed
-              </p>
-              <div className="flex gap-3 mt-2">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-xs text-slate-600">{stats.completed} Done</span>
+        {/* Progress Ring - Collapsible */}
+        <Collapsible defaultOpen={true}>
+          <div className="bg-slate-50 dark:bg-muted/50 rounded-xl border border-slate-100 dark:border-border overflow-hidden">
+            <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-slate-100/50 dark:hover:bg-muted transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      className="text-slate-200 dark:text-slate-600"
+                    />
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      strokeDasharray={`${completionRate * 1.005} 100.5`}
+                      strokeLinecap="round"
+                      className="text-green-500 transition-all duration-500"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{completionRate}%</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span className="text-xs text-slate-600">{stats.draft} Draft</span>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Completion Rate</p>
+                  <p className="text-xs text-slate-500 dark:text-muted-foreground">
+                    {stats.completed} of {stats.total} completed
+                  </p>
                 </div>
               </div>
-            </div>
+              <ChevronDown className="h-4 w-4 text-slate-400 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-4 pb-4 pt-0">
+                <div className="flex items-center gap-4">
+                  <div className="relative w-16 h-16">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="none"
+                        className="text-slate-200 dark:text-slate-600"
+                      />
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        fill="none"
+                        strokeDasharray={`${completionRate * 1.76} 176`}
+                        strokeLinecap="round"
+                        className="text-green-500 transition-all duration-500"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{completionRate}%</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex gap-3 mt-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{stats.completed} Done</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{stats.draft} Draft</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
           </div>
-        </div>
+        </Collapsible>
 
         {/* Upcoming Deadlines */}
         <div>
