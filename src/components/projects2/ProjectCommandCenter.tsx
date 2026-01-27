@@ -432,16 +432,17 @@ export const ProjectCommandCenter = ({
       missingItems: contractsMissing.length > 0 ? contractsMissing : undefined,
     });
     
-    // Team - partial if only owner (1 member)
+    // Team - pending if only owner (no members), complete if owner + at least 1 member
     const teamMissing: string[] = [];
-    if (info.teamSize <= 1) teamMissing.push("Only project owner, no team members");
+    const hasTeamMembers = info.teamSize > 1; // More than just owner
+    if (!hasTeamMembers) teamMissing.push("No team members added (only owner)");
     
     sources.push({
       id: "team",
       name: "Team",
       category: "workflow",
-      status: info.teamSize > 1 ? "complete" : "partial",
-      value: `${info.teamSize} member${info.teamSize > 1 ? "s" : ""}`,
+      status: hasTeamMembers ? "complete" : "pending",
+      value: hasTeamMembers ? `${info.teamSize} members` : "Owner only",
       icon: Users,
       missingItems: teamMissing.length > 0 ? teamMissing : undefined,
     });
