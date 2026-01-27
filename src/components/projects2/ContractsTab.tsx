@@ -143,9 +143,15 @@ interface ContractsTabProps {
   projectName?: string;
   projectAddress?: string;
   projectDescription?: string;
+  clientInfo?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
 }
 
-const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, projectDescription }: ContractsTabProps) => {
+const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, projectDescription, clientInfo }: ContractsTabProps) => {
   const { user } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -575,6 +581,14 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
                 address: projectAddress,
                 description: projectDescription,
               }}
+              quoteData={!editingContract && clientInfo ? {
+                clientName: clientInfo.name || "",
+                clientAddress: clientInfo.address || "",
+                clientPhone: clientInfo.phone || "",
+                clientEmail: clientInfo.email || "",
+                projectName: projectName || "",
+                projectAddress: projectAddress || "",
+              } : undefined}
               existingContract={editingContract ? {
                 id: editingContract.id,
                 contract_number: editingContract.contract_number,
