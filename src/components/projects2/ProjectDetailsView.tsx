@@ -29,7 +29,7 @@ import { FilterAnswers, AITriggers } from "./FilterQuestions";
 import ConflictStatusIndicator from "./ConflictStatusIndicator";
 import TeamMapWidget from "./TeamMapWidget";
 import DocumentsPane from "./DocumentsPane";
-import OperationalTruthCards from "./OperationalTruthCards";
+import OperationalTruthCards, { DataSourceOrigin } from "./OperationalTruthCards";
 import { DecisionLogPanel } from "./DecisionLogPanel";
 import TeamTab from "./TeamTab";
 import ContractsTab from "./ContractsTab";
@@ -1262,21 +1262,34 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   // Determine data source origins for transparency
   const dataSourceOrigins = useMemo(() => {
     const origins: {
-      area?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
-      materials?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
-      blueprint?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
-      obc?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
-      conflict?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
-      mode?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
-      size?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
-      confidence?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      area?: DataSourceOrigin;
+      materials?: DataSourceOrigin;
+      blueprint?: DataSourceOrigin;
+      obc?: DataSourceOrigin;
+      conflict?: DataSourceOrigin;
+      mode?: DataSourceOrigin;
+      size?: DataSourceOrigin;
+      confidence?: DataSourceOrigin;
     } = {};
 
-    // Area origin
-    if (rawArea) origins.area = "photo_ai";
-    else if (calculatorArea) origins.area = "config";
-    else if (fallbackArea) origins.area = "photo_ai";
-    else if (taskBasedArea) origins.area = "tasks";
+    // Area origin - priority matches final area calculation
+    // Priority: AI-detected (rawArea) > User description > Calculator > Materials > Tasks
+    if (rawArea) {
+      // Check if it came from blueprint analysis or photo analysis
+      if (blueprintAnalysis?.detectedArea === rawArea) {
+        origins.area = "blueprint";
+      } else {
+        origins.area = "photo_ai";
+      }
+    } else if (descriptionArea) {
+      origins.area = "description";
+    } else if (calculatorArea) {
+      origins.area = "config";
+    } else if (fallbackArea) {
+      origins.area = "photo_ai";
+    } else if (taskBasedArea) {
+      origins.area = "tasks";
+    }
 
     // Materials origin
     if (materialsData.length > 0) {
@@ -1311,7 +1324,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     else origins.confidence = "default";
 
     return origins;
-  }, [rawArea, calculatorArea, fallbackArea, taskBasedArea, materialsData, taskBasedMaterials, photoEstimate, blueprintAnalysis, dualEngineOutput, synthesisResult, manuallyValidatedBlueprint]);
+  }, [rawArea, descriptionArea, calculatorArea, fallbackArea, taskBasedArea, materialsData, taskBasedMaterials, photoEstimate, blueprintAnalysis, dualEngineOutput, synthesisResult, manuallyValidatedBlueprint, manuallyIgnoredConflicts]);
 
   // Handle Generate Report
   const handleGenerateReport = async () => {
