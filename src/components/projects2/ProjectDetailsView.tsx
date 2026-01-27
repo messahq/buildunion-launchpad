@@ -1546,18 +1546,18 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
 
         {/* Header Actions */}
         <div className="flex items-center gap-3">
-          {/* Total Budget Display */}
+          {/* Total Budget Display - synced with Materials tab */}
           <Badge
             variant="outline"
             className={cn(
               "text-sm font-semibold gap-1.5 hidden sm:flex",
-              totalTaskBudget > 0
+              (summary?.total_cost || 0) > 0
                 ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
                 : "border-muted"
             )}
           >
             <DollarSign className="h-3.5 w-3.5" />
-            Total: ${totalTaskBudget.toLocaleString()}
+            Total: ${(summary?.total_cost || 0).toLocaleString()}
           </Badge>
           {/* Generate Report Button - Premium Feature */}
           <div className="relative">
@@ -1864,7 +1864,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               
               return Object.values(laborMap);
             })()}
-            projectTotal={totalTaskBudget}
+            projectTotal={summary?.total_cost || 0}
             projectName={project.name}
             projectAddress={project.address || ""}
             companyName={companyBranding.name}
@@ -1888,7 +1888,10 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               }
               return 'tasks' as const;
             })()}
-            onGrandTotalChange={(newTotal) => setTotalTaskBudget(newTotal)}
+            onGrandTotalChange={(newTotal) => {
+              // Update summary.total_cost so header stays in sync
+              setSummary(prev => prev ? { ...prev, total_cost: newTotal } : null);
+            }}
             onSave={async (costs) => {
               if (!summary) return;
               
