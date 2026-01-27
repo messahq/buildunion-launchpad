@@ -285,6 +285,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [signedContracts, setSignedContracts] = useState(0);
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
   const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(false);
+  const [forceCalendarView, setForceCalendarView] = useState(false);
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -1293,6 +1294,10 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             dataSourceOrigins={dataSourceOrigins}
             onBlueprintValidated={setManuallyValidatedBlueprint}
             onConflictsIgnored={setManuallyIgnoredConflicts}
+            onNavigateToTaskTimeline={() => {
+              setForceCalendarView(true);
+              setActiveTab("team");
+            }}
           />
 
           {/* Project Description */}
@@ -1362,6 +1367,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               aiMaterials={aiAnalysis?.materials}
               projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
               projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+              forceCalendarView={forceCalendarView}
+              onCalendarViewActivated={() => setForceCalendarView(false)}
             />
           </TabsContent>
         )}

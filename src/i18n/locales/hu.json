@@ -307,7 +307,10 @@
     "high": "Magas",
     "low": "Alacsony",
     "items": "tétel",
-    "noneDetected": "Nem észlelt"
+    "noneDetected": "Nem észlelt",
+    "rescheduleTasks": "Feladatok Átütemezése",
+    "navigatedToTimeline": "Felhasználó az Idővonalra navigált feladatok átütemezésére",
+    "navigatedToTimelineDetails": "Feladat naptár megnyitása húzd és ejtsd átütemezéshez"
   },
   "synthesis": {
     "title": "Projekt Szintézis",

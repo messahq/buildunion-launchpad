@@ -307,7 +307,10 @@
     "high": "High",
     "low": "Low",
     "items": "items",
-    "noneDetected": "None detected"
+    "noneDetected": "None detected",
+    "rescheduleTasks": "Reschedule Tasks",
+    "navigatedToTimeline": "User navigated to Timeline to reschedule tasks",
+    "navigatedToTimelineDetails": "Opening task calendar for drag-and-drop rescheduling"
   },
   "synthesis": {
     "title": "Project Synthesis",

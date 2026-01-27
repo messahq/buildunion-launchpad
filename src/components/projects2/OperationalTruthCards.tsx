@@ -19,7 +19,8 @@ import {
   Play,
   RotateCcw,
   RefreshCw,
-  Database
+  Database,
+  CalendarDays
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OperationalTruth } from "@/types/operationalTruth";
@@ -39,6 +40,8 @@ interface OperationalTruthCardsProps {
   onBlueprintValidated?: (validated: boolean) => void;
   // Callback when conflicts are manually ignored
   onConflictsIgnored?: (ignored: boolean) => void;
+  // Callback to navigate to task timeline calendar
+  onNavigateToTaskTimeline?: () => void;
   // Data source origins for each pillar
   dataSourceOrigins?: {
     area?: DataSourceOrigin;
@@ -166,6 +169,7 @@ export default function OperationalTruthCards({
   onUpdate,
   onBlueprintValidated,
   onConflictsIgnored,
+  onNavigateToTaskTimeline,
   dataSourceOrigins = {},
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
@@ -1066,27 +1070,49 @@ export default function OperationalTruthCards({
                       <div className="flex items-center gap-2">
                         {/* Ignore button for conflict/weather warnings */}
                         {canIgnore && !manuallyIgnoredConflicts && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setManuallyIgnoredConflicts(true);
-                              onConflictsIgnored?.(true);
-                              addReport({
-                                pillar: "Conflict Check",
-                                engine: "dual",
-                                status: "success",
-                                message: t("operationalTruth.issuesIgnored", "Issues manually ignored by user"),
-                                details: t("operationalTruth.issuesIgnoredDetails", "User acknowledged and chose to proceed despite warnings")
-                              });
-                              toast.success(t("operationalTruth.conflictsIgnored", "Issues ignored - status updated"));
-                              onUpdate?.();
-                            }}
-                            className="h-6 px-2 text-xs gap-1 text-amber-600 hover:text-green-600 hover:bg-green-500/10"
-                          >
-                            <CheckCircle2 className="h-3 w-3" />
-                            {t("operationalTruth.ignoreIssues", "Ignore Issues")}
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setManuallyIgnoredConflicts(true);
+                                onConflictsIgnored?.(true);
+                                addReport({
+                                  pillar: "Conflict Check",
+                                  engine: "dual",
+                                  status: "success",
+                                  message: t("operationalTruth.issuesIgnored", "Issues manually ignored by user"),
+                                  details: t("operationalTruth.issuesIgnoredDetails", "User acknowledged and chose to proceed despite warnings")
+                                });
+                                toast.success(t("operationalTruth.conflictsIgnored", "Issues ignored - status updated"));
+                                onUpdate?.();
+                              }}
+                              className="h-6 px-2 text-xs gap-1 text-amber-600 hover:text-green-600 hover:bg-green-500/10"
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              {t("operationalTruth.ignoreIssues", "Ignore Issues")}
+                            </Button>
+                            {onNavigateToTaskTimeline && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  addReport({
+                                    pillar: "Conflict Check",
+                                    engine: "dual",
+                                    status: "warning",
+                                    message: t("operationalTruth.navigatedToTimeline", "User navigated to Timeline to reschedule tasks"),
+                                    details: t("operationalTruth.navigatedToTimelineDetails", "Opening task calendar for drag-and-drop rescheduling")
+                                  });
+                                  onNavigateToTaskTimeline();
+                                }}
+                                className="h-6 px-2 text-xs gap-1 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-500/10"
+                              >
+                                <CalendarDays className="h-3 w-3" />
+                                {t("operationalTruth.rescheduleTasks", "Reschedule Tasks")}
+                              </Button>
+                            )}
+                          </>
                         )}
                         <span className={cn(
                           "text-xs px-2 py-0.5 rounded-full",

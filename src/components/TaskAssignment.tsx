@@ -65,6 +65,8 @@ interface TaskAssignmentProps {
   projectAddress?: string;
   filterByMemberId?: string | null;
   onClearFilter?: () => void;
+  forceCalendarView?: boolean;
+  onCalendarViewActivated?: () => void;
 }
 
 interface TeamMember {
@@ -104,7 +106,7 @@ const STATUSES = [
   { value: "completed", label: "Completed", icon: CheckCircle2, color: "text-green-600" },
 ];
 
-const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter }: TaskAssignmentProps) => {
+const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated }: TaskAssignmentProps) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -126,6 +128,14 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Handle force calendar view from parent (e.g., from Operational Truth reschedule button)
+  useEffect(() => {
+    if (forceCalendarView) {
+      setViewMode("calendar");
+      onCalendarViewActivated?.();
+    }
+  }, [forceCalendarView, onCalendarViewActivated]);
 
   // Fetch tasks and members
   useEffect(() => {
