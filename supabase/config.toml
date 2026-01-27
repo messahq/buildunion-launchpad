@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.generate-team-report]
 verify_jwt = false
+
+[functions.obc-status-check]
+verify_jwt = false

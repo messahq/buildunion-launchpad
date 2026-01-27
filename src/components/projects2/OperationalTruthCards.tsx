@@ -382,7 +382,7 @@ export default function OperationalTruthCards({
     }
   };
 
-  // OpenAI: Verify OBC Status
+  // OpenAI: Verify OBC Status using dedicated edge function
   const verifyOBCStatus = async () => {
     if (!projectId) {
       toast.error("Project ID required");
@@ -391,31 +391,102 @@ export default function OperationalTruthCards({
     
     setLoadingPillar("obc");
     try {
-      // Call the ask-messa edge function with OBC focus
-      const { data, error } = await supabase.functions.invoke("ask-messa", {
-        body: {
-          projectId,
-          question: "Analyze this project for Ontario Building Code compliance. Check if permits are required based on the scope of work, materials, and project size. Return a brief compliance assessment.",
-          analysisType: "obc_compliance"
-        }
+      // Fetch project data for OBC check
+      const { data: summary } = await supabase
+        .from("project_summaries")
+        .select("photo_estimate, blueprint_analysis, ai_workflow_config, mode")
+        .eq("project_id", projectId)
+        .maybeSingle();
+
+      const { data: project } = await supabase
+        .from("projects")
+        .select("name, description, trade, trades")
+        .eq("id", projectId)
+        .maybeSingle();
+
+      // Extract materials from photo estimate or blueprint
+      const photoEstimate = summary?.photo_estimate as { materials?: { name: string }[] } | null;
+      const blueprintAnalysis = summary?.blueprint_analysis as { materials?: { name: string }[] } | null;
+      const materials = photoEstimate?.materials || blueprintAnalysis?.materials || [];
+      
+      // Get workflow config for additional flags
+      const workflowConfig = summary?.ai_workflow_config as {
+        projectSize?: string;
+        filterAnswers?: {
+          complexity?: string;
+          workType?: string[];
+        };
+      } | null;
+
+      // Determine changes from filter answers or trade info
+      const workTypes = workflowConfig?.filterAnswers?.workType || [];
+      const trades = project?.trades || [];
+      
+      const hasStructural = workTypes.some(w => 
+        w.toLowerCase().includes('structural') || w.toLowerCase().includes('load')
+      );
+      const hasMechanical = workTypes.some(w => 
+        w.toLowerCase().includes('hvac') || w.toLowerCase().includes('mechanical') || w.toLowerCase().includes('plumbing')
+      ) || trades.includes('plumber') || trades.includes('hvac_technician');
+      const hasElectrical = workTypes.some(w => 
+        w.toLowerCase().includes('electrical')
+      ) || trades.includes('electrician');
+
+      // Build OBC check input - map internal status values to OBC input format
+      const blueprintInputStatus = blueprintStatus === "analyzed" ? "uploaded" as const : 
+                                   blueprintStatus === "none" || blueprintStatus === "pending" ? "none" as const : 
+                                   "none" as const;
+      
+      const conflictInputStatus = conflictStatus === "conflict_detected" ? "detected" as const : 
+                                  conflictStatus === "aligned" ? "none" as const : 
+                                  "none" as const;
+
+      const obcInput = {
+        project_type: project?.trade || project?.name || "renovation",
+        scope_of_work: project?.description || "Interior renovation work",
+        confirmed_area_sqft: confirmedArea > 0 ? confirmedArea : undefined,
+        materials: materials.length > 0 ? materials : undefined,
+        blueprint_status: blueprintInputStatus,
+        structural_changes: hasStructural || undefined,
+        mechanical_changes: hasMechanical || undefined,
+        electrical_changes: hasElectrical || undefined,
+        load_bearing_work: hasStructural || undefined,
+        project_mode: (summary?.mode as "solo" | "team") || "solo",
+        conflict_status: conflictInputStatus,
+        data_confidence: materialsCount > 5 && confirmedArea > 0 ? "high" as const : 
+                        materialsCount > 0 || confirmedArea > 0 ? "medium" as const : "low" as const
+      };
+
+      // Call dedicated OBC status check edge function
+      const { data, error } = await supabase.functions.invoke("obc-status-check", {
+        body: { projectData: obcInput }
       });
 
       if (error) throw error;
 
-      const response = data?.response || data?.answer;
-      
-      if (response) {
-        const requiresPermit = response.toLowerCase().includes("permit required") || 
-                              response.toLowerCase().includes("building permit");
+      if (data?.result) {
+        const result = data.result;
+        const status = result.obc_status === "PASS" ? "success" : 
+                      result.obc_status === "CONDITIONAL" ? "warning" : "error";
+        
+        const permitRequired = result.requires_professional_review || result.obc_status === "FAIL";
         
         addReport({
           pillar: "OBC Status",
           engine: "openai",
-          status: requiresPermit ? "warning" : "success",
-          message: requiresPermit ? "Permit may be required" : "No permit required",
-          details: response.slice(0, 200) + (response.length > 200 ? "..." : "")
+          status,
+          message: result.obc_status === "PASS" ? "No permit required - Clear" :
+                  result.obc_status === "CONDITIONAL" ? "Conditional - Review recommended" :
+                  "Permit may be required",
+          details: [
+            `Risk Level: ${result.risk_level}`,
+            ...result.reasoning,
+            result.missing_information.length > 0 ? `Missing: ${result.missing_information.join(", ")}` : "",
+            result.notes || ""
+          ].filter(Boolean).join("\n")
         });
-        toast.success("OBC status verified");
+        
+        toast.success(`OBC Status: ${result.obc_status} (${result.risk_level} risk)`);
       } else {
         addReport({
           pillar: "OBC Status",
