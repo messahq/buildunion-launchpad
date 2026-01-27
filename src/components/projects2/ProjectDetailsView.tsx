@@ -840,6 +840,58 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
   });
 
+  // Determine data source origins for transparency
+  const dataSourceOrigins = useMemo(() => {
+    const origins: {
+      area?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      materials?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      blueprint?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      obc?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      conflict?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      mode?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      size?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+      confidence?: "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+    } = {};
+
+    // Area origin
+    if (rawArea) origins.area = "photo_ai";
+    else if (calculatorArea) origins.area = "config";
+    else if (fallbackArea) origins.area = "photo_ai";
+    else if (taskBasedArea) origins.area = "tasks";
+
+    // Materials origin
+    if (materialsData.length > 0) {
+      if (photoEstimate?.materials) origins.materials = "photo_ai";
+      else origins.materials = "config";
+    } else if (taskBasedMaterials.length > 0) {
+      origins.materials = "tasks";
+    }
+
+    // Blueprint origin
+    if (blueprintAnalysis?.extractedText) origins.blueprint = "blueprint";
+    else if (photoEstimate?.blueprintAnalysis) origins.blueprint = "photo_ai";
+
+    // OBC origin (always from OpenAI engine)
+    if (dualEngineOutput?.openai) origins.obc = "config";
+
+    // Conflict origin (dual-engine check)
+    if (synthesisResult) origins.conflict = "config";
+
+    // Mode origin (from filter answers)
+    origins.mode = "config";
+
+    // Size origin
+    if (photoEstimate?.projectSize) origins.size = "photo_ai";
+    else origins.size = "config";
+
+    // Confidence origin
+    if (photoEstimate?.areaConfidence) origins.confidence = "photo_ai";
+    else if (taskBasedArea) origins.confidence = "tasks";
+    else origins.confidence = "default";
+
+    return origins;
+  }, [rawArea, calculatorArea, fallbackArea, taskBasedArea, materialsData, taskBasedMaterials, photoEstimate, blueprintAnalysis, dualEngineOutput, synthesisResult]);
+
   // Handle Generate Report
   const handleGenerateReport = async () => {
     if (!isPremium) {
@@ -1097,6 +1149,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             operationalTruth={operationalTruth}
             projectId={projectId}
             projectAddress={project.address || undefined}
+            dataSourceOrigins={dataSourceOrigins}
           />
 
           {/* Project Description */}
