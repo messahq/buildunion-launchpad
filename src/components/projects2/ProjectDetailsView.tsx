@@ -286,6 +286,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
   const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(false);
   const [forceCalendarView, setForceCalendarView] = useState(false);
+  const [isLoadingOverrides, setIsLoadingOverrides] = useState(true);
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -377,12 +378,28 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             lockedAt: summaryData.baseline_locked_at,
             lockedBy: summaryData.baseline_locked_by,
           });
+          
+          // Load manual overrides from verified_facts
+          const verifiedFacts = (summaryResult.data as any).verified_facts as {
+            manuallyValidatedBlueprint?: boolean;
+            manuallyIgnoredConflicts?: boolean;
+          } | null;
+          
+          if (verifiedFacts) {
+            if (verifiedFacts.manuallyValidatedBlueprint) {
+              setManuallyValidatedBlueprint(true);
+            }
+            if (verifiedFacts.manuallyIgnoredConflicts) {
+              setManuallyIgnoredConflicts(true);
+            }
+          }
         }
       } catch (error) {
         console.error("Error loading project:", error);
         toast.error("Failed to load project");
       } finally {
         setLoading(false);
+        setIsLoadingOverrides(false);
       }
     };
 
@@ -728,6 +745,90 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     } catch (error) {
       console.error("Error updating client info:", error);
       throw error;
+    }
+  }, [summary?.id]);
+
+  // ============================================
+  // MANUAL OVERRIDE PERSISTENCE (Blueprint & Conflicts)
+  // ============================================
+  
+  // Persist manual blueprint validation to database
+  const handleBlueprintValidated = useCallback(async (validated: boolean) => {
+    setManuallyValidatedBlueprint(validated);
+    
+    if (!summary?.id) return;
+    
+    try {
+      // Get current verified_facts
+      const { data: currentData } = await supabase
+        .from("project_summaries")
+        .select("verified_facts")
+        .eq("id", summary.id)
+        .maybeSingle();
+      
+      const currentFacts = (currentData?.verified_facts as Record<string, unknown>) || {};
+      
+      // Update with new blueprint validation state
+      const updatedFacts = {
+        ...currentFacts,
+        manuallyValidatedBlueprint: validated,
+        blueprintValidatedAt: validated ? new Date().toISOString() : null,
+      };
+      
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({
+          verified_facts: updatedFacts,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", summary.id);
+        
+      if (error) throw error;
+      
+      console.log("[OP-Truth] Blueprint validation saved:", validated);
+    } catch (error) {
+      console.error("Error saving blueprint validation:", error);
+      toast.error("Failed to save blueprint validation");
+    }
+  }, [summary?.id]);
+
+  // Persist manual conflict ignore to database
+  const handleConflictsIgnored = useCallback(async (ignored: boolean) => {
+    setManuallyIgnoredConflicts(ignored);
+    
+    if (!summary?.id) return;
+    
+    try {
+      // Get current verified_facts
+      const { data: currentData } = await supabase
+        .from("project_summaries")
+        .select("verified_facts")
+        .eq("id", summary.id)
+        .maybeSingle();
+      
+      const currentFacts = (currentData?.verified_facts as Record<string, unknown>) || {};
+      
+      // Update with new conflict ignore state
+      const updatedFacts = {
+        ...currentFacts,
+        manuallyIgnoredConflicts: ignored,
+        conflictsIgnoredAt: ignored ? new Date().toISOString() : null,
+      };
+      
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({
+          verified_facts: updatedFacts,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", summary.id);
+        
+      if (error) throw error;
+      
+      console.log("[OP-Truth] Conflict ignore saved:", ignored);
+    } catch (error) {
+      console.error("Error saving conflict ignore:", error);
+      toast.error("Failed to save conflict status");
     }
   }, [summary?.id]);
 
@@ -1292,8 +1393,10 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             projectId={projectId}
             projectAddress={project.address || undefined}
             dataSourceOrigins={dataSourceOrigins}
-            onBlueprintValidated={setManuallyValidatedBlueprint}
-            onConflictsIgnored={setManuallyIgnoredConflicts}
+            onBlueprintValidated={handleBlueprintValidated}
+            onConflictsIgnored={handleConflictsIgnored}
+            initialBlueprintValidated={manuallyValidatedBlueprint}
+            initialConflictsIgnored={manuallyIgnoredConflicts}
             onNavigateToTaskTimeline={() => {
               setForceCalendarView(true);
               setActiveTab("team");

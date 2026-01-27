@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,9 @@ interface OperationalTruthCardsProps {
   onConflictsIgnored?: (ignored: boolean) => void;
   // Callback to navigate to task timeline calendar
   onNavigateToTaskTimeline?: () => void;
+  // Initial state from database (persisted overrides)
+  initialBlueprintValidated?: boolean;
+  initialConflictsIgnored?: boolean;
   // Data source origins for each pillar
   dataSourceOrigins?: {
     area?: DataSourceOrigin;
@@ -170,6 +173,8 @@ export default function OperationalTruthCards({
   onBlueprintValidated,
   onConflictsIgnored,
   onNavigateToTaskTimeline,
+  initialBlueprintValidated = false,
+  initialConflictsIgnored = false,
   dataSourceOrigins = {},
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
@@ -178,8 +183,18 @@ export default function OperationalTruthCards({
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [runAllProgress, setRunAllProgress] = useState(0);
   const [reports, setReports] = useState<VerificationReport[]>([]);
-  const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
-  const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(false);
+  // Initialize from database-persisted values
+  const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(initialBlueprintValidated);
+  const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(initialConflictsIgnored);
+  
+  // Sync with props when they change (e.g., after database load)
+  useEffect(() => {
+    setManuallyValidatedBlueprint(initialBlueprintValidated);
+  }, [initialBlueprintValidated]);
+  
+  useEffect(() => {
+    setManuallyIgnoredConflicts(initialConflictsIgnored);
+  }, [initialConflictsIgnored]);
   
   const {
     confirmedArea,
