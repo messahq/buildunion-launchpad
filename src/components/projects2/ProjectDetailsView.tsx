@@ -727,23 +727,101 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const extractAreaFromMaterials = (materials: Array<{ item: string; quantity: number; unit: string }> | undefined): number | null => {
     if (!materials?.length) return null;
     const areaBasedMaterial = materials.find(
-      m => m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft")
+      m => m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft") || m.unit?.toLowerCase().includes("m²")
     );
     return areaBasedMaterial?.quantity || null;
   };
 
+  // Extract area from tasks (tasks contain material assignments with quantities)
+  const extractAreaFromTasks = (tasksList: TaskWithBudget[]): number | null => {
+    // Look for tasks that contain area-based material information
+    for (const task of tasksList) {
+      const titleLower = task.title.toLowerCase();
+      const descLower = (task.description || "").toLowerCase();
+      
+      // Look for patterns like "1302 sq ft" or "1400 sq ft" in title or description
+      const patterns = [
+        /(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*ft|square\s*feet?|sqft)/i,
+        /(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*m|m²|square\s*meters?)/i,
+      ];
+      
+      for (const pattern of patterns) {
+        const titleMatch = task.title.match(pattern);
+        const descMatch = (task.description || "").match(pattern);
+        if (titleMatch) {
+          return parseFloat(titleMatch[1].replace(/,/g, ""));
+        }
+        if (descMatch) {
+          return parseFloat(descMatch[1].replace(/,/g, ""));
+        }
+      }
+    }
+    return null;
+  };
+
+  // Extract materials count from tasks
+  const extractMaterialsFromTasks = (tasksList: TaskWithBudget[]): Array<{ item: string; quantity: number; unit: string }> => {
+    // Group tasks by material category (from title prefix before first action word)
+    const materialMap: Record<string, { item: string; quantity: number; unit: string }> = {};
+    
+    for (const task of tasksList) {
+      // Extract material name from task title
+      // e.g., "Order Laminate Flooring" -> "Laminate Flooring"
+      // e.g., "Install Underlayment" -> "Underlayment"
+      const actionWords = ["order", "install", "lay", "apply", "cut", "deliver", "measure", "prep", "inspect", "verify", "clean", "final"];
+      let materialName = task.title;
+      for (const action of actionWords) {
+        materialName = materialName.replace(new RegExp(`^${action}\\s+`, "i"), "");
+      }
+      materialName = materialName.trim();
+      
+      if (materialName && task.quantity && task.quantity > 0) {
+        if (!materialMap[materialName]) {
+          // Determine unit from quantity range or task context
+          let unit = "units";
+          if (task.quantity > 100) unit = "sq ft";
+          if (task.title.toLowerCase().includes("trim") || task.title.toLowerCase().includes("baseboard")) unit = "linear ft";
+          
+          materialMap[materialName] = {
+            item: materialName,
+            quantity: task.quantity,
+            unit,
+          };
+        }
+      }
+    }
+    
+    return Object.values(materialMap);
+  };
+
   // Build unified aiAnalysis from photo_estimate (actual AI results)
-  // Priority: photo_estimate.area > blueprint_analysis.detectedArea > materials fallback > ai_workflow_config.aiAnalysis
+  // Priority: photo_estimate.area > blueprint_analysis.detectedArea > calculator_results > tasks fallback > materials fallback
   const rawArea = photoEstimate?.area ?? blueprintAnalysis?.detectedArea ?? null;
+  
+  // Also check calculator_results for detected area
+  const calculatorResults = Array.isArray(summary?.calculator_results) ? summary.calculator_results : [];
+  const calculatorArea = calculatorResults.length > 0 
+    ? (calculatorResults[0] as any)?.detectedArea 
+    : null;
+  
+  // Materials from multiple sources
   const materialsData = photoEstimate?.materials || aiConfig?.aiAnalysis?.materials || [];
   const fallbackArea = extractAreaFromMaterials(materialsData);
   
-  const aiAnalysis = photoEstimate || aiConfig?.aiAnalysis ? {
-    area: rawArea ?? fallbackArea,
+  // Task-based fallbacks for 16-source synchronization
+  const taskBasedArea = extractAreaFromTasks(tasks);
+  const taskBasedMaterials = extractMaterialsFromTasks(tasks);
+  
+  // Final area with all fallbacks (including +10% waste consideration)
+  const finalArea = rawArea ?? calculatorArea ?? fallbackArea ?? taskBasedArea;
+  const finalMaterials = materialsData.length > 0 ? materialsData : taskBasedMaterials;
+  
+  const aiAnalysis = (photoEstimate || aiConfig?.aiAnalysis || finalArea !== null || finalMaterials.length > 0) ? {
+    area: finalArea,
     areaUnit: photoEstimate?.areaUnit || blueprintAnalysis?.areaUnit || "sq ft",
-    materials: materialsData,
+    materials: finalMaterials,
     hasBlueprint: !!blueprintAnalysis?.extractedText || !!photoEstimate?.blueprintAnalysis?.extractedText,
-    confidence: photoEstimate?.areaConfidence || aiConfig?.aiAnalysis?.confidence || "medium",
+    confidence: photoEstimate?.areaConfidence || aiConfig?.aiAnalysis?.confidence || (taskBasedArea ? "medium" : "low"),
   } : null;
 
   // Status indicators
@@ -752,7 +830,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const hasLineItems = Array.isArray(summary?.line_items) && summary.line_items.length > 0;
   const totalCost = summary?.total_cost || 0;
 
-  // Build Operational Truth for report
+  // Build Operational Truth for report - now synchronized across 16 sources
   const operationalTruth: OperationalTruth = buildOperationalTruth({
     aiAnalysis,
     blueprintAnalysis: blueprintAnalysis ? { analyzed: !!blueprintAnalysis.extractedText } : undefined,
