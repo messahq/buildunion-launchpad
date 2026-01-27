@@ -389,16 +389,30 @@ export const ProjectCommandCenter = ({
       missingItems: tasksMissing.length > 0 ? tasksMissing : undefined,
     });
     
-    // Documents - require at least one uploaded
+    // Documents - require at least 1 uploaded document AND 1 contract for complete
     const docsMissing: string[] = [];
     if (info.documentCount === 0) docsMissing.push("No documents uploaded");
+    if (info.contractCount === 0) docsMissing.push("No contract created");
+    
+    // Status: complete = has docs AND contracts, partial = has one or the other, pending = neither
+    const hasDocs = info.documentCount > 0;
+    const hasContracts = info.contractCount > 0;
+    const docsStatus = (hasDocs && hasContracts) 
+      ? "complete" 
+      : (hasDocs || hasContracts) 
+        ? "partial" 
+        : "pending";
     
     sources.push({
       id: "documents",
       name: "Documents",
       category: "workflow",
-      status: info.documentCount > 0 ? "complete" : "pending",
-      value: info.documentCount > 0 ? `${info.documentCount} files` : undefined,
+      status: docsStatus,
+      value: hasDocs 
+        ? `${info.documentCount} files${hasContracts ? ` + ${info.contractCount} contract${info.contractCount > 1 ? 's' : ''}` : ''}`
+        : hasContracts 
+          ? `${info.contractCount} contract${info.contractCount > 1 ? 's' : ''} only`
+          : undefined,
       icon: FileText,
       missingItems: docsMissing.length > 0 ? docsMissing : undefined,
     });
