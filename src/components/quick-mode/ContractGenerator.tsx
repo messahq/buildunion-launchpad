@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import { SaveAndSendContractDialog } from "./SaveAndSendContractDialog";
+import { buildContractHTML, generatePDFBlob } from "@/lib/pdfGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
@@ -334,6 +336,7 @@ const ContractGenerator = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedContractId, setSavedContractId] = useState<string | null>(null);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
 
   // Report progress updates to parent
   useEffect(() => {
@@ -667,6 +670,143 @@ const ContractGenerator = ({
       console.error("Error saving contract:", error);
       toast.error("Failed to save contract");
       return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save contract and send to team members + upload to project documents
+  const saveAndSendContract = async (selectedMemberIds: string[]) => {
+    if (!user) {
+      toast.error("Please sign in first");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // First save the contract
+      const contractId = await saveContractToDatabase();
+      if (!contractId) {
+        throw new Error("Failed to save contract");
+      }
+
+      // If we have a linked project, upload contract PDF to project documents
+      if (linkedProjectId) {
+        // Generate PDF blob
+        const htmlContent = buildContractHTML({
+          contractNumber: contract.contractNumber,
+          contractDate: contract.contractDate,
+          templateType: selectedTemplate,
+          contractorInfo: {
+            name: contract.contractorName,
+            address: contract.contractorAddress,
+            phone: contract.contractorPhone,
+            email: contract.contractorEmail,
+            license: contract.licenseNumber || undefined,
+          },
+          clientInfo: {
+            name: contract.clientName,
+            address: contract.clientAddress,
+            phone: contract.clientPhone,
+            email: contract.clientEmail,
+          },
+          projectInfo: {
+            name: contract.projectName,
+            address: contract.projectAddress,
+            description: contract.scopeOfWork || undefined,
+          },
+          financialTerms: {
+            totalAmount: contract.totalAmount,
+            depositPercentage: contract.depositPercentage,
+            depositAmount: contract.depositAmount,
+            paymentSchedule: contract.paymentSchedule,
+          },
+          timeline: {
+            startDate: contract.startDate,
+            estimatedEndDate: contract.estimatedEndDate,
+            workingDays: contract.workingDays,
+          },
+          terms: {
+            scopeOfWork: contract.scopeOfWork,
+            warrantyPeriod: contract.warrantyPeriod,
+            materialsIncluded: contract.materialsIncluded,
+            changeOrderPolicy: contract.changeOrderPolicy,
+            cancellationPolicy: contract.cancellationPolicy,
+            disputeResolution: contract.disputeResolution,
+            additionalTerms: contract.additionalTerms || undefined,
+            hasLiabilityInsurance: contract.hasLiabilityInsurance,
+            hasWSIB: contract.hasWSIB,
+          },
+          signatures: {
+            client: clientSignature,
+            contractor: contractorSignature,
+          },
+          branding: profileData ? {
+            companyLogoUrl: profileData.companyLogoUrl || undefined,
+            companyName: profileData.companyName || undefined,
+          } : undefined,
+          formatCurrency,
+        });
+
+        const pdfBlob = await generatePDFBlob(htmlContent, {
+          filename: `Contract-${contract.contractNumber}.pdf`,
+        });
+
+        // Upload to storage
+        const fileName = `contract-${contract.contractNumber}-${Date.now()}.pdf`;
+        const filePath = `${linkedProjectId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("project-documents")
+          .upload(filePath, pdfBlob, {
+            contentType: "application/pdf",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("Storage upload error:", uploadError);
+          // Don't fail the whole operation if storage fails
+        } else {
+          // Save to project_documents table
+          await supabase
+            .from("project_documents")
+            .insert({
+              project_id: linkedProjectId,
+              file_name: `Contract #${contract.contractNumber}.pdf`,
+              file_path: filePath,
+              file_size: pdfBlob.size,
+            });
+        }
+      }
+
+      // Send notifications to selected team members
+      if (selectedMemberIds.length > 0) {
+        const messagePromises = selectedMemberIds.map(async (memberId) => {
+          await supabase
+            .from("team_messages")
+            .insert({
+              sender_id: user.id,
+              recipient_id: memberId,
+              message: `📄 New contract shared: Contract #${contract.contractNumber} for ${contract.projectName || "project"}. Total: ${formatCurrency(contract.totalAmount)}.`,
+            });
+        });
+
+        await Promise.all(messagePromises);
+        toast.success(`Contract saved and sent to ${selectedMemberIds.length} team member(s)`);
+      } else {
+        toast.success("Contract saved to project documents");
+      }
+
+      setIsSendDialogOpen(false);
+      onContractGenerated?.({
+        id: contractId,
+        contract_number: contract.contractNumber,
+        total_amount: contract.totalAmount,
+        status: contractorSignature && clientSignature ? 'signed' : contractorSignature ? 'pending_client' : 'draft',
+      });
+    } catch (error: any) {
+      console.error("Error in save and send:", error);
+      toast.error(error.message || "Failed to save and send contract");
     } finally {
       setIsSaving(false);
     }
@@ -1507,19 +1647,35 @@ const ContractGenerator = ({
 
               {/* Action Buttons */}
               <div className="space-y-2">
-                <Button
-                  onClick={saveContractToDatabase}
-                  disabled={isSaving}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {isSaving ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2" />
-                  )}
-                  {savedContractId ? "Update Contract" : "Save Contract"}
-                </Button>
+                {/* Save & Send - only when linked to project */}
+                {linkedProjectId ? (
+                  <Button
+                    onClick={() => setIsSendDialogOpen(true)}
+                    disabled={isSaving}
+                    className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    Save & Send Contract
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={saveContractToDatabase}
+                    disabled={isSaving}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    {savedContractId ? "Update Contract" : "Save Contract"}
+                  </Button>
+                )}
 
                 <Button
                   onClick={generateContractPDF}
@@ -1677,6 +1833,18 @@ const ContractGenerator = ({
           </Card>
         </div>
       </div>
+
+      {/* Save & Send Dialog */}
+      {linkedProjectId && (
+        <SaveAndSendContractDialog
+          open={isSendDialogOpen}
+          onOpenChange={setIsSendDialogOpen}
+          projectId={linkedProjectId}
+          contractNumber={contract.contractNumber}
+          onSaveAndSend={saveAndSendContract}
+          isSaving={isSaving}
+        />
+      )}
     </div>
   );
 };
