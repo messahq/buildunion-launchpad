@@ -1311,33 +1311,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         })} 
       />
 
-      {/* Baseline Lock Card - ALWAYS VISIBLE */}
-      {summary && (
-        <BaselineLockCard
-          projectId={projectId}
-          summaryId={summary.id}
-          operationalTruth={operationalTruth}
-          currentBaseline={baselineState}
-          isOwner={isOwner}
-          onBaselineLocked={handleBaselineLocked}
-          initialStartDate={summary.project_start_date}
-          initialEndDate={summary.project_end_date}
-          onDatesChanged={(startDate, endDate) => {
-            // Update local summary state - this will automatically sync with:
-            // 1. ProjectTimelineBar (above)
-            // 2. ProjectTimelineBar in Timeline tab
-            // 3. HierarchicalTimeline (receives dates via props)
-            setSummary(prev => prev ? {
-              ...prev,
-              project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
-              project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
-            } : null);
-            
-            // Toast notification for sync feedback
-            toast.success(t("baseline.datesSynced", "Project dates synced across all timelines"));
-          }}
-        />
-      )}
 
     </div>
   );
