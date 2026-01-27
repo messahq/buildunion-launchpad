@@ -39,6 +39,11 @@ interface GlobalStats {
   activeConflicts: number;
 }
 
+interface TaskStats {
+  totalTasks: number;
+  completedTasks: number;
+}
+
 interface UpcomingTask {
   id: string;
   title: string;
@@ -60,6 +65,7 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
   const navigate = useNavigate();
   const [stats, setStats] = useState<ProjectStats>({ total: 0, draft: 0, active: 0, completed: 0 });
   const [globalStats, setGlobalStats] = useState<GlobalStats>({ totalProjects: 0, activeProjects: 0, totalRevenue: 0, activeConflicts: 0 });
+  const [taskStats, setTaskStats] = useState<TaskStats>({ totalTasks: 0, completedTasks: 0 });
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [todaysTasks, setTodaysTasks] = useState<UpcomingTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,29 +144,43 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
 
       const projectMap = Object.fromEntries((allProjects || []).map(p => [p.id, p.name]));
 
-      // Fetch upcoming tasks with due dates
+      // Fetch ALL tasks for task-based completion rate
       if (projectIdsForTasks.length > 0) {
-        const { data: tasks, error: tasksError } = await supabase
+        const { data: allTasks, error: allTasksError } = await supabase
           .from("project_tasks")
           .select("id, title, due_date, priority, project_id, status")
-          .in("project_id", projectIdsForTasks)
-          .not("due_date", "is", null)
-          .neq("status", "completed")
-          .order("due_date", { ascending: true })
-          .limit(10);
+          .in("project_id", projectIdsForTasks);
 
-        if (!tasksError && tasks) {
-          const mappedTasks = tasks.map(t => ({
-            ...t,
-            project_name: projectMap[t.project_id] || "Unknown"
-          }));
+        if (!allTasksError && allTasks) {
+          // Calculate task-based completion stats
+          const completedCount = allTasks.filter(t => t.status === 'completed').length;
+          setTaskStats({
+            totalTasks: allTasks.length,
+            completedTasks: completedCount
+          });
+
+          // Filter for upcoming tasks (not completed, has due date)
+          const upcomingOnly = allTasks
+            .filter(t => t.due_date && t.status !== 'completed')
+            .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
+            .slice(0, 10)
+            .map(t => ({
+              ...t,
+              due_date: t.due_date!,
+              project_name: projectMap[t.project_id] || "Unknown"
+            }));
           
           // Separate today's tasks for Global Fleet View
-          const today = mappedTasks.filter(t => isToday(new Date(t.due_date)));
+          const today = upcomingOnly.filter(t => isToday(new Date(t.due_date)));
           setTodaysTasks(today);
-          setUpcomingTasks(mappedTasks.slice(0, 5));
+          setUpcomingTasks(upcomingOnly.slice(0, 5));
+        } else {
+          setTaskStats({ totalTasks: 0, completedTasks: 0 });
+          setUpcomingTasks([]);
+          setTodaysTasks([]);
         }
       } else {
+        setTaskStats({ totalTasks: 0, completedTasks: 0 });
         setUpcomingTasks([]);
         setTodaysTasks([]);
       }
@@ -198,7 +218,10 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
     );
   }
 
-  const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+  // Calculate completion rate based on TASKS, not project status
+  const completionRate = taskStats.totalTasks > 0 
+    ? Math.round((taskStats.completedTasks / taskStats.totalTasks) * 100) 
+    : 0;
 
   // Determine if we're in Global Fleet View mode
   const isGlobalView = !selectedProjectId;
@@ -373,9 +396,9 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Completion Rate</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Task Completion</p>
                   <p className="text-xs text-slate-500 dark:text-muted-foreground">
-                    {stats.completed} of {stats.total} completed
+                    {taskStats.completedTasks} of {taskStats.totalTasks} tasks done
                   </p>
                 </div>
               </div>
@@ -415,11 +438,11 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
                     <div className="flex gap-3 mt-2">
                       <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-xs text-slate-600 dark:text-slate-400">{stats.completed} Done</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{taskStats.completedTasks} Done</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="text-xs text-slate-600 dark:text-slate-400">{stats.draft} Draft</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{taskStats.totalTasks - taskStats.completedTasks} Pending</span>
                       </div>
                     </div>
                   </div>
