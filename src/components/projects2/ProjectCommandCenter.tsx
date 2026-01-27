@@ -44,8 +44,6 @@ import {
   ExternalLink,
   Keyboard,
   Save,
-  Clock,
-  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -74,32 +72,6 @@ interface DocumentAction {
   action: () => Promise<void> | void;
 }
 
-interface RecentDocument {
-  id: string;
-  name: string;
-  type: "ai-brief" | "full-report" | "team-report" | "quote" | "contract" | "invoice" | "task-list";
-  accessedAt: string;
-  projectId: string;
-}
-
-const RECENT_DOCS_KEY = "buildunion_recent_documents";
-const MAX_RECENT_DOCS = 5;
-
-// Helper function to format time ago
-const formatTimeAgo = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-};
 
 interface ProjectCommandCenterProps {
   projectId: string;
@@ -158,62 +130,8 @@ export const ProjectCommandCenter = ({
   // Selected state for visual feedback
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   
-  // Recent documents state
-  const [recentDocuments, setRecentDocuments] = useState<RecentDocument[]>([]);
-  
   // Double-tap detection for mobile
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
-
-  // Load recent documents from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(RECENT_DOCS_KEY);
-      if (stored) {
-        const allRecent: RecentDocument[] = JSON.parse(stored);
-        // Filter to show only documents from this project
-        const projectRecent = allRecent
-          .filter(doc => doc.projectId === projectId)
-          .slice(0, MAX_RECENT_DOCS);
-        setRecentDocuments(projectRecent);
-      }
-    } catch (error) {
-      console.error("Error loading recent documents:", error);
-    }
-  }, [projectId]);
-
-  // Function to add a document to recent history
-  const addToRecentDocuments = useCallback((docId: string, docName: string, docType: RecentDocument["type"]) => {
-    try {
-      const stored = localStorage.getItem(RECENT_DOCS_KEY);
-      let allRecent: RecentDocument[] = stored ? JSON.parse(stored) : [];
-      
-      // Remove existing entry for this document in this project
-      allRecent = allRecent.filter(doc => !(doc.id === docId && doc.projectId === projectId));
-      
-      // Add new entry at the beginning
-      const newDoc: RecentDocument = {
-        id: docId,
-        name: docName,
-        type: docType,
-        accessedAt: new Date().toISOString(),
-        projectId,
-      };
-      allRecent.unshift(newDoc);
-      
-      // Keep only last 50 documents across all projects
-      allRecent = allRecent.slice(0, 50);
-      
-      localStorage.setItem(RECENT_DOCS_KEY, JSON.stringify(allRecent));
-      
-      // Update local state with this project's recent docs
-      const projectRecent = allRecent
-        .filter(doc => doc.projectId === projectId)
-        .slice(0, MAX_RECENT_DOCS);
-      setRecentDocuments(projectRecent);
-    } catch (error) {
-      console.error("Error saving recent document:", error);
-    }
-  }, [projectId]);
 
   // Generate AI Brief and save to documents
   const generateAIBrief = useCallback(async (saveToDocuments = true) => {
@@ -446,19 +364,11 @@ export const ProjectCommandCenter = ({
     setSelectedDocumentId(action.id);
     setPreviewDocument(action);
     setIsPreviewOpen(true);
-    
-    // Track this document access
-    const docType = action.id as RecentDocument["type"];
-    addToRecentDocuments(action.id, action.name, docType);
-  }, [addToRecentDocuments]);
+  }, []);
 
   // Handle double click - open full/editable view
   const handleDoubleClick = useCallback((action: DocumentAction) => {
     setSelectedDocumentId(action.id);
-    
-    // Track this document access
-    const docType = action.id as RecentDocument["type"];
-    addToRecentDocuments(action.id, action.name, docType);
     
     if (action.id === "ai-brief") {
       if (briefContent) {
@@ -479,7 +389,7 @@ export const ProjectCommandCenter = ({
     } else {
       action.action();
     }
-  }, [briefContent, teamReportContent, generateAIBrief, generateTeamReport, onNavigateToTab, addToRecentDocuments]);
+  }, [briefContent, teamReportContent, generateAIBrief, generateTeamReport, onNavigateToTab]);
 
   // Handle mobile touch with double-tap detection
   const handleTouchEnd = useCallback((action: DocumentAction) => {
@@ -734,60 +644,6 @@ export const ProjectCommandCenter = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
-          {/* Recent Documents Section */}
-          {recentDocuments.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <History className="h-4 w-4" />
-                <span className="font-medium">Recent Documents</span>
-                <Badge variant="secondary" className="text-[10px]">
-                  {recentDocuments.length}
-                </Badge>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {recentDocuments.map((doc) => {
-                  const action = documentActions.find(a => a.id === doc.type);
-                  const Icon = action?.icon || Brain;
-                  const timeAgo = formatTimeAgo(doc.accessedAt);
-                  
-                  return (
-                    <Button
-                      key={`${doc.id}-${doc.accessedAt}`}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (action) {
-                          handleDoubleClick(action);
-                        }
-                      }}
-                      className={cn(
-                        "h-auto py-2 px-3 text-left gap-2 hover:border-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/20",
-                        "transition-all group"
-                      )}
-                    >
-                      <div className={cn(
-                        "p-1.5 rounded-md transition-colors",
-                        action?.category === "report" && "bg-amber-100 text-amber-600 group-hover:bg-amber-200",
-                        action?.category === "financial" && "bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200",
-                        action?.category === "legal" && "bg-blue-100 text-blue-600 group-hover:bg-blue-200",
-                        action?.category === "team" && "bg-purple-100 text-purple-600 group-hover:bg-purple-200"
-                      )}>
-                        <Icon className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-medium truncate max-w-[100px]">{doc.name}</span>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5" />
-                          {timeAgo}
-                        </span>
-                      </div>
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Document Grid */}
           <div className="space-y-3">
