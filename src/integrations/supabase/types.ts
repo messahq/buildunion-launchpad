@@ -183,6 +183,44 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_events: {
+        Row: {
+          contract_id: string
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_events_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           additional_terms: string | null
@@ -193,6 +231,8 @@ export type Database = {
           client_name: string | null
           client_phone: string | null
           client_signature: Json | null
+          client_signed_at: string | null
+          client_viewed_at: string | null
           contract_date: string
           contract_number: string
           contractor_address: string | null
@@ -215,6 +255,8 @@ export type Database = {
           project_id: string | null
           project_name: string | null
           scope_of_work: string | null
+          sent_to_client_at: string | null
+          share_token: string | null
           start_date: string | null
           status: string
           template_type: string | null
@@ -233,6 +275,8 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           client_signature?: Json | null
+          client_signed_at?: string | null
+          client_viewed_at?: string | null
           contract_date?: string
           contract_number: string
           contractor_address?: string | null
@@ -255,6 +299,8 @@ export type Database = {
           project_id?: string | null
           project_name?: string | null
           scope_of_work?: string | null
+          sent_to_client_at?: string | null
+          share_token?: string | null
           start_date?: string | null
           status?: string
           template_type?: string | null
@@ -273,6 +319,8 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           client_signature?: Json | null
+          client_signed_at?: string | null
+          client_viewed_at?: string | null
           contract_date?: string
           contract_number?: string
           contractor_address?: string | null
@@ -295,6 +343,8 @@ export type Database = {
           project_id?: string | null
           project_name?: string | null
           scope_of_work?: string | null
+          sent_to_client_at?: string | null
+          share_token?: string | null
           start_date?: string | null
           status?: string
           template_type?: string | null

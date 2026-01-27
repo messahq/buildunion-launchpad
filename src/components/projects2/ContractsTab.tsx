@@ -9,6 +9,11 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { 
   FileText, 
   CheckCircle2, 
@@ -23,7 +28,10 @@ import {
   FileCheck,
   Plus,
   ArrowRight,
-  X
+  X,
+  ChevronDown,
+  Eye,
+  Send,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +40,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { buildContractHTML, generatePDFBlob } from "@/lib/pdfGenerator";
 import ContractGenerator from "@/components/quick-mode/ContractGenerator";
+import { ContractStatusTracker } from "@/components/contracts/ContractStatusTracker";
 
 interface Contract {
   id: string;
@@ -70,6 +79,11 @@ interface Contract {
   contractor_signature: any | null;
   created_at: string;
   updated_at: string;
+  // Tracking fields
+  share_token: string | null;
+  sent_to_client_at: string | null;
+  client_viewed_at: string | null;
+  client_signed_at: string | null;
 }
 
 type ContractTemplateType = "custom" | "residential" | "commercial" | "renovation";
@@ -382,67 +396,104 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
           </CardHeader>
           <CardContent className="space-y-3">
             {contracts.map((contract) => (
-              <div
-                key={contract.id}
-                className={cn(
-                  "flex items-center justify-between p-4 rounded-lg border",
-                  "bg-card hover:bg-muted/30 transition-colors"
-                )}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "h-10 w-10 rounded-full flex items-center justify-center",
-                    contract.client_signature && contract.contractor_signature
-                      ? "bg-green-100 dark:bg-green-950/30"
-                      : "bg-muted"
-                  )}>
-                    <FileText className={cn(
-                      "h-5 w-5",
-                      contract.client_signature && contract.contractor_signature
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-muted-foreground"
-                    )} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium text-sm">
-                        #{contract.contract_number}
-                      </p>
-                      {getStatusBadge(contract)}
-                      {getTemplateBadge(contract.template_type)}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {format(new Date(contract.created_at), "MMM d, yyyy")}
-                      </span>
-                      {contract.total_amount && (
-                        <span className="font-medium text-foreground">
-                          {formatCurrency(contract.total_amount)}
-                        </span>
-                      )}
-                      {contract.client_name && (
-                        <span>Client: {contract.client_name}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadPDF(contract)}
-                  disabled={downloadingId === contract.id}
-                  className="gap-2"
-                >
-                  {downloadingId === contract.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
+              <Collapsible key={contract.id}>
+                <div
+                  className={cn(
+                    "p-4 rounded-lg border",
+                    "bg-card hover:bg-muted/30 transition-colors"
                   )}
-                  <span className="hidden sm:inline">Download</span>
-                </Button>
-              </div>
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "h-10 w-10 rounded-full flex items-center justify-center",
+                        contract.client_signed_at
+                          ? "bg-green-100 dark:bg-green-950/30"
+                          : contract.client_viewed_at
+                          ? "bg-blue-100 dark:bg-blue-950/30"
+                          : contract.sent_to_client_at
+                          ? "bg-amber-100 dark:bg-amber-950/30"
+                          : "bg-muted"
+                      )}>
+                        {contract.client_signed_at ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        ) : contract.client_viewed_at ? (
+                          <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        ) : contract.sent_to_client_at ? (
+                          <Send className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        ) : (
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm">
+                            #{contract.contract_number}
+                          </p>
+                          {getStatusBadge(contract)}
+                          {getTemplateBadge(contract.template_type)}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(contract.created_at), "MMM d, yyyy")}
+                          </span>
+                          {contract.total_amount && (
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(contract.total_amount)}
+                            </span>
+                          )}
+                          {contract.client_name && (
+                            <span>Client: {contract.client_name}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadPDF(contract)}
+                        disabled={downloadingId === contract.id}
+                        className="gap-2"
+                      >
+                        {downloadingId === contract.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        <span className="hidden sm:inline">Download</span>
+                      </Button>
+                      
+                      {isOwner && (
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </CollapsibleTrigger>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contract Status Tracker - Collapsible for owners */}
+                  {isOwner && (
+                    <CollapsibleContent className="pt-4 mt-4 border-t">
+                      <ContractStatusTracker
+                        contractId={contract.id}
+                        contractNumber={contract.contract_number}
+                        shareToken={contract.share_token}
+                        status={contract.status}
+                        sentToClientAt={contract.sent_to_client_at}
+                        clientViewedAt={contract.client_viewed_at}
+                        clientSignedAt={contract.client_signed_at}
+                        clientEmail={contract.client_email}
+                        onStatusChange={fetchContracts}
+                      />
+                    </CollapsibleContent>
+                  )}
+                </div>
+              </Collapsible>
             ))}
           </CardContent>
         </Card>
