@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -42,6 +42,7 @@ import {
   Eye,
   Pencil,
   ExternalLink,
+  Keyboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -309,7 +310,7 @@ export const ProjectCommandCenter = ({
     }
   }, [briefContent, generateAIBrief]);
 
-  // Document Actions with preview content
+  // Document Actions with preview content - defined before keyboard handler
   const documentActions: DocumentAction[] = [
     {
       id: "ai-brief",
@@ -397,6 +398,57 @@ export const ProjectCommandCenter = ({
     ? documentActions 
     : documentActions.filter(a => a.category === activeDocumentCategory);
 
+  // Keyboard shortcuts: Enter = preview, Ctrl+Enter = full view
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if we have a selected document
+      if (!selectedDocumentId) return;
+      
+      // Don't handle if we're in a dialog or input
+      const activeElement = document.activeElement;
+      if (
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA" ||
+        isPreviewOpen ||
+        isBriefDialogOpen
+      ) {
+        return;
+      }
+
+      const selectedAction = documentActions.find(a => a.id === selectedDocumentId);
+      if (!selectedAction) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) {
+          // Ctrl+Enter: Open full view
+          handleDoubleClick(selectedAction);
+        } else {
+          // Enter: Open preview
+          handleSingleClick(selectedAction);
+        }
+      } else if (e.key === "Escape") {
+        // Clear selection
+        setSelectedDocumentId(null);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        // Navigate to next document
+        e.preventDefault();
+        const currentIndex = filteredActions.findIndex(a => a.id === selectedDocumentId);
+        const nextIndex = (currentIndex + 1) % filteredActions.length;
+        setSelectedDocumentId(filteredActions[nextIndex].id);
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        // Navigate to previous document
+        e.preventDefault();
+        const currentIndex = filteredActions.findIndex(a => a.id === selectedDocumentId);
+        const prevIndex = currentIndex <= 0 ? filteredActions.length - 1 : currentIndex - 1;
+        setSelectedDocumentId(filteredActions[prevIndex].id);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedDocumentId, documentActions, filteredActions, handleSingleClick, handleDoubleClick, isPreviewOpen, isBriefDialogOpen]);
+
   return (
     <>
       {/* Command Center Card */}
@@ -412,8 +464,12 @@ export const ProjectCommandCenter = ({
                   Project Command Center
                   <ProBadge tier="pro" size="sm" />
                 </CardTitle>
-                <CardDescription>
-                  Click to preview • Double-click to open full view
+                <CardDescription className="flex items-center gap-2">
+                  <span>Click to preview • Double-click to open</span>
+                  <Badge variant="outline" className="text-[10px] gap-1">
+                    <Keyboard className="h-2.5 w-2.5" />
+                    Enter / Ctrl+Enter
+                  </Badge>
                 </CardDescription>
               </div>
             </div>
@@ -532,12 +588,19 @@ export const ProjectCommandCenter = ({
                       </div>
                     </div>
 
-                    {/* Selection hint */}
+                    {/* Selection hint with keyboard shortcuts */}
                     {isSelected && (
-                      <div className="mt-2 pt-2 border-t border-amber-200 flex items-center gap-2 text-xs text-amber-600">
-                        <Eye className="h-3 w-3" />
-                        <span>Preview mode</span>
-                        <span className="text-muted-foreground">• Double-click to edit</span>
+                      <div className="mt-2 pt-2 border-t border-amber-200 flex items-center justify-between text-xs text-amber-600">
+                        <div className="flex items-center gap-2">
+                          <Eye className="h-3 w-3" />
+                          <span>Selected</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd>
+                          <span>preview</span>
+                          <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono ml-1">Ctrl+↵</kbd>
+                          <span>open</span>
+                        </div>
                       </div>
                     )}
 
@@ -594,8 +657,12 @@ export const ProjectCommandCenter = ({
                       <TooltipTrigger asChild>
                         <div className="group">{cardContent}</div>
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs">
-                        Click to preview • Double-click to open
+                      <TooltipContent side="top" className="text-xs flex flex-col gap-1">
+                        <span>Click to preview • Double-click to open</span>
+                        <span className="text-muted-foreground">
+                          <kbd className="px-1 bg-muted rounded font-mono">Enter</kbd> preview • 
+                          <kbd className="px-1 bg-muted rounded font-mono ml-1">Ctrl+Enter</kbd> open
+                        </span>
                       </TooltipContent>
                     </Tooltip>
                   );
