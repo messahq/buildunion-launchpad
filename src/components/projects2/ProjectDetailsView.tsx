@@ -1790,7 +1790,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         <TabsContent value="materials" className="mt-6">
           <MaterialCalculationTab 
             materials={(() => {
-              // Aggregate materials from "Order" tasks
+              // First check if we have saved line_items in the summary
+              const savedLineItems = summary?.line_items as { materials?: Array<{ item: string; quantity: number; unit: string; unitPrice: number }> } | null;
+              if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
+                return savedLineItems.materials;
+              }
+              
+              // Otherwise aggregate materials from "Order" tasks
               type CostEntry = { item: string; quantity: number; unit: string; unitPrice: number };
               const materialMap: Record<string, CostEntry> = {};
               
@@ -1817,7 +1823,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               return result;
             })()}
             labor={(() => {
-              // Aggregate labor from "Install" tasks
+              // First check if we have saved line_items in the summary
+              const savedLineItems = summary?.line_items as { labor?: Array<{ item: string; quantity: number; unit: string; unitPrice: number }> } | null;
+              if (savedLineItems?.labor && savedLineItems.labor.length > 0) {
+                return savedLineItems.labor;
+              }
+              
+              // Otherwise aggregate labor from "Install" tasks
               type CostEntry = { item: string; quantity: number; unit: string; unitPrice: number };
               const laborMap: Record<string, CostEntry> = {};
               
