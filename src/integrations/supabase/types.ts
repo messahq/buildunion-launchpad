@@ -96,6 +96,7 @@ export type Database = {
           is_union_member: boolean | null
           is_verified: boolean | null
           latitude: number | null
+          location_status: string | null
           location_updated_at: string | null
           longitude: number | null
           phone: string | null
@@ -131,6 +132,7 @@ export type Database = {
           is_union_member?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
+          location_status?: string | null
           location_updated_at?: string | null
           longitude?: number | null
           phone?: string | null
@@ -166,6 +168,7 @@ export type Database = {
           is_union_member?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
+          location_status?: string | null
           location_updated_at?: string | null
           longitude?: number | null
           phone?: string | null

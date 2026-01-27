@@ -93,8 +93,32 @@ function TeamMapWidgetInner({
   const { t } = useTranslation();
   const { user } = useAuth();
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<"on_site" | "en_route" | "away">("away");
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Fetch current user's status on mount
+  const fetchCurrentStatus = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from("bu_profiles")
+        .select("location_status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data?.location_status) {
+        setCurrentStatus(data.location_status as "on_site" | "en_route" | "away");
+      }
+    } catch (error) {
+      console.error("Error fetching status:", error);
+    }
+  }, [user]);
+
+  // Fetch status on mount
+  useState(() => {
+    fetchCurrentStatus();
+  });
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
@@ -194,6 +218,30 @@ function TeamMapWidgetInner({
         maximumAge: 0,
       }
     );
+  };
+
+  const handleStatusChange = async (newStatus: "on_site" | "en_route" | "away") => {
+    if (!user || newStatus === currentStatus) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from("bu_profiles")
+        .update({ location_status: newStatus })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setCurrentStatus(newStatus);
+      toast.success(t("location.statusUpdated", "Status updated to {{status}}", { 
+        status: getStatusLabel(newStatus) 
+      }));
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error(t("location.statusUpdateFailed", "Failed to update status"));
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const renderMapContent = () => {
@@ -332,26 +380,55 @@ function TeamMapWidgetInner({
           </div>
         </div>
 
-        {/* Share Location Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full mt-3 text-xs h-9 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
-          onClick={handleShareLocation}
-          disabled={isUpdatingLocation}
-        >
-          {isUpdatingLocation ? (
-            <>
-              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-              {t("location.updating", "Updating...")}
-            </>
-          ) : (
-            <>
-              <MapPinned className="h-3 w-3 mr-2" />
-              {t("location.shareMyLocation", "Share My Location")}
-            </>
-          )}
-        </Button>
+        {/* Share Location & Status */}
+        <div className="mt-3 space-y-2">
+          {/* Status Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border border-cyan-200 dark:border-cyan-800">
+            <span className="text-xs text-muted-foreground px-2 flex-shrink-0">{t("location.status", "Status")}:</span>
+            <div className="flex gap-1 flex-1">
+              {(["on_site", "en_route", "away"] as const).map((status) => (
+                <Button
+                  key={status}
+                  variant={currentStatus === status ? "default" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "flex-1 text-xs h-7 px-2",
+                    currentStatus === status && status === "on_site" && "bg-green-600 hover:bg-green-700",
+                    currentStatus === status && status === "en_route" && "bg-blue-600 hover:bg-blue-700",
+                    currentStatus === status && status === "away" && "bg-slate-500 hover:bg-slate-600"
+                  )}
+                  onClick={() => handleStatusChange(status)}
+                  disabled={isUpdatingStatus}
+                >
+                  {status === "on_site" && t("location.onSite", "On Site")}
+                  {status === "en_route" && t("location.enRoute", "En Route")}
+                  {status === "away" && t("location.away", "Away")}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Share Location Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs h-9 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
+            onClick={handleShareLocation}
+            disabled={isUpdatingLocation}
+          >
+            {isUpdatingLocation ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                {t("location.updating", "Updating...")}
+              </>
+            ) : (
+              <>
+                <MapPinned className="h-3 w-3 mr-2" />
+                {t("location.shareMyLocation", "Share My Location")}
+              </>
+            )}
+          </Button>
+        </div>
 
         {/* Conflict legend for premium users */}
         {isPremium && hasConflicts && (
