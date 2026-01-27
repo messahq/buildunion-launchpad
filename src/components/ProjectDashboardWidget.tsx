@@ -34,7 +34,11 @@ interface UpcomingTask {
   project_name: string;
 }
 
-const ProjectDashboardWidget = () => {
+interface ProjectDashboardWidgetProps {
+  onTaskClick?: (projectId: string, navigateToTasks?: boolean) => void;
+}
+
+const ProjectDashboardWidget = ({ onTaskClick }: ProjectDashboardWidgetProps = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<ProjectStats>({ total: 0, draft: 0, active: 0, completed: 0 });
@@ -241,7 +245,13 @@ const ProjectDashboardWidget = () => {
               {upcomingTasks.map(task => (
                 <div 
                   key={task.id}
-                  onClick={() => navigate(`/buildunion/project/${task.project_id}`)}
+                  onClick={() => {
+                    if (onTaskClick) {
+                      onTaskClick(task.project_id, true);
+                    } else {
+                      navigate(`/buildunion/project/${task.project_id}`);
+                    }
+                  }}
                   className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
                     isOverdue(task.due_date) 
                       ? 'bg-red-50 border-red-200 hover:border-red-300' 
