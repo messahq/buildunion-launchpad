@@ -52,7 +52,40 @@ export default function DocumentsPane({
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [signedImageUrls, setSignedImageUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Generate signed URLs for site images
+  const generateSignedUrls = useCallback(async (paths: string[]) => {
+    if (!paths.length) return;
+    
+    const urlPromises = paths.map(async (path) => {
+      const { data, error } = await supabase.storage
+        .from("project-documents")
+        .createSignedUrl(path, 3600); // 1 hour expiry
+      
+      if (!error && data?.signedUrl) {
+        return { path, url: data.signedUrl };
+      }
+      return null;
+    });
+
+    const results = await Promise.all(urlPromises);
+    const urlMap: Record<string, string> = {};
+    results.forEach((result) => {
+      if (result) {
+        urlMap[result.path] = result.url;
+      }
+    });
+    setSignedImageUrls(urlMap);
+  }, []);
+
+  // Generate signed URLs when site images change
+  useEffect(() => {
+    if (siteImages?.length) {
+      generateSignedUrls(siteImages);
+    }
+  }, [siteImages, generateSignedUrls]);
 
   // Fetch project documents
   const fetchDocuments = useCallback(async () => {
@@ -318,22 +351,31 @@ export default function DocumentsPane({
               Site Photos
             </h4>
             <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-              {siteImages.slice(0, 8).map((path, i) => (
-                <div 
-                  key={i}
-                  className="aspect-square rounded-lg bg-muted/50 border overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                  onClick={() => setSelectedImage(`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${path}`)}
-                >
-                  <img 
-                    src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${path}`}
-                    alt={`Site image ${i + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-              ))}
+              {siteImages.slice(0, 8).map((path, i) => {
+                const imageUrl = signedImageUrls[path];
+                return (
+                  <div 
+                    key={i}
+                    className="aspect-square rounded-lg bg-muted/50 border overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                    onClick={() => imageUrl && setSelectedImage(imageUrl)}
+                  >
+                    {imageUrl ? (
+                      <img 
+                        src={imageUrl}
+                        alt={`Site image ${i + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {siteImages.length > 8 && (
                 <div className="aspect-square rounded-lg bg-muted/50 border flex items-center justify-center">
                   <span className="text-sm text-muted-foreground">+{siteImages.length - 8}</span>
@@ -365,11 +407,15 @@ export default function DocumentsPane({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        window.open(
-                          `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${doc.file_path}`,
-                          "_blank"
-                        );
+                      onClick={async () => {
+                        const { data, error } = await supabase.storage
+                          .from("project-documents")
+                          .createSignedUrl(doc.file_path, 3600);
+                        if (!error && data?.signedUrl) {
+                          window.open(data.signedUrl, "_blank");
+                        } else {
+                          toast.error("Failed to open document");
+                        }
                       }}
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -411,11 +457,15 @@ export default function DocumentsPane({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        window.open(
-                          `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/project-documents/${doc.file_path}`,
-                          "_blank"
-                        );
+                      onClick={async () => {
+                        const { data, error } = await supabase.storage
+                          .from("project-documents")
+                          .createSignedUrl(doc.file_path, 3600);
+                        if (!error && data?.signedUrl) {
+                          window.open(data.signedUrl, "_blank");
+                        } else {
+                          toast.error("Failed to open document");
+                        }
                       }}
                     >
                       <ExternalLink className="h-4 w-4" />
