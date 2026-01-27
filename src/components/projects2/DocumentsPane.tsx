@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   FileText, 
   Image, 
@@ -10,10 +11,14 @@ import {
   Plus,
   ExternalLink,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Save,
+  Pencil,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +39,7 @@ interface DocumentsPaneProps {
   siteImages: string[] | null;
   aiAnalysis?: AIAnalysis | null;
   className?: string;
+  onMaterialsUpdated?: () => void;
 }
 
 interface ProjectDocument {
@@ -44,18 +50,39 @@ interface ProjectDocument {
   uploaded_at: string;
 }
 
+interface ConsolidatedMaterial {
+  id: string;
+  item: string;
+  baseQuantity: number;
+  unit: string;
+  quantityWithWaste: number;
+  isEditing?: boolean;
+}
+
 // Default waste percentage for materials
 const WASTE_PERCENTAGE = 10;
+
+// Essential material categories to consolidate into
+const ESSENTIAL_CATEGORIES = [
+  { pattern: /laminate|flooring/i, label: "Laminate Flooring", unit: "sq ft" },
+  { pattern: /underlayment|underlay/i, label: "Underlayment", unit: "sq ft" },
+  { pattern: /baseboard|trim|moulding/i, label: "Baseboard Trim", unit: "linear ft" },
+  { pattern: /adhesive|glue|supplies|nails|screws/i, label: "Adhesive & Supplies", unit: "units" },
+];
 
 export default function DocumentsPane({ 
   projectId, 
   siteImages, 
   aiAnalysis,
-  className 
+  className,
+  onMaterialsUpdated
 }: DocumentsPaneProps) {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [editingMaterials, setEditingMaterials] = useState<ConsolidatedMaterial[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch project documents
   useEffect(() => {
@@ -80,6 +107,73 @@ export default function DocumentsPane({
     fetchDocuments();
   }, [projectId]);
 
+  // Consolidate materials into essential categories with 10% waste
+  const consolidatedMaterials = useMemo((): ConsolidatedMaterial[] => {
+    if (!aiAnalysis?.materials?.length) return [];
+
+    const consolidated: Record<string, { quantity: number; unit: string }> = {};
+
+    // Initialize all essential categories
+    ESSENTIAL_CATEGORIES.forEach(cat => {
+      consolidated[cat.label] = { quantity: 0, unit: cat.unit };
+    });
+
+    // Consolidate materials by matching to categories
+    aiAnalysis.materials.forEach(material => {
+      for (const cat of ESSENTIAL_CATEGORIES) {
+        if (cat.pattern.test(material.item)) {
+          // Only add quantity if it's greater than 1 (skip "1 unit" placeholder tasks)
+          if (material.quantity > 1) {
+            // Use max quantity to avoid duplicates
+            if (material.quantity > consolidated[cat.label].quantity) {
+              consolidated[cat.label].quantity = material.quantity;
+            }
+          }
+          break;
+        }
+      }
+    });
+
+    // If no laminate detected but we have area, use that
+    if (consolidated["Laminate Flooring"].quantity === 0 && aiAnalysis.area) {
+      consolidated["Laminate Flooring"].quantity = aiAnalysis.area;
+    }
+
+    // If no underlayment detected, use laminate area + 10%
+    if (consolidated["Underlayment"].quantity === 0 && consolidated["Laminate Flooring"].quantity > 0) {
+      consolidated["Underlayment"].quantity = Math.ceil(consolidated["Laminate Flooring"].quantity * 1.08);
+    }
+
+    // Estimate baseboard if not detected (perimeter calculation from area)
+    if (consolidated["Baseboard Trim"].quantity === 0 && aiAnalysis.area) {
+      // Rough estimate: sqrt(area) * 4 for perimeter
+      const estimatedPerimeter = Math.ceil(Math.sqrt(aiAnalysis.area) * 4);
+      consolidated["Baseboard Trim"].quantity = estimatedPerimeter;
+    }
+
+    // Default adhesive & supplies if none detected
+    if (consolidated["Adhesive & Supplies"].quantity === 0 && aiAnalysis.area) {
+      // Roughly 1 unit per 100 sq ft
+      consolidated["Adhesive & Supplies"].quantity = Math.max(5, Math.ceil(aiAnalysis.area / 100));
+    }
+
+    // Convert to array and add waste calculation
+    return ESSENTIAL_CATEGORIES.map((cat, index) => ({
+      id: `mat-${index}`,
+      item: cat.label,
+      baseQuantity: consolidated[cat.label].quantity,
+      unit: consolidated[cat.label].unit,
+      quantityWithWaste: Math.ceil(consolidated[cat.label].quantity * (1 + WASTE_PERCENTAGE / 100)),
+    })).filter(m => m.baseQuantity > 0);
+  }, [aiAnalysis]);
+
+  // Initialize editing materials when consolidated changes
+  useEffect(() => {
+    if (consolidatedMaterials.length > 0 && editingMaterials.length === 0) {
+      setEditingMaterials(consolidatedMaterials);
+    }
+  }, [consolidatedMaterials, editingMaterials.length]);
+
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (['pdf'].includes(ext || '')) return <FileText className="h-4 w-4 text-red-500" />;
@@ -94,15 +188,80 @@ export default function DocumentsPane({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Calculate materials with waste
-  const materialsWithWaste = aiAnalysis?.materials?.map(m => ({
-    ...m,
-    quantityWithWaste: Math.ceil(m.quantity * (1 + WASTE_PERCENTAGE / 100)),
-  })) || [];
+  // Handle quantity change in edit mode
+  const handleQuantityChange = (id: string, newQuantity: number) => {
+    setEditingMaterials(prev => prev.map(m => 
+      m.id === id 
+        ? { 
+            ...m, 
+            baseQuantity: newQuantity,
+            quantityWithWaste: Math.ceil(newQuantity * (1 + WASTE_PERCENTAGE / 100))
+          } 
+        : m
+    ));
+  };
+
+  // Save materials to database
+  const saveMaterials = useCallback(async () => {
+    if (!projectId) return;
+    
+    setIsSaving(true);
+    try {
+      // Convert to the format expected by the database
+      const materialsToSave = editingMaterials.map(m => ({
+        item: m.item,
+        quantity: m.baseQuantity,
+        unit: m.unit,
+        userEdited: true,
+      }));
+
+      // Get current summary
+      const { data: summary, error: fetchError } = await supabase
+        .from("project_summaries")
+        .select("photo_estimate, ai_workflow_config")
+        .eq("project_id", projectId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      // Update photo_estimate with edited materials
+      const currentPhotoEstimate = (summary?.photo_estimate as any) || {};
+      const updatedPhotoEstimate = {
+        ...currentPhotoEstimate,
+        materials: materialsToSave,
+        materialsEditedAt: new Date().toISOString(),
+      };
+
+      const { error: updateError } = await supabase
+        .from("project_summaries")
+        .update({
+          photo_estimate: updatedPhotoEstimate,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("project_id", projectId);
+
+      if (updateError) throw updateError;
+
+      toast.success("Materials saved successfully!");
+      setIsEditMode(false);
+      onMaterialsUpdated?.();
+    } catch (error) {
+      console.error("Error saving materials:", error);
+      toast.error("Failed to save materials");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [projectId, editingMaterials, onMaterialsUpdated]);
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingMaterials(consolidatedMaterials);
+    setIsEditMode(false);
+  };
 
   const totalImages = (siteImages?.length || 0);
-  const totalDocuments = documents.length;
   const pdfDocuments = documents.filter(d => d.file_name.toLowerCase().endsWith('.pdf'));
+  const displayMaterials = isEditMode ? editingMaterials : (editingMaterials.length > 0 ? editingMaterials : consolidatedMaterials);
 
   return (
     <Card className={cn("border-border", className)}>
@@ -193,16 +352,55 @@ export default function DocumentsPane({
           </div>
         )}
 
-        {/* Materials List with Waste Calculation */}
-        {materialsWithWaste.length > 0 && (
+        {/* Essential Materials List with Waste Calculation - Editable */}
+        {displayMaterials.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <Package className="h-4 w-4 text-amber-500" />
-              Extracted Materials 
-              <Badge variant="outline" className="text-[10px] ml-1">
-                +{WASTE_PERCENTAGE}% waste included
-              </Badge>
-            </h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <Package className="h-4 w-4 text-amber-500" />
+                Essential Materials 
+                <Badge variant="outline" className="text-[10px] ml-1 bg-green-50 text-green-700 border-green-200">
+                  +{WASTE_PERCENTAGE}% waste included
+                </Badge>
+              </h4>
+              <div className="flex items-center gap-2">
+                {isEditMode ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={cancelEditing}
+                      disabled={isSaving}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={saveMaterials}
+                      disabled={isSaving}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4 mr-1" />
+                      )}
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditMode(true)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+            </div>
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
@@ -214,14 +412,29 @@ export default function DocumentsPane({
                   </tr>
                 </thead>
                 <tbody>
-                  {materialsWithWaste.map((m, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="px-3 py-2 text-foreground">{m.item}</td>
+                  {displayMaterials.map((m) => (
+                    <tr key={m.id} className="border-t">
+                      <td className="px-3 py-2 text-foreground font-medium">{m.item}</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">
-                        {m.quantity} {m.unit}
+                        {isEditMode ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <Input
+                              type="number"
+                              value={m.baseQuantity}
+                              onChange={(e) => handleQuantityChange(m.id, parseInt(e.target.value) || 0)}
+                              className="w-24 h-8 text-right"
+                              min={0}
+                            />
+                            <span className="text-xs w-16">{m.unit}</span>
+                          </div>
+                        ) : (
+                          <>
+                            {m.baseQuantity.toLocaleString()} {m.unit}
+                          </>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-right font-medium text-amber-600 dark:text-amber-400">
-                        {m.quantityWithWaste} {m.unit}
+                        {m.quantityWithWaste.toLocaleString()} {m.unit}
                       </td>
                       <td className="px-3 py-2 text-center">
                         <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-600 border-green-200">
