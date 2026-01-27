@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users, Download } from "lucide-react";
 import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
@@ -25,6 +25,9 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import SwipeableProjectCard from "@/components/SwipeableProjectCard";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ExportDialog, ExportOptions, ExportFormat } from "@/components/ExportDialog";
+import { exportToCSV, exportToJSON, projectExportColumns, generateExportFilename } from "@/lib/exportUtils";
+import { downloadPDF, buildProjectSummaryHTML } from "@/lib/pdfGenerator";
 
 interface SavedProject {
   id: string;
@@ -505,6 +508,85 @@ const BuildUnionProjects2 = () => {
     setShowQuestionnaire(true);
   };
 
+  // Handle project export
+  const handleProjectExport = async (format: ExportFormat, options: ExportOptions) => {
+    const allProjects = [...projects, ...sharedProjects.map(p => ({ ...p, is_shared: true }))];
+    
+    if (allProjects.length === 0) {
+      throw new Error("No projects to export");
+    }
+
+    const filename = generateExportFilename("buildunion_projects");
+
+    if (format === "csv") {
+      const exportData = allProjects.map(p => ({
+        ...p,
+        is_shared: p.is_shared ? "Yes" : "No",
+      }));
+      exportToCSV(exportData, [
+        ...projectExportColumns,
+        { key: "is_shared", header: "Shared Project" },
+      ], filename);
+    } else if (format === "json") {
+      exportToJSON(allProjects, filename);
+    } else if (format === "pdf") {
+      // Simple PDF export for projects list
+      const formatCurrency = (amount: number) => 
+        new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(amount);
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Projects Export</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; padding: 32px; }
+            h1 { font-size: 24px; margin-bottom: 24px; color: #f59e0b; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+            th { background: #f8fafc; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+            td { font-size: 14px; }
+            .status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+            .status-draft { background: #f1f5f9; color: #475569; }
+            .status-active { background: #dcfce7; color: #166534; }
+          </style>
+        </head>
+        <body>
+          <h1>📁 BuildUnion Projects</h1>
+          <p style="color: #64748b; margin-bottom: 16px;">Exported on ${new Date().toLocaleDateString("en-CA")}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Address</th>
+                <th>Trade</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${allProjects.map(p => `
+                <tr>
+                  <td><strong>${p.name}</strong>${p.is_shared ? ' <span style="color: #3b82f6;">(Shared)</span>' : ''}</td>
+                  <td>${p.address || '-'}</td>
+                  <td>${p.trade?.replace(/_/g, ' ') || '-'}</td>
+                  <td><span class="status status-${p.status}">${p.status}</span></td>
+                  <td>${new Date(p.created_at).toLocaleDateString("en-CA")}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <p style="margin-top: 24px; font-size: 12px; color: #94a3b8;">Total: ${allProjects.length} projects</p>
+        </body>
+        </html>
+      `;
+      
+      await downloadPDF(htmlContent, { filename: `${filename}.pdf` });
+    }
+  };
+
   return (
     <main className="bg-background min-h-screen transition-colors">
       <BuildUnionHeader />
@@ -585,6 +667,21 @@ const BuildUnionProjects2 = () => {
                       {subscription.tier.toUpperCase()} • Up to {TEAM_LIMITS[subscription.tier] === Infinity ? "∞" : TEAM_LIMITS[subscription.tier]} team members
                     </span>
                   )}
+                  
+                  {/* Export Button */}
+                  {projects.length > 0 && (
+                    <ExportDialog
+                      dataType="projects"
+                      onExport={handleProjectExport}
+                      trigger={
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Download className="h-4 w-4" />
+                          <span className="hidden sm:inline">Export</span>
+                        </Button>
+                      }
+                    />
+                  )}
+                  
                   <Button 
                     onClick={() => setShowQuestionnaire(true)}
                     disabled={!user}
