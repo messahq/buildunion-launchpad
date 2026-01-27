@@ -873,9 +873,10 @@ interface TaskItemProps {
   getPriorityBadge: (priority: string) => JSX.Element;
   getStatusInfo: (status: string) => { value: string; label: string; icon: any; color: string };
   getDueDateInfo?: (dueDateStr: string | null) => DueDateInfo | null;
+  isLocked?: boolean;
 }
 
-const TaskItem = ({ task, isOwner, members, onEdit, onDelete, onStatusChange, onAssigneeChange, getPriorityBadge, getStatusInfo, getDueDateInfo }: TaskItemProps) => {
+const TaskItem = ({ task, isOwner, members, onEdit, onDelete, onStatusChange, onAssigneeChange, getPriorityBadge, getStatusInfo, getDueDateInfo, isLocked = false }: TaskItemProps) => {
   const statusInfo = getStatusInfo(task.status);
   const StatusIcon = statusInfo.icon;
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "completed";
@@ -889,21 +890,27 @@ const TaskItem = ({ task, isOwner, members, onEdit, onDelete, onStatusChange, on
       ${isOverdue ? "border-red-200" : "border-slate-200"}
     `}>
       <div className="flex-shrink-0 pt-0.5">
-        <Select value={task.status} onValueChange={onStatusChange}>
-          <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent">
-            <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUSES.map((s) => (
-              <SelectItem key={s.value} value={s.value}>
-                <div className="flex items-center gap-2">
-                  <s.icon className={`h-4 w-4 ${s.color}`} />
-                  <span>{s.label}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isLocked ? (
+          <div className="h-6 w-6 flex items-center justify-center" title="Complete previous phase first">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          </div>
+        ) : (
+          <Select value={task.status} onValueChange={onStatusChange}>
+            <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent">
+              <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUSES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  <div className="flex items-center gap-2">
+                    <s.icon className={`h-4 w-4 ${s.color}`} />
+                    <span>{s.label}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -982,7 +989,7 @@ const TaskItem = ({ task, isOwner, members, onEdit, onDelete, onStatusChange, on
         </div>
       </div>
 
-      {isOwner && (
+      {isOwner && !isLocked && (
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -1124,16 +1131,16 @@ const PhaseSection = ({
               </div>
             </div>
 
-            {/* Right side: Progress info */}
+            {/* Right side: Status indicator showing phase name */}
             <div className="flex items-center gap-4">
-              <div className="text-right text-xs text-muted-foreground">
-                Progress
-              </div>
+              <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wide", colors.text)}>
+                {phaseName}
+              </Badge>
               <div className="text-right font-medium">
                 {progress}%
               </div>
               <div className="text-right text-xs text-muted-foreground">
-                {tasks.length} tasks
+                {completedCount}/{tasks.length}
               </div>
             </div>
           </div>
@@ -1165,6 +1172,7 @@ const PhaseSection = ({
                 getPriorityBadge={getPriorityBadge}
                 getStatusInfo={getStatusInfo}
                 getDueDateInfo={getDueDateInfo}
+                isLocked={isLocked}
               />
             ))}
           </div>
