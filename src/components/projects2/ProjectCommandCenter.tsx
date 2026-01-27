@@ -176,6 +176,14 @@ export const ProjectCommandCenter = ({
   const [activeDocumentCategory, setActiveDocumentCategory] = useState<string>("all");
   const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
   
+  // Editable content states for reports
+  const [editableBriefContent, setEditableBriefContent] = useState<string>("");
+  const [editableTeamReportContent, setEditableTeamReportContent] = useState<string>("");
+  const [isEditingBrief, setIsEditingBrief] = useState(false);
+  const [isEditingTeamReport, setIsEditingTeamReport] = useState(false);
+  const [isSavingBrief, setIsSavingBrief] = useState(false);
+  const [isSavingTeamReport, setIsSavingTeamReport] = useState(false);
+  
   // Preview state
   const [previewDocument, setPreviewDocument] = useState<DocumentAction | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -675,11 +683,116 @@ export const ProjectCommandCenter = ({
 
   // Email Brief
   const emailBrief = useCallback(() => {
-    if (!briefContent) return;
+    const contentToEmail = isEditingBrief ? editableBriefContent : briefContent;
+    if (!contentToEmail) return;
     const subject = encodeURIComponent(`Project Brief: ${projectName}`);
-    const body = encodeURIComponent(`Project Brief for ${projectName}\n\n${briefContent}\n\n---\nGenerated with BuildUnion AI`);
+    const body = encodeURIComponent(`Project Brief for ${projectName}\n\n${contentToEmail}\n\n---\nGenerated with BuildUnion AI`);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  }, [briefContent, projectName]);
+  }, [briefContent, editableBriefContent, isEditingBrief, projectName]);
+
+  // Save edited Brief
+  const saveEditedBrief = useCallback(async () => {
+    if (!editableBriefContent.trim()) {
+      toast.error("Content cannot be empty");
+      return;
+    }
+    
+    setIsSavingBrief(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to save");
+        return;
+      }
+
+      // Save to documents
+      const result = await saveAIBriefToProject(
+        projectId,
+        session.user.id,
+        editableBriefContent,
+        projectName
+      );
+      
+      if (result.success) {
+        // Update the main content
+        setBriefContent(editableBriefContent);
+        setIsEditingBrief(false);
+        toast.success("Brief saved to Documents!");
+      } else {
+        toast.error("Failed to save brief");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save brief");
+    } finally {
+      setIsSavingBrief(false);
+    }
+  }, [editableBriefContent, projectId, projectName]);
+
+  // Save edited Team Report
+  const saveEditedTeamReport = useCallback(async () => {
+    if (!editableTeamReportContent.trim()) {
+      toast.error("Content cannot be empty");
+      return;
+    }
+    
+    setIsSavingTeamReport(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to save");
+        return;
+      }
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.md`;
+      const blob = new Blob([editableTeamReportContent], { type: 'text/markdown' });
+      
+      const result = await saveDocumentToProject({
+        projectId,
+        userId: session.user.id,
+        fileName,
+        fileBlob: blob,
+        documentType: 'team-report'
+      });
+      
+      if (result.success) {
+        setTeamReportContent(editableTeamReportContent);
+        setIsEditingTeamReport(false);
+        toast.success("Team Report saved to Documents!");
+      } else {
+        toast.error("Failed to save report");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save report");
+    } finally {
+      setIsSavingTeamReport(false);
+    }
+  }, [editableTeamReportContent, projectId, projectName]);
+
+  // Start editing brief
+  const startEditingBrief = useCallback(() => {
+    setEditableBriefContent(briefContent || "");
+    setIsEditingBrief(true);
+  }, [briefContent]);
+
+  // Start editing team report
+  const startEditingTeamReport = useCallback(() => {
+    setEditableTeamReportContent(teamReportContent || "");
+    setIsEditingTeamReport(true);
+  }, [teamReportContent]);
+
+  // Cancel editing
+  const cancelEditingBrief = useCallback(() => {
+    setIsEditingBrief(false);
+    setEditableBriefContent("");
+  }, []);
+
+  const cancelEditingTeamReport = useCallback(() => {
+    setIsEditingTeamReport(false);
+    setEditableTeamReportContent("");
+  }, []);
 
   // Handle single click - show preview
   const handleSingleClick = useCallback((action: DocumentAction) => {
@@ -1504,9 +1617,14 @@ export const ProjectCommandCenter = ({
                           <Eye className="h-3 w-3" />
                           Preview
                         </Badge>
+                      ) : isEditingBrief ? (
+                        <Badge className="gap-1 ml-2 bg-gradient-to-r from-green-500 to-emerald-500">
+                          <Pencil className="h-3 w-3" />
+                          Editing
+                        </Badge>
                       ) : (
                         <Badge className="gap-1 ml-2 bg-gradient-to-r from-amber-500 to-cyan-500">
-                          <Pencil className="h-3 w-3" />
+                          <Eye className="h-3 w-3" />
                           Full View
                         </Badge>
                       )}
@@ -1523,8 +1641,12 @@ export const ProjectCommandCenter = ({
                       )}
                     </DialogDescription>
                   </div>
-                  {!isPreviewMode && (
+                  {!isPreviewMode && !isEditingBrief && (
                     <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={startEditingBrief}>
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
                       <Button variant="outline" size="sm" onClick={copyBriefToClipboard}>
                         <Copy className="h-4 w-4 mr-1" />
                         Copy
@@ -1539,11 +1661,31 @@ export const ProjectCommandCenter = ({
                       </Button>
                     </div>
                   )}
+                  {isEditingBrief && (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={cancelEditingBrief}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        className="gap-1 bg-gradient-to-r from-green-500 to-emerald-500"
+                        onClick={saveEditedBrief}
+                        disabled={isSavingBrief}
+                      >
+                        {isSavingBrief ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        Save & Update
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </DialogHeader>
 
               <ScrollArea className={cn("pr-4", isPreviewMode ? "max-h-[40vh]" : "max-h-[60vh]")}>
-                {!isPreviewMode && briefMetadata && (
+                {!isPreviewMode && briefMetadata && !isEditingBrief && (
                   <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
                     <Badge variant="secondary">
                       📊 {briefMetadata.completionRate}% Complete
@@ -1568,15 +1710,24 @@ export const ProjectCommandCenter = ({
                   </div>
                 )}
 
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  {briefContent ? (
-                    <ReactMarkdown>
-                      {isPreviewMode ? briefContent.substring(0, 800) + "..." : briefContent}
-                    </ReactMarkdown>
-                  ) : (
-                    <p className="text-muted-foreground">No content available</p>
-                  )}
-                </div>
+                {isEditingBrief ? (
+                  <textarea
+                    className="w-full min-h-[400px] p-4 border rounded-lg font-mono text-sm resize-y bg-background"
+                    value={editableBriefContent}
+                    onChange={(e) => setEditableBriefContent(e.target.value)}
+                    placeholder="Edit your brief content here..."
+                  />
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    {briefContent ? (
+                      <ReactMarkdown>
+                        {isPreviewMode ? briefContent.substring(0, 800) + "..." : briefContent}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="text-muted-foreground">No content available</p>
+                    )}
+                  </div>
+                )}
               </ScrollArea>
 
               {isPreviewMode ? (
@@ -1598,20 +1749,29 @@ export const ProjectCommandCenter = ({
                     </Button>
                   </div>
                 </div>
-              ) : (
-                briefMetadata && (
-                  <div className="pt-4 border-t text-xs text-muted-foreground text-center">
+              ) : !isEditingBrief && briefMetadata ? (
+                <div className="pt-4 border-t flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
                     Generated {new Date(briefMetadata.generatedAt).toLocaleString()} • BuildUnion AI
-                  </div>
-                )
-              )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Click "Edit" to modify before sending or printing
+                  </p>
+                </div>
+              ) : null}
             </>
           )}
         </DialogContent>
       </Dialog>
 
       {/* Team Report Dialog */}
-      <Dialog open={isTeamReportDialogOpen} onOpenChange={setIsTeamReportDialogOpen}>
+      <Dialog open={isTeamReportDialogOpen} onOpenChange={(open) => {
+        setIsTeamReportDialogOpen(open);
+        if (!open) {
+          setIsEditingTeamReport(false);
+          setEditableTeamReportContent("");
+        }
+      }}>
         <DialogContent className="max-w-3xl max-h-[85vh]">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -1619,40 +1779,72 @@ export const ProjectCommandCenter = ({
                 <DialogTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-purple-500" />
                   Team Report
-                  <Badge className="gap-1 ml-2 bg-gradient-to-r from-purple-500 to-pink-500">
-                    <Pencil className="h-3 w-3" />
-                    Full View
-                  </Badge>
+                  {isEditingTeamReport ? (
+                    <Badge className="gap-1 ml-2 bg-gradient-to-r from-green-500 to-emerald-500">
+                      <Pencil className="h-3 w-3" />
+                      Editing
+                    </Badge>
+                  ) : (
+                    <Badge className="gap-1 ml-2 bg-gradient-to-r from-purple-500 to-pink-500">
+                      <Eye className="h-3 w-3" />
+                      Full View
+                    </Badge>
+                  )}
                 </DialogTitle>
                 <DialogDescription>
                   {projectName} • Team Performance Analysis
                 </DialogDescription>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => {
-                  if (teamReportContent) {
-                    navigator.clipboard.writeText(teamReportContent);
-                    toast.success("Report copied!");
-                  }
-                }}>
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => {
-                  if (!teamReportContent) return;
-                  const subject = encodeURIComponent(`Team Report: ${projectName}`);
-                  const body = encodeURIComponent(`Team Report for ${projectName}\n\n${teamReportContent}\n\n---\nGenerated with BuildUnion AI`);
-                  window.location.href = `mailto:?subject=${subject}&body=${body}`;
-                }}>
-                  <Mail className="h-4 w-4 mr-1" />
-                  Email
-                </Button>
-              </div>
+              {!isEditingTeamReport ? (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={startEditingTeamReport}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    if (teamReportContent) {
+                      navigator.clipboard.writeText(teamReportContent);
+                      toast.success("Report copied!");
+                    }
+                  }}>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    if (!teamReportContent) return;
+                    const subject = encodeURIComponent(`Team Report: ${projectName}`);
+                    const body = encodeURIComponent(`Team Report for ${projectName}\n\n${teamReportContent}\n\n---\nGenerated with BuildUnion AI`);
+                    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                  }}>
+                    <Mail className="h-4 w-4 mr-1" />
+                    Email
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={cancelEditingTeamReport}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="gap-1 bg-gradient-to-r from-green-500 to-emerald-500"
+                    onClick={saveEditedTeamReport}
+                    disabled={isSavingTeamReport}
+                  >
+                    {isSavingTeamReport ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Save & Update
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogHeader>
 
           <ScrollArea className="max-h-[60vh] pr-4">
-            {teamReportMetadata && (
+            {teamReportMetadata && !isEditingTeamReport && (
               <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
                 <Badge variant="secondary">
                   👥 {teamReportMetadata.teamSize} Members
@@ -1669,18 +1861,32 @@ export const ProjectCommandCenter = ({
               </div>
             )}
 
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              {teamReportContent ? (
-                <ReactMarkdown>{teamReportContent}</ReactMarkdown>
-              ) : (
-                <p className="text-muted-foreground">No content available</p>
-              )}
-            </div>
+            {isEditingTeamReport ? (
+              <textarea
+                className="w-full min-h-[400px] p-4 border rounded-lg font-mono text-sm resize-y bg-background"
+                value={editableTeamReportContent}
+                onChange={(e) => setEditableTeamReportContent(e.target.value)}
+                placeholder="Edit your team report content here..."
+              />
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {teamReportContent ? (
+                  <ReactMarkdown>{teamReportContent}</ReactMarkdown>
+                ) : (
+                  <p className="text-muted-foreground">No content available</p>
+                )}
+              </div>
+            )}
           </ScrollArea>
 
-          {teamReportMetadata && (
-            <div className="pt-4 border-t text-xs text-muted-foreground text-center">
-              Generated {new Date(teamReportMetadata.generatedAt).toLocaleString()} • BuildUnion AI
+          {teamReportMetadata && !isEditingTeamReport && (
+            <div className="pt-4 border-t flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Generated {new Date(teamReportMetadata.generatedAt).toLocaleString()} • BuildUnion AI
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Click "Edit" to modify before sending or printing
+              </p>
             </div>
           )}
         </DialogContent>
