@@ -1019,6 +1019,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           <OperationalTruthCards
             operationalTruth={operationalTruth}
             projectId={projectId}
+            projectAddress={project.address}
           />
 
           {/* Project Description */}
