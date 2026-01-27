@@ -22,6 +22,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import SwipeableProjectCard from "@/components/SwipeableProjectCard";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SavedProject {
   id: string;
@@ -43,6 +46,7 @@ interface QuestionnaireData {
 
 const BuildUnionProjects2 = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { user, loading: authLoading } = useAuth();
   const { subscription } = useSubscription();
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
@@ -698,123 +702,158 @@ const BuildUnionProjects2 = () => {
                         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
                           {/* Projects List */}
                           <div className="lg:col-span-2 space-y-4">
-                            {projects.map((project) => (
-                              <div 
-                                key={project.id}
-                                onClick={() => setSidebarProjectId(prev => prev === project.id ? null : project.id)}
-                                onDoubleClick={() => setSelectedProjectId(project.id)}
-                                onTouchEnd={(e) => {
-                                  // Long press detection for mobile - handled via CSS active state
-                                  // Double tap for mobile navigation
-                                  const now = Date.now();
-                                  const lastTap = (e.currentTarget as any).lastTap || 0;
-                                  if (now - lastTap < 300) {
-                                    setSelectedProjectId(project.id);
-                                  } else {
-                                    (e.currentTarget as any).lastTap = now;
-                                  }
-                                }}
-                                className={cn(
-                                  "p-4 sm:p-6 rounded-xl border bg-card transition-all cursor-pointer group select-none",
-                                  "active:scale-[0.99] touch-manipulation",
-                                  sidebarProjectId === project.id 
-                                    ? "border-amber-400 ring-2 ring-amber-200 dark:ring-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20" 
-                                    : "hover:border-amber-300 hover:bg-accent/30"
-                                )}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                                    <div className={cn(
-                                      "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-                                      sidebarProjectId === project.id 
-                                        ? "bg-amber-500 text-white" 
-                                        : "bg-amber-100 dark:bg-amber-900/30"
-                                    )}>
-                                      <FolderOpen className={cn(
-                                        "h-5 w-5",
-                                        sidebarProjectId === project.id ? "text-white" : "text-amber-600"
-                                      )} />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{project.name}</h3>
-                                        <Badge variant="outline" className="capitalize text-xs">
-                                          {project.status}
-                                        </Badge>
+                            {projects.map((project) => {
+                              const handleDelete = async () => {
+                                const { error } = await supabase
+                                  .from("projects")
+                                  .delete()
+                                  .eq("id", project.id);
+                                
+                                if (error) {
+                                  toast.error("Failed to delete project");
+                                } else {
+                                  setProjects(prev => prev.filter(p => p.id !== project.id));
+                                  if (sidebarProjectId === project.id) setSidebarProjectId(null);
+                                  toast.success("Project deleted");
+                                }
+                              };
+
+                              const cardContent = (
+                                <div 
+                                  onClick={() => setSidebarProjectId(prev => prev === project.id ? null : project.id)}
+                                  onDoubleClick={() => setSelectedProjectId(project.id)}
+                                  onTouchEnd={(e) => {
+                                    // Double tap for mobile navigation (only if not swiping)
+                                    const target = e.currentTarget as any;
+                                    if (target.isSwiping) return;
+                                    
+                                    const now = Date.now();
+                                    const lastTap = target.lastTap || 0;
+                                    if (now - lastTap < 300) {
+                                      setSelectedProjectId(project.id);
+                                    } else {
+                                      target.lastTap = now;
+                                    }
+                                  }}
+                                  className={cn(
+                                    "p-4 sm:p-6 rounded-xl border bg-card transition-all cursor-pointer group select-none",
+                                    "active:scale-[0.99] touch-manipulation",
+                                    sidebarProjectId === project.id 
+                                      ? "border-amber-400 ring-2 ring-amber-200 dark:ring-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20" 
+                                      : "hover:border-amber-300 hover:bg-accent/30"
+                                  )}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                      <div className={cn(
+                                        "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                                        sidebarProjectId === project.id 
+                                          ? "bg-amber-500 text-white" 
+                                          : "bg-amber-100 dark:bg-amber-900/30"
+                                      )}>
+                                        <FolderOpen className={cn(
+                                          "h-5 w-5",
+                                          sidebarProjectId === project.id ? "text-white" : "text-amber-600"
+                                        )} />
                                       </div>
-                                      <p className="text-sm text-muted-foreground line-clamp-2">
-                                        {project.description || project.address || "No description"}
-                                      </p>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{project.name}</h3>
+                                          <Badge variant="outline" className="capitalize text-xs">
+                                            {project.status}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground line-clamp-2">
+                                          {project.description || project.address || "No description"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                                      {project.id === createdProjectId && analyzing && (
+                                        <span className="hidden sm:flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                                          <Sparkles className="h-3 w-3 animate-pulse" />
+                                          Analyzing...
+                                        </span>
+                                      )}
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedProjectId(project.id);
+                                        }}
+                                      >
+                                        Open
+                                      </Button>
+                                      {/* Mobile open button - always visible */}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="sm:hidden h-8 w-8"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedProjectId(project.id);
+                                        }}
+                                      >
+                                        <ArrowLeft className="h-4 w-4 rotate-180" />
+                                      </Button>
+                                      {/* Desktop delete button */}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+                                          handleDelete();
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                                    {project.id === createdProjectId && analyzing && (
-                                      <span className="hidden sm:flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
-                                        <Sparkles className="h-3 w-3 animate-pulse" />
-                                        Analyzing...
-                                      </span>
-                                    )}
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedProjectId(project.id);
-                                      }}
-                                    >
-                                      Open
-                                    </Button>
-                                    {/* Mobile open button - always visible */}
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="sm:hidden h-8 w-8"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedProjectId(project.id);
-                                      }}
-                                    >
-                                      <ArrowLeft className="h-4 w-4 rotate-180" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 sm:transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
-                                        
-                                        const { error } = await supabase
-                                          .from("projects")
-                                          .delete()
-                                          .eq("id", project.id);
-                                        
-                                        if (error) {
-                                          toast.error("Failed to delete project");
-                                        } else {
-                                          setProjects(prev => prev.filter(p => p.id !== project.id));
-                                          if (sidebarProjectId === project.id) setSidebarProjectId(null);
-                                          toast.success("Project deleted");
-                                        }
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-xs text-muted-foreground">
+                                    <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
+                                    {project.address && <span className="truncate max-w-[200px]">📍 {project.address}</span>}
                                   </div>
+                                  {/* Mobile hint for selected project */}
+                                  {sidebarProjectId === project.id && (
+                                    <p className="sm:hidden text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
+                                      ✓ Selected — Swipe left to delete
+                                    </p>
+                                  )}
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-xs text-muted-foreground">
-                                  <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
-                                  {project.address && <span className="truncate max-w-[200px]">📍 {project.address}</span>}
-                                </div>
-                                {/* Mobile hint for selected project */}
-                                {sidebarProjectId === project.id && (
-                                  <p className="sm:hidden text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
-                                    ✓ Selected — Double-tap to open
-                                  </p>
-                                )}
-                              </div>
-                            ))}
+                              );
+
+                              // Mobile: wrap in swipeable container
+                              if (isMobile) {
+                                return (
+                                  <SwipeableProjectCard
+                                    key={project.id}
+                                    onDelete={handleDelete}
+                                    deleteLabel="Delete"
+                                  >
+                                    {cardContent}
+                                  </SwipeableProjectCard>
+                                );
+                              }
+
+                              // Desktop: wrap in tooltip
+                              return (
+                                <Tooltip key={project.id} delayDuration={700}>
+                                  <TooltipTrigger asChild>
+                                    {cardContent}
+                                  </TooltipTrigger>
+                                  <TooltipContent 
+                                    side="top" 
+                                    className="bg-slate-900 text-white border-slate-800"
+                                  >
+                                    <p className="text-xs">Click to select • Double-click to open</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
                           </div>
 
                           <div className="lg:col-span-1">
@@ -856,82 +895,105 @@ const BuildUnionProjects2 = () => {
                       ) : (
                         <div className="grid lg:grid-cols-3 gap-6">
                           <div className="lg:col-span-2 space-y-4">
-                            {sharedProjects.map((project) => (
-                              <div 
-                                key={project.id}
-                                onClick={() => setSidebarProjectId(prev => prev === project.id ? null : project.id)}
-                                onDoubleClick={() => setSelectedProjectId(project.id)}
-                                onTouchEnd={(e) => {
-                                  const now = Date.now();
-                                  const lastTap = (e.currentTarget as any).lastTap || 0;
-                                  if (now - lastTap < 300) {
-                                    setSelectedProjectId(project.id);
-                                  } else {
-                                    (e.currentTarget as any).lastTap = now;
-                                  }
-                                }}
-                                className={cn(
-                                  "p-4 sm:p-6 rounded-xl border bg-card transition-all cursor-pointer group select-none",
-                                  "active:scale-[0.99] touch-manipulation",
-                                  sidebarProjectId === project.id 
-                                    ? "border-cyan-400 ring-2 ring-cyan-200 dark:ring-cyan-800/50 bg-cyan-50/50 dark:bg-cyan-950/20" 
-                                    : "hover:border-cyan-300 hover:bg-accent/30"
-                                )}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                                    <div className={cn(
-                                      "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-                                      sidebarProjectId === project.id 
-                                        ? "bg-cyan-500 text-white" 
-                                        : "bg-cyan-100 dark:bg-cyan-900/30"
-                                    )}>
-                                      <Users className={cn(
-                                        "h-5 w-5",
-                                        sidebarProjectId === project.id ? "text-white" : "text-cyan-600"
-                                      )} />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{project.name}</h3>
-                                        <Badge variant="outline" className="capitalize text-xs">
-                                          {project.status}
-                                        </Badge>
-                                        <Badge variant="secondary" className="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 text-xs">
-                                          Shared
-                                        </Badge>
-                                      </div>
-                                      <p className="text-sm text-muted-foreground line-clamp-2">
-                                        {project.description || project.address || "No description"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  {/* Mobile open button */}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="sm:hidden h-8 w-8 flex-shrink-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
+                            {sharedProjects.map((project) => {
+                              const cardContent = (
+                                <div 
+                                  onClick={() => setSidebarProjectId(prev => prev === project.id ? null : project.id)}
+                                  onDoubleClick={() => setSelectedProjectId(project.id)}
+                                  onTouchEnd={(e) => {
+                                    const target = e.currentTarget as any;
+                                    if (target.isSwiping) return;
+                                    
+                                    const now = Date.now();
+                                    const lastTap = target.lastTap || 0;
+                                    if (now - lastTap < 300) {
                                       setSelectedProjectId(project.id);
-                                    }}
-                                  >
-                                    <ArrowLeft className="h-4 w-4 rotate-180" />
-                                  </Button>
+                                    } else {
+                                      target.lastTap = now;
+                                    }
+                                  }}
+                                  className={cn(
+                                    "p-4 sm:p-6 rounded-xl border bg-card transition-all cursor-pointer group select-none",
+                                    "active:scale-[0.99] touch-manipulation",
+                                    sidebarProjectId === project.id 
+                                      ? "border-cyan-400 ring-2 ring-cyan-200 dark:ring-cyan-800/50 bg-cyan-50/50 dark:bg-cyan-950/20" 
+                                      : "hover:border-cyan-300 hover:bg-accent/30"
+                                  )}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                      <div className={cn(
+                                        "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                                        sidebarProjectId === project.id 
+                                          ? "bg-cyan-500 text-white" 
+                                          : "bg-cyan-100 dark:bg-cyan-900/30"
+                                      )}>
+                                        <Users className={cn(
+                                          "h-5 w-5",
+                                          sidebarProjectId === project.id ? "text-white" : "text-cyan-600"
+                                        )} />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{project.name}</h3>
+                                          <Badge variant="outline" className="capitalize text-xs">
+                                            {project.status}
+                                          </Badge>
+                                          <Badge variant="secondary" className="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 text-xs">
+                                            Shared
+                                          </Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground line-clamp-2">
+                                          {project.description || project.address || "No description"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {/* Mobile open button */}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="sm:hidden h-8 w-8 flex-shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedProjectId(project.id);
+                                      }}
+                                    >
+                                      <ArrowLeft className="h-4 w-4 rotate-180" />
+                                    </Button>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-xs text-muted-foreground">
+                                    <span>👤 {project.owner_name}</span>
+                                    <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
+                                    {project.address && <span className="truncate max-w-[200px]">📍 {project.address}</span>}
+                                  </div>
+                                  {/* Mobile hint for selected project */}
+                                  {sidebarProjectId === project.id && (
+                                    <p className="sm:hidden text-xs text-cyan-600 dark:text-cyan-400 mt-2 font-medium">
+                                      ✓ Selected — Double-tap to open
+                                    </p>
+                                  )}
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-xs text-muted-foreground">
-                                  <span>👤 {project.owner_name}</span>
-                                  <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
-                                  {project.address && <span className="truncate max-w-[200px]">📍 {project.address}</span>}
-                                </div>
-                                {/* Mobile hint for selected project */}
-                                {sidebarProjectId === project.id && (
-                                  <p className="sm:hidden text-xs text-cyan-600 dark:text-cyan-400 mt-2 font-medium">
-                                    ✓ Selected — Double-tap to open
-                                  </p>
-                                )}
-                              </div>
-                            ))}
+                              );
+
+                              // Desktop: wrap in tooltip (shared projects can't be deleted by non-owners)
+                              if (!isMobile) {
+                                return (
+                                  <Tooltip key={project.id} delayDuration={700}>
+                                    <TooltipTrigger asChild>
+                                      {cardContent}
+                                    </TooltipTrigger>
+                                    <TooltipContent 
+                                      side="top" 
+                                      className="bg-slate-900 text-white border-slate-800"
+                                    >
+                                      <p className="text-xs">Click to select • Double-click to open</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              }
+
+                              return <div key={project.id}>{cardContent}</div>;
+                            })}
                           </div>
 
                           {/* Sidebar with Project Dashboard Widget */}
