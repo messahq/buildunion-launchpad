@@ -1017,11 +1017,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
           <OperationalTruthCards
             operationalTruth={operationalTruth}
             projectId={projectId}
-            projectAddress={project.address}
-            phases={phaseProgress.phases}
-            taskProgress={phaseProgress.taskProgressPercent}
-            completedTasks={phaseProgress.completedCount}
-            totalTasks={phaseProgress.totalCount}
+            projectAddress={project.address || undefined}
           />
 
           {/* Project Description */}
