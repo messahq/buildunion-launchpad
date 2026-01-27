@@ -1865,6 +1865,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               phone: summary?.client_phone || undefined,
               address: summary?.client_address || undefined,
             }}
+            dataSource={(() => {
+              const savedLineItems = summary?.line_items as { materials?: unknown[] } | null;
+              if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
+                return 'saved' as const;
+              }
+              if (aiAnalysis?.materials && aiAnalysis.materials.length > 0) {
+                return 'ai' as const;
+              }
+              return 'tasks' as const;
+            })()}
             onGrandTotalChange={(newTotal) => setTotalTaskBudget(newTotal)}
             onSave={async (costs) => {
               if (!summary) return;

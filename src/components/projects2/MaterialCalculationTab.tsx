@@ -72,6 +72,7 @@ interface MaterialCalculationTabProps {
   onGrandTotalChange?: (grandTotalWithTax: number) => void;
   onSave?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[]; grandTotal: number }) => Promise<void>;
   currency?: string;
+  dataSource?: 'saved' | 'ai' | 'tasks';
 }
 
 // Essential material patterns that get 10% waste calculation
@@ -159,7 +160,8 @@ export function MaterialCalculationTab({
   onCostsChange,
   onGrandTotalChange,
   onSave,
-  currency = "CAD"
+  currency = "CAD",
+  dataSource = "ai"
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
@@ -218,8 +220,9 @@ export function MaterialCalculationTab({
   // Other/custom items
   const [otherItems, setOtherItems] = useState<CostItem[]>([]);
   
-  // Track unsaved changes
+  // Track unsaved changes and current data source
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [currentDataSource, setCurrentDataSource] = useState<'saved' | 'ai' | 'tasks'>(dataSource);
   
   // Auto-save timer ref
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -319,6 +322,7 @@ export function MaterialCalculationTab({
           grandTotal,
         });
         setHasUnsavedChanges(false);
+        setCurrentDataSource('saved');
         toast.success(t("materials.autoSaved", "Saved"));
       } catch (error) {
         console.error("Auto-save error:", error);
@@ -430,6 +434,7 @@ export function MaterialCalculationTab({
         grandTotal,
       });
       setHasUnsavedChanges(false);
+      setCurrentDataSource('saved');
       toast.success(t("materials.saved", "Cost breakdown saved successfully"));
     } catch (error) {
       console.error("Save error:", error);
@@ -999,6 +1004,24 @@ export function MaterialCalculationTab({
           <h3 className="text-lg font-semibold">
             {t("materials.calculation", "Cost Breakdown")}
           </h3>
+          {/* Data source indicator */}
+          <Badge 
+            variant="outline" 
+            className={cn(
+              "text-xs",
+              currentDataSource === 'saved' 
+                ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
+                : currentDataSource === 'ai'
+                ? "border-purple-500 text-purple-700 bg-purple-50 dark:bg-purple-950/30 dark:text-purple-400"
+                : "border-blue-500 text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400"
+            )}
+          >
+            {currentDataSource === 'saved' 
+              ? "💾 Saved Edits" 
+              : currentDataSource === 'ai' 
+              ? "🤖 AI Generated" 
+              : "📋 From Tasks"}
+          </Badge>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-sm">
