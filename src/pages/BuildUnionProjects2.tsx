@@ -3,8 +3,7 @@ import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2 } from "lucide-react";
-import UpcomingDeadlinesWidget from "@/components/UpcomingDeadlinesWidget";
-import ClockDateWidget from "@/components/ClockDateWidget";
+import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
@@ -668,11 +667,9 @@ const BuildUnionProjects2 = () => {
                         ))}
                       </div>
 
-                      {/* Sidebar with Clock and Upcoming Deadlines */}
-                      <div className="lg:col-span-1 space-y-4">
-                        <ClockDateWidget />
-                        <UpcomingDeadlinesWidget 
-                          projectId={selectedProjectId}
+                      {/* Sidebar with Project Dashboard Widget */}
+                      <div className="lg:col-span-1">
+                        <ProjectDashboardWidget 
                           onTaskClick={(projectId, navigateToTasks) => {
                             setSelectedProjectId(projectId);
                             if (navigateToTasks) {
