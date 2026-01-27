@@ -48,6 +48,13 @@ interface TaskBasedEntry {
   unitPrice?: number;
 }
 
+interface ClientInfo {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
 interface MaterialCalculationTabProps {
   materials: TaskBasedEntry[];
   labor: TaskBasedEntry[];
@@ -59,6 +66,7 @@ interface MaterialCalculationTabProps {
   companyPhone?: string | null;
   companyEmail?: string | null;
   companyWebsite?: string | null;
+  clientInfo?: ClientInfo;
   onCostsChange?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[] }) => void;
   onGrandTotalChange?: (grandTotalWithTax: number) => void;
   onSave?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[]; grandTotal: number }) => Promise<void>;
@@ -146,6 +154,7 @@ export function MaterialCalculationTab({
   companyPhone,
   companyEmail,
   companyWebsite,
+  clientInfo,
   onCostsChange,
   onGrandTotalChange,
   onSave,
@@ -526,6 +535,17 @@ export function MaterialCalculationTab({
                 </div>
               </div>
             </div>
+
+            <!-- Client Information Section -->
+            ${clientInfo?.name ? `
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 10px; font-weight: 600; color: #64748b; margin-bottom: 6px;">PREPARED FOR</div>
+                <div style="font-size: 13px; font-weight: 600; color: #1e293b;">${clientInfo.name}</div>
+                ${clientInfo.email ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">📧 ${clientInfo.email}</div>` : ''}
+                ${clientInfo.phone ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">📞 ${clientInfo.phone}</div>` : ''}
+                ${clientInfo.address ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">📍 ${clientInfo.address}</div>` : ''}
+              </div>
+            ` : ''}
 
             <!-- Materials Section - Compact -->
             ${materialItems.length > 0 ? `
