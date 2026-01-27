@@ -188,6 +188,8 @@ export default function OperationalTruthCards({
   // Initialize from database-persisted values
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(initialBlueprintValidated);
   const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(initialConflictsIgnored);
+  // Track if OBC warnings/errors have been acknowledged by user (turns pillar green)
+  const [obcAcknowledged, setObcAcknowledged] = useState(false);
   // Animation state for sync pulse effect
   const [syncAnimationActive, setSyncAnimationActive] = useState(false);
   const [previousVerificationRate, setPreviousVerificationRate] = useState<number | null>(null);
@@ -200,6 +202,28 @@ export default function OperationalTruthCards({
   useEffect(() => {
     setManuallyIgnoredConflicts(initialConflictsIgnored);
   }, [initialConflictsIgnored]);
+  
+  // Load obcAcknowledged from database on mount
+  useEffect(() => {
+    const loadObcAcknowledged = async () => {
+      if (!projectId) return;
+      try {
+        const { data } = await supabase
+          .from("project_summaries")
+          .select("ai_workflow_config")
+          .eq("project_id", projectId)
+          .maybeSingle();
+        
+        const config = data?.ai_workflow_config as { obcResult?: { acknowledged?: boolean } } | null;
+        if (config?.obcResult?.acknowledged) {
+          setObcAcknowledged(true);
+        }
+      } catch (error) {
+        console.error("Failed to load OBC acknowledged state:", error);
+      }
+    };
+    loadObcAcknowledged();
+  }, [projectId]);
   
   const {
     confirmedArea,
@@ -233,8 +257,8 @@ export default function OperationalTruthCards({
     // Pillar 3: Blueprint Status (with manual override)
     if (effectiveBlueprintStatus !== "pending") verifiedPillars++;
     
-    // Pillar 4: OBC Compliance
-    if (obcCompliance !== "pending") verifiedPillars++;
+    // Pillar 4: OBC Compliance (with acknowledge override)
+    if (obcCompliance !== "pending" || obcAcknowledged) verifiedPillars++;
     
     // Pillar 5: Conflict Status (with manual override)
     if (effectiveConflictStatus !== "pending") verifiedPillars++;
@@ -243,7 +267,7 @@ export default function OperationalTruthCards({
     verifiedPillars += 3;
     
     return Math.round((verifiedPillars / 8) * 100);
-  }, [confirmedArea, materialsCount, effectiveBlueprintStatus, obcCompliance, effectiveConflictStatus]);
+  }, [confirmedArea, materialsCount, effectiveBlueprintStatus, obcCompliance, obcAcknowledged, effectiveConflictStatus]);
   
   // Use the effective verification rate (not the props one)
   const verificationRate = effectiveVerificationRate;
@@ -1147,16 +1171,32 @@ export default function OperationalTruthCards({
           sourceOrigin={manuallyValidatedBlueprint ? "manual" : dataSourceOrigins.blueprint}
         />
 
-        {/* Pillar 4: OBC Compliance - Clickable */}
+        {/* Pillar 4: OBC Compliance - Clickable, turns green when acknowledged */}
         <PillarCard
           icon={<Shield className="h-4 w-4" />}
           label={t("operationalTruth.obcStatus")}
-          value={obcCompliance === "clear" ? t("operationalTruth.clear") : obcCompliance === "permit_required" ? t("operationalTruth.permitRequired") : t("operationalTruth.pending")}
-          status={obcCompliance === "clear" ? "verified" : obcCompliance === "permit_required" ? "warning" : "pending"}
-          isClickable={obcCompliance === "pending" && !!projectId}
+          value={
+            obcAcknowledged 
+              ? t("operationalTruth.acknowledged", "Acknowledged")
+              : obcCompliance === "clear" 
+                ? t("operationalTruth.clear") 
+                : obcCompliance === "permit_required" 
+                  ? t("operationalTruth.permitRequired") 
+                  : t("operationalTruth.pending")
+          }
+          status={
+            obcAcknowledged 
+              ? "verified" 
+              : obcCompliance === "clear" 
+                ? "verified" 
+                : obcCompliance === "permit_required" 
+                  ? "warning" 
+                  : "pending"
+          }
+          isClickable={obcCompliance === "pending" && !obcAcknowledged && !!projectId}
           isLoading={loadingPillar === "obc"}
           onClick={verifyOBCStatus}
-          sourceOrigin={dataSourceOrigins.obc}
+          sourceOrigin={obcAcknowledged ? "manual" : dataSourceOrigins.obc}
         />
 
         {/* Pillar 5: Conflict Status - Clickable or can be ignored */}
@@ -1245,12 +1285,15 @@ export default function OperationalTruthCards({
                 const canIgnore = isConflictOrWeatherReport && (report.status === "warning" || report.status === "error");
                 const canAcknowledge = isOBCReport && (report.status === "warning" || report.status === "error") && !report.acknowledged;
                 
-                // Handle acknowledgment
+                // Handle acknowledgment - also updates the OBC pillar status to green
                 const handleAcknowledge = async () => {
                   // Update report state to acknowledged
                   setReports(prev => prev.map((r, i) => 
                     i === index ? { ...r, acknowledged: true, status: "success" as const } : r
                   ));
+                  
+                  // Update OBC pillar state to show as verified/green
+                  setObcAcknowledged(true);
                   
                   // Persist acknowledgment to database
                   if (projectId) {
