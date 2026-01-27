@@ -604,29 +604,70 @@ export default function OperationalTruthCards({
 
   return (
     <div className="space-y-4">
-      {/* Verification Progress + Run All Button */}
-      <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
-        <Brain className="h-5 w-5 text-primary" />
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium">{t("operationalTruth.title")}</span>
-            <span className="text-sm text-muted-foreground">
-              {isRunningAll ? `${runAllProgress}%` : `${verificationRate}%`}
-            </span>
-          </div>
-          <Progress 
-            value={isRunningAll ? runAllProgress : verificationRate} 
-            className={cn("h-2", isRunningAll && "animate-pulse")} 
-          />
+      {/* Verification Progress + Run All Button - Matching ProjectTimelineBar style */}
+      <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/20 text-amber-600">
+          <Brain className="h-5 w-5" />
         </div>
         
-        {/* Run All Verifications Button */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-foreground">{t("operationalTruth.title")}</span>
+            {verificationRate === 100 && !isRunningAll && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                VERIFIED
+              </span>
+            )}
+            {isRunningAll && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium animate-pulse flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                RUNNING
+              </span>
+            )}
+          </div>
+          
+          {/* Progress bar matching timeline style */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden relative">
+              <div 
+                className={cn(
+                  "h-full rounded-full transition-all duration-500 ease-out",
+                  verificationRate === 100 
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500" 
+                    : "bg-gradient-to-r from-amber-500 to-orange-500"
+                )}
+                style={{ width: `${isRunningAll ? runAllProgress : verificationRate}%` }}
+              />
+              {/* Tick marks */}
+              <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                {[25, 50, 75].map((tick) => (
+                  <div 
+                    key={tick} 
+                    className="w-px h-full bg-background/30" 
+                    style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
+                  />
+                ))}
+              </div>
+            </div>
+            <span className="text-sm font-medium text-foreground min-w-[40px] text-right">
+              {isRunningAll ? runAllProgress : verificationRate}%
+            </span>
+          </div>
+        </div>
+        
+        {/* Run All Verifications Button - Amber themed */}
         <Button
           size="sm"
-          variant={pendingChecksCount > 0 ? "default" : "outline"}
+          variant="outline"
           onClick={runAllVerifications}
           disabled={isRunningAll || !projectId || pendingChecksCount === 0}
-          className="gap-2 min-w-[140px]"
+          className={cn(
+            "gap-2 min-w-[140px] font-medium transition-all",
+            pendingChecksCount > 0 
+              ? "border-amber-500 bg-amber-500 hover:bg-amber-600 text-white hover:text-white" 
+              : "border-green-500/50 text-green-600 hover:bg-green-500/10"
+          )}
         >
           {isRunningAll ? (
             <>
@@ -649,9 +690,9 @@ export default function OperationalTruthCards({
 
       {/* Run All progress indicator when running */}
       {isRunningAll && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <span className="text-sm text-primary">
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+          <span className="text-sm text-amber-700 dark:text-amber-400">
             Running verification checks... {runAllProgress}% complete
           </span>
         </div>
