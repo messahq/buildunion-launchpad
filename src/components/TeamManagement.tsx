@@ -37,10 +37,12 @@ import {
   UserCheck
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface TeamManagementProps {
   projectId: string;
   isOwner: boolean;
+  onMemberClick?: (memberId: string, memberName: string) => void;
 }
 
 interface SearchedUser {
@@ -53,7 +55,7 @@ interface SearchedUser {
   email?: string;
 }
 
-const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
+const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { members, invitations, loading, sendInvitation, cancelInvitation, removeMember } = useProjectTeam(projectId);
@@ -457,14 +459,25 @@ const TeamManagement = ({ projectId, isOwner }: TeamManagementProps) => {
             const roleInfo = TEAM_ROLES[member.role as TeamRole] || TEAM_ROLES.member;
             return (
               <div key={member.id} className="flex items-center justify-between py-2 border-t border-slate-100">
-                <div className="flex items-center gap-3">
+                <div 
+                  className={cn(
+                    "flex items-center gap-3",
+                    onMemberClick && "cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
+                  )}
+                  onClick={() => onMemberClick?.(member.user_id, member.full_name || "Team Member")}
+                >
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-slate-100 text-slate-700 font-medium">
                       {roleInfo.icon}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{member.full_name}</p>
+                    <p className={cn(
+                      "text-sm font-medium text-slate-900",
+                      onMemberClick && "hover:text-amber-600 transition-colors"
+                    )}>
+                      {member.full_name}
+                    </p>
                     <p className="text-xs text-slate-500">{roleInfo.label}</p>
                   </div>
                 </div>

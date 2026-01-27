@@ -40,7 +40,9 @@ import {
   Bell,
   CalendarDays,
   List,
-  UserPlus
+  UserPlus,
+  X,
+  ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -50,6 +52,8 @@ interface TaskAssignmentProps {
   projectId: string;
   isOwner: boolean;
   projectAddress?: string;
+  filterByMemberId?: string | null;
+  onClearFilter?: () => void;
 }
 
 interface TeamMember {
@@ -89,7 +93,7 @@ const STATUSES = [
   { value: "completed", label: "Completed", icon: CheckCircle2, color: "text-green-600" },
 ];
 
-const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentProps) => {
+const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter }: TaskAssignmentProps) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -332,10 +336,19 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentPr
     );
   }
 
-  const pendingTasks = tasks.filter((t) => t.status === "pending");
-  const inProgressTasks = tasks.filter((t) => t.status === "in_progress");
-  const completedTasks = tasks.filter((t) => t.status === "completed");
-  const overdueTasks = tasks.filter((t) => 
+  // Filter tasks by member if selected
+  const filteredTasks = filterByMemberId 
+    ? tasks.filter(t => t.assigned_to === filterByMemberId)
+    : tasks;
+
+  const filteredMemberInfo = filterByMemberId 
+    ? members.find(m => m.user_id === filterByMemberId)
+    : null;
+
+  const pendingTasks = filteredTasks.filter((t) => t.status === "pending");
+  const inProgressTasks = filteredTasks.filter((t) => t.status === "in_progress");
+  const completedTasks = filteredTasks.filter((t) => t.status === "completed");
+  const overdueTasks = filteredTasks.filter((t) => 
     t.due_date && 
     isPast(startOfDay(new Date(t.due_date))) && 
     !isToday(new Date(t.due_date)) &&
@@ -360,22 +373,53 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress }: TaskAssignmentPr
 
   return (
     <>
+      {/* Member Filter Banner */}
+      {filterByMemberId && filteredMemberInfo && (
+        <div className="mb-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={filteredMemberInfo.avatar_url || undefined} />
+              <AvatarFallback className="bg-amber-100 text-amber-700 font-medium text-sm">
+                {(filteredMemberInfo.full_name || "?").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium text-amber-900">
+                {filteredMemberInfo.full_name} feladatai
+              </p>
+              <p className="text-xs text-amber-700">
+                {filteredTasks.length} feladat • {pendingTasks.length} folyamatban
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearFilter}
+            className="gap-1.5 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Összes feladat
+          </Button>
+        </div>
+      )}
+
       <Card className="border-slate-200 bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                 <ListTodo className="h-5 w-5 text-amber-600" />
-                Tasks
+                {filterByMemberId ? `${filteredMemberInfo?.full_name || "Member"} Tasks` : "Tasks"}
               </CardTitle>
               <CardDescription>
-                {tasks.length} task{tasks.length !== 1 ? "s" : ""} 
+                {filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""} 
                 {inProgressTasks.length > 0 && ` • ${inProgressTasks.length} in progress`}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               {/* View Toggle */}
-              {tasks.length > 0 && (
+              {filteredTasks.length > 0 && (
                 <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
                   <Button
                     variant="ghost"

@@ -76,6 +76,19 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [] }: TeamT
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
   const [generateTasksDialogOpen, setGenerateTasksDialogOpen] = useState(false);
   const [existingTaskCount, setExistingTaskCount] = useState(0);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+
+  // Handle member click - show their tasks
+  const handleMemberClick = (memberId: string, memberName: string) => {
+    setSelectedMemberId(memberId);
+    setActiveSubTab("tasks");
+    toast.info(`${memberName} feladatai`);
+  };
+
+  // Clear member filter
+  const handleClearMemberFilter = () => {
+    setSelectedMemberId(null);
+  };
 
   // Check subscription tier
   const currentTier = subscription?.tier || "free";
@@ -234,7 +247,11 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [] }: TeamT
         </TabsList>
 
         <TabsContent value="team" className="mt-4">
-          <TeamManagement projectId={projectId} isOwner={isOwner} />
+          <TeamManagement 
+            projectId={projectId} 
+            isOwner={isOwner} 
+            onMemberClick={handleMemberClick}
+          />
         </TabsContent>
 
         <TabsContent value="tasks" className="mt-4">
@@ -242,6 +259,8 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [] }: TeamT
             projectId={projectId} 
             isOwner={isOwner}
             projectAddress={projectAddress}
+            filterByMemberId={selectedMemberId}
+            onClearFilter={handleClearMemberFilter}
           />
         </TabsContent>
       </Tabs>
