@@ -43,6 +43,8 @@ interface TeamTabProps {
   isOwner: boolean;
   projectAddress?: string;
   aiMaterials?: Material[];
+  projectStartDate?: Date | null;
+  projectEndDate?: Date | null;
 }
 
 // Map materials to task titles
@@ -67,7 +69,7 @@ const materialToTaskDescription = (material: Material): string => {
   return `${material.quantity} ${material.unit} of ${material.item}${material.notes ? ` - ${material.notes}` : ""}`;
 };
 
-const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [] }: TeamTabProps) => {
+const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate }: TeamTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
@@ -127,18 +129,85 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [] }: TeamT
 
     setIsGeneratingTasks(true);
     try {
-      // Create tasks from materials, distributing among members
-      const tasks = aiMaterials.map((material, index) => ({
-        project_id: projectId,
-        title: materialToTaskTitle(material),
-        description: materialToTaskDescription(material),
-        assigned_to: members[index % members.length].user_id, // Round-robin assignment
-        assigned_by: user.id,
-        priority: material.item.toLowerCase().includes("foundation") || 
-                  material.item.toLowerCase().includes("structural") 
-                  ? "high" : "medium",
-        status: "pending",
-      }));
+      // Calculate the project duration in days
+      const startDate = projectStartDate || new Date();
+      const endDate = projectEndDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default 7 days
+      const totalDurationMs = endDate.getTime() - startDate.getTime();
+      const totalDays = Math.max(1, Math.ceil(totalDurationMs / (24 * 60 * 60 * 1000)));
+      
+      // Distribute tasks across the timeline based on their phase
+      // Phase distribution: Preparation 40%, Execution 40%, Verification 20%
+      const getPhaseForMaterial = (material: Material): "prep" | "exec" | "verify" => {
+        const itemLower = material.item.toLowerCase();
+        // Preparation phase items
+        if (itemLower.includes("order") || itemLower.includes("deliver") || 
+            itemLower.includes("permit") || itemLower.includes("plan")) {
+          return "prep";
+        }
+        // Verification phase items
+        if (itemLower.includes("inspect") || itemLower.includes("verify") || 
+            itemLower.includes("test") || itemLower.includes("final")) {
+          return "verify";
+        }
+        // Everything else is execution
+        return "exec";
+      };
+      
+      // Calculate due date based on phase and position
+      const calculateDueDate = (index: number, phase: "prep" | "exec" | "verify"): Date => {
+        const prepDuration = totalDays * 0.4;
+        const execDuration = totalDays * 0.4;
+        // const verifyDuration = totalDays * 0.2;
+        
+        let phaseStart: number;
+        let phaseDuration: number;
+        
+        if (phase === "prep") {
+          phaseStart = 0;
+          phaseDuration = prepDuration;
+        } else if (phase === "exec") {
+          phaseStart = prepDuration;
+          phaseDuration = execDuration;
+        } else {
+          phaseStart = prepDuration + execDuration;
+          phaseDuration = totalDays * 0.2;
+        }
+        
+        // Distribute within the phase
+        const positionInPhase = (index % 3) / 3; // Simple distribution
+        const dayOffset = Math.floor(phaseStart + (phaseDuration * positionInPhase));
+        
+        const dueDate = new Date(startDate);
+        dueDate.setDate(dueDate.getDate() + dayOffset);
+        return dueDate;
+      };
+      
+      // Calculate priority based on how soon the due date is
+      const calculatePriority = (dueDate: Date): string => {
+        const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+        if (daysUntilDue <= 1) return "urgent";
+        if (daysUntilDue <= 2) return "high";
+        if (daysUntilDue <= 4) return "medium";
+        return "low";
+      };
+      
+      // Create tasks from materials with timeline-aware due dates
+      const tasks = aiMaterials.map((material, index) => {
+        const phase = getPhaseForMaterial(material);
+        const dueDate = calculateDueDate(index, phase);
+        const priority = calculatePriority(dueDate);
+        
+        return {
+          project_id: projectId,
+          title: materialToTaskTitle(material),
+          description: materialToTaskDescription(material),
+          assigned_to: members[index % members.length].user_id, // Round-robin assignment
+          assigned_by: user.id,
+          priority,
+          status: "pending",
+          due_date: dueDate.toISOString(),
+        };
+      });
 
       const { error } = await supabase
         .from("project_tasks")
