@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -191,7 +191,6 @@ export default function OperationalTruthCards({
     projectMode,
     projectSize,
     confidenceLevel,
-    verificationRate,
   } = operationalTruth;
 
   // Determine effective blueprint status (manual override takes priority)
@@ -199,6 +198,35 @@ export default function OperationalTruthCards({
   
   // Determine effective conflict status (manual ignore takes priority)
   const effectiveConflictStatus = manuallyIgnoredConflicts ? "aligned" : conflictStatus;
+
+  // CRITICAL: Recalculate verification rate based on EFFECTIVE statuses (with overrides)
+  // This is "the clock" - the single source of truth for project verification
+  const effectiveVerificationRate = useMemo(() => {
+    let verifiedPillars = 0;
+    
+    // Pillar 1: Confirmed Area
+    if (confirmedArea !== null) verifiedPillars++;
+    
+    // Pillar 2: Materials Count
+    if (materialsCount > 0) verifiedPillars++;
+    
+    // Pillar 3: Blueprint Status (with manual override)
+    if (effectiveBlueprintStatus !== "pending") verifiedPillars++;
+    
+    // Pillar 4: OBC Compliance
+    if (obcCompliance !== "pending") verifiedPillars++;
+    
+    // Pillar 5: Conflict Status (with manual override)
+    if (effectiveConflictStatus !== "pending") verifiedPillars++;
+    
+    // Pillars 6-8: Mode, Size, Confidence are always "verified"
+    verifiedPillars += 3;
+    
+    return Math.round((verifiedPillars / 8) * 100);
+  }, [confirmedArea, materialsCount, effectiveBlueprintStatus, obcCompliance, effectiveConflictStatus]);
+  
+  // Use the effective verification rate (not the props one)
+  const verificationRate = effectiveVerificationRate;
 
   const addReport = (report: Omit<VerificationReport, "timestamp">) => {
     setReports(prev => [...prev, { ...report, timestamp: new Date() }]);
@@ -587,7 +615,7 @@ export default function OperationalTruthCards({
         name: "Conflict Check", 
         key: "conflict",
         fn: verifyConflicts, 
-        isPending: conflictStatus === "pending" 
+        isPending: effectiveConflictStatus === "pending"  // Use effective status (manual ignore = not pending)
       },
     ];
     
@@ -660,15 +688,16 @@ export default function OperationalTruthCards({
     obcCompliance, conflictStatus, onUpdate
   ]);
 
-  // Calculate pending checks count
+  // Calculate pending checks count - USE EFFECTIVE STATUSES
+  // This ensures the "Run All" button reflects the true pending state after manual overrides
   const pendingChecksCount = [
     !confirmedArea,
     materialsCount === 0,
     obcCompliance === "pending",
-    conflictStatus === "pending"
+    effectiveConflictStatus === "pending" // Use effective status (not raw conflictStatus)
   ].filter(Boolean).length;
 
-  // Display progress: pillar-based verification rate
+  // Display progress: pillar-based verification rate (using effective rate)
   const displayProgress = isRunningAll || isSyncingAll ? runAllProgress : verificationRate;
 
   // Auto-Sync: Re-analyze all 16 data sources
