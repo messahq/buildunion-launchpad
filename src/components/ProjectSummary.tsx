@@ -8,6 +8,7 @@ import { RegionSelector } from "@/components/RegionSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -1943,11 +1944,9 @@ export function ProjectSummary({
                     </td>
                     <td className="py-3 text-center">
                       {editMode ? (
-                        <Input
-                          type="text"
-                          inputMode="decimal"
+                        <NumericInput
                           value={item.quantity}
-                          onChange={(e) => updateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                          onChange={(val) => updateLineItem(index, "quantity", val)}
                           className="h-8 w-20 text-center mx-auto"
                         />
                       ) : (
@@ -1967,11 +1966,9 @@ export function ProjectSummary({
                     </td>
                     <td className="py-3 text-right">
                       {editMode ? (
-                        <Input
-                          type="text"
-                          inputMode="decimal"
+                        <NumericInput
                           value={item.unit_price}
-                          onChange={(e) => updateLineItem(index, "unit_price", parseFloat(e.target.value) || 0)}
+                          onChange={(val) => updateLineItem(index, "unit_price", val)}
                           className="h-8 w-28 text-right ml-auto"
                         />
                       ) : (

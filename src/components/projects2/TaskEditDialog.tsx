@@ -3,6 +3,7 @@ import { format, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
@@ -459,20 +460,16 @@ const TaskEditDialog = ({
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>{t("taskEdit.unitPrice", "Unit Price ($)")}</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
+              <NumericInput
                 value={unitPrice}
-                onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
+                onChange={(val) => setUnitPrice(val)}
               />
             </div>
             <div className="space-y-2">
               <Label>{t("taskEdit.quantity", "Quantity")}</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
+              <NumericInput
                 value={quantity}
-                onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)}
+                onChange={(val) => setQuantity(val || 1)}
               />
             </div>
             <div className="space-y-2">

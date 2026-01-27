@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Sparkles, 
@@ -310,11 +311,9 @@ export default function WorkflowSelector({
           
           {isEditingArea ? (
             <div className="flex items-center gap-2">
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={editableArea || ""}
-                onChange={(e) => setEditableArea(Number(e.target.value) || 0)}
+              <NumericInput
+                value={editableArea}
+                onChange={(val) => setEditableArea(val)}
                 className="h-8 w-24 text-sm"
                 autoFocus
               />
@@ -425,13 +424,11 @@ export default function WorkflowSelector({
                   
                   {editingMaterialIndex === i ? (
                     <div className="flex items-center gap-1">
-                      <Input
-                        type="text"
-                        inputMode="decimal"
+                      <NumericInput
                         value={editableMaterials[i].quantity}
-                        onChange={(e) => {
+                        onChange={(val) => {
                           const updated = [...editableMaterials];
-                          updated[i].quantity = Number(e.target.value) || 0;
+                          updated[i].quantity = val;
                           setEditableMaterials(updated);
                         }}
                         className="h-6 w-16 text-xs"

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -207,11 +208,9 @@ export default function EditableAIAnalysisSummary({
             <div className="text-xs text-muted-foreground mb-1">Detected Area</div>
             {isEditing ? (
               <div className="flex gap-1">
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  value={editArea}
-                  onChange={(e) => setEditArea(e.target.value)}
+                <NumericInput
+                  value={editArea ? parseFloat(editArea) : null}
+                  onChange={(val) => setEditArea(String(val))}
                   className="h-8 text-sm"
                   placeholder="0"
                 />
@@ -363,13 +362,11 @@ export default function EditableAIAnalysisSummary({
                     placeholder="Material name"
                     className="flex-1"
                   />
-                  <Input
-                    type="text"
-                    inputMode="decimal"
+                  <NumericInput
                     value={material.quantity}
-                    onChange={(e) => handleMaterialChange(index, "quantity", e.target.value)}
-                    placeholder="Qty"
+                    onChange={(val) => handleMaterialChange(index, "quantity", String(val))}
                     className="w-24"
+                    placeholder="Qty"
                   />
                   <Select
                     value={material.unit}

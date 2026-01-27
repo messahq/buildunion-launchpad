@@ -3,6 +3,7 @@ import { Calculator, Plus, Trash2, Copy, Check, ArrowRight, LayoutTemplate, Spar
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -703,12 +704,9 @@ Estimated Labor: ${results.laborHours} hours
                   <Label htmlFor={input.id}>
                     {input.label} {input.unit && `(${input.unit})`}
                   </Label>
-                  <Input
-                    id={input.id}
-                    type="text"
-                    inputMode="decimal"
-                    value={inputs[input.id] || ""}
-                    onChange={(e) => handleInputChange(input.id, e.target.value)}
+                  <NumericInput
+                    value={inputs[input.id] ? Number(inputs[input.id]) : null}
+                    onChange={(val) => handleInputChange(input.id, String(val))}
                     className="text-lg"
                   />
                 </div>
@@ -807,11 +805,9 @@ Estimated Labor: ${results.laborHours} hours
                               onChange={(e) => updateMaterialName(index, e.target.value)}
                               className="flex-1 h-8"
                             />
-                            <Input
-                              type="text"
-                              inputMode="decimal"
+                            <NumericInput
                               value={material.quantity}
-                              onChange={(e) => updateMaterialQuantity(index, parseFloat(e.target.value) || 0)}
+                              onChange={(val) => updateMaterialQuantity(index, val)}
                               className="w-20 h-8 text-center"
                             />
                             <span className="text-xs text-muted-foreground w-12">{material.unit}</span>
