@@ -58,6 +58,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import TaskTimelineCalendar from "./TaskTimelineCalendar";
+import TaskTemplateManager from "./projects2/TaskTemplateManager";
 
 interface TaskAssignmentProps {
   projectId: string;
@@ -322,6 +323,33 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     }
   };
 
+  // Handle applying template tasks
+  const handleApplyTemplate = async (templateTasks: Omit<Task, "id">[]) => {
+    if (!user || members.length === 0) return;
+
+    try {
+      const tasksToInsert = templateTasks.map((t, index) => ({
+        project_id: projectId,
+        title: t.title,
+        description: t.description,
+        assigned_to: members[index % members.length].user_id, // Round-robin
+        assigned_by: user.id,
+        priority: t.priority,
+        status: "pending",
+        due_date: null,
+      }));
+
+      const { error } = await supabase
+        .from("project_tasks")
+        .insert(tasksToInsert);
+
+      if (error) throw error;
+    } catch (err: any) {
+      console.error("Error applying template:", err);
+      toast.error(err.message || "Failed to apply template");
+    }
+  };
+
   const handleUpdateAssignee = async (taskId: string, newAssigneeId: string) => {
     try {
       const { error } = await supabase
@@ -514,6 +542,14 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                     Timeline
                   </Button>
                 </div>
+              )}
+              {isOwner && members.length > 0 && (
+                <TaskTemplateManager
+                  projectId={projectId}
+                  currentTasks={tasks}
+                  onApplyTemplate={handleApplyTemplate}
+                  isOwner={isOwner}
+                />
               )}
               {isOwner && members.length > 0 && (
                 <Button
