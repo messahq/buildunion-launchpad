@@ -84,7 +84,7 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   const handleMemberClick = (memberId: string, memberName: string) => {
     setSelectedMemberId(memberId);
     setActiveSubTab("tasks");
-    toast.info(`${memberName} feladatai`);
+    toast.info(`${memberName}'s tasks`);
   };
 
   // Clear member filter
