@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2 } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -212,38 +212,43 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
           </Button>
 
 
-          {/* Community Link */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/buildunion/community")}
-            className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Community</span>
-          </Button>
-
-          {/* Forum Link */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/buildunion/forum")}
-            className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
-          >
-            <MessageSquare className="h-4 w-4" />
-            <span className="hidden sm:inline">Forum</span>
-          </Button>
-
-          {/* Members Link */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/buildunion/members")}
-            className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
-          >
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Members</span>
-          </Button>
+          {/* Community Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Community</span>
+                <ChevronDown className="h-3 w-3 ml-0.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 bg-popover border border-border shadow-lg z-50">
+              <DropdownMenuItem 
+                onClick={() => navigate("/buildunion/community")}
+                className="cursor-pointer gap-2"
+              >
+                <Newspaper className="h-4 w-4" />
+                News & Updates
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate("/buildunion/forum")}
+                className="cursor-pointer gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Discussion Forum
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate("/buildunion/members")}
+                className="cursor-pointer gap-2"
+              >
+                <User className="h-4 w-4" />
+                Member Directory
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Messages Link - only for logged in users */}
           {user && (
