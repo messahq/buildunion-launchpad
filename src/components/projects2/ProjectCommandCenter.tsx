@@ -1,12 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -105,6 +108,13 @@ interface DataSourcesInfo {
   hasClientInfo: boolean;
 }
 
+interface ClientInfoData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
 // ============================================
 // TYPES
 // ============================================
@@ -143,6 +153,9 @@ interface ProjectCommandCenterProps {
   onNavigateToTab?: (tabId: string) => void;
   // Extended data sources info
   dataSourcesInfo?: DataSourcesInfo;
+  // Client info management
+  clientInfo?: ClientInfoData;
+  onClientInfoUpdate?: (info: ClientInfoData) => void;
 }
 
 // ============================================
@@ -161,6 +174,8 @@ export const ProjectCommandCenter = ({
   isPremium = false,
   onNavigateToTab,
   dataSourcesInfo,
+  clientInfo,
+  onClientInfoUpdate,
 }: ProjectCommandCenterProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -175,6 +190,16 @@ export const ProjectCommandCenter = ({
   const [isPreviewMode, setIsPreviewMode] = useState(true);
   const [activeDocumentCategory, setActiveDocumentCategory] = useState<string>("all");
   const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
+  
+  // Client Info Dialog state
+  const [isClientInfoDialogOpen, setIsClientInfoDialogOpen] = useState(false);
+  const [editingClientInfo, setEditingClientInfo] = useState<ClientInfoData>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+  const [isSavingClientInfo, setIsSavingClientInfo] = useState(false);
   
   // Editable content states for reports
   const [editableBriefContent, setEditableBriefContent] = useState<string>("");
@@ -794,6 +819,72 @@ export const ProjectCommandCenter = ({
     setEditableBriefContent("");
   }, []);
 
+  // ============================================
+  // CLIENT INFO MANAGEMENT
+  // ============================================
+  
+  // Open client info dialog
+  const openClientInfoDialog = useCallback(() => {
+    setEditingClientInfo({
+      name: clientInfo?.name || "",
+      email: clientInfo?.email || "",
+      phone: clientInfo?.phone || "",
+      address: clientInfo?.address || "",
+    });
+    setIsClientInfoDialogOpen(true);
+  }, [clientInfo]);
+
+  // Save client info
+  const saveClientInfo = useCallback(async () => {
+    setIsSavingClientInfo(true);
+    try {
+      // Call the parent update handler
+      if (onClientInfoUpdate) {
+        await onClientInfoUpdate(editingClientInfo);
+      }
+      
+      setIsClientInfoDialogOpen(false);
+      toast.success("Client information saved!");
+    } catch (error) {
+      console.error("Save client info error:", error);
+      toast.error("Failed to save client information");
+    } finally {
+      setIsSavingClientInfo(false);
+    }
+  }, [editingClientInfo, onClientInfoUpdate]);
+
+  // ============================================
+  // DATA SOURCE NAVIGATION
+  // ============================================
+  
+  const handleDataSourceClick = useCallback((sourceId: string) => {
+    // Map data source IDs to navigation actions or dialogs
+    const navigationMap: Record<string, () => void> = {
+      tasks: () => onNavigateToTab?.("team"),
+      documents: () => onNavigateToTab?.("documents"),
+      contracts: () => onNavigateToTab?.("contracts"),
+      team: () => onNavigateToTab?.("team"),
+      sitemap: () => onNavigateToTab?.("sitemap"),
+      timeline: () => onNavigateToTab?.("team"),
+      client: openClientInfoDialog,
+      weather: () => onNavigateToTab?.("weather"),
+      // Pillars navigate to overview
+      area: () => onNavigateToTab?.("overview"),
+      materials: () => onNavigateToTab?.("materials"),
+      blueprint: () => onNavigateToTab?.("documents"),
+      obc: () => onNavigateToTab?.("overview"),
+      conflicts: () => onNavigateToTab?.("overview"),
+      mode: () => onNavigateToTab?.("team"),
+      projectSize: () => onNavigateToTab?.("overview"),
+      confidence: () => onNavigateToTab?.("overview"),
+    };
+    
+    const action = navigationMap[sourceId];
+    if (action) {
+      action();
+    }
+  }, [onNavigateToTab, openClientInfoDialog]);
+
   const cancelEditingTeamReport = useCallback(() => {
     setIsEditingTeamReport(false);
     setEditableTeamReportContent("");
@@ -1153,23 +1244,27 @@ export const ProjectCommandCenter = ({
                       return (
                         <Tooltip key={source.id}>
                           <TooltipTrigger asChild>
-                            <div className={cn(
-                              "flex items-center gap-2 p-2 rounded-md text-xs transition-colors cursor-help",
-                              source.status === "complete" && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400",
-                              source.status === "partial" && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
-                              source.status === "pending" && "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                            )}>
+                            <button
+                              onClick={() => handleDataSourceClick(source.id)}
+                              className={cn(
+                                "flex items-center gap-2 p-2 rounded-md text-xs transition-all w-full text-left",
+                                "hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 active:scale-95",
+                                source.status === "complete" && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400",
+                                source.status === "partial" && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
+                                source.status === "pending" && "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                              )}
+                            >
                               <Icon className="h-3.5 w-3.5 flex-shrink-0" />
                               <span className="truncate">{source.name}</span>
                               {source.status === "complete" && <CircleCheck className="h-3 w-3 ml-auto flex-shrink-0" />}
                               {source.status === "partial" && <CircleDashed className="h-3 w-3 ml-auto flex-shrink-0" />}
                               {source.status === "pending" && <CircleAlert className="h-3 w-3 ml-auto flex-shrink-0" />}
-                            </div>
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent side="top">
                             <p className="font-medium">{source.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {source.value || (source.status === "pending" ? "Not yet configured" : "Partially complete")}
+                              {source.value || (source.status === "pending" ? "Click to configure" : "Click to view")}
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -1894,6 +1989,82 @@ export const ProjectCommandCenter = ({
               </p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Info Dialog */}
+      <Dialog open={isClientInfoDialogOpen} onOpenChange={setIsClientInfoDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-cyan-500" />
+              Client Information
+            </DialogTitle>
+            <DialogDescription>
+              Edit client details for this project. This information will be used in contracts, invoices, and reports.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="client-name">Client Name</Label>
+              <Input
+                id="client-name"
+                value={editingClientInfo.name}
+                onChange={(e) => setEditingClientInfo(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="John Smith"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="client-email">Email</Label>
+              <Input
+                id="client-email"
+                type="email"
+                value={editingClientInfo.email}
+                onChange={(e) => setEditingClientInfo(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="client@example.com"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="client-phone">Phone</Label>
+              <Input
+                id="client-phone"
+                value={editingClientInfo.phone}
+                onChange={(e) => setEditingClientInfo(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+1 (416) 555-0123"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="client-address">Address</Label>
+              <Input
+                id="client-address"
+                value={editingClientInfo.address}
+                onChange={(e) => setEditingClientInfo(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="123 Main St, Toronto, ON"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsClientInfoDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveClientInfo}
+              disabled={isSavingClientInfo}
+              className="gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500"
+            >
+              {isSavingClientInfo ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save Client Info
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
