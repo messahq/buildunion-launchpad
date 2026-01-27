@@ -1740,7 +1740,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             <DocumentsPane
               projectId={projectId}
               siteImages={project.site_images}
-              aiAnalysis={aiAnalysis}
             />
           </TabsContent>
         )}

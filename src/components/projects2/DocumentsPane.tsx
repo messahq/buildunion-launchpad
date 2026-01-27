@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,18 +6,12 @@ import {
   FileText, 
   Image, 
   FileIcon, 
-  Package,
   Plus,
   ExternalLink,
   Loader2,
-  CheckCircle2,
-  Save,
-  Pencil,
-  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -25,20 +19,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface AIAnalysis {
-  area: number | null;
-  areaUnit: string;
-  materials: Array<{ item: string; quantity: number; unit: string }>;
-  hasBlueprint: boolean;
-  confidence: string;
-}
-
 interface DocumentsPaneProps {
   projectId: string;
   siteImages: string[] | null;
-  aiAnalysis?: AIAnalysis | null;
   className?: string;
-  onMaterialsUpdated?: () => void;
 }
 
 interface ProjectDocument {
@@ -49,44 +33,14 @@ interface ProjectDocument {
   uploaded_at: string;
 }
 
-interface ConsolidatedMaterial {
-  id: string;
-  item: string;
-  baseQuantity: number;
-  unit: string;
-  quantityWithWaste: number;
-  isEssential: boolean; // Only essential materials get waste calculation
-}
-
-// Default waste percentage for essential materials only
-const WASTE_PERCENTAGE = 10;
-
-// Essential material patterns that should get waste calculation
-const ESSENTIAL_PATTERNS = [
-  /^laminate flooring$/i,
-  /^underlayment$/i,
-  /^baseboard trim$/i,
-  /^adhesive & supplies$/i,
-];
-
-// Check if a material is essential (should get waste calculation)
-const isEssentialMaterial = (itemName: string): boolean => {
-  return ESSENTIAL_PATTERNS.some(pattern => pattern.test(itemName.trim()));
-};
-
 export default function DocumentsPane({ 
   projectId, 
   siteImages, 
-  aiAnalysis,
   className,
-  onMaterialsUpdated
 }: DocumentsPaneProps) {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [editingMaterials, setEditingMaterials] = useState<ConsolidatedMaterial[]>([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch project documents
   useEffect(() => {
@@ -111,46 +65,6 @@ export default function DocumentsPane({
     fetchDocuments();
   }, [projectId]);
 
-  // Process materials - keep all items but only add waste to essential ones
-  // Also ensure Underlayment matches Laminate Flooring
-  const processedMaterials = useMemo((): ConsolidatedMaterial[] => {
-    if (!aiAnalysis?.materials?.length) return [];
-
-    // Find laminate flooring quantity for underlayment sync
-    const laminateItem = aiAnalysis.materials.find(m => 
-      /laminate flooring/i.test(m.item)
-    );
-    const laminateQty = laminateItem?.quantity || aiAnalysis.area || 0;
-
-    return aiAnalysis.materials.map((m, index) => {
-      const isEssential = isEssentialMaterial(m.item);
-      
-      // Sync underlayment with laminate flooring
-      let baseQty = m.quantity;
-      if (/^underlayment$/i.test(m.item.trim()) && laminateQty > 0) {
-        baseQty = laminateQty;
-      }
-
-      return {
-        id: `mat-${index}`,
-        item: m.item,
-        baseQuantity: baseQty,
-        unit: m.unit,
-        quantityWithWaste: isEssential 
-          ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE / 100))
-          : baseQty, // Non-essential items don't get waste
-        isEssential,
-      };
-    });
-  }, [aiAnalysis]);
-
-  // Initialize editing materials when processed changes
-  useEffect(() => {
-    if (processedMaterials.length > 0 && editingMaterials.length === 0) {
-      setEditingMaterials(processedMaterials);
-    }
-  }, [processedMaterials, editingMaterials.length]);
-
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (['pdf'].includes(ext || '')) return <FileText className="h-4 w-4 text-red-500" />;
@@ -165,82 +79,8 @@ export default function DocumentsPane({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Handle quantity change in edit mode - only add waste for essential materials
-  const handleQuantityChange = (id: string, newQuantity: number) => {
-    setEditingMaterials(prev => prev.map(m => 
-      m.id === id 
-        ? { 
-            ...m, 
-            baseQuantity: newQuantity,
-            quantityWithWaste: m.isEssential 
-              ? Math.ceil(newQuantity * (1 + WASTE_PERCENTAGE / 100))
-              : newQuantity // Non-essential items don't get waste
-          } 
-        : m
-    ));
-  };
-
-  // Save materials to database
-  const saveMaterials = useCallback(async () => {
-    if (!projectId) return;
-    
-    setIsSaving(true);
-    try {
-      // Convert to the format expected by the database
-      const materialsToSave = editingMaterials.map(m => ({
-        item: m.item,
-        quantity: m.baseQuantity,
-        unit: m.unit,
-        userEdited: true,
-      }));
-
-      // Get current summary
-      const { data: summary, error: fetchError } = await supabase
-        .from("project_summaries")
-        .select("photo_estimate, ai_workflow_config")
-        .eq("project_id", projectId)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      // Update photo_estimate with edited materials
-      const currentPhotoEstimate = (summary?.photo_estimate as any) || {};
-      const updatedPhotoEstimate = {
-        ...currentPhotoEstimate,
-        materials: materialsToSave,
-        materialsEditedAt: new Date().toISOString(),
-      };
-
-      const { error: updateError } = await supabase
-        .from("project_summaries")
-        .update({
-          photo_estimate: updatedPhotoEstimate,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("project_id", projectId);
-
-      if (updateError) throw updateError;
-
-      toast.success("Materials saved successfully!");
-      setIsEditMode(false);
-      onMaterialsUpdated?.();
-    } catch (error) {
-      console.error("Error saving materials:", error);
-      toast.error("Failed to save materials");
-    } finally {
-      setIsSaving(false);
-    }
-  }, [projectId, editingMaterials, onMaterialsUpdated]);
-
-  // Cancel editing
-  const cancelEditing = () => {
-    setEditingMaterials(processedMaterials);
-    setIsEditMode(false);
-  };
-
   const totalImages = (siteImages?.length || 0);
   const pdfDocuments = documents.filter(d => d.file_name.toLowerCase().endsWith('.pdf'));
-  const displayMaterials = isEditMode ? editingMaterials : (editingMaterials.length > 0 ? editingMaterials : processedMaterials);
 
   return (
     <Card className={cn("border-border", className)}>
@@ -248,7 +88,7 @@ export default function DocumentsPane({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4 text-muted-foreground" />
-            Documents & Materials
+            Documents
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
@@ -331,119 +171,12 @@ export default function DocumentsPane({
           </div>
         )}
 
-        {/* Essential Materials List with Waste Calculation - Editable */}
-        {displayMaterials.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium flex items-center gap-2">
-                <Package className="h-4 w-4 text-amber-500" />
-                Essential Materials 
-                <Badge variant="outline" className="text-[10px] ml-1 bg-green-50 text-green-700 border-green-200">
-                  +{WASTE_PERCENTAGE}% waste included
-                </Badge>
-              </h4>
-              <div className="flex items-center gap-2">
-                {isEditMode ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={cancelEditing}
-                      disabled={isSaving}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={saveMaterials}
-                      disabled={isSaving}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4 mr-1" />
-                      )}
-                      Save
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditMode(true)}
-                  >
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-medium">Material</th>
-                    <th className="text-right px-3 py-2 font-medium">Base Qty</th>
-                    <th className="text-right px-3 py-2 font-medium">With Waste</th>
-                    <th className="text-center px-3 py-2 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayMaterials.map((m) => (
-                    <tr key={m.id} className={cn("border-t", m.isEssential && "bg-amber-50/30 dark:bg-amber-950/10")}>
-                      <td className="px-3 py-2 text-foreground">
-                        <span className={cn(m.isEssential && "font-medium")}>{m.item}</span>
-                        {m.isEssential && (
-                          <span className="ml-2 text-[10px] text-amber-600">+10%</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">
-                        {isEditMode ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={m.baseQuantity}
-                              onChange={(e) => handleQuantityChange(m.id, parseInt(e.target.value) || 0)}
-                              className="w-20 h-8 text-right px-2 rounded border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                            />
-                            <span className="text-xs w-16">{m.unit}</span>
-                          </div>
-                        ) : (
-                          <>
-                            {m.baseQuantity.toLocaleString()} {m.unit}
-                          </>
-                        )}
-                      </td>
-                      <td className={cn(
-                        "px-3 py-2 text-right font-medium",
-                        m.isEssential 
-                          ? "text-amber-600 dark:text-amber-400" 
-                          : "text-muted-foreground"
-                      )}>
-                        {m.quantityWithWaste.toLocaleString()} {m.unit}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-600 border-green-200">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          RAG
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {aiAnalysis?.area && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Based on detected area: {aiAnalysis.area.toLocaleString()} {aiAnalysis.areaUnit}
-              </p>
-            )}
-          </div>
-        )}
+        {/* Materials info note */}
+        <div className="p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50">
+          <p className="text-sm text-amber-700 dark:text-amber-400">
+            💡 Materials and cost breakdown are managed in the <strong>Materials</strong> tab.
+          </p>
+        </div>
 
         {/* Empty state */}
         {!siteImages?.length && documents.length === 0 && !isLoading && (
@@ -475,7 +208,7 @@ export default function DocumentsPane({
               <img 
                 src={selectedImage}
                 alt="Site photo"
-                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                className="w-full h-auto rounded-lg"
               />
             </div>
           )}
