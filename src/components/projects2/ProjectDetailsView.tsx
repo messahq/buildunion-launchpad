@@ -74,7 +74,7 @@ function getDefaultDemoMaterials(projectDescription?: string): Array<{ item: str
   }
   
   // Flooring project defaults
-  if (desc.includes("floor") || desc.includes("padló") || desc.includes("laminate") || desc.includes("laminált")) {
+  if (desc.includes("floor") || desc.includes("padló") || desc.includes("laminate") || desc.includes("laminált") || desc.includes("tile") || desc.includes("csempe")) {
     return [
       { item: "Laminate Flooring", quantity: 150, unit: "sq ft" },
       { item: "Underlayment", quantity: 150, unit: "sq ft" },
@@ -84,13 +84,183 @@ function getDefaultDemoMaterials(projectDescription?: string): Array<{ item: str
       { item: "Spacers", quantity: 1, unit: "pack" },
     ];
   }
-  
-  // Renovation/general defaults
+
+  // Roofing project defaults
+  if (desc.includes("roof") || desc.includes("tető") || desc.includes("shingle") || desc.includes("zsindely")) {
+    return [
+      { item: "Asphalt Shingles", quantity: 30, unit: "bundles" },
+      { item: "Roofing Underlayment", quantity: 500, unit: "sq ft" },
+      { item: "Roofing Nails", quantity: 10, unit: "lbs" },
+      { item: "Drip Edge", quantity: 100, unit: "linear ft" },
+      { item: "Ridge Cap Shingles", quantity: 3, unit: "bundles" },
+      { item: "Roofing Cement", quantity: 2, unit: "tubes" },
+      { item: "Flashing", quantity: 20, unit: "linear ft" },
+      { item: "Ventilation Supplies", quantity: 4, unit: "pcs" },
+    ];
+  }
+
+  // Electrical project defaults
+  if (desc.includes("electr") || desc.includes("villany") || desc.includes("wiring") || desc.includes("vezeték")) {
+    return [
+      { item: "Electrical Wire (14/2)", quantity: 250, unit: "ft" },
+      { item: "Electrical Wire (12/2)", quantity: 100, unit: "ft" },
+      { item: "Outlet Boxes", quantity: 12, unit: "pcs" },
+      { item: "Switch Boxes", quantity: 6, unit: "pcs" },
+      { item: "Circuit Breakers", quantity: 4, unit: "pcs" },
+      { item: "Outlets & Switches", quantity: 18, unit: "pcs" },
+      { item: "Wire Connectors", quantity: 1, unit: "box" },
+      { item: "Electrical Tape", quantity: 3, unit: "rolls" },
+    ];
+  }
+
+  // Plumbing project defaults
+  if (desc.includes("plumb") || desc.includes("vízvezeték") || desc.includes("pipe") || desc.includes("cső") || desc.includes("bathroom") || desc.includes("fürdő")) {
+    return [
+      { item: "PVC Pipes (Various)", quantity: 50, unit: "linear ft" },
+      { item: "Copper Pipes", quantity: 20, unit: "linear ft" },
+      { item: "Pipe Fittings", quantity: 25, unit: "pcs" },
+      { item: "Shut-off Valves", quantity: 4, unit: "pcs" },
+      { item: "Plumber's Tape", quantity: 3, unit: "rolls" },
+      { item: "PVC Cement & Primer", quantity: 2, unit: "cans" },
+      { item: "Drain Assembly", quantity: 2, unit: "pcs" },
+      { item: "Silicone Sealant", quantity: 3, unit: "tubes" },
+    ];
+  }
+
+  // HVAC project defaults
+  if (desc.includes("hvac") || desc.includes("heating") || desc.includes("cooling") || desc.includes("fűtés") || desc.includes("hűtés") || desc.includes("klíma")) {
+    return [
+      { item: "Ductwork", quantity: 100, unit: "linear ft" },
+      { item: "Duct Insulation", quantity: 100, unit: "sq ft" },
+      { item: "Vent Registers", quantity: 8, unit: "pcs" },
+      { item: "HVAC Tape", quantity: 4, unit: "rolls" },
+      { item: "Thermostat", quantity: 1, unit: "pcs" },
+      { item: "Air Filters", quantity: 4, unit: "pcs" },
+      { item: "Refrigerant Lines", quantity: 25, unit: "ft" },
+      { item: "Mounting Brackets", quantity: 2, unit: "sets" },
+    ];
+  }
+
+  // Masonry/Concrete project defaults
+  if (desc.includes("mason") || desc.includes("concrete") || desc.includes("beton") || desc.includes("brick") || desc.includes("tégla") || desc.includes("stone") || desc.includes("kő")) {
+    return [
+      { item: "Concrete Mix", quantity: 20, unit: "bags" },
+      { item: "Rebar", quantity: 100, unit: "linear ft" },
+      { item: "Bricks/Blocks", quantity: 200, unit: "pcs" },
+      { item: "Mortar Mix", quantity: 10, unit: "bags" },
+      { item: "Sand", quantity: 1, unit: "cubic yard" },
+      { item: "Gravel", quantity: 1, unit: "cubic yard" },
+      { item: "Concrete Forms", quantity: 20, unit: "linear ft" },
+      { item: "Rebar Ties", quantity: 1, unit: "box" },
+    ];
+  }
+
+  // Drywall project defaults
+  if (desc.includes("drywall") || desc.includes("gipszkarton") || desc.includes("wall") || desc.includes("fal")) {
+    return [
+      { item: "Drywall Sheets (4x8)", quantity: 20, unit: "pcs" },
+      { item: "Drywall Screws", quantity: 2, unit: "boxes" },
+      { item: "Joint Compound", quantity: 3, unit: "buckets" },
+      { item: "Drywall Tape", quantity: 4, unit: "rolls" },
+      { item: "Corner Bead", quantity: 10, unit: "pcs" },
+      { item: "Sanding Sponge", quantity: 5, unit: "pcs" },
+      { item: "Primer", quantity: 2, unit: "gallons" },
+      { item: "Metal Studs", quantity: 30, unit: "pcs" },
+    ];
+  }
+
+  // Kitchen project defaults
+  if (desc.includes("kitchen") || desc.includes("konyha") || desc.includes("cabinet") || desc.includes("szekrény")) {
+    return [
+      { item: "Base Cabinets", quantity: 6, unit: "pcs" },
+      { item: "Wall Cabinets", quantity: 4, unit: "pcs" },
+      { item: "Countertop Material", quantity: 25, unit: "sq ft" },
+      { item: "Cabinet Hardware", quantity: 20, unit: "pcs" },
+      { item: "Backsplash Tile", quantity: 15, unit: "sq ft" },
+      { item: "Tile Adhesive", quantity: 1, unit: "bucket" },
+      { item: "Grout", quantity: 2, unit: "bags" },
+      { item: "Sink & Faucet", quantity: 1, unit: "set" },
+    ];
+  }
+
+  // Deck/Outdoor project defaults
+  if (desc.includes("deck") || desc.includes("terasz") || desc.includes("patio") || desc.includes("outdoor") || desc.includes("kültéri") || desc.includes("fence") || desc.includes("kerítés")) {
+    return [
+      { item: "Pressure Treated Lumber (2x6)", quantity: 40, unit: "pcs" },
+      { item: "Deck Boards", quantity: 200, unit: "sq ft" },
+      { item: "Deck Screws", quantity: 5, unit: "lbs" },
+      { item: "Joist Hangers", quantity: 20, unit: "pcs" },
+      { item: "Concrete Post Blocks", quantity: 6, unit: "pcs" },
+      { item: "Railing System", quantity: 30, unit: "linear ft" },
+      { item: "Deck Stain/Sealer", quantity: 3, unit: "gallons" },
+      { item: "Post Caps", quantity: 6, unit: "pcs" },
+    ];
+  }
+
+  // Window/Door project defaults
+  if (desc.includes("window") || desc.includes("ablak") || desc.includes("door") || desc.includes("ajtó")) {
+    return [
+      { item: "Windows", quantity: 6, unit: "pcs" },
+      { item: "Doors", quantity: 2, unit: "pcs" },
+      { item: "Window Trim", quantity: 50, unit: "linear ft" },
+      { item: "Door Trim", quantity: 20, unit: "linear ft" },
+      { item: "Insulation Foam", quantity: 4, unit: "cans" },
+      { item: "Shims", quantity: 2, unit: "packs" },
+      { item: "Caulk", quantity: 6, unit: "tubes" },
+      { item: "Hardware (Hinges, Locks)", quantity: 1, unit: "set" },
+    ];
+  }
+
+  // Insulation project defaults
+  if (desc.includes("insul") || desc.includes("szigetel")) {
+    return [
+      { item: "Fiberglass Batts (R-13)", quantity: 500, unit: "sq ft" },
+      { item: "Fiberglass Batts (R-30)", quantity: 300, unit: "sq ft" },
+      { item: "Vapor Barrier", quantity: 400, unit: "sq ft" },
+      { item: "Spray Foam (Cans)", quantity: 6, unit: "cans" },
+      { item: "Insulation Supports", quantity: 50, unit: "pcs" },
+      { item: "Staples", quantity: 1, unit: "box" },
+      { item: "Tape & Sealant", quantity: 4, unit: "rolls" },
+      { item: "Safety Equipment", quantity: 1, unit: "kit" },
+    ];
+  }
+
+  // Siding/Exterior project defaults
+  if (desc.includes("siding") || desc.includes("burkolat") || desc.includes("exterior") || desc.includes("külső")) {
+    return [
+      { item: "Vinyl Siding", quantity: 500, unit: "sq ft" },
+      { item: "House Wrap", quantity: 500, unit: "sq ft" },
+      { item: "J-Channel", quantity: 100, unit: "linear ft" },
+      { item: "Corner Posts", quantity: 8, unit: "pcs" },
+      { item: "Starter Strip", quantity: 50, unit: "linear ft" },
+      { item: "Siding Nails", quantity: 5, unit: "lbs" },
+      { item: "Trim Pieces", quantity: 20, unit: "pcs" },
+      { item: "Caulk & Sealant", quantity: 6, unit: "tubes" },
+    ];
+  }
+
+  // Office/Commercial project defaults
+  if (desc.includes("office") || desc.includes("iroda") || desc.includes("commercial") || desc.includes("kereskedelmi")) {
+    return [
+      { item: "Ceiling Tiles", quantity: 50, unit: "pcs" },
+      { item: "Ceiling Grid", quantity: 100, unit: "linear ft" },
+      { item: "Partition Walls", quantity: 4, unit: "panels" },
+      { item: "Commercial Flooring", quantity: 500, unit: "sq ft" },
+      { item: "Light Fixtures", quantity: 12, unit: "pcs" },
+      { item: "Electrical Outlets", quantity: 20, unit: "pcs" },
+      { item: "Data Cabling", quantity: 500, unit: "ft" },
+      { item: "Fire Safety Equipment", quantity: 4, unit: "pcs" },
+    ];
+  }
+
+  // Default renovation/general materials (fallback)
   return [
     { item: "Drywall Sheets", quantity: 12, unit: "pcs" },
     { item: "Joint Compound", quantity: 2, unit: "buckets" },
     { item: "Screws & Fasteners", quantity: 1, unit: "box" },
+    { item: "Lumber (2x4)", quantity: 20, unit: "pcs" },
     { item: "Electrical Supplies", quantity: 1, unit: "kit" },
+    { item: "Plumbing Supplies", quantity: 1, unit: "kit" },
     { item: "Primer & Paint", quantity: 4, unit: "gallons" },
     { item: "Finishing Materials", quantity: 1, unit: "set" },
   ];
