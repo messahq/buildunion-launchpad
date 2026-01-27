@@ -131,3 +131,25 @@ All colors MUST be HSL.
     @apply bg-transparent border-2 border-amber-500 text-amber-600 hover:border-amber-600 hover:text-amber-700;
   }
 }
+
+/* Progress bar shimmer animation */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Pulse glow animation for progress updates */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 20px 4px currentColor;
+  }
+}

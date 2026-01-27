@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -52,11 +52,38 @@ export default function ProjectTimelineBar({
   const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date | null>(projectStartDate);
   const [endDate, setEndDate] = useState<Date | null>(projectEndDate);
+  
+  // Track previous phase values for animation trigger
+  const prevPhasesRef = useRef<Record<string, number>>({});
+  const [animatingPhases, setAnimatingPhases] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setStartDate(projectStartDate);
     setEndDate(projectEndDate);
   }, [projectStartDate, projectEndDate]);
+
+  // Detect phase progress changes and trigger animations
+  useEffect(() => {
+    if (!phases) return;
+    
+    const newAnimating: Record<string, boolean> = {};
+    phases.forEach(phase => {
+      const prevProgress = prevPhasesRef.current[phase.name] ?? phase.progress;
+      if (prevProgress !== phase.progress) {
+        newAnimating[phase.name] = true;
+      }
+      prevPhasesRef.current[phase.name] = phase.progress;
+    });
+    
+    if (Object.keys(newAnimating).length > 0) {
+      setAnimatingPhases(newAnimating);
+      // Clear animation state after animation completes
+      const timer = setTimeout(() => {
+        setAnimatingPhases({});
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [phases]);
 
   const today = new Date();
   
@@ -181,19 +208,57 @@ export default function ProjectTimelineBar({
             
             {/* Phase-based progress bars */}
             {phases && phases.length > 0 ? (
-              <div className="space-y-1">
-                {phases.map((phase, idx) => (
-                  <div key={phase.name} className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground w-16 truncate">{phase.name}</span>
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={cn("h-full rounded-full transition-all duration-500 ease-out", phase.color)}
-                        style={{ width: `${phase.progress}%` }}
-                      />
+              <div className="space-y-1.5">
+                {phases.map((phase, idx) => {
+                  const isAnimating = animatingPhases[phase.name];
+                  return (
+                    <div 
+                      key={phase.name} 
+                      className={cn(
+                        "flex items-center gap-2 transition-all duration-300",
+                        isAnimating && "scale-[1.02]"
+                      )}
+                    >
+                      <span className={cn(
+                        "text-[10px] text-muted-foreground w-16 truncate transition-colors duration-300",
+                        isAnimating && "text-foreground font-medium"
+                      )}>
+                        {phase.name}
+                      </span>
+                      <div className={cn(
+                        "flex-1 h-2 bg-muted rounded-full overflow-hidden relative transition-all duration-300",
+                        isAnimating && "h-2.5 shadow-sm"
+                      )}>
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-700 ease-out",
+                            phase.color,
+                            isAnimating && "shadow-lg"
+                          )}
+                          style={{ 
+                            width: `${phase.progress}%`,
+                            boxShadow: isAnimating ? `0 0 12px 2px currentColor` : undefined,
+                          }}
+                        />
+                        {/* Shine effect on animation */}
+                        {isAnimating && (
+                          <div 
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_1s_ease-out]"
+                            style={{
+                              animation: 'shimmer 1s ease-out',
+                            }}
+                          />
+                        )}
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-medium w-10 text-right transition-all duration-300",
+                        isAnimating && "text-foreground scale-110"
+                      )}>
+                        {phase.progress}%
+                      </span>
                     </div>
-                    <span className="text-[10px] font-medium w-10 text-right">{phase.progress}%</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <>
