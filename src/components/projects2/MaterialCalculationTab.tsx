@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,8 @@ import {
   Download,
   Loader2,
   MapPin,
-  PenLine
+  PenLine,
+  RotateCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -150,9 +151,8 @@ export function MaterialCalculationTab({
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
   
-  // Material items with waste calculation
-  const [materialItems, setMaterialItems] = useState<CostItem[]>(() => {
-    // First pass: find laminate quantity for syncing underlayment
+  // Helper to create initial material items
+  const createInitialMaterialItems = useCallback(() => {
     const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
     const laminateQty = laminateEntry?.quantity || 0;
     
@@ -181,10 +181,10 @@ export function MaterialCalculationTab({
         isEssential,
       };
     });
-  });
+  }, [initialMaterials]);
 
-  // Labor items
-  const [laborItems, setLaborItems] = useState<CostItem[]>(() => 
+  // Helper to create initial labor items
+  const createInitialLaborItems = useCallback(() => 
     initialLabor.map((l, idx) => ({
       id: `labor-${idx}`,
       item: l.item,
@@ -193,7 +193,19 @@ export function MaterialCalculationTab({
       unitPrice: l.unitPrice || 0,
       totalPrice: l.quantity * (l.unitPrice || 0),
     }))
-  );
+  , [initialLabor]);
+  
+  // Material items with waste calculation
+  const [materialItems, setMaterialItems] = useState<CostItem[]>(createInitialMaterialItems);
+
+  // Labor items
+  const [laborItems, setLaborItems] = useState<CostItem[]>(createInitialLaborItems);
+  
+  // Other/custom items
+  const [otherItems, setOtherItems] = useState<CostItem[]>([]);
+  
+  // Track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Get laminate base quantity for sync dependency
   const laminateBaseQty = materialItems.find(m => /laminate|flooring/i.test(m.item))?.baseQuantity;
@@ -225,9 +237,6 @@ export function MaterialCalculationTab({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laminateBaseQty]);
-  
-  // Other/custom items
-  const [otherItems, setOtherItems] = useState<CostItem[]>([]);
   
   // New other item form
   const [otherDescription, setOtherDescription] = useState("");
@@ -274,12 +283,32 @@ export function MaterialCalculationTab({
     }
   }, [grandTotal, projectAddress, onGrandTotalChange]);
 
+  // Handle base quantity change for essential materials (auto-updates waste)
+  const handleBaseQuantityChange = (id: string, newBaseQty: number) => {
+    setHasUnsavedChanges(true);
+    setMaterialItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      
+      const quantityWithWaste = item.isEssential 
+        ? Math.ceil(newBaseQty * (1 + WASTE_PERCENTAGE)) 
+        : newBaseQty;
+      
+      return {
+        ...item,
+        baseQuantity: newBaseQty,
+        quantity: quantityWithWaste,
+        totalPrice: quantityWithWaste * item.unitPrice,
+      };
+    }));
+  };
+
   const handleItemChange = (
     setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,
     id: string, 
     field: 'unitPrice' | 'quantity',
     value: number
   ) => {
+    setHasUnsavedChanges(true);
     setItems(prev => prev.map(item => {
       if (item.id !== id) return item;
       const newItem = { ...item, [field]: value };
@@ -293,6 +322,7 @@ export function MaterialCalculationTab({
     setEditValues({
       item: item.item,
       quantity: item.quantity,
+      baseQuantity: item.baseQuantity,
       unit: item.unit,
       unitPrice: item.unitPrice,
     });
@@ -302,6 +332,7 @@ export function MaterialCalculationTab({
     setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,
     id: string
   ) => {
+    setHasUnsavedChanges(true);
     setItems(prev => prev.map(item => 
       item.id === id 
         ? { 
@@ -324,7 +355,17 @@ export function MaterialCalculationTab({
     setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,
     id: string
   ) => {
+    setHasUnsavedChanges(true);
     setItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Reset all changes to initial state
+  const handleReset = () => {
+    setMaterialItems(createInitialMaterialItems());
+    setLaborItems(createInitialLaborItems());
+    setOtherItems([]);
+    setHasUnsavedChanges(false);
+    toast.info(t("materials.reset", "Changes reset to original values"));
   };
 
   const addOtherItem = () => {
@@ -801,11 +842,25 @@ export function MaterialCalculationTab({
             )}
           </div>
           <div className="col-span-2 text-center text-sm text-muted-foreground">
-            {item.isEssential && item.baseQuantity ? (
-              <span className="flex flex-col items-center leading-tight">
-                <span className="text-xs text-muted-foreground/60 line-through">{item.baseQuantity.toLocaleString()}</span>
-                <span className="font-medium text-amber-700 dark:text-amber-400">{item.quantity.toLocaleString()}</span>
-              </span>
+            {item.isEssential && item.baseQuantity !== undefined ? (
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={item.baseQuantity}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      handleBaseQuantityChange(item.id, val);
+                    }}
+                    className="h-6 w-16 text-xs text-center p-1 border-dashed"
+                    title={t("materials.editBaseQty", "Edit base quantity")}
+                  />
+                </div>
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                  → {item.quantity.toLocaleString()} (+10%)
+                </span>
+              </div>
             ) : (
               item.quantity.toLocaleString()
             )}
@@ -882,6 +937,26 @@ export function MaterialCalculationTab({
           >
             Project: {formatCurrency(projectTotal)}
           </Badge>
+          {/* Unsaved changes indicator */}
+          {hasUnsavedChanges && (
+            <Badge 
+              variant="outline" 
+              className="text-sm border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 animate-pulse"
+            >
+              {t("materials.unsaved", "Unsaved")}
+            </Badge>
+          )}
+          {/* Reset Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+            disabled={!hasUnsavedChanges}
+            className="gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("materials.reset", "Reset")}</span>
+          </Button>
           {/* Export PDF Button */}
           <Button
             variant="outline"
