@@ -873,7 +873,36 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
       {/* Main Project Timeline Bar - THE CLOCKWORK */}
       {(() => {
-        // Calculate task-based progress for the main timeline - tasks now always includes demo tasks when DB is empty
+        // Helper to categorize tasks by phase
+        const getPhaseForTask = (task: TaskWithBudget): "preparation" | "execution" | "verification" => {
+          const titleLower = task.title.toLowerCase();
+          if (titleLower.includes("prep") || titleLower.includes("order") || titleLower.includes("measure") || titleLower.includes("deliver")) {
+            return "preparation";
+          }
+          if (titleLower.includes("install") || titleLower.includes("lay") || titleLower.includes("apply") || titleLower.includes("cut")) {
+            return "execution";
+          }
+          if (titleLower.includes("inspect") || titleLower.includes("verify") || titleLower.includes("clean") || titleLower.includes("final")) {
+            return "verification";
+          }
+          return "execution"; // Default
+        };
+
+        // Calculate phase-based progress
+        const preparationTasks = tasks.filter(t => getPhaseForTask(t) === "preparation");
+        const executionTasks = tasks.filter(t => getPhaseForTask(t) === "execution");
+        const verificationTasks = tasks.filter(t => getPhaseForTask(t) === "verification");
+
+        const calcProgress = (phaseTasks: TaskWithBudget[]) => 
+          phaseTasks.length === 0 ? 0 : Math.round((phaseTasks.filter(t => t.status === "completed").length / phaseTasks.length) * 100);
+
+        const phases = [
+          { name: "Preparation", progress: calcProgress(preparationTasks), taskCount: preparationTasks.length, color: "bg-blue-500" },
+          { name: "Execution", progress: calcProgress(executionTasks), taskCount: executionTasks.length, color: "bg-amber-500" },
+          { name: "Verification", progress: calcProgress(verificationTasks), taskCount: verificationTasks.length, color: "bg-green-500" },
+        ];
+
+        // Calculate overall task-based progress
         const completedCount = tasks.filter(t => t.status === "completed").length;
         const totalCount = tasks.length;
         const taskProgressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -905,6 +934,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             taskProgress={taskProgressPercent}
             completedTasks={completedCount}
             totalTasks={totalCount}
+            phases={phases}
           />
         );
       })()}

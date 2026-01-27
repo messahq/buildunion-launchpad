@@ -15,6 +15,13 @@ import { cn } from "@/lib/utils";
 import { format, differenceInDays, isAfter, isBefore, addDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 
+export interface PhaseProgress {
+  name: string;
+  progress: number;
+  taskCount: number;
+  color: string;
+}
+
 export interface ProjectTimelineBarProps {
   projectStartDate: Date | null;
   projectEndDate: Date | null;
@@ -27,6 +34,8 @@ export interface ProjectTimelineBarProps {
   completedTasks?: number;
   /** Total number of tasks */
   totalTasks?: number;
+  /** Phase-based progress data */
+  phases?: PhaseProgress[];
 }
 
 export default function ProjectTimelineBar({
@@ -38,6 +47,7 @@ export default function ProjectTimelineBar({
   taskProgress,
   completedTasks = 0,
   totalTasks = 0,
+  phases,
 }: ProjectTimelineBarProps) {
   const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date | null>(projectStartDate);
@@ -152,9 +162,9 @@ export default function ProjectTimelineBar({
           </div>
         </div>
 
-        {/* Center - Progress bar (only if dates are set) */}
+        {/* Center - Progress bar with phase indicators (only if dates are set) */}
         {startDate && endDate && (
-          <div className="flex-1 max-w-md hidden md:block">
+          <div className="flex-1 max-w-lg hidden md:block">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               {totalTasks > 0 ? (
                 <>
@@ -168,22 +178,44 @@ export default function ProjectTimelineBar({
                 </>
               )}
             </div>
-            <div className="h-3 bg-muted rounded-full overflow-hidden relative">
-              <div 
-                className={cn("h-full rounded-full transition-all duration-500 ease-out", getProgressColor())}
-                style={{ width: `${progressPercent}%` }}
-              />
-              {/* Tick marks for visual reference */}
-              <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
-                {[25, 50, 75].map((tick) => (
-                  <div 
-                    key={tick} 
-                    className="w-px h-full bg-background/30" 
-                    style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
-                  />
+            
+            {/* Phase-based progress bars */}
+            {phases && phases.length > 0 ? (
+              <div className="space-y-1">
+                {phases.map((phase, idx) => (
+                  <div key={phase.name} className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-16 truncate">{phase.name}</span>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={cn("h-full rounded-full transition-all duration-500 ease-out", phase.color)}
+                        style={{ width: `${phase.progress}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-medium w-10 text-right">{phase.progress}%</span>
+                  </div>
                 ))}
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="h-3 bg-muted rounded-full overflow-hidden relative">
+                  <div 
+                    className={cn("h-full rounded-full transition-all duration-500 ease-out", getProgressColor())}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                  {/* Tick marks for visual reference */}
+                  <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                    {[25, 50, 75].map((tick) => (
+                      <div 
+                        key={tick} 
+                        className="w-px h-full bg-background/30" 
+                        style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
+                      />
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+            
             <div className="flex items-center justify-center mt-1">
               <span className="text-xs font-medium text-foreground">
                 {Math.round(progressPercent)}% {t("projectTimeline.complete", "complete")}
