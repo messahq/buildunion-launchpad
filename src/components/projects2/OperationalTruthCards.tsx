@@ -522,8 +522,8 @@ export default function OperationalTruthCards({
                   key={index}
                   className={cn(
                     "p-3 rounded-lg border text-sm",
-                    report.status === "success" && "bg-green-500/5 border-green-500/30",
-                    report.status === "warning" && "bg-amber-500/5 border-amber-500/30",
+                    report.status === "success" && "bg-green-500/10 border-green-500/50",
+                    report.status === "warning" && "bg-amber-500/10 border-amber-500/50",
                     report.status === "error" && "bg-red-500/5 border-red-500/30"
                   )}
                 >
