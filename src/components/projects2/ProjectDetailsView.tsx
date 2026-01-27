@@ -1403,21 +1403,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             }}
           />
 
-          {/* Project Description */}
-          {project.description && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  Project Description
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{project.description}</p>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Project Command Center - AI Brief & Document Hub */}
           <ProjectCommandCenter
             projectId={projectId}
