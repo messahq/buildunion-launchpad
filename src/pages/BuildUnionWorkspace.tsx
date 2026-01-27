@@ -21,6 +21,7 @@ import { useSubscription, TEAM_LIMITS } from "@/hooks/useSubscription";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface SavedProject {
   id: string;
@@ -59,9 +60,12 @@ const BuildUnionProjects2 = () => {
   const [pendingWorkType, setPendingWorkType] = useState<string | null>(null);
   const [pendingDescription, setPendingDescription] = useState<string>("");
   
-  // Selected project for details view
+  // Selected project for details view (opens full project)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+  
+  // Sidebar project selection (just highlights in list, updates sidebar)
+  const [sidebarProjectId, setSidebarProjectId] = useState<string | null>(null);
   
   // Tab state for My Projects / Shared With Me
   const [projectsTab, setProjectsTab] = useState<"my" | "shared">("my");
@@ -697,13 +701,26 @@ const BuildUnionProjects2 = () => {
                             {projects.map((project) => (
                               <div 
                                 key={project.id}
-                                onClick={() => setSelectedProjectId(project.id)}
-                                className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer group"
+                                onClick={() => setSidebarProjectId(prev => prev === project.id ? null : project.id)}
+                                className={cn(
+                                  "p-6 rounded-xl border bg-card transition-all cursor-pointer group",
+                                  sidebarProjectId === project.id 
+                                    ? "border-amber-400 ring-2 ring-amber-200 dark:ring-amber-800/50" 
+                                    : "hover:border-amber-300"
+                                )}
                               >
                                 <div className="flex items-start justify-between">
                                   <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                                      <FolderOpen className="h-5 w-5 text-amber-600" />
+                                    <div className={cn(
+                                      "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                                      sidebarProjectId === project.id 
+                                        ? "bg-amber-500 text-white" 
+                                        : "bg-amber-100 dark:bg-amber-900/30"
+                                    )}>
+                                      <FolderOpen className={cn(
+                                        "h-5 w-5",
+                                        sidebarProjectId === project.id ? "text-white" : "text-amber-600"
+                                      )} />
                                     </div>
                                     <div>
                                       <div className="flex items-center gap-2">
@@ -725,6 +742,17 @@ const BuildUnionProjects2 = () => {
                                       </span>
                                     )}
                                     <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedProjectId(project.id);
+                                      }}
+                                    >
+                                      Open
+                                    </Button>
+                                    <Button
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -741,6 +769,7 @@ const BuildUnionProjects2 = () => {
                                           toast.error("Failed to delete project");
                                         } else {
                                           setProjects(prev => prev.filter(p => p.id !== project.id));
+                                          if (sidebarProjectId === project.id) setSidebarProjectId(null);
                                           toast.success("Project deleted");
                                         }
                                       }}
@@ -759,14 +788,14 @@ const BuildUnionProjects2 = () => {
 
                           <div className="lg:col-span-1">
                             <ProjectDashboardWidget 
-                              selectedProjectId={selectedProjectId}
+                              selectedProjectId={sidebarProjectId}
                               onTaskClick={(projectId, navigateToTasks) => {
                                 setSelectedProjectId(projectId);
                                 if (navigateToTasks) {
                                   setInitialTab("team");
                                 }
                               }}
-                              onClearSelection={() => setSelectedProjectId(null)}
+                              onClearSelection={() => setSidebarProjectId(null)}
                             />
                           </div>
                         </div>
