@@ -66,6 +66,8 @@ import {
   Clock,
   CircleCheck,
   CircleDashed,
+  AlertOctagon,
+  Radio,
   CircleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -183,6 +185,21 @@ export const ProjectCommandCenter = ({
   
   // Double-tap detection for mobile
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
+  
+  // ============================================
+  // CONFLICT MONITOR STATE
+  // ============================================
+  const [conflictMonitorData, setConflictMonitorData] = useState<{
+    hasConflict: boolean;
+    conflictDetails: string[];
+    lastChecked: Date | null;
+    severity: "none" | "warning" | "critical";
+  }>({
+    hasConflict: false,
+    conflictDetails: [],
+    lastChecked: null,
+    severity: "none",
+  });
 
   // ============================================
   // BUILD 16 DATA SOURCES STATUS
@@ -361,6 +378,82 @@ export const ProjectCommandCenter = ({
   const partialCount = dataSources.filter(s => s.status === "partial").length;
   const pendingCount = dataSources.filter(s => s.status === "pending").length;
   const completeCount = dataSources.filter(s => s.status === "complete").length;
+
+  // ============================================
+  // CONFLICT MONITOR - Cross-Check Logic (5 min interval)
+  // ============================================
+  const runConflictCheck = useCallback(() => {
+    const conflictDetails: string[] = [];
+    let severity: "none" | "warning" | "critical" = "none";
+    
+    // Cross-check critical data sources: Area, Timeline, Weather, GPS
+    const areaSource = dataSources.find(s => s.id === "area");
+    const timelineSource = dataSources.find(s => s.id === "timeline");
+    const weatherSource = dataSources.find(s => s.id === "weather");
+    const siteMapSource = dataSources.find(s => s.id === "sitemap");
+    const tasksSource = dataSources.find(s => s.id === "tasks");
+    const materialsSource = dataSources.find(s => s.id === "materials");
+    
+    // Check 1: Area vs Materials mismatch
+    if (areaSource?.status === "complete" && materialsSource?.status === "pending") {
+      conflictDetails.push("Area confirmed but no materials calculated");
+      severity = "warning";
+    }
+    
+    // Check 2: Timeline without tasks
+    if (timelineSource?.status === "complete" && tasksSource?.status === "pending") {
+      conflictDetails.push("Timeline set but no tasks assigned");
+      severity = "warning";
+    }
+    
+    // Check 3: GPS/Site without weather monitoring
+    if (siteMapSource?.status === "complete" && weatherSource?.status === "pending") {
+      conflictDetails.push("Site located but weather data unavailable");
+      severity = "warning";
+    }
+    
+    // Check 4: Operational Truth conflicts
+    if (operationalTruth.conflictStatus === "conflict_detected") {
+      conflictDetails.push("Site-to-Blueprint data conflict detected");
+      severity = "critical";
+    }
+    
+    // Check 5: OBC compliance issues (permit_required is a warning, not critical)
+    if (operationalTruth.obcCompliance === "permit_required") {
+      conflictDetails.push("OBC permit required - ensure compliance before proceeding");
+      severity = severity === "critical" ? "critical" : "warning";
+    }
+    
+    // Check 6: AI Confidence too low with high completion
+    if (operationalTruth.confidenceLevel === "low" && healthScore > 50) {
+      conflictDetails.push("Low AI confidence despite high data completion");
+      severity = severity === "critical" ? "critical" : "warning";
+    }
+    
+    // Check 7: Tasks assigned but team incomplete
+    if (tasksSource?.status !== "pending") {
+      const info = dataSourcesInfo || { teamSize: 1, taskCount: 0 };
+      if (info.taskCount > 5 && info.teamSize < 2) {
+        conflictDetails.push("Multiple tasks but only solo team member");
+        severity = severity === "critical" ? "critical" : "warning";
+      }
+    }
+    
+    setConflictMonitorData({
+      hasConflict: conflictDetails.length > 0,
+      conflictDetails,
+      lastChecked: new Date(),
+      severity,
+    });
+    
+  }, [dataSources, operationalTruth, healthScore, dataSourcesInfo]);
+  
+  // Run conflict check on mount and every 5 minutes
+  useEffect(() => {
+    runConflictCheck();
+    const interval = setInterval(runConflictCheck, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [runConflictCheck]);
 
   // Generate AI Brief and save to documents
   const generateAIBrief = useCallback(async (saveToDocuments = true) => {
@@ -970,13 +1063,94 @@ export const ProjectCommandCenter = ({
             </CollapsibleContent>
           </Collapsible>
 
+          {/* Conflict Monitor Warning Banner */}
+          {conflictMonitorData.hasConflict && (
+            <div className={cn(
+              "flex items-center gap-3 p-3 rounded-lg border",
+              conflictMonitorData.severity === "critical" 
+                ? "bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-800 animate-pulse" 
+                : "bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800"
+            )}>
+              <div className={cn(
+                "p-2 rounded-full relative",
+                conflictMonitorData.severity === "critical" 
+                  ? "bg-red-100 dark:bg-red-900/50" 
+                  : "bg-amber-100 dark:bg-amber-900/50"
+              )}>
+                <Radio className={cn(
+                  "h-4 w-4",
+                  conflictMonitorData.severity === "critical" 
+                    ? "text-red-600" 
+                    : "text-amber-600"
+                )} />
+                {conflictMonitorData.severity === "critical" && (
+                  <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-50" />
+                )}
+              </div>
+              <div className="flex-1">
+                <div className={cn(
+                  "font-medium text-sm flex items-center gap-2",
+                  conflictMonitorData.severity === "critical" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"
+                )}>
+                  <AlertOctagon className="h-4 w-4" />
+                  Adateltérés észlelve - a jelentés hitelessége alacsony
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {conflictMonitorData.conflictDetails.slice(0, 2).join(" • ")}
+                  {conflictMonitorData.conflictDetails.length > 2 && ` (+${conflictMonitorData.conflictDetails.length - 2} more)`}
+                </div>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[10px] cursor-help",
+                      conflictMonitorData.severity === "critical" 
+                        ? "border-red-400 text-red-600" 
+                        : "border-amber-400 text-amber-600"
+                    )}
+                  >
+                    {conflictMonitorData.conflictDetails.length} conflicts
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-xs">
+                  <p className="font-medium mb-1">Conflict Details:</p>
+                  <ul className="text-xs space-y-1">
+                    {conflictMonitorData.conflictDetails.map((detail, i) => (
+                      <li key={i} className="flex items-start gap-1">
+                        <span>•</span> {detail}
+                      </li>
+                    ))}
+                  </ul>
+                  {conflictMonitorData.lastChecked && (
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Last checked: {conflictMonitorData.lastChecked.toLocaleTimeString()}
+                    </p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+
           {/* Quick Action: AI Brief */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               onClick={() => generateAIBrief()}
               disabled={isGeneratingBrief}
-              className="flex-1 h-auto py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-cyan-500 hover:from-amber-600 hover:via-amber-500 hover:to-cyan-600 text-white shadow-md"
+              className={cn(
+                "flex-1 h-auto py-4 text-white shadow-md relative overflow-hidden",
+                conflictMonitorData.hasConflict
+                  ? "bg-gradient-to-r from-amber-600 via-orange-500 to-red-500 hover:from-amber-700 hover:via-orange-600 hover:to-red-600"
+                  : "bg-gradient-to-r from-amber-500 via-amber-400 to-cyan-500 hover:from-amber-600 hover:via-amber-500 hover:to-cyan-600"
+              )}
             >
+              {/* Flashing conflict indicator */}
+              {conflictMonitorData.hasConflict && (
+                <span className="absolute top-2 right-2">
+                  <AlertTriangle className="h-4 w-4 text-white animate-pulse" />
+                </span>
+              )}
               {isGeneratingBrief ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -987,7 +1161,11 @@ export const ProjectCommandCenter = ({
                   <Sparkles className="h-5 w-5 mr-2" />
                   <div className="text-left">
                     <div className="font-semibold">Generate AI Brief</div>
-                    <div className="text-xs opacity-90">Executive summary from all project data</div>
+                    <div className="text-xs opacity-90">
+                      {conflictMonitorData.hasConflict 
+                        ? "⚠️ Data conflicts detected" 
+                        : "Executive summary from all project data"}
+                    </div>
                   </div>
                 </>
               )}
@@ -995,16 +1173,22 @@ export const ProjectCommandCenter = ({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 relative">
                   <Download className="h-4 w-4" />
                   Export
                   <ChevronDown className="h-4 w-4" />
+                  {conflictMonitorData.severity === "critical" && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-ping" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => generateFullReport()}>
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Full Project Report (PDF)
+                  {conflictMonitorData.severity === "critical" && (
+                    <Badge variant="destructive" className="ml-auto text-[9px]">!</Badge>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onNavigateToTab?.("materials")}>
@@ -1052,13 +1236,30 @@ export const ProjectCommandCenter = ({
                     onDoubleClick={() => !isMobile && handleDoubleClick(action)}
                     onTouchEnd={() => isMobile && handleTouchEnd(action)}
                     className={cn(
-                      "p-4 rounded-lg border text-left transition-all cursor-pointer select-none",
+                      "p-4 rounded-lg border text-left transition-all cursor-pointer select-none relative",
                       "bg-white dark:bg-card hover:shadow-md",
                       isSelected && "border-amber-400 ring-2 ring-amber-200 bg-amber-50/50 dark:bg-amber-950/20",
                       !isSelected && "hover:border-amber-300",
-                      action.id === "ai-brief" && !isSelected && "ring-1 ring-amber-200"
+                      action.id === "ai-brief" && !isSelected && "ring-1 ring-amber-200",
+                      action.id === "ai-brief" && conflictMonitorData.hasConflict && "ring-2 ring-red-300 border-red-300"
                     )}
                   >
+                    {/* Conflict flashing indicator for AI Brief */}
+                    {action.id === "ai-brief" && conflictMonitorData.hasConflict && (
+                      <div className="absolute top-2 right-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className={cn(
+                            "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                            conflictMonitorData.severity === "critical" ? "bg-red-400" : "bg-amber-400"
+                          )} />
+                          <span className={cn(
+                            "relative inline-flex rounded-full h-3 w-3",
+                            conflictMonitorData.severity === "critical" ? "bg-red-500" : "bg-amber-500"
+                          )} />
+                        </span>
+                      </div>
+                    )}
+                    
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         "p-2 rounded-lg transition-transform",
@@ -1066,7 +1267,8 @@ export const ProjectCommandCenter = ({
                         action.category === "report" && "bg-amber-100 text-amber-600",
                         action.category === "financial" && "bg-emerald-100 text-emerald-600",
                         action.category === "legal" && "bg-blue-100 text-blue-600",
-                        action.category === "team" && "bg-purple-100 text-purple-600"
+                        action.category === "team" && "bg-purple-100 text-purple-600",
+                        action.id === "ai-brief" && conflictMonitorData.hasConflict && conflictMonitorData.severity === "critical" && "bg-red-100 text-red-600"
                       )}>
                         <Icon className="h-4 w-4" />
                       </div>
@@ -1074,9 +1276,19 @@ export const ProjectCommandCenter = ({
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm truncate">{action.name}</span>
                           {action.isPremium && <ProBadge tier="pro" size="sm" showTooltip={false} />}
+                          {action.id === "ai-brief" && conflictMonitorData.hasConflict && (
+                            <Badge 
+                              variant="destructive" 
+                              className="text-[9px] px-1.5 py-0 h-4 animate-pulse"
+                            >
+                              !
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                          {action.description}
+                          {action.id === "ai-brief" && conflictMonitorData.hasConflict 
+                            ? `⚠️ ${conflictMonitorData.conflictDetails.length} data conflicts`
+                            : action.description}
                         </p>
                       </div>
                     </div>
