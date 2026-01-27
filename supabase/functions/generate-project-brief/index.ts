@@ -102,6 +102,46 @@ serve(async (req) => {
     const documents = documentsResult.data || [];
     const members = membersResult.data || [];
 
+    // Extract text from uploaded PDF documents (added later to project)
+    let uploadedDocumentsSummary = "";
+    if (documents.length > 0) {
+      const pdfDocuments = documents.filter((d: any) => 
+        d.file_name?.toLowerCase().endsWith('.pdf')
+      );
+      
+      // Try to get extracted text from PDFs via extract-pdf-text function
+      const documentExtracts: string[] = [];
+      for (const doc of pdfDocuments.slice(0, 5)) { // Limit to 5 PDFs to avoid timeout
+        try {
+          const pdfResponse = await supabase.functions.invoke("extract-pdf-text", {
+            body: { filePath: doc.file_path, bucketName: "project-documents" },
+          });
+          if (!pdfResponse.error && pdfResponse.data?.text) {
+            documentExtracts.push(`📄 ${doc.file_name}:\n${pdfResponse.data.text.substring(0, 1500)}...`);
+          }
+        } catch (pdfError) {
+          console.warn(`PDF extraction failed for ${doc.file_name}:`, pdfError);
+        }
+      }
+      
+      if (documentExtracts.length > 0) {
+        uploadedDocumentsSummary = `
+== UPLOADED DOCUMENTS CONTENT (Added Later) ==
+${documentExtracts.join("\n\n")}
+`;
+      }
+      
+      // Also list non-PDF documents
+      const otherDocs = documents.filter((d: any) => 
+        !d.file_name?.toLowerCase().endsWith('.pdf')
+      );
+      if (otherDocs.length > 0) {
+        uploadedDocumentsSummary += `
+Other Uploaded Files: ${otherDocs.map((d: any) => d.file_name).join(", ")}
+`;
+      }
+    }
+
     // Fetch weather data if project has an address
     let weatherData: WeatherData | null = null;
     if (includeWeather && project.address) {
@@ -200,7 +240,7 @@ Pending: ${taskStats.pending}
 == DOCUMENTS (Tab 3: Documents) ==
 Uploaded Files: ${documents.length}
 Document Types: ${[...new Set(documents.map(d => d.file_name.split('.').pop()))].join(", ") || "None"}
-
+${uploadedDocumentsSummary}
 == CONTRACTS (Tab 4: Contracts) ==
 Draft: ${contractStats.draft}
 Sent to Client: ${contractStats.sent}
