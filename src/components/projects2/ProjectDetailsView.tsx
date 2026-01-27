@@ -35,6 +35,7 @@ import TeamTab from "./TeamTab";
 import ContractsTab from "./ContractsTab";
 import EditableAIAnalysisSummary from "./EditableAIAnalysisSummary";
 import { MaterialCalculationTab } from "./MaterialCalculationTab";
+import { ProjectCommandCenter } from "./ProjectCommandCenter";
 
 import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
@@ -1034,6 +1035,29 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               </CardContent>
             </Card>
           )}
+
+          {/* Project Command Center - AI Brief & Document Hub */}
+          <ProjectCommandCenter
+            projectId={projectId}
+            projectName={project.name}
+            projectAddress={project.address || undefined}
+            projectTrade={project.trade || undefined}
+            projectCreatedAt={project.created_at}
+            operationalTruth={operationalTruth}
+            companyBranding={{
+              name: companyBranding.name,
+              logo: companyBranding.logoUrl || undefined,
+              phone: companyBranding.phone || undefined,
+              email: companyBranding.email || undefined,
+              website: companyBranding.website || undefined,
+            }}
+            conflicts={projectConflicts.map(c => ({
+              conflictType: c.conflictType,
+              severity: c.severity,
+              description: c.description,
+            }))}
+            isPremium={isPremium}
+          />
         </TabsContent>
 
         {/* Team Tab - Only for Team Mode */}

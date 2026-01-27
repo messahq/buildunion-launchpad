@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.view-contract]
 verify_jwt = false
+
+[functions.generate-project-brief]
+verify_jwt = false
