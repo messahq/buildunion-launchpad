@@ -279,6 +279,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [tasksLoading, setTasksLoading] = useState(false);
   const [totalTaskBudget, setTotalTaskBudget] = useState(0);
   const [timelineView, setTimelineView] = useState<"hierarchical" | "myTasks">("hierarchical");
+  const [documentCount, setDocumentCount] = useState(0);
+  const [contractCount, setContractCount] = useState(0);
+  const [signedContracts, setSignedContracts] = useState(0);
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -612,6 +615,73 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       supabase.removeChannel(channel);
     };
   }, [projectId, user?.id]);
+
+  // Fetch document and contract counts for Data Sources synchronization
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!projectId) return;
+      
+      try {
+        // Fetch document count
+        const { count: docCount } = await supabase
+          .from("project_documents")
+          .select("*", { count: "exact", head: true })
+          .eq("project_id", projectId);
+        
+        setDocumentCount(docCount || 0);
+        
+        // Fetch contract count and signed contracts
+        const { data: contractsData } = await supabase
+          .from("contracts")
+          .select("id, status, client_signed_at")
+          .eq("project_id", projectId);
+        
+        if (contractsData) {
+          setContractCount(contractsData.length);
+          setSignedContracts(contractsData.filter(c => c.client_signed_at || c.status === "signed").length);
+        }
+      } catch (error) {
+        console.error("Error fetching counts:", error);
+      }
+    };
+
+    fetchCounts();
+
+    // Subscribe to document changes
+    const docChannel = supabase
+      .channel(`project_documents_count_${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_documents",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => fetchCounts()
+      )
+      .subscribe();
+
+    // Subscribe to contract changes
+    const contractChannel = supabase
+      .channel(`contracts_count_${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "contracts",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => fetchCounts()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(docChannel);
+      supabase.removeChannel(contractChannel);
+    };
+  }, [projectId]);
 
 
   // Calculate global verification rate based on completed verification tasks
@@ -1192,9 +1262,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             dataSourcesInfo={{
               taskCount: tasks.length,
               completedTasks: tasks.filter(t => t.status === "completed").length,
-              documentCount: 0, // Documents fetched in Documents tab
-              contractCount: 0, // Contracts fetched in Contracts tab
-              signedContracts: 0,
+              documentCount: documentCount,
+              contractCount: contractCount,
+              signedContracts: signedContracts,
               teamSize: members.length + 1, // +1 for owner
               hasTimeline: !!(summary?.project_start_date && summary?.project_end_date),
               hasClientInfo: !!(summary?.client_name || summary?.client_email),
