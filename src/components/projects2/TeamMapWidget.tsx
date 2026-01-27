@@ -102,70 +102,73 @@ export default function TeamMapWidget({
 
       <CardContent className="p-4">
         {/* Static map preview - clickable link to Google Maps */}
-        <a
-          href={googleMapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block group"
+        <div 
+          onClick={() => window.open(googleMapsUrl, '_blank', 'noopener,noreferrer')}
+          className="relative rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800 h-48 bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-cyan-950/30 dark:via-teal-950/30 dark:to-emerald-950/30 hover:border-cyan-400 dark:hover:border-cyan-600 transition-colors cursor-pointer group"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
+            }
+          }}
         >
-          <div className="relative rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800 h-48 bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-cyan-950/30 dark:via-teal-950/30 dark:to-emerald-950/30 hover:border-cyan-400 dark:hover:border-cyan-600 transition-colors cursor-pointer">
-            {/* Decorative map pattern */}
-            <div className="absolute inset-0 opacity-20 dark:opacity-10">
-              <svg className="w-full h-full" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Grid lines */}
-                <path d="M0 50 H400 M0 100 H400 M0 150 H400" stroke="currentColor" strokeWidth="1" className="text-cyan-600"/>
-                <path d="M100 0 V200 M200 0 V200 M300 0 V200" stroke="currentColor" strokeWidth="1" className="text-cyan-600"/>
-                {/* Curved roads */}
-                <path d="M50 180 Q150 100 250 120 T380 80" stroke="currentColor" strokeWidth="3" className="text-teal-500" fill="none"/>
-                <path d="M20 60 Q100 120 180 80 T320 140" stroke="currentColor" strokeWidth="2" className="text-cyan-500" fill="none"/>
-              </svg>
-            </div>
-
-            {/* Center pin with pulse animation */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative">
-                {/* Pulse rings */}
-                <div className="absolute inset-0 -m-4">
-                  <div className="w-16 h-16 rounded-full bg-cyan-500/20 animate-ping" />
-                </div>
-                <div className="absolute inset-0 -m-2">
-                  <div className="w-12 h-12 rounded-full bg-cyan-500/30" />
-                </div>
-                {/* Pin icon */}
-                <div className="relative w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <MapPin className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-
-            {/* Open in Google Maps overlay */}
-            <div className="absolute bottom-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-cyan-200 dark:border-cyan-800 rounded-lg p-2 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Navigation className="h-4 w-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
-                  <span className="text-sm text-foreground truncate">{projectAddress}</span>
-                </div>
-                <Button variant="ghost" size="sm" className="text-xs gap-1 flex-shrink-0 group-hover:text-cyan-600">
-                  <ExternalLink className="h-3 w-3" />
-                  <span className="hidden sm:inline">{t("common.openMaps", "Open Maps")}</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Locked overlay for non-premium users with conflicts */}
-            {!isPremium && hasConflicts && (
-              <div className="absolute top-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg p-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  <span className="text-xs text-muted-foreground flex-1">
-                    {conflicts.length} {t("conflicts.detectedUpgrade", "conflicts detected")}
-                  </span>
-                  <ProBadge tier="premium" size="sm" />
-                </div>
-              </div>
-            )}
+          {/* Decorative map pattern */}
+          <div className="absolute inset-0 opacity-20 dark:opacity-10">
+            <svg className="w-full h-full" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Grid lines */}
+              <path d="M0 50 H400 M0 100 H400 M0 150 H400" stroke="currentColor" strokeWidth="1" className="text-cyan-600"/>
+              <path d="M100 0 V200 M200 0 V200 M300 0 V200" stroke="currentColor" strokeWidth="1" className="text-cyan-600"/>
+              {/* Curved roads */}
+              <path d="M50 180 Q150 100 250 120 T380 80" stroke="currentColor" strokeWidth="3" className="text-teal-500" fill="none"/>
+              <path d="M20 60 Q100 120 180 80 T320 140" stroke="currentColor" strokeWidth="2" className="text-cyan-500" fill="none"/>
+            </svg>
           </div>
-        </a>
+
+          {/* Center pin with pulse animation */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative">
+              {/* Pulse rings */}
+              <div className="absolute inset-0 -m-4">
+                <div className="w-16 h-16 rounded-full bg-cyan-500/20 animate-ping" />
+              </div>
+              <div className="absolute inset-0 -m-2">
+                <div className="w-12 h-12 rounded-full bg-cyan-500/30" />
+              </div>
+              {/* Pin icon */}
+              <div className="relative w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <MapPin className="h-4 w-4 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Open in Google Maps overlay */}
+          <div className="absolute bottom-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-cyan-200 dark:border-cyan-800 rounded-lg p-2 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Navigation className="h-4 w-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+                <span className="text-sm text-foreground truncate">{projectAddress}</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-cyan-600 dark:text-cyan-400 flex-shrink-0">
+                <ExternalLink className="h-3 w-3" />
+                <span className="hidden sm:inline">{t("common.openMaps", "Open Maps")}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Locked overlay for non-premium users with conflicts */}
+          {!isPremium && hasConflicts && (
+            <div className="absolute top-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg p-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <span className="text-xs text-muted-foreground flex-1">
+                  {conflicts.length} {t("conflicts.detectedUpgrade", "conflicts detected")}
+                </span>
+                <ProBadge tier="premium" size="sm" />
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Conflict legend for premium users */}
         {isPremium && hasConflicts && (
