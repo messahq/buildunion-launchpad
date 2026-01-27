@@ -51,12 +51,8 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
 
       if (regex.test(inputValue)) {
         setLocalValue(inputValue);
-        
-        // If it's a valid complete number, update parent immediately
-        const num = parseFloat(inputValue);
-        if (!isNaN(num)) {
-          onChange(num);
-        }
+        // DON'T update parent during typing - only on blur
+        // This prevents re-renders that cause focus/cursor issues
       }
     };
 
