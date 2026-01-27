@@ -10,8 +10,7 @@ import {
   AlertTriangle,
   User,
   Route,
-  Loader2,
-  MapPinned
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -92,7 +91,6 @@ function TeamMapWidgetInner({
 }: TeamMapWidgetProps & { apiKey: string }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<"on_site" | "en_route" | "away">("away");
   const [mapCenter, setMapCenter] = useState(defaultCenter);
@@ -220,66 +218,6 @@ function TeamMapWidgetInner({
   const lowCount = conflicts.filter(c => c.severity === "low").length;
   const hasConflicts = conflicts.length > 0;
 
-  const handleShareLocation = async () => {
-    if (!user) {
-      toast.error(t("common.loginRequired", "Please log in to share your location"));
-      return;
-    }
-
-    if (!navigator.geolocation) {
-      toast.error(t("location.notSupported", "Geolocation is not supported by your browser"));
-      return;
-    }
-
-    setIsUpdatingLocation(true);
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-
-        try {
-          const { error } = await supabase
-            .from("bu_profiles")
-            .update({
-              latitude,
-              longitude,
-              location_updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", user.id);
-
-          if (error) throw error;
-
-          toast.success(t("location.updated", "Location shared successfully!"));
-        } catch (error) {
-          console.error("Error updating location:", error);
-          toast.error(t("location.updateFailed", "Failed to update location"));
-        } finally {
-          setIsUpdatingLocation(false);
-        }
-      },
-      (error) => {
-        setIsUpdatingLocation(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            toast.error(t("location.permissionDenied", "Location permission denied. Please enable location access in your browser settings."));
-            break;
-          case error.POSITION_UNAVAILABLE:
-            toast.error(t("location.unavailable", "Location information is unavailable"));
-            break;
-          case error.TIMEOUT:
-            toast.error(t("location.timeout", "Location request timed out"));
-            break;
-          default:
-            toast.error(t("location.error", "An error occurred while getting location"));
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
-    );
-  };
 
   const handleStatusChange = async (newStatus: "on_site" | "en_route" | "away") => {
     if (!user || newStatus === currentStatus) return;
@@ -478,27 +416,6 @@ function TeamMapWidgetInner({
               ))}
             </div>
           </div>
-
-          {/* Share Location Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-xs h-9 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
-            onClick={handleShareLocation}
-            disabled={isUpdatingLocation}
-          >
-            {isUpdatingLocation ? (
-              <>
-                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                {t("location.updating", "Updating...")}
-              </>
-            ) : (
-              <>
-                <MapPinned className="h-3 w-3 mr-2" />
-                {t("location.shareMyLocation", "Share My Location")}
-              </>
-            )}
-          </Button>
         </div>
 
         {/* Conflict legend for premium users */}
