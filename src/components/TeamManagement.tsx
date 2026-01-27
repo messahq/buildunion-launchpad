@@ -73,6 +73,56 @@ const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementPro
   const [searching, setSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SearchedUser | null>(null);
 
+  // Task progress tracking per member
+  const [memberTaskStats, setMemberTaskStats] = useState<Record<string, { total: number; completed: number }>>({});
+
+  // Fetch task statistics for all members
+  useEffect(() => {
+    const fetchTaskStats = async () => {
+      if (!projectId) return;
+      
+      const { data: tasks } = await supabase
+        .from("project_tasks")
+        .select("assigned_to, status")
+        .eq("project_id", projectId);
+      
+      if (tasks) {
+        const stats: Record<string, { total: number; completed: number }> = {};
+        tasks.forEach(task => {
+          if (!stats[task.assigned_to]) {
+            stats[task.assigned_to] = { total: 0, completed: 0 };
+          }
+          stats[task.assigned_to].total++;
+          if (task.status === "completed") {
+            stats[task.assigned_to].completed++;
+          }
+        });
+        setMemberTaskStats(stats);
+      }
+    };
+    
+    fetchTaskStats();
+    
+    // Subscribe to task changes
+    const channel = supabase
+      .channel(`task_stats_${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_tasks",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => fetchTaskStats()
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId]);
+
   // Calculate team limit info
   const currentTier = subscription.tier;
   const teamLimit = getTeamLimit(currentTier);
@@ -457,28 +507,77 @@ const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementPro
           {/* Members */}
           {members.map((member) => {
             const roleInfo = TEAM_ROLES[member.role as TeamRole] || TEAM_ROLES.member;
+            const taskStats = memberTaskStats[member.user_id] || { total: 0, completed: 0 };
+            const progressPercent = taskStats.total > 0 
+              ? Math.round((taskStats.completed / taskStats.total) * 100) 
+              : 0;
+            
             return (
-              <div key={member.id} className="flex items-center justify-between py-2 border-t border-slate-100">
+              <div key={member.id} className="flex items-center justify-between py-3 border-t border-slate-100">
                 <div 
                   className={cn(
-                    "flex items-center gap-3",
+                    "flex items-center gap-3 flex-1",
                     onMemberClick && "cursor-pointer hover:bg-slate-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
                   )}
                   onClick={() => onMemberClick?.(member.user_id, member.full_name || "Team Member")}
                 >
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-slate-100 text-slate-700 font-medium">
-                      {roleInfo.icon}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
+                  {/* Avatar with progress ring */}
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-slate-100 text-slate-700 font-medium">
+                        {roleInfo.icon}
+                      </AvatarFallback>
+                    </Avatar>
+                    {taskStats.total > 0 && (
+                      <div 
+                        className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center"
+                        title={`${taskStats.completed}/${taskStats.total} tasks completed`}
+                      >
+                        <span className={cn(
+                          "text-[10px] font-bold",
+                          progressPercent === 100 ? "text-green-600" :
+                          progressPercent >= 50 ? "text-amber-600" : "text-slate-500"
+                        )}>
+                          {progressPercent}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
                     <p className={cn(
-                      "text-sm font-medium text-slate-900",
+                      "text-sm font-medium text-slate-900 truncate",
                       onMemberClick && "hover:text-amber-600 transition-colors"
                     )}>
                       {member.full_name}
                     </p>
-                    <p className="text-xs text-slate-500">{roleInfo.label}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-slate-500">{roleInfo.label}</p>
+                      {taskStats.total > 0 && (
+                        <>
+                          <span className="text-slate-300">•</span>
+                          <p className={cn(
+                            "text-xs",
+                            progressPercent === 100 ? "text-green-600" : "text-slate-500"
+                          )}>
+                            {taskStats.completed}/{taskStats.total} tasks
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    {/* Progress bar */}
+                    {taskStats.total > 0 && (
+                      <div className="mt-1.5 h-1.5 w-full max-w-[120px] bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-300",
+                            progressPercent === 100 ? "bg-green-500" :
+                            progressPercent >= 50 ? "bg-amber-500" : "bg-slate-400"
+                          )}
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -490,7 +589,10 @@ const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementPro
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                      onClick={() => handleRemoveMember(member.id, member.full_name || "Member")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveMember(member.id, member.full_name || "Member");
+                      }}
                     >
                       <UserMinus className="h-4 w-4" />
                     </Button>
