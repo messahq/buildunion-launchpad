@@ -535,8 +535,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
 
     fetchTasks();
 
-    // Subscribe to realtime updates - but DON'T refetch on every change
-    // to prevent scroll position reset. Only handle INSERT/DELETE events.
+    // Subscribe to realtime updates - handle INSERT/DELETE/UPDATE events
     const channel = supabase
       .channel(`project_tasks_budget_${projectId}`)
       .on(
@@ -561,6 +560,35 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             } as TaskWithBudget;
             return [...prev, newTask];
           });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "project_tasks",
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          // Update the specific task's status/data in-place for real-time sync
+          setTasks(prev => prev.map(t => {
+            if (t.id === payload.new.id) {
+              return {
+                ...t,
+                status: payload.new.status,
+                priority: payload.new.priority,
+                title: payload.new.title,
+                description: payload.new.description,
+                due_date: payload.new.due_date,
+                assigned_to: payload.new.assigned_to,
+                unit_price: payload.new.unit_price || 0,
+                quantity: payload.new.quantity || 1,
+                total_cost: payload.new.total_cost || 0,
+              };
+            }
+            return t;
+          }));
         }
       )
       .on(
