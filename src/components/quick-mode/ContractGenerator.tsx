@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -337,6 +337,49 @@ const ContractGenerator = ({
   const [isSaving, setIsSaving] = useState(false);
   const [savedContractId, setSavedContractId] = useState<string | null>(null);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [pendingAutoSave, setPendingAutoSave] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const previousSignaturesRef = useRef<{client: SignatureData | null, contractor: SignatureData | null}>({client: null, contractor: null});
+
+  // Mark initial load complete after first render to prevent auto-save on load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoadComplete(true);
+      previousSignaturesRef.current = {client: clientSignature, contractor: contractorSignature};
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Auto-save when signatures change (with debounce) - only after initial load
+  useEffect(() => {
+    if (!user || !initialLoadComplete) return;
+    
+    // Check if signatures actually changed (not just initial load)
+    const prevSigs = previousSignaturesRef.current;
+    const clientChanged = clientSignature?.signedAt !== prevSigs.client?.signedAt;
+    const contractorChanged = contractorSignature?.signedAt !== prevSigs.contractor?.signedAt;
+    
+    if (!clientChanged && !contractorChanged) return;
+    if (isSaving) return;
+    
+    // Update ref
+    previousSignaturesRef.current = {client: clientSignature, contractor: contractorSignature};
+    
+    // Mark pending auto-save
+    setPendingAutoSave(true);
+  }, [clientSignature, contractorSignature, user, initialLoadComplete, isSaving]);
+
+  // Execute auto-save after a short delay
+  useEffect(() => {
+    if (!pendingAutoSave || isSaving) return;
+    
+    const timer = setTimeout(async () => {
+      setPendingAutoSave(false);
+      await saveContractToDatabase();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [pendingAutoSave, isSaving]);
 
   // Report progress updates to parent
   useEffect(() => {
@@ -585,7 +628,7 @@ const ContractGenerator = ({
     try {
       const contractData = {
         user_id: user.id,
-        project_id: linkedProjectId || null, // Link to project if coming from Contracts tab
+        project_id: linkedProjectId || null,
         contract_number: contract.contractNumber,
         contract_date: contract.contractDate,
         template_type: selectedTemplate,
@@ -626,9 +669,11 @@ const ContractGenerator = ({
         
         client_signature: clientSignature ? JSON.parse(JSON.stringify(clientSignature)) : null,
         contractor_signature: contractorSignature ? JSON.parse(JSON.stringify(contractorSignature)) : null,
+        client_signed_at: clientSignature ? (clientSignature.signedAt || new Date().toISOString()) : null,
       };
 
       let resultId = savedContractId;
+      const isAutoSave = pendingAutoSave;
       
       if (savedContractId) {
         // Update existing contract
@@ -638,7 +683,11 @@ const ContractGenerator = ({
           .eq("id", savedContractId);
 
         if (error) throw error;
-        toast.success("Contract updated!");
+        if (!isAutoSave) {
+          toast.success("Contract updated!");
+        } else if (clientSignature && contractorSignature) {
+          toast.success("✅ Contract signed and saved!");
+        }
       } else {
         // Insert new contract
         const { data, error } = await supabase
@@ -650,7 +699,11 @@ const ContractGenerator = ({
         if (error) throw error;
         setSavedContractId(data.id);
         resultId = data.id;
-        toast.success("Contract saved!");
+        if (!isAutoSave) {
+          toast.success("Contract saved!");
+        } else if (clientSignature || contractorSignature) {
+          toast.success("✅ Signature saved!");
+        }
       }
       
       // Notify parent to refresh contracts list (syncs Operational Truth)
@@ -1573,6 +1626,7 @@ const ContractGenerator = ({
                           label="Client Signature"
                           placeholder="Client's full name"
                           onSignatureChange={setClientSignature}
+                          initialSignature={clientSignature}
                         />
                       </div>
                       <div>
@@ -1581,6 +1635,7 @@ const ContractGenerator = ({
                           label="Contractor Signature"
                           placeholder="Your name"
                           onSignatureChange={setContractorSignature}
+                          initialSignature={contractorSignature}
                         />
                       </div>
                     </div>

@@ -8,6 +8,7 @@ import { Eraser, Pen, Type, Check, Calendar } from "lucide-react";
 export interface SignatureData {
   type: 'drawn' | 'typed';
   data: string;
+  dataUrl?: string; // For backwards compatibility with drawn signatures
   name: string;
   signedAt: string; // ISO date string when signature was captured
 }
@@ -16,12 +17,14 @@ interface SignatureCaptureProps {
   onSignatureChange: (signature: SignatureData | null) => void;
   label?: string;
   placeholder?: string;
+  initialSignature?: SignatureData | null;
 }
 
 const SignatureCapture = ({ 
   onSignatureChange, 
   label = "Signature",
-  placeholder = "Type your full name"
+  placeholder = "Type your full name",
+  initialSignature
 }: SignatureCaptureProps) => {
   const [activeTab, setActiveTab] = useState<'draw' | 'type'>('type');
   const [typedName, setTypedName] = useState("");
@@ -29,6 +32,37 @@ const SignatureCapture = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasDrawnSignature, setHasDrawnSignature] = useState(false);
   const [signedDate, setSignedDate] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockedSignature, setLockedSignature] = useState<SignatureData | null>(null);
+
+  // Load initial signature if provided
+  useEffect(() => {
+    if (initialSignature) {
+      setIsLocked(true);
+      setLockedSignature(initialSignature);
+      setSignedDate(initialSignature.signedAt);
+      
+      if (initialSignature.type === 'typed') {
+        setTypedName(initialSignature.data || initialSignature.name || '');
+        setActiveTab('type');
+      } else if (initialSignature.type === 'drawn') {
+        setActiveTab('draw');
+        setHasDrawnSignature(true);
+        // Load the drawn signature into canvas
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (ctx && canvas) {
+          const img = new Image();
+          img.onload = () => {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          };
+          img.src = initialSignature.dataUrl || initialSignature.data;
+        }
+      }
+    }
+  }, [initialSignature]);
 
   // Initialize canvas
   useEffect(() => {
@@ -69,6 +103,7 @@ const SignatureCapture = ({
   };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (isLocked) return;
     e.preventDefault();
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -81,6 +116,7 @@ const SignatureCapture = ({
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (isLocked) return;
     e.preventDefault();
     if (!isDrawing) return;
     
@@ -95,23 +131,31 @@ const SignatureCapture = ({
   };
 
   const stopDrawing = () => {
-    if (isDrawing && hasDrawnSignature) {
+    if (isDrawing && hasDrawnSignature && !isLocked) {
       const canvas = canvasRef.current;
       if (canvas) {
         const now = new Date().toISOString();
         setSignedDate(now);
-        onSignatureChange({
+        const signatureData: SignatureData = {
           type: 'drawn',
           data: canvas.toDataURL('image/png'),
+          dataUrl: canvas.toDataURL('image/png'),
           name: '',
           signedAt: now
-        });
+        };
+        onSignatureChange(signatureData);
       }
     }
     setIsDrawing(false);
   };
 
   const clearCanvas = () => {
+    if (isLocked) {
+      // Unlock and clear
+      setIsLocked(false);
+      setLockedSignature(null);
+    }
+    
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!ctx || !canvas) return;
@@ -120,10 +164,12 @@ const SignatureCapture = ({
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setHasDrawnSignature(false);
     setSignedDate(null);
+    setTypedName("");
     onSignatureChange(null);
   };
 
   const handleTypedNameChange = (name: string) => {
+    if (isLocked) return;
     setTypedName(name);
     if (name.trim()) {
       const now = new Date().toISOString();
@@ -149,6 +195,53 @@ const SignatureCapture = ({
       minute: '2-digit'
     });
   };
+
+  // Render locked/existing signature view
+  if (isLocked && lockedSignature) {
+    return (
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">{label}</Label>
+        
+        <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+          {lockedSignature.type === 'drawn' ? (
+            <img 
+              src={lockedSignature.dataUrl || lockedSignature.data} 
+              alt="Signature" 
+              className="max-h-20 mb-2"
+            />
+          ) : (
+            <div 
+              className="text-3xl text-slate-800 mb-2"
+              style={{ fontFamily: "'Dancing Script', cursive" }}
+            >
+              {lockedSignature.data || lockedSignature.name}
+            </div>
+          )}
+          
+          <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
+            <Check className="w-4 h-4" />
+            <span>Signed</span>
+          </div>
+          {signedDate && (
+            <div className="flex items-center gap-2 text-xs text-green-600 mt-1">
+              <Calendar className="w-3 h-3" />
+              <span>{formatDate(signedDate)}</span>
+            </div>
+          )}
+        </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={clearCanvas}
+          className="gap-2"
+        >
+          <Eraser className="w-4 h-4" />
+          Clear & Re-sign
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
