@@ -40,6 +40,7 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
       // Allow empty string
       if (inputValue === "") {
         setLocalValue("");
+        onChange(0);
         return;
       }
 
@@ -51,8 +52,13 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
 
       if (regex.test(inputValue)) {
         setLocalValue(inputValue);
-        // DON'T update parent during typing - only on blur
-        // This prevents re-renders that cause focus/cursor issues
+        
+        // Update parent with valid number (for saving)
+        // But local string state controls display (no cursor jump)
+        const num = parseFloat(inputValue);
+        if (!isNaN(num)) {
+          onChange(num);
+        }
       }
     };
 
