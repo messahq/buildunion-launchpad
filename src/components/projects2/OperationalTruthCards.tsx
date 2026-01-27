@@ -50,6 +50,7 @@ interface PillarCardProps {
   onClick?: () => void;
   isLoading?: boolean;
   isClickable?: boolean;
+  subtitle?: string;
 }
 
 const PillarCard = ({ 
@@ -60,7 +61,8 @@ const PillarCard = ({
   iconColor, 
   onClick, 
   isLoading,
-  isClickable = false 
+  isClickable = false,
+  subtitle
 }: PillarCardProps) => (
   <Card 
     className={cn(
@@ -90,20 +92,27 @@ const PillarCard = ({
           <Sparkles className="h-3 w-3 text-primary ml-auto" />
         )}
       </div>
-      <div className="flex items-center gap-2">
-        {status === "verified" ? (
-          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
-        ) : status === "warning" ? (
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-        ) : (
-          <Clock className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0" />
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2">
+          {status === "verified" ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
+          ) : status === "warning" ? (
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          ) : (
+            <Clock className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0" />
+          )}
+          <span className={cn(
+            "text-sm font-medium truncate",
+            status !== "pending" ? "text-foreground" : "text-muted-foreground"
+          )}>
+            {isLoading ? "Verifying..." : value}
+          </span>
+        </div>
+        {subtitle && status === "pending" && !isLoading && (
+          <span className="text-[10px] text-muted-foreground/70 mt-0.5 ml-5">
+            {subtitle}
+          </span>
         )}
-        <span className={cn(
-          "text-sm font-medium truncate",
-          status !== "pending" ? "text-foreground" : "text-muted-foreground"
-        )}>
-          {isLoading ? "Verifying..." : value}
-        </span>
       </div>
     </CardContent>
   </Card>
@@ -723,6 +732,7 @@ export default function OperationalTruthCards({
           isClickable={!confirmedArea && !!projectId}
           isLoading={loadingPillar === "area"}
           onClick={verifyConfirmedArea}
+          subtitle={!confirmedArea ? t("operationalTruth.areaNotDetected", "Area not detected by AI") : undefined}
         />
 
         {/* Pillar 2: Materials Count - Clickable */}
