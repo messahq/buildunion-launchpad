@@ -367,16 +367,23 @@ export const ProjectCommandCenter = ({
       hasClientInfo: false,
     };
     
-    // Tasks - check if any exist and if any are completed
+    // Tasks - check if any exist and if ALL are completed (complete only when 100%)
     const tasksMissing: string[] = [];
-    if (info.taskCount === 0) tasksMissing.push("No tasks created");
-    else if (info.completedTasks === 0) tasksMissing.push("No tasks completed yet");
+    if (info.taskCount === 0) {
+      tasksMissing.push("No tasks created");
+    } else if (info.completedTasks < info.taskCount) {
+      tasksMissing.push(`${info.taskCount - info.completedTasks} tasks remaining`);
+    }
+    
+    // Status: complete = ALL tasks done, partial = some tasks exist/done, pending = none
+    const allTasksComplete = info.taskCount > 0 && info.completedTasks === info.taskCount;
+    const someTasksExist = info.taskCount > 0;
     
     sources.push({
       id: "tasks",
       name: "Tasks",
       category: "workflow",
-      status: info.taskCount > 0 ? (info.completedTasks > 0 ? "complete" : "partial") : "pending",
+      status: allTasksComplete ? "complete" : someTasksExist ? "partial" : "pending",
       value: info.taskCount > 0 ? `${info.completedTasks}/${info.taskCount}` : undefined,
       icon: ClipboardList,
       missingItems: tasksMissing.length > 0 ? tasksMissing : undefined,
