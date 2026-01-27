@@ -8,6 +8,7 @@ import { RegionProvider } from "@/hooks/useRegionSettings";
 import { ThemeProvider } from "@/hooks/useTheme";
 import DevTierPanel from "@/components/DevTierPanel";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
 import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
@@ -72,6 +73,7 @@ const App = () => (
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                <MobileBottomNav />
                 <DevTierPanel />
               </BrowserRouter>
             </TooltipProvider>
