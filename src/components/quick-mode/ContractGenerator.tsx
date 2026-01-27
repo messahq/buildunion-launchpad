@@ -1507,11 +1507,10 @@ const ContractGenerator = ({
                       <div className="space-y-2">
                         <Label>Deposit (%)</Label>
                         <Input
-                          type="number"
-                          min={0}
-                          max={100}
+                          type="text"
+                          inputMode="decimal"
                           value={contract.depositPercentage}
-                          onChange={(e) => updateContract("depositPercentage", parseFloat(e.target.value) || 0)}
+                          onChange={(e) => updateContract("depositPercentage", Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
                         />
                       </div>
                     </div>

@@ -208,7 +208,8 @@ export default function EditableAIAnalysisSummary({
             {isEditing ? (
               <div className="flex gap-1">
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={editArea}
                   onChange={(e) => setEditArea(e.target.value)}
                   className="h-8 text-sm"
@@ -363,7 +364,8 @@ export default function EditableAIAnalysisSummary({
                     className="flex-1"
                   />
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={material.quantity}
                     onChange={(e) => handleMaterialChange(index, "quantity", e.target.value)}
                     placeholder="Qty"
