@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -513,24 +514,16 @@ const TaskGanttTimeline = ({
                     {/* Budget Edit */}
                     {editingBudget === task.id ? (
                       <div className="flex items-center gap-1">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
+                        <NumericInput
                           value={tempUnitPrice}
-                          onChange={(e) =>
-                            setTempUnitPrice(parseFloat(e.target.value) || 0)
-                          }
+                          onChange={(val) => setTempUnitPrice(val)}
                           className="h-6 w-16 text-xs"
                           placeholder="$/unit"
                         />
                         <span className="text-xs text-muted-foreground">×</span>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
+                        <NumericInput
                           value={tempQuantity}
-                          onChange={(e) =>
-                            setTempQuantity(parseFloat(e.target.value) || 1)
-                          }
+                          onChange={(val) => setTempQuantity(val || 1)}
                           className="h-6 w-12 text-xs"
                           placeholder="qty"
                         />

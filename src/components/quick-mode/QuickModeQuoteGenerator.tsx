@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1048,12 +1049,10 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-2">
                       <Label>Quantity</Label>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
+                      <NumericInput
                         value={item.quantity}
-                        onChange={(e) =>
-                          updateLineItem(item.id, "quantity", parseFloat(e.target.value) || 0)
+                        onChange={(val) =>
+                          updateLineItem(item.id, "quantity", val)
                         }
                       />
                     </div>
@@ -1077,14 +1076,12 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                     </div>
                     <div className="space-y-2">
                       <Label>Unit Price ($)</Label>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={item.unitPrice === 0 ? "" : item.unitPrice}
-                        onChange={(e) =>
-                          updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
+                      <NumericInput
+                        value={item.unitPrice}
+                        onChange={(val) =>
+                          updateLineItem(item.id, "unitPrice", val)
                         }
-                        placeholder="Enter price"
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -1150,12 +1147,10 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                         <div className="grid grid-cols-3 gap-3">
                           <div className="space-y-2">
                             <Label>Quantity</Label>
-                            <Input
-                              type="text"
-                              inputMode="decimal"
+                            <NumericInput
                               value={item.quantity}
-                              onChange={(e) =>
-                                updateLineItem(item.id, "quantity", parseFloat(e.target.value) || 0)
+                              onChange={(val) =>
+                                updateLineItem(item.id, "quantity", val)
                               }
                             />
                           </div>
@@ -1179,14 +1174,12 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
                           </div>
                           <div className="space-y-2">
                             <Label>Unit Price ($)</Label>
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              value={item.unitPrice === 0 ? "" : item.unitPrice}
-                              onChange={(e) =>
-                                updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
+                            <NumericInput
+                              value={item.unitPrice}
+                              onChange={(val) =>
+                                updateLineItem(item.id, "unitPrice", val)
                               }
-                              placeholder="Enter price"
+                              placeholder="0"
                             />
                           </div>
                         </div>
