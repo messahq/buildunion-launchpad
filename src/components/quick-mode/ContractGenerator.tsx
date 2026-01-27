@@ -235,14 +235,27 @@ interface ContractGeneratorProps {
   onContinue?: () => void;
   onSaveToProjects?: (projectId: string) => void;
   projectData?: ProjectData;
+  initialTemplate?: ContractTemplateType;
+  linkedProjectId?: string;
 }
 
-const ContractGenerator = ({ quoteData, collectedData, existingContract, onContractGenerated, onProgressUpdate, onContinue, onSaveToProjects, projectData }: ContractGeneratorProps) => {
+const ContractGenerator = ({ 
+  quoteData, 
+  collectedData, 
+  existingContract, 
+  onContractGenerated, 
+  onProgressUpdate, 
+  onContinue, 
+  onSaveToProjects, 
+  projectData,
+  initialTemplate,
+  linkedProjectId
+}: ContractGeneratorProps) => {
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
   
-  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType>("custom");
+  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType>(initialTemplate || "custom");
   
   const [contract, setContract] = useState({
     // Contract Info
@@ -457,6 +470,30 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
     }
   }, [existingContract, profile, user, quoteData, projectData]);
 
+  // Apply initial template on mount
+  useEffect(() => {
+    if (initialTemplate && initialTemplate !== "custom") {
+      const template = CONTRACT_TEMPLATES.find(t => t.id === initialTemplate);
+      if (template) {
+        setContract(prev => ({
+          ...prev,
+          depositPercentage: template.depositPercentage,
+          paymentSchedule: template.paymentSchedule,
+          workingDays: template.workingDays,
+          warrantyPeriod: template.warrantyPeriod,
+          changeOrderPolicy: template.changeOrderPolicy,
+          cancellationPolicy: template.cancellationPolicy,
+          disputeResolution: template.disputeResolution,
+          hasLiabilityInsurance: template.hasLiabilityInsurance,
+          hasWSIB: template.hasWSIB,
+          materialsIncluded: template.materialsIncluded,
+          additionalTerms: template.additionalTerms || "",
+        }));
+        toast.success(`${template.name} template applied`);
+      }
+    }
+  }, [initialTemplate]);
+
   // Pre-fill from collected synthesis data (dual-engine results)
   useEffect(() => {
     if (!collectedData) return;
@@ -545,6 +582,7 @@ const ContractGenerator = ({ quoteData, collectedData, existingContract, onContr
     try {
       const contractData = {
         user_id: user.id,
+        project_id: linkedProjectId || null, // Link to project if coming from Contracts tab
         contract_number: contract.contractNumber,
         contract_date: contract.contractDate,
         template_type: selectedTemplate,
