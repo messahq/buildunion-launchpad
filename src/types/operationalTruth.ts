@@ -87,6 +87,8 @@ export interface BuildOperationalTruthParams {
     };
   };
   projectSize?: string;
+  // Manual overrides
+  obcAcknowledged?: boolean; // User clicked "I Understood" on OBC warning
 }
 
 // Helper function to normalize OBC references (handle both string and object formats)
@@ -134,6 +136,7 @@ export function buildOperationalTruth(params: BuildOperationalTruthParams): Oper
     synthesisResult,
     filterAnswers,
     projectSize,
+    obcAcknowledged,
   } = params;
 
   // Calculate confirmed area - prioritize direct area, then try to extract from materials
@@ -163,10 +166,14 @@ export function buildOperationalTruth(params: BuildOperationalTruthParams): Oper
   }
 
   // OBC Compliance and Details
+  // If user acknowledged OBC warnings, treat as "clear" for verification purposes
   let obcCompliance: OperationalTruth["obcCompliance"] = "pending";
   let obcDetails: OBCValidationDetails | undefined = undefined;
   
-  if (dualEngineOutput?.openai) {
+  if (obcAcknowledged) {
+    // User acknowledged OBC - treat as verified/clear for the pillar
+    obcCompliance = "clear";
+  } else if (dualEngineOutput?.openai) {
     const openai = dualEngineOutput.openai;
     obcCompliance = openai.permitRequired ? "permit_required" : "clear";
     

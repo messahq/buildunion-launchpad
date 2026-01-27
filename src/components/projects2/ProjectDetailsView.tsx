@@ -497,6 +497,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [signedContracts, setSignedContracts] = useState(0);
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
   const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(false);
+  const [obcAcknowledged, setObcAcknowledged] = useState(false);
   const [forceCalendarView, setForceCalendarView] = useState(false);
   const [isLoadingOverrides, setIsLoadingOverrides] = useState(true);
   const [baselineState, setBaselineState] = useState<{
@@ -604,6 +605,15 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             if (verifiedFacts.manuallyIgnoredConflicts) {
               setManuallyIgnoredConflicts(true);
             }
+          }
+          
+          // Load OBC acknowledged from ai_workflow_config
+          const aiConfig = (summaryResult.data as any).ai_workflow_config as {
+            obcResult?: { acknowledged?: boolean };
+          } | null;
+          
+          if (aiConfig?.obcResult?.acknowledged) {
+            setObcAcknowledged(true);
           }
         }
       } catch (error) {
@@ -1322,6 +1332,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       synthesisResult,
       filterAnswers,
       projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
+      obcAcknowledged, // Pass OBC acknowledged status
     });
     
     // SYNC: Override projectMode from summary.mode to ensure header and Operational Truth match
@@ -1352,7 +1363,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       ...baseOT,
       projectMode: syncedMode,
     };
-  }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint, manuallyIgnoredConflicts, summary?.mode]);
+  }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint, manuallyIgnoredConflicts, obcAcknowledged, summary?.mode]);
 
   // Determine data source origins for transparency
   const dataSourceOrigins = useMemo(() => {
@@ -1686,6 +1697,22 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             onNavigateToTaskTimeline={() => {
               setForceCalendarView(true);
               setActiveTab("team");
+            }}
+            onUpdate={() => {
+              // Reload OBC acknowledged status when reports are updated
+              const loadObcStatus = async () => {
+                const { data } = await supabase
+                  .from("project_summaries")
+                  .select("ai_workflow_config")
+                  .eq("project_id", projectId)
+                  .maybeSingle();
+                
+                const config = data?.ai_workflow_config as { obcResult?: { acknowledged?: boolean } } | null;
+                if (config?.obcResult?.acknowledged && !obcAcknowledged) {
+                  setObcAcknowledged(true);
+                }
+              };
+              loadObcStatus();
             }}
           />
 
