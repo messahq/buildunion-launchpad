@@ -258,9 +258,15 @@ export const ProjectCommandCenter = ({
       missingItems: areaMissing.length > 0 ? areaMissing : undefined,
     });
     
-    // Materials
+    // Materials - Check if contract is signed for warning
     const materialsMissing: string[] = [];
     if (operationalTruth.materialsCount === 0) materialsMissing.push("No materials detected by AI");
+    
+    // Add warning if materials exist but contract not signed
+    const signedCount = dataSourcesInfo?.signedContracts ?? 0;
+    if (operationalTruth.materialsCount > 0 && signedCount === 0) {
+      materialsMissing.push("⚠️ Contract not signed - client approval pending");
+    }
     
     sources.push({
       id: "materials",
@@ -1318,25 +1324,37 @@ export const ProjectCommandCenter = ({
                   <div className="grid grid-cols-2 gap-1.5">
                     {dataSources.filter(s => s.category === "pillar").map((source) => {
                       const Icon = source.icon;
+                      const hasContractWarning = source.id === "materials" && source.missingItems?.some(m => m.includes("Contract not signed"));
                       return (
                         <Tooltip key={source.id}>
                           <TooltipTrigger asChild>
-                            <div className={cn(
-                              "flex items-center gap-2 p-2 rounded-md text-xs transition-colors cursor-help",
-                              source.status === "complete" && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400",
-                              source.status === "partial" && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
-                              source.status === "pending" && "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                            )}>
+                            <button
+                              onClick={() => handleDataSourceClick(source.id)}
+                              className={cn(
+                                "flex items-center gap-2 p-2 rounded-md text-xs transition-all w-full text-left",
+                                "hover:ring-2 hover:ring-offset-1 hover:ring-amber-400 active:scale-95",
+                                source.status === "complete" && !hasContractWarning && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400",
+                                source.status === "complete" && hasContractWarning && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-300",
+                                source.status === "partial" && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
+                                source.status === "pending" && "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                              )}
+                            >
                               <Icon className="h-3.5 w-3.5 flex-shrink-0" />
                               <span className="truncate">{source.name}</span>
-                              {source.status === "complete" && <CircleCheck className="h-3 w-3 ml-auto flex-shrink-0" />}
-                              {source.status === "partial" && <CircleDashed className="h-3 w-3 ml-auto flex-shrink-0" />}
-                              {source.status === "pending" && <CircleAlert className="h-3 w-3 ml-auto flex-shrink-0" />}
-                            </div>
+                              {hasContractWarning ? (
+                                <AlertTriangle className="h-3 w-3 ml-auto flex-shrink-0 text-amber-500 animate-pulse" />
+                              ) : source.status === "complete" ? (
+                                <CircleCheck className="h-3 w-3 ml-auto flex-shrink-0" />
+                              ) : source.status === "partial" ? (
+                                <CircleDashed className="h-3 w-3 ml-auto flex-shrink-0" />
+                              ) : (
+                                <CircleAlert className="h-3 w-3 ml-auto flex-shrink-0" />
+                              )}
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[220px]">
                             <p className="font-medium">{source.name}</p>
-                            {source.status === "complete" ? (
+                            {source.status === "complete" && !hasContractWarning ? (
                               <p className="text-xs text-emerald-600">✓ {source.value || "Verified"}</p>
                             ) : source.missingItems && source.missingItems.length > 0 ? (
                               <div className="text-xs text-amber-600 mt-1">
@@ -1352,6 +1370,7 @@ export const ProjectCommandCenter = ({
                                 {source.value || "Not yet verified"}
                               </p>
                             )}
+                            <p className="text-[10px] text-muted-foreground mt-2">Click to navigate</p>
                           </TooltipContent>
                         </Tooltip>
                       );

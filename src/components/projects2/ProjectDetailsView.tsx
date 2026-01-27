@@ -1481,6 +1481,12 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               projectName={project.name}
               projectAddress={project.address || undefined}
               projectDescription={project.description || undefined}
+              clientInfo={{
+                name: summary?.client_name || undefined,
+                email: summary?.client_email || undefined,
+                phone: summary?.client_phone || undefined,
+                address: summary?.client_address || undefined,
+              }}
             />
           </TabsContent>
         )}
