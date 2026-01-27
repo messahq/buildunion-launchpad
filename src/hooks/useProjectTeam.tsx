@@ -9,6 +9,10 @@ interface TeamMember {
   joined_at: string;
   email?: string;
   full_name?: string;
+  avatar_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_updated_at?: string | null;
 }
 
 export type TeamRole = "foreman" | "worker" | "inspector" | "subcontractor" | "member";
@@ -60,18 +64,30 @@ export function useProjectTeam(projectId?: string) {
 
       if (membersError) throw membersError;
 
-      // Get user details for members
+      // Get user details for members including GPS location from bu_profiles
       const membersWithDetails = await Promise.all(
         (membersData || []).map(async (member) => {
+          // Fetch from profiles for name
           const { data: profile } = await supabase
             .from("profiles")
-            .select("full_name")
+            .select("full_name, avatar_url")
+            .eq("user_id", member.user_id)
+            .maybeSingle();
+
+          // Fetch from bu_profiles for GPS location
+          const { data: buProfile } = await supabase
+            .from("bu_profiles")
+            .select("latitude, longitude, location_updated_at, avatar_url")
             .eq("user_id", member.user_id)
             .maybeSingle();
 
           return {
             ...member,
             full_name: profile?.full_name || "Unknown User",
+            avatar_url: buProfile?.avatar_url || profile?.avatar_url || null,
+            latitude: buProfile?.latitude || null,
+            longitude: buProfile?.longitude || null,
+            location_updated_at: buProfile?.location_updated_at || null,
           };
         })
       );
