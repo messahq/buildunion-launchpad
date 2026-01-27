@@ -129,6 +129,7 @@ export default function OperationalTruthCards({
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [runAllProgress, setRunAllProgress] = useState(0);
   const [reports, setReports] = useState<VerificationReport[]>([]);
+  const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
   
   const {
     confirmedArea,
@@ -142,6 +143,9 @@ export default function OperationalTruthCards({
     confidenceLevel,
     verificationRate,
   } = operationalTruth;
+
+  // Determine effective blueprint status (manual override takes priority)
+  const effectiveBlueprintStatus = manuallyValidatedBlueprint ? "analyzed" : blueprintStatus;
 
   const addReport = (report: Omit<VerificationReport, "timestamp">) => {
     setReports(prev => [...prev, { ...report, timestamp: new Date() }]);
@@ -746,12 +750,34 @@ export default function OperationalTruthCards({
           onClick={verifyMaterials}
         />
 
-        {/* Pillar 3: Blueprint Status - Not clickable (optional) */}
+        {/* Pillar 3: Blueprint Status - Clickable for manual validation */}
         <PillarCard
           icon={<FileText className="h-4 w-4" />}
           label={t("operationalTruth.blueprint")}
-          value={blueprintStatus === "analyzed" ? t("operationalTruth.analyzed") : blueprintStatus === "none" ? t("operationalTruth.notProvided") : t("operationalTruth.pending")}
-          status={blueprintStatus === "analyzed" ? "verified" : blueprintStatus === "none" ? "warning" : "pending"}
+          value={
+            effectiveBlueprintStatus === "analyzed" 
+              ? (manuallyValidatedBlueprint ? t("operationalTruth.manuallyVerified", "Manually Verified") : t("operationalTruth.analyzed")) 
+              : effectiveBlueprintStatus === "none" 
+                ? t("operationalTruth.notProvided") 
+                : t("operationalTruth.pending")
+          }
+          status={effectiveBlueprintStatus === "analyzed" ? "verified" : effectiveBlueprintStatus === "none" ? "warning" : "pending"}
+          isClickable={effectiveBlueprintStatus !== "analyzed" && !!projectId}
+          onClick={() => {
+            if (effectiveBlueprintStatus !== "analyzed") {
+              setManuallyValidatedBlueprint(true);
+              addReport({
+                pillar: "Blueprint",
+                engine: "dual",
+                status: "success",
+                message: t("operationalTruth.blueprintManuallyValidated", "Blueprint manually validated by user"),
+                details: t("operationalTruth.blueprintManuallyValidatedDetails", "User confirmed blueprint data is correct or not required for this project")
+              });
+              toast.success(t("operationalTruth.blueprintValidated", "Blueprint validated"));
+              onUpdate?.();
+            }
+          }}
+          subtitle={effectiveBlueprintStatus !== "analyzed" ? t("operationalTruth.clickToValidate", "Click to manually validate") : undefined}
         />
 
         {/* Pillar 4: OBC Compliance - Clickable */}
