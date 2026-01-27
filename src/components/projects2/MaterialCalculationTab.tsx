@@ -812,7 +812,8 @@ export function MaterialCalculationTab({
           </div>
           <div className="col-span-2">
             <Input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={editValues.quantity || 0}
               onChange={(e) => setEditValues(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
               className="h-8 text-sm text-center"
@@ -827,8 +828,8 @@ export function MaterialCalculationTab({
           </div>
           <div className="col-span-2">
             <Input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={editValues.unitPrice || ""}
               onChange={(e) => setEditValues(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
               className="h-8 text-sm text-right"
@@ -896,8 +897,8 @@ export function MaterialCalculationTab({
           </div>
           <div className="col-span-2">
             <Input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={item.unitPrice || ""}
               onChange={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
               className="h-8 text-sm text-right"
@@ -1178,7 +1179,8 @@ export function MaterialCalculationTab({
                       {t("materials.quantity", "Quantity")}
                     </label>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={otherQuantity}
                       onChange={(e) => setOtherQuantity(parseFloat(e.target.value) || 0)}
                       className="h-9 text-center"
@@ -1199,8 +1201,8 @@ export function MaterialCalculationTab({
                       {t("materials.unitPrice", "Unit Price")}
                     </label>
                     <Input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={otherUnitPrice || ""}
                       onChange={(e) => setOtherUnitPrice(parseFloat(e.target.value) || 0)}
                       className="h-9 text-right"
