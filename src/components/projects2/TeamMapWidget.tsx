@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,6 @@ import {
   ExternalLink,
   AlertTriangle,
   User,
-  Navigation,
   Route,
   Loader2,
   MapPinned
@@ -22,6 +21,8 @@ import { ProBadge } from "@/components/ui/pro-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 
 interface TeamMemberLocation {
   user_id: string;
@@ -69,17 +70,58 @@ const getStatusLabel = (status?: string) => {
   }
 };
 
-export default function TeamMapWidget({ 
+const mapContainerStyle = {
+  width: "100%",
+  height: "200px",
+};
+
+const defaultCenter = {
+  lat: 43.6532,
+  lng: -79.3832,
+};
+
+// Inner component that uses the Google Maps
+function TeamMapWidgetInner({ 
   projectAddress, 
   projectName,
   className,
   conflicts = [],
   isPremium = false,
   teamMembers = [],
-}: TeamMapWidgetProps) {
+  apiKey,
+}: TeamMapWidgetProps & { apiKey: string }) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: apiKey,
+    libraries: ["places"],
+  });
+
+  // Geocode the project address
+  const geocodeAddress = useCallback(async () => {
+    if (!isLoaded || !projectAddress) return;
+    
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: projectAddress }, (results, status) => {
+      if (status === "OK" && results && results[0]) {
+        const location = results[0].geometry.location;
+        setMapCenter({
+          lat: location.lat(),
+          lng: location.lng(),
+        });
+      }
+    });
+  }, [isLoaded, projectAddress]);
+
+  // Geocode when map loads
+  const onMapLoad = useCallback(() => {
+    setMapLoaded(true);
+    geocodeAddress();
+  }, [geocodeAddress]);
 
   // Create Google Maps URL for the address
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(projectAddress)}`;
@@ -154,6 +196,64 @@ export default function TeamMapWidget({
     );
   };
 
+  const renderMapContent = () => {
+    if (loadError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+          <AlertTriangle className="h-8 w-8 mb-2 text-amber-500" />
+          <span className="text-sm">{t("maps.loadError", "Failed to load map")}</span>
+        </div>
+      );
+    }
+
+    if (!isLoaded) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+          <Loader2 className="h-8 w-8 mb-2 animate-spin text-cyan-500" />
+          <span className="text-sm">{t("maps.loading", "Loading map...")}</span>
+        </div>
+      );
+    }
+
+    return (
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={mapCenter}
+        zoom={15}
+        onLoad={onMapLoad}
+        options={{
+          disableDefaultUI: false,
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
+      >
+        {/* Project location marker */}
+        <Marker position={mapCenter} title={projectName} />
+
+        {/* Team member markers */}
+        {teamMembers
+          .filter((m) => m.latitude && m.longitude)
+          .map((member) => (
+            <Marker
+              key={member.user_id}
+              position={{ lat: member.latitude!, lng: member.longitude! }}
+              title={`${member.full_name} (${getStatusLabel(member.status)})`}
+              icon={{
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: member.status === "on_site" ? "#22c55e" : member.status === "en_route" ? "#3b82f6" : "#94a3b8",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2,
+              }}
+            />
+          ))}
+      </GoogleMap>
+    );
+  };
+
   return (
     <Card className={cn("bg-card border-cyan-200 dark:border-cyan-800 overflow-hidden", className)}>
       <CardHeader className="pb-3 bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 border-b border-cyan-100 dark:border-cyan-900">
@@ -174,76 +274,13 @@ export default function TeamMapWidget({
       </CardHeader>
 
       <CardContent className="p-4">
-        {/* Static map preview */}
-        <div className="relative rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800 h-48 bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-cyan-950/30 dark:via-teal-950/30 dark:to-emerald-950/30">
-          {/* Decorative map pattern */}
-          <div className="absolute inset-0 opacity-20 dark:opacity-10">
-            <svg className="w-full h-full" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 50 H400 M0 100 H400 M0 150 H400" stroke="currentColor" strokeWidth="1" className="text-cyan-600"/>
-              <path d="M100 0 V200 M200 0 V200 M300 0 V200" stroke="currentColor" strokeWidth="1" className="text-cyan-600"/>
-              <path d="M50 180 Q150 100 250 120 T380 80" stroke="currentColor" strokeWidth="3" className="text-teal-500" fill="none"/>
-              <path d="M20 60 Q100 120 180 80 T320 140" stroke="currentColor" strokeWidth="2" className="text-cyan-500" fill="none"/>
-            </svg>
-          </div>
-
-          {/* Center pin with pulse animation */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="relative">
-              <div className="absolute inset-0 -m-4">
-                <div className="w-16 h-16 rounded-full bg-cyan-500/20 animate-ping" />
-              </div>
-              <div className="absolute inset-0 -m-2">
-                <div className="w-12 h-12 rounded-full bg-cyan-500/30" />
-              </div>
-              <div className="relative w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center shadow-lg">
-                <MapPin className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          </div>
-
-          {/* Address and action buttons overlay */}
-          <div className="absolute bottom-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-cyan-200 dark:border-cyan-800 rounded-lg p-2">
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="h-4 w-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
-              <span className="text-sm text-foreground truncate flex-1">{projectAddress}</span>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1 text-xs h-8 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
-                asChild
-              >
-                <a 
-                  href={googleMapsUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  {t("common.viewMap", "View Map")}
-                </a>
-              </Button>
-              <Button 
-                variant="default" 
-                size="sm" 
-                className="flex-1 text-xs h-8 bg-cyan-600 hover:bg-cyan-700"
-                asChild
-              >
-                <a 
-                  href={directionsUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <Route className="h-3 w-3 mr-1" />
-                  {t("common.getDirections", "Directions")}
-                </a>
-              </Button>
-            </div>
-          </div>
+        {/* Interactive Google Map */}
+        <div className="relative rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800 h-[200px] bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-cyan-950/30 dark:via-teal-950/30 dark:to-emerald-950/30">
+          {renderMapContent()}
 
           {/* Locked overlay for non-premium users with conflicts */}
           {!isPremium && hasConflicts && (
-            <div className="absolute top-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg p-2">
+            <div className="absolute top-3 left-3 right-3 bg-background/95 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg p-2 z-10">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
                 <span className="text-xs text-muted-foreground flex-1">
@@ -253,6 +290,46 @@ export default function TeamMapWidget({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Address and action buttons */}
+        <div className="mt-3 p-2 bg-muted/50 border border-cyan-200 dark:border-cyan-800 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <MapPin className="h-4 w-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+            <span className="text-sm text-foreground truncate flex-1">{projectAddress}</span>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 text-xs h-8 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
+              asChild
+            >
+              <a 
+                href={googleMapsUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                {t("common.viewMap", "View Map")}
+              </a>
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex-1 text-xs h-8 bg-cyan-600 hover:bg-cyan-700"
+              asChild
+            >
+              <a 
+                href={directionsUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Route className="h-3 w-3 mr-1" />
+                {t("common.getDirections", "Directions")}
+              </a>
+            </Button>
+          </div>
         </div>
 
         {/* Share Location Button */}
@@ -328,4 +405,87 @@ export default function TeamMapWidget({
       </CardContent>
     </Card>
   );
+}
+
+// Wrapper component that fetches the API key
+export default function TeamMapWidget(props: TeamMapWidgetProps) {
+  const { apiKey, isLoading, error } = useGoogleMapsApi();
+  const { t } = useTranslation();
+
+  // Show loading state while fetching API key
+  if (isLoading) {
+    return (
+      <Card className={cn("bg-card border-cyan-200 dark:border-cyan-800 overflow-hidden", props.className)}>
+        <CardHeader className="pb-3 bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 border-b border-cyan-100 dark:border-cyan-900">
+          <div className="flex items-center gap-2">
+            <Map className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <CardTitle className="text-lg font-semibold">
+              {t("projects.siteMap", "Project Site")}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="h-[200px] rounded-lg border border-cyan-200 dark:border-cyan-800 flex items-center justify-center bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-cyan-950/30 dark:via-teal-950/30 dark:to-emerald-950/30">
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If no API key or error, show fallback with static preview
+  if (error || !apiKey) {
+    return (
+      <Card className={cn("bg-card border-cyan-200 dark:border-cyan-800 overflow-hidden", props.className)}>
+        <CardHeader className="pb-3 bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/30 dark:to-teal-950/30 border-b border-cyan-100 dark:border-cyan-900">
+          <div className="flex items-center gap-2">
+            <Map className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <CardTitle className="text-lg font-semibold">
+              {t("projects.siteMap", "Project Site")}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="h-[200px] rounded-lg border border-cyan-200 dark:border-cyan-800 flex flex-col items-center justify-center bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-cyan-950/30 dark:via-teal-950/30 dark:to-emerald-950/30">
+            <MapPin className="h-8 w-8 mb-2 text-cyan-500" />
+            <span className="text-sm text-muted-foreground">{props.projectAddress}</span>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 text-xs h-8 border-cyan-200 dark:border-cyan-800"
+              asChild
+            >
+              <a 
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(props.projectAddress)}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                {t("common.viewMap", "View Map")}
+              </a>
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex-1 text-xs h-8 bg-cyan-600 hover:bg-cyan-700"
+              asChild
+            >
+              <a 
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(props.projectAddress)}&travelmode=driving`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Route className="h-3 w-3 mr-1" />
+                {t("common.getDirections", "Directions")}
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return <TeamMapWidgetInner {...props} apiKey={apiKey} />;
 }
