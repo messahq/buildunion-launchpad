@@ -535,16 +535,21 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   // Determine if current user is owner
   const isOwner = project?.user_id === user?.id;
   
-  // Map team members for the map widget
+  // Map team members for the map widget - include GPS from bu_profiles
   const teamMembersForMap = members.map(m => ({
     user_id: m.user_id,
     full_name: m.full_name || "Team Member",
-    avatar_url: (m as any).avatar_url,
+    avatar_url: m.avatar_url,
     role: m.role,
-    // Note: Real location would come from bu_profiles if implemented
-    latitude: undefined,
-    longitude: undefined,
-    status: undefined as "on_site" | "en_route" | "away" | undefined,
+    // GPS location from bu_profiles
+    latitude: m.latitude || undefined,
+    longitude: m.longitude || undefined,
+    // Determine status based on location freshness (if updated within last 30 min = on_site)
+    status: (m.latitude && m.longitude && m.location_updated_at)
+      ? (new Date().getTime() - new Date(m.location_updated_at).getTime() < 30 * 60 * 1000)
+        ? "on_site" as const
+        : "away" as const
+      : undefined,
   }));
 
   // Weather data for timeline integration
