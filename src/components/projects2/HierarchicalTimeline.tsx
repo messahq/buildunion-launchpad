@@ -1093,30 +1093,6 @@ const HierarchicalTimeline = ({
           );
         })}
       </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs pt-2 border-t">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-blue-500" />
-          <span className="text-muted-foreground">{t("timeline.preparation", "Preparation")}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-amber-500" />
-          <span className="text-muted-foreground">{t("timeline.execution", "Execution")}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span className="text-muted-foreground">{t("timeline.verification", "Verification")}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Lock className="h-3 w-3 text-muted-foreground" />
-          <span className="text-muted-foreground">{t("timeline.dependencyLock", "Dependency Lock")}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <AlertOctagon className="h-3 w-3 text-red-500" />
-          <span className="text-muted-foreground">{t("timeline.conflictAlert", "Conflict Alert")}</span>
-        </div>
-      </div>
     </div>
   );
 };
