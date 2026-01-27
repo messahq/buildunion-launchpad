@@ -118,24 +118,26 @@ const getStatusColor = (status?: string) => {
   }
 };
 
-export default function TeamMapWidget({ 
+// Inner component that only renders when API key is available
+function TeamMapWidgetInner({ 
   projectAddress, 
   projectName,
   className,
   conflicts = [],
   isPremium = false,
   teamMembers = [],
-}: TeamMapWidgetProps) {
+  apiKey,
+}: TeamMapWidgetProps & { apiKey: string }) {
   const { t } = useTranslation();
-  const { apiKey, isLoading: isLoadingKey, error: keyError } = useGoogleMapsApi();
   const [projectLocation, setProjectLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [geocodeError, setGeocodeError] = useState(false);
   const [selectedConflict, setSelectedConflict] = useState<ProjectConflict | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMemberLocation | null>(null);
 
+  // Now we can safely call useJsApiLoader because apiKey is guaranteed to be a valid string
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: apiKey || "",
+    googleMapsApiKey: apiKey,
     libraries,
   });
 
@@ -188,28 +190,7 @@ export default function TeamMapWidget({
     };
   };
 
-  // Loading state for API key
-  if (isLoadingKey) {
-    return (
-      <Card className={cn("border-cyan-200 dark:border-cyan-800", className)}>
-        <CardContent className="py-12 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-cyan-500" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Error state for API key
-  if (keyError || !apiKey) {
-    return (
-      <Card className={cn("border-muted", className)}>
-        <CardContent className="py-12 text-center">
-          <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">Map unavailable</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // API key loading/error states are handled by the wrapper component
 
   const MapContent = ({ height = "h-48" }: { height?: string }) => (
     <div className={cn("relative rounded-lg overflow-hidden border border-cyan-200 dark:border-cyan-800", height)}>
@@ -508,4 +489,36 @@ export default function TeamMapWidget({
       </CardContent>
     </Card>
   );
+}
+
+// Wrapper component that handles API key loading before rendering the map
+export default function TeamMapWidget(props: TeamMapWidgetProps) {
+  const { apiKey, isLoading: isLoadingKey, error: keyError } = useGoogleMapsApi();
+
+  // Loading state for API key
+  if (isLoadingKey) {
+    return (
+      <Card className={cn("border-cyan-200 dark:border-cyan-800", props.className)}>
+        <CardContent className="py-12 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-cyan-500" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Error state for API key
+  if (keyError || !apiKey) {
+    return (
+      <Card className={cn("border-muted", props.className)}>
+        <CardContent className="py-12 text-center">
+          <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">Map unavailable</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Only render the inner component when API key is confirmed available
+  // This prevents useJsApiLoader from being called with different apiKey values
+  return <TeamMapWidgetInner {...props} apiKey={apiKey} />;
 }
