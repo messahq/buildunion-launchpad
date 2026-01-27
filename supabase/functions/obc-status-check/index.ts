@@ -47,11 +47,16 @@ FAIL criteria:
 - missing mandatory info
 - conflicting data`;
 
+interface MaterialItem {
+  item?: string;
+  name?: string;
+}
+
 interface OBCCheckInput {
   project_type?: string;
   scope_of_work?: string;
   confirmed_area_sqft?: number;
-  materials?: string[] | { name: string }[];
+  materials?: string[] | MaterialItem[];
   blueprint_status?: "none" | "uploaded" | "manually_verified";
   structural_changes?: boolean | null;
   mechanical_changes?: boolean | null;
@@ -85,8 +90,9 @@ serve(async (req) => {
     }
 
     // Format materials for the prompt
-    const materialsStr = Array.isArray(projectData.materials)
-      ? projectData.materials.map(m => typeof m === 'string' ? m : m.name).join(", ")
+    const materialsArr = Array.isArray(projectData.materials) ? projectData.materials : [];
+    const materialsStr = materialsArr.length > 0
+      ? materialsArr.map(m => typeof m === 'string' ? m : (m.item || m.name || 'Unknown')).join(", ")
       : "Not specified";
 
     // Build structured user prompt
@@ -108,7 +114,7 @@ serve(async (req) => {
 
     console.log("OBC Check input:", userPrompt);
 
-    // Call AI gateway with OpenAI for regulatory analysis
+    // Call AI gateway with Gemini for regulatory analysis (faster, more reliable for structured output)
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -116,13 +122,12 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt }
         ],
         temperature: 0.3,
-        max_tokens: 800,
       }),
     });
 
