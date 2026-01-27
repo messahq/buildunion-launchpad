@@ -97,6 +97,68 @@ interface ConflictItem {
 }
 
 // ============================================
+// MESSA AUDIT REPORT TYPES
+// ============================================
+
+interface AuditReportStatus {
+  status: "VERIFIED" | "CONFLICT_DETECTED" | "PENDING";
+  conflictCount: number;
+  highSeverityCount: number;
+}
+
+interface StructuralSummary {
+  dimensions: string[];
+  materials: string[];
+  loadBearing: string[];
+  utilities: string[];
+  specialConsiderations: string[];
+}
+
+interface OBCCheckResult {
+  status: "PASSED" | "WARNING" | "FAILED" | "PENDING";
+  complianceScore: number;
+  criticalIssues: string[];
+  permitRequired: boolean;
+}
+
+interface OperationalReadiness {
+  isStable: boolean;
+  readinessScore: number; // 0-100
+  blockers: string[];
+  warnings: string[];
+  recommendations: string[];
+}
+
+interface MESSAAuditReport {
+  auditStatus: AuditReportStatus;
+  structuralSummary: StructuralSummary;
+  obcCheck: OBCCheckResult;
+  operationalReadiness: OperationalReadiness;
+  engineHandshake: {
+    geminiExtraction: {
+      timestamp: string;
+      dataPoints: Record<string, unknown>;
+      confidence: "high" | "medium" | "low";
+    };
+    openaiValidation: {
+      timestamp: string;
+      dataPoints: Record<string, unknown>;
+      validationPassed: boolean;
+    };
+    crossValidation: {
+      performed: boolean;
+      discrepancies: ConflictItem[];
+      deltaPercentage: number;
+    };
+  };
+  tierEnforcement: {
+    tier: "free" | "pro" | "premium";
+    featuresEnabled: string[];
+    featuresLocked: string[];
+  };
+}
+
+// ============================================
 // MODEL SELECTION - COST OPTIMIZED
 // ============================================
 
@@ -494,27 +556,28 @@ CRITICAL: Match materials to the PROJECT TYPE. If user says "paint", provide PAI
   }
 }
 
-// STEP 3: Cross-verify and detect conflicts
+// STEP 3: Cross-verify and detect conflicts - ENGINEERING HANDSHAKE
 function detectConflicts(gemini: GeminiVisualData, gpt: GPTEstimateData): ConflictItem[] {
   const conflicts: ConflictItem[] = [];
   
-  // Check area consistency
+  // Check area consistency - CRITICAL for cost accuracy
   if (gemini.total_area && gpt.total_material_area) {
     const areaDiff = Math.abs(gemini.total_area - gpt.total_material_area);
     const areaPercent = (areaDiff / gemini.total_area) * 100;
     
-    if (areaPercent > 10) {
+    // ANY delta > 0% triggers conflict (strict mode)
+    if (areaPercent > 0) {
       conflicts.push({
         field: "Total Area",
-        geminiValue: `${gemini.total_area} sq ft (measured)`,
-        gptValue: `${gpt.total_material_area} sq ft (used for calc)`,
+        geminiValue: `${gemini.total_area} sq ft (Visual Engine measurement)`,
+        gptValue: `${gpt.total_material_area} sq ft (Estimation Engine calc)`,
         verified: false,
-        severity: areaPercent > 25 ? "high" : "medium"
+        severity: areaPercent > 25 ? "high" : areaPercent > 10 ? "medium" : "low"
       });
     }
   }
   
-  // Check if flooring quantity matches area
+  // Check if flooring/material quantity matches area
   const flooringMaterial = gpt.materials.find(m => 
     m.item.toLowerCase().includes("tile") || 
     m.item.toLowerCase().includes("floor")
@@ -524,7 +587,6 @@ function detectConflicts(gemini: GeminiVisualData, gpt: GPTEstimateData): Confli
     const expectedMin = gemini.total_area * 1.10;
     const expectedMax = gemini.total_area * 1.20;
     
-    // Check boxes calculation (12 sq ft per box standard)
     if (flooringMaterial.unit === "boxes") {
       const boxArea = flooringMaterial.quantity * 12;
       if (boxArea < expectedMin || boxArea > expectedMax * 1.5) {
@@ -533,40 +595,225 @@ function detectConflicts(gemini: GeminiVisualData, gpt: GPTEstimateData): Confli
           geminiValue: `${gemini.total_area} sq ft = ~${Math.ceil(gemini.total_area * 1.15 / 12)} boxes expected`,
           gptValue: `${flooringMaterial.quantity} boxes (${boxArea} sq ft)`,
           verified: false,
-          severity: "medium"
+          severity: "high"
         });
       }
+    }
+  }
+  
+  // Surface type vs material mismatch detection
+  if (gemini.surface_type && gpt.materials.length > 0) {
+    const surfaceLower = gemini.surface_type.toLowerCase();
+    const hasMatchingMaterial = gpt.materials.some(m => {
+      const itemLower = m.item.toLowerCase();
+      if (surfaceLower.includes("concrete") && itemLower.includes("concrete")) return true;
+      if (surfaceLower.includes("wood") && (itemLower.includes("wood") || itemLower.includes("floor"))) return true;
+      if (surfaceLower.includes("tile") && itemLower.includes("tile")) return true;
+      if (surfaceLower.includes("carpet") && itemLower.includes("carpet")) return true;
+      return false;
+    });
+    
+    if (!hasMatchingMaterial && gemini.surface_type !== "unknown") {
+      conflicts.push({
+        field: "Surface Type vs Materials",
+        geminiValue: `Detected: ${gemini.surface_type}`,
+        gptValue: `Materials: ${gpt.materials.map(m => m.item).slice(0, 3).join(", ")}`,
+        verified: false,
+        severity: "medium"
+      });
     }
   }
   
   return conflicts;
 }
 
-// Main dual-engine analysis - now with tier-based model selection
+// ============================================
+// MESSA AUDIT REPORT BUILDER
+// ============================================
+
+function buildAuditReport(
+  gemini: GeminiVisualData,
+  gpt: GPTEstimateData,
+  conflicts: ConflictItem[],
+  obcData: OpenAIOBCData | null,
+  tier: "free" | "pro" | "premium",
+  filterAnswers?: FilterAnswers | null
+): MESSAAuditReport {
+  const highSeverityConflicts = conflicts.filter(c => c.severity === "high");
+  const deltaPercentage = conflicts.length > 0 && gemini.total_area && gpt.total_material_area
+    ? Math.abs(gemini.total_area - gpt.total_material_area) / gemini.total_area * 100
+    : 0;
+
+  // Determine audit status
+  let auditStatus: AuditReportStatus["status"] = "VERIFIED";
+  if (conflicts.length > 0) {
+    auditStatus = "CONFLICT_DETECTED";
+  }
+  if (!gemini.total_area && !gpt.total_material_area) {
+    auditStatus = "PENDING";
+  }
+
+  // Build structural summary
+  const structuralSummary: StructuralSummary = {
+    dimensions: gemini.total_area ? [`Total Area: ${gemini.total_area} ${gemini.unit}`] : ["Area: Pending measurement"],
+    materials: gpt.materials.map(m => `${m.item}: ${m.quantity} ${m.unit}`),
+    loadBearing: (gemini as any).structural_elements || [],
+    utilities: (gemini as any).utilities_detected || [],
+    specialConsiderations: (gemini as any).special_considerations || [],
+  };
+
+  // Build OBC check result
+  const obcCheck: OBCCheckResult = obcData ? {
+    status: obcData.complianceScore >= 80 ? "PASSED" : obcData.complianceScore >= 50 ? "WARNING" : "FAILED",
+    complianceScore: obcData.complianceScore,
+    criticalIssues: obcData.obcReferences.filter(r => r.relevance === "direct").map(r => `${r.code}: ${r.summary}`),
+    permitRequired: obcData.permitRequired,
+  } : {
+    status: "PENDING",
+    complianceScore: 0,
+    criticalIssues: [],
+    permitRequired: false,
+  };
+
+  // Calculate operational readiness
+  const blockers: string[] = [];
+  const warnings: string[] = [];
+  
+  if (highSeverityConflicts.length > 0) {
+    blockers.push(`${highSeverityConflicts.length} high-severity data conflicts detected`);
+  }
+  if (!gemini.total_area) {
+    blockers.push("Area measurement not confirmed");
+  }
+  if (obcData?.permitRequired && obcData.validationStatus !== "validated") {
+    blockers.push("Permit requirements not verified");
+  }
+  if (gemini.confidence === "low") {
+    warnings.push("Low confidence in visual analysis - recommend additional photos");
+  }
+  if (conflicts.length > 0 && conflicts.length <= 2) {
+    warnings.push("Minor discrepancies detected between engines");
+  }
+
+  const readinessScore = Math.max(0, 100 - (blockers.length * 25) - (warnings.length * 10) - (conflicts.length * 5));
+  
+  // Tier enforcement
+  const tierFeatures = {
+    free: {
+      enabled: ["Basic visual analysis", "Material estimation"],
+      locked: ["Dual-engine validation", "OBC compliance check", "Conflict visualization", "Team coordination"]
+    },
+    pro: {
+      enabled: ["Enhanced visual analysis", "Material estimation", "Dual-engine validation (on conflict)", "OBC check (structural/mechanical)"],
+      locked: ["Full conflict visualization", "Priority analysis", "Impact analysis"]
+    },
+    premium: {
+      enabled: ["Full deep analysis", "Dual-engine always", "OBC compliance check", "Conflict visualization", "Impact analysis", "Priority support"],
+      locked: []
+    }
+  };
+
+  return {
+    auditStatus: {
+      status: auditStatus,
+      conflictCount: conflicts.length,
+      highSeverityCount: highSeverityConflicts.length,
+    },
+    structuralSummary,
+    obcCheck,
+    operationalReadiness: {
+      isStable: blockers.length === 0,
+      readinessScore,
+      blockers,
+      warnings,
+      recommendations: [
+        ...gpt.recommendations,
+        ...(obcData?.recommendations || []),
+        blockers.length > 0 ? "Resolve blockers before proceeding to Timeline/Task modules" : "",
+      ].filter(Boolean),
+    },
+    engineHandshake: {
+      geminiExtraction: {
+        timestamp: new Date().toISOString(),
+        dataPoints: {
+          area: gemini.total_area,
+          surfaceType: gemini.surface_type,
+          condition: gemini.surface_condition,
+          roomType: gemini.room_type,
+          features: gemini.visible_features,
+        },
+        confidence: gemini.confidence,
+      },
+      openaiValidation: {
+        timestamp: new Date().toISOString(),
+        dataPoints: {
+          materialsCount: gpt.materials.length,
+          areaUsed: gpt.total_material_area,
+          summary: gpt.summary,
+        },
+        validationPassed: conflicts.length === 0,
+      },
+      crossValidation: {
+        performed: true,
+        discrepancies: conflicts,
+        deltaPercentage: Math.round(deltaPercentage * 100) / 100,
+      },
+    },
+    tierEnforcement: {
+      tier,
+      featuresEnabled: tierFeatures[tier].enabled,
+      featuresLocked: tierFeatures[tier].locked,
+    },
+  };
+}
+
+// Main dual-engine analysis - MESSA AUDIT PROTOCOL
 async function dualEngineAnalysis(
   image: string, 
   description: string, 
   apiKey: string, 
   modelConfig: ModelSelection,
-  filterAnswers?: FilterAnswers | null
+  filterAnswers?: FilterAnswers | null,
+  obcData?: OpenAIOBCData | null
 ) {
-  const tierName = modelConfig.visualModel === AI_MODELS.GEMINI_PRO ? "PREMIUM" : 
-                   modelConfig.visualModel === AI_MODELS.GEMINI_FLASH ? "PRO" : "FREE";
-  console.log(`=== DUAL ENGINE ANALYSIS START === (${tierName}) - DualEngine: ${modelConfig.runDualEngine}`);
+  const tier = modelConfig.visualModel === AI_MODELS.GEMINI_PRO ? "premium" as const : 
+               modelConfig.visualModel === AI_MODELS.GEMINI_FLASH ? "pro" as const : "free" as const;
+  console.log(`=== MESSA DUAL ENGINE AUDIT START === (Tier: ${tier.toUpperCase()}) - DualEngine: ${modelConfig.runDualEngine}`);
   
-  // Step 1: Gemini visual analysis
+  // STEP 1: GEMINI VISUAL EXTRACTION
+  // Role: Spatial analysis of blueprints, dimensions, site photos
+  console.log(`[GEMINI] Starting visual extraction with ${modelConfig.visualModel}`);
   const geminiData = await geminiVisualAnalysis(image, description, apiKey, modelConfig);
-  console.log("Gemini complete:", { area: geminiData.total_area, confidence: geminiData.confidence });
+  console.log("[GEMINI] Extraction complete:", { 
+    area: geminiData.total_area, 
+    surface: geminiData.surface_type,
+    confidence: geminiData.confidence 
+  });
   
-  // Step 2: Estimation based on Gemini data
+  // STEP 2: ESTIMATION ENGINE (Material Calculations)
+  console.log(`[ESTIMATION] Starting material calculation with ${modelConfig.estimationModel}`);
   const gptData = await gptEstimationAnalysis(image, description, geminiData, apiKey, modelConfig);
-  console.log("Estimation complete:", { materials: gptData.materials.length });
+  console.log("[ESTIMATION] Calculation complete:", { 
+    materialsCount: gptData.materials.length,
+    areaUsed: gptData.total_material_area
+  });
   
-  // Step 3: Conflict detection
+  // STEP 3: ENGINEERING HANDSHAKE - Cross-Validation
+  console.log("[CROSS-VALIDATION] Performing engineering handshake...");
   const conflicts = detectConflicts(geminiData, gptData);
-  console.log("Conflicts detected:", conflicts.length);
+  const deltaPercentage = geminiData.total_area && gptData.total_material_area
+    ? Math.abs(geminiData.total_area - gptData.total_material_area) / geminiData.total_area * 100
+    : 0;
+  console.log("[CROSS-VALIDATION] Result:", { 
+    conflictsDetected: conflicts.length,
+    deltaPercentage: `${deltaPercentage.toFixed(2)}%`,
+    status: conflicts.length > 0 ? "CONFLICT_DETECTED" : "VERIFIED"
+  });
   
-  // Build final response with tier info
+  // Build MESSA Audit Report
+  const auditReport = buildAuditReport(geminiData, gptData, conflicts, obcData || null, tier, filterAnswers);
+  
+  // Build final response with full audit transparency
   return {
     estimate: {
       // Core estimate data
@@ -584,21 +831,26 @@ async function dualEngineAnalysis(
       surfaceCondition: geminiData.surface_condition,
       roomType: geminiData.room_type,
       
-      // Dual-engine transparency
+      // MESSA AUDIT REPORT - Primary output
+      messaAudit: auditReport,
+      
+      // Dual-engine transparency (legacy format for compatibility)
       dualEngine: {
         gemini: {
-          role: "Visual Specialist",
+          role: "Visual Specialist (Spatial Analysis)",
           model: modelConfig.visualModel,
           findings: {
             area: geminiData.total_area,
             surface: geminiData.surface_type,
             condition: geminiData.surface_condition,
-            confidence: geminiData.confidence
+            confidence: geminiData.confidence,
+            roomType: geminiData.room_type,
+            features: geminiData.visible_features,
           },
           rawExcerpt: geminiData.raw_response
         },
         estimation: {
-          role: "Estimation Specialist", 
+          role: "Estimation Specialist (Material Calculations)", 
           model: modelConfig.estimationModel,
           findings: {
             materialsCount: gptData.materials.length,
@@ -610,8 +862,14 @@ async function dualEngineAnalysis(
         },
         conflicts: conflicts,
         verified: conflicts.length === 0,
-        verificationStatus: conflicts.length === 0 ? "verified" : "conflicts_detected"
+        verificationStatus: conflicts.length === 0 ? "verified" : "conflicts_detected",
+        deltaPercentage: deltaPercentage,
       }
+    },
+    // Store raw engine data for Decision Log transparency
+    _engineData: {
+      gemini: geminiData,
+      estimation: gptData,
     }
   };
 }
@@ -934,39 +1192,53 @@ serve(async (req) => {
     };
     console.log(`[AI_CALL] ${JSON.stringify(logEntry)}`);
 
-    // Run analysis with tier-optimized models
-    const result = type === "photo_estimate" 
-      ? await dualEngineAnalysis(image, description, apiKey, modelConfig, filterAnswers)
-      : await standardAnalysis(image, description, apiKey);
-    
-    // OBC validation only if enabled by model config OR explicitly triggered
+    // === MESSA AUDIT PROTOCOL ===
+    // For photo_estimate: run OBC first if needed, then pass to dual engine
+    let obcData: OpenAIOBCData | null = null;
     const shouldRunOBC = modelConfig.runOBCValidation || aiTriggers?.obcSearch;
-      
-    if (shouldRunOBC) {
+    
+    if (shouldRunOBC && type === "photo_estimate") {
+      console.log(`[MESSA] Running OBC validation BEFORE dual-engine analysis`);
       console.log(`[AI_CALL] ${JSON.stringify({ event: "obc_validation_call", tier: userTier, timestamp: new Date().toISOString() })}`);
-      const obcData = await openaiOBCValidation(
+      obcData = await openaiOBCValidation(
         filterAnswers, 
         aiTriggers, 
         apiKey,
         description,
-        result.estimate?.area
+        undefined // Area not yet known
       );
+      console.log("[OBC] Validation complete:", { 
+        status: obcData.validationStatus, 
+        permitRequired: obcData.permitRequired,
+        complianceScore: obcData.complianceScore
+      });
+    }
+
+    // Run analysis with tier-optimized models
+    const result = type === "photo_estimate" 
+      ? await dualEngineAnalysis(image, description, apiKey, modelConfig, filterAnswers, obcData)
+      : await standardAnalysis(image, description, apiKey);
+    
+    // Merge OBC data into result if we ran it
+    if (obcData && result.estimate) {
+      result.estimate.obcValidation = obcData;
+      result.estimate.dualEngine = result.estimate.dualEngine || {};
+      result.estimate.dualEngine.openai = {
+        role: "Regulatory Validator (OBC Compliance)",
+        model: modelConfig.validationModel,
+        findings: obcData,
+        rawExcerpt: obcData.raw_response,
+      };
       
-      // Merge OBC data into result
-      if (result.estimate) {
-        result.estimate.obcValidation = obcData;
-        result.estimate.dualEngine = result.estimate.dualEngine || {};
-        result.estimate.dualEngine.openai = {
-          role: "Regulatory Validator",
-          model: modelConfig.validationModel,
-          findings: obcData,
-          rawExcerpt: obcData.raw_response,
+      // Update MESSA Audit Report with OBC data
+      if (result.estimate.messaAudit) {
+        result.estimate.messaAudit.obcCheck = {
+          status: obcData.complianceScore >= 80 ? "PASSED" : obcData.complianceScore >= 50 ? "WARNING" : "FAILED",
+          complianceScore: obcData.complianceScore,
+          criticalIssues: obcData.obcReferences.filter(r => r.relevance === "direct").map(r => `${r.code}: ${r.summary}`),
+          permitRequired: obcData.permitRequired,
         };
       }
-      console.log("OBC Validation complete:", { 
-        status: obcData.validationStatus, 
-        permitRequired: obcData.permitRequired 
-      });
     }
 
     // Add tier info to response for transparency
@@ -982,6 +1254,17 @@ serve(async (req) => {
         obcEnabled: shouldRunOBC,
       };
     }
+
+    // === FINAL AUDIT LOG ===
+    console.log(`[MESSA_AUDIT] ${JSON.stringify({
+      event: "audit_complete",
+      tier: userTier,
+      timestamp: new Date().toISOString(),
+      auditStatus: result.estimate?.messaAudit?.auditStatus?.status || "N/A",
+      conflictCount: result.estimate?.messaAudit?.auditStatus?.conflictCount || 0,
+      obcStatus: result.estimate?.messaAudit?.obcCheck?.status || "PENDING",
+      readinessScore: result.estimate?.messaAudit?.operationalReadiness?.readinessScore || 0,
+    })}`);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
