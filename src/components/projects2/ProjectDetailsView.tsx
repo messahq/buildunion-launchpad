@@ -1301,17 +1301,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
         )}
       </div>
 
-      {/* Operational Truth Cards - 8 Pillars */}
-      <OperationalTruthCards
-        operationalTruth={buildOperationalTruth({
-          aiAnalysis,
-          blueprintAnalysis: blueprintAnalysis ? { analyzed: !!blueprintAnalysis.extractedText } : undefined,
-          dualEngineOutput,
-          synthesisResult,
-          filterAnswers,
-          projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
-        })} 
-      />
 
 
     </div>
