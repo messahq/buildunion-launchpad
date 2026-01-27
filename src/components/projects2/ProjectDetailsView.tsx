@@ -282,6 +282,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [documentCount, setDocumentCount] = useState(0);
   const [contractCount, setContractCount] = useState(0);
   const [signedContracts, setSignedContracts] = useState(0);
+  const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -901,14 +902,27 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const totalCost = summary?.total_cost || 0;
 
   // Build Operational Truth for report - now synchronized across 16 sources
-  const operationalTruth: OperationalTruth = buildOperationalTruth({
-    aiAnalysis,
-    blueprintAnalysis: blueprintAnalysis ? { analyzed: !!blueprintAnalysis.extractedText } : undefined,
-    dualEngineOutput,
-    synthesisResult,
-    filterAnswers,
-    projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
-  });
+  // Include manual blueprint validation override
+  const operationalTruth: OperationalTruth = useMemo(() => {
+    const baseOT = buildOperationalTruth({
+      aiAnalysis,
+      blueprintAnalysis: blueprintAnalysis ? { analyzed: !!blueprintAnalysis.extractedText } : undefined,
+      dualEngineOutput,
+      synthesisResult,
+      filterAnswers,
+      projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
+    });
+    
+    // Apply manual blueprint override if set
+    if (manuallyValidatedBlueprint && baseOT.blueprintStatus !== "analyzed") {
+      return {
+        ...baseOT,
+        blueprintStatus: "analyzed" as const,
+      };
+    }
+    
+    return baseOT;
+  }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint]);
 
   // Determine data source origins for transparency
   const dataSourceOrigins = useMemo(() => {
@@ -937,8 +951,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       origins.materials = "tasks";
     }
 
-    // Blueprint origin
-    if (blueprintAnalysis?.extractedText) origins.blueprint = "blueprint";
+    // Blueprint origin - prioritize manual validation
+    if (manuallyValidatedBlueprint) origins.blueprint = "manual";
+    else if (blueprintAnalysis?.extractedText) origins.blueprint = "blueprint";
     else if (photoEstimate?.blueprintAnalysis) origins.blueprint = "photo_ai";
 
     // OBC origin (always from OpenAI engine)
@@ -960,7 +975,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     else origins.confidence = "default";
 
     return origins;
-  }, [rawArea, calculatorArea, fallbackArea, taskBasedArea, materialsData, taskBasedMaterials, photoEstimate, blueprintAnalysis, dualEngineOutput, synthesisResult]);
+  }, [rawArea, calculatorArea, fallbackArea, taskBasedArea, materialsData, taskBasedMaterials, photoEstimate, blueprintAnalysis, dualEngineOutput, synthesisResult, manuallyValidatedBlueprint]);
 
   // Handle Generate Report
   const handleGenerateReport = async () => {
@@ -1220,6 +1235,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             projectId={projectId}
             projectAddress={project.address || undefined}
             dataSourceOrigins={dataSourceOrigins}
+            onBlueprintValidated={setManuallyValidatedBlueprint}
           />
 
           {/* Project Description */}
