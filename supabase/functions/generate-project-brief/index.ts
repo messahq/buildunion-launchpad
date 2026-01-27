@@ -11,6 +11,24 @@ interface ProjectBriefRequest {
   includeWeather?: boolean;
 }
 
+interface WeatherAlert {
+  type: string;
+  severity: "warning" | "danger" | "info";
+  message: string;
+}
+
+interface WeatherData {
+  temperature?: number;
+  description?: string;
+  alerts?: WeatherAlert[];
+  forecast?: Array<{
+    date: string;
+    temp_max: number;
+    temp_min: number;
+    description: string;
+  }>;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -44,7 +62,7 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { projectId } = await req.json() as ProjectBriefRequest;
+    const { projectId, includeWeather = true } = await req.json() as ProjectBriefRequest;
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "projectId is required" }), {
@@ -84,6 +102,21 @@ serve(async (req) => {
     const documents = documentsResult.data || [];
     const members = membersResult.data || [];
 
+    // Fetch weather data if project has an address
+    let weatherData: WeatherData | null = null;
+    if (includeWeather && project.address) {
+      try {
+        const weatherResponse = await supabase.functions.invoke("get-weather", {
+          body: { address: project.address },
+        });
+        if (!weatherResponse.error && weatherResponse.data) {
+          weatherData = weatherResponse.data;
+        }
+      } catch (weatherError) {
+        console.warn("Weather fetch failed:", weatherError);
+      }
+    }
+
     // Parse AI analysis from summary
     const aiAnalysis = summary?.blueprint_analysis || {};
     const calculatorResults = summary?.calculator_results || {};
@@ -109,9 +142,36 @@ serve(async (req) => {
       signed: contracts.filter(c => c.status === "signed").length,
     };
 
+    // Build weather section for context
+    let weatherSection = "";
+    if (weatherData) {
+      weatherSection = `
+== WEATHER CONDITIONS & RISKS (17th Data Source) ==
+Current Temperature: ${weatherData.temperature ?? "N/A"}°C
+Current Conditions: ${weatherData.description || "N/A"}
+`;
+      if (weatherData.alerts && weatherData.alerts.length > 0) {
+        weatherSection += `
+⚠️ ACTIVE WEATHER ALERTS:
+${weatherData.alerts.map(a => `- [${a.severity.toUpperCase()}] ${a.type}: ${a.message}`).join("\n")}
+`;
+      } else {
+        weatherSection += "Weather Alerts: None\n";
+      }
+
+      if (weatherData.forecast && weatherData.forecast.length > 0) {
+        weatherSection += `
+3-Day Forecast:
+${weatherData.forecast.slice(0, 3).map(f => 
+  `- ${f.date}: ${f.temp_min}°C to ${f.temp_max}°C, ${f.description}`
+).join("\n")}
+`;
+      }
+    }
+
     // Build comprehensive context for AI
     const projectContext = `
-PROJECT DATA SUMMARY - 16 DATA SOURCES
+PROJECT DATA SUMMARY - ${weatherData ? "17" : "16"} DATA SOURCES
 
 == PROJECT BASICS ==
 Name: ${project.name}
@@ -171,6 +231,7 @@ ${aiAnalysis.materials?.map((m: any) => `- ${m.item}: ${m.quantity} ${m.unit}`).
 == PROJECT TIMELINE ==
 Start Date: ${summary?.project_start_date || "Not set"}
 End Date: ${summary?.project_end_date || "Not set"}
+${weatherSection}
 `;
 
     // Generate AI Brief using Lovable AI
@@ -181,7 +242,7 @@ End Date: ${summary?.project_end_date || "Not set"}
       });
     }
 
-    const aiPrompt = `You are a professional construction project analyst for BuildUnion. Generate a comprehensive PROJECT BRIEF based on the following 16 data sources.
+    const aiPrompt = `You are a professional construction project analyst for BuildUnion. Generate a comprehensive PROJECT BRIEF based on the following ${weatherData ? "17" : "16"} data sources.
 
 ${projectContext}
 
@@ -206,6 +267,14 @@ Generate a detailed project brief with the following sections in clean Markdown 
 
 ## ⚠️ Risk Factors
 (Potential issues or blockers to monitor, based on missing data or delays)
+${weatherData && weatherData.alerts && weatherData.alerts.length > 0 ? "\n**IMPORTANT: Include weather-related risks prominently based on active weather alerts!**" : ""}
+
+${weatherData ? `## 🌤️ Weather Impact Assessment
+(Based on current conditions and forecast, assess:)
+- Impact on outdoor work scheduling
+- Any weather alerts that could delay progress
+- Recommendations for weather-related planning
+` : ""}
 
 ## 📅 Timeline Analysis
 (Assessment of project timeline health and any scheduling concerns)
@@ -224,7 +293,7 @@ Keep the tone professional but accessible. Use Canadian English and CAD currency
           { role: "system", content: "You are a professional construction project analyst. Generate clear, actionable project briefs." },
           { role: "user", content: aiPrompt },
         ],
-        max_tokens: 2000,
+        max_tokens: 2500,
       }),
     });
 
@@ -258,13 +327,15 @@ Keep the tone professional but accessible. Use Canadian English and CAD currency
       metadata: {
         generatedAt: new Date().toISOString(),
         projectName: project.name,
-        dataSources: 16,
+        dataSources: weatherData ? 17 : 16,
         taskCount: taskStats.total,
         completionRate: taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0,
         totalBudget: summary?.total_cost || totalBudget,
         contractCount: contracts.length,
         documentCount: documents.length,
         teamSize: members.length + 1,
+        hasWeatherData: !!weatherData,
+        weatherAlerts: weatherData?.alerts?.length || 0,
       },
     };
 

@@ -877,104 +877,148 @@ export const ProjectCommandCenter = ({
       {/* AI Brief Dialog - Full/Edit Mode */}
       <Dialog open={isBriefDialogOpen} onOpenChange={setIsBriefDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh]">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-amber-500" />
-                  AI Project Brief
-                  {isPreviewMode ? (
-                    <Badge variant="outline" className="gap-1 ml-2">
-                      <Eye className="h-3 w-3" />
-                      Preview
-                    </Badge>
-                  ) : (
-                    <Badge className="gap-1 ml-2 bg-gradient-to-r from-amber-500 to-cyan-500">
-                      <Pencil className="h-3 w-3" />
-                      Full View
-                    </Badge>
-                  )}
-                </DialogTitle>
-                <DialogDescription>
-                  {projectName} • Generated from 16 data sources
-                </DialogDescription>
-              </div>
-              {!isPreviewMode && (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={copyBriefToClipboard}>
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={printBrief}>
-                    <Printer className="h-4 w-4 mr-1" />
-                    Print
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={emailBrief}>
-                    <Mail className="h-4 w-4 mr-1" />
-                    Email
-                  </Button>
+          {/* Loading State */}
+          {isGeneratingBrief && (
+            <div className="flex flex-col items-center justify-center py-16 space-y-6">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-cyan-500 blur-xl opacity-30 animate-pulse" />
+                <div className="relative p-6 rounded-full bg-gradient-to-r from-amber-100 to-cyan-100 dark:from-amber-900/30 dark:to-cyan-900/30">
+                  <Loader2 className="h-12 w-12 text-amber-500 animate-spin" />
                 </div>
-              )}
-            </div>
-          </DialogHeader>
-
-          <ScrollArea className={cn("pr-4", isPreviewMode ? "max-h-[40vh]" : "max-h-[60vh]")}>
-            {!isPreviewMode && briefMetadata && (
-              <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
-                <Badge variant="secondary">
-                  📊 {briefMetadata.completionRate}% Complete
-                </Badge>
-                <Badge variant="secondary">
-                  📝 {briefMetadata.taskCount} Tasks
-                </Badge>
-                <Badge variant="secondary">
-                  💰 ${briefMetadata.totalBudget?.toLocaleString()} CAD
-                </Badge>
-                <Badge variant="secondary">
-                  📄 {briefMetadata.documentCount} Docs
-                </Badge>
-                <Badge variant="secondary">
-                  👥 {briefMetadata.teamSize} Team
-                </Badge>
               </div>
-            )}
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold text-foreground flex items-center justify-center gap-2">
+                  <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
+                  Generating AI Project Brief
+                </h3>
+                <p className="text-muted-foreground text-sm max-w-md">
+                  Analyzing 17 data sources including weather conditions, 8 pillars of operational truth, tasks, documents, and contracts...
+                </p>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            </div>
+          )}
 
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              {briefContent ? (
-                <ReactMarkdown>
-                  {isPreviewMode ? briefContent.substring(0, 800) + "..." : briefContent}
-                </ReactMarkdown>
+          {/* Content - only show when not generating */}
+          {!isGeneratingBrief && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5 text-amber-500" />
+                      AI Project Brief
+                      {isPreviewMode ? (
+                        <Badge variant="outline" className="gap-1 ml-2">
+                          <Eye className="h-3 w-3" />
+                          Preview
+                        </Badge>
+                      ) : (
+                        <Badge className="gap-1 ml-2 bg-gradient-to-r from-amber-500 to-cyan-500">
+                          <Pencil className="h-3 w-3" />
+                          Full View
+                        </Badge>
+                      )}
+                      {briefMetadata?.hasWeatherData && (
+                        <Badge variant="outline" className="gap-1 ml-1 text-cyan-600 border-cyan-300">
+                          🌤️ +Weather
+                        </Badge>
+                      )}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {projectName} • Generated from {briefMetadata?.dataSources || 16} data sources
+                      {briefMetadata?.weatherAlerts > 0 && (
+                        <span className="text-amber-600 ml-2">• ⚠️ {briefMetadata.weatherAlerts} weather alert(s)</span>
+                      )}
+                    </DialogDescription>
+                  </div>
+                  {!isPreviewMode && (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={copyBriefToClipboard}>
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={printBrief}>
+                        <Printer className="h-4 w-4 mr-1" />
+                        Print
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={emailBrief}>
+                        <Mail className="h-4 w-4 mr-1" />
+                        Email
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </DialogHeader>
+
+              <ScrollArea className={cn("pr-4", isPreviewMode ? "max-h-[40vh]" : "max-h-[60vh]")}>
+                {!isPreviewMode && briefMetadata && (
+                  <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
+                    <Badge variant="secondary">
+                      📊 {briefMetadata.completionRate}% Complete
+                    </Badge>
+                    <Badge variant="secondary">
+                      📝 {briefMetadata.taskCount} Tasks
+                    </Badge>
+                    <Badge variant="secondary">
+                      💰 ${briefMetadata.totalBudget?.toLocaleString()} CAD
+                    </Badge>
+                    <Badge variant="secondary">
+                      📄 {briefMetadata.documentCount} Docs
+                    </Badge>
+                    <Badge variant="secondary">
+                      👥 {briefMetadata.teamSize} Team
+                    </Badge>
+                    {briefMetadata.hasWeatherData && (
+                      <Badge variant="secondary" className="text-cyan-600">
+                        🌤️ Weather Data
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  {briefContent ? (
+                    <ReactMarkdown>
+                      {isPreviewMode ? briefContent.substring(0, 800) + "..." : briefContent}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-muted-foreground">No content available</p>
+                  )}
+                </div>
+              </ScrollArea>
+
+              {isPreviewMode ? (
+                <div className="flex justify-between items-center pt-4 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Showing preview • Click "Open Full View" for complete brief
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsBriefDialogOpen(false)}>
+                      Close
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="gap-1 bg-gradient-to-r from-amber-500 to-cyan-500"
+                      onClick={() => setIsPreviewMode(false)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Open Full View
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                <p className="text-muted-foreground">No content available</p>
+                briefMetadata && (
+                  <div className="pt-4 border-t text-xs text-muted-foreground text-center">
+                    Generated {new Date(briefMetadata.generatedAt).toLocaleString()} • BuildUnion AI
+                  </div>
+                )
               )}
-            </div>
-          </ScrollArea>
-
-          {isPreviewMode ? (
-            <div className="flex justify-between items-center pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                Showing preview • Click "Open Full View" for complete brief
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsBriefDialogOpen(false)}>
-                  Close
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="gap-1 bg-gradient-to-r from-amber-500 to-cyan-500"
-                  onClick={() => setIsPreviewMode(false)}
-                >
-                  <Pencil className="h-3 w-3" />
-                  Open Full View
-                </Button>
-              </div>
-            </div>
-          ) : (
-            briefMetadata && (
-              <div className="pt-4 border-t text-xs text-muted-foreground text-center">
-                Generated {new Date(briefMetadata.generatedAt).toLocaleString()} • BuildUnion AI
-              </div>
-            )
+            </>
           )}
         </DialogContent>
       </Dialog>
