@@ -32,7 +32,20 @@ import {
   ChevronDown,
   Eye,
   Send,
+  Trash2,
+  Save,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -163,6 +176,7 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
   
   // Edit mode state
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-CA", {
@@ -331,6 +345,26 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
     }
   };
 
+  const handleDeleteContract = async (contractId: string) => {
+    setDeletingId(contractId);
+    try {
+      const { error } = await supabase
+        .from("contracts")
+        .delete()
+        .eq("id", contractId);
+
+      if (error) throw error;
+      
+      toast.success("Contract deleted successfully");
+      fetchContracts();
+    } catch (error) {
+      console.error("Error deleting contract:", error);
+      toast.error("Failed to delete contract");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -494,6 +528,45 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
                         )}
                         <span className="hidden sm:inline">Download</span>
                       </Button>
+                      
+                      {/* Delete button for owners */}
+                      {isOwner && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deletingId === contract.id}
+                            >
+                              {deletingId === contract.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              <span className="hidden sm:inline">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Contract</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete contract #{contract.contract_number}? 
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteContract(contract.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                       
                       {isOwner && (
                         <CollapsibleTrigger asChild>
