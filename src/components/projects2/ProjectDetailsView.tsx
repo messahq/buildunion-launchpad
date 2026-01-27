@@ -678,10 +678,68 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           assignee_avatar: memberProfiles[task.assigned_to]?.avatar_url,
         }));
 
-        // If no tasks from DB, set empty array - NO demo data
-        // Tasks will be generated when user clicks "Generate Tasks from AI" button after analysis
+        // If no tasks from DB, auto-generate from AI materials and save to DB
+        // This ensures users always see their project tasks immediately
         if (enrichedTasks.length === 0) {
-          setTasks([]);
+          // Check if we have AI materials to generate from
+          const photoEst = summary?.photo_estimate as PhotoEstimateData | undefined;
+          const aiMats = photoEst?.materials || [];
+          
+          if (aiMats.length > 0 && user?.id) {
+            console.log(`[TaskAutoGen] Auto-generating ${aiMats.length * 3} tasks from AI materials...`);
+            
+            // Generate tasks from AI materials
+            const generatedTasks = generateTasksFromMaterials(
+              projectId,
+              user.id,
+              aiMats,
+              project?.description || undefined
+            );
+            
+            if (generatedTasks.length > 0) {
+              // Save to database
+              const tasksToInsert = generatedTasks.map(t => ({
+                project_id: t.project_id,
+                assigned_to: t.assigned_to,
+                assigned_by: t.assigned_by,
+                title: t.title,
+                description: t.description,
+                priority: t.priority,
+                status: t.status,
+                due_date: t.due_date,
+                quantity: t.quantity,
+                unit_price: t.unit_price,
+                total_cost: t.total_cost,
+              }));
+              
+              const { data: insertedTasks, error: insertError } = await supabase
+                .from("project_tasks")
+                .insert(tasksToInsert)
+                .select();
+              
+              if (insertError) {
+                console.error("[TaskAutoGen] Error saving tasks:", insertError);
+                // Still show generated tasks in memory as fallback
+                setTasks(generatedTasks);
+              } else {
+                console.log(`[TaskAutoGen] Saved ${insertedTasks?.length || 0} tasks to DB`);
+                // Use the DB-returned tasks (they have real IDs)
+                const enrichedInserted = (insertedTasks || []).map((task) => ({
+                  ...task,
+                  unit_price: task.unit_price || 0,
+                  quantity: task.quantity || 1,
+                  total_cost: task.total_cost || 0,
+                  assignee_name: "Project Owner",
+                  assignee_avatar: undefined,
+                }));
+                setTasks(enrichedInserted);
+              }
+            } else {
+              setTasks([]);
+            }
+          } else {
+            setTasks([]);
+          }
           setTotalTaskBudget(0);
         } else {
           setTasks(enrichedTasks);
@@ -772,7 +830,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId, user?.id]);
+  }, [projectId, user?.id, summary?.photo_estimate, project?.description]);
 
   // Fetch document and contract counts for Data Sources synchronization
   useEffect(() => {
