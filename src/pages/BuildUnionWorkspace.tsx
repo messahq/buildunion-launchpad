@@ -759,13 +759,14 @@ const BuildUnionProjects2 = () => {
 
                           <div className="lg:col-span-1">
                             <ProjectDashboardWidget 
-                              selectedProjectId={null}
+                              selectedProjectId={selectedProjectId}
                               onTaskClick={(projectId, navigateToTasks) => {
                                 setSelectedProjectId(projectId);
                                 if (navigateToTasks) {
                                   setInitialTab("team");
                                 }
                               }}
+                              onClearSelection={() => setSelectedProjectId(null)}
                             />
                           </div>
                         </div>
