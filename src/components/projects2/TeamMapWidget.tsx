@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,9 +102,9 @@ function TeamMapWidgetInner({
   const [localTeamMembers, setLocalTeamMembers] = useState<TeamMemberLocation[]>(teamMembers);
   
   // Sync with prop changes
-  useState(() => {
+  useEffect(() => {
     setLocalTeamMembers(teamMembers);
-  });
+  }, [teamMembers]);
 
   // Fetch current user's status on mount
   const fetchCurrentStatus = useCallback(async () => {
@@ -124,9 +124,62 @@ function TeamMapWidgetInner({
   }, [user]);
 
   // Fetch status on mount
-  useState(() => {
+  useEffect(() => {
     fetchCurrentStatus();
-  });
+  }, [fetchCurrentStatus]);
+
+  // Realtime subscription for team location updates
+  useEffect(() => {
+    if (localTeamMembers.length === 0) return;
+
+    const userIds = localTeamMembers.map(m => m.user_id);
+    
+    const channel = supabase
+      .channel('team-locations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bu_profiles',
+        },
+        (payload) => {
+          const updated = payload.new as {
+            user_id: string;
+            latitude?: number;
+            longitude?: number;
+            location_status?: string;
+          };
+          
+          // Only update if this user is in our team
+          if (!userIds.includes(updated.user_id)) return;
+          
+          // Update local team members
+          setLocalTeamMembers(prev => 
+            prev.map(member => 
+              member.user_id === updated.user_id
+                ? {
+                    ...member,
+                    latitude: updated.latitude,
+                    longitude: updated.longitude,
+                    status: updated.location_status as "on_site" | "en_route" | "away",
+                  }
+                : member
+            )
+          );
+          
+          // If it's the current user, also update currentStatus
+          if (user && updated.user_id === user.id && updated.location_status) {
+            setCurrentStatus(updated.location_status as "on_site" | "en_route" | "away");
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [localTeamMembers.length, user]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
