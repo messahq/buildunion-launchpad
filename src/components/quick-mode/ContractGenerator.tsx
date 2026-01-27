@@ -728,7 +728,7 @@ const ContractGenerator = ({
     }
   };
 
-  // Save contract and send to team members + upload to project documents
+  // Save contract and send to team members + upload to project documents + email to client
   const saveAndSendContract = async (selectedMemberIds: string[]) => {
     if (!user) {
       toast.error("Please sign in first");
@@ -737,15 +737,83 @@ const ContractGenerator = ({
 
     setIsSaving(true);
     try {
-      // First save the contract
-      const contractId = await saveContractToDatabase();
+      // Generate share token for client viewing
+      const shareToken = crypto.randomUUID();
+      
+      // First save the contract with share token
+      const contractData = {
+        user_id: user.id,
+        project_id: linkedProjectId || null,
+        contract_number: contract.contractNumber,
+        contract_date: contract.contractDate,
+        template_type: selectedTemplate,
+        status: "sent",
+        share_token: shareToken,
+        sent_to_client_at: new Date().toISOString(),
+        
+        contractor_name: contract.contractorName,
+        contractor_address: contract.contractorAddress,
+        contractor_phone: contract.contractorPhone,
+        contractor_email: contract.contractorEmail,
+        contractor_license: contract.licenseNumber,
+        
+        client_name: contract.clientName,
+        client_address: contract.clientAddress,
+        client_phone: contract.clientPhone,
+        client_email: contract.clientEmail,
+        
+        project_name: contract.projectName,
+        project_address: contract.projectAddress,
+        scope_of_work: contract.scopeOfWork,
+        
+        total_amount: contract.totalAmount,
+        deposit_percentage: contract.depositPercentage,
+        deposit_amount: contract.depositAmount,
+        payment_schedule: contract.paymentSchedule,
+        
+        start_date: contract.startDate || null,
+        estimated_end_date: contract.estimatedEndDate || null,
+        working_days: contract.workingDays,
+        
+        warranty_period: contract.warrantyPeriod,
+        change_order_policy: contract.changeOrderPolicy,
+        cancellation_policy: contract.cancellationPolicy,
+        dispute_resolution: contract.disputeResolution,
+        additional_terms: contract.additionalTerms,
+        materials_included: contract.materialsIncluded,
+        has_liability_insurance: contract.hasLiabilityInsurance,
+        has_wsib: contract.hasWSIB,
+        
+        client_signature: clientSignature ? JSON.parse(JSON.stringify(clientSignature)) : null,
+        contractor_signature: contractorSignature ? JSON.parse(JSON.stringify(contractorSignature)) : null,
+        client_signed_at: clientSignature ? (clientSignature.signedAt || new Date().toISOString()) : null,
+      };
+
+      let contractId = savedContractId;
+      
+      if (savedContractId) {
+        const { error } = await supabase
+          .from("contracts")
+          .update(contractData)
+          .eq("id", savedContractId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("contracts")
+          .insert(contractData)
+          .select("id")
+          .single();
+        if (error) throw error;
+        contractId = data.id;
+        setSavedContractId(data.id);
+      }
+
       if (!contractId) {
         throw new Error("Failed to save contract");
       }
 
       // If we have a linked project, upload contract PDF to project documents
       if (linkedProjectId) {
-        // Generate PDF blob
         const htmlContent = buildContractHTML({
           contractNumber: contract.contractNumber,
           contractDate: contract.contractDate,
@@ -805,7 +873,6 @@ const ContractGenerator = ({
           filename: `Contract-${contract.contractNumber}.pdf`,
         });
 
-        // Upload to storage
         const fileName = `contract-${contract.contractNumber}-${Date.now()}.pdf`;
         const filePath = `${linkedProjectId}/${fileName}`;
 
@@ -816,11 +883,7 @@ const ContractGenerator = ({
             upsert: false,
           });
 
-        if (uploadError) {
-          console.error("Storage upload error:", uploadError);
-          // Don't fail the whole operation if storage fails
-        } else {
-          // Save to project_documents table
+        if (!uploadError) {
           await supabase
             .from("project_documents")
             .insert({
@@ -829,6 +892,34 @@ const ContractGenerator = ({
               file_path: filePath,
               file_size: pdfBlob.size,
             });
+        }
+      }
+
+      // Send email to client if email is provided
+      if (contract.clientEmail) {
+        const contractUrl = `${window.location.origin}/contract/view/${shareToken}`;
+        
+        try {
+          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-contract-email', {
+            body: {
+              clientEmail: contract.clientEmail,
+              clientName: contract.clientName || 'Client',
+              contractorName: contract.contractorName || 'Your Contractor',
+              projectName: contract.projectName || 'Your Project',
+              contractUrl,
+              totalAmount: contract.totalAmount,
+            },
+          });
+
+          if (emailError) {
+            console.error("Email sending error:", emailError);
+            toast.warning("Contract saved but email failed to send");
+          } else {
+            console.log("Contract email sent:", emailResult);
+          }
+        } catch (emailErr) {
+          console.error("Email error:", emailErr);
+          toast.warning("Contract saved but email failed to send");
         }
       }
 
@@ -845,17 +936,19 @@ const ContractGenerator = ({
         });
 
         await Promise.all(messagePromises);
-        toast.success(`Contract saved and sent to ${selectedMemberIds.length} team member(s)`);
-      } else {
-        toast.success("Contract saved to project documents");
       }
+
+      // Success message
+      const emailSent = contract.clientEmail ? " and email sent to client" : "";
+      const teamNotified = selectedMemberIds.length > 0 ? ` + ${selectedMemberIds.length} team member(s) notified` : "";
+      toast.success(`Contract saved${emailSent}${teamNotified}`);
 
       setIsSendDialogOpen(false);
       onContractGenerated?.({
         id: contractId,
         contract_number: contract.contractNumber,
         total_amount: contract.totalAmount,
-        status: contractorSignature && clientSignature ? 'signed' : contractorSignature ? 'pending_client' : 'draft',
+        status: 'sent',
       });
     } catch (error: any) {
       console.error("Error in save and send:", error);
