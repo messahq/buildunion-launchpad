@@ -186,6 +186,9 @@ export default function OperationalTruthCards({
   // Initialize from database-persisted values
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(initialBlueprintValidated);
   const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(initialConflictsIgnored);
+  // Animation state for sync pulse effect
+  const [syncAnimationActive, setSyncAnimationActive] = useState(false);
+  const [previousVerificationRate, setPreviousVerificationRate] = useState<number | null>(null);
   
   // Sync with props when they change (e.g., after database load)
   useEffect(() => {
@@ -242,6 +245,16 @@ export default function OperationalTruthCards({
   
   // Use the effective verification rate (not the props one)
   const verificationRate = effectiveVerificationRate;
+  
+  // Trigger sync animation when verification rate changes
+  useEffect(() => {
+    if (previousVerificationRate !== null && previousVerificationRate !== verificationRate) {
+      setSyncAnimationActive(true);
+      const timer = setTimeout(() => setSyncAnimationActive(false), 1500);
+      return () => clearTimeout(timer);
+    }
+    setPreviousVerificationRate(verificationRate);
+  }, [verificationRate, previousVerificationRate]);
 
   const addReport = (report: Omit<VerificationReport, "timestamp">) => {
     setReports(prev => [...prev, { ...report, timestamp: new Date() }]);
@@ -816,24 +829,39 @@ export default function OperationalTruthCards({
   return (
     <div className="space-y-4">
       {/* Verification Progress + Run All Button - Matching ProjectTimelineBar style */}
-      <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/20 text-amber-600">
-          <Brain className="h-5 w-5" />
+      <div className={cn(
+        "flex items-center gap-4 p-4 rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10 transition-all duration-500",
+        syncAnimationActive && "ring-2 ring-cyan-400 ring-offset-2 animate-pulse shadow-lg shadow-cyan-400/30"
+      )}>
+        <div className={cn(
+          "w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/20 text-amber-600 transition-all duration-500",
+          syncAnimationActive && "bg-cyan-500/30 text-cyan-500 scale-110"
+        )}>
+          <Brain className={cn("h-5 w-5", syncAnimationActive && "animate-spin")} />
         </div>
         
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-foreground">{t("operationalTruth.title")}</span>
-            <span className="text-xs text-muted-foreground">
+            <span className={cn(
+              "text-xs text-muted-foreground transition-all duration-300",
+              syncAnimationActive && "text-cyan-500 font-medium"
+            )}>
               {Math.round((8 - pendingChecksCount) * (100/8))}% verified
             </span>
-            {verificationRate === 100 && !isRunningAll && (
+            {syncAnimationActive && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 font-medium animate-pulse flex items-center gap-1">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                SYNCING
+              </span>
+            )}
+            {verificationRate === 100 && !isRunningAll && !syncAnimationActive && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3" />
                 VERIFIED
               </span>
             )}
-            {isRunningAll && (
+            {isRunningAll && !syncAnimationActive && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium animate-pulse flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 RUNNING
@@ -847,12 +875,18 @@ export default function OperationalTruthCards({
               <div 
                 className={cn(
                   "h-full rounded-full transition-all duration-500 ease-out",
-                  verificationRate === 100 
-                    ? "bg-gradient-to-r from-green-500 to-emerald-500" 
-                    : "bg-gradient-to-r from-amber-500 to-orange-500"
+                  syncAnimationActive
+                    ? "bg-gradient-to-r from-cyan-400 to-cyan-500"
+                    : verificationRate === 100 
+                      ? "bg-gradient-to-r from-green-500 to-emerald-500" 
+                      : "bg-gradient-to-r from-amber-500 to-orange-500"
                 )}
                 style={{ width: `${displayProgress}%` }}
               />
+              {/* Shimmer effect on sync */}
+              {syncAnimationActive && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_1s_ease-in-out_infinite]" />
+              )}
               {/* Tick marks */}
               <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
                 {[25, 50, 75].map((tick) => (
@@ -864,7 +898,10 @@ export default function OperationalTruthCards({
                 ))}
               </div>
             </div>
-            <span className="text-sm font-medium text-foreground min-w-[40px] text-right">
+            <span className={cn(
+              "text-sm font-medium text-foreground min-w-[40px] text-right transition-all duration-300",
+              syncAnimationActive && "text-cyan-500 scale-110"
+            )}>
               {displayProgress}%
             </span>
           </div>
