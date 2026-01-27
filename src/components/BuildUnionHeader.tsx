@@ -223,6 +223,28 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
             <span className="hidden sm:inline">Community</span>
           </Button>
 
+          {/* Forum Link */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion/forum")}
+            className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Forum</span>
+          </Button>
+
+          {/* Members Link */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion/members")}
+            className="text-muted-foreground hover:text-foreground font-medium px-1.5 sm:px-3 text-xs sm:text-sm gap-1"
+          >
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">Members</span>
+          </Button>
+
           {/* Messages Link - only for logged in users */}
           {user && (
             <Button
