@@ -1746,6 +1746,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               signedContracts: signedContracts,
               teamSize: members.length + 1, // +1 for owner
               hasTimeline: !!(summary?.project_start_date && summary?.project_end_date),
+              hasStartDate: !!summary?.project_start_date,
+              hasEndDate: !!summary?.project_end_date,
               hasClientInfo: !!(summary?.client_name || summary?.client_email),
             }}
             clientInfo={{

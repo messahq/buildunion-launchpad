@@ -106,6 +106,8 @@ interface DataSourcesInfo {
   signedContracts: number;
   teamSize: number;
   hasTimeline: boolean;
+  hasStartDate: boolean;
+  hasEndDate: boolean;
   hasClientInfo: boolean;
 }
 
@@ -364,6 +366,8 @@ export const ProjectCommandCenter = ({
       signedContracts: 0,
       teamSize: 1,
       hasTimeline: false,
+      hasStartDate: false,
+      hasEndDate: false,
       hasClientInfo: false,
     };
     
@@ -475,16 +479,28 @@ export const ProjectCommandCenter = ({
       missingItems: siteMapMissing.length > 0 ? siteMapMissing : undefined,
     });
     
-    // Timeline - requires start and end dates
+    // Timeline - complete = both dates, partial = only start date, pending = neither
     const timelineMissing: string[] = [];
-    if (!info.hasTimeline) timelineMissing.push("Project start/end dates not set");
+    if (!info.hasStartDate) timelineMissing.push("Project start date not set");
+    if (!info.hasEndDate) timelineMissing.push("Target end date not set");
+    
+    // Status: complete = both dates, partial = start only, pending = neither
+    const timelineStatus = (info.hasStartDate && info.hasEndDate) 
+      ? "complete" 
+      : info.hasStartDate 
+        ? "partial" 
+        : "pending";
     
     sources.push({
       id: "timeline",
       name: "Timeline",
       category: "workflow",
-      status: info.hasTimeline ? "complete" : "pending",
-      value: info.hasTimeline ? "Set" : undefined,
+      status: timelineStatus,
+      value: info.hasTimeline 
+        ? "Complete" 
+        : info.hasStartDate 
+          ? "Start only" 
+          : undefined,
       icon: Calendar,
       missingItems: timelineMissing.length > 0 ? timelineMissing : undefined,
     });
