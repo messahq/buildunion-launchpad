@@ -1057,6 +1057,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               description: c.description,
             }))}
             isPremium={isPremium}
+            onNavigateToTab={(tabId) => setActiveTab(tabId)}
           />
         </TabsContent>
 
