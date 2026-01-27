@@ -350,36 +350,9 @@ const ContractGenerator = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto-save when signatures change (with debounce) - only after initial load
-  useEffect(() => {
-    if (!user || !initialLoadComplete) return;
-    
-    // Check if signatures actually changed (not just initial load)
-    const prevSigs = previousSignaturesRef.current;
-    const clientChanged = clientSignature?.signedAt !== prevSigs.client?.signedAt;
-    const contractorChanged = contractorSignature?.signedAt !== prevSigs.contractor?.signedAt;
-    
-    if (!clientChanged && !contractorChanged) return;
-    if (isSaving) return;
-    
-    // Update ref
-    previousSignaturesRef.current = {client: clientSignature, contractor: contractorSignature};
-    
-    // Mark pending auto-save
-    setPendingAutoSave(true);
-  }, [clientSignature, contractorSignature, user, initialLoadComplete, isSaving]);
-
-  // Execute auto-save after a short delay
-  useEffect(() => {
-    if (!pendingAutoSave || isSaving) return;
-    
-    const timer = setTimeout(async () => {
-      setPendingAutoSave(false);
-      await saveContractToDatabase();
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [pendingAutoSave, isSaving]);
+  // NOTE: Auto-save on signature change has been DISABLED to prevent premature saves
+  // Users must manually click "Save & Continue" to save the contract
+  // This ensures the form is fully completed before saving
 
   // Report progress updates to parent
   useEffect(() => {
