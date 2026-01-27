@@ -1028,6 +1028,8 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
               isOwner={isOwner}
               projectAddress={project.address || undefined}
               aiMaterials={aiAnalysis?.materials}
+              projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+              projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
             />
           </TabsContent>
         )}
