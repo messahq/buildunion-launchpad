@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,13 +10,18 @@ import {
   AlertTriangle,
   User,
   Navigation,
-  Route
+  Route,
+  Loader2,
+  MapPinned
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { ProjectConflict } from "@/hooks/useSingleProjectConflicts";
 import { ConflictMarkerLegend } from "./ConflictMarkerLegend";
 import { ProBadge } from "@/components/ui/pro-badge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TeamMemberLocation {
   user_id: string;
@@ -72,6 +78,8 @@ export default function TeamMapWidget({
   teamMembers = [],
 }: TeamMapWidgetProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
 
   // Create Google Maps URL for the address
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(projectAddress)}`;
@@ -79,21 +87,72 @@ export default function TeamMapWidget({
   // Create Google Maps directions URL (from current location to project site)
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(projectAddress)}&travelmode=driving`;
 
-  const handleOpenDirections = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.open(directionsUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleOpenMap = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
-  };
-
   // Count conflicts by severity
   const highCount = conflicts.filter(c => c.severity === "high").length;
   const mediumCount = conflicts.filter(c => c.severity === "medium").length;
   const lowCount = conflicts.filter(c => c.severity === "low").length;
   const hasConflicts = conflicts.length > 0;
+
+  const handleShareLocation = async () => {
+    if (!user) {
+      toast.error(t("common.loginRequired", "Please log in to share your location"));
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      toast.error(t("location.notSupported", "Geolocation is not supported by your browser"));
+      return;
+    }
+
+    setIsUpdatingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          const { error } = await supabase
+            .from("bu_profiles")
+            .update({
+              latitude,
+              longitude,
+              location_updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", user.id);
+
+          if (error) throw error;
+
+          toast.success(t("location.updated", "Location shared successfully!"));
+        } catch (error) {
+          console.error("Error updating location:", error);
+          toast.error(t("location.updateFailed", "Failed to update location"));
+        } finally {
+          setIsUpdatingLocation(false);
+        }
+      },
+      (error) => {
+        setIsUpdatingLocation(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            toast.error(t("location.permissionDenied", "Location permission denied. Please enable location access in your browser settings."));
+            break;
+          case error.POSITION_UNAVAILABLE:
+            toast.error(t("location.unavailable", "Location information is unavailable"));
+            break;
+          case error.TIMEOUT:
+            toast.error(t("location.timeout", "Location request timed out"));
+            break;
+          default:
+            toast.error(t("location.error", "An error occurred while getting location"));
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
 
   return (
     <Card className={cn("bg-card border-cyan-200 dark:border-cyan-800 overflow-hidden", className)}>
@@ -153,19 +212,31 @@ export default function TeamMapWidget({
                 variant="outline" 
                 size="sm" 
                 className="flex-1 text-xs h-8 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
-                onClick={handleOpenMap}
+                asChild
               >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                {t("common.viewMap", "View Map")}
+                <a 
+                  href={googleMapsUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  {t("common.viewMap", "View Map")}
+                </a>
               </Button>
               <Button 
                 variant="default" 
                 size="sm" 
                 className="flex-1 text-xs h-8 bg-cyan-600 hover:bg-cyan-700"
-                onClick={handleOpenDirections}
+                asChild
               >
-                <Route className="h-3 w-3 mr-1" />
-                {t("common.getDirections", "Directions")}
+                <a 
+                  href={directionsUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <Route className="h-3 w-3 mr-1" />
+                  {t("common.getDirections", "Directions")}
+                </a>
               </Button>
             </div>
           </div>
@@ -183,6 +254,27 @@ export default function TeamMapWidget({
             </div>
           )}
         </div>
+
+        {/* Share Location Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-3 text-xs h-9 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
+          onClick={handleShareLocation}
+          disabled={isUpdatingLocation}
+        >
+          {isUpdatingLocation ? (
+            <>
+              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+              {t("location.updating", "Updating...")}
+            </>
+          ) : (
+            <>
+              <MapPinned className="h-3 w-3 mr-2" />
+              {t("location.shareMyLocation", "Share My Location")}
+            </>
+          )}
+        </Button>
 
         {/* Conflict legend for premium users */}
         {isPremium && hasConflicts && (
