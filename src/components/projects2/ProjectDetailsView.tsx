@@ -631,6 +631,42 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
     return Math.round((completedVerif / verificationTasks.length) * 100);
   }, [tasks]);
 
+  // Helper to categorize tasks by phase (used by both Timeline and OperationalTruth)
+  const getPhaseForTask = useCallback((task: TaskWithBudget): "preparation" | "execution" | "verification" => {
+    const titleLower = task.title.toLowerCase();
+    if (titleLower.includes("prep") || titleLower.includes("order") || titleLower.includes("measure") || titleLower.includes("deliver")) {
+      return "preparation";
+    }
+    if (titleLower.includes("install") || titleLower.includes("lay") || titleLower.includes("apply") || titleLower.includes("cut")) {
+      return "execution";
+    }
+    if (titleLower.includes("inspect") || titleLower.includes("verify") || titleLower.includes("clean") || titleLower.includes("final")) {
+      return "verification";
+    }
+    return "execution"; // Default
+  }, []);
+
+  // Calculate phase-based progress (shared between Timeline and OperationalTruth)
+  const phaseProgress = useMemo(() => {
+    const preparationTasks = tasks.filter(t => getPhaseForTask(t) === "preparation");
+    const executionTasks = tasks.filter(t => getPhaseForTask(t) === "execution");
+    const verificationTasks = tasks.filter(t => getPhaseForTask(t) === "verification");
+
+    const calcProgress = (phaseTasks: TaskWithBudget[]) => 
+      phaseTasks.length === 0 ? 0 : Math.round((phaseTasks.filter(t => t.status === "completed").length / phaseTasks.length) * 100);
+
+    return {
+      phases: [
+        { name: "Preparation", progress: calcProgress(preparationTasks), taskCount: preparationTasks.length, color: "bg-blue-500" },
+        { name: "Execution", progress: calcProgress(executionTasks), taskCount: executionTasks.length, color: "bg-amber-500" },
+        { name: "Verification", progress: calcProgress(verificationTasks), taskCount: verificationTasks.length, color: "bg-green-500" },
+      ],
+      completedCount: tasks.filter(t => t.status === "completed").length,
+      totalCount: tasks.length,
+      taskProgressPercent: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === "completed").length / tasks.length) * 100) : 0,
+    };
+  }, [tasks, getPhaseForTask]);
+
   // Handle task completion (for verification feedback)
   const handleTaskComplete = useCallback(async (taskId: string) => {
     // Refresh tasks list
@@ -901,72 +937,34 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
       </div>
 
       {/* Main Project Timeline Bar - THE CLOCKWORK */}
-      {(() => {
-        // Helper to categorize tasks by phase
-        const getPhaseForTask = (task: TaskWithBudget): "preparation" | "execution" | "verification" => {
-          const titleLower = task.title.toLowerCase();
-          if (titleLower.includes("prep") || titleLower.includes("order") || titleLower.includes("measure") || titleLower.includes("deliver")) {
-            return "preparation";
-          }
-          if (titleLower.includes("install") || titleLower.includes("lay") || titleLower.includes("apply") || titleLower.includes("cut")) {
-            return "execution";
-          }
-          if (titleLower.includes("inspect") || titleLower.includes("verify") || titleLower.includes("clean") || titleLower.includes("final")) {
-            return "verification";
-          }
-          return "execution"; // Default
-        };
-
-        // Calculate phase-based progress
-        const preparationTasks = tasks.filter(t => getPhaseForTask(t) === "preparation");
-        const executionTasks = tasks.filter(t => getPhaseForTask(t) === "execution");
-        const verificationTasks = tasks.filter(t => getPhaseForTask(t) === "verification");
-
-        const calcProgress = (phaseTasks: TaskWithBudget[]) => 
-          phaseTasks.length === 0 ? 0 : Math.round((phaseTasks.filter(t => t.status === "completed").length / phaseTasks.length) * 100);
-
-        const phases = [
-          { name: "Preparation", progress: calcProgress(preparationTasks), taskCount: preparationTasks.length, color: "bg-blue-500" },
-          { name: "Execution", progress: calcProgress(executionTasks), taskCount: executionTasks.length, color: "bg-amber-500" },
-          { name: "Verification", progress: calcProgress(verificationTasks), taskCount: verificationTasks.length, color: "bg-green-500" },
-        ];
-
-        // Calculate overall task-based progress
-        const completedCount = tasks.filter(t => t.status === "completed").length;
-        const totalCount = tasks.length;
-        const taskProgressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-        
-        return (
-          <ProjectTimelineBar
-            projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
-            projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
-            onDatesChange={async (startDate, endDate) => {
-              // Update summary state
-              setSummary(prev => prev ? {
-                ...prev,
+      <ProjectTimelineBar
+        projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+        projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+        onDatesChange={async (startDate, endDate) => {
+          // Update summary state
+          setSummary(prev => prev ? {
+            ...prev,
+            project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+            project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
+          } : null);
+          
+          // Persist to database
+          if (summary?.id) {
+            await supabase
+              .from("project_summaries")
+              .update({
                 project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
                 project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
-              } : null);
-              
-              // Persist to database
-              if (summary?.id) {
-                await supabase
-                  .from("project_summaries")
-                  .update({
-                    project_start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
-                    project_end_date: endDate ? format(endDate, "yyyy-MM-dd") : null,
-                  })
-                  .eq("id", summary.id);
-              }
-            }}
-            isEditable={isOwner}
-            taskProgress={taskProgressPercent}
-            completedTasks={completedCount}
-            totalTasks={totalCount}
-            phases={phases}
-          />
-        );
-      })()}
+              })
+              .eq("id", summary.id);
+          }
+        }}
+        isEditable={isOwner}
+        taskProgress={phaseProgress.taskProgressPercent}
+        completedTasks={phaseProgress.completedCount}
+        totalTasks={phaseProgress.totalCount}
+        phases={phaseProgress.phases}
+      />
 
       {/* Main Content Tabs - Between Timeline Bar and Phases */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1020,6 +1018,10 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             operationalTruth={operationalTruth}
             projectId={projectId}
             projectAddress={project.address}
+            phases={phaseProgress.phases}
+            taskProgress={phaseProgress.taskProgressPercent}
+            completedTasks={phaseProgress.completedCount}
+            totalTasks={phaseProgress.totalCount}
           />
 
           {/* Project Description */}

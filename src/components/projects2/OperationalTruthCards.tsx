@@ -25,11 +25,26 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface PhaseProgress {
+  name: string;
+  progress: number;
+  taskCount: number;
+  color: string;
+}
+
 interface OperationalTruthCardsProps {
   operationalTruth: OperationalTruth;
   projectId?: string;
   projectAddress?: string | null;
   onUpdate?: () => void;
+  /** Phase-based progress from ProjectTimelineBar for sync */
+  phases?: PhaseProgress[];
+  /** Overall task completion percentage */
+  taskProgress?: number;
+  /** Number of completed tasks */
+  completedTasks?: number;
+  /** Total number of tasks */
+  totalTasks?: number;
 }
 
 interface VerificationReport {
@@ -113,7 +128,11 @@ export default function OperationalTruthCards({
   operationalTruth, 
   projectId,
   projectAddress,
-  onUpdate 
+  onUpdate,
+  phases,
+  taskProgress,
+  completedTasks = 0,
+  totalTasks = 0,
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
   const [loadingPillar, setLoadingPillar] = useState<string | null>(null);
@@ -602,6 +621,14 @@ export default function OperationalTruthCards({
     conflictStatus === "pending"
   ].filter(Boolean).length;
 
+  // Get verification phase progress from phases (if synced with timeline)
+  const verificationPhase = phases?.find(p => p.name === "Verification");
+  const verificationPhaseProgress = verificationPhase?.progress ?? 0;
+  
+  // Combined display progress: use pillar-based rate or phase-based, whichever shows more info
+  const displayProgress = isRunningAll ? runAllProgress : verificationRate;
+  const hasPhases = phases && phases.length > 0;
+
   return (
     <div className="space-y-4">
       {/* Verification Progress + Run All Button - Matching ProjectTimelineBar style */}
@@ -613,6 +640,11 @@ export default function OperationalTruthCards({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-foreground">{t("operationalTruth.title")}</span>
+            {totalTasks > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {completedTasks} / {totalTasks} tasks
+              </span>
+            )}
             {verificationRate === 100 && !isRunningAll && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3" />
@@ -627,33 +659,60 @@ export default function OperationalTruthCards({
             )}
           </div>
           
-          {/* Progress bar matching timeline style */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden relative">
-              <div 
-                className={cn(
-                  "h-full rounded-full transition-all duration-500 ease-out",
-                  verificationRate === 100 
-                    ? "bg-gradient-to-r from-green-500 to-emerald-500" 
-                    : "bg-gradient-to-r from-amber-500 to-orange-500"
-                )}
-                style={{ width: `${isRunningAll ? runAllProgress : verificationRate}%` }}
-              />
-              {/* Tick marks */}
-              <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
-                {[25, 50, 75].map((tick) => (
-                  <div 
-                    key={tick} 
-                    className="w-px h-full bg-background/30" 
-                    style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
-                  />
-                ))}
+          {/* Phase-based progress bars - synced with ProjectTimelineBar */}
+          {hasPhases ? (
+            <div className="space-y-1.5">
+              {phases.map((phase) => (
+                <div key={phase.name} className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground w-20 truncate">
+                    {phase.name}
+                  </span>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden relative">
+                    <div 
+                      className={cn("h-full rounded-full transition-all duration-500 ease-out", phase.color)}
+                      style={{ width: `${phase.progress}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium w-10 text-right">
+                    {phase.progress}%
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center justify-center mt-1">
+                <span className="text-xs font-medium text-foreground">
+                  {taskProgress ?? 0}% complete
+                </span>
               </div>
             </div>
-            <span className="text-sm font-medium text-foreground min-w-[40px] text-right">
-              {isRunningAll ? runAllProgress : verificationRate}%
-            </span>
-          </div>
+          ) : (
+            /* Fallback: Single progress bar for pillar verification */
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden relative">
+                <div 
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500 ease-out",
+                    verificationRate === 100 
+                      ? "bg-gradient-to-r from-green-500 to-emerald-500" 
+                      : "bg-gradient-to-r from-amber-500 to-orange-500"
+                  )}
+                  style={{ width: `${displayProgress}%` }}
+                />
+                {/* Tick marks */}
+                <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                  {[25, 50, 75].map((tick) => (
+                    <div 
+                      key={tick} 
+                      className="w-px h-full bg-background/30" 
+                      style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
+                    />
+                  ))}
+                </div>
+              </div>
+              <span className="text-sm font-medium text-foreground min-w-[40px] text-right">
+                {displayProgress}%
+              </span>
+            </div>
+          )}
         </div>
         
         {/* Run All Verifications Button - Amber themed */}
