@@ -1067,6 +1067,9 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             <ContractsTab
               projectId={projectId}
               isOwner={isOwner}
+              projectName={project.name}
+              projectAddress={project.address || undefined}
+              projectDescription={project.description || undefined}
             />
           </TabsContent>
         )}
