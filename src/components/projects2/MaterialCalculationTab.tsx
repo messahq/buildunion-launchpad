@@ -176,6 +176,7 @@ export function MaterialCalculationTab({
   
   // Signature state
   const [clientSignature, setClientSignature] = useState<SignatureData | null>(null);
+  const [contractorSignature, setContractorSignature] = useState<SignatureData | null>(null);
   const [signatureOpen, setSignatureOpen] = useState(true);
 
   // Calculate section totals
@@ -544,17 +545,39 @@ export function MaterialCalculationTab({
                 <!-- Contractor Signature -->
                 <div style="flex: 1;">
                   <p style="font-size: 8px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Contractor Signature</p>
-                  <div style="border-bottom: 1px solid #1e293b; height: 35px; margin-bottom: 4px;"></div>
-                  <div style="display: flex; justify-content: space-between; font-size: 8px;">
-                    <div>
-                      <span style="color: #64748b;">Name: </span>
-                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 80px;"></span>
+                  ${contractorSignature ? `
+                    ${contractorSignature.type === 'drawn' ? `
+                      <div style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px; margin-bottom: 4px; background: white;">
+                        <img src="${contractorSignature.data}" alt="Contractor Signature" style="height: 40px; max-width: 100%; object-fit: contain;" />
+                      </div>
+                    ` : `
+                      <div style="border-bottom: 1px solid #1e293b; padding: 8px 0; margin-bottom: 4px; font-family: 'Dancing Script', cursive; font-size: 20px; color: #1e293b;">
+                        ${contractorSignature.data}
+                      </div>
+                    `}
+                    <div style="display: flex; justify-content: space-between; font-size: 8px;">
+                      <div>
+                        <span style="color: #64748b;">Name: </span>
+                        <span style="font-weight: 500;">${contractorSignature.name || contractorSignature.data}</span>
+                      </div>
+                      <div>
+                        <span style="color: #64748b;">Date: </span>
+                        <span style="font-weight: 500;">${new Date(contractorSignature.signedAt).toLocaleDateString('en-CA')}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span style="color: #64748b;">Date: </span>
-                      <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 50px;"></span>
+                  ` : `
+                    <div style="border-bottom: 1px solid #1e293b; height: 35px; margin-bottom: 4px;"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 8px;">
+                      <div>
+                        <span style="color: #64748b;">Name: </span>
+                        <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 80px;"></span>
+                      </div>
+                      <div>
+                        <span style="color: #64748b;">Date: </span>
+                        <span style="border-bottom: 1px solid #94a3b8; display: inline-block; width: 50px;"></span>
+                      </div>
                     </div>
-                  </div>
+                  `}
                 </div>
               </div>
             </div>
@@ -984,11 +1007,11 @@ export function MaterialCalculationTab({
               <button className="flex items-center justify-between w-full text-left">
                 <CardTitle className="text-base flex items-center gap-2">
                   <PenLine className="h-4 w-4 text-green-600" />
-                  {t("materials.clientSignature", "Client Signature")}
-                  {clientSignature && (
+                  {t("materials.signatures", "Signatures")}
+                  {(clientSignature || contractorSignature) && (
                     <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
                       <Check className="h-3 w-3 mr-1" />
-                      Signed
+                      {clientSignature && contractorSignature ? '2/2' : '1/2'}
                     </Badge>
                   )}
                 </CardTitle>
@@ -1004,15 +1027,49 @@ export function MaterialCalculationTab({
           </CardHeader>
           <CollapsibleContent>
             <CardContent className="pt-0">
-              <div className="bg-green-50/50 dark:bg-green-950/20 rounded-lg p-4 border border-green-100 dark:border-green-900">
-                <p className="text-xs text-muted-foreground mb-4">
-                  {t("materials.signatureHint", "Capture client signature for cost breakdown approval. Draw or type a signature below.")}
+              <div className="bg-green-50/50 dark:bg-green-950/20 rounded-lg p-4 border border-green-100 dark:border-green-900 space-y-6">
+                <p className="text-xs text-muted-foreground">
+                  {t("materials.signatureHint", "Capture signatures for cost breakdown approval. Draw or type signatures below.")}
                 </p>
-                <SignatureCapture
-                  onSignatureChange={setClientSignature}
-                  label={t("materials.clientApproval", "Client Approval Signature")}
-                  placeholder={t("materials.typeFullName", "Type client's full name")}
-                />
+                
+                {/* Dual Signature Grid */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Client Signature */}
+                  <div className="space-y-2">
+                    <SignatureCapture
+                      onSignatureChange={setClientSignature}
+                      label={t("materials.clientApproval", "Client Signature")}
+                      placeholder={t("materials.typeClientName", "Type client's full name")}
+                    />
+                  </div>
+                  
+                  {/* Contractor Signature */}
+                  <div className="space-y-2">
+                    <SignatureCapture
+                      onSignatureChange={setContractorSignature}
+                      label={t("materials.contractorApproval", "Contractor Signature")}
+                      placeholder={t("materials.typeContractorName", "Type contractor's full name")}
+                    />
+                  </div>
+                </div>
+                
+                {/* Status Summary */}
+                {(clientSignature || contractorSignature) && (
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-green-200 dark:border-green-800">
+                    {clientSignature && (
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                        <Check className="h-3 w-3 mr-1" />
+                        Client signed
+                      </Badge>
+                    )}
+                    {contractorSignature && (
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
+                        <Check className="h-3 w-3 mr-1" />
+                        Contractor signed
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
           </CollapsibleContent>
