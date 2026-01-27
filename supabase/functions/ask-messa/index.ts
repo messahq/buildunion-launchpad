@@ -1126,7 +1126,27 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, dualEngine = true, projectContext } = await req.json();
+    const requestBody = await req.json();
+    
+    // Support both old format (messages + projectContext) and new format (projectId + question)
+    let messages = requestBody.messages;
+    const dualEngine = requestBody.dualEngine ?? true;
+    
+    // Handle new simplified format: { projectId, question, analysisType }
+    let projectContext = requestBody.projectContext;
+    if (requestBody.projectId && requestBody.question) {
+      // Convert new format to old format
+      messages = [{ role: "user", content: requestBody.question }];
+      projectContext = { projectId: requestBody.projectId };
+      console.log(`Converted simple request: ${requestBody.analysisType || "general"}`);
+    }
+    
+    // Ensure messages is always an array
+    if (!messages || !Array.isArray(messages)) {
+      messages = [{ role: "user", content: "Analyze this project" }];
+      console.log("No messages provided, using default");
+    }
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
