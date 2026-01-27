@@ -292,12 +292,12 @@ function generateTasksFromMaterials(
   const tasks: TaskWithBudget[] = [];
   let taskCounter = 0;
 
-  // Generate tasks for each material with 3 phases
+  // Generate tasks for each material with 3 phases: Preparation (Order/Deliver), Execution (Install), Verification (Verify)
   effectiveMaterials.forEach((material, materialIndex) => {
     const materialName = material.item.split(" ")[0];
-    const baseDay = materialIndex * 5;
+    const baseDay = materialIndex * 4;
 
-    // Phase 1: Order
+    // Phase 1: Preparation - Order materials
     tasks.push({
       id: `task-${++taskCounter}`,
       project_id: projectId,
@@ -316,7 +316,26 @@ function generateTasksFromMaterials(
       assignee_name: "Project Owner",
     });
 
-    // Phase 2: Install
+    // Phase 1: Preparation - Deliver materials
+    tasks.push({
+      id: `task-${++taskCounter}`,
+      project_id: projectId,
+      assigned_to: userId,
+      assigned_by: userId,
+      title: `Deliver ${material.item} to site`,
+      description: `Receive and inspect delivery of ${material.quantity} ${material.unit} of ${material.item}`,
+      priority: "medium",
+      status: "pending",
+      due_date: addDays(now, baseDay + 1),
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      unit_price: 0,
+      quantity: material.quantity,
+      total_cost: 0,
+      assignee_name: "Project Owner",
+    });
+
+    // Phase 2: Execution - Install materials
     tasks.push({
       id: `task-${++taskCounter}`,
       project_id: projectId,
@@ -326,7 +345,7 @@ function generateTasksFromMaterials(
       description: `Install ${material.quantity} ${material.unit} of ${material.item}`,
       priority: "high",
       status: "pending",
-      due_date: addDays(now, baseDay + 3),
+      due_date: addDays(now, baseDay + 2),
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
       unit_price: 0,
@@ -335,17 +354,17 @@ function generateTasksFromMaterials(
       assignee_name: "Project Owner",
     });
 
-    // Phase 3: Verify
+    // Phase 3: Verification - Verify installation
     tasks.push({
       id: `task-${++taskCounter}`,
       project_id: projectId,
       assigned_to: userId,
       assigned_by: userId,
       title: `Verify ${materialName} installation`,
-      description: `Final inspection of ${material.item}`,
+      description: `Final inspection and quality check of ${material.item}`,
       priority: "medium",
       status: "pending",
-      due_date: addDays(now, baseDay + 5),
+      due_date: addDays(now, baseDay + 3),
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
       unit_price: 0,
