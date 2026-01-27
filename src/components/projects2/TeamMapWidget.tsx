@@ -340,17 +340,51 @@ function TeamMapWidgetInner({
           )}
         </div>
 
-        {/* Address, Status & Actions - Combined */}
-        <div className="mt-3 p-3 bg-muted/50 border border-cyan-200 dark:border-cyan-800 rounded-lg space-y-3">
-          {/* Address */}
-          <div className="flex items-center gap-2">
+        {/* Address and action buttons */}
+        <div className="mt-3 p-2 bg-muted/50 border border-cyan-200 dark:border-cyan-800 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
             <MapPin className="h-4 w-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
             <span className="text-sm text-foreground truncate flex-1">{projectAddress}</span>
           </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 text-xs h-8 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
+              asChild
+            >
+              <a 
+                href={googleMapsUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                {t("common.viewMap", "View Map")}
+              </a>
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex-1 text-xs h-8 bg-cyan-600 hover:bg-cyan-700"
+              asChild
+            >
+              <a 
+                href={directionsUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Route className="h-3 w-3 mr-1" />
+                {t("common.getDirections", "Directions")}
+              </a>
+            </Button>
+          </div>
+        </div>
 
+        {/* Share Location & Status */}
+        <div className="mt-3 space-y-2">
           {/* Status Toggle */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground px-1 flex-shrink-0">{t("location.status", "Status")}:</span>
+          <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border border-cyan-200 dark:border-cyan-800">
+            <span className="text-xs text-muted-foreground px-2 flex-shrink-0">{t("location.status", "Status")}:</span>
             <div className="flex gap-1 flex-1">
               {(["on_site", "en_route", "away"] as const).map((status) => (
                 <Button
@@ -374,53 +408,26 @@ function TeamMapWidgetInner({
             </div>
           </div>
 
-          {/* Action Buttons Row */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs h-8 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
-              onClick={handleShareLocation}
-              disabled={isUpdatingLocation}
-            >
-              {isUpdatingLocation ? (
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              ) : (
-                <MapPinned className="h-3 w-3 mr-1" />
-              )}
-              {t("location.share", "Share")}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex-1 text-xs h-8 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
-              asChild
-            >
-              <a 
-                href={googleMapsUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                {t("common.viewMap", "View")}
-              </a>
-            </Button>
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="flex-1 text-xs h-8 bg-cyan-600 hover:bg-cyan-700"
-              asChild
-            >
-              <a 
-                href={directionsUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <Route className="h-3 w-3 mr-1" />
-                {t("common.directions", "Go")}
-              </a>
-            </Button>
-          </div>
+          {/* Share Location Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs h-9 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
+            onClick={handleShareLocation}
+            disabled={isUpdatingLocation}
+          >
+            {isUpdatingLocation ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                {t("location.updating", "Updating...")}
+              </>
+            ) : (
+              <>
+                <MapPinned className="h-3 w-3 mr-2" />
+                {t("location.shareMyLocation", "Share My Location")}
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Conflict legend for premium users */}
