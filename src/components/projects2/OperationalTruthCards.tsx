@@ -37,6 +37,8 @@ interface OperationalTruthCardsProps {
   onUpdate?: () => void;
   // Callback when blueprint is manually validated
   onBlueprintValidated?: (validated: boolean) => void;
+  // Callback when conflicts are manually ignored
+  onConflictsIgnored?: (ignored: boolean) => void;
   // Data source origins for each pillar
   dataSourceOrigins?: {
     area?: DataSourceOrigin;
@@ -163,6 +165,7 @@ export default function OperationalTruthCards({
   projectAddress,
   onUpdate,
   onBlueprintValidated,
+  onConflictsIgnored,
   dataSourceOrigins = {},
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
@@ -172,6 +175,7 @@ export default function OperationalTruthCards({
   const [runAllProgress, setRunAllProgress] = useState(0);
   const [reports, setReports] = useState<VerificationReport[]>([]);
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
+  const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(false);
   
   const {
     confirmedArea,
@@ -188,6 +192,9 @@ export default function OperationalTruthCards({
 
   // Determine effective blueprint status (manual override takes priority)
   const effectiveBlueprintStatus = manuallyValidatedBlueprint ? "analyzed" : blueprintStatus;
+  
+  // Determine effective conflict status (manual ignore takes priority)
+  const effectiveConflictStatus = manuallyIgnoredConflicts ? "aligned" : conflictStatus;
 
   const addReport = (report: Omit<VerificationReport, "timestamp">) => {
     setReports(prev => [...prev, { ...report, timestamp: new Date() }]);
@@ -960,16 +967,23 @@ export default function OperationalTruthCards({
           sourceOrigin={dataSourceOrigins.obc}
         />
 
-        {/* Pillar 5: Conflict Status - Clickable */}
+        {/* Pillar 5: Conflict Status - Clickable or can be ignored */}
         <PillarCard
           icon={<AlertTriangle className="h-4 w-4" />}
           label={t("operationalTruth.conflictCheck")}
-          value={conflictStatus === "aligned" ? t("operationalTruth.aligned") : conflictStatus === "conflict_detected" ? t("operationalTruth.conflicts") : t("operationalTruth.pending")}
-          status={conflictStatus === "aligned" ? "verified" : conflictStatus === "conflict_detected" ? "warning" : "pending"}
-          isClickable={conflictStatus === "pending" && !!projectId}
+          value={
+            effectiveConflictStatus === "aligned" 
+              ? (manuallyIgnoredConflicts ? t("operationalTruth.ignored", "Ignored") : t("operationalTruth.aligned"))
+              : effectiveConflictStatus === "conflict_detected" 
+                ? t("operationalTruth.conflicts") 
+                : t("operationalTruth.pending")
+          }
+          status={effectiveConflictStatus === "aligned" ? "verified" : effectiveConflictStatus === "conflict_detected" ? "warning" : "pending"}
+          isClickable={effectiveConflictStatus === "pending" && !!projectId}
           isLoading={loadingPillar === "conflict"}
           onClick={verifyConflicts}
-          sourceOrigin={dataSourceOrigins.conflict}
+          subtitle={effectiveConflictStatus === "pending" ? t("operationalTruth.clickToCheck", "Click to check conflicts") : undefined}
+          sourceOrigin={manuallyIgnoredConflicts ? "manual" : dataSourceOrigins.conflict}
         />
 
         {/* Pillar 6: Project Mode - Not clickable */}
@@ -1030,42 +1044,76 @@ export default function OperationalTruthCards({
               </div>
             </div>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {reports.map((report, index) => (
-                <div 
-                  key={index}
-                  className={cn(
-                    "p-3 rounded-lg border text-sm",
-                    report.status === "success" && "bg-green-500/10 border-green-500/50",
-                    report.status === "warning" && "bg-amber-500/10 border-amber-500/50",
-                    report.status === "error" && "bg-red-500/5 border-red-500/30"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium">{report.pillar}</span>
-                    <span className={cn(
-                      "text-xs px-2 py-0.5 rounded-full",
-                      report.engine === "gemini" && "bg-blue-500/20 text-blue-600",
-                      report.engine === "openai" && "bg-emerald-500/20 text-emerald-600",
-                      report.engine === "dual" && "bg-purple-500/20 text-purple-600"
+              {reports.map((report, index) => {
+                const isConflictOrWeatherReport = 
+                  report.pillar === "Conflict Check" || 
+                  report.pillar === "Weather Alert" ||
+                  report.pillar === "Weather Check";
+                const canIgnore = isConflictOrWeatherReport && (report.status === "warning" || report.status === "error");
+                
+                return (
+                  <div 
+                    key={index}
+                    className={cn(
+                      "p-3 rounded-lg border text-sm",
+                      report.status === "success" && "bg-green-500/10 border-green-500/50",
+                      report.status === "warning" && "bg-amber-500/10 border-amber-500/50",
+                      report.status === "error" && "bg-red-500/5 border-red-500/30"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium">{report.pillar}</span>
+                      <div className="flex items-center gap-2">
+                        {/* Ignore button for conflict/weather warnings */}
+                        {canIgnore && !manuallyIgnoredConflicts && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setManuallyIgnoredConflicts(true);
+                              onConflictsIgnored?.(true);
+                              addReport({
+                                pillar: "Conflict Check",
+                                engine: "dual",
+                                status: "success",
+                                message: t("operationalTruth.issuesIgnored", "Issues manually ignored by user"),
+                                details: t("operationalTruth.issuesIgnoredDetails", "User acknowledged and chose to proceed despite warnings")
+                              });
+                              toast.success(t("operationalTruth.conflictsIgnored", "Issues ignored - status updated"));
+                              onUpdate?.();
+                            }}
+                            className="h-6 px-2 text-xs gap-1 text-amber-600 hover:text-green-600 hover:bg-green-500/10"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                            {t("operationalTruth.ignoreIssues", "Ignore Issues")}
+                          </Button>
+                        )}
+                        <span className={cn(
+                          "text-xs px-2 py-0.5 rounded-full",
+                          report.engine === "gemini" && "bg-blue-500/20 text-blue-600",
+                          report.engine === "openai" && "bg-emerald-500/20 text-emerald-600",
+                          report.engine === "dual" && "bg-purple-500/20 text-purple-600"
+                        )}>
+                          {report.engine === "gemini" ? "Gemini" : report.engine === "openai" ? "OpenAI" : "Dual Engine"}
+                        </span>
+                      </div>
+                    </div>
+                    <p className={cn(
+                      "text-sm",
+                      report.status === "success" && "text-green-700 dark:text-green-400",
+                      report.status === "warning" && "text-amber-700 dark:text-amber-400",
+                      report.status === "error" && "text-red-700 dark:text-red-400"
                     )}>
-                      {report.engine === "gemini" ? "Gemini" : report.engine === "openai" ? "OpenAI" : "Dual Engine"}
-                    </span>
-                  </div>
-                  <p className={cn(
-                    "text-sm",
-                    report.status === "success" && "text-green-700 dark:text-green-400",
-                    report.status === "warning" && "text-amber-700 dark:text-amber-400",
-                    report.status === "error" && "text-red-700 dark:text-red-400"
-                  )}>
-                    {report.message}
-                  </p>
-                  {report.details && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {report.details}
+                      {report.message}
                     </p>
-                  )}
-                </div>
-              ))}
+                    {report.details && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {report.details}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

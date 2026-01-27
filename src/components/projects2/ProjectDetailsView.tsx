@@ -284,6 +284,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [contractCount, setContractCount] = useState(0);
   const [signedContracts, setSignedContracts] = useState(0);
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
+  const [manuallyIgnoredConflicts, setManuallyIgnoredConflicts] = useState(false);
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -962,11 +963,21 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       return {
         ...baseOT,
         blueprintStatus: "analyzed" as const,
+        // Also apply conflict override if needed
+        ...(manuallyIgnoredConflicts && baseOT.conflictStatus !== "aligned" ? { conflictStatus: "aligned" as const } : {})
+      };
+    }
+    
+    // Apply manual conflict override if set (without blueprint override)
+    if (manuallyIgnoredConflicts && baseOT.conflictStatus !== "aligned") {
+      return {
+        ...baseOT,
+        conflictStatus: "aligned" as const,
       };
     }
     
     return baseOT;
-  }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint]);
+  }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint, manuallyIgnoredConflicts]);
 
   // Determine data source origins for transparency
   const dataSourceOrigins = useMemo(() => {
@@ -1003,8 +1014,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     // OBC origin (always from OpenAI engine)
     if (dualEngineOutput?.openai) origins.obc = "config";
 
-    // Conflict origin (dual-engine check)
-    if (synthesisResult) origins.conflict = "config";
+    // Conflict origin (dual-engine check or manual ignore)
+    if (manuallyIgnoredConflicts) origins.conflict = "manual";
+    else if (synthesisResult) origins.conflict = "config";
 
     // Mode origin (from filter answers)
     origins.mode = "config";
@@ -1280,6 +1292,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             projectAddress={project.address || undefined}
             dataSourceOrigins={dataSourceOrigins}
             onBlueprintValidated={setManuallyValidatedBlueprint}
+            onConflictsIgnored={setManuallyIgnoredConflicts}
           />
 
           {/* Project Description */}
