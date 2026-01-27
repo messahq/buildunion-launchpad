@@ -119,6 +119,26 @@ All colors MUST be HSL.
   .animate-pulse {
     transition: none !important;
   }
+
+  /* Remove number input spinners globally for all browsers */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  /* Also ensure text inputs with inputMode="numeric" or "decimal" look clean */
+  input[inputmode="numeric"],
+  input[inputmode="decimal"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
 /* Gradient button utility */
