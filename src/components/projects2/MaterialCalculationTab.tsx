@@ -58,6 +58,7 @@ interface MaterialCalculationTabProps {
   companyEmail?: string | null;
   companyWebsite?: string | null;
   onCostsChange?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[] }) => void;
+  onGrandTotalChange?: (grandTotalWithTax: number) => void;
   currency?: string;
 }
 
@@ -143,6 +144,7 @@ export function MaterialCalculationTab({
   companyEmail,
   companyWebsite,
   onCostsChange,
+  onGrandTotalChange,
   currency = "CAD"
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
@@ -257,6 +259,20 @@ export function MaterialCalculationTab({
   useEffect(() => {
     onCostsChange?.({ materials: materialItems, labor: laborItems, other: otherItems });
   }, [materialItems, laborItems, otherItems, onCostsChange]);
+
+  // Sync grand total with parent (including tax)
+  useEffect(() => {
+    if (onGrandTotalChange) {
+      const taxInfo = getCanadianTaxRates(projectAddress);
+      const subtotal = grandTotal;
+      const gstAmount = taxInfo.gst > 0 ? subtotal * taxInfo.gst : 0;
+      const pstAmount = taxInfo.pst > 0 ? subtotal * taxInfo.pst : 0;
+      const hstAmount = taxInfo.hst > 0 ? subtotal * taxInfo.hst : 0;
+      const totalTax = gstAmount + pstAmount + hstAmount;
+      const grandTotalWithTax = subtotal + totalTax;
+      onGrandTotalChange(grandTotalWithTax);
+    }
+  }, [grandTotal, projectAddress, onGrandTotalChange]);
 
   const handleItemChange = (
     setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,

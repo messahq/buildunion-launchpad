@@ -1568,6 +1568,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             companyPhone={companyBranding.phone}
             companyEmail={companyBranding.email}
             companyWebsite={companyBranding.website}
+            onGrandTotalChange={(newTotal) => setTotalTaskBudget(newTotal)}
           />
         </TabsContent>
 
