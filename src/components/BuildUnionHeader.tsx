@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,6 +29,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useTheme } from "@/hooks/useTheme";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
@@ -52,6 +53,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   const { profile } = useBuProfile();
   const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useUnreadMessages();
+  const { isAdmin } = useAdminRole();
   const { t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
 
@@ -521,6 +523,12 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   <Eye className="h-4 w-4 mr-2" />
                   View Profile
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")} className="text-red-600 dark:text-red-400">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Admin Dashboard
+                  </DropdownMenuItem>
+                )}
                 {subscription.subscribed && (
                   <>
                     <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")}>
