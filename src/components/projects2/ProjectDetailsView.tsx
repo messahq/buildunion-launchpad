@@ -647,8 +647,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     fetchCompanyBranding();
   }, [user?.id, user?.email]);
 
-  // Fetch tasks with budget data
+  // Fetch tasks with budget data - wait for summary to load first
   useEffect(() => {
+    // Don't run until we have summary data loaded (to check for AI materials)
+    if (loading) return;
+    
     const fetchTasks = async () => {
       if (!projectId) return;
       
@@ -849,7 +852,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId, user?.id, summary?.photo_estimate, project?.description]);
+  }, [projectId, user?.id, summary?.photo_estimate, project?.description, loading]);
 
   // Fetch document and contract counts for Data Sources synchronization
   useEffect(() => {
