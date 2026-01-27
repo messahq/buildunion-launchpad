@@ -1070,18 +1070,32 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   }, [tasks]);
 
   // Helper to categorize tasks by phase (used by both Timeline and OperationalTruth)
+  // MUST match TaskAssignment.tsx getPhaseForTask exactly for consistency
   const getPhaseForTask = useCallback((task: TaskWithBudget): "preparation" | "execution" | "verification" => {
     const titleLower = task.title.toLowerCase();
-    if (titleLower.includes("prep") || titleLower.includes("order") || titleLower.includes("measure") || titleLower.includes("deliver")) {
+    const descLower = (task.description || "").toLowerCase();
+    const combined = titleLower + " " + descLower;
+    
+    // Preparation phase - ordering, planning, measuring, setup tasks
+    if (combined.includes("order") || combined.includes("deliver") || combined.includes("measure") || 
+        combined.includes("prep") || combined.includes("plan") || combined.includes("schedule") ||
+        combined.includes("permit") || combined.includes("survey") || combined.includes("quote") ||
+        combined.includes("buy") || combined.includes("purchase") || combined.includes("setup") ||
+        combined.includes("protect") || combined.includes("tape") || combined.includes("drop cloth") ||
+        combined.includes("primer") || combined.includes("sand")) {
       return "preparation";
     }
-    if (titleLower.includes("install") || titleLower.includes("lay") || titleLower.includes("apply") || titleLower.includes("cut")) {
-      return "execution";
-    }
-    if (titleLower.includes("inspect") || titleLower.includes("verify") || titleLower.includes("clean") || titleLower.includes("final")) {
+    
+    // Verification phase - inspection, testing, cleanup, final touches
+    if (combined.includes("inspect") || combined.includes("verify") || combined.includes("test") ||
+        combined.includes("final") || combined.includes("clean") || combined.includes("review") ||
+        combined.includes("check") || combined.includes("approve") || combined.includes("sign off") ||
+        combined.includes("touch up") || combined.includes("punch list")) {
       return "verification";
     }
-    return "execution"; // Default
+    
+    // Everything else is execution (install, apply, paint, lay, cut, build, etc.)
+    return "execution";
   }, []);
 
   // Calculate phase-based progress (shared between Timeline and OperationalTruth)
