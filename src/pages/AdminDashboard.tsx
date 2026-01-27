@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Table, 
   TableBody, 
@@ -30,6 +31,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Users, 
   Shield, 
@@ -44,6 +55,16 @@ import {
   RefreshCw,
   Crown,
   UserPlus,
+  CreditCard,
+  MessageSquare,
+  Trash2,
+  Eye,
+  TrendingUp,
+  DollarSign,
+  Calendar,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -55,6 +76,8 @@ interface UserWithProfile {
   full_name: string | null;
   company_name: string | null;
   role: "admin" | "moderator" | "user" | null;
+  subscription_status?: "active" | "inactive" | "cancelled" | null;
+  subscription_tier?: string | null;
 }
 
 interface DashboardStats {
@@ -62,6 +85,21 @@ interface DashboardStats {
   totalProjects: number;
   totalContracts: number;
   activeSubscriptions: number;
+  totalRevenue: number;
+  adminCount: number;
+  moderatorCount: number;
+  forumPosts: number;
+}
+
+interface ForumPost {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  created_at: string;
+  user_id: string;
+  replies_count: number;
+  author_name?: string;
 }
 
 export default function AdminDashboard() {
@@ -70,18 +108,27 @@ export default function AdminDashboard() {
   const { isAdmin, isLoading: adminLoading } = useAdminRole();
   
   const [users, setUsers] = useState<UserWithProfile[]>([]);
+  const [forumPosts, setForumPosts] = useState<ForumPost[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalProjects: 0,
     totalContracts: 0,
     activeSubscriptions: 0,
+    totalRevenue: 0,
+    adminCount: 0,
+    moderatorCount: 0,
+    forumPosts: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [forumSearchQuery, setForumSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithProfile | null>(null);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState<"admin" | "moderator" | "user">("user");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [postToDelete, setPostToDelete] = useState<ForumPost | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Redirect non-admins
   useEffect(() => {
@@ -102,18 +149,19 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       // Fetch stats
-      const [projectsRes, contractsRes, profilesRes] = await Promise.all([
+      const [projectsRes, contractsRes, profilesRes, postsRes] = await Promise.all([
         supabase.from("projects").select("id", { count: "exact", head: true }),
         supabase.from("contracts").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("forum_posts").select("id", { count: "exact", head: true }),
       ]);
 
-      setStats({
-        totalUsers: profilesRes.count || 0,
-        totalProjects: projectsRes.count || 0,
-        totalContracts: contractsRes.count || 0,
-        activeSubscriptions: 0, // Would need Stripe API call
-      });
+      // Fetch project summaries for total revenue calculation
+      const { data: summaries } = await supabase
+        .from("project_summaries")
+        .select("total_cost");
+      
+      const totalRevenue = summaries?.reduce((sum, s) => sum + (s.total_cost || 0), 0) || 0;
 
       // Fetch users with profiles and roles
       const { data: profiles, error: profilesError } = await supabase
@@ -137,11 +185,14 @@ export default function AdminDashboard() {
         .select("user_id, role");
 
       const roleMap = new Map(roles?.map(r => [r.user_id, r.role as "admin" | "moderator" | "user"]) || []);
+      
+      const adminCount = roles?.filter(r => r.role === "admin").length || 0;
+      const moderatorCount = roles?.filter(r => r.role === "moderator").length || 0;
 
-      // Get emails from auth metadata (we use profiles as source)
+      // Get users data
       const usersData: UserWithProfile[] = (profiles || []).map(profile => ({
         id: profile.user_id,
-        email: "", // Will be populated if available
+        email: "", 
         created_at: profile.created_at,
         full_name: profile.full_name,
         company_name: buProfileMap.get(profile.user_id) || null,
@@ -149,6 +200,41 @@ export default function AdminDashboard() {
       }));
 
       setUsers(usersData);
+      
+      setStats({
+        totalUsers: profilesRes.count || 0,
+        totalProjects: projectsRes.count || 0,
+        totalContracts: contractsRes.count || 0,
+        activeSubscriptions: 0, // Placeholder - would need Stripe check
+        totalRevenue,
+        adminCount,
+        moderatorCount,
+        forumPosts: postsRes.count || 0,
+      });
+
+      // Fetch forum posts for moderation
+      const { data: posts } = await supabase
+        .from("forum_posts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      // Get author names for posts
+      const postUserIds = posts?.map(p => p.user_id) || [];
+      const { data: postAuthors } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", postUserIds);
+
+      const authorMap = new Map(postAuthors?.map(a => [a.user_id, a.full_name]) || []);
+
+      const postsWithAuthors: ForumPost[] = (posts || []).map(post => ({
+        ...post,
+        author_name: authorMap.get(post.user_id) || "Unknown User",
+      }));
+
+      setForumPosts(postsWithAuthors);
+
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       toast.error("Failed to load dashboard data");
@@ -203,10 +289,46 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (!postToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete replies first
+      await supabase
+        .from("forum_replies")
+        .delete()
+        .eq("post_id", postToDelete.id);
+
+      // Delete the post
+      const { error } = await supabase
+        .from("forum_posts")
+        .delete()
+        .eq("id", postToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Post deleted successfully");
+      setPostToDelete(null);
+      fetchDashboardData();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast.error("Failed to delete post");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredUsers = users.filter(u => 
     u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredPosts = forumPosts.filter(p =>
+    p.title.toLowerCase().includes(forumSearchQuery.toLowerCase()) ||
+    p.content.toLowerCase().includes(forumSearchQuery.toLowerCase()) ||
+    p.author_name?.toLowerCase().includes(forumSearchQuery.toLowerCase())
   );
 
   const getRoleBadge = (role: string | null) => {
@@ -220,6 +342,21 @@ export default function AdminDashboard() {
       default:
         return <Badge variant="outline" className="text-muted-foreground">No role</Badge>;
     }
+  };
+
+  const getCategoryBadge = (category: string) => {
+    const colors: Record<string, string> = {
+      general: "bg-slate-500",
+      help: "bg-blue-500",
+      showcase: "bg-purple-500",
+      jobs: "bg-green-500",
+      news: "bg-amber-500",
+    };
+    return (
+      <Badge className={`${colors[category] || "bg-slate-500"} hover:opacity-80`}>
+        {category}
+      </Badge>
+    );
   };
 
   if (authLoading || adminLoading) {
@@ -249,151 +386,430 @@ export default function AdminDashboard() {
                 <h1 className="text-xl font-bold">Admin Dashboard</h1>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchDashboardData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={fetchDashboardData} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-500" />
-                <span className="text-2xl font-bold">{stats.totalUsers}</span>
-              </div>
-            </CardContent>
-          </Card>
+      <main className="container mx-auto px-4 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+            <TabsTrigger value="overview" className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="gap-2">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">Subscriptions</span>
+            </TabsTrigger>
+            <TabsTrigger value="moderation" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Moderation</span>
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Projects</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <FolderKanban className="h-5 w-5 text-green-500" />
-                <span className="text-2xl font-bold">{stats.totalProjects}</span>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-blue-500" />
+                    <span className="text-2xl font-bold">{stats.totalUsers}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Contracts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-amber-500" />
-                <span className="text-2xl font-bold">{stats.totalContracts}</span>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Projects</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <FolderKanban className="h-5 w-5 text-green-500" />
+                    <span className="text-2xl font-bold">{stats.totalProjects}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Admin Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-5 w-5 text-red-500" />
-                <span className="text-2xl font-bold">
-                  {users.filter(u => u.role === "admin").length}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Contracts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-amber-500" />
+                    <span className="text-2xl font-bold">{stats.totalContracts}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-        {/* User Management */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCog className="h-5 w-5" />
-                  User Management
-                </CardTitle>
-                <CardDescription>Manage user roles and permissions</CardDescription>
-              </div>
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Forum Posts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-purple-500" />
+                    <span className="text-2xl font-bold">{stats.forumPosts}</span>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          No users found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredUsers.map((u) => (
-                        <TableRow key={u.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{u.full_name || "Unnamed User"}</p>
-                              <p className="text-xs text-muted-foreground truncate max-w-[200px]">{u.id}</p>
+
+            {/* Revenue & Role Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="md:col-span-1">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Project Value</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-6 w-6 text-emerald-500" />
+                    <span className="text-3xl font-bold">
+                      ${stats.totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Combined value of all project estimates</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Admin Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-red-500" />
+                    <span className="text-2xl font-bold">{stats.adminCount}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Users with full access</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Moderators</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-amber-500" />
+                    <span className="text-2xl font-bold">{stats.moderatorCount}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Content moderators</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Users */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Recent Registrations
+                </CardTitle>
+                <CardDescription>Latest users who joined the platform</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {users.slice(0, 5).map((u) => (
+                    <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{u.full_name || "Unnamed User"}</p>
+                          <p className="text-xs text-muted-foreground">{u.company_name || "No company"}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {getRoleBadge(u.role)}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(u.created_at), "MMM d, yyyy")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserCog className="h-5 w-5" />
+                      User Management
+                    </CardTitle>
+                    <CardDescription>Manage user roles and permissions</CardDescription>
+                  </div>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search users..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Joined</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                              No users found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredUsers.map((u) => (
+                            <TableRow key={u.id}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{u.full_name || "Unnamed User"}</p>
+                                  <p className="text-xs text-muted-foreground truncate max-w-[200px]">{u.id}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>{u.company_name || "-"}</TableCell>
+                              <TableCell>{getRoleBadge(u.role)}</TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {format(new Date(u.created_at), "MMM d, yyyy")}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedUser(u);
+                                    setNewRole(u.role || "user");
+                                    setIsRoleDialogOpen(true);
+                                  }}
+                                >
+                                  <UserPlus className="h-4 w-4 mr-1" />
+                                  Set Role
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Subscriptions Tab */}
+          <TabsContent value="subscriptions" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Active Subscriptions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <span className="text-2xl font-bold">{stats.activeSubscriptions}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Free Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-slate-500" />
+                    <span className="text-2xl font-bold">{stats.totalUsers - stats.activeSubscriptions}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Conversion Rate</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-500" />
+                    <span className="text-2xl font-bold">
+                      {stats.totalUsers > 0 
+                        ? `${((stats.activeSubscriptions / stats.totalUsers) * 100).toFixed(1)}%`
+                        : "0%"
+                      }
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Subscription Management
+                </CardTitle>
+                <CardDescription>
+                  View and manage user subscriptions via Stripe Dashboard
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open("https://dashboard.stripe.com/subscriptions", "_blank")}
+                    className="flex-1"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    View Subscriptions in Stripe
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open("https://dashboard.stripe.com/customers", "_blank")}
+                    className="flex-1"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    View Customers in Stripe
+                  </Button>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Stripe Dashboard Access Required</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Subscription management is handled through the Stripe Dashboard. 
+                      Make sure you have access to the connected Stripe account to view customer details, 
+                      manage subscriptions, issue refunds, and view payment analytics.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Moderation Tab */}
+          <TabsContent value="moderation" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Forum Moderation
+                    </CardTitle>
+                    <CardDescription>Review and moderate forum posts</CardDescription>
+                  </div>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search posts..."
+                      value={forumSearchQuery}
+                      onChange={(e) => setForumSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : filteredPosts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No forum posts found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredPosts.map((post) => (
+                      <div 
+                        key={post.id} 
+                        className="border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {getCategoryBadge(post.category)}
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(post.created_at), "MMM d, yyyy 'at' h:mm a")}
+                              </span>
                             </div>
-                          </TableCell>
-                          <TableCell>{u.company_name || "-"}</TableCell>
-                          <TableCell>{getRoleBadge(u.role)}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {format(new Date(u.created_at), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell className="text-right">
+                            <h3 className="font-semibold truncate">{post.title}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                              {post.content}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {post.author_name}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                {post.replies_count} replies
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                setSelectedUser(u);
-                                setNewRole(u.role || "user");
-                                setIsRoleDialogOpen(true);
-                              }}
+                              onClick={() => navigate(`/buildunion/forum?post=${post.id}`)}
                             >
-                              <UserPlus className="h-4 w-4 mr-1" />
-                              Set Role
+                              <Eye className="h-4 w-4" />
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setPostToDelete(post)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Role Update Dialog */}
@@ -445,6 +861,31 @@ export default function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Post Confirmation Dialog */}
+      <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Forum Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{postToDelete?.title}"? 
+              This will also delete all {postToDelete?.replies_count || 0} replies. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePost}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete Post
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
