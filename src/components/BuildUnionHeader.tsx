@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -33,6 +33,7 @@ import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { GlobalSearch, GlobalSearchTrigger } from "@/components/GlobalSearch";
 
 const languages = [
   { code: "en", name: "English" },
@@ -64,6 +65,19 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   };
   const [isTogglingMode, setIsTogglingMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Keyboard shortcut for search (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Check if user can access team mode (Pro/Premium/Enterprise)
   const canAccessTeamMode =
@@ -169,6 +183,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   };
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm transition-colors">
       <div className="container mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
         {/* Left - Logo + Mode Indicator */}
@@ -194,6 +209,8 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
 
         {/* Right - Navigation & Auth */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          {/* Global Search Button */}
+          <GlobalSearchTrigger onClick={() => setSearchOpen(true)} />
 
           {/* Mobile Menu Button */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -593,6 +610,10 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
         </div>
       </div>
     </header>
+
+    {/* Global Search Modal */}
+    <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+    </>
   );
 };
 
