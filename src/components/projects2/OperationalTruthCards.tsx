@@ -28,8 +28,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Data source origin type
-type DataSourceOrigin = "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+// Data source origin type - extended to include "description" for user-provided explicit area
+export type DataSourceOrigin = "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default" | "description";
 
 interface OperationalTruthCardsProps {
   operationalTruth: OperationalTruth;
@@ -89,6 +89,7 @@ const getSourceLabel = (origin?: DataSourceOrigin): string => {
     case "manual": return "✋ Manual";
     case "config": return "⚙️ Config";
     case "default": return "🔧 Default";
+    case "description": return "📝 Description";
     default: return "";
   }
 };
