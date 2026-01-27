@@ -3,6 +3,7 @@ import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2 } from "lucide-react";
+import UpcomingDeadlinesWidget from "@/components/UpcomingDeadlinesWidget";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
   ProjectAnswers, 
@@ -601,62 +602,72 @@ const BuildUnionProjects2 = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid gap-4">
-                      {projects.map((project) => (
-                        <div 
-                          key={project.id}
-                          onClick={() => setSelectedProjectId(project.id)}
-                          className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {project.address || "No location"} • {project.trade?.replace("_", " ") || "General"}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {project.id === createdProjectId && analyzing && (
-                                <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
-                                  <Sparkles className="h-3 w-3 animate-pulse" />
-                                  Analyzing...
+                    <div className="grid lg:grid-cols-3 gap-6">
+                      {/* Projects List */}
+                      <div className="lg:col-span-2 space-y-4">
+                        {projects.map((project) => (
+                          <div 
+                            key={project.id}
+                            onClick={() => setSelectedProjectId(project.id)}
+                            className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer group"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {project.address || "No location"} • {project.trade?.replace("_", " ") || "General"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {project.id === createdProjectId && analyzing && (
+                                  <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                                    <Sparkles className="h-3 w-3 animate-pulse" />
+                                    Analyzing...
+                                  </span>
+                                )}
+                                <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 capitalize">
+                                  {project.status}
                                 </span>
-                              )}
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 capitalize">
-                                {project.status}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
-                                  
-                                  const { error } = await supabase
-                                    .from("projects")
-                                    .delete()
-                                    .eq("id", project.id);
-                                  
-                                  if (error) {
-                                    toast.error("Failed to delete project");
-                                  } else {
-                                    setProjects(prev => prev.filter(p => p.id !== project.id));
-                                    toast.success("Project deleted");
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+                                    
+                                    const { error } = await supabase
+                                      .from("projects")
+                                      .delete()
+                                      .eq("id", project.id);
+                                    
+                                    if (error) {
+                                      toast.error("Failed to delete project");
+                                    } else {
+                                      setProjects(prev => prev.filter(p => p.id !== project.id));
+                                      toast.success("Project deleted");
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
+                            {project.description && (
+                              <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
+                                {project.description}
+                              </p>
+                            )}
                           </div>
-                          {project.description && (
-                            <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
-                              {project.description}
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+
+                      {/* Sidebar with Upcoming Deadlines */}
+                      <div className="lg:col-span-1">
+                        <UpcomingDeadlinesWidget 
+                          onTaskClick={(projectId) => setSelectedProjectId(projectId)}
+                        />
+                      </div>
                     </div>
                   )}
                 </>
