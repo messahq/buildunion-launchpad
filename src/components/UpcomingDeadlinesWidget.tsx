@@ -20,7 +20,7 @@ interface UpcomingTask {
 
 interface UpcomingDeadlinesWidgetProps {
   projectId?: string | null;
-  onTaskClick?: (projectId: string) => void;
+  onTaskClick?: (projectId: string, navigateToTasks?: boolean) => void;
 }
 
 const UpcomingDeadlinesWidget = ({ projectId, onTaskClick }: UpcomingDeadlinesWidgetProps) => {
@@ -122,9 +122,9 @@ const UpcomingDeadlinesWidget = ({ projectId, onTaskClick }: UpcomingDeadlinesWi
 
   const handleTaskClick = (projectId: string) => {
     if (onTaskClick) {
-      onTaskClick(projectId);
+      onTaskClick(projectId, true);
     } else {
-      navigate(`/buildunion/projects2?project=${projectId}`);
+      navigate(`/buildunion/projects2?project=${projectId}&tab=tasks`);
     }
   };
 
