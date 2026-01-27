@@ -1058,6 +1058,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             }))}
             isPremium={isPremium}
             onNavigateToTab={(tabId) => setActiveTab(tabId)}
+            dataSourcesInfo={{
+              taskCount: tasks.length,
+              completedTasks: tasks.filter(t => t.status === "completed").length,
+              documentCount: 0, // Documents fetched in Documents tab
+              contractCount: 0, // Contracts fetched in Contracts tab
+              signedContracts: 0,
+              teamSize: members.length + 1, // +1 for owner
+              hasTimeline: !!(summary?.project_start_date && summary?.project_end_date),
+              hasClientInfo: !!(summary?.client_name || summary?.client_email),
+            }}
           />
         </TabsContent>
 
