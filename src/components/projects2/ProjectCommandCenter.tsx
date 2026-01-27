@@ -95,6 +95,7 @@ interface DataSourceStatus {
   status: "complete" | "partial" | "pending";
   value?: string | number;
   icon: React.ComponentType<{ className?: string }>;
+  missingItems?: string[]; // List of what's missing for tooltip
 }
 
 interface DataSourcesInfo {
@@ -241,7 +242,12 @@ export const ProjectCommandCenter = ({
   const buildDataSourcesStatus = useCallback((): DataSourceStatus[] => {
     const sources: DataSourceStatus[] = [];
     
-    // 8 PILLARS OF OPERATIONAL TRUTH
+    // 8 PILLARS OF OPERATIONAL TRUTH (with missing items for tooltips)
+    
+    // Area
+    const areaMissing: string[] = [];
+    if (operationalTruth.confirmedArea === null) areaMissing.push("Area not detected from photos/blueprints");
+    
     sources.push({
       id: "area",
       name: "Confirmed Area",
@@ -249,7 +255,12 @@ export const ProjectCommandCenter = ({
       status: operationalTruth.confirmedArea !== null ? "complete" : "pending",
       value: operationalTruth.confirmedArea ? `${operationalTruth.confirmedArea} ${operationalTruth.areaUnit}` : undefined,
       icon: Ruler,
+      missingItems: areaMissing.length > 0 ? areaMissing : undefined,
     });
+    
+    // Materials
+    const materialsMissing: string[] = [];
+    if (operationalTruth.materialsCount === 0) materialsMissing.push("No materials detected by AI");
     
     sources.push({
       id: "materials",
@@ -258,7 +269,13 @@ export const ProjectCommandCenter = ({
       status: operationalTruth.materialsCount > 0 ? "complete" : "pending",
       value: operationalTruth.materialsCount > 0 ? `${operationalTruth.materialsCount} items` : undefined,
       icon: Package,
+      missingItems: materialsMissing.length > 0 ? materialsMissing : undefined,
     });
+    
+    // Blueprint
+    const blueprintMissing: string[] = [];
+    if (operationalTruth.blueprintStatus === "pending") blueprintMissing.push("Blueprint not analyzed or validated");
+    else if (operationalTruth.blueprintStatus === "none") blueprintMissing.push("No blueprint provided");
     
     sources.push({
       id: "blueprint",
@@ -267,7 +284,12 @@ export const ProjectCommandCenter = ({
       status: operationalTruth.blueprintStatus === "analyzed" ? "complete" : operationalTruth.blueprintStatus === "none" ? "partial" : "pending",
       value: operationalTruth.blueprintStatus,
       icon: FileCheck,
+      missingItems: blueprintMissing.length > 0 ? blueprintMissing : undefined,
     });
+    
+    // OBC Compliance
+    const obcMissing: string[] = [];
+    if (operationalTruth.obcCompliance === "pending") obcMissing.push("OBC compliance check not run");
     
     sources.push({
       id: "obc",
@@ -276,7 +298,12 @@ export const ProjectCommandCenter = ({
       status: operationalTruth.obcCompliance !== "pending" ? "complete" : "pending",
       value: operationalTruth.obcCompliance,
       icon: Shield,
+      missingItems: obcMissing.length > 0 ? obcMissing : undefined,
     });
+    
+    // Conflict Status
+    const conflictMissing: string[] = [];
+    if (operationalTruth.conflictStatus === "pending") conflictMissing.push("Conflict check not run");
     
     sources.push({
       id: "conflict",
@@ -285,8 +312,10 @@ export const ProjectCommandCenter = ({
       status: operationalTruth.conflictStatus !== "pending" ? "complete" : "pending",
       value: operationalTruth.conflictStatus,
       icon: AlertTriangle,
+      missingItems: conflictMissing.length > 0 ? conflictMissing : undefined,
     });
     
+    // Project Mode (always complete)
     sources.push({
       id: "mode",
       name: "Project Mode",
@@ -296,6 +325,7 @@ export const ProjectCommandCenter = ({
       icon: UserCheck,
     });
     
+    // Project Size (always complete)
     sources.push({
       id: "size",
       name: "Project Size",
@@ -305,6 +335,10 @@ export const ProjectCommandCenter = ({
       icon: Activity,
     });
     
+    // AI Confidence
+    const confidenceMissing: string[] = [];
+    if (operationalTruth.confidenceLevel === "low") confidenceMissing.push("Insufficient data for high confidence");
+    
     sources.push({
       id: "confidence",
       name: "AI Confidence",
@@ -312,6 +346,7 @@ export const ProjectCommandCenter = ({
       status: operationalTruth.confidenceLevel !== "low" ? "complete" : "partial",
       value: operationalTruth.confidenceLevel,
       icon: Brain,
+      missingItems: confidenceMissing.length > 0 ? confidenceMissing : undefined,
     });
     
     // 8 WORKFLOW DATA SOURCES
@@ -326,6 +361,11 @@ export const ProjectCommandCenter = ({
       hasClientInfo: false,
     };
     
+    // Tasks - check if any exist and if any are completed
+    const tasksMissing: string[] = [];
+    if (info.taskCount === 0) tasksMissing.push("No tasks created");
+    else if (info.completedTasks === 0) tasksMissing.push("No tasks completed yet");
+    
     sources.push({
       id: "tasks",
       name: "Tasks",
@@ -333,7 +373,12 @@ export const ProjectCommandCenter = ({
       status: info.taskCount > 0 ? (info.completedTasks > 0 ? "complete" : "partial") : "pending",
       value: info.taskCount > 0 ? `${info.completedTasks}/${info.taskCount}` : undefined,
       icon: ClipboardList,
+      missingItems: tasksMissing.length > 0 ? tasksMissing : undefined,
     });
+    
+    // Documents - require at least one uploaded
+    const docsMissing: string[] = [];
+    if (info.documentCount === 0) docsMissing.push("No documents uploaded");
     
     sources.push({
       id: "documents",
@@ -342,21 +387,41 @@ export const ProjectCommandCenter = ({
       status: info.documentCount > 0 ? "complete" : "pending",
       value: info.documentCount > 0 ? `${info.documentCount} files` : undefined,
       icon: FileText,
+      missingItems: docsMissing.length > 0 ? docsMissing : undefined,
     });
+    
+    // Contracts - REQUIRE SIGNATURE for complete status (not just existence)
+    const contractsMissing: string[] = [];
+    if (info.contractCount === 0) {
+      contractsMissing.push("No contract created");
+    } else if (info.signedContracts === 0) {
+      contractsMissing.push("Contract not signed by client");
+    }
+    
+    // Status: complete = signed, partial = created but not signed, pending = none
+    const contractStatus = info.signedContracts > 0 
+      ? "complete" 
+      : info.contractCount > 0 
+        ? "partial" 
+        : "pending";
     
     sources.push({
       id: "contracts",
       name: "Contracts",
       category: "workflow",
-      // Consider contracts as complete if any exist (even if not signed)
-      status: info.contractCount > 0 ? "complete" : "pending",
+      status: contractStatus,
       value: info.contractCount > 0 
         ? (info.signedContracts > 0 
             ? `${info.signedContracts}/${info.contractCount} signed` 
-            : `${info.contractCount} created`)
+            : `${info.contractCount} created (unsigned)`)
         : undefined,
       icon: FileSignature,
+      missingItems: contractsMissing.length > 0 ? contractsMissing : undefined,
     });
+    
+    // Team - partial if only owner (1 member)
+    const teamMissing: string[] = [];
+    if (info.teamSize <= 1) teamMissing.push("Only project owner, no team members");
     
     sources.push({
       id: "team",
@@ -365,7 +430,12 @@ export const ProjectCommandCenter = ({
       status: info.teamSize > 1 ? "complete" : "partial",
       value: `${info.teamSize} member${info.teamSize > 1 ? "s" : ""}`,
       icon: Users,
+      missingItems: teamMissing.length > 0 ? teamMissing : undefined,
     });
+    
+    // Site Map - requires project address
+    const siteMapMissing: string[] = [];
+    if (!projectAddress) siteMapMissing.push("No project address set");
     
     sources.push({
       id: "sitemap",
@@ -374,7 +444,12 @@ export const ProjectCommandCenter = ({
       status: projectAddress ? "complete" : "pending",
       value: projectAddress ? "Located" : undefined,
       icon: MapPin,
+      missingItems: siteMapMissing.length > 0 ? siteMapMissing : undefined,
     });
+    
+    // Timeline - requires start and end dates
+    const timelineMissing: string[] = [];
+    if (!info.hasTimeline) timelineMissing.push("Project start/end dates not set");
     
     sources.push({
       id: "timeline",
@@ -383,7 +458,12 @@ export const ProjectCommandCenter = ({
       status: info.hasTimeline ? "complete" : "pending",
       value: info.hasTimeline ? "Set" : undefined,
       icon: Calendar,
+      missingItems: timelineMissing.length > 0 ? timelineMissing : undefined,
     });
+    
+    // Client Info - requires name or email
+    const clientMissing: string[] = [];
+    if (!info.hasClientInfo) clientMissing.push("Client name/email missing");
     
     sources.push({
       id: "client",
@@ -392,7 +472,12 @@ export const ProjectCommandCenter = ({
       status: info.hasClientInfo ? "complete" : "pending",
       value: info.hasClientInfo ? "Complete" : undefined,
       icon: UserCheck,
+      missingItems: clientMissing.length > 0 ? clientMissing : undefined,
     });
+    
+    // Weather - requires address for location-based weather
+    const weatherMissing: string[] = [];
+    if (!projectAddress) weatherMissing.push("Add address for weather data");
     
     sources.push({
       id: "weather",
@@ -401,6 +486,7 @@ export const ProjectCommandCenter = ({
       status: projectAddress ? "complete" : "pending",
       value: projectAddress ? "Available" : undefined,
       icon: CloudSun,
+      missingItems: weatherMissing.length > 0 ? weatherMissing : undefined,
     });
     
     return sources;
@@ -1248,11 +1334,24 @@ export const ProjectCommandCenter = ({
                               {source.status === "pending" && <CircleAlert className="h-3 w-3 ml-auto flex-shrink-0" />}
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="top">
+                          <TooltipContent side="top" className="max-w-[220px]">
                             <p className="font-medium">{source.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {source.value || (source.status === "pending" ? "Not yet verified" : "Partially verified")}
-                            </p>
+                            {source.status === "complete" ? (
+                              <p className="text-xs text-emerald-600">✓ {source.value || "Verified"}</p>
+                            ) : source.missingItems && source.missingItems.length > 0 ? (
+                              <div className="text-xs text-amber-600 mt-1">
+                                <p className="font-medium text-amber-700 mb-0.5">Missing:</p>
+                                {source.missingItems.map((item, i) => (
+                                  <p key={i} className="flex items-start gap-1">
+                                    <span>•</span> {item}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                {source.value || "Not yet verified"}
+                              </p>
+                            )}
                           </TooltipContent>
                         </Tooltip>
                       );
@@ -1289,11 +1388,24 @@ export const ProjectCommandCenter = ({
                               {source.status === "pending" && <CircleAlert className="h-3 w-3 ml-auto flex-shrink-0" />}
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent side="top">
+                          <TooltipContent side="top" className="max-w-[220px]">
                             <p className="font-medium">{source.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {source.value || (source.status === "pending" ? "Click to configure" : "Click to view")}
-                            </p>
+                            {source.status === "complete" ? (
+                              <p className="text-xs text-emerald-600">✓ {source.value || "Complete"}</p>
+                            ) : source.missingItems && source.missingItems.length > 0 ? (
+                              <div className="text-xs text-amber-600 mt-1">
+                                <p className="font-medium text-amber-700 mb-0.5">Missing:</p>
+                                {source.missingItems.map((item, i) => (
+                                  <p key={i} className="flex items-start gap-1">
+                                    <span>•</span> {item}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                {source.value || "Click to configure"}
+                              </p>
+                            )}
                           </TooltipContent>
                         </Tooltip>
                       );
