@@ -310,7 +310,10 @@
     "noneDetected": "Nem észlelt",
     "rescheduleTasks": "Feladatok Átütemezése",
     "navigatedToTimeline": "Felhasználó az Idővonalra navigált feladatok átütemezésére",
-    "navigatedToTimelineDetails": "Feladat naptár megnyitása húzd és ejtsd átütemezéshez"
+    "navigatedToTimelineDetails": "Feladat naptár megnyitása húzd és ejtsd átütemezéshez",
+    "iUnderstood": "Megértettem",
+    "acknowledged": "Elfogadva - Köszönjük az áttekintést",
+    "reviewedAndAcknowledged": "Felhasználó áttekintette és elfogadta"
   },
   "synthesis": {
     "title": "Projekt Szintézis",

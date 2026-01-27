@@ -65,6 +65,7 @@ interface VerificationReport {
   message: string;
   details?: string;
   timestamp: Date;
+  acknowledged?: boolean; // User clicked "I Understood" or "Ignore"
 }
 
 interface PillarCardProps {
@@ -469,7 +470,39 @@ export default function OperationalTruthCards({
         const status = result.obc_status === "PASS" ? "success" : 
                       result.obc_status === "CONDITIONAL" ? "warning" : "error";
         
-        const permitRequired = result.requires_professional_review || result.obc_status === "FAIL";
+        // Save OBC result to ai_workflow_config in project_summaries
+        try {
+          const { data: existingSummary } = await supabase
+            .from("project_summaries")
+            .select("ai_workflow_config")
+            .eq("project_id", projectId)
+            .maybeSingle();
+
+          const existingConfig = (existingSummary?.ai_workflow_config as Record<string, unknown>) || {};
+          
+          await supabase
+            .from("project_summaries")
+            .update({
+              ai_workflow_config: {
+                ...existingConfig,
+                obcResult: {
+                  status: result.obc_status,
+                  riskLevel: result.risk_level,
+                  reasoning: result.reasoning,
+                  missingInfo: result.missing_information,
+                  requiresProfessionalReview: result.requires_professional_review,
+                  notes: result.notes,
+                  checkedAt: new Date().toISOString(),
+                  acknowledged: false // User hasn't acknowledged yet
+                }
+              }
+            })
+            .eq("project_id", projectId);
+
+          console.log("OBC result saved to ai_workflow_config");
+        } catch (saveError) {
+          console.error("Failed to save OBC result:", saveError);
+        }
         
         addReport({
           pillar: "OBC Status",
@@ -483,7 +516,8 @@ export default function OperationalTruthCards({
             ...result.reasoning,
             result.missing_information.length > 0 ? `Missing: ${result.missing_information.join(", ")}` : "",
             result.notes || ""
-          ].filter(Boolean).join("\n")
+          ].filter(Boolean).join("\n"),
+          acknowledged: false
         });
         
         toast.success(`OBC Status: ${result.obc_status} (${result.risk_level} risk)`);
@@ -493,7 +527,8 @@ export default function OperationalTruthCards({
           engine: "openai",
           status: "warning",
           message: "Could not determine OBC status",
-          details: "Insufficient project data for compliance check"
+          details: "Insufficient project data for compliance check",
+          acknowledged: false
         });
       }
       
@@ -1206,21 +1241,85 @@ export default function OperationalTruthCards({
                   report.pillar === "Conflict Check" || 
                   report.pillar === "Weather Alert" ||
                   report.pillar === "Weather Check";
+                const isOBCReport = report.pillar === "OBC Status";
                 const canIgnore = isConflictOrWeatherReport && (report.status === "warning" || report.status === "error");
+                const canAcknowledge = isOBCReport && (report.status === "warning" || report.status === "error") && !report.acknowledged;
+                
+                // Handle acknowledgment
+                const handleAcknowledge = async () => {
+                  // Update report state to acknowledged
+                  setReports(prev => prev.map((r, i) => 
+                    i === index ? { ...r, acknowledged: true, status: "success" as const } : r
+                  ));
+                  
+                  // Persist acknowledgment to database
+                  if (projectId) {
+                    try {
+                      const { data: existingSummary } = await supabase
+                        .from("project_summaries")
+                        .select("ai_workflow_config")
+                        .eq("project_id", projectId)
+                        .maybeSingle();
+
+                      const existingConfig = (existingSummary?.ai_workflow_config as Record<string, unknown>) || {};
+                      const obcResult = (existingConfig.obcResult as Record<string, unknown>) || {};
+                      
+                      await supabase
+                        .from("project_summaries")
+                        .update({
+                          ai_workflow_config: {
+                            ...existingConfig,
+                            obcResult: {
+                              ...obcResult,
+                              acknowledged: true,
+                              acknowledgedAt: new Date().toISOString()
+                            }
+                          }
+                        })
+                        .eq("project_id", projectId);
+                    } catch (error) {
+                      console.error("Failed to save acknowledgment:", error);
+                    }
+                  }
+                  
+                  toast.success(t("operationalTruth.acknowledged", "Acknowledged - Thank you for reviewing"));
+                  onUpdate?.();
+                };
                 
                 return (
                   <div 
                     key={index}
                     className={cn(
-                      "p-3 rounded-lg border text-sm",
-                      report.status === "success" && "bg-green-500/10 border-green-500/50",
-                      report.status === "warning" && "bg-amber-500/10 border-amber-500/50",
-                      report.status === "error" && "bg-red-500/5 border-red-500/30"
+                      "p-3 rounded-lg border text-sm transition-all duration-300",
+                      report.acknowledged && "bg-green-500/10 border-green-500/50",
+                      !report.acknowledged && report.status === "success" && "bg-green-500/10 border-green-500/50",
+                      !report.acknowledged && report.status === "warning" && "bg-amber-500/10 border-amber-500/50",
+                      !report.acknowledged && report.status === "error" && "bg-red-500/5 border-red-500/30"
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium">{report.pillar}</span>
+                      <span className="font-medium flex items-center gap-2">
+                        {report.pillar}
+                        {report.acknowledged && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Acknowledged
+                          </span>
+                        )}
+                      </span>
                       <div className="flex items-center gap-2">
+                        {/* "I Understood" button for OBC warnings/errors */}
+                        {canAcknowledge && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleAcknowledge}
+                            className="h-6 px-2 text-xs gap-1 text-amber-600 hover:text-green-600 hover:bg-green-500/10 border border-amber-500/50 hover:border-green-500/50"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                            {t("operationalTruth.iUnderstood", "I Understood")}
+                          </Button>
+                        )}
                         {/* Ignore button for conflict/weather warnings */}
                         {canIgnore && !manuallyIgnoredConflicts && (
                           <>
@@ -1279,13 +1378,14 @@ export default function OperationalTruthCards({
                     </div>
                     <p className={cn(
                       "text-sm",
-                      report.status === "success" && "text-green-700 dark:text-green-400",
-                      report.status === "warning" && "text-amber-700 dark:text-amber-400",
-                      report.status === "error" && "text-red-700 dark:text-red-400"
+                      report.acknowledged && "text-green-700 dark:text-green-400",
+                      !report.acknowledged && report.status === "success" && "text-green-700 dark:text-green-400",
+                      !report.acknowledged && report.status === "warning" && "text-amber-700 dark:text-amber-400",
+                      !report.acknowledged && report.status === "error" && "text-red-700 dark:text-red-400"
                     )}>
-                      {report.message}
+                      {report.acknowledged ? t("operationalTruth.reviewedAndAcknowledged", "Reviewed and acknowledged by user") : report.message}
                     </p>
-                    {report.details && (
+                    {report.details && !report.acknowledged && (
                       <p className="text-xs text-muted-foreground mt-1">
                         {report.details}
                       </p>
