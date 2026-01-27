@@ -385,10 +385,10 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
             </Avatar>
             <div>
               <p className="text-sm font-medium text-amber-900">
-                {filteredMemberInfo.full_name} feladatai
+                {filteredMemberInfo.full_name}'s Tasks
               </p>
               <p className="text-xs text-amber-700">
-                {filteredTasks.length} feladat • {pendingTasks.length} folyamatban
+                {filteredTasks.length} tasks • {pendingTasks.length} in progress
               </p>
             </div>
           </div>
@@ -399,7 +399,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
             className="gap-1.5 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
           >
             <ArrowLeft className="h-4 w-4" />
-            Összes feladat
+            All Tasks
           </Button>
         </div>
       )}
