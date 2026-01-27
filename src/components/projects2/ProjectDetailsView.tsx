@@ -659,7 +659,6 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
       phases: [
         { name: "Preparation", progress: calcProgress(preparationTasks), taskCount: preparationTasks.length, color: "bg-blue-500" },
         { name: "Execution", progress: calcProgress(executionTasks), taskCount: executionTasks.length, color: "bg-amber-500" },
-        { name: "Verification", progress: calcProgress(verificationTasks), taskCount: verificationTasks.length, color: "bg-green-500" },
       ],
       completedCount: tasks.filter(t => t.status === "completed").length,
       totalCount: tasks.length,
