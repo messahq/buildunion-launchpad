@@ -55,14 +55,60 @@ import { ProBadge } from "@/components/ui/pro-badge";
 // HELPER FUNCTIONS
 // ============================================
 
-// Generate tasks from AI-analyzed materials ONLY - no demo/fallback data
+// Default editable demo materials for different project types
+function getDefaultDemoMaterials(projectDescription?: string): Array<{ item: string; quantity: number; unit: string }> {
+  const desc = (projectDescription || "").toLowerCase();
+  
+  // Painting project defaults
+  if (desc.includes("paint") || desc.includes("festés") || desc.includes("festeni") || desc.includes("fest")) {
+    return [
+      { item: "Interior Paint (Premium)", quantity: 5, unit: "gallons" },
+      { item: "Primer", quantity: 2, unit: "gallons" },
+      { item: "Paint Roller Set", quantity: 3, unit: "sets" },
+      { item: "Paint Brushes (Assorted)", quantity: 6, unit: "pcs" },
+      { item: "Painter's Tape", quantity: 4, unit: "rolls" },
+      { item: "Drop Cloth / Floor Protection", quantity: 3, unit: "pcs" },
+      { item: "Sandpaper (Various Grits)", quantity: 1, unit: "pack" },
+      { item: "Caulk & Filler", quantity: 2, unit: "tubes" },
+    ];
+  }
+  
+  // Flooring project defaults
+  if (desc.includes("floor") || desc.includes("padló") || desc.includes("laminate") || desc.includes("laminált")) {
+    return [
+      { item: "Laminate Flooring", quantity: 150, unit: "sq ft" },
+      { item: "Underlayment", quantity: 150, unit: "sq ft" },
+      { item: "Baseboard Trim", quantity: 60, unit: "linear ft" },
+      { item: "Transition Strips", quantity: 3, unit: "pcs" },
+      { item: "Flooring Adhesive", quantity: 2, unit: "tubes" },
+      { item: "Spacers", quantity: 1, unit: "pack" },
+    ];
+  }
+  
+  // Renovation/general defaults
+  return [
+    { item: "Drywall Sheets", quantity: 12, unit: "pcs" },
+    { item: "Joint Compound", quantity: 2, unit: "buckets" },
+    { item: "Screws & Fasteners", quantity: 1, unit: "box" },
+    { item: "Electrical Supplies", quantity: 1, unit: "kit" },
+    { item: "Primer & Paint", quantity: 4, unit: "gallons" },
+    { item: "Finishing Materials", quantity: 1, unit: "set" },
+  ];
+}
+
+// Generate tasks from materials (AI-detected or demo defaults) - all editable
 function generateTasksFromMaterials(
   projectId: string,
   userId: string,
-  materials: Array<{ item: string; quantity: number; unit: string }>
+  materials: Array<{ item: string; quantity: number; unit: string }>,
+  projectDescription?: string
 ): TaskWithBudget[] {
-  // CRITICAL: If no real materials from AI analysis, return empty - NO demo data
-  if (!materials || materials.length === 0) {
+  // Use demo materials if no AI-detected ones, but they're fully editable
+  const effectiveMaterials = materials && materials.length > 0 
+    ? materials 
+    : getDefaultDemoMaterials(projectDescription);
+
+  if (effectiveMaterials.length === 0) {
     return [];
   }
 
@@ -76,8 +122,8 @@ function generateTasksFromMaterials(
   const tasks: TaskWithBudget[] = [];
   let taskCounter = 0;
 
-  // Generate tasks for each AI-detected material with 3 phases
-  materials.forEach((material, materialIndex) => {
+  // Generate tasks for each material with 3 phases
+  effectiveMaterials.forEach((material, materialIndex) => {
     const materialName = material.item.split(" ")[0];
     const baseDay = materialIndex * 5;
 
