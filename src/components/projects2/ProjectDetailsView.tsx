@@ -1187,6 +1187,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
 
   // Build Operational Truth for report - now synchronized across 16 sources
   // Include manual blueprint validation override
+  // CRITICAL: Use summary.mode as the source of truth for projectMode (synced with header)
   const operationalTruth: OperationalTruth = useMemo(() => {
     const baseOT = buildOperationalTruth({
       aiAnalysis,
@@ -1197,10 +1198,14 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       projectSize: photoEstimate?.projectSize || aiConfig?.projectSize,
     });
     
+    // SYNC: Override projectMode from summary.mode to ensure header and Operational Truth match
+    const syncedMode = summary?.mode === "team" ? "team" : "solo";
+    
     // Apply manual blueprint override if set
     if (manuallyValidatedBlueprint && baseOT.blueprintStatus !== "analyzed") {
       return {
         ...baseOT,
+        projectMode: syncedMode,
         blueprintStatus: "analyzed" as const,
         // Also apply conflict override if needed
         ...(manuallyIgnoredConflicts && baseOT.conflictStatus !== "aligned" ? { conflictStatus: "aligned" as const } : {})
@@ -1211,12 +1216,17 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     if (manuallyIgnoredConflicts && baseOT.conflictStatus !== "aligned") {
       return {
         ...baseOT,
+        projectMode: syncedMode,
         conflictStatus: "aligned" as const,
       };
     }
     
-    return baseOT;
-  }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint, manuallyIgnoredConflicts]);
+    // Always apply synced mode to ensure consistency with header
+    return {
+      ...baseOT,
+      projectMode: syncedMode,
+    };
+  }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint, manuallyIgnoredConflicts, summary?.mode]);
 
   // Determine data source origins for transparency
   const dataSourceOrigins = useMemo(() => {
