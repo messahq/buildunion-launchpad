@@ -154,6 +154,9 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
   // Contract Generator Sheet state
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType>("custom");
+  
+  // Edit mode state
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-CA", {
@@ -234,7 +237,14 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
     // Refresh contracts list after a new contract is generated
     fetchContracts();
     setIsGeneratorOpen(false);
-    toast.success("Contract created successfully");
+    setEditingContract(null);
+    toast.success(editingContract ? "Contract updated successfully" : "Contract created successfully");
+  };
+
+  const handleEditContract = (contract: Contract) => {
+    setEditingContract(contract);
+    setSelectedTemplate((contract.template_type as ContractTemplateType) || "custom");
+    setIsGeneratorOpen(true);
   };
 
   const handleDownloadPDF = async (contract: Contract) => {
@@ -451,6 +461,19 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {/* Edit button for owners - only for draft/unsigned contracts */}
+                      {isOwner && !contract.client_signed_at && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditContract(contract)}
+                          className="gap-2"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                      )}
+                      
                       <Button
                         variant="outline"
                         size="sm"
@@ -512,23 +535,32 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
       )}
 
       {/* Contract Generator Sheet */}
-      <Sheet open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
+      <Sheet open={isGeneratorOpen} onOpenChange={(open) => {
+        setIsGeneratorOpen(open);
+        if (!open) setEditingContract(null);
+      }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto p-0">
           <SheetHeader className="sticky top-0 z-10 bg-background border-b p-4">
             <div className="flex items-center justify-between">
               <div>
                 <SheetTitle className="flex items-center gap-2">
                   <FileSignature className="h-5 w-5 text-cyan-500" />
-                  New Contract
+                  {editingContract ? `Edit Contract #${editingContract.contract_number}` : "New Contract"}
                 </SheetTitle>
                 <SheetDescription>
-                  {CONTRACT_TEMPLATES.find(t => t.id === selectedTemplate)?.name} Template
+                  {editingContract 
+                    ? "Update contract details and save changes"
+                    : `${CONTRACT_TEMPLATES.find(t => t.id === selectedTemplate)?.name} Template`
+                  }
                 </SheetDescription>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsGeneratorOpen(false)}
+                onClick={() => {
+                  setIsGeneratorOpen(false);
+                  setEditingContract(null);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -543,6 +575,41 @@ const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, project
                 address: projectAddress,
                 description: projectDescription,
               }}
+              existingContract={editingContract ? {
+                id: editingContract.id,
+                contract_number: editingContract.contract_number,
+                contract_date: editingContract.contract_date,
+                template_type: editingContract.template_type || "custom",
+                contractor_name: editingContract.contractor_name,
+                contractor_address: editingContract.contractor_address,
+                contractor_phone: editingContract.contractor_phone,
+                contractor_email: editingContract.contractor_email,
+                contractor_license: editingContract.contractor_license,
+                client_name: editingContract.client_name,
+                client_address: editingContract.client_address,
+                client_phone: editingContract.client_phone,
+                client_email: editingContract.client_email,
+                project_name: editingContract.project_name,
+                project_address: editingContract.project_address,
+                scope_of_work: editingContract.scope_of_work,
+                total_amount: editingContract.total_amount,
+                deposit_percentage: editingContract.deposit_percentage,
+                deposit_amount: editingContract.deposit_amount,
+                payment_schedule: editingContract.payment_schedule,
+                start_date: editingContract.start_date,
+                estimated_end_date: editingContract.estimated_end_date,
+                working_days: editingContract.working_days,
+                warranty_period: editingContract.warranty_period,
+                change_order_policy: editingContract.change_order_policy,
+                cancellation_policy: editingContract.cancellation_policy,
+                dispute_resolution: editingContract.dispute_resolution,
+                additional_terms: editingContract.additional_terms,
+                materials_included: editingContract.materials_included,
+                has_liability_insurance: editingContract.has_liability_insurance,
+                has_wsib: editingContract.has_wsib,
+                client_signature: editingContract.client_signature,
+                contractor_signature: editingContract.contractor_signature,
+              } : undefined}
               onContractGenerated={handleContractGenerated}
             />
           </div>
