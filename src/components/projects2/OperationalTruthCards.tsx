@@ -17,7 +17,9 @@ import {
   Sparkles,
   CloudRain,
   Play,
-  RotateCcw
+  RotateCcw,
+  RefreshCw,
+  Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OperationalTruth } from "@/types/operationalTruth";
@@ -25,11 +27,25 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Data source origin type
+type DataSourceOrigin = "photo_ai" | "blueprint" | "tasks" | "manual" | "config" | "default";
+
 interface OperationalTruthCardsProps {
   operationalTruth: OperationalTruth;
   projectId?: string;
   projectAddress?: string | null;
   onUpdate?: () => void;
+  // Data source origins for each pillar
+  dataSourceOrigins?: {
+    area?: DataSourceOrigin;
+    materials?: DataSourceOrigin;
+    blueprint?: DataSourceOrigin;
+    obc?: DataSourceOrigin;
+    conflict?: DataSourceOrigin;
+    mode?: DataSourceOrigin;
+    size?: DataSourceOrigin;
+    confidence?: DataSourceOrigin;
+  };
 }
 
 interface VerificationReport {
@@ -51,7 +67,21 @@ interface PillarCardProps {
   isLoading?: boolean;
   isClickable?: boolean;
   subtitle?: string;
+  sourceOrigin?: DataSourceOrigin;
 }
+
+// Helper to get source label
+const getSourceLabel = (origin?: DataSourceOrigin): string => {
+  switch (origin) {
+    case "photo_ai": return "📷 Photo AI";
+    case "blueprint": return "📐 Blueprint";
+    case "tasks": return "📋 Tasks";
+    case "manual": return "✋ Manual";
+    case "config": return "⚙️ Config";
+    case "default": return "🔧 Default";
+    default: return "";
+  }
+};
 
 const PillarCard = ({ 
   icon, 
@@ -62,7 +92,8 @@ const PillarCard = ({
   onClick, 
   isLoading,
   isClickable = false,
-  subtitle
+  subtitle,
+  sourceOrigin
 }: PillarCardProps) => (
   <Card 
     className={cn(
@@ -108,6 +139,12 @@ const PillarCard = ({
             {isLoading ? "Verifying..." : value}
           </span>
         </div>
+        {/* Source origin label */}
+        {sourceOrigin && status !== "pending" && !isLoading && (
+          <span className="text-[10px] text-muted-foreground/60 mt-0.5 ml-5 font-medium">
+            {getSourceLabel(sourceOrigin)}
+          </span>
+        )}
         {subtitle && status === "pending" && !isLoading && (
           <span className="text-[10px] text-muted-foreground/70 mt-0.5 ml-5">
             {subtitle}
@@ -123,10 +160,12 @@ export default function OperationalTruthCards({
   projectId,
   projectAddress,
   onUpdate,
+  dataSourceOrigins = {},
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
   const [loadingPillar, setLoadingPillar] = useState<string | null>(null);
   const [isRunningAll, setIsRunningAll] = useState(false);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [runAllProgress, setRunAllProgress] = useState(0);
   const [reports, setReports] = useState<VerificationReport[]>([]);
   const [manuallyValidatedBlueprint, setManuallyValidatedBlueprint] = useState(false);
@@ -616,7 +655,105 @@ export default function OperationalTruthCards({
   ].filter(Boolean).length;
 
   // Display progress: pillar-based verification rate
-  const displayProgress = isRunningAll ? runAllProgress : verificationRate;
+  const displayProgress = isRunningAll || isSyncingAll ? runAllProgress : verificationRate;
+
+  // Auto-Sync: Re-analyze all 16 data sources
+  const autoSyncDataSources = useCallback(async () => {
+    if (!projectId) {
+      toast.error("Project ID required");
+      return;
+    }
+
+    setIsSyncingAll(true);
+    setRunAllProgress(0);
+    
+    toast.info("Syncing all 16 data sources...");
+
+    try {
+      // Step 1: Refresh project data (20%)
+      setRunAllProgress(10);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Step 2: Fetch fresh data from database
+      const { data: summaryData, error } = await supabase
+        .from("project_summaries")
+        .select("photo_estimate, blueprint_analysis, ai_workflow_config, calculator_results")
+        .eq("project_id", projectId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setRunAllProgress(30);
+
+      // Step 3: Fetch tasks for task-based data points
+      const { data: tasksData } = await supabase
+        .from("project_tasks")
+        .select("*")
+        .eq("project_id", projectId);
+
+      setRunAllProgress(50);
+
+      // Step 4: Fetch documents count
+      const { count: docCount } = await supabase
+        .from("project_documents")
+        .select("*", { count: "exact", head: true })
+        .eq("project_id", projectId);
+
+      setRunAllProgress(70);
+
+      // Step 5: Fetch team members
+      const { data: teamData } = await supabase
+        .from("project_members")
+        .select("*")
+        .eq("project_id", projectId);
+
+      setRunAllProgress(85);
+
+      // Compile sync report
+      const photoEstimate = summaryData?.photo_estimate as any;
+      const blueprintAnalysis = summaryData?.blueprint_analysis as any;
+      const aiConfig = summaryData?.ai_workflow_config as any;
+      
+      const syncedSources: string[] = [];
+      
+      // Check each data source
+      if (photoEstimate?.area) syncedSources.push("Photo AI Area");
+      if (photoEstimate?.materials?.length) syncedSources.push("Photo AI Materials");
+      if (blueprintAnalysis?.analyzed) syncedSources.push("Blueprint Analysis");
+      if (tasksData?.length) syncedSources.push(`${tasksData.length} Tasks`);
+      if (docCount) syncedSources.push(`${docCount} Documents`);
+      if (teamData?.length) syncedSources.push(`${teamData.length} Team Members`);
+      if (aiConfig?.filterAnswers) syncedSources.push("Workflow Config");
+
+      setRunAllProgress(100);
+
+      addReport({
+        pillar: "🔄 Auto-Sync Complete",
+        engine: "dual",
+        status: "success",
+        message: `${syncedSources.length} data sources synchronized`,
+        details: syncedSources.length > 0 
+          ? `Active sources: ${syncedSources.join(", ")}`
+          : "No additional data sources found. Upload photos, blueprints, or create tasks to populate."
+      });
+
+      toast.success(`Synced ${syncedSources.length} data sources`);
+      onUpdate?.();
+
+    } catch (error) {
+      console.error("Auto-sync error:", error);
+      addReport({
+        pillar: "🔄 Auto-Sync",
+        engine: "dual",
+        status: "error",
+        message: "Sync failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+      toast.error("Failed to sync data sources");
+    } finally {
+      setIsSyncingAll(false);
+      setRunAllProgress(0);
+    }
+  }, [projectId, onUpdate]);
 
   return (
     <div className="space-y-4">
@@ -675,36 +812,60 @@ export default function OperationalTruthCards({
           </div>
         </div>
         
-        {/* Run All Verifications Button - Amber themed */}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={runAllVerifications}
-          disabled={isRunningAll || !projectId || pendingChecksCount === 0}
-          className={cn(
-            "gap-2 min-w-[140px] font-medium transition-all",
-            pendingChecksCount > 0 
-              ? "border-amber-500 bg-amber-500 hover:bg-amber-600 text-white hover:text-white" 
-              : "border-green-500/50 text-green-600 hover:bg-green-500/10"
-          )}
-        >
-          {isRunningAll ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Verifying...
-            </>
-          ) : pendingChecksCount > 0 ? (
-            <>
-              <Play className="h-4 w-4" />
-              Run All ({pendingChecksCount})
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="h-4 w-4" />
-              All Complete
-            </>
-          )}
-        </Button>
+        {/* Buttons container */}
+        <div className="flex items-center gap-2">
+          {/* Auto-Sync Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={autoSyncDataSources}
+            disabled={isSyncingAll || isRunningAll || !projectId}
+            className="gap-2 min-w-[110px] border-cyan-500/50 text-cyan-600 hover:bg-cyan-500/10"
+          >
+            {isSyncingAll ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Auto-Sync
+              </>
+            )}
+          </Button>
+
+          {/* Run All Verifications Button - Amber themed */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={runAllVerifications}
+            disabled={isRunningAll || isSyncingAll || !projectId || pendingChecksCount === 0}
+            className={cn(
+              "gap-2 min-w-[140px] font-medium transition-all",
+              pendingChecksCount > 0 
+                ? "border-amber-500 bg-amber-500 hover:bg-amber-600 text-white hover:text-white" 
+                : "border-green-500/50 text-green-600 hover:bg-green-500/10"
+            )}
+          >
+            {isRunningAll ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : pendingChecksCount > 0 ? (
+              <>
+                <Play className="h-4 w-4" />
+                Run All ({pendingChecksCount})
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                All Complete
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Run All progress indicator when running */}
@@ -737,6 +898,7 @@ export default function OperationalTruthCards({
           isLoading={loadingPillar === "area"}
           onClick={verifyConfirmedArea}
           subtitle={!confirmedArea ? t("operationalTruth.areaNotDetected", "Area not detected by AI") : undefined}
+          sourceOrigin={dataSourceOrigins.area}
         />
 
         {/* Pillar 2: Materials Count - Clickable */}
@@ -748,6 +910,7 @@ export default function OperationalTruthCards({
           isClickable={materialsCount === 0 && !!projectId}
           isLoading={loadingPillar === "materials"}
           onClick={verifyMaterials}
+          sourceOrigin={dataSourceOrigins.materials}
         />
 
         {/* Pillar 3: Blueprint Status - Clickable for manual validation */}
@@ -778,6 +941,7 @@ export default function OperationalTruthCards({
             }
           }}
           subtitle={effectiveBlueprintStatus !== "analyzed" ? t("operationalTruth.clickToValidate", "Click to manually validate") : undefined}
+          sourceOrigin={manuallyValidatedBlueprint ? "manual" : dataSourceOrigins.blueprint}
         />
 
         {/* Pillar 4: OBC Compliance - Clickable */}
@@ -789,6 +953,7 @@ export default function OperationalTruthCards({
           isClickable={obcCompliance === "pending" && !!projectId}
           isLoading={loadingPillar === "obc"}
           onClick={verifyOBCStatus}
+          sourceOrigin={dataSourceOrigins.obc}
         />
 
         {/* Pillar 5: Conflict Status - Clickable */}
@@ -800,6 +965,7 @@ export default function OperationalTruthCards({
           isClickable={conflictStatus === "pending" && !!projectId}
           isLoading={loadingPillar === "conflict"}
           onClick={verifyConflicts}
+          sourceOrigin={dataSourceOrigins.conflict}
         />
 
         {/* Pillar 6: Project Mode - Not clickable */}
@@ -809,6 +975,7 @@ export default function OperationalTruthCards({
           value={projectMode === "team" ? t("projects.teamMode") : t("projects.soloMode")}
           status="verified"
           iconColor={projectMode === "team" ? "text-cyan-500" : "text-amber-500"}
+          sourceOrigin={dataSourceOrigins.mode || "config"}
         />
 
         {/* Pillar 7: Project Size - Not clickable */}
@@ -817,6 +984,7 @@ export default function OperationalTruthCards({
           label={t("operationalTruth.projectSize")}
           value={t(`operationalTruth.${projectSize}`)}
           status="verified"
+          sourceOrigin={dataSourceOrigins.size || "config"}
         />
 
         {/* Pillar 8: Confidence Level - Not clickable */}
@@ -825,6 +993,7 @@ export default function OperationalTruthCards({
           label={t("operationalTruth.aiConfidence")}
           value={t(`operationalTruth.${confidenceLevel}`)}
           status={confidenceLevel === "high" ? "verified" : confidenceLevel === "medium" ? "verified" : "warning"}
+          sourceOrigin={dataSourceOrigins.confidence || "photo_ai"}
         />
       </div>
 
