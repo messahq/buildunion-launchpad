@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users } from "lucide-react";
 import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
@@ -18,6 +18,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjectAIAnalysis } from "@/hooks/useProjectAIAnalysis";
 import { useSubscription, TEAM_LIMITS } from "@/hooks/useSubscription";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 interface SavedProject {
   id: string;
@@ -27,6 +30,8 @@ interface SavedProject {
   status: string;
   description: string | null;
   created_at: string;
+  owner_name?: string;
+  is_shared?: boolean;
 }
 
 // Questionnaire data stored for filter step
@@ -45,6 +50,7 @@ const BuildUnionProjects2 = () => {
   const [filterAnswers, setFilterAnswers] = useState<FilterAnswers | null>(null);
   const [aiTriggers, setAiTriggers] = useState<AITriggers | null>(null);
   const [projects, setProjects] = useState<SavedProject[]>([]);
+  const [sharedProjects, setSharedProjects] = useState<SavedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
@@ -56,6 +62,9 @@ const BuildUnionProjects2 = () => {
   // Selected project for details view
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+  
+  // Tab state for My Projects / Shared With Me
+  const [projectsTab, setProjectsTab] = useState<"my" | "shared">("my");
 
   const { 
     analyzeProject, 
@@ -68,7 +77,7 @@ const BuildUnionProjects2 = () => {
     tierConfig
   } = useProjectAIAnalysis();
 
-  // Load projects from database
+  // Load projects from database (my projects + shared projects)
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -77,18 +86,63 @@ const BuildUnionProjects2 = () => {
     }
 
     const loadProjects = async () => {
-      const { data, error } = await supabase
+      // Load my projects
+      const { data: myProjectsData, error: myError } = await supabase
         .from("projects")
         .select("id, name, address, trade, status, description, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading projects:", error);
+      if (myError) {
+        console.error("Error loading projects:", myError);
         toast.error("Failed to load projects");
       } else {
-        setProjects(data || []);
+        setProjects(myProjectsData || []);
       }
+
+      // Load shared projects (where user is a team member but not owner)
+      const { data: memberData, error: memberError } = await supabase
+        .from("project_members")
+        .select(`
+          project_id,
+          role,
+          projects!inner(id, name, address, trade, status, description, created_at, user_id)
+        `)
+        .eq("user_id", user.id);
+
+      if (memberError) {
+        console.error("Error loading shared projects:", memberError);
+      } else if (memberData) {
+        // Filter out projects where user is owner and format data
+        const sharedProjectsFormatted: SavedProject[] = [];
+        
+        for (const member of memberData) {
+          const project = member.projects as any;
+          if (project && project.user_id !== user.id) {
+            // Get owner profile
+            const { data: ownerProfile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("user_id", project.user_id)
+              .single();
+            
+            sharedProjectsFormatted.push({
+              id: project.id,
+              name: project.name,
+              address: project.address,
+              trade: project.trade,
+              status: project.status,
+              description: project.description,
+              created_at: project.created_at,
+              owner_name: ownerProfile?.full_name || "Unknown",
+              is_shared: true,
+            });
+          }
+        }
+        
+        setSharedProjects(sharedProjectsFormatted);
+      }
+
       setLoading(false);
     };
 
@@ -591,94 +645,206 @@ const BuildUnionProjects2 = () => {
               {/* Projects List or Empty State */}
               {!authLoading && !loading && user && (
                 <>
-                  {projects.length === 0 ? (
-                    <div className="min-h-[400px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
-                      <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
-                      <div className="text-center">
-                        <p className="text-lg font-medium text-foreground">No projects yet</p>
-                        <p className="text-muted-foreground">Start by answering a few questions</p>
-                      </div>
-                      <Button 
-                        onClick={() => setShowQuestionnaire(true)}
-                        className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                      >
-                        <Plus className="h-4 w-4" />
-                        New Project
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="grid lg:grid-cols-3 gap-6">
-                      {/* Projects List */}
-                      <div className="lg:col-span-2 space-y-4">
-                        {projects.map((project) => (
-                          <div 
-                            key={project.id}
-                            onClick={() => setSelectedProjectId(project.id)}
-                            className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer group"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {project.address || "No location"} • {project.trade?.replace("_", " ") || "General"}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {project.id === createdProjectId && analyzing && (
-                                  <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
-                                    <Sparkles className="h-3 w-3 animate-pulse" />
-                                    Analyzing...
-                                  </span>
-                                )}
-                                <span className="px-3 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 capitalize">
-                                  {project.status}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
-                                    
-                                    const { error } = await supabase
-                                      .from("projects")
-                                      .delete()
-                                      .eq("id", project.id);
-                                    
-                                    if (error) {
-                                      toast.error("Failed to delete project");
-                                    } else {
-                                      setProjects(prev => prev.filter(p => p.id !== project.id));
-                                      toast.success("Project deleted");
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                            {project.description && (
-                              <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
-                                {project.description}
-                              </p>
-                            )}
-                          </div>
-                        ))}
+                  {/* Tab Switcher */}
+                  <Tabs value={projectsTab} onValueChange={(v) => setProjectsTab(v as "my" | "shared")} className="mb-6">
+                    <TabsList className="bg-muted/50">
+                      <TabsTrigger value="my" className="gap-2 data-[state=active]:bg-background">
+                        <FolderOpen className="h-4 w-4" />
+                        My Projects
+                      </TabsTrigger>
+                      <TabsTrigger value="shared" className="gap-2 data-[state=active]:bg-background">
+                        <Users className="h-4 w-4" />
+                        Shared With Me
+                        {sharedProjects.length > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                            {sharedProjects.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+
+                  {/* My Projects Tab */}
+                  {projectsTab === "my" && (
+                    <>
+                      {/* Header with count */}
+                      <div className="mb-4">
+                        <h2 className="text-xl font-bold text-foreground">My Projects</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {projects.length} project{projects.length !== 1 ? "s" : ""}{sharedProjects.length > 0 ? ` • ${sharedProjects.length} shared` : ""}
+                        </p>
                       </div>
 
-                      {/* Sidebar with Project Dashboard Widget */}
-                      <div className="lg:col-span-1">
-                        <ProjectDashboardWidget 
-                          onTaskClick={(projectId, navigateToTasks) => {
-                            setSelectedProjectId(projectId);
-                            if (navigateToTasks) {
-                              setInitialTab("team");
-                            }
-                          }}
-                        />
+                      {projects.length === 0 ? (
+                        <div className="min-h-[300px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                          <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
+                          <div className="text-center">
+                            <p className="text-lg font-medium text-foreground">No projects yet</p>
+                            <p className="text-muted-foreground">Start by answering a few questions</p>
+                          </div>
+                          <Button 
+                            onClick={() => setShowQuestionnaire(true)}
+                            className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                          >
+                            <Plus className="h-4 w-4" />
+                            New Project
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid lg:grid-cols-3 gap-6">
+                          {/* Projects List */}
+                          <div className="lg:col-span-2 space-y-4">
+                            {projects.map((project) => (
+                              <div 
+                                key={project.id}
+                                onClick={() => setSelectedProjectId(project.id)}
+                                className="p-6 rounded-xl border bg-card hover:border-amber-300 transition-colors cursor-pointer group"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                                      <FolderOpen className="h-5 w-5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
+                                        <Badge variant="outline" className="capitalize">
+                                          {project.status}
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">
+                                        {project.description || project.address || "No description"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {project.id === createdProjectId && analyzing && (
+                                      <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                                        <Sparkles className="h-3 w-3 animate-pulse" />
+                                        Analyzing...
+                                      </span>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+                                        
+                                        const { error } = await supabase
+                                          .from("projects")
+                                          .delete()
+                                          .eq("id", project.id);
+                                        
+                                        if (error) {
+                                          toast.error("Failed to delete project");
+                                        } else {
+                                          setProjects(prev => prev.filter(p => p.id !== project.id));
+                                          toast.success("Project deleted");
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                                  <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
+                                  {project.address && <span>📍 {project.address}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Sidebar with Project Dashboard Widget */}
+                          <div className="lg:col-span-1">
+                            <ProjectDashboardWidget 
+                              onTaskClick={(projectId, navigateToTasks) => {
+                                setSelectedProjectId(projectId);
+                                if (navigateToTasks) {
+                                  setInitialTab("team");
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Shared With Me Tab */}
+                  {projectsTab === "shared" && (
+                    <>
+                      {/* Header */}
+                      <div className="mb-4">
+                        <h2 className="text-xl font-bold text-foreground">Shared With Me</h2>
+                        <p className="text-sm text-muted-foreground">
+                          Projects where you are a team member
+                        </p>
                       </div>
-                    </div>
+
+                      {sharedProjects.length === 0 ? (
+                        <div className="min-h-[300px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                          <Users className="h-16 w-16 text-muted-foreground/40" />
+                          <div className="text-center">
+                            <p className="text-lg font-medium text-foreground">No shared projects</p>
+                            <p className="text-muted-foreground">Projects shared with you will appear here</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid lg:grid-cols-3 gap-6">
+                          <div className="lg:col-span-2 space-y-4">
+                            {sharedProjects.map((project) => (
+                              <div 
+                                key={project.id}
+                                onClick={() => setSelectedProjectId(project.id)}
+                                className="p-6 rounded-xl border bg-card hover:border-cyan-300 transition-colors cursor-pointer group"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
+                                      <Users className="h-5 w-5 text-cyan-600" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
+                                        <Badge variant="outline" className="capitalize">
+                                          {project.status}
+                                        </Badge>
+                                        <Badge variant="secondary" className="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300">
+                                          Shared
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">
+                                        {project.description || project.address || "No description"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                                  <span>👤 {project.owner_name}</span>
+                                  <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
+                                  {project.address && <span>📍 {project.address}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Sidebar with Project Dashboard Widget */}
+                          <div className="lg:col-span-1">
+                            <ProjectDashboardWidget 
+                              onTaskClick={(projectId, navigateToTasks) => {
+                                setSelectedProjectId(projectId);
+                                if (navigateToTasks) {
+                                  setInitialTab("team");
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
