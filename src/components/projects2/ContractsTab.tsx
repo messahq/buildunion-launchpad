@@ -199,7 +199,7 @@ const ContractsTab = ({ projectId, isOwner }: ContractsTabProps) => {
 
   const handleTemplateSelect = (templateId: ContractTemplateType) => {
     // Navigate to Quick Mode with template pre-selected
-    navigate(`/buildunion/quick-mode?projectId=${projectId}&template=${templateId}`);
+    navigate(`/buildunion/quick?projectId=${projectId}&template=${templateId}`);
   };
 
   const handleDownloadPDF = async (contract: Contract) => {
