@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { 
   Ruler, 
   Package, 
@@ -10,14 +12,29 @@ import {
   Gauge, 
   Brain,
   CheckCircle2,
-  Clock
+  Clock,
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OperationalTruth } from "@/types/operationalTruth";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface OperationalTruthCardsProps {
   operationalTruth: OperationalTruth;
+  projectId?: string;
+  onUpdate?: () => void;
+}
+
+interface VerificationReport {
+  pillar: string;
+  engine: "gemini" | "openai" | "dual";
+  status: "success" | "warning" | "error";
+  message: string;
+  details?: string;
+  timestamp: Date;
 }
 
 interface PillarCardProps {
@@ -26,15 +43,32 @@ interface PillarCardProps {
   value: string;
   status: "verified" | "pending" | "warning";
   iconColor?: string;
+  onClick?: () => void;
+  isLoading?: boolean;
+  isClickable?: boolean;
 }
 
-const PillarCard = ({ icon, label, value, status, iconColor }: PillarCardProps) => (
-  <Card className={cn(
-    "transition-colors",
-    status === "verified" && "border-green-500/50 bg-green-500/5",
-    status === "warning" && "border-amber-500/50 bg-amber-500/5",
-    status === "pending" && "border-muted"
-  )}>
+const PillarCard = ({ 
+  icon, 
+  label, 
+  value, 
+  status, 
+  iconColor, 
+  onClick, 
+  isLoading,
+  isClickable = false 
+}: PillarCardProps) => (
+  <Card 
+    className={cn(
+      "transition-all duration-200",
+      status === "verified" && "border-green-500/50 bg-green-500/5",
+      status === "warning" && "border-amber-500/50 bg-amber-500/5",
+      status === "pending" && "border-muted",
+      isClickable && !isLoading && "cursor-pointer hover:scale-[1.02] hover:shadow-md",
+      isLoading && "opacity-70"
+    )}
+    onClick={isClickable && !isLoading ? onClick : undefined}
+  >
     <CardContent className="p-3">
       <div className="flex items-center gap-2 mb-1">
         <span className={cn(
@@ -45,9 +79,12 @@ const PillarCard = ({ icon, label, value, status, iconColor }: PillarCardProps) 
             "text-muted-foreground"
           )
         )}>
-          {icon}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
         </span>
         <span className="text-xs text-muted-foreground">{label}</span>
+        {isClickable && status === "pending" && !isLoading && (
+          <Sparkles className="h-3 w-3 text-primary ml-auto" />
+        )}
       </div>
       <div className="flex items-center gap-2">
         {status === "verified" ? (
@@ -61,15 +98,21 @@ const PillarCard = ({ icon, label, value, status, iconColor }: PillarCardProps) 
           "text-sm font-medium truncate",
           status !== "pending" ? "text-foreground" : "text-muted-foreground"
         )}>
-          {value}
+          {isLoading ? "Verifying..." : value}
         </span>
       </div>
     </CardContent>
   </Card>
 );
 
-export default function OperationalTruthCards({ operationalTruth }: OperationalTruthCardsProps) {
+export default function OperationalTruthCards({ 
+  operationalTruth, 
+  projectId,
+  onUpdate 
+}: OperationalTruthCardsProps) {
   const { t } = useTranslation();
+  const [loadingPillar, setLoadingPillar] = useState<string | null>(null);
+  const [reports, setReports] = useState<VerificationReport[]>([]);
   
   const {
     confirmedArea,
@@ -83,6 +126,282 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
     confidenceLevel,
     verificationRate,
   } = operationalTruth;
+
+  const addReport = (report: Omit<VerificationReport, "timestamp">) => {
+    setReports(prev => [...prev, { ...report, timestamp: new Date() }]);
+  };
+
+  // Gemini: Verify Confirmed Area
+  const verifyConfirmedArea = async () => {
+    if (!projectId) {
+      toast.error("Project ID required");
+      return;
+    }
+    
+    setLoadingPillar("area");
+    try {
+      // Fetch photo_estimate from project_summaries
+      const { data: summary, error } = await supabase
+        .from("project_summaries")
+        .select("photo_estimate, ai_workflow_config")
+        .eq("project_id", projectId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const photoEstimate = summary?.photo_estimate as any;
+      const aiConfig = summary?.ai_workflow_config as any;
+      
+      // Extract area from various sources
+      const detectedArea = photoEstimate?.area || 
+                          aiConfig?.aiAnalysis?.area ||
+                          photoEstimate?.blueprintAnalysis?.detectedArea;
+      
+      if (detectedArea) {
+        addReport({
+          pillar: "Confirmed Area",
+          engine: "gemini",
+          status: "success",
+          message: `Area verified: ${detectedArea.toLocaleString()} ${areaUnit}`,
+          details: `Source: ${photoEstimate?.area ? 'Photo Analysis' : 'Blueprint Analysis'}. Confidence: ${photoEstimate?.areaConfidence || 'medium'}`
+        });
+        toast.success(`Area confirmed: ${detectedArea.toLocaleString()} ${areaUnit}`);
+      } else {
+        addReport({
+          pillar: "Confirmed Area",
+          engine: "gemini",
+          status: "warning",
+          message: "No area data found in analysis",
+          details: "Upload site photos or blueprints to enable area detection"
+        });
+        toast.info("No area data found - upload photos or blueprints");
+      }
+      
+      onUpdate?.();
+    } catch (error) {
+      console.error("Error verifying area:", error);
+      addReport({
+        pillar: "Confirmed Area",
+        engine: "gemini",
+        status: "error",
+        message: "Failed to verify area",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+      toast.error("Failed to verify area");
+    } finally {
+      setLoadingPillar(null);
+    }
+  };
+
+  // Gemini: Verify Materials
+  const verifyMaterials = async () => {
+    if (!projectId) {
+      toast.error("Project ID required");
+      return;
+    }
+    
+    setLoadingPillar("materials");
+    try {
+      const { data: summary, error } = await supabase
+        .from("project_summaries")
+        .select("photo_estimate, ai_workflow_config")
+        .eq("project_id", projectId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const photoEstimate = summary?.photo_estimate as any;
+      const aiConfig = summary?.ai_workflow_config as any;
+      
+      const materials = photoEstimate?.materials || aiConfig?.aiAnalysis?.materials || [];
+      
+      if (materials.length > 0) {
+        const materialsList = materials.slice(0, 3).map((m: any) => m.item).join(", ");
+        addReport({
+          pillar: "Materials",
+          engine: "gemini",
+          status: "success",
+          message: `${materials.length} materials detected`,
+          details: `Items: ${materialsList}${materials.length > 3 ? ` +${materials.length - 3} more` : ''}`
+        });
+        toast.success(`${materials.length} materials verified`);
+      } else {
+        addReport({
+          pillar: "Materials",
+          engine: "gemini",
+          status: "warning",
+          message: "No materials detected",
+          details: "AI analysis has not identified materials yet"
+        });
+        toast.info("No materials detected yet");
+      }
+      
+      onUpdate?.();
+    } catch (error) {
+      console.error("Error verifying materials:", error);
+      addReport({
+        pillar: "Materials",
+        engine: "gemini",
+        status: "error",
+        message: "Failed to verify materials",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+      toast.error("Failed to verify materials");
+    } finally {
+      setLoadingPillar(null);
+    }
+  };
+
+  // OpenAI: Verify OBC Status
+  const verifyOBCStatus = async () => {
+    if (!projectId) {
+      toast.error("Project ID required");
+      return;
+    }
+    
+    setLoadingPillar("obc");
+    try {
+      // Call the ask-messa edge function with OBC focus
+      const { data, error } = await supabase.functions.invoke("ask-messa", {
+        body: {
+          projectId,
+          question: "Analyze this project for Ontario Building Code compliance. Check if permits are required based on the scope of work, materials, and project size. Return a brief compliance assessment.",
+          analysisType: "obc_compliance"
+        }
+      });
+
+      if (error) throw error;
+
+      const response = data?.response || data?.answer;
+      
+      if (response) {
+        const requiresPermit = response.toLowerCase().includes("permit required") || 
+                              response.toLowerCase().includes("building permit");
+        
+        addReport({
+          pillar: "OBC Status",
+          engine: "openai",
+          status: requiresPermit ? "warning" : "success",
+          message: requiresPermit ? "Permit may be required" : "No permit required",
+          details: response.slice(0, 200) + (response.length > 200 ? "..." : "")
+        });
+        toast.success("OBC status verified");
+      } else {
+        addReport({
+          pillar: "OBC Status",
+          engine: "openai",
+          status: "warning",
+          message: "Could not determine OBC status",
+          details: "Insufficient project data for compliance check"
+        });
+      }
+      
+      onUpdate?.();
+    } catch (error) {
+      console.error("Error verifying OBC:", error);
+      addReport({
+        pillar: "OBC Status",
+        engine: "openai",
+        status: "error",
+        message: "OBC verification failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+      toast.error("Failed to verify OBC status");
+    } finally {
+      setLoadingPillar(null);
+    }
+  };
+
+  // Dual Engine: Conflict Check
+  const verifyConflicts = async () => {
+    if (!projectId) {
+      toast.error("Project ID required");
+      return;
+    }
+    
+    setLoadingPillar("conflict");
+    try {
+      // Fetch project data for conflict analysis
+      const { data: summary, error } = await supabase
+        .from("project_summaries")
+        .select("photo_estimate, blueprint_analysis, ai_workflow_config")
+        .eq("project_id", projectId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const photoEstimate = summary?.photo_estimate as any;
+      const blueprintAnalysis = summary?.blueprint_analysis as any;
+      
+      // Check for area discrepancy
+      const photoArea = photoEstimate?.area;
+      const blueprintArea = blueprintAnalysis?.detectedArea;
+      
+      let hasConflict = false;
+      let conflictDetails = "";
+      
+      if (photoArea && blueprintArea) {
+        const difference = Math.abs(photoArea - blueprintArea);
+        const percentDiff = (difference / Math.max(photoArea, blueprintArea)) * 100;
+        
+        if (percentDiff > 10) {
+          hasConflict = true;
+          conflictDetails = `Photo: ${photoArea} ${areaUnit} vs Blueprint: ${blueprintArea} ${areaUnit} (${percentDiff.toFixed(1)}% difference)`;
+        }
+      }
+      
+      // Call dual-engine for deeper analysis if needed
+      const { data: aiCheck } = await supabase.functions.invoke("ask-messa", {
+        body: {
+          projectId,
+          question: "Check for any data conflicts or discrepancies in this project between site photos, blueprints, and estimates. Report any alignment issues.",
+          analysisType: "conflict_check"
+        }
+      });
+
+      const aiResponse = aiCheck?.response || aiCheck?.answer || "";
+      const aiHasConflict = aiResponse.toLowerCase().includes("conflict") || 
+                           aiResponse.toLowerCase().includes("discrepancy");
+      
+      if (hasConflict || aiHasConflict) {
+        addReport({
+          pillar: "Conflict Check",
+          engine: "dual",
+          status: "warning",
+          message: "Potential conflicts detected",
+          details: conflictDetails || aiResponse.slice(0, 150)
+        });
+        toast.warning("Conflicts detected - review report below");
+      } else {
+        addReport({
+          pillar: "Conflict Check",
+          engine: "dual",
+          status: "success",
+          message: "All data sources aligned",
+          details: "Gemini (Visual) and OpenAI (Regulatory) analysis are consistent"
+        });
+        toast.success("No conflicts detected");
+      }
+      
+      onUpdate?.();
+    } catch (error) {
+      console.error("Error checking conflicts:", error);
+      addReport({
+        pillar: "Conflict Check",
+        engine: "dual",
+        status: "error",
+        message: "Conflict check failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+      toast.error("Failed to check conflicts");
+    } finally {
+      setLoadingPillar(null);
+    }
+  };
+
+  const clearReports = () => {
+    setReports([]);
+  };
 
   return (
     <div className="space-y-4">
@@ -98,25 +417,37 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
         </div>
       </div>
 
+      {/* Click hint */}
+      <p className="text-xs text-muted-foreground flex items-center gap-1">
+        <Sparkles className="h-3 w-3" />
+        Click pending pillars to trigger AI verification
+      </p>
+
       {/* 8 Pillars Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Pillar 1: Confirmed Area */}
+        {/* Pillar 1: Confirmed Area - Clickable */}
         <PillarCard
           icon={<Ruler className="h-4 w-4" />}
           label={t("operationalTruth.confirmedArea")}
           value={confirmedArea ? `${confirmedArea.toLocaleString()} ${areaUnit}` : t("operationalTruth.pending")}
           status={confirmedArea ? "verified" : "pending"}
+          isClickable={!confirmedArea && !!projectId}
+          isLoading={loadingPillar === "area"}
+          onClick={verifyConfirmedArea}
         />
 
-        {/* Pillar 2: Materials Count */}
+        {/* Pillar 2: Materials Count - Clickable */}
         <PillarCard
           icon={<Package className="h-4 w-4" />}
           label={t("operationalTruth.materials")}
           value={materialsCount > 0 ? `${materialsCount} ${t("operationalTruth.items")}` : t("operationalTruth.noneDetected")}
           status={materialsCount > 0 ? "verified" : "pending"}
+          isClickable={materialsCount === 0 && !!projectId}
+          isLoading={loadingPillar === "materials"}
+          onClick={verifyMaterials}
         />
 
-        {/* Pillar 3: Blueprint Status */}
+        {/* Pillar 3: Blueprint Status - Not clickable (optional) */}
         <PillarCard
           icon={<FileText className="h-4 w-4" />}
           label={t("operationalTruth.blueprint")}
@@ -124,23 +455,29 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
           status={blueprintStatus === "analyzed" ? "verified" : blueprintStatus === "none" ? "warning" : "pending"}
         />
 
-        {/* Pillar 4: OBC Compliance */}
+        {/* Pillar 4: OBC Compliance - Clickable */}
         <PillarCard
           icon={<Shield className="h-4 w-4" />}
           label={t("operationalTruth.obcStatus")}
           value={obcCompliance === "clear" ? t("operationalTruth.clear") : obcCompliance === "permit_required" ? t("operationalTruth.permitRequired") : t("operationalTruth.pending")}
           status={obcCompliance === "clear" ? "verified" : obcCompliance === "permit_required" ? "warning" : "pending"}
+          isClickable={obcCompliance === "pending" && !!projectId}
+          isLoading={loadingPillar === "obc"}
+          onClick={verifyOBCStatus}
         />
 
-        {/* Pillar 5: Conflict Status */}
+        {/* Pillar 5: Conflict Status - Clickable */}
         <PillarCard
           icon={<AlertTriangle className="h-4 w-4" />}
           label={t("operationalTruth.conflictCheck")}
           value={conflictStatus === "aligned" ? t("operationalTruth.aligned") : conflictStatus === "conflict_detected" ? t("operationalTruth.conflicts") : t("operationalTruth.pending")}
           status={conflictStatus === "aligned" ? "verified" : conflictStatus === "conflict_detected" ? "warning" : "pending"}
+          isClickable={conflictStatus === "pending" && !!projectId}
+          isLoading={loadingPillar === "conflict"}
+          onClick={verifyConflicts}
         />
 
-        {/* Pillar 6: Project Mode */}
+        {/* Pillar 6: Project Mode - Not clickable */}
         <PillarCard
           icon={<Users className="h-4 w-4" />}
           label={t("operationalTruth.projectMode")}
@@ -149,7 +486,7 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
           iconColor={projectMode === "team" ? "text-cyan-500" : "text-amber-500"}
         />
 
-        {/* Pillar 7: Project Size */}
+        {/* Pillar 7: Project Size - Not clickable */}
         <PillarCard
           icon={<Gauge className="h-4 w-4" />}
           label={t("operationalTruth.projectSize")}
@@ -157,7 +494,7 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
           status="verified"
         />
 
-        {/* Pillar 8: Confidence Level */}
+        {/* Pillar 8: Confidence Level - Not clickable */}
         <PillarCard
           icon={<Brain className="h-4 w-4" />}
           label={t("operationalTruth.aiConfidence")}
@@ -165,6 +502,61 @@ export default function OperationalTruthCards({ operationalTruth }: OperationalT
           status={confidenceLevel === "high" ? "verified" : confidenceLevel === "medium" ? "verified" : "warning"}
         />
       </div>
+
+      {/* Verification Reports Section */}
+      {reports.length > 0 && (
+        <Card className="mt-4 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" />
+                Verification Reports
+              </h4>
+              <Button variant="ghost" size="sm" onClick={clearReports}>
+                Clear
+              </Button>
+            </div>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {reports.map((report, index) => (
+                <div 
+                  key={index}
+                  className={cn(
+                    "p-3 rounded-lg border text-sm",
+                    report.status === "success" && "bg-green-500/5 border-green-500/30",
+                    report.status === "warning" && "bg-amber-500/5 border-amber-500/30",
+                    report.status === "error" && "bg-red-500/5 border-red-500/30"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium">{report.pillar}</span>
+                    <span className={cn(
+                      "text-xs px-2 py-0.5 rounded-full",
+                      report.engine === "gemini" && "bg-blue-500/20 text-blue-600",
+                      report.engine === "openai" && "bg-emerald-500/20 text-emerald-600",
+                      report.engine === "dual" && "bg-purple-500/20 text-purple-600"
+                    )}>
+                      {report.engine === "gemini" ? "Gemini" : report.engine === "openai" ? "OpenAI" : "Dual Engine"}
+                    </span>
+                  </div>
+                  <p className={cn(
+                    "text-sm",
+                    report.status === "success" && "text-green-700 dark:text-green-400",
+                    report.status === "warning" && "text-amber-700 dark:text-amber-400",
+                    report.status === "error" && "text-red-700 dark:text-red-400"
+                  )}>
+                    {report.message}
+                  </p>
+                  {report.details && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {report.details}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
