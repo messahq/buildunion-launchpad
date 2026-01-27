@@ -468,22 +468,8 @@ export default function AdminDashboard() {
               </Card>
             </div>
 
-            {/* Revenue & Role Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="md:col-span-1">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Project Value</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-6 w-6 text-emerald-500" />
-                    <span className="text-3xl font-bold">
-                      ${stats.totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Combined value of all project estimates</p>
-                </CardContent>
-              </Card>
+            {/* Role Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               <Card>
                 <CardHeader className="pb-2">
