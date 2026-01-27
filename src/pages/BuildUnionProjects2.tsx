@@ -56,6 +56,7 @@ const BuildUnionProjects2 = () => {
   
   // Selected project for details view
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
 
   const { 
     analyzeProject, 
@@ -494,7 +495,11 @@ const BuildUnionProjects2 = () => {
           {!showQuestionnaire && !showFilterQuestions && selectedProjectId && (
             <ProjectDetailsView
               projectId={selectedProjectId}
-              onBack={() => setSelectedProjectId(null)}
+              onBack={() => {
+                setSelectedProjectId(null);
+                setInitialTab(undefined);
+              }}
+              initialTab={initialTab}
             />
           )}
 
@@ -668,7 +673,12 @@ const BuildUnionProjects2 = () => {
                         <ClockDateWidget />
                         <UpcomingDeadlinesWidget 
                           projectId={selectedProjectId}
-                          onTaskClick={(projectId) => setSelectedProjectId(projectId)}
+                          onTaskClick={(projectId, navigateToTasks) => {
+                            setSelectedProjectId(projectId);
+                            if (navigateToTasks) {
+                              setInitialTab("team");
+                            }
+                          }}
                         />
                       </div>
                     </div>

@@ -261,17 +261,18 @@ interface TaskWithBudget {
 interface ProjectDetailsViewProps {
   projectId: string;
   onBack: () => void;
+  initialTab?: string;
 }
 
 // ============================================
 // MAIN COMPONENT
 // ============================================
 
-const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
+const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsViewProps) => {
   const [project, setProject] = useState<ProjectData | null>(null);
   const [summary, setSummary] = useState<ProjectSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(initialTab || "overview");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [tasks, setTasks] = useState<TaskWithBudget[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
