@@ -20,7 +20,8 @@ import {
   Loader2,
   MapPin,
   PenLine,
-  RotateCcw
+  RotateCcw,
+  Save
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -60,6 +61,7 @@ interface MaterialCalculationTabProps {
   companyWebsite?: string | null;
   onCostsChange?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[] }) => void;
   onGrandTotalChange?: (grandTotalWithTax: number) => void;
+  onSave?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[]; grandTotal: number }) => Promise<void>;
   currency?: string;
 }
 
@@ -146,10 +148,12 @@ export function MaterialCalculationTab({
   companyWebsite,
   onCostsChange,
   onGrandTotalChange,
+  onSave,
   currency = "CAD"
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Helper to create initial material items
   const createInitialMaterialItems = useCallback(() => {
@@ -366,6 +370,28 @@ export function MaterialCalculationTab({
     setOtherItems([]);
     setHasUnsavedChanges(false);
     toast.info(t("materials.reset", "Changes reset to original values"));
+  };
+
+  // Save changes to database
+  const handleSave = async () => {
+    if (!onSave) return;
+    
+    setIsSaving(true);
+    try {
+      await onSave({
+        materials: materialItems,
+        labor: laborItems,
+        other: otherItems,
+        grandTotal,
+      });
+      setHasUnsavedChanges(false);
+      toast.success(t("materials.saved", "Cost breakdown saved successfully"));
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error(t("materials.saveError", "Failed to save cost breakdown"));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const addOtherItem = () => {
@@ -957,6 +983,23 @@ export function MaterialCalculationTab({
             <RotateCcw className="h-4 w-4" />
             <span className="hidden sm:inline">{t("materials.reset", "Reset")}</span>
           </Button>
+          {/* Save Button */}
+          {onSave && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSave}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="gap-2"
+            >
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{t("materials.save", "Save")}</span>
+            </Button>
+          )}
           {/* Export PDF Button */}
           <Button
             variant="outline"

@@ -1569,6 +1569,35 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             companyEmail={companyBranding.email}
             companyWebsite={companyBranding.website}
             onGrandTotalChange={(newTotal) => setTotalTaskBudget(newTotal)}
+            onSave={async (costs) => {
+              if (!summary) return;
+              
+              // Serialize to JSON-compatible format
+              const lineItemsData = JSON.parse(JSON.stringify({
+                materials: costs.materials,
+                labor: costs.labor,
+                other: costs.other,
+              }));
+              
+              // Save to project_summaries as line_items and total_cost
+              const { error } = await supabase
+                .from('project_summaries')
+                .update({
+                  line_items: lineItemsData,
+                  total_cost: costs.grandTotal,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', summary.id);
+              
+              if (error) throw error;
+              
+              // Update local state
+              setSummary(prev => prev ? {
+                ...prev,
+                line_items: lineItemsData as unknown[],
+                total_cost: costs.grandTotal,
+              } : null);
+            }}
           />
         </TabsContent>
 
