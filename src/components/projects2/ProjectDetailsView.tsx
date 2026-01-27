@@ -979,7 +979,7 @@ const ProjectDetailsView = ({ projectId, onBack }: ProjectDetailsViewProps) => {
             <>
               <TabsTrigger value="team" className="gap-2">
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">{t("projects.team", "Team")}</span>
+                <span className="hidden sm:inline">{t("projects.teamAndTasks", "Team & Tasks")}</span>
                 {members.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full">
                     {members.length}
