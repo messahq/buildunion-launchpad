@@ -3,6 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { 
   FileText, 
   CheckCircle2, 
   Clock, 
@@ -15,7 +22,8 @@ import {
   Wrench,
   FileCheck,
   Plus,
-  ArrowRight
+  ArrowRight,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +31,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { buildContractHTML, generatePDFBlob } from "@/lib/pdfGenerator";
-import { useNavigate } from "react-router-dom";
+import ContractGenerator from "@/components/quick-mode/ContractGenerator";
 
 interface Contract {
   id: string;
@@ -118,14 +126,20 @@ const CONTRACT_TEMPLATES: ContractTemplate[] = [
 interface ContractsTabProps {
   projectId: string;
   isOwner: boolean;
+  projectName?: string;
+  projectAddress?: string;
+  projectDescription?: string;
 }
 
-const ContractsTab = ({ projectId, isOwner }: ContractsTabProps) => {
+const ContractsTab = ({ projectId, isOwner, projectName, projectAddress, projectDescription }: ContractsTabProps) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  
+  // Contract Generator Sheet state
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType>("custom");
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-CA", {
@@ -134,28 +148,28 @@ const ContractsTab = ({ projectId, isOwner }: ContractsTabProps) => {
     }).format(amount);
   };
 
+  const fetchContracts = async () => {
+    if (!projectId) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("contracts")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setContracts(data as Contract[] || []);
+    } catch (error) {
+      console.error("Error fetching contracts:", error);
+      toast.error("Failed to load contracts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchContracts = async () => {
-      if (!projectId) return;
-      
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("contracts")
-          .select("*")
-          .eq("project_id", projectId)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        setContracts(data as Contract[] || []);
-      } catch (error) {
-        console.error("Error fetching contracts:", error);
-        toast.error("Failed to load contracts");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchContracts();
   }, [projectId]);
 
@@ -198,8 +212,15 @@ const ContractsTab = ({ projectId, isOwner }: ContractsTabProps) => {
   };
 
   const handleTemplateSelect = (templateId: ContractTemplateType) => {
-    // Navigate to Quick Mode with template pre-selected
-    navigate(`/buildunion/quick?projectId=${projectId}&template=${templateId}`);
+    setSelectedTemplate(templateId);
+    setIsGeneratorOpen(true);
+  };
+
+  const handleContractGenerated = () => {
+    // Refresh contracts list after a new contract is generated
+    fetchContracts();
+    setIsGeneratorOpen(false);
+    toast.success("Contract created successfully");
   };
 
   const handleDownloadPDF = async (contract: Contract) => {
@@ -438,6 +459,44 @@ const ContractsTab = ({ projectId, isOwner }: ContractsTabProps) => {
           </Card>
         )
       )}
+
+      {/* Contract Generator Sheet */}
+      <Sheet open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl lg:max-w-4xl overflow-y-auto p-0">
+          <SheetHeader className="sticky top-0 z-10 bg-background border-b p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <SheetTitle className="flex items-center gap-2">
+                  <FileSignature className="h-5 w-5 text-cyan-500" />
+                  New Contract
+                </SheetTitle>
+                <SheetDescription>
+                  {CONTRACT_TEMPLATES.find(t => t.id === selectedTemplate)?.name} Template
+                </SheetDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsGeneratorOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </SheetHeader>
+          <div className="p-4">
+            <ContractGenerator
+              initialTemplate={selectedTemplate}
+              linkedProjectId={projectId}
+              projectData={{
+                name: projectName,
+                address: projectAddress,
+                description: projectDescription,
+              }}
+              onContractGenerated={handleContractGenerated}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
