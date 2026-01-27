@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   Save,
   Pencil,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface AIAnalysis {
   area: number | null;
@@ -56,22 +63,27 @@ interface ConsolidatedMaterial {
   unit: string;
   quantityWithWaste: number;
   isEssential: boolean; // Only essential materials get waste calculation
+  isAdhesiveCategory: boolean; // Items under Adhesive & Supplies category
 }
 
 // Default waste percentage for essential materials only
 const WASTE_PERCENTAGE = 10;
 
-// Essential material patterns that should get waste calculation
+// Essential material patterns that should get waste calculation (NOT adhesive & supplies)
 const ESSENTIAL_PATTERNS = [
   /^laminate flooring$/i,
   /^underlayment$/i,
   /^baseboard trim$/i,
-  /^adhesive & supplies$/i,
 ];
 
 // Check if a material is essential (should get waste calculation)
 const isEssentialMaterial = (itemName: string): boolean => {
   return ESSENTIAL_PATTERNS.some(pattern => pattern.test(itemName.trim()));
+};
+
+// Check if material belongs to Adhesive & Supplies category (no waste)
+const isAdhesiveCategory = (itemName: string): boolean => {
+  return /adhesive|glue|supplies|nail|screw|spacer|transition|molding|cleaner|sealer|caulk|tape|foam/i.test(itemName.trim());
 };
 
 export default function DocumentsPane({ 
@@ -87,6 +99,7 @@ export default function DocumentsPane({
   const [editingMaterials, setEditingMaterials] = useState<ConsolidatedMaterial[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [adhesiveExpanded, setAdhesiveExpanded] = useState(false);
 
   // Fetch project documents
   useEffect(() => {
@@ -113,6 +126,7 @@ export default function DocumentsPane({
 
   // Process materials - keep all items but only add waste to essential ones
   // Also ensure Underlayment matches Laminate Flooring
+  // Adhesive & Supplies items don't get waste calculation
   const processedMaterials = useMemo((): ConsolidatedMaterial[] => {
     if (!aiAnalysis?.materials?.length) return [];
 
@@ -124,6 +138,7 @@ export default function DocumentsPane({
 
     return aiAnalysis.materials.map((m, index) => {
       const isEssential = isEssentialMaterial(m.item);
+      const isAdhesive = isAdhesiveCategory(m.item);
       
       // Sync underlayment with laminate flooring
       let baseQty = m.quantity;
@@ -138,8 +153,9 @@ export default function DocumentsPane({
         unit: m.unit,
         quantityWithWaste: isEssential 
           ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE / 100))
-          : baseQty, // Non-essential items don't get waste
+          : baseQty, // Non-essential and adhesive items don't get waste
         isEssential,
+        isAdhesiveCategory: isAdhesive,
       };
     });
   }, [aiAnalysis]);
@@ -165,16 +181,16 @@ export default function DocumentsPane({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Handle quantity change in edit mode - only add waste for essential materials
+  // Handle quantity change in edit mode - only add waste for essential materials (not adhesive)
   const handleQuantityChange = (id: string, newQuantity: number) => {
     setEditingMaterials(prev => prev.map(m => 
       m.id === id 
         ? { 
             ...m, 
             baseQuantity: newQuantity,
-            quantityWithWaste: m.isEssential 
+            quantityWithWaste: m.isEssential && !m.isAdhesiveCategory
               ? Math.ceil(newQuantity * (1 + WASTE_PERCENTAGE / 100))
-              : newQuantity // Non-essential items don't get waste
+              : newQuantity // Adhesive items don't get waste
           } 
         : m
     ));
@@ -241,6 +257,10 @@ export default function DocumentsPane({
   const totalImages = (siteImages?.length || 0);
   const pdfDocuments = documents.filter(d => d.file_name.toLowerCase().endsWith('.pdf'));
   const displayMaterials = isEditMode ? editingMaterials : (editingMaterials.length > 0 ? editingMaterials : processedMaterials);
+  
+  // Separate essential materials from adhesive/supplies category
+  const essentialMaterials = displayMaterials.filter(m => !m.isAdhesiveCategory);
+  const adhesiveMaterials = displayMaterials.filter(m => m.isAdhesiveCategory);
 
   return (
     <Card className={cn("border-border", className)}>
@@ -332,7 +352,7 @@ export default function DocumentsPane({
         )}
 
         {/* Essential Materials List with Waste Calculation - Editable */}
-        {displayMaterials.length > 0 && (
+        {essentialMaterials.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-medium flex items-center gap-2">
@@ -391,7 +411,7 @@ export default function DocumentsPane({
                   </tr>
                 </thead>
                 <tbody>
-                  {displayMaterials.map((m) => (
+                  {essentialMaterials.map((m) => (
                     <tr key={m.id} className={cn("border-t", m.isEssential && "bg-amber-50/30 dark:bg-amber-950/10")}>
                       <td className="px-3 py-2 text-foreground">
                         <span className={cn(m.isEssential && "font-medium")}>{m.item}</span>
@@ -437,6 +457,78 @@ export default function DocumentsPane({
                 </tbody>
               </table>
             </div>
+            
+            {/* Adhesive & Supplies - Collapsible section (no waste) */}
+            {adhesiveMaterials.length > 0 && (
+              <Collapsible open={adhesiveExpanded} onOpenChange={setAdhesiveExpanded} className="mt-3">
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-between px-3 py-2 h-auto hover:bg-muted/50 border border-dashed rounded-lg"
+                  >
+                    <span className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Adhesive & Supplies
+                      <Badge variant="outline" className="text-[10px] ml-1">
+                        {adhesiveMaterials.length} items
+                      </Badge>
+                    </span>
+                    {adhesiveExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="border rounded-lg overflow-hidden mt-2">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/30">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Item</th>
+                          <th className="text-right px-3 py-2 font-medium text-muted-foreground">Quantity</th>
+                          <th className="text-center px-3 py-2 font-medium text-muted-foreground">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adhesiveMaterials.map((m) => (
+                          <tr key={m.id} className="border-t">
+                            <td className="px-3 py-2 text-foreground">{m.item}</td>
+                            <td className="px-3 py-2 text-right text-muted-foreground">
+                              {isEditMode ? (
+                                <div className="flex items-center justify-end gap-2">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={m.baseQuantity}
+                                    onChange={(e) => handleQuantityChange(m.id, parseInt(e.target.value) || 0)}
+                                    className="w-20 h-8 text-right px-2 rounded border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                  />
+                                  <span className="text-xs w-16">{m.unit}</span>
+                                </div>
+                              ) : (
+                                <>
+                                  {m.baseQuantity.toLocaleString()} {m.unit}
+                                </>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-600 border-green-200">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                RAG
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+            
             {aiAnalysis?.area && (
               <p className="text-xs text-muted-foreground mt-2">
                 Based on detected area: {aiAnalysis.area.toLocaleString()} {aiAnalysis.areaUnit}
