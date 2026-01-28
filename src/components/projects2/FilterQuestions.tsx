@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { CollectedCitation, CITATION_IDS } from "@/types/collectedCitation";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -42,6 +43,8 @@ export interface FilterAnswers {
     subcontractorCount: "1-2" | "3-5" | "6+" | "not_applicable";
     deadline: "strict_fixed" | "flexible_fixed" | "strict_flexible" | "both_flexible";
   };
+  // NEW: Collected citations from Pages 2-3
+  collectedCitations?: CollectedCitation[];
 }
 
 export interface AITriggers {
@@ -60,6 +63,7 @@ export interface FilterQuestionsProps {
     hasImages: boolean;
     hasDocuments: boolean;
   };
+  previousCitations?: CollectedCitation[]; // Citations from Page 1
   onComplete: (answers: FilterAnswers, triggers: AITriggers) => void;
   onBack: () => void;
 }
@@ -153,7 +157,8 @@ const FILTER_STEPS = [
 // ============================================
 
 export default function FilterQuestions({ 
-  projectData, 
+  projectData,
+  previousCitations = [],
   onComplete, 
   onBack 
 }: FilterQuestionsProps) {
@@ -192,13 +197,75 @@ export default function FilterQuestions({
     }));
   };
 
+  // Collect citations from FilterQuestions data
+  const collectCitations = useCallback((): CollectedCitation[] => {
+    const citations: CollectedCitation[] = [];
+    const now = new Date().toISOString();
+
+    // [C-003] Data Source citation
+    const dataLabels: Record<string, string> = {
+      both: 'Both blueprints and photos available',
+      blueprints_only: 'Only blueprints available',
+      photos_only: 'Only photos available',
+      none: 'No documentation available',
+    };
+    citations.push({
+      sourceId: CITATION_IDS.DATA_SOURCE,
+      documentName: 'Data Source Selection',
+      documentType: 'log',
+      contextSnippet: dataLabels[answers.inputFilter.dataAvailability],
+      linkedPillar: 'confidence',
+      timestamp: now,
+      sourceType: 'USER',
+    });
+
+    // [TL-001] Timeline citation (only if dates set)
+    if (answers.technicalFilter.projectStartDate || answers.technicalFilter.projectEndDate) {
+      const startStr = answers.technicalFilter.projectStartDate 
+        ? format(answers.technicalFilter.projectStartDate, 'MMM d, yyyy') 
+        : 'Not set';
+      const endStr = answers.technicalFilter.projectEndDate 
+        ? format(answers.technicalFilter.projectEndDate, 'MMM d, yyyy') 
+        : 'Not set';
+      citations.push({
+        sourceId: CITATION_IDS.TIMELINE,
+        documentName: 'Project Timeline',
+        documentType: 'log',
+        contextSnippet: `Start: ${startStr} | End: ${endStr}`,
+        timestamp: now,
+        sourceType: 'USER',
+      });
+    }
+
+    // [T-001] Trades citation (for Team Mode)
+    if (answers.workflowFilter.subcontractorCount !== 'not_applicable') {
+      const tradeLabels: Record<string, string> = {
+        '1-2': '1-2 trades (simple coordination)',
+        '3-5': '3-5 trades (standard project)',
+        '6+': '6+ trades (complex coordination)',
+      };
+      citations.push({
+        sourceId: CITATION_IDS.TRADES,
+        documentName: 'Trades Configuration',
+        documentType: 'log',
+        contextSnippet: tradeLabels[answers.workflowFilter.subcontractorCount] || answers.workflowFilter.subcontractorCount,
+        timestamp: now,
+        sourceType: 'USER',
+      });
+    }
+
+    return citations;
+  }, [answers]);
+
   const handleNext = () => {
     if (currentStep < FILTER_STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Complete - calculate triggers and submit
+      // Complete - calculate triggers and submit with citations
       const triggers = calculateAITriggers(answers);
-      onComplete(answers, triggers);
+      const newCitations = collectCitations();
+      const allCitations = [...previousCitations, ...newCitations];
+      onComplete({ ...answers, collectedCitations: allCitations }, triggers);
     }
   };
 
@@ -211,9 +278,11 @@ export default function FilterQuestions({
   };
 
   const handleSkipAll = () => {
-    // Use defaults with pre-filled data availability
+    // Use defaults with pre-filled data availability + collect citations
     const triggers = calculateAITriggers(answers);
-    onComplete(answers, triggers);
+    const newCitations = collectCitations();
+    const allCitations = [...previousCitations, ...newCitations];
+    onComplete({ ...answers, collectedCitations: allCitations }, triggers);
   };
 
   const step = FILTER_STEPS[currentStep];

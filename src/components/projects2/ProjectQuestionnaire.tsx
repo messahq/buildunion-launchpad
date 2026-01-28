@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,13 @@ import {
   FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  CollectedCitation, 
+  CITATION_IDS, 
+  generatePhotoCitationId, 
+  generateDocumentCitationId, 
+  isLikelyBlueprint 
+} from "@/types/collectedCitation";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -49,6 +56,8 @@ export interface ProjectAnswers {
   description: string;
   images: File[];
   documents: File[]; // PDF/blueprints
+  // NEW: Collected citations from Page 1
+  collectedCitations?: CollectedCitation[];
 }
 
 export interface WorkflowRecommendation {
@@ -237,9 +246,71 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
     updateAnswers({ documents: answers.documents.filter((_, i) => i !== index) });
   };
 
+  // Collect citations from Page 1 data
+  const collectCitations = useCallback((): CollectedCitation[] => {
+    const citations: CollectedCitation[] = [];
+    const now = new Date().toISOString();
+
+    // [C-001] Work Type citation
+    if (answers.workType) {
+      citations.push({
+        sourceId: CITATION_IDS.WORK_TYPE,
+        documentName: 'Work Type Selection',
+        documentType: 'log',
+        contextSnippet: `Selected work type: ${WORK_TYPES.find(t => t.value === answers.workType)?.label || answers.workType}`,
+        linkedPillar: 'mode',
+        timestamp: now,
+        sourceType: 'USER',
+      });
+    }
+
+    // [P-001..N] Photo citations
+    answers.images.forEach((file, index) => {
+      citations.push({
+        sourceId: generatePhotoCitationId(index),
+        documentName: file.name || `Site Photo ${index + 1}`,
+        documentType: 'site_photo',
+        contextSnippet: `Site photo uploaded: ${file.name}`,
+        linkedPillar: 'area',
+        timestamp: now,
+        sourceType: 'USER',
+      });
+    });
+
+    // [D-001..N] or [B-001..N] Document citations
+    answers.documents.forEach((file, index) => {
+      const isBp = isLikelyBlueprint(file.name);
+      citations.push({
+        sourceId: generateDocumentCitationId(index, isBp),
+        documentName: file.name,
+        documentType: isBp ? 'blueprint' : 'pdf',
+        contextSnippet: `Document uploaded: ${file.name}`,
+        linkedPillar: isBp ? 'blueprint' : undefined,
+        timestamp: now,
+        sourceType: 'USER',
+      });
+    });
+
+    // [C-002] Description citation (only if provided)
+    if (answers.description.trim()) {
+      citations.push({
+        sourceId: CITATION_IDS.DESCRIPTION,
+        documentName: 'Project Description',
+        documentType: 'log',
+        contextSnippet: answers.description.substring(0, 100) + (answers.description.length > 100 ? '...' : ''),
+        linkedPillar: 'size',
+        timestamp: now,
+        sourceType: 'USER',
+      });
+    }
+
+    return citations;
+  }, [answers]);
+
   const handleSubmit = () => {
     const workflow = determineWorkflow(answers);
-    onComplete(answers, workflow);
+    const citations = collectCitations();
+    onComplete({ ...answers, collectedCitations: citations }, workflow);
   };
 
   // Validation - name is required, work type helps AI

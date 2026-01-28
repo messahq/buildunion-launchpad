@@ -12,6 +12,7 @@ import ProjectQuestionnaire, {
 import FilterQuestions, { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
 import AIAnalysisProgress from "@/components/projects2/AIAnalysisProgress";
 import WorkflowSelector, { AIAnalysisResult, EditedAnalysisData } from "@/components/projects2/WorkflowSelector";
+import { CollectedCitation } from "@/types/collectedCitation";
 import ProjectDetailsView from "@/components/projects2/ProjectDetailsView";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -817,6 +818,7 @@ const BuildUnionProjects2 = () => {
                     tier={subscription.tier}
                     filterAnswers={filterAnswers || undefined}
                     aiTriggers={aiTriggers || undefined}
+                    collectedCitations={filterAnswers?.collectedCitations || []}
                     onSelectWorkflow={handleWorkflowSelect}
                     onUpgradeClick={handleUpgradeClick}
                     onReanalyze={handleReanalyze}
