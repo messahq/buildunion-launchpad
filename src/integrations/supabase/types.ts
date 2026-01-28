@@ -1194,6 +1194,32 @@ export type Database = {
         Args: { _project_id: string; _role: string; _user_id: string }
         Returns: Json
       }
+      get_public_profiles: {
+        Args: {
+          availability_filter?: string
+          contractors_only?: boolean
+          result_limit?: number
+          search_query?: string
+          trade_filter?: string
+        }
+        Returns: {
+          availability: string
+          avatar_url: string
+          bio: string
+          certifications: string[]
+          company_name: string
+          created_at: string
+          experience_level: Database["public"]["Enums"]["experience_level"]
+          experience_years: number
+          id: string
+          is_contractor: boolean
+          is_verified: boolean
+          primary_trade: Database["public"]["Enums"]["construction_trade"]
+          secondary_trades: Database["public"]["Enums"]["construction_trade"][]
+          service_area: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
