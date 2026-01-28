@@ -447,6 +447,7 @@ interface ProjectSummaryData {
   client_address: string | null;
   total_cost: number | null;
   line_items: unknown[];
+  verified_facts: Record<string, unknown> | null;
   baseline_snapshot: OperationalTruth | null;
   baseline_locked_at: string | null;
   baseline_locked_by: string | null;
@@ -2202,12 +2203,49 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 other: costs.other,
               }));
               
-              // Save to project_summaries as line_items and total_cost
+              // Get existing verified_facts to update citation registry
+              const existingFacts = (summary.verified_facts || {}) as Record<string, unknown>;
+              const existingCitations = (existingFacts.citationRegistry || []) as CitationSource[];
+              
+              // Check if we already have a MAT-EDIT citation, update it or add new one
+              const matEditIndex = existingCitations.findIndex(c => c.sourceId === 'MAT-EDIT');
+              const newCitation: CitationSource = {
+                id: crypto.randomUUID(),
+                sourceId: 'MAT-EDIT',
+                documentName: 'Manual Cost Breakdown Edit',
+                documentType: 'log',
+                linkedPillar: 'materials',
+                contextSnippet: `User manually edited cost breakdown: ${costs.materials.length} materials, ${costs.labor.length} labor items, ${costs.other.length} other items. Grand total: $${costs.grandTotal.toLocaleString()}`,
+                timestamp: new Date().toISOString(),
+                registeredAt: new Date().toISOString(),
+                registeredBy: user?.id || 'unknown',
+              };
+              
+              let updatedCitations: CitationSource[];
+              if (matEditIndex >= 0) {
+                // Update existing
+                updatedCitations = [...existingCitations];
+                updatedCitations[matEditIndex] = newCitation;
+              } else {
+                // Add new
+                updatedCitations = [...existingCitations, newCitation];
+              }
+              
+              // Serialize updatedFacts properly for Supabase JSON column
+              const updatedFacts = JSON.parse(JSON.stringify({
+                ...existingFacts,
+                citationRegistry: updatedCitations,
+                citationRegistryUpdatedAt: new Date().toISOString(),
+                totalCitations: updatedCitations.length,
+              }));
+              
+              // Save to project_summaries as line_items, total_cost, and updated verified_facts
               const { error } = await supabase
                 .from('project_summaries')
                 .update({
                   line_items: lineItemsData,
                   total_cost: costs.grandTotal,
+                  verified_facts: updatedFacts,
                   updated_at: new Date().toISOString(),
                 })
                 .eq('id', summary.id);
@@ -2219,7 +2257,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 ...prev,
                 line_items: lineItemsData as unknown[],
                 total_cost: costs.grandTotal,
+                verified_facts: updatedFacts as Record<string, unknown>,
               } : null);
+              
+              // Refresh citations in the registry hook
+              await refreshCitations();
             }}
           />
         </TabsContent>
