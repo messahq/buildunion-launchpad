@@ -20,6 +20,8 @@ export interface CitationSource {
   // NEW: Registration metadata
   registeredAt?: string;
   registeredBy?: string; // user_id
+  // NEW: Source attribution for References section
+  sourceType?: 'USER' | 'PHOTO-AI' | 'CONFIG' | 'EDIT';
 }
 
 export interface CitationMetadata {
