@@ -1770,7 +1770,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
 
 
           {/* AI Citation Demo - Verified Source System */}
-          <CitationDemo />
+          <div className="my-6">
+            <CitationDemo />
+          </div>
 
           {/* Project Command Center - AI Brief & Document Hub */}
           <ProjectCommandCenter
