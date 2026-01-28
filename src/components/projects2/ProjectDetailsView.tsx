@@ -1788,6 +1788,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               description: c.description,
             }))}
             isPremium={isPremium}
+            subscriptionTier={subscription?.tier || "free"}
             onNavigateToTab={(tabId) => {
               // Flash effect before navigating
               setFlashingTab(tabId);

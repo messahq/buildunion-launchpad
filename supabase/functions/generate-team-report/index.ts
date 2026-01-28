@@ -8,6 +8,32 @@ const corsHeaders = {
 
 interface TeamReportRequest {
   projectId: string;
+  tier?: "free" | "pro" | "premium" | "enterprise";
+}
+
+// Tiered Model Selection for Cost Optimization
+const AI_MODELS = {
+  FREE: "google/gemini-2.5-flash-lite",      // Cheapest - basic reports
+  PRO: "google/gemini-2.5-flash",            // Balanced - good quality
+  PREMIUM: "google/gemini-3-flash-preview",  // Best - full features
+} as const;
+
+const TOKEN_LIMITS = {
+  FREE: 1000,     // Limited tokens for free tier
+  PRO: 1600,      // Standard tokens
+  PREMIUM: 2000,  // Full tokens
+} as const;
+
+function selectModelForTier(tier: string): { model: string; maxTokens: number } {
+  switch (tier) {
+    case "premium":
+    case "enterprise":
+      return { model: AI_MODELS.PREMIUM, maxTokens: TOKEN_LIMITS.PREMIUM };
+    case "pro":
+      return { model: AI_MODELS.PRO, maxTokens: TOKEN_LIMITS.PRO };
+    default:
+      return { model: AI_MODELS.FREE, maxTokens: TOKEN_LIMITS.FREE };
+  }
 }
 
 serve(async (req) => {
@@ -43,7 +69,11 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { projectId } = await req.json() as TeamReportRequest;
+    const { projectId, tier = "free" } = await req.json() as TeamReportRequest;
+    
+    // Select model based on subscription tier
+    const { model: selectedModel, maxTokens } = selectModelForTier(tier);
+    console.log(`[Tiered AI] Using ${selectedModel} with ${maxTokens} tokens for tier: ${tier}`);
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "projectId is required" }), {
@@ -190,12 +220,12 @@ Keep the tone professional and constructive. Use Canadian English and CAD curren
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: selectedModel,
         messages: [
           { role: "system", content: "You are a professional construction team performance analyst. Generate clear, actionable team reports." },
           { role: "user", content: aiPrompt },
         ],
-        max_tokens: 2000,
+        max_tokens: maxTokens,
       }),
     });
 
@@ -233,6 +263,9 @@ Keep the tone professional and constructive. Use Canadian English and CAD curren
         totalTasks: overallStats.totalTasks,
         completionRate: overallStats.totalTasks > 0 ? Math.round((overallStats.completedTasks / overallStats.totalTasks) * 100) : 0,
         totalBudget: overallStats.totalBudget,
+        tier,
+        modelUsed: selectedModel,
+        tokensUsed: maxTokens,
       },
       memberStats,
       overallStats,

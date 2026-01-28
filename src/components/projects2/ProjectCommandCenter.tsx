@@ -153,6 +153,7 @@ interface ProjectCommandCenterProps {
   };
   conflicts?: ConflictData[];
   isPremium?: boolean;
+  subscriptionTier?: "free" | "pro" | "premium" | "enterprise";
   onNavigateToTab?: (tabId: string) => void;
   // Extended data sources info
   dataSourcesInfo?: DataSourcesInfo;
@@ -175,6 +176,7 @@ export const ProjectCommandCenter = ({
   companyBranding,
   conflicts = [],
   isPremium = false,
+  subscriptionTier = "free",
   onNavigateToTab,
   dataSourcesInfo,
   clientInfo,
@@ -634,7 +636,7 @@ export const ProjectCommandCenter = ({
       }
 
       const response = await supabase.functions.invoke("generate-project-brief", {
-        body: { projectId },
+        body: { projectId, tier: subscriptionTier },
       });
 
       if (response.error) {
@@ -670,7 +672,7 @@ export const ProjectCommandCenter = ({
     } finally {
       setIsGeneratingBrief(false);
     }
-  }, [projectId, projectName]);
+  }, [projectId, projectName, subscriptionTier]);
 
   // Generate Team Report and save to documents
   const generateTeamReport = useCallback(async (saveToDocuments = true) => {
@@ -683,7 +685,7 @@ export const ProjectCommandCenter = ({
       }
 
       const response = await supabase.functions.invoke("generate-team-report", {
-        body: { projectId },
+        body: { projectId, tier: subscriptionTier },
       });
 
       if (response.error) {
@@ -724,7 +726,7 @@ export const ProjectCommandCenter = ({
     } finally {
       setIsGeneratingTeamReport(false);
     }
-  }, [projectId, projectName]);
+  }, [projectId, projectName, subscriptionTier]);
 
   // Generate Project Report PDF and save to documents
   const generateFullReport = useCallback(async (saveToDocuments = true) => {
