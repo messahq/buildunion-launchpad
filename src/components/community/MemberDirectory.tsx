@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, UserPlus } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MemberCard } from "./MemberCard";
 import { MemberDetailDialog } from "./MemberDetailDialog";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 // Public member data - excludes sensitive fields like phone, location, hourly_rate
 interface PublicMember {
@@ -37,32 +38,8 @@ interface PublicMember {
   created_at?: string;
 }
 
-const trades = [
-  { value: "all", label: "All Trades" },
-  { value: "general_contractor", label: "General Contractor" },
-  { value: "electrician", label: "Electrician" },
-  { value: "plumber", label: "Plumber" },
-  { value: "carpenter", label: "Carpenter" },
-  { value: "mason", label: "Mason" },
-  { value: "roofer", label: "Roofer" },
-  { value: "hvac_technician", label: "HVAC Technician" },
-  { value: "painter", label: "Painter" },
-  { value: "welder", label: "Welder" },
-  { value: "heavy_equipment_operator", label: "Heavy Equipment Operator" },
-  { value: "concrete_worker", label: "Concrete Worker" },
-  { value: "drywall_installer", label: "Drywall Installer" },
-  { value: "flooring_specialist", label: "Flooring Specialist" },
-  { value: "landscaper", label: "Landscaper" },
-  { value: "project_manager", label: "Project Manager" },
-];
-
-const availabilityOptions = [
-  { value: "all", label: "Any Availability" },
-  { value: "available", label: "Available" },
-  { value: "busy", label: "Busy" },
-];
-
 export const MemberDirectory = () => {
+  const { t } = useTranslation();
   const [members, setMembers] = useState<PublicMember[]>([]);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +51,31 @@ export const MemberDirectory = () => {
   const [selectedMember, setSelectedMember] = useState<PublicMember | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
+
+  const trades = [
+    { value: "all", label: t("memberDirectory.allTrades") },
+    { value: "general_contractor", label: "General Contractor" },
+    { value: "electrician", label: "Electrician" },
+    { value: "plumber", label: "Plumber" },
+    { value: "carpenter", label: "Carpenter" },
+    { value: "mason", label: "Mason" },
+    { value: "roofer", label: "Roofer" },
+    { value: "hvac_technician", label: "HVAC Technician" },
+    { value: "painter", label: "Painter" },
+    { value: "welder", label: "Welder" },
+    { value: "heavy_equipment_operator", label: "Heavy Equipment Operator" },
+    { value: "concrete_worker", label: "Concrete Worker" },
+    { value: "drywall_installer", label: "Drywall Installer" },
+    { value: "flooring_specialist", label: "Flooring Specialist" },
+    { value: "landscaper", label: "Landscaper" },
+    { value: "project_manager", label: "Project Manager" },
+  ];
+
+  const availabilityOptions = [
+    { value: "all", label: t("memberDirectory.anyAvailability") },
+    { value: "available", label: t("memberDirectory.available") },
+    { value: "busy", label: t("memberDirectory.busy") },
+  ];
 
   const fetchMembers = async () => {
     setIsLoading(true);
@@ -133,7 +135,7 @@ export const MemberDirectory = () => {
 
   const togglePublicProfile = async () => {
     if (!user) {
-      toast.error("Please log in to update your profile visibility");
+      toast.error(t("memberDirectory.pleaseLogin"));
       return;
     }
 
@@ -146,7 +148,7 @@ export const MemberDirectory = () => {
       if (error) throw error;
 
       setIsPublicProfile(!isPublicProfile);
-      toast.success(isPublicProfile ? "Profile hidden from directory" : "Profile now visible in directory");
+      toast.success(isPublicProfile ? t("memberDirectory.profileHidden") : t("memberDirectory.profileVisible"));
       fetchMembers();
     } catch (error) {
       console.error("Error updating profile visibility:", error);
@@ -175,9 +177,9 @@ export const MemberDirectory = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Member Directory</h2>
+          <h2 className="text-xl font-semibold text-foreground">{t("memberDirectory.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Find and connect with construction professionals
+            {t("memberDirectory.subtitle")}
           </p>
         </div>
         {user && (
@@ -188,7 +190,7 @@ export const MemberDirectory = () => {
               onCheckedChange={togglePublicProfile}
             />
             <Label htmlFor="public-profile" className="text-sm cursor-pointer">
-              Show me in directory
+              {t("memberDirectory.showInDirectory")}
             </Label>
           </div>
         )}
@@ -199,7 +201,7 @@ export const MemberDirectory = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, company, or location..."
+            placeholder={t("memberDirectory.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -234,7 +236,7 @@ export const MemberDirectory = () => {
           onClick={() => setShowContractorsOnly(!showContractorsOnly)}
           className="whitespace-nowrap"
         >
-          Contractors Only
+          {t("memberDirectory.contractorsOnly")}
         </Button>
       </div>
 
@@ -248,11 +250,11 @@ export const MemberDirectory = () => {
       ) : members.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <UserPlus className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">No members found</p>
+          <p className="text-lg">{t("memberDirectory.noMembersFound")}</p>
           <p className="text-sm">
             {user 
-              ? "Try adjusting your filters or toggle your profile to be visible"
-              : "Log in and complete your profile to appear in the directory"
+              ? t("memberDirectory.noMembersTip")
+              : t("memberDirectory.noMembersTipGuest")
             }
           </p>
         </div>
