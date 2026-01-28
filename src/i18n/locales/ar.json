@@ -590,5 +590,10 @@
     "replyAdded": "تمت إضافة الرد!",
     "noReplies": "لا توجد ردود بعد",
     "beFirstReply": "كن أول من يرد!"
+  },
+  "upsell": {
+    "regenerateTitle": "تريد جودة أفضل؟",
+    "regenerateDesc": "يحصل مستخدمو Pro على تحليل ذكاء اصطناعي محسّن بدقة أعلى",
+    "upgradeToPro": "الترقية إلى Pro"
   }
 }

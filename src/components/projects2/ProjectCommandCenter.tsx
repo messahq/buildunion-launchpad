@@ -2037,13 +2037,40 @@ export const ProjectCommandCenter = ({
                   </div>
                 </div>
               ) : !isEditingBrief && briefMetadata ? (
-                <div className="pt-4 border-t flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    Generated {new Date(briefMetadata.generatedAt).toLocaleString()} • BuildUnion AI
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Click "Edit" to modify before sending or printing
-                  </p>
+                <div className="pt-4 border-t space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Generated {new Date(briefMetadata.generatedAt).toLocaleString()} • BuildUnion AI
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Click "Edit" to modify before sending or printing
+                    </p>
+                  </div>
+                  
+                  {/* Regenerate with Pro Quality upsell for free users */}
+                  {subscriptionTier === "free" && (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500">
+                          <Sparkles className="h-3.5 w-3.5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{t("upsell.regenerateTitle")}</p>
+                          <p className="text-xs text-muted-foreground">{t("upsell.regenerateDesc")}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-md"
+                        onClick={() => {
+                          window.location.href = "/buildunion/pricing";
+                        }}
+                      >
+                        <Zap className="h-3.5 w-3.5" />
+                        {t("upsell.upgradeToPro")}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : null}
             </>
@@ -2167,13 +2194,40 @@ export const ProjectCommandCenter = ({
           </ScrollArea>
 
           {teamReportMetadata && !isEditingTeamReport && (
-            <div className="pt-4 border-t flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                Generated {new Date(teamReportMetadata.generatedAt).toLocaleString()} • BuildUnion AI
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Click "Edit" to modify before sending or printing
-              </p>
+            <div className="pt-4 border-t space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Generated {new Date(teamReportMetadata.generatedAt).toLocaleString()} • BuildUnion AI
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Click "Edit" to modify before sending or printing
+                </p>
+              </div>
+              
+              {/* Regenerate with Pro Quality upsell for free users */}
+              {subscriptionTier === "free" && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500">
+                      <Sparkles className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{t("upsell.regenerateTitle")}</p>
+                      <p className="text-xs text-muted-foreground">{t("upsell.regenerateDesc")}</p>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-md"
+                    onClick={() => {
+                      window.location.href = "/buildunion/pricing";
+                    }}
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    {t("upsell.upgradeToPro")}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

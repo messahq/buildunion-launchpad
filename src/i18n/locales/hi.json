@@ -590,5 +590,10 @@
     "replyAdded": "जवाब जोड़ा गया!",
     "noReplies": "अभी तक कोई जवाब नहीं",
     "beFirstReply": "पहले जवाब देने वाले बनें!"
+  },
+  "upsell": {
+    "regenerateTitle": "बेहतर गुणवत्ता चाहिए?",
+    "regenerateDesc": "Pro उपयोगकर्ताओं को उच्च सटीकता के साथ उन्नत AI विश्लेषण मिलता है",
+    "upgradeToPro": "Pro में अपग्रेड करें"
   }
 }

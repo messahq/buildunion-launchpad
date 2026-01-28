@@ -603,5 +603,10 @@
     "replyAdded": "Válasz hozzáadva!",
     "noReplies": "Még nincs válasz",
     "beFirstReply": "Legyél az első, aki válaszol!"
+  },
+  "upsell": {
+    "regenerateTitle": "Jobb minőséget szeretnél?",
+    "regenerateDesc": "Pro felhasználók fejlettebb AI elemzést kapnak nagyobb pontossággal",
+    "upgradeToPro": "Frissítés Pro-ra"
   }
 }

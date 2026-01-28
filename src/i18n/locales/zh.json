@@ -590,5 +590,10 @@
     "replyAdded": "回复已添加！",
     "noReplies": "暂无回复",
     "beFirstReply": "成为第一个回复的人！"
+  },
+  "upsell": {
+    "regenerateTitle": "想要更好的质量？",
+    "regenerateDesc": "Pro用户可获得更精确的增强AI分析",
+    "upgradeToPro": "升级到Pro"
   }
 }
