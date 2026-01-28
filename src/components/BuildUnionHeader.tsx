@@ -83,6 +83,8 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   const [isTogglingMode, setIsTogglingMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [languageExpanded, setLanguageExpanded] = useState(false);
+  const [sheetLanguageExpanded, setSheetLanguageExpanded] = useState(false);
 
   // Keyboard shortcut for search (Cmd+K / Ctrl+K)
   useEffect(() => {
@@ -324,22 +326,36 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 {/* Divider */}
                 <div className="my-3 border-t border-border" />
 
-                {/* Language Selector */}
+                {/* Language Selector - Collapsible */}
                 <div className="px-4 py-2">
-                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Language</p>
-                  <div className="flex gap-2">
-                    {languages.map((lang) => (
-                      <Button
-                        key={lang.code}
-                        variant={selectedLanguage === lang.code ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={selectedLanguage === lang.code ? "bg-amber-500 hover:bg-amber-600" : ""}
-                      >
-                        {lang.name}
-                      </Button>
-                    ))}
-                  </div>
+                  <button
+                    onClick={() => setSheetLanguageExpanded(!sheetLanguageExpanded)}
+                    className="flex items-center justify-between w-full text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider hover:text-foreground transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Globe className="h-3 w-3" />
+                      Language: {currentLang?.name}
+                    </span>
+                    <ChevronDown className={`h-3 w-3 transition-transform ${sheetLanguageExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {sheetLanguageExpanded && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {languages.map((lang) => (
+                        <Button
+                          key={lang.code}
+                          variant={selectedLanguage === lang.code ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            handleLanguageChange(lang.code);
+                            setSheetLanguageExpanded(false);
+                          }}
+                          className={selectedLanguage === lang.code ? "bg-amber-500 hover:bg-amber-600" : ""}
+                        >
+                          {lang.name}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Theme Toggle */}
@@ -623,21 +639,35 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                     <DropdownMenuSeparator />
                   </>
                 )}
-                {/* Language selector - visible in dropdown on mobile */}
+                {/* Language selector - collapsible in dropdown */}
                 <div className="sm:hidden">
-                  <DropdownMenuItem disabled className="text-xs text-muted-foreground py-1">
+                  <DropdownMenuItem 
+                    className="text-xs text-muted-foreground py-1 cursor-pointer hover:bg-accent"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setLanguageExpanded(!languageExpanded);
+                    }}
+                  >
                     <Globe className="h-3 w-3 mr-2" />
-                    Language
+                    Language: {currentLang?.name}
+                    <ChevronDown className={`h-3 w-3 ml-auto transition-transform ${languageExpanded ? 'rotate-180' : ''}`} />
                   </DropdownMenuItem>
-                  {languages.map((lang) => (
-                    <DropdownMenuItem
-                      key={lang.code}
-                      onClick={() => handleLanguageChange(lang.code)}
-                      className={`pl-7 ${selectedLanguage === lang.code ? "bg-accent font-medium" : ""}`}
-                    >
-                      {lang.name}
-                    </DropdownMenuItem>
-                  ))}
+                  {languageExpanded && (
+                    <>
+                      {languages.map((lang) => (
+                        <DropdownMenuItem
+                          key={lang.code}
+                          onClick={() => {
+                            handleLanguageChange(lang.code);
+                            setLanguageExpanded(false);
+                          }}
+                          className={`pl-7 ${selectedLanguage === lang.code ? "bg-accent font-medium" : ""}`}
+                        >
+                          {lang.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                 </div>
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-600 dark:text-red-400">
