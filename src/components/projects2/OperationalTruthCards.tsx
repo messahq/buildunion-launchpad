@@ -961,7 +961,7 @@ export default function OperationalTruthCards({
     <div className="space-y-4">
       {/* Verification Progress + Run All Button - Matching ProjectTimelineBar style */}
       <div className={cn(
-        "flex items-center gap-4 p-4 rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10 transition-all duration-500",
+        "flex items-center gap-4 p-4 rounded-xl border-2 border-amber-400/40 bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20 transition-all duration-500",
         syncAnimationActive && "ring-2 ring-cyan-400 ring-offset-2 animate-pulse shadow-lg shadow-cyan-400/30"
       )}>
         <div className={cn(
