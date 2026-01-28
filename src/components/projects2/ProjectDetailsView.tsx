@@ -1772,22 +1772,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           </div>
         </div>
 
-        {/* Header Actions - separate row on mobile */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:justify-end">
-          {/* Total Budget Display - synced with Materials tab */}
-          <Badge
-            variant="outline"
-            className={cn(
-              "text-xs sm:text-sm font-semibold gap-1.5",
-              (summary?.total_cost || 0) > 0
-                ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
-                : "border-muted"
-            )}
-          >
-            <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span className="hidden xs:inline">Total:</span> ${(summary?.total_cost || 0).toLocaleString()}
-          </Badge>
-        </div>
       </div>
 
       {/* Main Project Timeline Bar - THE CLOCKWORK */}
