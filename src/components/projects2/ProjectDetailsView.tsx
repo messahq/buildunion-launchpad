@@ -1808,7 +1808,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn(
           "grid w-full bg-muted/50",
-          isTeamMode ? "grid-cols-7" : "grid-cols-4"
+          isTeamMode ? "grid-cols-7" : "grid-cols-6"
         )}>
           <TabsTrigger 
             value="overview" 
@@ -1820,54 +1820,58 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.overview")}</span>
           </TabsTrigger>
+          {/* Tasks Tab - Always visible, different label for solo/team */}
+          <TabsTrigger 
+            value="team" 
+            className={cn(
+              "gap-2 transition-all duration-300",
+              flashingTab === "team" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+            )}
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {isTeamMode ? t("projects.teamAndTasks", "Team & Tasks") : t("projects.tasks", "Tasks")}
+            </span>
+            {isTeamMode && members.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full">
+                {members.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          {/* Documents Tab - Always visible */}
+          <TabsTrigger 
+            value="documents" 
+            className={cn(
+              "gap-2 transition-all duration-300",
+              flashingTab === "documents" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+            )}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("projects.documents")}</span>
+          </TabsTrigger>
+          {/* Contracts Tab - Always visible */}
+          <TabsTrigger 
+            value="contracts" 
+            className={cn(
+              "gap-2 transition-all duration-300",
+              flashingTab === "contracts" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+            )}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Contracts</span>
+          </TabsTrigger>
+          {/* Site Map Tab - Only for Team Mode */}
           {isTeamMode && (
-            <>
-              <TabsTrigger 
-                value="team" 
-                className={cn(
-                  "gap-2 transition-all duration-300",
-                  flashingTab === "team" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
-                )}
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">{t("projects.teamAndTasks", "Team & Tasks")}</span>
-                {members.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full">
-                    {members.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="documents" 
-                className={cn(
-                  "gap-2 transition-all duration-300",
-                  flashingTab === "documents" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
-                )}
-              >
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">{t("projects.documents")}</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="contracts" 
-                className={cn(
-                  "gap-2 transition-all duration-300",
-                  flashingTab === "contracts" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
-                )}
-              >
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Contracts</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="map" 
-                className={cn(
-                  "gap-2 transition-all duration-300",
-                  flashingTab === "map" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
-                )}
-              >
-                <Map className="h-4 w-4" />
-                <span className="hidden sm:inline">{t("projects.siteMap")}</span>
-              </TabsTrigger>
-            </>
+            <TabsTrigger 
+              value="map" 
+              className={cn(
+                "gap-2 transition-all duration-300",
+                flashingTab === "map" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+              )}
+            >
+              <Map className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("projects.siteMap")}</span>
+            </TabsTrigger>
           )}
           <TabsTrigger 
             value="materials" 
@@ -1982,51 +1986,46 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           />
         </TabsContent>
 
-        {/* Team Tab - Only for Team Mode */}
-        {isTeamMode && (
-          <TabsContent value="team" className="mt-6">
-            <TeamTab
-              projectId={projectId}
-              isOwner={isOwner}
-              projectAddress={project.address || undefined}
-              aiMaterials={aiAnalysis?.materials}
-              projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
-              projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
-              forceCalendarView={forceCalendarView}
-              onCalendarViewActivated={() => setForceCalendarView(false)}
-              existingTaskCount={tasks.length}
-            />
-          </TabsContent>
-        )}
+        {/* Team/Tasks Tab - Always visible */}
+        <TabsContent value="team" className="mt-6">
+          <TeamTab
+            projectId={projectId}
+            isOwner={isOwner}
+            projectAddress={project.address || undefined}
+            aiMaterials={aiAnalysis?.materials}
+            projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+            projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+            forceCalendarView={forceCalendarView}
+            onCalendarViewActivated={() => setForceCalendarView(false)}
+            existingTaskCount={tasks.length}
+            isSoloMode={!isTeamMode}
+          />
+        </TabsContent>
 
-        {/* Documents Tab - After Team */}
-        {isTeamMode && (
-          <TabsContent value="documents" className="mt-6">
-            <DocumentsPane
-              projectId={projectId}
-              siteImages={project.site_images}
-            />
-          </TabsContent>
-        )}
+        {/* Documents Tab - Always visible */}
+        <TabsContent value="documents" className="mt-6">
+          <DocumentsPane
+            projectId={projectId}
+            siteImages={project.site_images}
+          />
+        </TabsContent>
 
-        {/* Contracts Tab - Only for Team Mode */}
-        {isTeamMode && (
-          <TabsContent value="contracts" className="mt-6">
-            <ContractsTab
-              projectId={projectId}
-              isOwner={isOwner}
-              projectName={project.name}
-              projectAddress={project.address || undefined}
-              projectDescription={project.description || undefined}
-              clientInfo={{
-                name: summary?.client_name || undefined,
-                email: summary?.client_email || undefined,
-                phone: summary?.client_phone || undefined,
-                address: summary?.client_address || undefined,
-              }}
-            />
-          </TabsContent>
-        )}
+        {/* Contracts Tab - Always visible */}
+        <TabsContent value="contracts" className="mt-6">
+          <ContractsTab
+            projectId={projectId}
+            isOwner={isOwner}
+            projectName={project.name}
+            projectAddress={project.address || undefined}
+            projectDescription={project.description || undefined}
+            clientInfo={{
+              name: summary?.client_name || undefined,
+              email: summary?.client_email || undefined,
+              phone: summary?.client_phone || undefined,
+              address: summary?.client_address || undefined,
+            }}
+          />
+        </TabsContent>
 
         {/* Team Map Tab - Only for Team Mode */}
         {isTeamMode && (

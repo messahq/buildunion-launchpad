@@ -48,6 +48,7 @@ interface TeamTabProps {
   forceCalendarView?: boolean;
   onCalendarViewActivated?: () => void;
   existingTaskCount?: number;
+  isSoloMode?: boolean;
 }
 
 // Map materials to task titles
@@ -72,7 +73,7 @@ const materialToTaskDescription = (material: Material): string => {
   return `${material.quantity} ${material.unit} of ${material.item}${material.notes ? ` - ${material.notes}` : ""}`;
 };
 
-const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate, forceCalendarView, onCalendarViewActivated, existingTaskCount = 0 }: TeamTabProps) => {
+const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate, forceCalendarView, onCalendarViewActivated, existingTaskCount = 0, isSoloMode = false }: TeamTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
@@ -223,8 +224,8 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
     }
   };
 
-  // Show locked state for non-Pro users
-  if (!isPro) {
+  // Show locked state for non-Pro users (only for Team features, not Tasks in Solo mode)
+  if (!isPro && !isSoloMode) {
     return (
       <Card className="border-dashed border-amber-300 dark:border-amber-700">
         <CardContent className="py-12 text-center">
@@ -236,6 +237,42 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
           <ProBadge tier="pro" size="md" />
         </CardContent>
       </Card>
+    );
+  }
+
+  // Solo mode - show only Tasks without team management
+  if (isSoloMode) {
+    return (
+      <div className="space-y-4">
+        {/* Solo Mode Task Header */}
+        <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <ListTodo className="h-5 w-5 text-amber-600" />
+                  <span className="font-medium">{t("tasks.projectTasks", "Project Tasks")}</span>
+                </div>
+                <Badge 
+                  variant="outline" 
+                  className="bg-background border-amber-300 text-amber-600"
+                >
+                  {t("projects.soloMode", "Solo Mode")}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tasks Only - No Team Management in Solo Mode */}
+        <TaskAssignment 
+          projectId={projectId} 
+          isOwner={isOwner}
+          projectAddress={projectAddress}
+          forceCalendarView={forceCalendarView}
+          onCalendarViewActivated={onCalendarViewActivated}
+        />
+      </div>
     );
   }
 
