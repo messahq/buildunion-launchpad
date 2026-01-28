@@ -746,12 +746,12 @@ export default function BuildUnionMessages() {
         
         <!-- META BAR -->
         <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 16px 32px; border-bottom: 1px solid #e2e8f0;">
-          <div style="display: flex; justify-content: flex-start; align-items: center; gap: 12px; padding-left: 131px;">
-            <span style="font-size: 13px; color: #64748b;">${torontoDate}</span>
+          <div style="display: flex; justify-content: flex-start; align-items: center; gap: 12px; padding-left: 35px; flex-wrap: nowrap;">
+            <span style="font-size: 13px; color: #64748b; white-space: nowrap;">${torontoDate}</span>
             <span style="color: #cbd5e1;">•</span>
             <span style="font-size: 12px; font-weight: 600; color: #1e293b; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;">OFFICIAL MESSAGE</span>
             <span style="color: #cbd5e1;">•</span>
-            <span style="font-size: 13px; color: #64748b;">${torontoTime} (Toronto)</span>
+            <span style="font-size: 13px; color: #64748b; white-space: nowrap;">${torontoTime} (Toronto)</span>
           </div>
         </div>
 

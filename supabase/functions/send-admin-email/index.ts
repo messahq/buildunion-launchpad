@@ -231,7 +231,8 @@ serve(async (req) => {
       justify-content: flex-start;
       align-items: center;
       gap: 12px;
-      padding-left: 131px;
+      padding-left: 35px;
+      flex-wrap: nowrap;
     }
     .meta-item {
       font-size: 13px;
