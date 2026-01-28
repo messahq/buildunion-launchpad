@@ -113,7 +113,8 @@ function generateCitationSources(
   detectedArea?: number | null,
   materials?: Array<{ item: string; quantity: number; unit: string }>,
   surfaceType?: string,
-  isUserProvidedArea?: boolean
+  wasManuallyEdited?: boolean,
+  lastModified?: Date | null
 ): CitationSource[] {
   const sources: CitationSource[] = [];
   
@@ -146,20 +147,21 @@ function generateCitationSources(
   
   const workTypeDesc = getWorkTypeDescription(surfaceType);
   
-  // Area detection citation - handle both AI and user-provided
+  // Area detection citation - check if manually edited first, then AI, then fallback
   if (detectedArea) {
-    if (isUserProvidedArea) {
-      // User-provided area citation
+    if (wasManuallyEdited && lastModified) {
+      // User manually edited the area after AI detection
+      const timeStr = lastModified.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       sources.push({
-        id: "area-user-input",
-        sourceId: "USER",
-        documentName: "User Input",
+        id: "area-manual-edit",
+        sourceId: "EDIT",
+        documentName: "Manual Edit",
         documentType: "log",
-        contextSnippet: `User manually specified ${detectedArea.toLocaleString()} sq ft as the project area. This is the BASE AREA - waste buffer (+10%) applied separately.`,
-        timestamp: new Date().toISOString(),
+        contextSnippet: `Area was manually adjusted to ${detectedArea.toLocaleString()} sq ft at ${timeStr}. Materials recalculated based on this value.`,
+        timestamp: lastModified.toISOString(),
       });
     } else if (dualEngineOutput?.gemini) {
-      // AI-detected area citation
+      // AI-detected area citation (original detection from photo)
       const confidence = dualEngineOutput.gemini.confidence;
       const extractionMethod = confidence === "high" 
         ? "directly read from visible text in image" 
@@ -176,13 +178,13 @@ function generateCitationSources(
         timestamp: new Date().toISOString(),
       });
     } else {
-      // Fallback: area exists but no engine output (e.g. manual edit without user flag)
+      // Fallback: area exists but no AI engine output (rare case)
       sources.push({
-        id: "area-edited",
-        sourceId: "EDIT",
-        documentName: "Manual Edit",
+        id: "area-input",
+        sourceId: "USER",
+        documentName: "User Input",
         documentType: "log",
-        contextSnippet: `Area was manually set to ${detectedArea.toLocaleString()} sq ft. This is the BASE AREA - waste buffer (+10%) applied separately.`,
+        contextSnippet: `Project area set to ${detectedArea.toLocaleString()} sq ft. This is the BASE AREA - waste buffer (+10%) applied separately.`,
         timestamp: new Date().toISOString(),
       });
     }
@@ -190,13 +192,17 @@ function generateCitationSources(
   
   // Materials citation - DYNAMIC WORK TYPE
   if (materials && materials.length > 0) {
+    const materialsNote = wasManuallyEdited 
+      ? `Recalculated for ${detectedArea?.toLocaleString() || 'specified'} sq ft after manual area edit.`
+      : `AI calculated ${materials.length} material items using BASE AREA of ${detectedArea?.toLocaleString() || 'detected'} sq ft.`;
+    
     sources.push({
       id: "materials-estimation",
       sourceId: "MAT-AI",
       documentName: "Material Estimation Report",
       documentType: "log",
-      contextSnippet: `AI calculated ${materials.length} material items using BASE AREA of ${detectedArea?.toLocaleString() || 'detected'} sq ft. Essential materials (${workTypeDesc}) use base quantity with +10% waste buffer displayed separately.`,
-      timestamp: new Date().toISOString(),
+      contextSnippet: `${materialsNote} Essential materials (${workTypeDesc}) use base quantity with +10% waste buffer displayed separately.`,
+      timestamp: lastModified?.toISOString() || new Date().toISOString(),
     });
   }
   
@@ -313,9 +319,10 @@ export default function AIAnalysisCitation({
   const [editingMaterialIndex, setEditingMaterialIndex] = useState<number | null>(null);
   const [newMaterialName, setNewMaterialName] = useState("");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
+  const [isEditingMaterials, setIsEditingMaterials] = useState(false);
   
-  // Track if area was user-provided (manual input) vs AI detected
-  const [isUserProvidedArea, setIsUserProvidedArea] = useState(false);
+  // Track if area was manually edited (not just user-provided initially, but actively edited)
+  const [wasAreaManuallyEdited, setWasAreaManuallyEdited] = useState(false);
   
   // Track last area modification timestamp
   const [areaLastModified, setAreaLastModified] = useState<Date | null>(null);
@@ -324,12 +331,9 @@ export default function AIAnalysisCitation({
   useEffect(() => {
     if (detectedArea) {
       setEditableArea(detectedArea);
-      // If we have AI output with area, it's AI detected; otherwise it came from user input
-      setIsUserProvidedArea(!dualEngineOutput?.gemini?.area);
     } else if (dualEngineOutput?.gemini?.area) {
       // Use the raw Gemini-detected area (true base, no waste)
       setEditableArea(dualEngineOutput.gemini.area);
-      setIsUserProvidedArea(false);
     } else if (materials && materials.length > 0) {
       // Last resort: back-calculate from materials
       // Materials quantity includes +10% waste, so calculate base: total / 1.1
@@ -337,7 +341,6 @@ export default function AIAnalysisCitation({
       if (areaFromMaterials && areaFromMaterials > 0) {
         const baseArea = Math.round(areaFromMaterials / 1.1);
         setEditableArea(baseArea);
-        setIsUserProvidedArea(false);
       }
     }
   }, [detectedArea, materials, dualEngineOutput]);
@@ -355,7 +358,7 @@ export default function AIAnalysisCitation({
     const previousArea = editableArea;
     setEditableArea(newArea);
     setIsEditingArea(false);
-    setIsUserProvidedArea(true); // User manually edited, mark as user-provided
+    setWasAreaManuallyEdited(true); // Mark as manually edited
     setAreaLastModified(new Date()); // Record modification timestamp
     onAreaChange?.(newArea);
     
@@ -398,13 +401,14 @@ export default function AIAnalysisCitation({
     onMaterialsChange?.(updated);
   };
   
-  // Generate citation sources from analysis data - pass surfaceType and user-provided flag
+  // Generate citation sources from analysis data - pass edit flag and timestamp
   const citationSources = generateCitationSources(
     dualEngineOutput, 
     editableArea, 
     editableMaterials, 
     surfaceType,
-    isUserProvidedArea
+    wasAreaManuallyEdited,
+    areaLastModified
   );
   
   // Find specific sources for inline citations (check for any area source type)
@@ -611,13 +615,32 @@ export default function AIAnalysisCitation({
                 </span>
                 {materialsSource && <SourceTag source={materialsSource} />}
               </div>
-              <button 
-                onClick={() => setShowAddMaterial(true)}
-                className="p-1 hover:bg-muted rounded transition-colors"
-                title="Add material"
-              >
-                <Plus className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-              </button>
+              <div className="flex items-center gap-1">
+                {!isEditingMaterials ? (
+                  <button 
+                    onClick={() => setIsEditingMaterials(true)}
+                    className="p-1 hover:bg-muted rounded transition-colors"
+                    title="Edit materials"
+                  >
+                    <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditingMaterials(false)}
+                    className="p-1 hover:bg-green-500/20 rounded transition-colors text-green-600"
+                    title="Done editing"
+                  >
+                    <Check className="h-3 w-3" />
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowAddMaterial(true)}
+                  className="p-1 hover:bg-muted rounded transition-colors"
+                  title="Add material"
+                >
+                  <Plus className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                </button>
+              </div>
             </div>
             
             {/* Add material input */}
@@ -655,7 +678,7 @@ export default function AIAnalysisCitation({
                   <div key={i} className="text-xs flex items-center justify-between group">
                     <span className="text-foreground truncate max-w-[120px]">{m.item}</span>
                     
-                    {editingMaterialIndex === i ? (
+                    {editingMaterialIndex === i || isEditingMaterials ? (
                       <div className="flex items-center gap-1">
                         <NumericInput
                           value={editableMaterials[i].quantity}
@@ -663,23 +686,19 @@ export default function AIAnalysisCitation({
                             const updated = [...editableMaterials];
                             updated[i].quantity = val;
                             setEditableMaterials(updated);
+                            onMaterialsChange?.(updated);
                           }}
                           className="h-6 w-16 text-xs"
-                          autoFocus
                         />
                         <span className="text-muted-foreground">{m.unit}</span>
-                        <button 
-                          onClick={() => handleMaterialQuantityChange(i, editableMaterials[i].quantity)}
-                          className="p-0.5 hover:bg-green-500/20 rounded text-green-600"
-                        >
-                          <Check className="h-3 w-3" />
-                        </button>
-                        <button 
-                          onClick={() => setEditingMaterialIndex(null)}
-                          className="p-0.5 hover:bg-red-500/20 rounded text-red-600"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                        {isEditingMaterials && (
+                          <button 
+                            onClick={() => handleRemoveMaterial(i)}
+                            className="p-0.5 hover:bg-red-500/20 rounded text-red-500"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-1">
