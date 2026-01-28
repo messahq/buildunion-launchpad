@@ -1,4 +1,13 @@
 {
+  "offline": {
+    "syncComplete": "تم مزامنة {{count}} تغييرات",
+    "syncFailed": "فشل مزامنة {{count}} تغييرات",
+    "savedLocally": "تم حفظ التغيير محلياً - سيتم المزامنة عند الاتصال",
+    "backOnline": "عدت للاتصال - جاري مزامنة التغييرات...",
+    "offline": "أنت غير متصل - سيتم حفظ التغييرات محلياً",
+    "pendingChanges": "{{count}} تغييرات معلقة",
+    "syncing": "جاري المزامنة..."
+  },
   "commandCenter": {
     "solo": {
       "notRequired": "غير مطلوب (فردي)",

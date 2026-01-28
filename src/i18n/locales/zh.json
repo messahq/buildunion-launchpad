@@ -1,4 +1,13 @@
 {
+  "offline": {
+    "syncComplete": "{{count}} 个更改已同步",
+    "syncFailed": "{{count}} 个更改同步失败",
+    "savedLocally": "更改已本地保存 - 上线后将同步",
+    "backOnline": "已重新上线 - 正在同步更改...",
+    "offline": "您已离线 - 更改将本地保存",
+    "pendingChanges": "{{count}} 个待同步更改",
+    "syncing": "同步中..."
+  },
   "commandCenter": {
     "solo": {
       "notRequired": "不需要（个人模式）",
