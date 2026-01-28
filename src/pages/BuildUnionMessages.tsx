@@ -745,19 +745,13 @@ export default function BuildUnionMessages() {
         </div>
         
         <!-- META BAR -->
-        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 32px; border-bottom: 1px solid #e2e8f0;">
-          <div style="display: flex; justify-content: flex-start; align-items: center; gap: 16px; flex-wrap: wrap; padding-left: 96px;">
-            <div style="display: inline-flex; align-items: center; font-size: 13px; color: #64748b; padding: 8px 16px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; white-space: nowrap;">
-              ${torontoDate}
-            </div>
-            <span style="color: #cbd5e1; font-size: 14px;">•</span>
-            <span style="display: inline-block; background: transparent; color: #f59e0b; padding: 8px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-              OFFICIAL MESSAGE
-            </span>
-            <span style="color: #cbd5e1; font-size: 14px;">•</span>
-            <div style="display: inline-flex; align-items: center; font-size: 13px; color: #64748b; padding: 8px 16px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; white-space: nowrap;">
-              ${torontoTime} (Toronto)
-            </div>
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 16px 32px; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; justify-content: flex-start; align-items: center; gap: 12px; padding-left: 96px;">
+            <span style="font-size: 13px; color: #64748b;">${torontoDate}</span>
+            <span style="color: #cbd5e1;">•</span>
+            <span style="font-size: 12px; font-weight: 600; color: #1e293b; text-transform: uppercase; letter-spacing: 1px;">OFFICIAL MESSAGE</span>
+            <span style="color: #cbd5e1;">•</span>
+            <span style="font-size: 13px; color: #64748b;">${torontoTime} (Toronto)</span>
           </div>
         </div>
 
