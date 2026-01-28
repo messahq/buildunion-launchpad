@@ -9,12 +9,38 @@ const corsHeaders = {
 interface ProjectBriefRequest {
   projectId: string;
   includeWeather?: boolean;
+  tier?: "free" | "pro" | "premium" | "enterprise";
 }
 
 interface WeatherAlert {
   type: string;
   severity: "warning" | "danger" | "info";
   message: string;
+}
+
+// Tiered Model Selection for Cost Optimization
+const AI_MODELS = {
+  FREE: "google/gemini-2.5-flash-lite",      // Cheapest - basic reports
+  PRO: "google/gemini-2.5-flash",            // Balanced - good quality
+  PREMIUM: "google/gemini-3-flash-preview",  // Best - full features
+} as const;
+
+const TOKEN_LIMITS = {
+  FREE: 1200,     // Limited tokens for free tier
+  PRO: 2000,      // Standard tokens
+  PREMIUM: 2500,  // Full tokens
+} as const;
+
+function selectModelForTier(tier: string): { model: string; maxTokens: number } {
+  switch (tier) {
+    case "premium":
+    case "enterprise":
+      return { model: AI_MODELS.PREMIUM, maxTokens: TOKEN_LIMITS.PREMIUM };
+    case "pro":
+      return { model: AI_MODELS.PRO, maxTokens: TOKEN_LIMITS.PRO };
+    default:
+      return { model: AI_MODELS.FREE, maxTokens: TOKEN_LIMITS.FREE };
+  }
 }
 
 interface WeatherData {
@@ -62,7 +88,11 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { projectId, includeWeather = true } = await req.json() as ProjectBriefRequest;
+    const { projectId, includeWeather = true, tier = "free" } = await req.json() as ProjectBriefRequest;
+    
+    // Select model based on subscription tier
+    const { model: selectedModel, maxTokens } = selectModelForTier(tier);
+    console.log(`[Tiered AI] Using ${selectedModel} with ${maxTokens} tokens for tier: ${tier}`);
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "projectId is required" }), {
@@ -328,12 +358,12 @@ Keep the tone professional but accessible. Use Canadian English and CAD currency
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: selectedModel,
         messages: [
           { role: "system", content: "You are a professional construction project analyst. Generate clear, actionable project briefs." },
           { role: "user", content: aiPrompt },
         ],
-        max_tokens: 2500,
+        max_tokens: maxTokens,
       }),
     });
 
@@ -376,6 +406,9 @@ Keep the tone professional but accessible. Use Canadian English and CAD currency
         teamSize: members.length + 1,
         hasWeatherData: !!weatherData,
         weatherAlerts: weatherData?.alerts?.length || 0,
+        tier,
+        modelUsed: selectedModel,
+        tokensUsed: maxTokens,
       },
     };
 
