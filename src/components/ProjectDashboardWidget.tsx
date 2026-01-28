@@ -366,7 +366,7 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
         {/* Progress Ring - Collapsible */}
         <Collapsible defaultOpen={true}>
           <div className="bg-slate-50 dark:bg-muted/50 rounded-xl border border-slate-100 dark:border-border overflow-hidden">
-            <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-slate-100/50 dark:hover:bg-muted transition-colors">
+            <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-gradient-to-r hover:from-cyan-50/60 hover:via-sky-50/40 hover:to-blue-50/30 dark:hover:from-cyan-950/20 dark:hover:via-sky-950/15 dark:hover:to-blue-950/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="relative w-10 h-10">
                   <svg className="w-full h-full transform -rotate-90">
@@ -479,13 +479,14 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
                       navigate(`/buildunion/project/${task.project_id}`);
                     }
                   }}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                  className={cn(
+                    "p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md",
                     isOverdue(task.due_date) 
                       ? 'bg-red-50 border-red-200 hover:border-red-300' 
                       : isDueSoon(task.due_date)
                         ? 'bg-amber-50 border-amber-200 hover:border-amber-300'
-                        : 'bg-white border-slate-200 hover:border-slate-300'
-                  }`}
+                        : 'bg-white dark:bg-card border-slate-200 dark:border-border hover:bg-gradient-to-r hover:from-cyan-50/60 hover:via-sky-50/40 hover:to-blue-50/30 dark:hover:from-cyan-950/20 dark:hover:via-sky-950/15 dark:hover:to-blue-950/10 hover:border-cyan-200 dark:hover:border-cyan-800/30'
+                  )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">

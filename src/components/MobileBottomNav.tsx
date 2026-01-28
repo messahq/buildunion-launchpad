@@ -53,8 +53,8 @@ const MobileBottomNav = () => {
             className={cn(
               "flex flex-col items-center justify-center gap-1 flex-1 h-full px-2 transition-colors relative",
               item.isActive
-                ? "text-amber-600"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-cyan-600"
+                : "text-muted-foreground hover:text-foreground hover:bg-gradient-to-t hover:from-cyan-50/60 hover:to-transparent dark:hover:from-cyan-950/20"
             )}
           >
             <div className="relative">
@@ -78,7 +78,7 @@ const MobileBottomNav = () => {
               {item.label}
             </span>
             {item.isActive && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-amber-500 rounded-full" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-cyan-500 rounded-full" />
             )}
           </button>
         ))}
