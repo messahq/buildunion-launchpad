@@ -1024,7 +1024,7 @@ export const ProjectCommandCenter = ({
     // Map data source IDs to navigation actions or dialogs
     const navigationMap: Record<string, () => void> = {
       tasks: () => onNavigateToTab?.("team"),
-      documents: () => onNavigateToTab?.("documents"),
+      documents: () => onNavigateToTab?.("contracts"),
       contracts: () => onNavigateToTab?.("contracts"),
       team: () => onNavigateToTab?.("team"),
       sitemap: () => onNavigateToTab?.("map"),
