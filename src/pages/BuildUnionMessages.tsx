@@ -790,7 +790,7 @@ export default function BuildUnionMessages() {
           
           <div style="height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 24px 0;"></div>
           
-          <div style="margin: 20px 0;">
+          <div style="margin: 20px 0; padding-left: 45px;">
             <span style="display: inline-block; margin: 6px 16px; font-size: 13px; color: #64748b;">
               🌐 <a href="https://buildunion.ca" style="color: #374151; text-decoration: none;">buildunion.ca</a>
             </span>
