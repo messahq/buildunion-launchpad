@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RegionProvider } from "@/hooks/useRegionSettings";
 import { ThemeProvider } from "@/hooks/useTheme";
-import DevTierPanel from "@/components/DevTierPanel";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import Index from "./pages/Index";
@@ -76,7 +75,6 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <MobileBottomNav />
-                <DevTierPanel />
               </BrowserRouter>
             </TooltipProvider>
           </RegionProvider>
