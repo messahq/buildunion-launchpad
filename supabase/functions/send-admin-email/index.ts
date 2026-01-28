@@ -134,7 +134,7 @@ serve(async (req) => {
       hour12: true 
     });
 
-    const logoUrl = "https://buildunionca.lovable.app/images/buildunion-logo-email.png";
+    const logoUrl = "https://buildunionca.lovable.app/images/buildunion-logo-lightmode.png";
 
     // Build elegant light-themed HTML email with logo
     const htmlContent = `
@@ -160,7 +160,7 @@ serve(async (req) => {
       font-weight: 300;
       letter-spacing: 1px;
     }
-    .brand-build { color: #ffffff; }
+    .brand-build { color: #475569; }
     .brand-union { color: #f59e0b; }
     .wrapper {
       padding: 40px 20px;
@@ -175,13 +175,13 @@ serve(async (req) => {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     }
     .header { 
-      background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
       padding: 32px;
       text-align: center;
       border-bottom: 4px solid #f59e0b;
     }
     .logo-img {
-      max-width: 60px;
+      max-width: 100px;
       height: auto;
       margin-bottom: 12px;
     }
@@ -191,7 +191,7 @@ serve(async (req) => {
     .company-name {
       font-size: 12px;
       font-weight: 500;
-      color: #94a3b8;
+      color: #64748b;
       text-transform: uppercase;
       letter-spacing: 2px;
       margin-bottom: 8px;
@@ -201,14 +201,14 @@ serve(async (req) => {
       width: 100%;
       margin-top: 20px;
       padding-top: 20px;
-      border-top: 1px solid #475569;
+      border-top: 1px solid #e2e8f0;
     }
     .header-info-item {
       display: inline-block;
       padding: 0 16px;
-      border-right: 1px solid #475569;
+      border-right: 1px solid #e2e8f0;
       font-size: 12px;
-      color: #94a3b8;
+      color: #64748b;
     }
     .header-info-item:last-child {
       border-right: none;
@@ -318,9 +318,10 @@ serve(async (req) => {
     .info-label { color: #64748b; }
     .info-value { color: #1e293b; font-weight: 500; }
     .footer { 
-      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       padding: 40px 32px; 
       text-align: center;
+      border-top: 1px solid #e2e8f0;
     }
     .footer-logo-section {
       margin-bottom: 24px;
@@ -328,7 +329,6 @@ serve(async (req) => {
     .footer-logo-img {
       max-width: 80px;
       height: auto;
-      opacity: 0.9;
     }
     .footer-company-name {
       font-family: 'Montserrat', sans-serif;
@@ -337,16 +337,11 @@ serve(async (req) => {
       margin-top: 12px;
       letter-spacing: 1px;
     }
-    .footer-build { color: #ffffff; }
+    .footer-build { color: #475569; }
     .footer-union { color: #f59e0b; }
-    .footer-tagline {
-      color: #94a3b8;
-      font-size: 13px;
-      margin-top: 4px;
-    }
     .footer-divider {
       height: 1px;
-      background: linear-gradient(90deg, transparent, #475569, transparent);
+      background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
       margin: 24px 0;
     }
     .footer-contact {
@@ -356,14 +351,14 @@ serve(async (req) => {
       display: inline-block;
       margin: 6px 16px;
       font-size: 13px;
-      color: #94a3b8;
+      color: #64748b;
     }
     .footer-contact-row a {
       color: #f59e0b;
       text-decoration: none;
     }
     .footer-contact-row a:hover {
-      color: #fbbf24;
+      color: #d97706;
       text-decoration: underline;
     }
     .footer-links {
@@ -383,7 +378,7 @@ serve(async (req) => {
     .footer-legal {
       margin-top: 24px;
       padding-top: 24px;
-      border-top: 1px solid #334155;
+      border-top: 1px solid #e2e8f0;
     }
     .footer-legal p {
       margin: 4px 0;
@@ -392,22 +387,8 @@ serve(async (req) => {
     }
     .footer-copyright {
       font-size: 12px !important;
-      color: #94a3b8 !important;
+      color: #475569 !important;
       font-weight: 500;
-    }
-    .footer-badges {
-      margin-top: 16px;
-    }
-    .footer-badge {
-      display: inline-block;
-      background: #334155;
-      color: #94a3b8;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 10px;
-      margin: 2px 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
     @media (max-width: 600px) {
       .meta-row { flex-direction: column; text-align: center; }
@@ -505,7 +486,6 @@ serve(async (req) => {
           <div class="footer-company-name">
             <span class="footer-build">Build</span><span class="footer-union">Union</span>
           </div>
-          <div class="footer-tagline">Building Better, Together</div>
         </div>
 
         <div class="footer-divider"></div>
