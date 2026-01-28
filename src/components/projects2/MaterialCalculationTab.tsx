@@ -274,6 +274,18 @@ export function MaterialCalculationTab({
   const [otherUnit, setOtherUnit] = useState("pcs");
   const [otherUnitPrice, setOtherUnitPrice] = useState<number>(0);
   
+  // New material item form
+  const [newMaterialDescription, setNewMaterialDescription] = useState("");
+  const [newMaterialQuantity, setNewMaterialQuantity] = useState<number>(1);
+  const [newMaterialUnit, setNewMaterialUnit] = useState("sq ft");
+  const [newMaterialUnitPrice, setNewMaterialUnitPrice] = useState<number>(0);
+  
+  // New labor item form
+  const [newLaborDescription, setNewLaborDescription] = useState("");
+  const [newLaborQuantity, setNewLaborQuantity] = useState<number>(1);
+  const [newLaborUnit, setNewLaborUnit] = useState("hrs");
+  const [newLaborUnitPrice, setNewLaborUnitPrice] = useState<number>(0);
+  
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<CostItem>>({});
@@ -444,10 +456,57 @@ export function MaterialCalculationTab({
     };
     
     setOtherItems(prev => [...prev, newItem]);
+    setHasUnsavedChanges(true);
     setOtherDescription("");
     setOtherQuantity(1);
     setOtherUnit("pcs");
     setOtherUnitPrice(0);
+  };
+
+  const addMaterialItem = () => {
+    if (!newMaterialDescription.trim()) return;
+    
+    const isEssential = isEssentialMaterial(newMaterialDescription);
+    const baseQty = newMaterialQuantity;
+    const finalQty = isEssential ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE)) : baseQty;
+    
+    const newItem: CostItem = {
+      id: `material-${Date.now()}`,
+      item: newMaterialDescription,
+      baseQuantity: baseQty,
+      quantity: finalQty,
+      unit: newMaterialUnit,
+      unitPrice: newMaterialUnitPrice,
+      totalPrice: finalQty * newMaterialUnitPrice,
+      isEssential,
+    };
+    
+    setMaterialItems(prev => [...prev, newItem]);
+    setHasUnsavedChanges(true);
+    setNewMaterialDescription("");
+    setNewMaterialQuantity(1);
+    setNewMaterialUnit("sq ft");
+    setNewMaterialUnitPrice(0);
+  };
+
+  const addLaborItem = () => {
+    if (!newLaborDescription.trim()) return;
+    
+    const newItem: CostItem = {
+      id: `labor-${Date.now()}`,
+      item: newLaborDescription,
+      quantity: newLaborQuantity,
+      unit: newLaborUnit,
+      unitPrice: newLaborUnitPrice,
+      totalPrice: newLaborQuantity * newLaborUnitPrice,
+    };
+    
+    setLaborItems(prev => [...prev, newItem]);
+    setHasUnsavedChanges(true);
+    setNewLaborDescription("");
+    setNewLaborQuantity(1);
+    setNewLaborUnit("hrs");
+    setNewLaborUnitPrice(0);
   };
 
   const formatCurrency = (amount: number) => {
@@ -1190,12 +1249,74 @@ export function MaterialCalculationTab({
               {materialItems.map((item) => 
                 renderItemRow(item, setMaterialItems, editingId === item.id)
               )}
-              {materialItems.length === 0 && (
-                <div className="text-center py-6 text-muted-foreground">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">{t("materials.noMaterials", "No materials")}</p>
+              
+              {/* Add Material Form - always visible */}
+              <div className="border-t pt-4 mt-4">
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t("materials.addMaterialHint", "Add flooring, underlayment, trim, adhesive, etc.")}
+                </p>
+                <div className="grid grid-cols-12 gap-2 items-end">
+                  <div className="col-span-4">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.description", "Description")}
+                    </label>
+                    <Input
+                      value={newMaterialDescription}
+                      onChange={(e) => setNewMaterialDescription(e.target.value)}
+                      placeholder={t("materials.enterMaterialName", "Enter material name...")}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.quantity", "Quantity")}
+                    </label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      defaultValue={newMaterialQuantity || 1}
+                      onBlur={(e) => setNewMaterialQuantity(parseFloat(e.target.value.replace(',', '.')) || 1)}
+                      className="h-9 text-center"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.unit", "Unit")}
+                    </label>
+                    <Input
+                      value={newMaterialUnit}
+                      onChange={(e) => setNewMaterialUnit(e.target.value)}
+                      className="h-9 text-center"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.unitPrice", "Unit Price")}
+                    </label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      defaultValue={newMaterialUnitPrice || ''}
+                      onBlur={(e) => setNewMaterialUnitPrice(parseFloat(e.target.value.replace(',', '.')) || 0)}
+                      className="h-9 text-right"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="col-span-2 text-right text-sm font-medium py-2">
+                    {formatCurrency(newMaterialQuantity * newMaterialUnitPrice)}
+                  </div>
+                  <div className="col-span-1">
+                    <Button
+                      onClick={addMaterialItem}
+                      disabled={!newMaterialDescription.trim()}
+                      size="sm"
+                      className="w-full h-9"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
@@ -1233,12 +1354,74 @@ export function MaterialCalculationTab({
               {laborItems.map((item) => 
                 renderItemRow(item, setLaborItems, editingId === item.id)
               )}
-              {laborItems.length === 0 && (
-                <div className="text-center py-6 text-muted-foreground">
-                  <Hammer className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">{t("materials.noLabor", "No labor costs")}</p>
+              
+              {/* Add Labor Form - always visible */}
+              <div className="border-t pt-4 mt-4">
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t("materials.addLaborHint", "Add installation, removal, finishing work, etc.")}
+                </p>
+                <div className="grid grid-cols-12 gap-2 items-end">
+                  <div className="col-span-4">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.description", "Description")}
+                    </label>
+                    <Input
+                      value={newLaborDescription}
+                      onChange={(e) => setNewLaborDescription(e.target.value)}
+                      placeholder={t("materials.enterLaborType", "Enter labor type...")}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.quantity", "Quantity")}
+                    </label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      defaultValue={newLaborQuantity || 1}
+                      onBlur={(e) => setNewLaborQuantity(parseFloat(e.target.value.replace(',', '.')) || 1)}
+                      className="h-9 text-center"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.unit", "Unit")}
+                    </label>
+                    <Input
+                      value={newLaborUnit}
+                      onChange={(e) => setNewLaborUnit(e.target.value)}
+                      className="h-9 text-center"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      {t("materials.unitPrice", "Unit Price")}
+                    </label>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      defaultValue={newLaborUnitPrice || ''}
+                      onBlur={(e) => setNewLaborUnitPrice(parseFloat(e.target.value.replace(',', '.')) || 0)}
+                      className="h-9 text-right"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="col-span-2 text-right text-sm font-medium py-2">
+                    {formatCurrency(newLaborQuantity * newLaborUnitPrice)}
+                  </div>
+                  <div className="col-span-1">
+                    <Button
+                      onClick={addLaborItem}
+                      disabled={!newLaborDescription.trim()}
+                      size="sm"
+                      className="w-full h-9"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
