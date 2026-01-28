@@ -233,16 +233,30 @@ export default function WorkflowSelector({
         />
       )}
 
-      {/* AI Analysis with Citation System - Replaces ProjectSynthesis */}
+      {/* AI Analysis with Citation System - UNIFIED PANEL */}
       {filterAnswers && aiTriggers && (
         <AIAnalysisCitation
           filterAnswers={filterAnswers}
           aiTriggers={aiTriggers}
           dualEngineOutput={analysisResult.dualEngineOutput}
           synthesisResult={analysisResult.synthesisResult}
-          detectedArea={analysisResult.area}
+          detectedArea={editableArea}
           areaUnit={analysisResult.areaUnit}
-          materials={analysisResult.materials}
+          materials={editableMaterials}
+          projectSize={analysisResult.projectSize}
+          projectSizeReason={analysisResult.projectSizeReason}
+          confidence={analysisResult.confidence}
+          surfaceType={analysisResult.surfaceType}
+          roomType={analysisResult.roomType}
+          hasBlueprint={analysisResult.hasBlueprint}
+          onAreaChange={(newArea) => {
+            setEditableArea(newArea);
+            setHasUserEdits(true);
+          }}
+          onMaterialsChange={(newMaterials) => {
+            setEditableMaterials(newMaterials);
+            setHasUserEdits(true);
+          }}
         />
       )}
 
@@ -254,17 +268,9 @@ export default function WorkflowSelector({
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-foreground">AI Analysis Complete</h3>
-              <Badge className={cn("text-[10px]", SIZE_COLORS[analysisResult.projectSize])}>
-                {analysisResult.projectSize.toUpperCase()} PROJECT
-              </Badge>
-              {analysisResult.confidence !== "high" && (
-                <Badge variant="outline" className="text-[10px]">
-                  {analysisResult.confidence} confidence
-                </Badge>
-              )}
+              <h3 className="font-semibold text-foreground">Choose Your Workflow</h3>
             </div>
-            <p className="text-sm text-muted-foreground">{analysisResult.projectSizeReason}</p>
+            <p className="text-sm text-muted-foreground">Select Solo or Team Mode based on your project needs</p>
           </div>
         </div>
 

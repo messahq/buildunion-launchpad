@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Sparkles, 
@@ -15,7 +17,13 @@ import {
   Brain,
   MapPin,
   Package,
-  Ruler
+  Ruler,
+  Pencil,
+  Check,
+  X,
+  Plus,
+  Trash2,
+  Crown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
@@ -80,6 +88,15 @@ export interface AIAnalysisCitationProps {
   areaUnit?: string;
   materials?: Array<{ item: string; quantity: number; unit: string }>;
   isLoading?: boolean;
+  projectSize?: "small" | "medium" | "large";
+  projectSizeReason?: string;
+  confidence?: "low" | "medium" | "high";
+  surfaceType?: string;
+  roomType?: string;
+  hasBlueprint?: boolean;
+  // Editable callbacks
+  onAreaChange?: (newArea: number | null) => void;
+  onMaterialsChange?: (materials: Array<{ item: string; quantity: number; unit: string }>) => void;
 }
 
 // ============================================
@@ -201,6 +218,13 @@ function useTypewriter(messages: string[], speed: number = 25) {
   return { displayedText, isComplete, skipToEnd };
 }
 
+// Project size color mapping
+const SIZE_COLORS = {
+  small: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
+  medium: "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400",
+  large: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+};
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -214,11 +238,74 @@ export default function AIAnalysisCitation({
   areaUnit = "sq ft",
   materials = [],
   isLoading = false,
+  projectSize = "medium",
+  projectSizeReason = "",
+  confidence = "medium",
+  surfaceType = "unknown",
+  roomType = "unknown",
+  hasBlueprint = false,
+  onAreaChange,
+  onMaterialsChange,
 }: AIAnalysisCitationProps) {
   const [showDecisionLog, setShowDecisionLog] = useState(false);
   
+  // Editable state
+  const [editableArea, setEditableArea] = useState<number | null>(detectedArea ?? null);
+  const [editableMaterials, setEditableMaterials] = useState([...materials]);
+  const [isEditingArea, setIsEditingArea] = useState(false);
+  const [editingMaterialIndex, setEditingMaterialIndex] = useState<number | null>(null);
+  const [newMaterialName, setNewMaterialName] = useState("");
+  const [showAddMaterial, setShowAddMaterial] = useState(false);
+  
+  // Sync with props
+  useEffect(() => {
+    setEditableArea(detectedArea ?? null);
+  }, [detectedArea]);
+  
+  useEffect(() => {
+    setEditableMaterials([...materials]);
+  }, [materials]);
+  
+  // Calculate waste buffer (10%)
+  const wasteBuffer = editableArea ? Math.round(editableArea * 0.1) : 0;
+  const totalWithWaste = editableArea ? editableArea + wasteBuffer : null;
+  
+  // Handlers
+  const handleAreaChange = (newArea: number) => {
+    setEditableArea(newArea);
+    setIsEditingArea(false);
+    onAreaChange?.(newArea);
+  };
+
+  const handleMaterialQuantityChange = (index: number, newQuantity: number) => {
+    const updated = [...editableMaterials];
+    updated[index].quantity = newQuantity;
+    setEditableMaterials(updated);
+    setEditingMaterialIndex(null);
+    onMaterialsChange?.(updated);
+  };
+
+  const handleAddMaterial = () => {
+    if (!newMaterialName.trim()) return;
+    
+    const updated = [
+      ...editableMaterials,
+      { item: newMaterialName.trim(), quantity: 1, unit: "units" }
+    ];
+    setEditableMaterials(updated);
+    setNewMaterialName("");
+    setShowAddMaterial(false);
+    onMaterialsChange?.(updated);
+  };
+
+  const handleRemoveMaterial = (index: number) => {
+    const updated = editableMaterials.filter((_, i) => i !== index);
+    setEditableMaterials(updated);
+    onMaterialsChange?.(updated);
+  };
+  
   // Generate citation sources from analysis data
-  const citationSources = generateCitationSources(dualEngineOutput, detectedArea, materials);
+  const citationSources = generateCitationSources(dualEngineOutput, editableArea, editableMaterials);
   
   // Find specific sources for inline citations
   const areaSource = citationSources.find(s => s.sourceId === "PHOTO-AI");
@@ -256,27 +343,25 @@ export default function AIAnalysisCitation({
               <Brain className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                AI Analysis
+              <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
+                AI Analysis Complete
+                <Badge className={cn("text-[10px]", SIZE_COLORS[projectSize])}>
+                  {projectSize.toUpperCase()} PROJECT
+                </Badge>
                 {hasConflicts ? (
                   <Badge variant="destructive" className="text-[10px]">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    CONFLICT DETECTED
+                    CONFLICT
                   </Badge>
                 ) : verificationStatus === "verified" ? (
                   <Badge className="text-[10px] bg-green-500/20 text-green-600 dark:text-green-400">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     VERIFIED
                   </Badge>
-                ) : (
-                  <Badge className="text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                    <Zap className="h-3 w-3 mr-1" />
-                    ANALYZING
-                  </Badge>
-                )}
+                ) : null}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Dual-Engine: Gemini (Visual) + OpenAI (Regulatory) — Every fact is cited
+                {projectSizeReason || "AI determined project scope: " + editableMaterials.length + " materials"}
               </p>
             </div>
           </div>
@@ -290,79 +375,214 @@ export default function AIAnalysisCitation({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* AI Explanation with Typewriter */}
-        <div className="p-4 rounded-lg bg-white/50 dark:bg-black/20 border border-amber-200 dark:border-amber-800">
-          <div className="text-sm text-foreground whitespace-pre-wrap min-h-[60px]">
-            {displayedText}
-            {!isComplete && <span className="animate-pulse text-amber-500">▊</span>}
-          </div>
-        </div>
-
-        {/* Cited Analysis Results */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Detected Area with Citation */}
-          <div className="p-4 rounded-lg bg-white/80 dark:bg-black/30 border border-amber-200/50 dark:border-amber-700/30">
-            <div className="flex items-center gap-2 mb-2">
-              <Ruler className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Detected Area
-              </span>
-              {areaSource && <SourceTag source={areaSource} />}
-            </div>
-            <div className="text-2xl font-bold text-foreground">
-              {detectedArea ? (
-                <>
-                  {detectedArea.toLocaleString()} <span className="text-base font-normal text-muted-foreground">{areaUnit}</span>
-                </>
-              ) : (
-                <span className="text-muted-foreground text-lg">Pending...</span>
+        {/* Cited Analysis Results - Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/30">
+          {/* Detected Area with Citation - EDITABLE */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Ruler className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Detected Area
+                </span>
+                {areaSource && <SourceTag source={areaSource} />}
+              </div>
+              {!isEditingArea && editableArea && (
+                <button 
+                  onClick={() => setIsEditingArea(true)}
+                  className="p-1 hover:bg-muted rounded transition-colors"
+                  title="Edit area"
+                >
+                  <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                </button>
               )}
             </div>
-            {dualEngineOutput?.gemini && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Surface: {dualEngineOutput.gemini.surfaceType} • 
-                Room: {dualEngineOutput.gemini.roomType} •
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "ml-1 text-[10px]",
-                    dualEngineOutput.gemini.confidence === "high" && "border-green-500 text-green-600",
-                    dualEngineOutput.gemini.confidence === "medium" && "border-amber-500 text-amber-600",
-                    dualEngineOutput.gemini.confidence === "low" && "border-red-500 text-red-600"
-                  )}
+            
+            {isEditingArea ? (
+              <div className="flex items-center gap-2">
+                <NumericInput
+                  value={editableArea}
+                  onChange={(val) => setEditableArea(val)}
+                  className="h-8 w-24 text-sm"
+                  autoFocus
+                />
+                <span className="text-sm text-muted-foreground">{areaUnit}</span>
+                <button 
+                  onClick={() => handleAreaChange(editableArea || 0)}
+                  className="p-1 hover:bg-green-500/20 rounded text-green-600"
                 >
-                  {dualEngineOutput.gemini.confidence} confidence
-                </Badge>
+                  <Check className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={() => {
+                    setEditableArea(detectedArea ?? null);
+                    setIsEditingArea(false);
+                  }}
+                  className="p-1 hover:bg-red-500/20 rounded text-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
+            ) : (
+              <>
+                {editableArea ? (
+                  <div className="space-y-1">
+                    {/* Base Area */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-foreground">
+                        {editableArea.toLocaleString()}
+                      </span>
+                      <span className="text-base text-muted-foreground">{areaUnit}</span>
+                      <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-600">
+                        base
+                      </Badge>
+                    </div>
+                    {/* Waste Buffer Display */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">+{wasteBuffer.toLocaleString()} {areaUnit}</span>
+                      <Badge className="text-[10px] bg-amber-500/20 text-amber-600 border-amber-500/50">
+                        +10% waste
+                      </Badge>
+                      <span className="text-foreground font-semibold">= {totalWithWaste?.toLocaleString()} {areaUnit}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditingArea(true)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    + Add area manually
+                  </button>
+                )}
+              </>
+            )}
+            
+            {/* Surface/Room info */}
+            <div className="text-xs text-muted-foreground mt-2 space-x-2">
+              {surfaceType !== "unknown" && (
+                <span>Surface: {surfaceType}</span>
+              )}
+              {roomType !== "unknown" && (
+                <span>• {roomType}</span>
+              )}
+              {confidence !== "high" && (
+                <Badge variant="outline" className="text-[10px] ml-1">
+                  {confidence} confidence
+                </Badge>
+              )}
+            </div>
+            {hasBlueprint && (
+              <div className="text-xs text-primary mt-1">📄 Blueprint data included</div>
             )}
           </div>
 
-          {/* Materials with Citation */}
-          <div className="p-4 rounded-lg bg-white/80 dark:bg-black/30 border border-amber-200/50 dark:border-amber-700/30">
-            <div className="flex items-center gap-2 mb-2">
-              <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Materials Detected
-              </span>
-              {materialsSource && <SourceTag source={materialsSource} />}
+          {/* Materials with Citation - EDITABLE */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Materials ({editableMaterials.length})
+                </span>
+                {materialsSource && <SourceTag source={materialsSource} />}
+              </div>
+              <button 
+                onClick={() => setShowAddMaterial(true)}
+                className="p-1 hover:bg-muted rounded transition-colors"
+                title="Add material"
+              >
+                <Plus className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
             </div>
-            <div className="text-2xl font-bold text-foreground">
-              {materials.length} <span className="text-base font-normal text-muted-foreground">items</span>
-            </div>
-            {materials.length > 0 && (
-              <div className="mt-2 space-y-1 max-h-[100px] overflow-y-auto">
-                {materials.slice(0, 5).map((m, i) => (
-                  <div key={i} className="flex justify-between text-xs text-muted-foreground">
-                    <span className="truncate max-w-[150px]">{m.item}</span>
-                    <span className="font-medium text-foreground">{m.quantity} {m.unit}</span>
+            
+            {/* Add material input */}
+            {showAddMaterial && (
+              <div className="flex items-center gap-2 mb-2">
+                <Input
+                  value={newMaterialName}
+                  onChange={(e) => setNewMaterialName(e.target.value)}
+                  placeholder="Material name..."
+                  className="h-7 text-xs flex-1"
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleAddMaterial()}
+                />
+                <button 
+                  onClick={handleAddMaterial}
+                  className="p-1 hover:bg-green-500/20 rounded text-green-600"
+                >
+                  <Check className="h-3 w-3" />
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowAddMaterial(false);
+                    setNewMaterialName("");
+                  }}
+                  className="p-1 hover:bg-red-500/20 rounded text-red-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            
+            {editableMaterials.length > 0 ? (
+              <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+                {editableMaterials.map((m, i) => (
+                  <div key={i} className="text-xs flex items-center justify-between group">
+                    <span className="text-foreground truncate max-w-[120px]">{m.item}</span>
+                    
+                    {editingMaterialIndex === i ? (
+                      <div className="flex items-center gap-1">
+                        <NumericInput
+                          value={editableMaterials[i].quantity}
+                          onChange={(val) => {
+                            const updated = [...editableMaterials];
+                            updated[i].quantity = val;
+                            setEditableMaterials(updated);
+                          }}
+                          className="h-6 w-16 text-xs"
+                          autoFocus
+                        />
+                        <span className="text-muted-foreground">{m.unit}</span>
+                        <button 
+                          onClick={() => handleMaterialQuantityChange(i, editableMaterials[i].quantity)}
+                          className="p-0.5 hover:bg-green-500/20 rounded text-green-600"
+                        >
+                          <Check className="h-3 w-3" />
+                        </button>
+                        <button 
+                          onClick={() => setEditingMaterialIndex(null)}
+                          className="p-0.5 hover:bg-red-500/20 rounded text-red-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">{m.quantity} {m.unit}</span>
+                        <button 
+                          onClick={() => setEditingMaterialIndex(i)}
+                          className="p-0.5 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveMaterial(i)}
+                          className="p-0.5 hover:bg-red-500/20 rounded opacity-0 group-hover:opacity-100 transition-opacity text-red-500"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
-                {materials.length > 5 && (
-                  <div className="text-xs text-amber-600 dark:text-amber-400">
-                    +{materials.length - 5} more items
-                  </div>
-                )}
               </div>
+            ) : (
+              <button 
+                onClick={() => setShowAddMaterial(true)}
+                className="text-sm text-primary hover:underline"
+              >
+                + Add materials
+              </button>
             )}
           </div>
         </div>
