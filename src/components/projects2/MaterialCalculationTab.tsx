@@ -20,8 +20,7 @@ import {
   Loader2,
   MapPin,
   PenLine,
-  RotateCcw,
-  Save
+  RotateCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -164,7 +163,6 @@ export function MaterialCalculationTab({
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   
   // Helper to create initial material items
   // IMPORTANT: All incoming data (AI, saved, tasks) arrives as FINAL quantities (with waste already applied)
@@ -425,29 +423,6 @@ export function MaterialCalculationTab({
     setOtherItems([]);
     setHasUnsavedChanges(false);
     toast.info(t("materials.reset", "Changes reset to original values"));
-  };
-
-  // Save changes to database
-  const handleSave = async () => {
-    if (!onSave) return;
-    
-    setIsSaving(true);
-    try {
-      await onSave({
-        materials: materialItems,
-        labor: laborItems,
-        other: otherItems,
-        grandTotal,
-      });
-      setHasUnsavedChanges(false);
-      setCurrentDataSource('saved');
-      toast.success(t("materials.saved", "Cost breakdown saved successfully"));
-    } catch (error) {
-      console.error("Save error:", error);
-      toast.error(t("materials.saveError", "Failed to save cost breakdown"));
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const addOtherItem = () => {
@@ -1063,23 +1038,6 @@ export function MaterialCalculationTab({
             <RotateCcw className="h-4 w-4" />
             <span className="hidden sm:inline">{t("materials.reset", "Reset")}</span>
           </Button>
-          {/* Save Button */}
-          {onSave && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleSave}
-              disabled={!hasUnsavedChanges || isSaving}
-              className="gap-2"
-            >
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">{t("materials.save", "Save")}</span>
-            </Button>
-          )}
           {/* Export PDF Button */}
           <Button
             variant="outline"
