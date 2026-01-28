@@ -728,6 +728,28 @@ const BuildUnionProjects2 = () => {
               {/* AI Workflow Selector (after analysis) */}
               {aiAnalysisForSelector && !analyzing && createdProjectId && (
                 <div className="mb-6">
+                  {/* Back Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // Reset all analysis state and go back to projects list
+                      setAiAnalysisForSelector(null);
+                      setCreatedProjectId(null);
+                      setPendingImages([]);
+                      setPendingDocuments([]);
+                      setPendingDescription("");
+                      setPendingWorkType(null);
+                      setFilterAnswers(null);
+                      setAiTriggers(null);
+                      resetAnalysis(); // Reset the AI analysis hook
+                    }}
+                    className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to My Projects
+                  </Button>
+                  
                   <WorkflowSelector
                     projectId={createdProjectId}
                     analysisResult={aiAnalysisForSelector}
