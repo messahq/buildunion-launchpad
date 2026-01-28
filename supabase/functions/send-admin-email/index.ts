@@ -228,51 +228,35 @@ serve(async (req) => {
     }
     .meta-row {
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 12px;
-    }
-    .meta-info-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      gap: 16px;
       flex-wrap: wrap;
-      gap: 8px;
     }
     .meta-item {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
       font-size: 13px;
       color: #64748b;
-      padding: 6px 14px;
+      padding: 8px 16px;
       background: #ffffff;
       border-radius: 8px;
       border: 1px solid #e2e8f0;
+      white-space: nowrap;
     }
     .meta-separator {
       color: #cbd5e1;
       font-size: 14px;
-      padding: 0 2px;
-    }
-    .meta-timezone {
-      font-size: 11px;
-      color: #64748b;
-      font-weight: 500;
-      letter-spacing: 0.5px;
     }
     .badge {
       display: inline-block;
-      background: #ffffff;
+      background: transparent;
       color: #f59e0b;
-      padding: 10px 24px;
-      border-radius: 20px;
+      padding: 8px 16px;
       font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
-      border: 2px solid #f59e0b;
     }
     .content { 
       padding: 40px 32px; 
@@ -453,16 +437,11 @@ serve(async (req) => {
       <!-- META BAR -->
       <div class="meta-bar">
         <div class="meta-row">
-          <span class="badge">✉️ Official Message</span>
-          <div class="meta-info-row">
-            <div class="meta-item">
-              📅 ${torontoDate}
-            </div>
-            <span class="meta-separator">•</span>
-            <div class="meta-item">
-              🕐 ${torontoTime} <span class="meta-timezone">(Toronto)</span>
-            </div>
-          </div>
+          <div class="meta-item">${torontoDate}</div>
+          <span class="meta-separator">•</span>
+          <span class="badge">OFFICIAL MESSAGE</span>
+          <span class="meta-separator">•</span>
+          <div class="meta-item">${torontoTime} (Toronto)</div>
         </div>
       </div>
 
