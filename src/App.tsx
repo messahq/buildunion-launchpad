@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { RegionProvider } from "@/hooks/useRegionSettings";
 import { ThemeProvider } from "@/hooks/useTheme";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { CitationProvider } from "@/components/citations";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
@@ -43,41 +44,43 @@ const App = () => (
         <AuthProvider>
           <RegionProvider>
             <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<BuildUnion />} />
-                  <Route path="/buildunion" element={<BuildUnion />} />
-                  <Route path="/dock" element={<Index />} />
-                  <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
-                  <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
-                  {/* Project details route removed - using Projects2 workflow */}
-                  <Route path="/buildunion/facts" element={<BuildUnionProjectFacts />} />
-                  <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
-                  <Route path="/buildunion/profile" element={<BuildUnionProfile />} />
-                  <Route path="/buildunion/profile/view" element={<BuildUnionProfileView />} />
-                  <Route path="/buildunion/quick" element={<BuildUnionQuickMode />} />
-                  <Route path="/buildunion/summary" element={<BuildUnionProjectSummary />} />
-                  <Route path="/buildunion/summary/:summaryId" element={<BuildUnionProjectSummary />} />
-                  <Route path="/buildunion/community" element={<BuildUnionCommunity />} />
-                  <Route path="/buildunion/forum" element={<BuildUnionForum />} />
-                  <Route path="/buildunion/members" element={<BuildUnionMembers />} />
-                  <Route path="/buildunion/messages" element={<BuildUnionMessages />} />
-                  <Route path="/buildunion/login" element={<Login />} />
-                  <Route path="/buildunion/register" element={<Register />} />
-                  <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />
-                  <Route path="/dock/login" element={<DockLogin />} />
-                  <Route path="/dock/register" element={<DockRegister />} />
-                  <Route path="/orb" element={<OrbPage />} />
-                  <Route path="/contract/view/:token" element={<ContractView />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/buildunion/about" element={<BuildUnionAbout />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <MobileBottomNav />
-              </BrowserRouter>
+              <CitationProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<BuildUnion />} />
+                    <Route path="/buildunion" element={<BuildUnion />} />
+                    <Route path="/dock" element={<Index />} />
+                    <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
+                    <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
+                    {/* Project details route removed - using Projects2 workflow */}
+                    <Route path="/buildunion/facts" element={<BuildUnionProjectFacts />} />
+                    <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
+                    <Route path="/buildunion/profile" element={<BuildUnionProfile />} />
+                    <Route path="/buildunion/profile/view" element={<BuildUnionProfileView />} />
+                    <Route path="/buildunion/quick" element={<BuildUnionQuickMode />} />
+                    <Route path="/buildunion/summary" element={<BuildUnionProjectSummary />} />
+                    <Route path="/buildunion/summary/:summaryId" element={<BuildUnionProjectSummary />} />
+                    <Route path="/buildunion/community" element={<BuildUnionCommunity />} />
+                    <Route path="/buildunion/forum" element={<BuildUnionForum />} />
+                    <Route path="/buildunion/members" element={<BuildUnionMembers />} />
+                    <Route path="/buildunion/messages" element={<BuildUnionMessages />} />
+                    <Route path="/buildunion/login" element={<Login />} />
+                    <Route path="/buildunion/register" element={<Register />} />
+                    <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />
+                    <Route path="/dock/login" element={<DockLogin />} />
+                    <Route path="/dock/register" element={<DockRegister />} />
+                    <Route path="/orb" element={<OrbPage />} />
+                    <Route path="/contract/view/:token" element={<ContractView />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/buildunion/about" element={<BuildUnionAbout />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <MobileBottomNav />
+                </BrowserRouter>
+              </CitationProvider>
             </TooltipProvider>
           </RegionProvider>
         </AuthProvider>
