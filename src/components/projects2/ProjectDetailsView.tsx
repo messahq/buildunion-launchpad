@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { WeatherWidget } from "@/components/WeatherWidget";
 
-import ProjectSynthesis, { DualEngineOutput, SynthesisResult } from "./ProjectSynthesis";
+import { DualEngineOutput, SynthesisResult } from "./AIAnalysisCitation";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
 import ConflictStatusIndicator from "./ConflictStatusIndicator";
 import TeamMapWidget from "./TeamMapWidget";
@@ -36,7 +36,6 @@ import ContractsTab from "./ContractsTab";
 import EditableAIAnalysisSummary from "./EditableAIAnalysisSummary";
 import { MaterialCalculationTab } from "./MaterialCalculationTab";
 import { ProjectCommandCenter } from "./ProjectCommandCenter";
-import { CitationDemo } from "@/components/citations/CitationDemo";
 
 import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
@@ -1768,11 +1767,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             }}
           />
 
-
-          {/* AI Citation Demo - Verified Source System */}
-          <div className="my-6">
-            <CitationDemo />
-          </div>
 
           {/* Project Command Center - AI Brief & Document Hub */}
           <ProjectCommandCenter

@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, SubscriptionTier } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
-import { DualEngineOutput, SynthesisResult } from "@/components/projects2/ProjectSynthesis";
+import { DualEngineOutput, SynthesisResult } from "@/components/projects2/AIAnalysisCitation";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
 import { 
   generateCacheHash, 

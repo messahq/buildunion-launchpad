@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SubscriptionTier, TEAM_LIMITS } from "@/hooks/useSubscription";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
-import ProjectSynthesis, { DualEngineOutput, SynthesisResult } from "./ProjectSynthesis";
+import AIAnalysisCitation, { DualEngineOutput, SynthesisResult } from "./AIAnalysisCitation";
 import ProjectTimelineBar from "./ProjectTimelineBar";
 
 // ============================================
@@ -233,13 +233,16 @@ export default function WorkflowSelector({
         />
       )}
 
-      {/* Project Synthesis Bridge - Only show if we have filter data */}
+      {/* AI Analysis with Citation System - Replaces ProjectSynthesis */}
       {filterAnswers && aiTriggers && (
-        <ProjectSynthesis
+        <AIAnalysisCitation
           filterAnswers={filterAnswers}
           aiTriggers={aiTriggers}
           dualEngineOutput={analysisResult.dualEngineOutput}
           synthesisResult={analysisResult.synthesisResult}
+          detectedArea={analysisResult.area}
+          areaUnit={analysisResult.areaUnit}
+          materials={analysisResult.materials}
         />
       )}
 
