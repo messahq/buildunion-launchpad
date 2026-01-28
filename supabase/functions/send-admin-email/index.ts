@@ -134,7 +134,9 @@ serve(async (req) => {
       hour12: true 
     });
 
-    // Build elegant light-themed HTML email
+    const logoUrl = "https://buildunionca.lovable.app/images/buildunion-logo-email.png";
+
+    // Build elegant light-themed HTML email with logo
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -163,47 +165,78 @@ serve(async (req) => {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     }
     .header { 
-      background: linear-gradient(135deg, #ffffff 0%, #fefce8 100%);
-      padding: 40px 32px;
+      background: linear-gradient(135deg, #ffffff 0%, #fffbeb 50%, #fef3c7 100%);
+      padding: 32px;
       text-align: center;
-      border-bottom: 3px solid #f59e0b;
+      border-bottom: 4px solid #f59e0b;
     }
-    .logo-container {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
+    .logo-img {
+      max-width: 120px;
+      height: auto;
+      margin-bottom: 16px;
+    }
+    .header-content {
+      margin-top: 16px;
+    }
+    .company-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       margin-bottom: 8px;
     }
-    .logo-icon {
-      font-size: 32px;
+    .header-info {
+      display: table;
+      width: 100%;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
     }
-    .logo-text {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-    .logo-build { color: #1e293b; }
-    .logo-union { color: #f59e0b; }
-    .tagline {
+    .header-info-item {
+      display: inline-block;
+      padding: 0 16px;
+      border-right: 1px solid #e2e8f0;
+      font-size: 12px;
       color: #64748b;
-      font-size: 14px;
-      margin-top: 8px;
+    }
+    .header-info-item:last-child {
+      border-right: none;
+    }
+    .header-info-item a {
+      color: #f59e0b;
+      text-decoration: none;
       font-weight: 500;
     }
     .meta-bar {
-      background: #f8fafc;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
       padding: 16px 32px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .meta-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: 13px;
       color: #64748b;
     }
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .content { 
       padding: 40px 32px; 
@@ -216,10 +249,10 @@ serve(async (req) => {
     }
     .message-box { 
       background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      border: 1px solid #fcd34d;
+      border-left: 4px solid #f59e0b;
       padding: 24px; 
       margin: 24px 0; 
-      border-radius: 12px;
+      border-radius: 0 12px 12px 0;
       font-size: 15px;
       line-height: 1.8;
     }
@@ -229,11 +262,26 @@ serve(async (req) => {
     .message-box p:last-child {
       margin-bottom: 0;
     }
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+      margin: 32px 0;
+    }
+    .signature {
+      color: #64748b;
+      font-size: 14px;
+      font-style: italic;
+    }
+    .signature strong {
+      color: #1e293b;
+      font-style: normal;
+    }
     .info-section {
       background: #f8fafc;
       border-radius: 12px;
       padding: 20px 24px;
       margin-top: 32px;
+      border: 1px solid #e2e8f0;
     }
     .info-title {
       font-size: 13px;
@@ -251,101 +299,150 @@ serve(async (req) => {
       display: flex;
       justify-content: space-between;
       font-size: 14px;
+      padding: 4px 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .info-row:last-child {
+      border-bottom: none;
     }
     .info-label { color: #64748b; }
     .info-value { color: #1e293b; font-weight: 500; }
-    .divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-      margin: 32px 0;
-    }
-    .signature {
-      color: #64748b;
-      font-size: 14px;
-      font-style: italic;
-    }
     .footer { 
-      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
-      padding: 32px; 
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      padding: 40px 32px; 
       text-align: center;
     }
-    .footer-logo {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 12px;
+    .footer-logo-section {
+      margin-bottom: 24px;
     }
-    .footer-links {
-      margin: 16px 0;
+    .footer-logo-img {
+      max-width: 80px;
+      height: auto;
+      opacity: 0.9;
     }
-    .footer-link {
+    .footer-company-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 12px;
+    }
+    .footer-build { color: #ffffff; }
+    .footer-union { color: #f59e0b; }
+    .footer-tagline {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .footer-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #475569, transparent);
+      margin: 24px 0;
+    }
+    .footer-contact {
+      margin: 20px 0;
+    }
+    .footer-contact-row {
+      display: inline-block;
+      margin: 6px 16px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .footer-contact-row a {
       color: #f59e0b;
       text-decoration: none;
-      font-weight: 500;
-      font-size: 14px;
     }
-    .footer-link:hover {
-      color: #d97706;
+    .footer-contact-row a:hover {
+      color: #fbbf24;
+      text-decoration: underline;
     }
-    .footer-info {
-      color: #94a3b8;
-      font-size: 12px;
-      line-height: 1.6;
+    .footer-links {
+      margin: 24px 0;
     }
-    .footer-info p {
-      margin: 4px 0;
-    }
-    .badge {
+    .footer-link-btn {
       display: inline-block;
-      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      color: #92400e;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
       font-weight: 600;
+      text-decoration: none;
+      margin: 4px;
+    }
+    .footer-legal {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #334155;
+    }
+    .footer-legal p {
+      margin: 4px 0;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .footer-copyright {
+      font-size: 12px !important;
+      color: #94a3b8 !important;
+      font-weight: 500;
+    }
+    .footer-badges {
+      margin-top: 16px;
+    }
+    .footer-badge {
+      display: inline-block;
+      background: #334155;
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      margin: 2px 4px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    .social-links {
-      margin-top: 16px;
-    }
-    .social-links a {
-      color: #64748b;
-      text-decoration: none;
-      margin: 0 8px;
-      font-size: 13px;
-    }
     @media (max-width: 600px) {
-      .meta-bar { flex-direction: column; gap: 8px; text-align: center; }
+      .meta-row { flex-direction: column; text-align: center; }
       .content { padding: 24px 20px; }
-      .header { padding: 32px 20px; }
+      .header { padding: 24px 16px; }
+      .header-info-item { display: block; border-right: none; padding: 4px 0; }
+      .footer { padding: 32px 20px; }
+      .footer-contact-row { display: block; margin: 8px 0; }
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="container">
+      <!-- HEADER -->
       <div class="header">
-        <div class="logo-container">
-          <span class="logo-icon">🏗️</span>
-          <span class="logo-text">
-            <span class="logo-build">Build</span><span class="logo-union">Union</span>
+        <img src="${logoUrl}" alt="BuildUnion Logo" class="logo-img" />
+        <div class="header-content">
+          <div class="company-name">Construction Management Platform</div>
+        </div>
+        <div class="header-info">
+          <span class="header-info-item">
+            🌐 <a href="https://buildunion.ca">buildunion.ca</a>
+          </span>
+          <span class="header-info-item">
+            📧 <a href="mailto:admin@buildunion.ca">admin@buildunion.ca</a>
+          </span>
+          <span class="header-info-item">
+            📍 Toronto, Ontario, Canada
           </span>
         </div>
-        <div class="tagline">Construction Management Platform</div>
       </div>
       
+      <!-- META BAR -->
       <div class="meta-bar">
-        <div class="meta-item">
-          <span>📅</span>
-          <span>${currentDate}</span>
+        <div class="meta-row">
+          <div class="meta-item">
+            📅 ${currentDate}
+          </div>
+          <div class="meta-item">
+            🕐 ${currentTime}
+          </div>
+          <span class="badge">✉️ Official Message</span>
         </div>
-        <div class="meta-item">
-          <span>🕐</span>
-          <span>${currentTime}</span>
-        </div>
-        <span class="badge">Official Message</span>
       </div>
 
+      <!-- CONTENT -->
       <div class="content">
         <p class="greeting">
           ${recipientName ? `Dear ${recipientName},` : 'Hello,'}
@@ -358,15 +455,16 @@ serve(async (req) => {
         <div class="divider"></div>
         
         <p class="signature">
-          Warm regards,<br>
-          <strong style="color: #1e293b;">BuildUnion Admin Team</strong>
+          Warm regards,<br><br>
+          <strong>The BuildUnion Team</strong><br>
+          <span style="font-size: 12px; color: #94a3b8;">admin@buildunion.ca</span>
         </p>
 
         <div class="info-section">
-          <div class="info-title">📧 Message Details</div>
+          <div class="info-title">📋 Message Details</div>
           <div class="info-grid">
             <div class="info-row">
-              <span class="info-label">Sent To:</span>
+              <span class="info-label">Recipient:</span>
               <span class="info-value">${recipientEmail}</span>
             </div>
             <div class="info-row">
@@ -374,30 +472,52 @@ serve(async (req) => {
               <span class="info-value">${subject}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">From:</span>
-              <span class="info-value">admin@buildunion.ca</span>
+              <span class="info-label">Sent From:</span>
+              <span class="info-value">BuildUnion Admin</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Date:</span>
-              <span class="info-value">${currentDate} at ${currentTime}</span>
+              <span class="info-label">Date & Time:</span>
+              <span class="info-value">${currentDate}, ${currentTime}</span>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- FOOTER -->
       <div class="footer">
-        <div class="footer-logo">
-          <span class="logo-build">Build</span><span class="logo-union">Union</span>
+        <div class="footer-logo-section">
+          <img src="${logoUrl}" alt="BuildUnion" class="footer-logo-img" style="filter: brightness(10);" />
+          <div class="footer-company-name">
+            <span class="footer-build">Build</span><span class="footer-union">Union</span>
+          </div>
+          <div class="footer-tagline">Building Better, Together</div>
         </div>
+
+        <div class="footer-divider"></div>
+
+        <div class="footer-contact">
+          <span class="footer-contact-row">🌐 <a href="https://buildunion.ca">buildunion.ca</a></span>
+          <span class="footer-contact-row">📧 <a href="mailto:admin@buildunion.ca">admin@buildunion.ca</a></span>
+          <span class="footer-contact-row">📍 Toronto, Ontario, Canada</span>
+        </div>
+
         <div class="footer-links">
-          <a href="https://buildunion.ca" class="footer-link">🌐 buildunion.ca</a>
+          <a href="https://buildunion.ca" class="footer-link-btn">Visit Our Website</a>
         </div>
-        <div class="footer-info">
-          <p>📍 Toronto, Ontario, Canada</p>
-          <p>📧 admin@buildunion.ca</p>
-          <p style="margin-top: 12px;">© ${new Date().getFullYear()} BuildUnion. All rights reserved.</p>
-          <p style="margin-top: 8px; font-size: 11px; color: #94a3b8;">
-            This is an official communication from BuildUnion Admin.
+
+        <div class="footer-badges">
+          <span class="footer-badge">🛡️ Licensed</span>
+          <span class="footer-badge">✓ Insured</span>
+          <span class="footer-badge">🇨🇦 Canadian</span>
+        </div>
+
+        <div class="footer-legal">
+          <p class="footer-copyright">© 2026 BuildUnion. All rights reserved.</p>
+          <p>This email was sent by BuildUnion Administration.</p>
+          <p>If you received this email in error, please disregard it.</p>
+          <p style="margin-top: 8px;">
+            <a href="https://buildunion.ca/privacy" style="color: #64748b; text-decoration: none; margin: 0 8px;">Privacy Policy</a> |
+            <a href="https://buildunion.ca/terms" style="color: #64748b; text-decoration: none; margin: 0 8px;">Terms of Service</a>
           </p>
         </div>
       </div>
