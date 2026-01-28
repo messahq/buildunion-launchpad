@@ -1116,7 +1116,78 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      bu_profiles_public: {
+        Row: {
+          availability: string | null
+          avatar_url: string | null
+          bio: string | null
+          certifications: string[] | null
+          company_name: string | null
+          created_at: string | null
+          experience_level:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years: number | null
+          id: string | null
+          is_contractor: boolean | null
+          is_verified: boolean | null
+          primary_trade:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          secondary_trades:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area: string | null
+          user_id: string | null
+        }
+        Insert: {
+          availability?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          company_name?: string | null
+          created_at?: string | null
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years?: number | null
+          id?: string | null
+          is_contractor?: boolean | null
+          is_verified?: boolean | null
+          primary_trade?:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          secondary_trades?:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          availability?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          company_name?: string | null
+          created_at?: string | null
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years?: number | null
+          id?: string | null
+          is_contractor?: boolean | null
+          is_verified?: boolean | null
+          primary_trade?:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          secondary_trades?:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_project_member_validated: {

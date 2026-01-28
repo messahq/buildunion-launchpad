@@ -1,8 +1,9 @@
-import { MapPin, Briefcase, Clock, CheckCircle, Users } from "lucide-react";
+import { MapPin, Briefcase, Clock, CheckCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+// Public member data - sensitive fields like phone are not included for public profiles
 interface MemberCardProps {
   member: {
     id: string;
@@ -16,11 +17,7 @@ interface MemberCardProps {
     experience_years?: number;
     is_verified?: boolean;
     is_contractor?: boolean;
-    is_union_member?: boolean;
-    union_name?: string;
     bio?: string;
-    phone?: string;
-    company_website?: string;
     certifications?: string[];
     experience_level?: string;
   };
@@ -101,12 +98,6 @@ export const MemberCard = ({ member, profileName, onClick }: MemberCardProps) =>
                   Contractor
                 </Badge>
               )}
-              {member.is_union_member && (
-                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                  <Users className="h-3 w-3 mr-1" />
-                  Union
-                </Badge>
-              )}
             </div>
 
             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -123,12 +114,6 @@ export const MemberCard = ({ member, profileName, onClick }: MemberCardProps) =>
                 </div>
               )}
             </div>
-
-            {member.union_name && member.is_union_member && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 truncate">
-                {member.union_name}
-              </p>
-            )}
 
             {member.secondary_trades && member.secondary_trades.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
