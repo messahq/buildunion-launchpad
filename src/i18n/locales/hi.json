@@ -1,4 +1,13 @@
 {
+  "commandCenter": {
+    "solo": {
+      "notRequired": "आवश्यक नहीं (एकल)",
+      "documentsOptional": "एकल मोड में दस्तावेज़ वैकल्पिक हैं",
+      "contractsOptional": "व्यक्तिगत परियोजनाओं के लिए अनुबंध आवश्यक नहीं",
+      "teamNotApplicable": "एकल मोड में टीम सुविधाएँ अक्षम हैं",
+      "healthScoreNote": "स्वास्थ्य स्कोर {{count}} प्रासंगिक डेटा स्रोतों से गणना किया गया"
+    }
+  },
   "baseline": {
     "title": "प्रोजेक्ट बेसलाइन",
     "locked": "लॉक",

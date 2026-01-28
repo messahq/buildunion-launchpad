@@ -1,4 +1,13 @@
 {
+  "commandCenter": {
+    "solo": {
+      "notRequired": "不需要（个人模式）",
+      "documentsOptional": "个人模式下文档为可选项",
+      "contractsOptional": "个人项目不需要合同",
+      "teamNotApplicable": "个人模式下团队功能已禁用",
+      "healthScoreNote": "健康分数根据{{count}}个相关数据源计算"
+    }
+  },
   "baseline": {
     "title": "项目基线",
     "locked": "已锁定",
