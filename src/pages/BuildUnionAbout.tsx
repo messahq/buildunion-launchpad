@@ -50,19 +50,19 @@ const BuildUnionAbout = () => {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative py-16 md:py-24 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20">
+        <section className="relative py-10 md:py-14 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+            <div className="flex flex-col items-center text-center max-w-2xl mx-auto">
               <img 
                 src={aboutLogo} 
                 alt="BuildUnion Logo" 
-                className="w-48 md:w-64 h-auto mb-8"
+                className="w-32 md:w-40 h-auto mb-5"
               />
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">
                 <span className="text-foreground">{t("about.hero.titlePart1")}</span>{" "}
                 <span className="text-amber-500">{t("about.hero.titlePart2")}</span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
                 {t("about.hero.description")}
               </p>
             </div>
