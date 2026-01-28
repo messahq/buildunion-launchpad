@@ -1787,13 +1787,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span className="hidden xs:inline">Total:</span> ${(summary?.total_cost || 0).toLocaleString()}
           </Badge>
-
-          {/* Conflict Status Indicator */}
-          <ConflictStatusIndicator
-            synthesisResult={synthesisResult}
-            dualEngineOutput={dualEngineOutput}
-            size="md"
-          />
         </div>
       </div>
 
