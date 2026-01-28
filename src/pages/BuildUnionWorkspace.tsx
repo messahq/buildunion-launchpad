@@ -840,8 +840,8 @@ const BuildUnionProjects2 = () => {
                                     "p-4 sm:p-6 rounded-xl border bg-card transition-all cursor-pointer group select-none",
                                     "active:scale-[0.99] touch-manipulation",
                                     sidebarProjectId === project.id 
-                                      ? "border-amber-400 ring-2 ring-amber-200 dark:ring-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20" 
-                                      : "hover:border-amber-300 hover:bg-accent/30"
+                                      ? "border-cyan-400 ring-2 ring-cyan-200 dark:ring-cyan-800/50 bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/40 dark:from-cyan-950/30 dark:via-sky-950/20 dark:to-blue-950/10" 
+                                      : "hover:border-cyan-200 hover:bg-gradient-to-br hover:from-cyan-50/60 hover:via-sky-50/40 hover:to-blue-50/30 dark:hover:from-cyan-950/20 dark:hover:via-sky-950/15 dark:hover:to-blue-950/10"
                                   )}
                                 >
                                   <div className="flex items-start justify-between gap-3">
@@ -1017,8 +1017,8 @@ const BuildUnionProjects2 = () => {
                                     "p-4 sm:p-6 rounded-xl border bg-card transition-all cursor-pointer group select-none",
                                     "active:scale-[0.99] touch-manipulation",
                                     sidebarProjectId === project.id 
-                                      ? "border-cyan-400 ring-2 ring-cyan-200 dark:ring-cyan-800/50 bg-cyan-50/50 dark:bg-cyan-950/20" 
-                                      : "hover:border-cyan-300 hover:bg-accent/30"
+                                      ? "border-cyan-400 ring-2 ring-cyan-200 dark:ring-cyan-800/50 bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/40 dark:from-cyan-950/30 dark:via-sky-950/20 dark:to-blue-950/10" 
+                                      : "hover:border-cyan-200 hover:bg-gradient-to-br hover:from-cyan-50/60 hover:via-sky-50/40 hover:to-blue-50/30 dark:hover:from-cyan-950/20 dark:hover:via-sky-950/15 dark:hover:to-blue-950/10"
                                   )}
                                 >
                                   <div className="flex items-start justify-between gap-3">
