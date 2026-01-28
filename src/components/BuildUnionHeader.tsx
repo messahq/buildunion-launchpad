@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -302,6 +302,14 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   <User className="h-4 w-4" />
                   Member Directory
                 </Button>
+                <Button
+                  variant="ghost"
+                  className="justify-start gap-3 h-11"
+                  onClick={() => { navigate("/buildunion/about"); setMobileMenuOpen(false); }}
+                >
+                  <Info className="h-4 w-4" />
+                  About Us
+                </Button>
 
                 {/* Messages - only for logged in users */}
                 {user && (
@@ -478,6 +486,14 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 >
                   <User className="h-4 w-4" />
                   Member Directory
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => navigate("/buildunion/about")}
+                  className="cursor-pointer gap-2"
+                >
+                  <Info className="h-4 w-4" />
+                  About Us
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

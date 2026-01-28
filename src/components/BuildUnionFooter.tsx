@@ -20,7 +20,7 @@ const BuildUnionFooter = () => {
       { label: t("footer.changelog"), href: "#" },
     ],
     company: [
-      { label: t("footer.about"), href: "#" },
+      { label: t("footer.about"), href: "/buildunion/about" },
       { label: t("footer.careers"), href: "#" },
       { label: t("footer.press"), href: "#" },
       { label: t("footer.contact"), href: "#" },
@@ -104,12 +104,21 @@ const BuildUnionFooter = () => {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-amber-500 transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {link.href.startsWith('/') ? (
+                    <Link
+                      to={link.href}
+                      className="text-sm text-muted-foreground hover:text-amber-500 transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-sm text-muted-foreground hover:text-amber-500 transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
