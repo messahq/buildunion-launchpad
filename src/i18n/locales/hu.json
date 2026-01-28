@@ -179,7 +179,9 @@
     "generatedSuccess": "Feladatok sikeresen generálva",
     "generateError": "Feladatok generálása sikertelen",
     "addMembersFirst": "Először adj hozzá csapattagokat",
-    "noMaterials": "Nincs AI által észlelt anyag a feladatgeneráláshoz"
+    "noMaterials": "Nincs AI által észlelt anyag a feladatgeneráláshoz",
+    "projectTasks": "Projekt Feladatok",
+    "appliedFromTemplate": "Feladatok alkalmazva sablonból"
   },
   "common": {
     "loading": "Betöltés...",

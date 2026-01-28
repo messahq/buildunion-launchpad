@@ -325,14 +325,17 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
 
   // Handle applying template tasks
   const handleApplyTemplate = async (templateTasks: Omit<Task, "id">[]) => {
-    if (!user || members.length === 0) return;
+    if (!user) return;
 
     try {
+      // In solo mode (no members), assign all tasks to the current user
+      const assignees = members.length > 0 ? members : [{ user_id: user.id }];
+      
       const tasksToInsert = templateTasks.map((t, index) => ({
         project_id: projectId,
         title: t.title,
         description: t.description,
-        assigned_to: members[index % members.length].user_id, // Round-robin
+        assigned_to: assignees[index % assignees.length].user_id, // Round-robin or self
         assigned_by: user.id,
         priority: t.priority,
         status: "pending",
@@ -344,6 +347,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
         .insert(tasksToInsert);
 
       if (error) throw error;
+      toast.success(`Applied ${templateTasks.length} tasks from template`);
     } catch (err: any) {
       console.error("Error applying template:", err);
       toast.error(err.message || "Failed to apply template");
