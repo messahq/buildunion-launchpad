@@ -2143,6 +2143,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               }
               return 'tasks' as const;
             })()}
+            isSoloMode={!isTeamMode}
             onGrandTotalChange={(newTotal) => {
               // Update summary.total_cost so header stays in sync
               setSummary(prev => prev ? { ...prev, total_cost: newTotal } : null);
