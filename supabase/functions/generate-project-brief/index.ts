@@ -141,7 +141,7 @@ serve(async (req) => {
       
       // Try to get extracted text from PDFs via extract-pdf-text function
       const documentExtracts: string[] = [];
-      for (const doc of pdfDocuments.slice(0, 5)) { // Limit to 5 PDFs to avoid timeout
+      for (const doc of pdfDocuments.slice(0, 10)) { // Limit to 10 PDFs for comprehensive analysis
         try {
           const pdfResponse = await supabase.functions.invoke("extract-pdf-text", {
             body: { filePath: doc.file_path, bucketName: "project-documents" },
