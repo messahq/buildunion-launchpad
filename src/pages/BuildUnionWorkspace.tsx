@@ -169,21 +169,34 @@ const BuildUnionProjects2 = () => {
   const transformToSelectorFormat = (result: typeof analysisResult): AIAnalysisResult | null => {
     if (!result) return null;
 
-    const { projectSize, projectSizeReason } = result;
-    const area = result.estimate.area || null;
+    const { projectSize, projectSizeReason, dualEngineOutput, synthesisResult } = result;
+    
+    // Priority: dualEngineOutput.gemini.area > estimate.area > synthesisResult.operationalTruth.confirmedArea
+    const area = dualEngineOutput?.gemini?.area 
+      || result.estimate.area 
+      || synthesisResult?.operationalTruth?.confirmedArea 
+      || null;
+    
     const materials = result.estimate.materials || [];
     const hasBlueprint = !!result.blueprintAnalysis?.extractedText;
+    
+    // Derive confidence from dual engine or fallback
+    const confidence = dualEngineOutput?.gemini?.confidence 
+      || (materials.length > 3 ? "high" : area ? "medium" : "low");
 
     return {
       area,
-      areaUnit: result.estimate.areaUnit || "sq ft",
+      areaUnit: result.estimate.areaUnit || dualEngineOutput?.gemini?.areaUnit || "sq ft",
       materials: materials.slice(0, 10).map(m => ({ item: m.item, quantity: m.quantity, unit: m.unit })),
       hasBlueprint,
-      surfaceType: result.estimate.surfaceType || "unknown",
-      roomType: result.estimate.roomType || "unknown",
+      surfaceType: result.estimate.surfaceType || dualEngineOutput?.gemini?.surfaceType || "unknown",
+      roomType: result.estimate.roomType || dualEngineOutput?.gemini?.roomType || "unknown",
       projectSize: projectSize as "small" | "medium" | "large",
       projectSizeReason: projectSizeReason || "AI analysis complete",
-      confidence: materials.length > 3 ? "high" : area ? "medium" : "low",
+      confidence: confidence as "low" | "medium" | "high",
+      // CRITICAL: Pass dual-engine data for citation display
+      dualEngineOutput,
+      synthesisResult,
     };
   };
 
