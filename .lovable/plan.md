@@ -1,55 +1,127 @@
 
+# Health Score Solo skálázás + Lokalizáció + Teszt lefedettség
 
-# Admin Dashboard Hozzáférés - Javítási Terv
-
-## Probléma Azonosítása
-
-Az SQL parancs **nem futott le** - a `user_roles` tábla üres. Ezért az `isAdmin` hook `false` értéket ad vissza, és az Admin Dashboard link nem jelenik meg a dropdown menüben.
-
-## Megoldás
-
-Automatikusan hozzáadom az admin jogosultságot a fiókodhoz egy adatbázis művelettel.
+## Összefoglaló
+A Solo módban a Health Score jelenleg 16 pontra számol, holott 5 data source (Documents, Contracts, Team + opcionális) "N/A" státuszú. Ez torzítja a %-ot. Emellett hiányoznak a Solo-specifikus i18n kulcsok és a verification logikához nincsenek tesztek.
 
 ---
 
-## Végrehajtandó Lépések
+## 1. Health Score Solo skálázás
 
-### 1. Admin szerepkör hozzáadása
-
-```text
-Tábla: user_roles
+### Jelenlegi probléma
+A `ProjectCommandCenter.tsx` 580. sorában:
+```typescript
+const healthScore = Math.round(
+  (dataSources.filter(s => s.status === "complete").length / dataSources.length) * 100
+);
 ```
 
-Beszúrandó rekord:
-- **user_id**: `c1638795-efab-4a23-a8c8-612acdcf7822` (a te felhasználói azonosítód)
-- **role**: `admin`
+Ez **16-ra oszt** mindig, holott Solo módban 3-5 pillar automatikusan "complete" az "N/A" miatt - de nem relevánsak a %-ban.
 
-### 2. Változás hatása
+### Javítás
+Solo módban csak a **releváns** pillarokat számoljuk:
+- Kizárjuk: `documents`, `contracts`, `team` (ezek N/A)
+- A többi 13 pont marad értékelve
 
-Az admin jogosultság hozzáadása után:
-- Az `useAdminRole` hook `true` értéket fog visszaadni
-- Az **Admin Dashboard** link megjelenik a profil dropdown menüben
-- Hozzáférsz a `/admin` oldalhoz, ahol kezelheted a felhasználókat és statisztikákat láthatsz
+```typescript
+// Új logika
+const relevantSources = isSoloMode 
+  ? dataSources.filter(s => !["documents", "contracts", "team"].includes(s.id))
+  : dataSources;
 
----
-
-## Technikai Részletek
-
-A rendszer így működik:
-
-```text
-1. Bejelentkezés → useAuth hook megkapja a user.id-t
-2. useAdminRole hook meghívja az is_admin RPC funkciót
-3. Az is_admin funkció ellenőrzi a user_roles táblát
-4. Ha role = 'admin', akkor isAdmin = true
-5. A BuildUnionHeader megjeleníti az Admin Dashboard linket
+const healthScore = Math.round(
+  (relevantSources.filter(s => s.status === "complete").length / relevantSources.length) * 100
+);
 ```
 
-Jelenleg a 3. lépésnél nincs találat, mert a `user_roles` tábla üres.
+### Hatás
+- Solo: 13/13 = 100% (ha minden releváns teljes)
+- Team: 16/16 = 100% (változatlan)
 
 ---
 
-## Várt Eredmény
+## 2. Lokalizáció - Solo-specifikus kulcsok
 
-A javítás után a profil dropdown menüben megjelenik egy piros **"Admin Dashboard"** link egy pajzs ikonnal.
+### Hiányzó kulcsok (11 nyelv)
+Új namespace: `commandCenter.solo`
 
+| Kulcs | EN | HU |
+|-------|----|----|
+| `notRequired` | "Not required (Solo)" | "Nem szükséges (Egyéni)" |
+| `documentsOptional` | "Documents are optional in Solo Mode" | "Dokumentumok opcionálisak Egyéni módban" |
+| `contractsOptional` | "Contracts not needed for personal projects" | "Szerződések nem szükségesek személyes projektekhez" |
+| `teamNotApplicable` | "Team features disabled in Solo Mode" | "Csapat funkciók letiltva Egyéni módban" |
+
+### Fájlok
+Minden nyelv: `src/i18n/locales/*.json`
+
+---
+
+## 3. Unit tesztek - `buildDataSourcesStatus`
+
+### Új tesztfájl
+`src/test/operationalTruth.test.ts`
+
+### Teszt esetek
+1. **Solo mód**: Documents, Contracts, Team → "complete" (N/A)
+2. **Team mód**: Ezek valós adatot igényelnek
+3. **Health Score Solo**: 13 releváns pontból számol
+4. **Health Score Team**: 16 pontból számol
+5. **Conflict check**: Solo módban nem figyelmeztet team hiányra
+
+### Kód struktúra
+```typescript
+import { describe, it, expect } from "vitest";
+
+describe("buildDataSourcesStatus - Solo Mode", () => {
+  it("should mark Documents as complete in Solo Mode", () => {
+    // ...
+  });
+  
+  it("should calculate health score from 13 sources in Solo Mode", () => {
+    // ...
+  });
+});
+
+describe("buildDataSourcesStatus - Team Mode", () => {
+  it("should require real document uploads in Team Mode", () => {
+    // ...
+  });
+});
+```
+
+---
+
+## Technikai részletek
+
+### Érintett fájlok
+
+| Fájl | Módosítás |
+|------|-----------|
+| `src/components/projects2/ProjectCommandCenter.tsx` | Health Score kalkuláció |
+| `src/i18n/locales/en.json` | Új Solo kulcsok |
+| `src/i18n/locales/hu.json` | Új Solo kulcsok |
+| `src/i18n/locales/es.json` | Új Solo kulcsok |
+| `src/i18n/locales/fr.json` | Új Solo kulcsok |
+| `src/i18n/locales/de.json` | Új Solo kulcsok |
+| `src/i18n/locales/zh.json` | Új Solo kulcsok |
+| `src/i18n/locales/ar.json` | Új Solo kulcsok |
+| `src/i18n/locales/pt.json` | Új Solo kulcsok |
+| `src/i18n/locales/ru.json` | Új Solo kulcsok |
+| `src/i18n/locales/ja.json` | Új Solo kulcsok |
+| `src/i18n/locales/hi.json` | Új Solo kulcsok |
+| `src/test/operationalTruth.test.ts` | Új tesztfájl |
+
+### Változtatások sorrendje
+1. Health Score logika javítása
+2. Lokalizációs kulcsok hozzáadása (11 nyelv)
+3. i18n kulcsok beépítése a UI-ba
+4. Unit tesztek írása
+5. Tesztek futtatása ellenőrzésként
+
+---
+
+## Várható eredmény
+- Solo projektek: tiszta 13-pontos Health Score
+- Minden nyelven: érthető "Nem szükséges" üzenetek
+- Tesztekkel lefedett: verification logika
