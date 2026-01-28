@@ -560,7 +560,17 @@
     "inProgress": "In Progress",
     "completed": "Completed",
     "pendingTasks": "Pending Tasks",
-    "active": "Active"
+    "active": "Active",
+    "deleteFailed": "Failed to delete project",
+    "projectDeleted": "Project deleted",
+    "statusUpdateFailed": "Failed to update status",
+    "projectCompleted": "Project marked as completed!",
+    "projectReopened": "Project reopened",
+    "completeProject": "Mark as completed",
+    "reopenProject": "Reopen project",
+    "deleteProject": "Delete project",
+    "deleteConfirm": "Delete",
+    "cannotUndo": "This cannot be undone."
   },
   "footer": {
     "tagline": "Construction grade project management for teams who build the real world.",

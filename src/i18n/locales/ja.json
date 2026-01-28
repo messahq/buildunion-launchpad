@@ -542,7 +542,17 @@
     "inProgress": "進行中",
     "completed": "完了",
     "pendingTasks": "保留中のタスク",
-    "active": "アクティブ"
+    "active": "アクティブ",
+    "deleteFailed": "プロジェクトの削除に失敗しました",
+    "projectDeleted": "プロジェクトを削除しました",
+    "statusUpdateFailed": "ステータスの更新に失敗しました",
+    "projectCompleted": "プロジェクトを完了としてマークしました！",
+    "projectReopened": "プロジェクトを再開しました",
+    "completeProject": "完了としてマーク",
+    "reopenProject": "プロジェクトを再開",
+    "deleteProject": "プロジェクトを削除",
+    "deleteConfirm": "削除",
+    "cannotUndo": "この操作は取り消せません。"
   },
   "footer": {
     "tagline": "現実世界を構築するチームのための建設グレードのプロジェクト管理。",

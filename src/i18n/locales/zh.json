@@ -542,7 +542,17 @@
     "inProgress": "进行中",
     "completed": "已完成",
     "pendingTasks": "待处理任务",
-    "active": "活跃"
+    "active": "活跃",
+    "deleteFailed": "删除项目失败",
+    "projectDeleted": "项目已删除",
+    "statusUpdateFailed": "更新状态失败",
+    "projectCompleted": "项目已标记为完成！",
+    "projectReopened": "项目已重新打开",
+    "completeProject": "标记为完成",
+    "reopenProject": "重新打开项目",
+    "deleteProject": "删除项目",
+    "deleteConfirm": "删除",
+    "cannotUndo": "此操作无法撤销。"
   },
   "footer": {
     "tagline": "为建设真实世界的团队打造的建筑级项目管理。",
