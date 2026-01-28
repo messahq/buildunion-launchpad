@@ -271,6 +271,7 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
           projectAddress={projectAddress}
           forceCalendarView={forceCalendarView}
           onCalendarViewActivated={onCalendarViewActivated}
+          isSoloMode={true}
         />
       </div>
     );
