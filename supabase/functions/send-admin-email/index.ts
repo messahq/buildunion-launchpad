@@ -223,41 +223,31 @@ serve(async (req) => {
     }
     .meta-bar {
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      padding: 20px 32px;
+      padding: 16px 32px;
       border-bottom: 1px solid #e2e8f0;
     }
     .meta-row {
       display: flex;
       justify-content: flex-start;
       align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      padding-left: 96px;
+      gap: 12px;
+      padding-left: 131px;
     }
     .meta-item {
-      display: inline-flex;
-      align-items: center;
       font-size: 13px;
       color: #64748b;
-      padding: 8px 16px;
-      background: #ffffff;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
       white-space: nowrap;
     }
     .meta-separator {
       color: #cbd5e1;
-      font-size: 14px;
     }
     .badge {
-      display: inline-block;
-      background: transparent;
-      color: #f59e0b;
-      padding: 8px 16px;
       font-size: 12px;
       font-weight: 600;
+      color: #1e293b;
       text-transform: uppercase;
       letter-spacing: 1px;
+      white-space: nowrap;
     }
     .content { 
       padding: 40px 32px; 
