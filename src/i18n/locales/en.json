@@ -608,5 +608,55 @@
     "regenerateTitle": "Want better quality?",
     "regenerateDesc": "Pro users get enhanced AI analysis with higher accuracy",
     "upgradeToPro": "Upgrade to Pro"
+  },
+  "about": {
+    "hero": {
+      "titlePart1": "Building the Future",
+      "titlePart2": "Together",
+      "description": "BuildUnion is a revolutionary platform connecting construction professionals with cutting-edge AI technology to streamline project management, enhance collaboration, and deliver exceptional results."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "description": "We believe every construction project deserves precision, transparency, and efficiency. Our mission is to empower contractors, project managers, and tradespeople with intelligent tools that transform how projects are planned, executed, and delivered."
+    },
+    "values": {
+      "title": "Our Values",
+      "community": {
+        "title": "Community First",
+        "description": "We build for the people who build our world. Every feature is designed with real construction professionals in mind."
+      },
+      "precision": {
+        "title": "Precision",
+        "description": "From AI-powered estimates to detailed project tracking, accuracy is at the heart of everything we do."
+      },
+      "passion": {
+        "title": "Passion",
+        "description": "We're passionate about construction and technology, bringing innovation to an industry that shapes our daily lives."
+      },
+      "trust": {
+        "title": "Trust",
+        "description": "Security and reliability are non-negotiable. Your data and projects are protected with enterprise-grade security."
+      },
+      "excellence": {
+        "title": "Excellence",
+        "description": "We strive for excellence in every line of code, every feature, and every interaction with our users."
+      },
+      "global": {
+        "title": "Global Reach",
+        "description": "Supporting 11 languages and serving construction professionals worldwide, from local contractors to international teams."
+      }
+    },
+    "story": {
+      "title": "Our Story",
+      "paragraph1": "BuildUnion was born from a simple observation: the construction industry, one of the largest and most important sectors globally, was underserved by modern technology. While other industries embraced digital transformation, construction professionals were left with outdated tools and fragmented workflows.",
+      "paragraph2": "We set out to change that. By combining AI-powered analysis, real-time collaboration, and intuitive design, we created a platform that speaks the language of construction. From solo contractors managing residential projects to large teams coordinating commercial developments, BuildUnion adapts to your needs.",
+      "paragraph3": "Today, we continue to innovate, adding features like dual-engine AI verification, Ontario Building Code compliance checking, and comprehensive project synthesis. But our core mission remains the same: to help construction professionals work smarter, not harder."
+    },
+    "cta": {
+      "title": "Ready to Transform Your Projects?",
+      "description": "Join thousands of construction professionals who trust BuildUnion to deliver their projects on time, on budget, and beyond expectations.",
+      "joinButton": "Get Started Free",
+      "communityButton": "Explore Community"
+    }
   }
 }

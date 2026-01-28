@@ -595,5 +595,55 @@
     "regenerateTitle": "Quer melhor qualidade?",
     "regenerateDesc": "Usuários Pro recebem análise de IA aprimorada com maior precisão",
     "upgradeToPro": "Atualizar para Pro"
+  },
+  "about": {
+    "hero": {
+      "titlePart1": "Construindo o Futuro",
+      "titlePart2": "Juntos",
+      "description": "BuildUnion é uma plataforma revolucionária que conecta profissionais da construção com tecnologia de IA de ponta para otimizar a gestão de projetos, melhorar a colaboração e entregar resultados excepcionais."
+    },
+    "mission": {
+      "title": "Nossa Missão",
+      "description": "Acreditamos que cada projeto de construção merece precisão, transparência e eficiência. Nossa missão é capacitar empreiteiros, gerentes de projeto e comerciantes com ferramentas inteligentes que transformam como os projetos são planejados, executados e entregues."
+    },
+    "values": {
+      "title": "Nossos Valores",
+      "community": {
+        "title": "Comunidade Primeiro",
+        "description": "Construímos para as pessoas que constroem nosso mundo. Cada recurso é projetado pensando em profissionais reais da construção."
+      },
+      "precision": {
+        "title": "Precisão",
+        "description": "De estimativas alimentadas por IA ao rastreamento detalhado de projetos, a precisão está no coração de tudo o que fazemos."
+      },
+      "passion": {
+        "title": "Paixão",
+        "description": "Somos apaixonados por construção e tecnologia, trazendo inovação para uma indústria que molda nossas vidas diárias."
+      },
+      "trust": {
+        "title": "Confiança",
+        "description": "Segurança e confiabilidade são inegociáveis. Seus dados e projetos são protegidos com segurança de nível empresarial."
+      },
+      "excellence": {
+        "title": "Excelência",
+        "description": "Buscamos excelência em cada linha de código, cada recurso e cada interação com nossos usuários."
+      },
+      "global": {
+        "title": "Alcance Global",
+        "description": "Suportando 11 idiomas e servindo profissionais da construção em todo o mundo, de empreiteiros locais a equipes internacionais."
+      }
+    },
+    "story": {
+      "title": "Nossa História",
+      "paragraph1": "BuildUnion nasceu de uma observação simples: a indústria da construção, um dos maiores e mais importantes setores globalmente, estava mal atendida pela tecnologia moderna. Enquanto outras indústrias abraçavam a transformação digital, os profissionais da construção ficaram com ferramentas desatualizadas e fluxos de trabalho fragmentados.",
+      "paragraph2": "Decidimos mudar isso. Ao combinar análise alimentada por IA, colaboração em tempo real e design intuitivo, criamos uma plataforma que fala a linguagem da construção. De empreiteiros solo gerenciando projetos residenciais a grandes equipes coordenando desenvolvimentos comerciais, BuildUnion se adapta às suas necessidades.",
+      "paragraph3": "Hoje, continuamos a inovar, adicionando recursos como verificação de IA de motor duplo, verificação de conformidade do Código de Construção de Ontário e síntese abrangente de projetos. Mas nossa missão central permanece a mesma: ajudar os profissionais da construção a trabalhar de forma mais inteligente, não mais difícil."
+    },
+    "cta": {
+      "title": "Pronto para Transformar Seus Projetos?",
+      "description": "Junte-se a milhares de profissionais da construção que confiam no BuildUnion para entregar seus projetos no prazo, dentro do orçamento e além das expectativas.",
+      "joinButton": "Começar Grátis",
+      "communityButton": "Explorar Comunidade"
+    }
   }
 }
