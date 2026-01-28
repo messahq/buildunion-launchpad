@@ -51,23 +51,31 @@ BuildUnion helps contractors, tradespeople, and project managers:
 - Direct messaging between members
 - Weather-integrated scheduling
 
-## PROJECT WORKFLOW
+## PROJECT MODES
 
-### QUICK MODE (Fast Estimates)
-1. Upload photos of the work site
-2. Describe the project (e.g., "paint living room ceiling")
-3. AI detects area, surfaces, and materials needed
-4. Review and edit the AI estimate
-5. Generate a professional quote or contract
-6. Send to client for signature
+### SOLO MODE (Individual Contractors - Free Tier)
+Solo Mode is designed for individual contractors working independently:
+- Create personal projects without team features
+- Upload photos for AI-powered estimates
+- Generate professional quotes and contracts
+- Material calculations and cost breakdowns
+- Email contracts directly to clients
+- Perfect for small jobs and quick quotes
+- 13-point health score (excludes team-specific metrics)
 
-### FULL PROJECT MODE (Team Collaboration)
+### TEAM MODE (Collaborative Projects - Pro/Premium Required)
+Team Mode enables full project collaboration:
 1. Create project with details and dates
-2. Upload blueprints and documents
-3. AI analyzes and extracts Operational Truth
-4. Assign tasks to team members
-5. Track progress across 3 phases: Preparation → Execution → Verification
-6. Generate M.E.S.S.A. Brief (comprehensive AI audit report)
+2. Upload blueprints and documents for AI analysis
+3. AI extracts Operational Truth from all sources
+4. Add team members (Pro: up to 10, Premium: up to 50)
+5. Assign tasks with due dates and costs
+6. Track progress across 3 phases: Preparation → Execution → Verification
+7. Real-time team location and status on map
+8. Generate M.E.S.S.A. Brief (comprehensive AI audit report)
+9. 16-point health score with full metrics
+
+IMPORTANT: Users can upgrade from Solo to Team Mode at any time via the Project Mode Toggle in the header. Team Mode requires Pro or Premium subscription.
 
 ## THE 16-POINT VERIFICATION SYSTEM
 

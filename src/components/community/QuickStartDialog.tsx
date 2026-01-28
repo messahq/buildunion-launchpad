@@ -31,11 +31,11 @@ const steps = [
   {
     number: 3,
     title: "Choose Your Mode",
-    description: "Quick Mode for fast estimates and contracts, or Full Project Mode for comprehensive project management.",
+    description: "Solo Mode for individual work with estimates and contracts, or Team Mode for collaborative project management.",
     icon: Zap,
     tips: [
-      "Quick Mode: Best for small jobs and quick quotes",
-      "Full Mode: Best for complex projects with teams"
+      "Solo Mode: Best for individual contractors and quick quotes",
+      "Team Mode: Best for complex projects with team collaboration (Pro/Premium)"
     ]
   },
   {
@@ -49,7 +49,7 @@ const steps = [
 
 const features = [
   {
-    title: "Quick Mode",
+    title: "Solo Mode",
     icon: Zap,
     color: "text-amber-600",
     bgColor: "bg-amber-100 dark:bg-amber-900/30",
@@ -61,12 +61,12 @@ const features = [
     ]
   },
   {
-    title: "Full Project Mode",
+    title: "Team Mode",
     icon: Users,
     color: "text-cyan-600",
     bgColor: "bg-cyan-100 dark:bg-cyan-900/30",
     items: [
-      "Team collaboration",
+      "Team collaboration (Pro/Premium)",
       "Document analysis",
       "Task management",
       "Timeline tracking"
@@ -173,7 +173,7 @@ const QuickStartDialog = ({ isOpen, onClose }: QuickStartDialogProps) => {
             </div>
             <Button 
               className="bg-amber-600 hover:bg-amber-700"
-              onClick={() => handleNavigation("/register")}
+              onClick={() => handleNavigation("/buildunion/workspace")}
             >
               Get Started Free
               <ArrowRight className="h-4 w-4 ml-2" />
