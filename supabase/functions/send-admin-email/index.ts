@@ -122,16 +122,19 @@ serve(async (req) => {
       });
     }
 
-    const currentDate = new Date().toLocaleDateString('en-US', { 
+    // Always use Toronto timezone (America/Toronto)
+    const torontoDate = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'America/Toronto'
     });
-    const currentTime = new Date().toLocaleTimeString('en-US', { 
+    const torontoTime = new Date().toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
+      timeZone: 'America/Toronto'
     });
 
     const logoUrl = "https://buildunionca.lovable.app/images/buildunion-logo-lightmode.png";
@@ -220,15 +223,15 @@ serve(async (req) => {
     }
     .meta-bar {
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      padding: 16px 32px;
+      padding: 20px 32px;
       border-bottom: 1px solid #e2e8f0;
     }
     .meta-row {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
     }
     .meta-item {
       display: inline-flex;
@@ -236,17 +239,34 @@ serve(async (req) => {
       gap: 6px;
       font-size: 13px;
       color: #64748b;
+      padding: 8px 16px;
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .meta-separator {
+      color: #cbd5e1;
+      font-size: 16px;
+      padding: 0 4px;
+    }
+    .meta-timezone {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .badge {
       display: inline-block;
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #ffffff;
-      padding: 6px 14px;
+      padding: 8px 16px;
       border-radius: 20px;
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      margin-left: 8px;
     }
     .content { 
       padding: 40px 32px; 
@@ -428,10 +448,11 @@ serve(async (req) => {
       <div class="meta-bar">
         <div class="meta-row">
           <div class="meta-item">
-            📅 ${currentDate}
+            📅 ${torontoDate}
           </div>
+          <span class="meta-separator">•</span>
           <div class="meta-item">
-            🕐 ${currentTime}
+            🕐 ${torontoTime} <span class="meta-timezone">(Toronto EST)</span>
           </div>
           <span class="badge">✉️ Official Message</span>
         </div>
@@ -472,7 +493,7 @@ serve(async (req) => {
             </div>
             <div class="info-row">
               <span class="info-label">Date & Time:</span>
-              <span class="info-value">${currentDate}, ${currentTime}</span>
+              <span class="info-value">${torontoDate}, ${torontoTime} (Toronto)</span>
             </div>
           </div>
         </div>
