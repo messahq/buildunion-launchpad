@@ -39,6 +39,11 @@ i18n
     interpolation: {
       escapeValue: false,
     },
+    react: {
+      useSuspense: false,
+      bindI18n: 'languageChanged loaded',
+      bindI18nStore: 'added removed',
+    },
   });
 
 // Save language preference when changed
