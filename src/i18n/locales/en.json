@@ -313,7 +313,10 @@
     "navigatedToTimelineDetails": "Opening task calendar for drag-and-drop rescheduling",
     "iUnderstood": "I Understood",
     "acknowledged": "Acknowledged - Thank you for reviewing",
-    "reviewedAndAcknowledged": "Reviewed and acknowledged by user"
+    "reviewedAndAcknowledged": "Reviewed and acknowledged by user",
+    "clickToIgnore": "Click to ignore it",
+    "clickToValidate": "Click to manually validate",
+    "clickToCheck": "Click to check conflicts"
   },
   "synthesis": {
     "title": "Project Synthesis",

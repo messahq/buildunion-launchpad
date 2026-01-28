@@ -287,8 +287,9 @@ export default function OperationalTruthCards({
     // Pillar 2: Materials Count
     if (materialsCount > 0) verifiedPillars++;
     
-    // Pillar 3: Blueprint Status (with manual override)
-    if (effectiveBlueprintStatus !== "pending") verifiedPillars++;
+    // Pillar 3: Blueprint Status (with manual override OR citation auto-verification)
+    const hasBlueprintCitations = (pillarCitations.blueprint?.length ?? 0) > 0;
+    if (effectiveBlueprintStatus !== "pending" || hasBlueprintCitations) verifiedPillars++;
     
     // Pillar 4: OBC Compliance (with acknowledge override)
     if (obcCompliance !== "pending" || obcAcknowledged) verifiedPillars++;
@@ -300,7 +301,7 @@ export default function OperationalTruthCards({
     verifiedPillars += 3;
     
     return Math.round((verifiedPillars / 8) * 100);
-  }, [confirmedArea, materialsCount, effectiveBlueprintStatus, obcCompliance, obcAcknowledged, effectiveConflictStatus]);
+  }, [confirmedArea, materialsCount, effectiveBlueprintStatus, obcCompliance, obcAcknowledged, effectiveConflictStatus, pillarCitations.blueprint]);
   
   // Use the effective verification rate (not the props one)
   const verificationRate = effectiveVerificationRate;
@@ -1175,20 +1176,34 @@ export default function OperationalTruthCards({
         />
 
         {/* Pillar 3: Blueprint Status - Clickable for manual validation */}
+        {/* Auto-verified if citations are linked, otherwise clickable to ignore */}
         <PillarCard
           icon={<FileText className="h-4 w-4" />}
           label={t("operationalTruth.blueprint")}
           value={
-            effectiveBlueprintStatus === "analyzed" 
-              ? (manuallyValidatedBlueprint ? t("operationalTruth.manuallyVerified", "Manually Verified") : t("operationalTruth.analyzed")) 
-              : effectiveBlueprintStatus === "none" 
-                ? t("operationalTruth.notProvided") 
-                : t("operationalTruth.pending")
+            // If has linked citations -> auto verified
+            (pillarCitations.blueprint?.length ?? 0) > 0
+              ? t("operationalTruth.analyzed")
+              : effectiveBlueprintStatus === "analyzed" 
+                ? (manuallyValidatedBlueprint ? t("operationalTruth.manuallyVerified", "Manually Verified") : t("operationalTruth.analyzed")) 
+                : effectiveBlueprintStatus === "none" 
+                  ? t("operationalTruth.notProvided") 
+                  : t("operationalTruth.pending")
           }
-          status={effectiveBlueprintStatus === "analyzed" ? "verified" : effectiveBlueprintStatus === "none" ? "warning" : "pending"}
-          isClickable={effectiveBlueprintStatus !== "analyzed" && !!projectId}
+          status={
+            // Green if has citations OR manually validated OR analyzed
+            (pillarCitations.blueprint?.length ?? 0) > 0 || effectiveBlueprintStatus === "analyzed" 
+              ? "verified" 
+              : effectiveBlueprintStatus === "none" 
+                ? "warning" 
+                : "pending"
+          }
+          isClickable={
+            // Only clickable if no citations AND not analyzed
+            (pillarCitations.blueprint?.length ?? 0) === 0 && effectiveBlueprintStatus !== "analyzed" && !!projectId
+          }
           onClick={() => {
-            if (effectiveBlueprintStatus !== "analyzed") {
+            if ((pillarCitations.blueprint?.length ?? 0) === 0 && effectiveBlueprintStatus !== "analyzed") {
               setManuallyValidatedBlueprint(true);
               onBlueprintValidated?.(true);
               addReport({
@@ -1202,8 +1217,21 @@ export default function OperationalTruthCards({
               onUpdate?.();
             }
           }}
-          subtitle={effectiveBlueprintStatus !== "analyzed" ? t("operationalTruth.clickToValidate", "Click to manually validate") : undefined}
-          sourceOrigin={manuallyValidatedBlueprint ? "manual" : dataSourceOrigins.blueprint}
+          subtitle={
+            // Show "Click to ignore it" when no citations and status is none/pending
+            (pillarCitations.blueprint?.length ?? 0) === 0 && effectiveBlueprintStatus !== "analyzed"
+              ? (effectiveBlueprintStatus === "none" 
+                  ? t("operationalTruth.clickToIgnore", "Click to ignore it")
+                  : t("operationalTruth.clickToValidate", "Click to manually validate"))
+              : undefined
+          }
+          sourceOrigin={
+            (pillarCitations.blueprint?.length ?? 0) > 0 
+              ? "blueprint" 
+              : manuallyValidatedBlueprint 
+                ? "manual" 
+                : dataSourceOrigins.blueprint
+          }
           linkedCitations={pillarCitations.blueprint}
         />
 

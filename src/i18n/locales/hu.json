@@ -313,7 +313,10 @@
     "navigatedToTimelineDetails": "Feladat naptár megnyitása húzd és ejtsd átütemezéshez",
     "iUnderstood": "Megértettem",
     "acknowledged": "Elfogadva - Köszönjük az áttekintést",
-    "reviewedAndAcknowledged": "Felhasználó áttekintette és elfogadta"
+    "reviewedAndAcknowledged": "Felhasználó áttekintette és elfogadta",
+    "clickToIgnore": "Kattints a figyelmen kívül hagyáshoz",
+    "clickToValidate": "Kattints a manuális jóváhagyáshoz",
+    "clickToCheck": "Kattints a konfliktusok ellenőrzéséhez"
   },
   "synthesis": {
     "title": "Projekt Szintézis",
