@@ -78,58 +78,40 @@ export const MemberDirectory = () => {
   const fetchMembers = async () => {
     setIsLoading(true);
     try {
-      // Use the secure public view that excludes sensitive data
-      let query = supabase
-        .from("bu_profiles_public" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (selectedTrade !== "all") {
-        query = query.eq("primary_trade", selectedTrade);
-      }
-
-      if (selectedAvailability !== "all") {
-        query = query.eq("availability", selectedAvailability);
-      }
-
-      if (showContractorsOnly) {
-        query = query.eq("is_contractor", true);
-      }
-
-      const { data, error } = await query.limit(50);
+      // Use secure RPC function that only returns safe public profile data
+      const { data, error } = await supabase.rpc("get_public_profiles", {
+        trade_filter: selectedTrade !== "all" ? selectedTrade : null,
+        availability_filter: selectedAvailability !== "all" ? selectedAvailability : null,
+        contractors_only: showContractorsOnly,
+        search_query: searchQuery.trim() || null,
+        result_limit: 50,
+      });
 
       if (error) throw error;
 
-      // Cast data to PublicMember array since view isn't in types
+      // Cast data to PublicMember array
       const membersData = (data as unknown as PublicMember[]) || [];
 
       // Fetch names from profiles table
       const userIds = membersData.map(m => m.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", userIds);
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
 
-      const namesMap: Record<string, string> = {};
-      profiles?.forEach(p => {
-        if (p.full_name) {
-          namesMap[p.user_id] = p.full_name;
-        }
-      });
-
-      // Filter by search query
-      let filteredData = membersData;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        filteredData = filteredData.filter(m => 
-          m.company_name?.toLowerCase().includes(q) ||
-          namesMap[m.user_id]?.toLowerCase().includes(q) ||
-          m.service_area?.toLowerCase().includes(q)
-        );
+        const namesMap: Record<string, string> = {};
+        profiles?.forEach(p => {
+          if (p.full_name) {
+            namesMap[p.user_id] = p.full_name;
+          }
+        });
+        setProfileNames(namesMap);
+      } else {
+        setProfileNames({});
       }
 
-      setMembers(filteredData);
-      setProfileNames(namesMap);
+      setMembers(membersData);
     } catch (error) {
       console.error("Error fetching members:", error);
     } finally {
