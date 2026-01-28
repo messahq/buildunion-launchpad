@@ -1034,7 +1034,7 @@ export const ProjectCommandCenter = ({
       // Pillars navigate to overview
       area: () => onNavigateToTab?.("overview"),
       materials: () => onNavigateToTab?.("materials"),
-      blueprint: () => onNavigateToTab?.("documents"),
+      blueprint: () => onNavigateToTab?.("overview"),
       obc: () => onNavigateToTab?.("overview"),
       conflicts: () => onNavigateToTab?.("overview"),
       mode: () => onNavigateToTab?.("team"),
