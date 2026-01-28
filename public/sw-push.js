@@ -65,3 +65,40 @@ self.addEventListener("pushsubscriptionchange", (event) => {
   console.log("Push subscription changed, need to resubscribe");
   // The app will handle resubscription when it loads
 });
+
+// ============================================
+// BACKGROUND SYNC FOR OFFLINE TASK UPDATES
+// ============================================
+
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-tasks") {
+    console.log("[SW] Background sync triggered for tasks");
+    event.waitUntil(syncPendingTasks());
+  }
+});
+
+async function syncPendingTasks() {
+  // This will be handled by the app when it opens
+  // The service worker notifies the app that sync is needed
+  const allClients = await clients.matchAll({ includeUncontrolled: true });
+  
+  for (const client of allClients) {
+    client.postMessage({
+      type: "SYNC_TASKS",
+      timestamp: Date.now(),
+    });
+  }
+  
+  console.log("[SW] Notified clients to sync tasks");
+}
+
+// Listen for messages from the app
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === "GET_VERSION") {
+    event.ports[0].postMessage({ version: "1.1.0-offline-sync" });
+  }
+});

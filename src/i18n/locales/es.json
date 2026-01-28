@@ -1,4 +1,13 @@
 {
+  "offline": {
+    "syncComplete": "{{count}} cambios sincronizados",
+    "syncFailed": "{{count}} cambios fallaron al sincronizar",
+    "savedLocally": "Cambio guardado localmente - se sincronizará cuando esté en línea",
+    "backOnline": "De vuelta en línea - sincronizando cambios...",
+    "offline": "Estás sin conexión - los cambios se guardarán localmente",
+    "pendingChanges": "{{count}} cambios pendientes",
+    "syncing": "Sincronizando..."
+  },
   "commandCenter": {
     "solo": {
       "notRequired": "No requerido (Solo)",

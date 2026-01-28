@@ -1,4 +1,13 @@
 {
+  "offline": {
+    "syncComplete": "{{count}} változás szinkronizálva",
+    "syncFailed": "{{count}} változás szinkronizálása sikertelen",
+    "savedLocally": "Változás mentve helyben - online szinkronizálódik",
+    "backOnline": "Újra online - változások szinkronizálása...",
+    "offline": "Offline módban vagy - változások helyben mentődnek",
+    "pendingChanges": "{{count}} függő változás",
+    "syncing": "Szinkronizálás..."
+  },
   "commandCenter": {
     "solo": {
       "notRequired": "Nem szükséges (Egyéni)",
