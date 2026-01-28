@@ -68,6 +68,7 @@ interface TaskAssignmentProps {
   onClearFilter?: () => void;
   forceCalendarView?: boolean;
   onCalendarViewActivated?: () => void;
+  isSoloMode?: boolean;
 }
 
 interface TeamMember {
@@ -107,7 +108,7 @@ const STATUSES = [
   { value: "completed", label: "Completed", icon: CheckCircle2, color: "text-green-600" },
 ];
 
-const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated }: TaskAssignmentProps) => {
+const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated, isSoloMode = false }: TaskAssignmentProps) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -561,7 +562,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                   </Button>
                 </div>
               )}
-              {isOwner && members.length > 0 && (
+              {isOwner && (members.length > 0 || isSoloMode) && (
                 <TaskTemplateManager
                   projectId={projectId}
                   currentTasks={tasks}
@@ -569,7 +570,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                   isOwner={isOwner}
                 />
               )}
-              {isOwner && members.length > 0 && (
+              {isOwner && (members.length > 0 || isSoloMode) && (
                 <Button
                   size="sm"
                   className="gap-1 bg-amber-600 hover:bg-amber-700"
@@ -583,7 +584,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {members.length === 0 ? (
+          {members.length === 0 && !isSoloMode ? (
             <div className="text-center py-6 text-slate-500 text-sm">
               <User className="h-8 w-8 mx-auto mb-2 text-slate-300" />
               <p>Add team members first</p>
@@ -593,7 +594,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
             <div className="text-center py-6 text-slate-500 text-sm">
               <ListTodo className="h-8 w-8 mx-auto mb-2 text-slate-300" />
               <p>No tasks yet</p>
-              {isOwner && <p className="text-xs mt-1">Create tasks for your team</p>}
+              {isOwner && <p className="text-xs mt-1">{isSoloMode ? "Use templates or add tasks manually" : "Create tasks for your team"}</p>}
             </div>
           ) : viewMode === "calendar" ? (
             <TaskTimelineCalendar
