@@ -147,7 +147,7 @@ serve(async (req) => {
             body: { filePath: doc.file_path, bucketName: "project-documents" },
           });
           if (!pdfResponse.error && pdfResponse.data?.text) {
-            documentExtracts.push(`📄 ${doc.file_name}:\n${pdfResponse.data.text.substring(0, 1500)}...`);
+            documentExtracts.push(`📄 ${doc.file_name}:\n${pdfResponse.data.text.substring(0, 3000)}...`);
           }
         } catch (pdfError) {
           console.warn(`PDF extraction failed for ${doc.file_name}:`, pdfError);
