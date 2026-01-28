@@ -52,6 +52,14 @@ interface ProjectDocument {
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'csv', 'md'];
 
+// Upload limits per file type
+const UPLOAD_LIMITS = {
+  pdf: 10,        // Increased from 5 to 10 for M.E.S.S.A. analysis
+  images: 20,     // Site photos limit
+  documents: 15,  // DOC, DOCX, XLS, XLSX
+  other: 10,      // TXT, CSV, MD
+} as const;
+
 // Generate citation ID from document index
 const generateCitationId = (type: 'D' | 'P', index: number): string => {
   return `${type}-${String(index + 1).padStart(3, '0')}`;
@@ -287,6 +295,30 @@ export default function DocumentsPane({
     }
   };
 
+  // Helper to get file category
+  const getFileCategory = (fileName: string): keyof typeof UPLOAD_LIMITS => {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    if (ext === 'pdf') return 'pdf';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'images';
+    if (['doc', 'docx', 'xls', 'xlsx'].includes(ext)) return 'documents';
+    return 'other';
+  };
+
+  // Get current counts by category
+  const getDocumentCounts = () => {
+    const pdfCount = documents.filter(d => d.file_name.toLowerCase().endsWith('.pdf')).length;
+    const imageCount = documents.filter(d => ['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => d.file_name.toLowerCase().endsWith(ext))).length + (siteImages?.length || 0);
+    const docCount = documents.filter(d => ['doc', 'docx', 'xls', 'xlsx'].some(ext => d.file_name.toLowerCase().endsWith(ext))).length;
+    const otherCount = documents.filter(d => ['txt', 'csv', 'md'].some(ext => d.file_name.toLowerCase().endsWith(ext))).length;
+    return { pdf: pdfCount, images: imageCount, documents: docCount, other: otherCount };
+  };
+
+  // Check if category is at limit
+  const isAtLimit = (category: keyof typeof UPLOAD_LIMITS): boolean => {
+    const counts = getDocumentCounts();
+    return counts[category] >= UPLOAD_LIMITS[category];
+  };
+
   const uploadFiles = async (files: FileList | File[]) => {
     if (!user) {
       toast.error("Please sign in to upload files");
@@ -296,21 +328,51 @@ export default function DocumentsPane({
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
 
-    // Validate all files first
+    const counts = getDocumentCounts();
+    
+    // Check limits and filter files
+    const filesWithLimitCheck: File[] = [];
+    const limitWarnings: string[] = [];
+    
     for (const file of fileArray) {
       const error = validateFile(file);
       if (error) {
         toast.error(`${file.name}: ${error}`);
         return;
       }
+      
+      const category = getFileCategory(file.name);
+      const currentCount = counts[category];
+      const limit = UPLOAD_LIMITS[category];
+      const pendingInCategory = filesWithLimitCheck.filter(f => getFileCategory(f.name) === category).length;
+      
+      if (currentCount + pendingInCategory >= limit) {
+        limitWarnings.push(`${file.name}: ${category.toUpperCase()} limit reached (${limit} max)`);
+        continue;
+      }
+      
+      filesWithLimitCheck.push(file);
+    }
+    
+    // Show limit warnings
+    if (limitWarnings.length > 0) {
+      toast.warning(`Upload limit reached`, {
+        description: limitWarnings.join('\n'),
+        duration: 5000,
+      });
+    }
+    
+    if (filesWithLimitCheck.length === 0) {
+      toast.error("No files to upload - all limits reached");
+      return;
     }
 
     setIsUploading(true);
     let successCount = 0;
 
     try {
-      for (let i = 0; i < fileArray.length; i++) {
-        const file = fileArray[i];
+      for (let i = 0; i < filesWithLimitCheck.length; i++) {
+        const file = filesWithLimitCheck[i];
         const fileId = crypto.randomUUID();
         const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const filePath = `${user.id}/${projectId}/${fileId}-${safeFileName}`;
@@ -430,6 +492,7 @@ export default function DocumentsPane({
   const totalImages = (siteImages?.length || 0);
   const pdfDocuments = documents.filter(d => d.file_name.toLowerCase().endsWith('.pdf'));
   const otherDocuments = documents.filter(d => !d.file_name.toLowerCase().endsWith('.pdf'));
+  const docCounts = getDocumentCounts();
 
   return (
     <Card className={cn("border-border", className)}>
@@ -439,13 +502,43 @@ export default function DocumentsPane({
             <FileText className="h-4 w-4 text-muted-foreground" />
             Documents
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {totalImages} images
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {documents.length} files
-            </Badge>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs",
+                      docCounts.pdf >= UPLOAD_LIMITS.pdf && "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                    )}
+                  >
+                    {pdfDocuments.length}/{UPLOAD_LIMITS.pdf} PDFs
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{pdfDocuments.length >= UPLOAD_LIMITS.pdf ? "PDF limit reached" : `${UPLOAD_LIMITS.pdf - pdfDocuments.length} PDFs remaining`}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs",
+                      docCounts.images >= UPLOAD_LIMITS.images && "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                    )}
+                  >
+                    {docCounts.images}/{UPLOAD_LIMITS.images} images
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{docCounts.images >= UPLOAD_LIMITS.images ? "Image limit reached" : `${UPLOAD_LIMITS.images - docCounts.images} images remaining`}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </CardHeader>
