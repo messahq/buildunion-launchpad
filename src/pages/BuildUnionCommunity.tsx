@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
@@ -7,7 +7,7 @@ import FAQDialog from "@/components/community/FAQDialog";
 import UnionBenefitsDialog from "@/components/community/UnionBenefitsDialog";
 import CertificationsDialog from "@/components/community/CertificationsDialog";
 import QuickStartDialog from "@/components/community/QuickStartDialog";
-import { supabase } from "@/integrations/supabase/client";
+import UnionFinderDialog from "@/components/community/UnionFinderDialog";
 import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare, Hammer } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,7 @@ const BuildUnionCommunity = () => {
   const [isUnionBenefitsOpen, setIsUnionBenefitsOpen] = useState(false);
   const [isCertificationsOpen, setIsCertificationsOpen] = useState(false);
   const [isQuickStartOpen, setIsQuickStartOpen] = useState(false);
+  const [isUnionFinderOpen, setIsUnionFinderOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -493,7 +494,10 @@ const BuildUnionCommunity = () => {
                 <h3 className="text-xl font-semibold text-foreground mb-1">Ready to Join the Movement?</h3>
                 <p className="text-muted-foreground text-sm">Connect with local unions and access exclusive training programs.</p>
               </div>
-              <Button className="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 whitespace-nowrap">
+              <Button 
+                className="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 whitespace-nowrap"
+                onClick={() => setIsUnionFinderOpen(true)}
+              >
                 Find Your Local Union
               </Button>
             </div>
@@ -609,6 +613,7 @@ const BuildUnionCommunity = () => {
       <UnionBenefitsDialog isOpen={isUnionBenefitsOpen} onClose={() => setIsUnionBenefitsOpen(false)} />
       <CertificationsDialog isOpen={isCertificationsOpen} onClose={() => setIsCertificationsOpen(false)} />
       <QuickStartDialog isOpen={isQuickStartOpen} onClose={() => setIsQuickStartOpen(false)} />
+      <UnionFinderDialog isOpen={isUnionFinderOpen} onClose={() => setIsUnionFinderOpen(false)} />
     </div>
   );
 };
