@@ -28,6 +28,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExportDialog, ExportOptions, ExportFormat } from "@/components/ExportDialog";
 import { exportToCSV, exportToJSON, projectExportColumns, generateExportFilename } from "@/lib/exportUtils";
 import { downloadPDF, buildProjectSummaryHTML } from "@/lib/pdfGenerator";
+import { useTranslation } from "react-i18next";
 
 interface SavedProject {
   id: string;
@@ -49,6 +50,7 @@ interface QuestionnaireData {
 
 const BuildUnionProjects2 = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { user, loading: authLoading } = useAuth();
   const { subscription } = useSubscription();
@@ -600,7 +602,7 @@ const BuildUnionProjects2 = () => {
           className="gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Home
+          {t("workspace.backToHome")}
         </Button>
       </div>
 
@@ -656,15 +658,15 @@ const BuildUnionProjects2 = () => {
                     <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
                   <div className="min-w-0">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Projects 2.0</h1>
-                    <p className="text-sm text-muted-foreground truncate">Smart workflow based on AI analysis</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t("workspace.title")}</h1>
+                    <p className="text-sm text-muted-foreground truncate">{t("workspace.subtitle")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                   {/* Tier indicator - hidden on mobile */}
                   {subscription.tier !== "free" && (
                     <span className="hidden md:inline-block px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                      {subscription.tier.toUpperCase()} • Up to {TEAM_LIMITS[subscription.tier] === Infinity ? "∞" : TEAM_LIMITS[subscription.tier]} team members
+                      {subscription.tier.toUpperCase()} • {t("workspace.upTo")} {TEAM_LIMITS[subscription.tier] === Infinity ? "∞" : TEAM_LIMITS[subscription.tier]} {t("workspace.teamMembers")}
                     </span>
                   )}
                   
@@ -676,7 +678,7 @@ const BuildUnionProjects2 = () => {
                       trigger={
                         <Button variant="outline" size="sm" className="gap-2">
                           <Download className="h-4 w-4" />
-                          <span className="hidden sm:inline">Export</span>
+                          <span className="hidden sm:inline">{t("workspace.export")}</span>
                         </Button>
                       }
                     />
@@ -689,8 +691,8 @@ const BuildUnionProjects2 = () => {
                     className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
                     <Plus className="h-4 w-4" />
-                    <span className="hidden xs:inline">New Project</span>
-                    <span className="xs:hidden">New</span>
+                    <span className="hidden xs:inline">{t("workspace.newProject")}</span>
+                    <span className="xs:hidden">{t("workspace.new")}</span>
                   </Button>
                 </div>
               </div>
@@ -730,14 +732,14 @@ const BuildUnionProjects2 = () => {
                 <div className="min-h-[400px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
                   <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
                   <div className="text-center">
-                    <p className="text-lg font-medium text-foreground">Sign in to view projects</p>
-                    <p className="text-muted-foreground">Create an account to start managing your projects</p>
+                    <p className="text-lg font-medium text-foreground">{t("workspace.signInToView")}</p>
+                    <p className="text-muted-foreground">{t("workspace.createAccountToStart")}</p>
                   </div>
                   <Button 
                     onClick={() => navigate("/login")}
                     className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
-                    Sign In
+                    {t("workspace.signIn")}
                   </Button>
                 </div>
               )}
@@ -757,11 +759,11 @@ const BuildUnionProjects2 = () => {
                     <TabsList className="bg-muted/50">
                       <TabsTrigger value="my" className="gap-2 data-[state=active]:bg-background">
                         <FolderOpen className="h-4 w-4" />
-                        My Projects
+                        {t("workspace.myProjects")}
                       </TabsTrigger>
                       <TabsTrigger value="shared" className="gap-2 data-[state=active]:bg-background">
                         <Users className="h-4 w-4" />
-                        Shared With Me
+                        {t("workspace.sharedWithMe")}
                         {sharedProjects.length > 0 && (
                           <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                             {sharedProjects.length}
@@ -776,9 +778,9 @@ const BuildUnionProjects2 = () => {
                     <>
                       {/* Header with count */}
                       <div className="mb-4">
-                        <h2 className="text-xl font-bold text-foreground">My Projects</h2>
+                        <h2 className="text-xl font-bold text-foreground">{t("workspace.myProjects")}</h2>
                         <p className="text-sm text-muted-foreground">
-                          {projects.length} project{projects.length !== 1 ? "s" : ""}{sharedProjects.length > 0 ? ` • ${sharedProjects.length} shared` : ""}
+                          {projects.length} {t("workspace.projects")}{sharedProjects.length > 0 ? ` • ${sharedProjects.length} ${t("workspace.shared")}` : ""}
                         </p>
                       </div>
 
@@ -786,15 +788,15 @@ const BuildUnionProjects2 = () => {
                         <div className="min-h-[300px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
                           <FolderOpen className="h-16 w-16 text-muted-foreground/40" />
                           <div className="text-center">
-                            <p className="text-lg font-medium text-foreground">No projects yet</p>
-                            <p className="text-muted-foreground">Start by answering a few questions</p>
+                            <p className="text-lg font-medium text-foreground">{t("workspace.noProjectsYet")}</p>
+                            <p className="text-muted-foreground">{t("workspace.startByAnswering")}</p>
                           </div>
                           <Button 
                             onClick={() => setShowQuestionnaire(true)}
                             className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                           >
                             <Plus className="h-4 w-4" />
-                            New Project
+                            {t("workspace.newProject")}
                           </Button>
                         </div>
                       ) : (
@@ -863,7 +865,7 @@ const BuildUnionProjects2 = () => {
                                           </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground line-clamp-2">
-                                          {project.description || project.address || "No description"}
+                                          {project.description || project.address || t("workspace.noDescription")}
                                         </p>
                                       </div>
                                     </div>
@@ -871,7 +873,7 @@ const BuildUnionProjects2 = () => {
                                       {project.id === createdProjectId && analyzing && (
                                         <span className="hidden sm:flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
                                           <Sparkles className="h-3 w-3 animate-pulse" />
-                                          Analyzing...
+                                          {t("workspace.analyzing")}
                                         </span>
                                       )}
                                       <Button
@@ -883,7 +885,7 @@ const BuildUnionProjects2 = () => {
                                           setSelectedProjectId(project.id);
                                         }}
                                       >
-                                        Open
+                                        {t("workspace.open")}
                                       </Button>
                                       {/* Mobile open button - always visible */}
                                       <Button
