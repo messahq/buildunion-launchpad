@@ -4,9 +4,30 @@
     "syncFailed": "{{count}} Änderungen konnten nicht synchronisiert werden",
     "savedLocally": "Änderung lokal gespeichert - wird online synchronisiert",
     "backOnline": "Wieder online - Änderungen werden synchronisiert...",
-    "offline": "Sie sind offline - Änderungen werden lokal gespeichert",
-    "pendingChanges": "{{count}} ausstehende Änderungen",
-    "syncing": "Synchronisierung..."
+    "offline": "Offline",
+    "pendingChanges": "ausstehende Änderungen",
+    "syncing": "Synchronisierung...",
+    "workingOffline": "Offline arbeiten",
+    "syncNow": "Jetzt synchronisieren"
+  },
+  "tasks": {
+    "tasks": "Aufgaben",
+    "task": "Aufgabe",
+    "inProgress": "in Bearbeitung",
+    "loadError": "Fehler beim Laden der Aufgaben",
+    "fillRequired": "Bitte Titel ausfüllen und Mitglied zuweisen",
+    "updated": "Aufgabe aktualisiert",
+    "created": "Aufgabe erstellt",
+    "saveFailed": "Fehler beim Speichern der Aufgabe",
+    "deleteConfirm": "Diese Aufgabe löschen?",
+    "deleted": "Aufgabe gelöscht",
+    "deleteFailed": "Fehler beim Löschen der Aufgabe",
+    "statusUpdated": "Status aktualisiert",
+    "statusFailed": "Fehler beim Aktualisieren des Status",
+    "templateApplied": "{{count}} Aufgaben aus Vorlage angewendet",
+    "templateFailed": "Fehler beim Anwenden der Vorlage",
+    "assigned": "Aufgabe zugewiesen an {{name}}",
+    "assignFailed": "Fehler beim Aktualisieren der Zuweisung"
   },
   "commandCenter": {
     "solo": {

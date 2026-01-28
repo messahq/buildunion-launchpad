@@ -4,9 +4,30 @@
     "syncFailed": "فشل مزامنة {{count}} تغييرات",
     "savedLocally": "تم حفظ التغيير محلياً - سيتم المزامنة عند الاتصال",
     "backOnline": "عدت للاتصال - جاري مزامنة التغييرات...",
-    "offline": "أنت غير متصل - سيتم حفظ التغييرات محلياً",
-    "pendingChanges": "{{count}} تغييرات معلقة",
-    "syncing": "جاري المزامنة..."
+    "offline": "غير متصل",
+    "pendingChanges": "تغييرات معلقة",
+    "syncing": "جاري المزامنة...",
+    "workingOffline": "العمل بدون اتصال",
+    "syncNow": "مزامنة الآن"
+  },
+  "tasks": {
+    "tasks": "المهام",
+    "task": "مهمة",
+    "inProgress": "قيد التنفيذ",
+    "loadError": "فشل تحميل المهام",
+    "fillRequired": "يرجى ملء العنوان وتعيين عضو",
+    "updated": "تم تحديث المهمة",
+    "created": "تم إنشاء المهمة",
+    "saveFailed": "فشل حفظ المهمة",
+    "deleteConfirm": "حذف هذه المهمة؟",
+    "deleted": "تم حذف المهمة",
+    "deleteFailed": "فشل حذف المهمة",
+    "statusUpdated": "تم تحديث الحالة",
+    "statusFailed": "فشل تحديث الحالة",
+    "templateApplied": "تم تطبيق {{count}} مهام من القالب",
+    "templateFailed": "فشل تطبيق القالب",
+    "assigned": "تم تعيين المهمة إلى {{name}}",
+    "assignFailed": "فشل تحديث التعيين"
   },
   "commandCenter": {
     "solo": {

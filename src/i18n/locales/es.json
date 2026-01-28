@@ -4,9 +4,30 @@
     "syncFailed": "{{count}} cambios fallaron al sincronizar",
     "savedLocally": "Cambio guardado localmente - se sincronizará cuando esté en línea",
     "backOnline": "De vuelta en línea - sincronizando cambios...",
-    "offline": "Estás sin conexión - los cambios se guardarán localmente",
-    "pendingChanges": "{{count}} cambios pendientes",
-    "syncing": "Sincronizando..."
+    "offline": "Sin conexión",
+    "pendingChanges": "cambios pendientes",
+    "syncing": "Sincronizando...",
+    "workingOffline": "Trabajando sin conexión",
+    "syncNow": "Sincronizar ahora"
+  },
+  "tasks": {
+    "tasks": "Tareas",
+    "task": "tarea",
+    "inProgress": "en progreso",
+    "loadError": "Error al cargar tareas",
+    "fillRequired": "Por favor complete el título y asigne a un miembro",
+    "updated": "Tarea actualizada",
+    "created": "Tarea creada",
+    "saveFailed": "Error al guardar tarea",
+    "deleteConfirm": "¿Eliminar esta tarea?",
+    "deleted": "Tarea eliminada",
+    "deleteFailed": "Error al eliminar tarea",
+    "statusUpdated": "Estado actualizado",
+    "statusFailed": "Error al actualizar estado",
+    "templateApplied": "{{count}} tareas aplicadas de la plantilla",
+    "templateFailed": "Error al aplicar plantilla",
+    "assigned": "Tarea asignada a {{name}}",
+    "assignFailed": "Error al actualizar asignación"
   },
   "commandCenter": {
     "solo": {

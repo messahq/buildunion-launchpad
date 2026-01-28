@@ -4,9 +4,30 @@
     "syncFailed": "{{count}} 个更改同步失败",
     "savedLocally": "更改已本地保存 - 上线后将同步",
     "backOnline": "已重新上线 - 正在同步更改...",
-    "offline": "您已离线 - 更改将本地保存",
-    "pendingChanges": "{{count}} 个待同步更改",
-    "syncing": "同步中..."
+    "offline": "离线",
+    "pendingChanges": "待同步更改",
+    "syncing": "同步中...",
+    "workingOffline": "离线工作",
+    "syncNow": "立即同步"
+  },
+  "tasks": {
+    "tasks": "任务",
+    "task": "任务",
+    "inProgress": "进行中",
+    "loadError": "加载任务失败",
+    "fillRequired": "请填写标题并分配给成员",
+    "updated": "任务已更新",
+    "created": "任务已创建",
+    "saveFailed": "保存任务失败",
+    "deleteConfirm": "删除此任务？",
+    "deleted": "任务已删除",
+    "deleteFailed": "删除任务失败",
+    "statusUpdated": "状态已更新",
+    "statusFailed": "更新状态失败",
+    "templateApplied": "已从模板应用 {{count}} 个任务",
+    "templateFailed": "应用模板失败",
+    "assigned": "任务已分配给 {{name}}",
+    "assignFailed": "更新分配失败"
   },
   "commandCenter": {
     "solo": {

@@ -4,9 +4,30 @@
     "syncFailed": "{{count}} változás szinkronizálása sikertelen",
     "savedLocally": "Változás mentve helyben - online szinkronizálódik",
     "backOnline": "Újra online - változások szinkronizálása...",
-    "offline": "Offline módban vagy - változások helyben mentődnek",
-    "pendingChanges": "{{count}} függő változás",
-    "syncing": "Szinkronizálás..."
+    "offline": "Offline",
+    "pendingChanges": "függő változás",
+    "syncing": "Szinkronizálás...",
+    "workingOffline": "Offline mód",
+    "syncNow": "Szinkronizálás most"
+  },
+  "tasks": {
+    "tasks": "Feladatok",
+    "task": "feladat",
+    "inProgress": "folyamatban",
+    "loadError": "Feladatok betöltése sikertelen",
+    "fillRequired": "Kérlek töltsd ki a címet és válassz csapattagot",
+    "updated": "Feladat frissítve",
+    "created": "Feladat létrehozva",
+    "saveFailed": "Feladat mentése sikertelen",
+    "deleteConfirm": "Törlöd ezt a feladatot?",
+    "deleted": "Feladat törölve",
+    "deleteFailed": "Feladat törlése sikertelen",
+    "statusUpdated": "Státusz frissítve",
+    "statusFailed": "Státusz frissítése sikertelen",
+    "templateApplied": "{{count}} feladat alkalmazva a sablonból",
+    "templateFailed": "Sablon alkalmazása sikertelen",
+    "assigned": "Feladat hozzárendelve: {{name}}",
+    "assignFailed": "Hozzárendelés frissítése sikertelen"
   },
   "commandCenter": {
     "solo": {

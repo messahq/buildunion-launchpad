@@ -4,9 +4,30 @@
     "syncFailed": "{{count}} changes failed to sync",
     "savedLocally": "Change saved locally - will sync when online",
     "backOnline": "Back online - syncing changes...",
-    "offline": "You're offline - changes will be saved locally",
-    "pendingChanges": "{{count}} pending changes",
-    "syncing": "Syncing..."
+    "offline": "Offline",
+    "pendingChanges": "pending changes",
+    "syncing": "Syncing...",
+    "workingOffline": "Working offline",
+    "syncNow": "Sync now"
+  },
+  "tasks": {
+    "tasks": "Tasks",
+    "task": "task",
+    "inProgress": "in progress",
+    "loadError": "Failed to load tasks",
+    "fillRequired": "Please fill in title and assign to a member",
+    "updated": "Task updated",
+    "created": "Task created",
+    "saveFailed": "Failed to save task",
+    "deleteConfirm": "Delete this task?",
+    "deleted": "Task deleted",
+    "deleteFailed": "Failed to delete task",
+    "statusUpdated": "Status updated",
+    "statusFailed": "Failed to update status",
+    "templateApplied": "Applied {{count}} tasks from template",
+    "templateFailed": "Failed to apply template",
+    "assigned": "Task assigned to {{name}}",
+    "assignFailed": "Failed to update assignee"
   },
   "commandCenter": {
     "solo": {

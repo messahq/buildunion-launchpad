@@ -4,9 +4,30 @@
     "syncFailed": "{{count}} modifications n'ont pas pu être synchronisées",
     "savedLocally": "Modification enregistrée localement - sera synchronisée en ligne",
     "backOnline": "De retour en ligne - synchronisation des modifications...",
-    "offline": "Vous êtes hors ligne - les modifications seront enregistrées localement",
-    "pendingChanges": "{{count}} modifications en attente",
-    "syncing": "Synchronisation..."
+    "offline": "Hors ligne",
+    "pendingChanges": "modifications en attente",
+    "syncing": "Synchronisation...",
+    "workingOffline": "Travail hors ligne",
+    "syncNow": "Synchroniser maintenant"
+  },
+  "tasks": {
+    "tasks": "Tâches",
+    "task": "tâche",
+    "inProgress": "en cours",
+    "loadError": "Échec du chargement des tâches",
+    "fillRequired": "Veuillez remplir le titre et assigner à un membre",
+    "updated": "Tâche mise à jour",
+    "created": "Tâche créée",
+    "saveFailed": "Échec de l'enregistrement de la tâche",
+    "deleteConfirm": "Supprimer cette tâche?",
+    "deleted": "Tâche supprimée",
+    "deleteFailed": "Échec de la suppression de la tâche",
+    "statusUpdated": "Statut mis à jour",
+    "statusFailed": "Échec de la mise à jour du statut",
+    "templateApplied": "{{count}} tâches appliquées du modèle",
+    "templateFailed": "Échec de l'application du modèle",
+    "assigned": "Tâche assignée à {{name}}",
+    "assignFailed": "Échec de la mise à jour de l'assignation"
   },
   "commandCenter": {
     "solo": {
