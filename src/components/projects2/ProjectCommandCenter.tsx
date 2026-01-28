@@ -1531,8 +1531,8 @@ export const ProjectCommandCenter = ({
             </div>
           )}
 
-          {/* Quick Action: AI Brief */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          {/* Quick Action: AI Brief - with gradient background wrapper */}
+          <div className="flex flex-col sm:flex-row gap-3 p-4 -mx-4 rounded-xl bg-gradient-to-r from-amber-100 via-orange-50 to-cyan-100 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-cyan-900/20 border border-amber-200/50 dark:border-amber-700/30">
             <Button
               onClick={() => generateAIBrief()}
               disabled={isGeneratingBrief}
