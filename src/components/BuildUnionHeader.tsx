@@ -555,7 +555,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[200px] bg-popover">
+              <DropdownMenuContent align="end" className="min-w-[200px] bg-popover [&_.dropdown-item]:hover:bg-gradient-to-r [&_.dropdown-item]:hover:from-amber-50/80 [&_.dropdown-item]:hover:via-orange-50/60 [&_.dropdown-item]:hover:to-yellow-50/40 [&_.dropdown-item]:dark:hover:from-amber-950/30 [&_.dropdown-item]:dark:hover:via-orange-950/20 [&_.dropdown-item]:dark:hover:to-yellow-950/10">
                 <div className="px-2 py-2">
                   <p className="text-sm font-medium text-foreground">{getDisplayName()}</p>
                   {profile?.company_name && (
@@ -572,7 +572,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/buildunion/profile/view")} className="hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10">
+                <DropdownMenuItem onClick={() => navigate("/buildunion/profile/view")} className="hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10">
                   <Eye className="h-4 w-4 mr-2" />
                   View Profile
                 </DropdownMenuItem>
@@ -599,7 +599,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                                 localStorage.setItem("dev_tier_override", tier);
                                 window.location.reload();
                               }}
-                              className={`capitalize hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10 ${localStorage.getItem("dev_tier_override") === tier ? "bg-cyan-50 dark:bg-cyan-950/30 font-medium" : ""}`}
+                              className={`capitalize hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10 ${localStorage.getItem("dev_tier_override") === tier ? "bg-amber-50 dark:bg-amber-950/30 font-medium" : ""}`}
                             >
                               {tier === "free" && "🆓 Free"}
                               {tier === "pro" && "⚡ Pro"}
@@ -613,7 +613,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                             localStorage.removeItem("dev_tier_override");
                             window.location.reload();
                           }}
-                          className="text-muted-foreground"
+                          className="text-muted-foreground hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10"
                         >
                           Clear Override
                         </DropdownMenuItem>
@@ -624,7 +624,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 )}
                 {subscription.subscribed && (
                   <>
-                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10">
+                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10">
                       Manage Subscription
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -632,7 +632,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 )}
                 {!subscription.subscribed && (
                   <>
-                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="text-cyan-600 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10">
+                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="text-amber-600 hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10">
                       <Zap className="h-4 w-4 mr-2" />
                       Upgrade to Pro
                     </DropdownMenuItem>
@@ -642,7 +642,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 {/* Language selector - collapsible in dropdown */}
                 <div className="sm:hidden">
                   <DropdownMenuItem 
-                    className="text-xs text-muted-foreground py-1 cursor-pointer hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
+                    className="text-xs text-muted-foreground py-1 cursor-pointer hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10"
                     onClick={(e) => {
                       e.preventDefault();
                       setLanguageExpanded(!languageExpanded);
@@ -661,7 +661,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                             handleLanguageChange(lang.code);
                             setLanguageExpanded(false);
                           }}
-                          className={`pl-7 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10 ${selectedLanguage === lang.code ? "bg-cyan-50 dark:bg-cyan-950/30 font-medium" : ""}`}
+                          className={`pl-7 hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10 ${selectedLanguage === lang.code ? "bg-amber-50 dark:bg-amber-950/30 font-medium" : ""}`}
                         >
                           {lang.name}
                         </DropdownMenuItem>
