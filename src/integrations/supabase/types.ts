@@ -53,6 +53,33 @@ export type Database = {
         }
         Relationships: []
       }
+      api_key_requests: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          key_type: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          key_type?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          key_type?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       baseline_versions: {
         Row: {
           change_reason: string
