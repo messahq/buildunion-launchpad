@@ -231,15 +231,17 @@ const AskMessaChat = ({ isOpen, onClose }: AskMessaChatProps) => {
             <h4 className="text-lg font-semibold text-slate-900 mb-2">
               Hi! I'm Messa
             </h4>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Your dual-engine AI assistant for Canadian construction. I cross-reference answers 
-              using both Gemini and OpenAI for verified, reliable insights.
+            <p className="text-slate-500 text-sm leading-relaxed mb-4">
+              Your AI assistant for BuildUnion and Canadian construction. 
+              Ask me about the platform, subscription tiers, how to use features, 
+              or construction codes and regulations!
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               {[
-                "OBC 2024 fire safety",
-                "Union wage rates",
-                "Permit requirements",
+                "How does BuildUnion work?",
+                "What's in Pro tier?",
+                "How do I create a project?",
+                "OBC permit requirements",
               ].map((suggestion) => (
                 <button
                   key={suggestion}
