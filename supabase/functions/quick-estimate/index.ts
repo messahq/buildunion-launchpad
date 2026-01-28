@@ -240,46 +240,66 @@ async function geminiVisualAnalysis(
 ): Promise<GeminiVisualData> {
   const isPremium = modelConfig.visualModel === AI_MODELS.GEMINI_PRO;
   
-  const basePrompt = `You are a VISUAL ANALYSIS specialist for construction. Your job is to LOOK at the image and extract what you SEE.
+  // =============================================================================
+  // PRECISION AREA EXTRACTION PROMPT - Zero Tolerance for Estimation Errors
+  // =============================================================================
+  const basePrompt = `You are a PRECISION VISUAL ANALYSIS specialist for construction. Your PRIMARY task is to EXTRACT EXACT MEASUREMENTS from the image.
 
-ANALYZE THE IMAGE AND EXTRACT:
-1. TOTAL AREA - Read the exact measurement shown (e.g., "1350 sq ft")
-2. SURFACE TYPE - What material is visible? (tile, hardwood, concrete, carpet, etc.)
-3. SURFACE CONDITION - Current state (new, worn, damaged, subfloor exposed, etc.)
-4. VISIBLE FEATURES - What rooms/areas are shown? Any obstacles?
-5. ROOM TYPE - Kitchen, bathroom, living room, basement, etc.`;
+=== CRITICAL: EXACT AREA EXTRACTION ===
+Your FIRST and MOST IMPORTANT job is to find and read ANY area measurement visible in the image.
+Look for text like:
+- "Total Area = 1302 sq ft" → Return 1302
+- "1,500 sq ft" → Return 1500
+- "Area: 850 square feet" → Return 850
+- "Floor Area = 2,100 sqft" → Return 2100
+
+DO NOT estimate or calculate. READ THE EXACT NUMBER from the image.
+DO NOT apply any buffers or adjustments - return the RAW number you see.
+DO NOT round or approximate - if you see "1302", return 1302, NOT 1300 or 1100.
+
+=== SECONDARY ANALYSIS (only after area extraction) ===
+1. SURFACE TYPE - What material is visible? (tile, hardwood, laminate, concrete, carpet, etc.)
+2. SURFACE CONDITION - Current state (new, worn, damaged, subfloor exposed, etc.)
+3. VISIBLE FEATURES - What rooms/areas are shown? Any obstacles?
+4. ROOM TYPE - Kitchen, bathroom, living room, basement, etc.`;
 
   const premiumAdditions = isPremium ? `
 
 === PREMIUM DEEP ANALYSIS ===
-6. STRUCTURAL ELEMENTS - Identify load-bearing walls, doorways, windows, columns
-7. ACCESSIBILITY - Note any accessibility considerations (ramps, wide doorways)
-8. UTILITIES - Visible electrical outlets, plumbing, HVAC vents that may affect work
-9. COMPLEXITY ASSESSMENT - Rate project complexity (simple/moderate/complex/highly complex)
-10. SPECIAL CONSIDERATIONS - Identify areas requiring special treatment (moisture, high traffic, etc.)` : '';
+5. STRUCTURAL ELEMENTS - Identify load-bearing walls, doorways, windows, columns
+6. ACCESSIBILITY - Note any accessibility considerations (ramps, wide doorways)
+7. UTILITIES - Visible electrical outlets, plumbing, HVAC vents that may affect work
+8. COMPLEXITY ASSESSMENT - Rate project complexity (simple/moderate/complex/highly complex)
+9. SPECIAL CONSIDERATIONS - Identify areas requiring special treatment (moisture, high traffic, etc.)` : '';
 
   const geminiPrompt = `${basePrompt}
 ${premiumAdditions}
 
 ${description ? `User notes: "${description}"` : ""}
 
-RESPOND IN THIS EXACT JSON FORMAT:
+=== RESPOND IN THIS EXACT JSON FORMAT ===
 {
-  "total_area": NUMBER_FROM_IMAGE_OR_NULL,
+  "total_area": EXACT_NUMBER_FROM_IMAGE_OR_NULL,
   "unit": "sq ft",
   "surface_type": "detected surface material",
-  "surface_condition": "current condition assessment",
+  "surface_condition": "current condition assessment", 
   "visible_features": ["feature1", "feature2"],
   "room_type": "room type",
-  "confidence": "high/medium/low"${isPremium ? `,
+  "confidence": "high/medium/low",
+  "area_source": "visible_text" | "blueprint_label" | "estimated"${isPremium ? `,
   "structural_elements": ["element1", "element2"],
   "utilities_detected": ["utility1", "utility2"],
   "complexity_rating": "simple/moderate/complex/highly complex",
   "special_considerations": ["consideration1", "consideration2"]` : ''}
 }
 
-CRITICAL: Read ANY visible measurements EXACTLY as written. If you see "Total Area = 1350 sq ft", return 1350.
-If no area measurement is visible, estimate based on room proportions and set confidence to "low".`;
+=== ZERO TOLERANCE RULES ===
+1. If you see "1302 sq ft" in the image, total_area MUST be 1302, NOT 1100 or 1300
+2. If you see ANY number followed by "sq ft", "sqft", "square feet", or "SF" - that is your total_area
+3. NEVER subtract a percentage from the area - we add waste buffer LATER, not here
+4. Set confidence to "high" if you read the number directly from visible text
+5. Set confidence to "low" ONLY if no area text is visible and you must estimate
+6. Set area_source to "visible_text" if you read it directly from the image`;
 
   console.log(`GEMINI: Using ${modelConfig.visualModel} (max_tokens: ${modelConfig.maxTokensVisual})`);
   
@@ -384,15 +404,18 @@ async function gptEstimationAnalysis(
 - Painter's tape: 1 roll per 60 linear ft
 - Drop cloths: 1 per 200 sq ft
 - Brushes/rollers: basic set per 500 sq ft
-- Add 10% extra for waste/touch-ups`;
+
+IMPORTANT: Use the EXACT base area (${areaValue} sq ft) for calculations. Do NOT modify this number.
+The waste buffer will be added by the frontend display.`;
     materialsExample = `{
     "materials": [
-      {"item": "Interior Paint", "quantity": NUMBER, "unit": "gallons", "notes": "2 coats, calc details"},
-      {"item": "Primer", "quantity": NUMBER, "unit": "gallons", "notes": "1 coat"},
+      {"item": "Interior Paint", "quantity": NUMBER, "unit": "gallons", "notes": "Based on ${areaValue} sq ft × 2 coats"},
+      {"item": "Primer", "quantity": NUMBER, "unit": "gallons", "notes": "1 coat for ${areaValue} sq ft"},
       {"item": "Painter's Tape", "quantity": NUMBER, "unit": "rolls", "notes": "60 ft/roll"},
       {"item": "Drop Cloths", "quantity": NUMBER, "unit": "pcs", "notes": ""},
       {"item": "Roller Kit", "quantity": NUMBER, "unit": "sets", "notes": "roller + brushes"}
     ],
+    "base_area": ${areaValue || "null"},
     "total_material_area": ${areaValue || "ESTIMATED_AREA"},
     "summary": "Paint materials for ${areaValue || 'estimated'} sq ft",
     "recommendations": ["tip1", "tip2"]
@@ -400,39 +423,56 @@ async function gptEstimationAnalysis(
   } else if (isFlooring || !description) {
     projectType = "Flooring/Tile project";
     estimationRules = `=== FLOORING ESTIMATION RULES ===
+- IMPORTANT: Use EXACT base area of ${areaValue} sq ft for all calculations
+- The 10% waste buffer will be ADDED by the frontend, do NOT add it here
 - Tile box: ~12 sq ft per box
 - Tile adhesive: 1 bag per 40 sq ft
 - Grout: 1 bag per 80 sq ft
-- Add 10-15% waste factor`;
+- Hardwood/Laminate: calculate per ${areaValue} sq ft base
+
+=== CRITICAL AREA HANDLING ===
+- base_area = ${areaValue} (the EXACT number from the image, no modification)
+- total_material_area = ${areaValue} (EXACT SAME as base_area, waste added later)
+- Do NOT subtract or add percentages to the detected area`;
     materialsExample = `{
     "materials": [
-      {"item": "Ceramic Tile", "quantity": NUMBER, "unit": "boxes", "notes": "calc details"},
-      {"item": "Tile Adhesive", "quantity": NUMBER, "unit": "bags", "notes": ""},
-      {"item": "Grout", "quantity": NUMBER, "unit": "bags", "notes": ""}
+      {"item": "Hardwood Flooring", "quantity": ${areaValue || "NUMBER"}, "unit": "sq ft", "notes": "Base area - waste added later"},
+      {"item": "Underlayment/Vapor Barrier", "quantity": ${areaValue || "NUMBER"}, "unit": "sq ft", "notes": "Matches base area"},
+      {"item": "Transition Strips/Thresholds", "quantity": 8, "unit": "linear ft", "notes": "Doorways estimate"},
+      {"item": "Adhesive/Fasteners", "quantity": 1, "unit": "lot", "notes": "Installation supplies"}
     ],
+    "base_area": ${areaValue || "null"},
     "total_material_area": ${areaValue || "ESTIMATED_AREA"},
-    "summary": "Brief summary",
+    "summary": "Flooring materials for ${areaValue || 'detected'} sq ft",
     "recommendations": ["tip1", "tip2"]
   }`;
   } else {
     projectType = description;
     estimationRules = `=== GENERAL ESTIMATION RULES ===
-Based on the project description, estimate appropriate materials.
-Add 10-15% waste factor for materials.`;
+- IMPORTANT: Use EXACT base area of ${areaValue} sq ft
+- The waste buffer will be ADDED by the frontend display, do NOT add it here
+Based on the project description, estimate appropriate materials.`;
     materialsExample = `{
     "materials": [
-      {"item": "Primary Material", "quantity": NUMBER, "unit": "appropriate unit", "notes": "calculation details"}
+      {"item": "Primary Material", "quantity": ${areaValue || "NUMBER"}, "unit": "sq ft", "notes": "Base area"}
     ],
+    "base_area": ${areaValue || "null"},
     "total_material_area": ${areaValue || "ESTIMATED_AREA"},
     "summary": "Brief summary based on project type",
     "recommendations": ["tip1", "tip2"]
   }`;
   }
   
-  const gptPrompt = `You are a PROFESSIONAL CONSTRUCTION ESTIMATOR. Calculate materials needed based on the area and PROJECT TYPE.
+  const gptPrompt = `You are a PRECISION CONSTRUCTION ESTIMATOR. Calculate materials based on EXACT measurements.
 
-=== VISUAL DATA ===
-- Total Area: ${areaValue ? `${areaValue} sq ft` : "Estimate from image"}
+=== CRITICAL: EXACT AREA USAGE ===
+The Visual Engine detected EXACTLY ${areaValue} sq ft from the image.
+YOU MUST USE THIS EXACT NUMBER: ${areaValue}
+DO NOT modify, round, or apply any buffers to this number.
+The frontend will add the waste buffer (+10%) separately.
+
+=== DETECTED DATA ===
+- Base Area: ${areaValue ? `${areaValue} sq ft (EXACT - use this number)` : "Estimate from image"}
 - Surface Type: ${geminiData.surface_type}
 - Room Type: ${geminiData.room_type}
 
@@ -442,10 +482,14 @@ User description: "${description || 'Not specified'}"
 
 ${estimationRules}
 
-RESPOND IN THIS EXACT JSON FORMAT:
+=== RESPOND IN THIS EXACT JSON FORMAT ===
 ${materialsExample}
 
-CRITICAL: Match materials to the PROJECT TYPE. If user says "paint", provide PAINT materials, NOT tiles!`;
+=== ZERO TOLERANCE RULES ===
+1. If Visual Engine said ${areaValue} sq ft, your base_area AND total_material_area MUST be ${areaValue}
+2. Material quantities for area-based items (flooring, underlayment) MUST match ${areaValue}
+3. NEVER subtract from the detected area - the waste is ADDED later, not subtracted now
+4. NEVER round 1302 to 1300 or 1100 - use the EXACT number`;
 
   // Use model from config for cost optimization
   const estimationModel = modelConfig?.estimationModel || AI_MODELS.GEMINI_FLASH_LITE;
