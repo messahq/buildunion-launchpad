@@ -115,7 +115,7 @@ export default function ProjectTimelineBar({
   const getStatusColor = () => {
     if (isOverdue) return "border-destructive bg-destructive/10";
     if (isNotStarted) return "border-muted bg-muted/50";
-    if (isActive) return "border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10";
+    if (isActive) return "border-amber-400/40 bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20";
     return "border-border bg-muted/30";
   };
 
