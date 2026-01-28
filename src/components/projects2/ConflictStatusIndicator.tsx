@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SynthesisResult, DualEngineOutput } from "./ProjectSynthesis";
+import { SynthesisResult, DualEngineOutput } from "./AIAnalysisCitation";
 
 interface ConflictStatusIndicatorProps {
   synthesisResult?: SynthesisResult;
