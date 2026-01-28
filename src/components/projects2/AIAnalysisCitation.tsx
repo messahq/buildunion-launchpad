@@ -317,6 +317,9 @@ export default function AIAnalysisCitation({
   // Track if area was user-provided (manual input) vs AI detected
   const [isUserProvidedArea, setIsUserProvidedArea] = useState(false);
   
+  // Track last area modification timestamp
+  const [areaLastModified, setAreaLastModified] = useState<Date | null>(null);
+  
   // Sync with props - prioritize raw AI detection from dualEngineOutput
   useEffect(() => {
     if (detectedArea) {
@@ -347,12 +350,25 @@ export default function AIAnalysisCitation({
   const wasteBuffer = editableArea ? Math.round(editableArea * 0.1) : 0;
   const totalWithWaste = editableArea ? editableArea + wasteBuffer : null;
   
-  // Handlers
+  // Handlers - recalculate materials when area changes
   const handleAreaChange = (newArea: number) => {
+    const previousArea = editableArea;
     setEditableArea(newArea);
     setIsEditingArea(false);
     setIsUserProvidedArea(true); // User manually edited, mark as user-provided
+    setAreaLastModified(new Date()); // Record modification timestamp
     onAreaChange?.(newArea);
+    
+    // Auto-recalculate materials based on area ratio if we have previous area
+    if (previousArea && previousArea > 0 && newArea !== previousArea) {
+      const ratio = newArea / previousArea;
+      const updatedMaterials = editableMaterials.map(mat => ({
+        ...mat,
+        quantity: Math.round(mat.quantity * ratio)
+      }));
+      setEditableMaterials(updatedMaterials);
+      onMaterialsChange?.(updatedMaterials);
+    }
   };
 
   const handleMaterialQuantityChange = (index: number, newQuantity: number) => {
@@ -566,7 +582,7 @@ export default function AIAnalysisCitation({
               </>
             )}
             
-            {/* Surface/Room info */}
+            {/* Surface/Room info + Last Modified */}
             <div className="text-xs text-muted-foreground mt-2 space-x-2">
               {surfaceType !== "unknown" && (
                 <span>Surface: {surfaceType}</span>
@@ -580,6 +596,13 @@ export default function AIAnalysisCitation({
                 </Badge>
               )}
             </div>
+            {/* Last Modified Timestamp */}
+            {areaLastModified && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                <RefreshCw className="h-3 w-3" />
+                <span>Modified: {areaLastModified.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            )}
             {hasBlueprint && (
               <div className="text-xs text-primary mt-1">📄 Blueprint data included</div>
             )}
