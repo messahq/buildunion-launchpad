@@ -212,6 +212,81 @@ export default function DocumentsPane({
     return null;
   };
 
+  // Register uploaded document as citation in the Citation Registry
+  const registerDocumentCitation = async (fileName: string, filePath: string, docIndex: number) => {
+    try {
+      // Get current verified_facts
+      const { data: summaryData, error: fetchError } = await supabase
+        .from("project_summaries")
+        .select("verified_facts")
+        .eq("project_id", projectId)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error("Error fetching project summary:", fetchError);
+        return;
+      }
+
+      const currentFacts = (summaryData?.verified_facts as Record<string, unknown>) || {};
+      const currentRegistry = (currentFacts.citationRegistry as CitationSource[]) || [];
+      
+      // Find highest DOC number to continue sequence
+      const docNumbers = currentRegistry
+        .filter((c: CitationSource) => c.sourceId?.startsWith('DOC-'))
+        .map((c: CitationSource) => parseInt(c.sourceId?.replace('DOC-', '') || '0', 10));
+      const nextDocNumber = docNumbers.length > 0 ? Math.max(...docNumbers) + 1 : 1;
+      
+      // Determine document type and linked pillar
+      const ext = fileName.split('.').pop()?.toLowerCase() || '';
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+      const isPdf = ext === 'pdf';
+      const documentType: CitationSource['documentType'] = isPdf ? 'pdf' : isImage ? 'site_photo' : 'pdf';
+      
+      // Auto-link to pillars based on document type
+      let linkedPillar: CitationSource['linkedPillar'] | undefined;
+      if (isImage) {
+        linkedPillar = 'area'; // Photos link to Area pillar
+      } else if (isPdf && (fileName.toLowerCase().includes('blueprint') || fileName.toLowerCase().includes('plan'))) {
+        linkedPillar = 'blueprint';
+      }
+
+      const newCitation: CitationSource = {
+        id: crypto.randomUUID(),
+        sourceId: `DOC-${String(nextDocNumber).padStart(3, '0')}`,
+        documentName: fileName,
+        documentType,
+        contextSnippet: `Document uploaded after project creation`,
+        filePath,
+        timestamp: new Date().toISOString(),
+        linkedPillar,
+        registeredAt: new Date().toISOString(),
+        registeredBy: user?.id,
+        sourceType: 'USER',
+      };
+
+      // Update verified_facts with new citation
+      const updatedFacts = {
+        ...currentFacts,
+        citationRegistry: [...currentRegistry, newCitation],
+        citationRegistryUpdatedAt: new Date().toISOString(),
+        totalCitations: currentRegistry.length + 1,
+      };
+
+      const { error: updateError } = await supabase
+        .from("project_summaries")
+        .update({ verified_facts: JSON.parse(JSON.stringify(updatedFacts)) })
+        .eq("project_id", projectId);
+
+      if (updateError) {
+        console.error("Error updating citation registry:", updateError);
+      } else {
+        console.log(`Citation [DOC-${String(nextDocNumber).padStart(3, '0')}] registered for ${fileName}`);
+      }
+    } catch (error) {
+      console.error("Error registering document citation:", error);
+    }
+  };
+
   const uploadFiles = async (files: FileList | File[]) => {
     if (!user) {
       toast.error("Please sign in to upload files");
@@ -234,7 +309,8 @@ export default function DocumentsPane({
     let successCount = 0;
 
     try {
-      for (const file of fileArray) {
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
         const fileId = crypto.randomUUID();
         const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const filePath = `${user.id}/${projectId}/${fileId}-${safeFileName}`;
@@ -269,11 +345,14 @@ export default function DocumentsPane({
           continue;
         }
 
+        // Register citation in Citation Registry (async, don't block upload)
+        registerDocumentCitation(file.name, filePath, successCount);
+        
         successCount++;
       }
 
       if (successCount > 0) {
-        toast.success(`Uploaded ${successCount} file${successCount > 1 ? 's' : ''}`);
+        toast.success(`Uploaded ${successCount} file${successCount > 1 ? 's' : ''} • Citations registered`);
         fetchDocuments();
       }
     } catch (error) {
