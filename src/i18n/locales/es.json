@@ -590,5 +590,10 @@
     "replyAdded": "¡Respuesta agregada!",
     "noReplies": "Aún no hay respuestas",
     "beFirstReply": "¡Sé el primero en responder!"
+  },
+  "upsell": {
+    "regenerateTitle": "¿Quieres mejor calidad?",
+    "regenerateDesc": "Los usuarios Pro obtienen análisis de IA mejorado con mayor precisión",
+    "upgradeToPro": "Actualizar a Pro"
   }
 }

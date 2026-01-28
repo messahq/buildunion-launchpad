@@ -590,5 +590,10 @@
     "replyAdded": "Antwort hinzugefügt!",
     "noReplies": "Noch keine Antworten",
     "beFirstReply": "Seien Sie der Erste, der antwortet!"
+  },
+  "upsell": {
+    "regenerateTitle": "Möchten Sie bessere Qualität?",
+    "regenerateDesc": "Pro-Benutzer erhalten erweiterte KI-Analyse mit höherer Genauigkeit",
+    "upgradeToPro": "Auf Pro upgraden"
   }
 }

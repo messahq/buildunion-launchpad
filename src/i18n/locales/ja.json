@@ -590,5 +590,10 @@
     "replyAdded": "返信が追加されました！",
     "noReplies": "まだ返信がありません",
     "beFirstReply": "最初に返信しましょう！"
+  },
+  "upsell": {
+    "regenerateTitle": "より高品質をお望みですか？",
+    "regenerateDesc": "Proユーザーはより高精度な強化AI分析を利用できます",
+    "upgradeToPro": "Proにアップグレード"
   }
 }

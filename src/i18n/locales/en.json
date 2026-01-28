@@ -603,5 +603,10 @@
     "replyAdded": "Reply added!",
     "noReplies": "No replies yet",
     "beFirstReply": "Be the first to reply!"
+  },
+  "upsell": {
+    "regenerateTitle": "Want better quality?",
+    "regenerateDesc": "Pro users get enhanced AI analysis with higher accuracy",
+    "upgradeToPro": "Upgrade to Pro"
   }
 }
