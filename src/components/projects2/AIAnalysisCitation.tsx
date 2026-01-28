@@ -106,9 +106,39 @@ export interface AIAnalysisCitationProps {
 function generateCitationSources(
   dualEngineOutput?: DualEngineOutput,
   detectedArea?: number | null,
-  materials?: Array<{ item: string; quantity: number; unit: string }>
+  materials?: Array<{ item: string; quantity: number; unit: string }>,
+  surfaceType?: string
 ): CitationSource[] {
   const sources: CitationSource[] = [];
+  
+  // Derive work type description from surface type
+  const getWorkTypeDescription = (surface: string | undefined): string => {
+    const s = (surface || "").toLowerCase();
+    if (s.includes("tile") || s.includes("csempe") || s.includes("ceramic") || s.includes("porcelain")) {
+      return "tile, grout, adhesive";
+    }
+    if (s.includes("paint") || s.includes("festés") || s.includes("festeni")) {
+      return "paint, primer, supplies";
+    }
+    if (s.includes("hardwood") || s.includes("laminate") || s.includes("vinyl")) {
+      return "flooring, underlayment";
+    }
+    if (s.includes("carpet") || s.includes("szőnyeg")) {
+      return "carpet, padding, supplies";
+    }
+    if (s.includes("concrete") || s.includes("beton")) {
+      return "concrete, reinforcement";
+    }
+    // Default based on materials detected
+    if (materials && materials.length > 0) {
+      const firstItem = materials[0]?.item?.toLowerCase() || "";
+      if (firstItem.includes("tile")) return "tile, grout, adhesive";
+      if (firstItem.includes("paint")) return "paint, primer, supplies";
+    }
+    return "primary materials";
+  };
+  
+  const workTypeDesc = getWorkTypeDescription(surfaceType);
   
   // Area detection citation - PRECISION EXTRACTION
   if (detectedArea && dualEngineOutput?.gemini) {
@@ -129,18 +159,14 @@ function generateCitationSources(
     });
   }
   
-  // Materials citation - BASE AREA CLARITY
+  // Materials citation - DYNAMIC WORK TYPE
   if (materials && materials.length > 0) {
-    const baseAreaMaterial = materials.find(m => 
-      m.unit === "sq ft" && m.quantity === detectedArea
-    );
-    
     sources.push({
       id: "materials-estimation",
       sourceId: "MAT-AI",
       documentName: "Material Estimation Report",
       documentType: "log",
-      contextSnippet: `AI calculated ${materials.length} material items using BASE AREA of ${detectedArea?.toLocaleString() || 'detected'} sq ft. Essential materials (flooring, underlayment) use base quantity with +10% waste buffer displayed separately.`,
+      contextSnippet: `AI calculated ${materials.length} material items using BASE AREA of ${detectedArea?.toLocaleString() || 'detected'} sq ft. Essential materials (${workTypeDesc}) use base quantity with +10% waste buffer displayed separately.`,
       timestamp: new Date().toISOString(),
     });
   }
@@ -257,10 +283,20 @@ export default function AIAnalysisCitation({
   const [newMaterialName, setNewMaterialName] = useState("");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
   
-  // Sync with props
+  // Sync with props - with fallback area extraction from materials
   useEffect(() => {
-    setEditableArea(detectedArea ?? null);
-  }, [detectedArea]);
+    if (detectedArea) {
+      setEditableArea(detectedArea);
+    } else if (materials && materials.length > 0) {
+      // Fallback: Extract area from materials (the first sq ft material is total with waste)
+      const areaFromMaterials = materials.find(m => m.unit === "sq ft")?.quantity;
+      if (areaFromMaterials && areaFromMaterials > 0) {
+        // Materials quantity includes +10% waste, so calculate base: total / 1.1
+        const baseArea = Math.round(areaFromMaterials / 1.1);
+        setEditableArea(baseArea);
+      }
+    }
+  }, [detectedArea, materials]);
   
   useEffect(() => {
     setEditableMaterials([...materials]);
@@ -304,8 +340,8 @@ export default function AIAnalysisCitation({
     onMaterialsChange?.(updated);
   };
   
-  // Generate citation sources from analysis data
-  const citationSources = generateCitationSources(dualEngineOutput, editableArea, editableMaterials);
+  // Generate citation sources from analysis data - pass surfaceType for work type detection
+  const citationSources = generateCitationSources(dualEngineOutput, editableArea, editableMaterials, surfaceType);
   
   // Find specific sources for inline citations
   const areaSource = citationSources.find(s => s.sourceId === "PHOTO-AI");
