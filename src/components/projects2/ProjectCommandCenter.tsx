@@ -577,8 +577,14 @@ export const ProjectCommandCenter = ({
   const dataSources = buildDataSourcesStatus();
   
   // Calculate Project Health Score
+  // Solo mode: exclude N/A sources (documents, contracts, team) from health calculation
+  const soloExcludedIds = ["documents", "contracts", "team"];
+  const relevantSources = isSoloMode 
+    ? dataSources.filter(s => !soloExcludedIds.includes(s.id))
+    : dataSources;
+
   const healthScore = Math.round(
-    (dataSources.filter(s => s.status === "complete").length / dataSources.length) * 100
+    (relevantSources.filter(s => s.status === "complete").length / relevantSources.length) * 100
   );
   
   const partialCount = dataSources.filter(s => s.status === "partial").length;

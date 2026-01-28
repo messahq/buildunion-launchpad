@@ -1,4 +1,13 @@
 {
+  "commandCenter": {
+    "solo": {
+      "notRequired": "Nem szükséges (Egyéni)",
+      "documentsOptional": "Dokumentumok opcionálisak Egyéni módban",
+      "contractsOptional": "Szerződések nem szükségesek személyes projektekhez",
+      "teamNotApplicable": "Csapat funkciók letiltva Egyéni módban",
+      "healthScoreNote": "Egészségi pontszám {{count}} releváns adatforrásból számolva"
+    }
+  },
   "baseline": {
     "title": "Projekt Alapállapot",
     "locked": "Rögzítve",

@@ -1,4 +1,13 @@
 {
+  "commandCenter": {
+    "solo": {
+      "notRequired": "Não necessário (Solo)",
+      "documentsOptional": "Documentos são opcionais no Modo Solo",
+      "contractsOptional": "Contratos não são necessários para projetos pessoais",
+      "teamNotApplicable": "Recursos de equipe desativados no Modo Solo",
+      "healthScoreNote": "Pontuação de saúde calculada a partir de {{count}} fontes de dados relevantes"
+    }
+  },
   "baseline": {
     "title": "Linha de Base do Projeto",
     "locked": "Bloqueado",

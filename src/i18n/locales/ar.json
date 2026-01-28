@@ -1,4 +1,13 @@
 {
+  "commandCenter": {
+    "solo": {
+      "notRequired": "غير مطلوب (فردي)",
+      "documentsOptional": "المستندات اختيارية في الوضع الفردي",
+      "contractsOptional": "العقود غير مطلوبة للمشاريع الشخصية",
+      "teamNotApplicable": "ميزات الفريق معطلة في الوضع الفردي",
+      "healthScoreNote": "تم حساب درجة الصحة من {{count}} مصادر بيانات ذات صلة"
+    }
+  },
   "baseline": {
     "title": "خط الأساس للمشروع",
     "locked": "مقفل",

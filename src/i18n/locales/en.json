@@ -1,4 +1,13 @@
 {
+  "commandCenter": {
+    "solo": {
+      "notRequired": "Not required (Solo)",
+      "documentsOptional": "Documents are optional in Solo Mode",
+      "contractsOptional": "Contracts not needed for personal projects",
+      "teamNotApplicable": "Team features disabled in Solo Mode",
+      "healthScoreNote": "Health score calculated from {{count}} relevant data sources"
+    }
+  },
   "baseline": {
     "title": "Project Baseline",
     "locked": "Locked",
