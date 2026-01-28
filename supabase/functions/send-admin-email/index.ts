@@ -228,7 +228,7 @@ serve(async (req) => {
     }
     .meta-row {
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
@@ -498,7 +498,7 @@ serve(async (req) => {
 
         <div class="footer-contact">
           <span class="footer-contact-row">🌐 <a href="https://buildunion.ca">buildunion.ca</a></span>
-          <span class="footer-contact-row">🌐 <a href="https://buadmin.ca">buadmin.ca</a></span>
+          <span class="footer-contact-row">📧 <a href="mailto:admin@buildunion.ca">admin@buildunion.ca</a></span>
           <span class="footer-contact-row">📞 <a href="tel:+14376011426">437-601-1426</a></span>
           <span class="footer-contact-row">📍 Toronto, Ontario, Canada</span>
         </div>
