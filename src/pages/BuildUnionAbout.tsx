@@ -56,7 +56,7 @@ const BuildUnionAbout = () => {
               <img 
                 src={aboutLogo} 
                 alt="BuildUnion Logo" 
-                className="w-32 md:w-40 h-auto mb-5"
+                className="w-32 md:w-40 h-auto mb-5 drop-shadow-lg"
               />
               <h1 className="text-3xl md:text-4xl font-bold mb-4">
                 <span className="text-foreground">{t("about.hero.titlePart1")}</span>{" "}
