@@ -133,7 +133,7 @@ serve(async (req) => {
     const torontoTime = new Date().toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: true,
+      hour12: false,
       timeZone: 'America/Toronto'
     });
 
@@ -217,7 +217,7 @@ serve(async (req) => {
       border-right: none;
     }
     .header-info-item a {
-      color: #f59e0b;
+      color: #06b6d4;
       text-decoration: none;
       font-weight: 500;
     }
@@ -374,11 +374,11 @@ serve(async (req) => {
       color: #64748b;
     }
     .footer-contact-row a {
-      color: #f59e0b;
+      color: #06b6d4;
       text-decoration: none;
     }
     .footer-contact-row a:hover {
-      color: #d97706;
+      color: #0891b2;
       text-decoration: underline;
     }
     .footer-links {
@@ -511,7 +511,7 @@ serve(async (req) => {
 
         <div class="footer-contact">
           <span class="footer-contact-row">🌐 <a href="https://buildunion.ca">buildunion.ca</a></span>
-          <span class="footer-contact-row">📧 <a href="mailto:admin@buildunion.ca">admin@buildunion.ca</a></span>
+          <span class="footer-contact-row">🌐 <a href="https://buadmin.ca">buadmin.ca</a></span>
           <span class="footer-contact-row">📞 <a href="tel:+14376011426">437-601-1426</a></span>
           <span class="footer-contact-row">📍 Toronto, Ontario, Canada</span>
         </div>
