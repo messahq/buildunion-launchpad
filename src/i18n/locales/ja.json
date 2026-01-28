@@ -517,7 +517,11 @@
     "analyzing": "分析中...",
     "noDescription": "説明なし",
     "teamMembers": "名のチームメンバー",
-    "upTo": "最大"
+    "upTo": "最大",
+    "inProgress": "進行中",
+    "completed": "完了",
+    "pendingTasks": "保留中のタスク",
+    "active": "アクティブ"
   },
   "footer": {
     "tagline": "現実世界を構築するチームのための建設グレードのプロジェクト管理。",

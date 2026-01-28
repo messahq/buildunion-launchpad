@@ -517,7 +517,11 @@
     "analyzing": "Analizando...",
     "noDescription": "Sin descripción",
     "teamMembers": "miembros del equipo",
-    "upTo": "Hasta"
+    "upTo": "Hasta",
+    "inProgress": "En Progreso",
+    "completed": "Completado",
+    "pendingTasks": "Tareas Pendientes",
+    "active": "Activo"
   },
   "footer": {
     "tagline": "Gestión de proyectos de nivel construcción para equipos que construyen el mundo real.",

@@ -517,7 +517,11 @@
     "analyzing": "جارٍ التحليل...",
     "noDescription": "لا يوجد وصف",
     "teamMembers": "أعضاء الفريق",
-    "upTo": "حتى"
+    "upTo": "حتى",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "pendingTasks": "المهام المعلقة",
+    "active": "نشط"
   },
   "footer": {
     "tagline": "إدارة مشاريع بمستوى البناء للفرق التي تبني العالم الحقيقي.",

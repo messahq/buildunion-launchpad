@@ -34,9 +34,9 @@ interface ProjectStats {
 
 interface GlobalStats {
   totalProjects: number;
-  activeProjects: number;
-  totalRevenue: number;
-  activeConflicts: number;
+  activeProjects: number; // Unfinished projects (draft + active + in_progress)
+  completedProjects: number; // Completed projects
+  pendingTasks: number; // Tasks not yet completed
 }
 
 interface TaskStats {
@@ -64,7 +64,7 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<ProjectStats>({ total: 0, draft: 0, active: 0, completed: 0 });
-  const [globalStats, setGlobalStats] = useState<GlobalStats>({ totalProjects: 0, activeProjects: 0, totalRevenue: 0, activeConflicts: 0 });
+  const [globalStats, setGlobalStats] = useState<GlobalStats>({ totalProjects: 0, activeProjects: 0, completedProjects: 0, pendingTasks: 0 });
   const [taskStats, setTaskStats] = useState<TaskStats>({ totalTasks: 0, completedTasks: 0 });
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [todaysTasks, setTodaysTasks] = useState<UpcomingTask[]>([]);
@@ -97,22 +97,13 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
       if (allProjectsError) throw allProjectsError;
 
       // Calculate global stats (always based on all projects)
+      // Active = unfinished (draft + active + in_progress), Completed = finished
       const globalProjectStats: GlobalStats = {
         totalProjects: allProjects?.length || 0,
-        activeProjects: allProjects?.filter(p => p.status === 'active' || p.status === 'in_progress').length || 0,
-        totalRevenue: 0, // Will be calculated from summaries
-        activeConflicts: 0, // Placeholder for future conflict tracking
+        activeProjects: allProjects?.filter(p => p.status !== 'completed').length || 0,
+        completedProjects: allProjects?.filter(p => p.status === 'completed').length || 0,
+        pendingTasks: 0, // Will be calculated from tasks
       };
-
-      // Fetch total revenue from project_summaries
-      const { data: summaries } = await supabase
-        .from("project_summaries")
-        .select("total_cost")
-        .eq("user_id", user.id);
-
-      if (summaries) {
-        globalProjectStats.totalRevenue = summaries.reduce((sum, s) => sum + (s.total_cost || 0), 0);
-      }
 
       setGlobalStats(globalProjectStats);
 
@@ -154,10 +145,14 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
         if (!allTasksError && allTasks) {
           // Calculate task-based completion stats
           const completedCount = allTasks.filter(t => t.status === 'completed').length;
+          const pendingCount = allTasks.filter(t => t.status !== 'completed').length;
           setTaskStats({
             totalTasks: allTasks.length,
             completedTasks: completedCount
           });
+          
+          // Update global stats with pending tasks
+          setGlobalStats(prev => ({ ...prev, pendingTasks: pendingCount }));
 
           // Filter for upcoming tasks (not completed, has due date)
           const upcomingOnly = allTasks
@@ -289,23 +284,29 @@ const ProjectDashboardWidget = ({ onTaskClick, selectedProjectId, onClearSelecti
               <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-400 mt-1">{globalStats.totalProjects}</p>
             </div>
             
-            <div className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-3 border border-green-100 dark:border-green-800/30">
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl p-3 border border-amber-100 dark:border-amber-800/30">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-green-600 uppercase tracking-wide">Active</span>
-                <TrendingUp className="h-4 w-4 text-green-500" />
+                <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Active</span>
+                <TrendingUp className="h-4 w-4 text-amber-500" />
               </div>
-              <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">{globalStats.activeProjects}</p>
+              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">{globalStats.activeProjects}</p>
             </div>
 
-            {globalStats.totalRevenue > 0 && (
-              <div className="col-span-2 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-xl p-3 border border-emerald-100 dark:border-emerald-800/30">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-xl p-3 border border-emerald-100 dark:border-emerald-800/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Completed</span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              </div>
+              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1">{globalStats.completedProjects}</p>
+            </div>
+
+            {globalStats.pendingTasks > 0 && (
+              <div className="col-span-2 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-3 border border-orange-100 dark:border-orange-800/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Total Revenue</span>
-                  <Zap className="h-4 w-4 text-emerald-500" />
+                  <span className="text-xs font-medium text-orange-600 uppercase tracking-wide">Pending Tasks</span>
+                  <Timer className="h-4 w-4 text-orange-500" />
                 </div>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1">
-                  ${globalStats.totalRevenue.toLocaleString()}
-                </p>
+                <p className="text-2xl font-bold text-orange-700 dark:text-orange-400 mt-1">{globalStats.pendingTasks}</p>
               </div>
             )}
           </div>
