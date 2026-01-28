@@ -197,8 +197,9 @@ Other Uploaded Files: ${otherDocs.map((d: any) => d.file_name).join(", ")}
     const calculatorResults = summary?.calculator_results || [];
     const workflowConfig = summary?.ai_workflow_config || {};
     const verifiedFacts = summary?.verified_facts || {};
-    const lineItems = summary?.line_items || [];
-    const templateItems = summary?.template_items || [];
+    // Ensure these are arrays (DB might store empty objects {})
+    const lineItems = Array.isArray(summary?.line_items) ? summary.line_items : [];
+    const templateItems = Array.isArray(summary?.template_items) ? summary.template_items : [];
     
     // ============================================
     // AREA DETECTION - PRIORITY CHAIN
