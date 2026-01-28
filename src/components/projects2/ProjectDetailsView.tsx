@@ -2194,7 +2194,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               setSummary(prev => prev ? { ...prev, total_cost: newTotal } : null);
             }}
             onSave={async (costs) => {
-              if (!summary || !user) return;
+              console.log('[Materials Save] Starting save process...', { hasSummary: !!summary, hasUser: !!user });
+              if (!summary || !user) {
+                console.log('[Materials Save] Missing summary or user, aborting');
+                return;
+              }
               
               // Serialize to JSON-compatible format
               const lineItemsData = JSON.parse(JSON.stringify({
@@ -2207,6 +2211,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               const now = new Date();
               const dateStr = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
               const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              
+              console.log('[Materials Save] Generating document:', `Cost-Breakdown-${dateStr}.md`);
               
               let markdownContent = `# Cost Breakdown - ${project.name}\n\n`;
               markdownContent += `**Generated:** ${dateStr} at ${timeStr}\n\n`;
@@ -2259,20 +2265,26 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               const docPath = `${user.id}/${project.id}/${docId}-${docFileName}`;
               
               // Upload to storage
+              console.log('[Materials Save] Uploading to storage path:', docPath);
               const blob = new Blob([markdownContent], { type: 'text/markdown' });
-              const { error: uploadError } = await supabase.storage
+              const { error: uploadError, data: uploadData } = await supabase.storage
                 .from('project-documents')
                 .upload(docPath, blob, { upsert: true, contentType: 'text/markdown' });
               
               if (uploadError) {
-                console.error('Failed to upload cost breakdown document:', uploadError);
+                console.error('[Materials Save] Failed to upload cost breakdown document:', uploadError);
+                toast.error('Failed to save document: ' + uploadError.message);
               } else {
+                console.log('[Materials Save] Upload successful:', uploadData);
+                
                 // Check if we already have a cost breakdown document for today, update or insert
                 const { data: existingDocs } = await supabase
                   .from('project_documents')
                   .select('id, file_path')
                   .eq('project_id', project.id)
                   .like('file_name', `Cost-Breakdown-${dateStr}%`);
+                
+                console.log('[Materials Save] Existing docs for today:', existingDocs);
                 
                 if (existingDocs && existingDocs.length > 0) {
                   // Delete old one(s) from storage and DB
@@ -2283,12 +2295,18 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 }
                 
                 // Insert new document record
-                await supabase.from('project_documents').insert({
+                const { error: insertError } = await supabase.from('project_documents').insert({
                   project_id: project.id,
                   file_name: docFileName,
                   file_path: docPath,
                   file_size: blob.size,
                 });
+                
+                if (insertError) {
+                  console.error('[Materials Save] Failed to insert document record:', insertError);
+                } else {
+                  console.log('[Materials Save] Document record inserted successfully');
+                }
               }
               
               // Get existing verified_facts to update citation registry
