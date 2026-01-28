@@ -877,9 +877,9 @@ export function MaterialCalculationTab({
           <div className="col-span-2">
             <Input
               type="text"
-              inputMode="numeric"
-              value={editValues.quantity || 0}
-              onChange={(e) => setEditValues(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
+              inputMode="decimal"
+              defaultValue={editValues.quantity || 0}
+              onBlur={(e) => setEditValues(prev => ({ ...prev, quantity: parseFloat(e.target.value.replace(',', '.')) || 0 }))}
               className="h-8 text-sm text-center"
             />
           </div>
@@ -894,8 +894,8 @@ export function MaterialCalculationTab({
             <Input
               type="text"
               inputMode="decimal"
-              value={editValues.unitPrice || ''}
-              onChange={(e) => setEditValues(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+              defaultValue={editValues.unitPrice || ''}
+              onBlur={(e) => setEditValues(prev => ({ ...prev, unitPrice: parseFloat(e.target.value.replace(',', '.')) || 0 }))}
               className="h-8 text-sm text-right"
               placeholder="0"
             />
@@ -939,8 +939,8 @@ export function MaterialCalculationTab({
                   <Input
                     type="text"
                     inputMode="decimal"
-                    value={item.baseQuantity || ''}
-                    onChange={(e) => handleBaseQuantityChange(item.id, parseFloat(e.target.value) || 0)}
+                    defaultValue={item.baseQuantity || ''}
+                    onBlur={(e) => handleBaseQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
                     className="h-6 w-16 text-xs text-center p-1 border-dashed"
                     title={t("materials.editBaseQty", "Edit base quantity")}
                   />
@@ -960,8 +960,8 @@ export function MaterialCalculationTab({
             <Input
               type="text"
               inputMode="decimal"
-              value={item.unitPrice || ''}
-              onChange={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+              defaultValue={item.unitPrice || ''}
+              onBlur={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value.replace(',', '.')) || 0)}
               className="h-8 text-sm text-right"
               placeholder="0"
             />
@@ -1245,8 +1245,8 @@ export function MaterialCalculationTab({
                     <Input
                       type="text"
                       inputMode="decimal"
-                      value={otherQuantity || ''}
-                      onChange={(e) => setOtherQuantity(parseFloat(e.target.value) || 1)}
+                      defaultValue={otherQuantity || 1}
+                      onBlur={(e) => setOtherQuantity(parseFloat(e.target.value.replace(',', '.')) || 1)}
                       className="h-9 text-center"
                     />
                   </div>
@@ -1267,8 +1267,8 @@ export function MaterialCalculationTab({
                     <Input
                       type="text"
                       inputMode="decimal"
-                      value={otherUnitPrice || ''}
-                      onChange={(e) => setOtherUnitPrice(parseFloat(e.target.value) || 0)}
+                      defaultValue={otherUnitPrice || ''}
+                      onBlur={(e) => setOtherUnitPrice(parseFloat(e.target.value.replace(',', '.')) || 0)}
                       className="h-9 text-right"
                       placeholder="0"
                     />
