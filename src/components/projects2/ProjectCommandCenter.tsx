@@ -2002,7 +2002,7 @@ export const ProjectCommandCenter = ({
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "p-2.5 rounded-xl transition-transform",
-                      "bg-primary text-primary-foreground",
+                      "bg-muted text-muted-foreground",
                       selectedDocumentId === finishProjectAction.id && "scale-110"
                     )}>
                       <finishProjectAction.icon className="h-5 w-5" />
@@ -2017,8 +2017,9 @@ export const ProjectCommandCenter = ({
                     </div>
                   </div>
                   <Button
+                    variant="outline"
                     size="sm"
-                    className="h-9 px-4"
+                    className="h-9 px-4 bg-white dark:bg-background"
                     onClick={(e) => {
                       e.stopPropagation();
                       finishProjectAction.action();
