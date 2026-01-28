@@ -145,7 +145,7 @@ serve(async (req) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { 
       font-family: 'Space Grotesk', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif; 
@@ -156,11 +156,11 @@ serve(async (req) => {
       background-color: #f8fafc; 
     }
     .brand-name {
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 600;
-      letter-spacing: -0.5px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 300;
+      letter-spacing: 1px;
     }
-    .brand-build { color: #475569; }
+    .brand-build { color: #ffffff; }
     .brand-union { color: #f59e0b; }
     .wrapper {
       padding: 40px 20px;
@@ -175,23 +175,23 @@ serve(async (req) => {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     }
     .header { 
-      background: linear-gradient(135deg, #ffffff 0%, #fffbeb 50%, #fef3c7 100%);
+      background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
       padding: 32px;
       text-align: center;
       border-bottom: 4px solid #f59e0b;
     }
     .logo-img {
-      max-width: 120px;
+      max-width: 60px;
       height: auto;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
     .header-content {
       margin-top: 16px;
     }
     .company-name {
       font-size: 12px;
-      font-weight: 600;
-      color: #64748b;
+      font-weight: 500;
+      color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 2px;
       margin-bottom: 8px;
@@ -201,14 +201,14 @@ serve(async (req) => {
       width: 100%;
       margin-top: 20px;
       padding-top: 20px;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid #475569;
     }
     .header-info-item {
       display: inline-block;
       padding: 0 16px;
-      border-right: 1px solid #e2e8f0;
+      border-right: 1px solid #475569;
       font-size: 12px;
-      color: #64748b;
+      color: #94a3b8;
     }
     .header-info-item:last-child {
       border-right: none;
@@ -331,11 +331,11 @@ serve(async (req) => {
       opacity: 0.9;
     }
     .footer-company-name {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 22px;
-      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 24px;
+      font-weight: 300;
       margin-top: 12px;
-      letter-spacing: -0.5px;
+      letter-spacing: 1px;
     }
     .footer-build { color: #ffffff; }
     .footer-union { color: #f59e0b; }
@@ -424,7 +424,8 @@ serve(async (req) => {
     <div class="container">
       <!-- HEADER -->
       <div class="header">
-        <div class="brand-name" style="font-size: 28px; margin-bottom: 8px;">
+        <img src="${logoUrl}" alt="BuildUnion Logo" class="logo-img" />
+        <div class="brand-name" style="font-size: 32px; margin-bottom: 8px;">
           <span class="brand-build">Build</span><span class="brand-union">Union</span>
         </div>
         <div class="header-content">
@@ -500,6 +501,7 @@ serve(async (req) => {
       <!-- FOOTER -->
       <div class="footer">
         <div class="footer-logo-section">
+          <img src="${logoUrl}" alt="BuildUnion Logo" class="footer-logo-img" />
           <div class="footer-company-name">
             <span class="footer-build">Build</span><span class="footer-union">Union</span>
           </div>
