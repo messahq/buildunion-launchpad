@@ -228,6 +228,13 @@ serve(async (req) => {
     }
     .meta-row {
       display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .meta-info-row {
+      display: flex;
       justify-content: center;
       align-items: center;
       flex-wrap: wrap;
@@ -239,15 +246,15 @@ serve(async (req) => {
       gap: 6px;
       font-size: 13px;
       color: #64748b;
-      padding: 8px 16px;
+      padding: 6px 14px;
       background: #ffffff;
       border-radius: 8px;
       border: 1px solid #e2e8f0;
     }
     .meta-separator {
       color: #cbd5e1;
-      font-size: 16px;
-      padding: 0 4px;
+      font-size: 14px;
+      padding: 0 2px;
     }
     .meta-timezone {
       font-size: 11px;
@@ -259,13 +266,12 @@ serve(async (req) => {
       display: inline-block;
       background: #ffffff;
       color: #f59e0b;
-      padding: 8px 16px;
+      padding: 10px 24px;
       border-radius: 20px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-left: 8px;
+      letter-spacing: 1px;
       border: 2px solid #f59e0b;
     }
     .content { 
@@ -447,14 +453,16 @@ serve(async (req) => {
       <!-- META BAR -->
       <div class="meta-bar">
         <div class="meta-row">
-          <div class="meta-item">
-            📅 ${torontoDate}
-          </div>
-          <span class="meta-separator">•</span>
-          <div class="meta-item">
-            🕐 ${torontoTime} <span class="meta-timezone">(Toronto)</span>
-          </div>
           <span class="badge">✉️ Official Message</span>
+          <div class="meta-info-row">
+            <div class="meta-item">
+              📅 ${torontoDate}
+            </div>
+            <span class="meta-separator">•</span>
+            <div class="meta-item">
+              🕐 ${torontoTime} <span class="meta-timezone">(Toronto)</span>
+            </div>
+          </div>
         </div>
       </div>
 
