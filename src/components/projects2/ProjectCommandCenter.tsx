@@ -1512,7 +1512,7 @@ export const ProjectCommandCenter = ({
                   conflictMonitorData.severity === "critical" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"
                 )}>
                   <AlertOctagon className="h-4 w-4" />
-                  Adateltérés észlelve - a jelentés hitelessége alacsony
+                  Data conflicts detected - report reliability is low
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {conflictMonitorData.conflictDetails.slice(0, 2).join(" • ")}
