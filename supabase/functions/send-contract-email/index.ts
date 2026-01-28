@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 class ResendClient {
   private apiKey: string;
@@ -38,7 +41,7 @@ const resend = new ResendClient(RESEND_API_KEY || "");
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface ContractEmailRequest {
@@ -48,6 +51,7 @@ interface ContractEmailRequest {
   projectName: string;
   contractUrl: string;
   totalAmount?: number;
+  contractId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -57,18 +61,121 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // ===== AUTHENTICATION CHECK =====
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("[SEND-CONTRACT-EMAIL] Missing or invalid Authorization header");
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized - Missing authentication" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Create authenticated Supabase client
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Verify user is authenticated
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("[SEND-CONTRACT-EMAIL] Invalid token:", claimsError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized - Invalid token" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log("[SEND-CONTRACT-EMAIL] User authenticated:", userId);
+
+    // Parse request body
     const { 
       clientEmail, 
       clientName, 
       contractorName, 
       projectName, 
       contractUrl,
-      totalAmount 
+      totalAmount,
+      contractId
     }: ContractEmailRequest = await req.json();
 
     // Validate required fields
     if (!clientEmail || !clientName || !contractUrl) {
       throw new Error("Missing required fields: clientEmail, clientName, contractUrl");
+    }
+
+    // ===== AUTHORIZATION CHECK =====
+    // Verify user owns the contract they're trying to send
+    if (contractId) {
+      const { data: contract, error: contractError } = await supabase
+        .from("contracts")
+        .select("user_id")
+        .eq("id", contractId)
+        .single();
+
+      if (contractError || !contract) {
+        console.error("[SEND-CONTRACT-EMAIL] Contract not found:", contractId);
+        return new Response(
+          JSON.stringify({ success: false, error: "Contract not found" }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      if (contract.user_id !== userId) {
+        console.error("[SEND-CONTRACT-EMAIL] User does not own contract:", { userId, contractOwnerId: contract.user_id });
+        return new Response(
+          JSON.stringify({ success: false, error: "Forbidden - You do not own this contract" }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    } else {
+      // If no contractId, extract share_token from URL and verify ownership
+      const shareTokenMatch = contractUrl.match(/token=([a-f0-9-]+)/i);
+      if (shareTokenMatch) {
+        const shareToken = shareTokenMatch[1];
+        const { data: contract, error: contractError } = await supabase
+          .from("contracts")
+          .select("user_id")
+          .eq("share_token", shareToken)
+          .single();
+
+        if (contractError || !contract) {
+          console.error("[SEND-CONTRACT-EMAIL] Contract not found by share_token");
+          return new Response(
+            JSON.stringify({ success: false, error: "Contract not found" }),
+            {
+              status: 404,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+
+        if (contract.user_id !== userId) {
+          console.error("[SEND-CONTRACT-EMAIL] User does not own contract");
+          return new Response(
+            JSON.stringify({ success: false, error: "Forbidden - You do not own this contract" }),
+            {
+              status: 403,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+      }
     }
 
     const formattedAmount = totalAmount 
@@ -129,7 +236,7 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Contract email sent successfully:", emailResponse);
+    console.log("[SEND-CONTRACT-EMAIL] Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
       status: 200,
@@ -139,7 +246,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in send-contract-email function:", error);
+    console.error("[SEND-CONTRACT-EMAIL] Error:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {
