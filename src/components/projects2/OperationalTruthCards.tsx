@@ -56,6 +56,17 @@ interface OperationalTruthCardsProps {
     size?: DataSourceOrigin;
     confidence?: DataSourceOrigin;
   };
+  // Linked citations per pillar (from Citation Registry)
+  pillarCitations?: {
+    area?: string[];
+    materials?: string[];
+    blueprint?: string[];
+    obc?: string[];
+    conflict?: string[];
+    mode?: string[];
+    size?: string[];
+    confidence?: string[];
+  };
 }
 
 interface VerificationReport {
@@ -79,6 +90,7 @@ interface PillarCardProps {
   isClickable?: boolean;
   subtitle?: string;
   sourceOrigin?: DataSourceOrigin;
+  linkedCitations?: string[]; // Array of citation IDs like ["P-001", "D-002"]
 }
 
 // Helper to get source label
@@ -105,7 +117,8 @@ const PillarCard = ({
   isLoading,
   isClickable = false,
   subtitle,
-  sourceOrigin
+  sourceOrigin,
+  linkedCitations = []
 }: PillarCardProps) => (
   <Card 
     className={cn(
@@ -131,7 +144,26 @@ const PillarCard = ({
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
         </span>
         <span className="text-xs text-muted-foreground">{label}</span>
-        {isClickable && status === "pending" && !isLoading && (
+        {/* Citation badges - show linked sources */}
+        {linkedCitations.length > 0 && (
+          <div className="flex items-center gap-0.5 ml-auto">
+            {linkedCitations.slice(0, 2).map((citationId) => (
+              <span 
+                key={citationId}
+                className="text-[9px] font-mono bg-amber-500/20 text-amber-700 dark:text-amber-400 px-1 py-0.5 rounded border border-amber-500/30"
+                title={`Linked source: ${citationId}`}
+              >
+                [{citationId}]
+              </span>
+            ))}
+            {linkedCitations.length > 2 && (
+              <span className="text-[9px] text-muted-foreground">
+                +{linkedCitations.length - 2}
+              </span>
+            )}
+          </div>
+        )}
+        {isClickable && status === "pending" && !isLoading && linkedCitations.length === 0 && (
           <Sparkles className="h-3 w-3 text-primary ml-auto" />
         )}
       </div>
@@ -178,6 +210,7 @@ export default function OperationalTruthCards({
   initialBlueprintValidated = false,
   initialConflictsIgnored = false,
   dataSourceOrigins = {},
+  pillarCitations = {},
 }: OperationalTruthCardsProps) {
   const { t } = useTranslation();
   const [loadingPillar, setLoadingPillar] = useState<string | null>(null);
@@ -1125,6 +1158,7 @@ export default function OperationalTruthCards({
           onClick={verifyConfirmedArea}
           subtitle={!confirmedArea ? t("operationalTruth.areaNotDetected", "Area not detected by AI") : undefined}
           sourceOrigin={dataSourceOrigins.area}
+          linkedCitations={pillarCitations.area}
         />
 
         {/* Pillar 2: Materials Count - Clickable */}
@@ -1137,6 +1171,7 @@ export default function OperationalTruthCards({
           isLoading={loadingPillar === "materials"}
           onClick={verifyMaterials}
           sourceOrigin={dataSourceOrigins.materials}
+          linkedCitations={pillarCitations.materials}
         />
 
         {/* Pillar 3: Blueprint Status - Clickable for manual validation */}
@@ -1169,6 +1204,7 @@ export default function OperationalTruthCards({
           }}
           subtitle={effectiveBlueprintStatus !== "analyzed" ? t("operationalTruth.clickToValidate", "Click to manually validate") : undefined}
           sourceOrigin={manuallyValidatedBlueprint ? "manual" : dataSourceOrigins.blueprint}
+          linkedCitations={pillarCitations.blueprint}
         />
 
         {/* Pillar 4: OBC Compliance - Clickable, turns green when acknowledged */}
@@ -1197,6 +1233,7 @@ export default function OperationalTruthCards({
           isLoading={loadingPillar === "obc"}
           onClick={verifyOBCStatus}
           sourceOrigin={obcAcknowledged ? "manual" : dataSourceOrigins.obc}
+          linkedCitations={pillarCitations.obc}
         />
 
         {/* Pillar 5: Conflict Status - Clickable or can be ignored */}
@@ -1216,6 +1253,7 @@ export default function OperationalTruthCards({
           onClick={verifyConflicts}
           subtitle={effectiveConflictStatus === "pending" ? t("operationalTruth.clickToCheck", "Click to check conflicts") : undefined}
           sourceOrigin={manuallyIgnoredConflicts ? "manual" : dataSourceOrigins.conflict}
+          linkedCitations={pillarCitations.conflict}
         />
 
         {/* Pillar 6: Project Mode - Not clickable */}
@@ -1226,6 +1264,7 @@ export default function OperationalTruthCards({
           status="verified"
           iconColor={projectMode === "team" ? "text-emerald-500" : "text-amber-500"}
           sourceOrigin={dataSourceOrigins.mode || "config"}
+          linkedCitations={pillarCitations.mode}
         />
 
         {/* Pillar 7: Project Size - Not clickable */}
@@ -1235,6 +1274,7 @@ export default function OperationalTruthCards({
           value={t(`operationalTruth.${projectSize}`)}
           status="verified"
           sourceOrigin={dataSourceOrigins.size || "config"}
+          linkedCitations={pillarCitations.size}
         />
 
         {/* Pillar 8: Confidence Level - Not clickable */}
@@ -1244,6 +1284,7 @@ export default function OperationalTruthCards({
           value={t(`operationalTruth.${confidenceLevel}`)}
           status={confidenceLevel === "high" ? "verified" : confidenceLevel === "medium" ? "verified" : "warning"}
           sourceOrigin={dataSourceOrigins.confidence || "photo_ai"}
+          linkedCitations={pillarCitations.confidence}
         />
       </div>
 
