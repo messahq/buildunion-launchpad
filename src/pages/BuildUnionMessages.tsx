@@ -19,7 +19,8 @@ import {
   Plus,
   Trash2,
   Upload,
-  Download
+  Download,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -227,6 +228,7 @@ export default function BuildUnionMessages() {
     { email: "", name: "" }
   ]);
   const [bulkSendProgress, setBulkSendProgress] = useState<{ sent: number; total: number; errors: string[] } | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Handle template selection
   const handleTemplateChange = (templateId: string) => {
@@ -694,6 +696,124 @@ export default function BuildUnionMessages() {
     }
   };
 
+  // Generate Email Preview HTML
+  const generateEmailPreviewHtml = () => {
+    const now = new Date();
+    const torontoDate = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'America/Toronto'
+    });
+    const torontoTime = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Toronto'
+    });
+    
+    const recipientName = isBulkMode 
+      ? (bulkRecipients.find(r => r.name.trim())?.name || "Recipient")
+      : (adminEmailName || "Recipient");
+    
+    const messageHtml = adminEmailMessage.split('\n').map(line => 
+      line.trim() ? `<p style="margin: 0 0 12px 0; line-height: 1.6;">${line}</p>` : ''
+    ).join('');
+
+    return `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <!-- HEADER -->
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 32px; text-align: center; border-bottom: 3px solid #f59e0b;">
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 300; letter-spacing: 1px;">
+            <span style="color: #475569;">Build</span><span style="color: #f59e0b;">Union</span>
+          </div>
+          <div style="font-size: 12px; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px;">
+            Construction Management Platform
+          </div>
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+            <span style="display: inline-block; padding: 0 16px; border-right: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
+              🌐 <a href="https://buildunion.ca" style="color: #374151; text-decoration: none; font-weight: 500;">buildunion.ca</a>
+            </span>
+            <span style="display: inline-block; padding: 0 16px; border-right: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
+              📧 <a href="mailto:admin@buildunion.ca" style="color: #374151; text-decoration: none; font-weight: 500;">admin@buildunion.ca</a>
+            </span>
+            <span style="display: inline-block; padding: 0 16px; font-size: 12px; color: #64748b;">
+              📍 Toronto, Ontario, Canada
+            </span>
+          </div>
+        </div>
+        
+        <!-- META BAR -->
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 32px; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; justify-content: flex-start; align-items: center; gap: 16px; flex-wrap: wrap; padding-left: 96px;">
+            <div style="display: inline-flex; align-items: center; font-size: 13px; color: #64748b; padding: 8px 16px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; white-space: nowrap;">
+              ${torontoDate}
+            </div>
+            <span style="color: #cbd5e1; font-size: 14px;">•</span>
+            <span style="display: inline-block; background: transparent; color: #f59e0b; padding: 8px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+              OFFICIAL MESSAGE
+            </span>
+            <span style="color: #cbd5e1; font-size: 14px;">•</span>
+            <div style="display: inline-flex; align-items: center; font-size: 13px; color: #64748b; padding: 8px 16px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; white-space: nowrap;">
+              ${torontoTime} (Toronto)
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div style="padding: 40px 32px;">
+          <p style="font-size: 18px; color: #1e293b; margin-bottom: 24px; font-weight: 500;">
+            Dear ${recipientName},
+          </p>
+          
+          <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 4px solid #f59e0b; padding: 24px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">
+              📝 Subject: ${adminEmailSubject || 'No subject'}
+            </p>
+            <div style="font-size: 15px; color: #1e293b; line-height: 1.7;">
+              ${messageHtml || '<p style="color: #64748b;">No message content</p>'}
+            </div>
+          </div>
+          
+          <p style="font-size: 15px; color: #475569; margin-top: 32px; line-height: 1.6;">
+            Best regards,<br />
+            <strong style="color: #1e293b;">The BuildUnion Admin Team</strong>
+          </p>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 32px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <div style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 300; margin-bottom: 16px; letter-spacing: 1px;">
+            <span style="color: #475569;">Build</span><span style="color: #f59e0b;">Union</span>
+          </div>
+          
+          <div style="height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 24px 0;"></div>
+          
+          <div style="margin: 20px 0;">
+            <span style="display: inline-block; margin: 6px 16px; font-size: 13px; color: #64748b;">
+              🌐 <a href="https://buildunion.ca" style="color: #374151; text-decoration: none;">buildunion.ca</a>
+            </span>
+            <span style="display: inline-block; margin: 6px 16px; font-size: 13px; color: #64748b;">
+              📧 <a href="mailto:admin@buildunion.ca" style="color: #374151; text-decoration: none;">admin@buildunion.ca</a>
+            </span>
+            <span style="display: inline-block; margin: 6px 16px; font-size: 13px; color: #64748b;">
+              📞 <a href="tel:+14376011426" style="color: #374151; text-decoration: none;">437-601-1426</a>
+            </span>
+            <span style="display: inline-block; margin: 6px 16px; font-size: 13px; color: #64748b;">
+              📍 Toronto, Ontario, Canada
+            </span>
+          </div>
+          
+          <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 4px 0; font-size: 12px; color: #475569;">© 2026 BuildUnion. All rights reserved.</p>
+            <p style="margin: 4px 0; font-size: 11px; color: #64748b;">This is an official communication from BuildUnion Admin.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
   // Send Admin Email (single or bulk)
   const sendAdminEmail = async () => {
     if (!adminEmailSubject.trim() || !adminEmailMessage.trim()) {
@@ -1080,13 +1200,22 @@ export default function BuildUnionMessages() {
               </div>
             </div>
             
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 onClick={resetAdminEmailDialog}
                 disabled={isSendingAdminEmail}
               >
                 Cancel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsPreviewOpen(true)}
+                disabled={!adminEmailSubject && !adminEmailMessage}
+                className="gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Preview
               </Button>
               <Button
                 onClick={sendAdminEmail}
@@ -1109,6 +1238,52 @@ export default function BuildUnionMessages() {
                     {isBulkMode ? `Send to ${bulkRecipients.filter(r => r.email.trim()).length} Recipients` : "Send Email"}
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Email Preview Dialog */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5 text-amber-500" />
+                Email Preview
+              </DialogTitle>
+              <DialogDescription>
+                This is how your email will appear to the recipient
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-auto border rounded-lg bg-gray-100 dark:bg-gray-900 p-4">
+              <div 
+                className="bg-white rounded-lg shadow-lg overflow-hidden"
+                dangerouslySetInnerHTML={{ __html: generateEmailPreviewHtml() }}
+              />
+            </div>
+            
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsPreviewOpen(false)}
+              >
+                Close Preview
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsPreviewOpen(false);
+                  sendAdminEmail();
+                }}
+                disabled={
+                  !adminEmailSubject || 
+                  !adminEmailMessage ||
+                  (isBulkMode ? bulkRecipients.filter(r => r.email.trim()).length === 0 : !adminEmailTo)
+                }
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {isBulkMode ? `Send to ${bulkRecipients.filter(r => r.email.trim()).length} Recipients` : "Send Email"}
               </Button>
             </DialogFooter>
           </DialogContent>
