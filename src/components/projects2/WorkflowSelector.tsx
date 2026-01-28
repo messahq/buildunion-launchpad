@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Sparkles, 
   Pencil, 
@@ -15,13 +16,19 @@ import {
   MessageSquare,
   Plus,
   Trash2,
-  Crown
+  Crown,
+  BookOpen,
+  Camera,
+  FileImage,
+  Clock,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SubscriptionTier, TEAM_LIMITS } from "@/hooks/useSubscription";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
 import AIAnalysisCitation, { DualEngineOutput, SynthesisResult } from "./AIAnalysisCitation";
 import ProjectTimelineBar from "./ProjectTimelineBar";
+import { CollectedCitation, CITATION_IDS } from "@/types/collectedCitation";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -54,7 +61,8 @@ export interface WorkflowSelectorProps {
   tier: SubscriptionTier;
   filterAnswers?: FilterAnswers;
   aiTriggers?: AITriggers;
-  onSelectWorkflow: (mode: "solo" | "team", editedData?: EditedAnalysisData) => void;
+  collectedCitations?: CollectedCitation[]; // All citations collected so far
+  onSelectWorkflow: (mode: "solo" | "team", editedData?: EditedAnalysisData, allCitations?: CollectedCitation[]) => void;
   onUpgradeClick: () => void;
   // Re-analyze callback
   onReanalyze?: () => void;
@@ -116,6 +124,7 @@ export default function WorkflowSelector({
   tier,
   filterAnswers,
   aiTriggers,
+  collectedCitations = [],
   onSelectWorkflow,
   onUpgradeClick,
   onReanalyze,
@@ -133,6 +142,42 @@ export default function WorkflowSelector({
   const [hasUserEdits, setHasUserEdits] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState("");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
+
+  // Collect final citations including Mode and AI Analysis
+  const collectFinalCitations = useCallback((selectedMode: "solo" | "team"): CollectedCitation[] => {
+    const now = new Date().toISOString();
+    const finalCitations = [...collectedCitations];
+
+    // [M-001] Mode selection citation
+    finalCitations.push({
+      sourceId: CITATION_IDS.MODE,
+      documentName: 'Workflow Mode Selection',
+      documentType: 'log',
+      contextSnippet: `Selected mode: ${selectedMode === 'solo' ? 'Solo Mode' : 'Team Mode'}`,
+      linkedPillar: 'mode',
+      timestamp: now,
+      sourceType: 'USER',
+    });
+
+    // [A-001] AI Analysis citation (if analysis was performed)
+    if (analysisResult.area || analysisResult.materials.length > 0) {
+      const areaStr = editableArea ? `${editableArea} ${analysisResult.areaUnit}` : 'Not detected';
+      const materialsStr = editableMaterials.length > 0 
+        ? editableMaterials.map(m => `${m.item}: ${m.quantity} ${m.unit}`).slice(0, 3).join(', ')
+        : 'None detected';
+      finalCitations.push({
+        sourceId: CITATION_IDS.AI_ANALYSIS,
+        documentName: 'AI Analysis Results',
+        documentType: 'log',
+        contextSnippet: `Area: ${areaStr} | Materials: ${materialsStr}${editableMaterials.length > 3 ? '...' : ''}`,
+        linkedPillar: 'area',
+        timestamp: now,
+        sourceType: hasUserEdits ? 'USER' : 'PHOTO-AI',
+      });
+    }
+
+    return finalCitations;
+  }, [collectedCitations, analysisResult, editableArea, editableMaterials, hasUserEdits]);
 
   // Determine recommended mode based on tier, project size, AND filter answers (tier-logic hardcoding)
   const getRecommendedMode = (): "solo" | "team" => {
@@ -220,7 +265,10 @@ export default function WorkflowSelector({
         }
       : undefined;
 
-    onSelectWorkflow(mode, editedData);
+    // Collect all citations including mode and AI analysis
+    const allCitations = collectFinalCitations(mode);
+
+    onSelectWorkflow(mode, editedData, allCitations);
   };
 
   // Extract dates from filter answers
@@ -421,6 +469,77 @@ export default function WorkflowSelector({
           <Pencil className="h-3 w-3" />
           <span>Your edits will be saved when you select a workflow</span>
         </div>
+      )}
+
+      {/* References Section - Shows all collected citations */}
+      {collectedCitations.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-4 w-4 text-amber-500" />
+              <h4 className="text-sm font-semibold text-foreground">References</h4>
+              <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600">
+                {collectedCitations.length} sources
+              </Badge>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {collectedCitations.map((citation, index) => (
+                <div 
+                  key={`${citation.sourceId}-${index}`}
+                  className="flex items-start gap-2 p-2 rounded-lg bg-background/50 border border-border/50"
+                >
+                  <div className="flex-shrink-0">
+                    {citation.documentType === 'site_photo' && <Camera className="h-4 w-4 text-blue-500" />}
+                    {citation.documentType === 'blueprint' && <FileImage className="h-4 w-4 text-purple-500" />}
+                    {citation.documentType === 'pdf' && <FileText className="h-4 w-4 text-amber-500" />}
+                    {citation.documentType === 'log' && <Settings className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <Badge 
+                        variant="outline" 
+                        className="text-[9px] px-1.5 py-0 font-mono border-amber-500/50 text-amber-600"
+                      >
+                        [{citation.sourceId}]
+                      </Badge>
+                      <span className="text-xs font-medium text-foreground truncate">
+                        {citation.documentName}
+                      </span>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[8px] px-1 py-0 ml-auto",
+                          citation.sourceType === 'USER' && "border-blue-500/50 text-blue-600",
+                          citation.sourceType === 'PHOTO-AI' && "border-emerald-500/50 text-emerald-600",
+                          citation.sourceType === 'CONFIG' && "border-muted text-muted-foreground"
+                        )}
+                      >
+                        {citation.sourceType}
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                      {citation.contextSnippet}
+                    </p>
+                    {citation.linkedPillar && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-[8px] text-muted-foreground">Linked to:</span>
+                        <Badge 
+                          variant="outline" 
+                          className="text-[8px] px-1 py-0 capitalize border-primary/50 text-primary"
+                        >
+                          {citation.linkedPillar}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2 italic">
+              These references will be stored with your project for verification and traceability.
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
