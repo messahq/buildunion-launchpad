@@ -78,6 +78,11 @@ const BuildUnionProjects2 = () => {
   
   // Tab state for My Projects / Shared With Me
   const [projectsTab, setProjectsTab] = useState<"my" | "shared">("my");
+  
+  // Re-analyze state - stores files for re-analysis
+  const [reanalyzeImages, setReanalyzeImages] = useState<File[]>([]);
+  const [reanalyzeDocuments, setReanalyzeDocuments] = useState<File[]>([]);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   const { 
     analyzeProject, 
@@ -250,6 +255,13 @@ const BuildUnionProjects2 = () => {
               });
           }
         }
+        // Store files for potential re-analysis before clearing pending state
+        if (pendingImages.length > 0) {
+          setReanalyzeImages([...pendingImages]);
+        }
+        if (pendingDocuments.length > 0) {
+          setReanalyzeDocuments([...pendingDocuments]);
+        }
         // Reset pending state but keep createdProjectId for workflow selection
         setPendingImages([]);
         setPendingDocuments([]);
@@ -258,6 +270,55 @@ const BuildUnionProjects2 = () => {
       });
     }
   }, [createdProjectId, pendingImages, pendingDocuments, analyzing, subscription.tier, filterAnswers]);
+
+  // Handle re-analyze request from WorkflowSelector
+  const handleReanalyze = async () => {
+    if (!createdProjectId) return;
+    
+    // Check if we have files to re-analyze
+    const hasFiles = reanalyzeImages.length > 0 || reanalyzeDocuments.length > 0;
+    if (!hasFiles) {
+      toast.info("No files available for re-analysis", {
+        description: "Upload new images or blueprints to analyze."
+      });
+      return;
+    }
+    
+    setIsReanalyzing(true);
+    
+    try {
+      // Get the description from questionnaireData if available
+      const description = questionnaireData?.answers?.description || "";
+      const workType = questionnaireData?.answers?.workType || null;
+      
+      // Force refresh to bypass cache
+      const result = await analyzeProject({
+        projectId: createdProjectId,
+        images: reanalyzeImages,
+        documents: reanalyzeDocuments,
+        description,
+        workType,
+        forceRefresh: true, // Force skip cache
+      });
+      
+      if (result) {
+        const selectorData = transformToSelectorFormat(result);
+        if (selectorData) {
+          setAiAnalysisForSelector(selectorData);
+          toast.success("Re-analysis complete!", {
+            description: `Detected area: ${selectorData.area || "Not found"} ${selectorData.areaUnit}`
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Re-analyze error:", err);
+      toast.error("Failed to re-analyze", {
+        description: "Please try again or add area manually."
+      });
+    } finally {
+      setIsReanalyzing(false);
+    }
+  };
 
   // Handle workflow selection from WorkflowSelector
   const handleWorkflowSelect = async (mode: "solo" | "team", editedData?: EditedAnalysisData) => {
@@ -758,6 +819,8 @@ const BuildUnionProjects2 = () => {
                     aiTriggers={aiTriggers || undefined}
                     onSelectWorkflow={handleWorkflowSelect}
                     onUpgradeClick={handleUpgradeClick}
+                    onReanalyze={handleReanalyze}
+                    isReanalyzing={isReanalyzing}
                   />
                 </div>
               )}
