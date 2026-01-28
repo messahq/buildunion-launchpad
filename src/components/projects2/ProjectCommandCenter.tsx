@@ -1992,24 +1992,24 @@ export const ProjectCommandCenter = ({
                 }}
                 className={cn(
                   "p-4 rounded-lg border-2 text-left transition-all cursor-pointer select-none",
-                  "bg-gradient-to-r from-cyan-50 via-white to-amber-50 dark:from-cyan-950/30 dark:via-background dark:to-amber-950/30",
-                  "border-cyan-200/60 dark:border-cyan-800/40",
-                  "hover:shadow-lg hover:border-cyan-300 dark:hover:border-cyan-700",
-                  "hover:from-cyan-100/80 hover:to-amber-100/80 dark:hover:from-cyan-900/40 dark:hover:to-amber-900/40",
-                  selectedDocumentId === finishProjectAction.id && "ring-2 ring-cyan-300 border-cyan-400"
+                  "bg-gradient-to-r from-sky-50 via-white to-orange-50 dark:from-sky-950/40 dark:via-background dark:to-orange-950/40",
+                  "border-sky-300/70 dark:border-sky-700/50",
+                  "hover:shadow-lg hover:shadow-sky-200/50 dark:hover:shadow-sky-900/30 hover:border-sky-400 dark:hover:border-sky-600",
+                  "hover:from-sky-100/90 hover:to-orange-100/90 dark:hover:from-sky-900/50 dark:hover:to-orange-900/50",
+                  selectedDocumentId === finishProjectAction.id && "ring-2 ring-sky-400 border-sky-500"
                 )}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "p-2.5 rounded-xl transition-transform",
-                      "bg-gradient-to-br from-cyan-500 to-amber-500 text-white shadow-md",
+                      "bg-gradient-to-br from-[#00D4FF] via-[#00A8E8] to-[#FF8A00] text-white shadow-lg shadow-sky-400/30",
                       selectedDocumentId === finishProjectAction.id && "scale-110"
                     )}>
                       <finishProjectAction.icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <span className="font-semibold text-base bg-gradient-to-r from-cyan-700 to-amber-700 dark:from-cyan-400 dark:to-amber-400 bg-clip-text text-transparent">
+                      <span className="font-semibold text-base bg-gradient-to-r from-[#0099CC] via-[#00B4D8] to-[#FF8A00] dark:from-[#00D4FF] dark:via-[#48CAE4] dark:to-[#FFA940] bg-clip-text text-transparent">
                         {finishProjectAction.name}
                       </span>
                       <p className="text-sm text-muted-foreground mt-0.5">
@@ -2022,9 +2022,9 @@ export const ProjectCommandCenter = ({
                     size="sm"
                     className={cn(
                       "h-9 px-4 font-medium transition-all",
-                      "bg-gradient-to-r from-cyan-500 to-amber-500 text-white",
-                      "hover:from-cyan-600 hover:to-amber-600 hover:text-white",
-                      "shadow-md hover:shadow-lg"
+                      "bg-gradient-to-r from-[#00D4FF] via-[#00A8E8] to-[#FF8A00] text-white",
+                      "hover:from-[#00BFFF] hover:via-[#0099CC] hover:to-[#FF7700] hover:text-white",
+                      "shadow-lg shadow-sky-400/40 hover:shadow-xl hover:shadow-orange-400/30"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
