@@ -283,20 +283,23 @@ export default function AIAnalysisCitation({
   const [newMaterialName, setNewMaterialName] = useState("");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
   
-  // Sync with props - with fallback area extraction from materials
+  // Sync with props - prioritize raw AI detection from dualEngineOutput
   useEffect(() => {
     if (detectedArea) {
       setEditableArea(detectedArea);
+    } else if (dualEngineOutput?.gemini?.area) {
+      // Use the raw Gemini-detected area (true base, no waste)
+      setEditableArea(dualEngineOutput.gemini.area);
     } else if (materials && materials.length > 0) {
-      // Fallback: Extract area from materials (the first sq ft material is total with waste)
+      // Last resort: back-calculate from materials
+      // Materials quantity includes +10% waste, so calculate base: total / 1.1
       const areaFromMaterials = materials.find(m => m.unit === "sq ft")?.quantity;
       if (areaFromMaterials && areaFromMaterials > 0) {
-        // Materials quantity includes +10% waste, so calculate base: total / 1.1
         const baseArea = Math.round(areaFromMaterials / 1.1);
         setEditableArea(baseArea);
       }
     }
-  }, [detectedArea, materials]);
+  }, [detectedArea, materials, dualEngineOutput]);
   
   useEffect(() => {
     setEditableMaterials([...materials]);
