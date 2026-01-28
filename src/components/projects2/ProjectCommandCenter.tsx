@@ -1991,25 +1991,24 @@ export const ProjectCommandCenter = ({
                   }
                 }}
                 className={cn(
-                  "p-4 rounded-lg border-2 text-left transition-all cursor-pointer select-none",
-                  "bg-gradient-to-r from-sky-50 via-white to-orange-50 dark:from-sky-950/40 dark:via-background dark:to-orange-950/40",
-                  "border-sky-300/70 dark:border-sky-700/50",
-                  "hover:shadow-lg hover:shadow-sky-200/50 dark:hover:shadow-sky-900/30 hover:border-sky-400 dark:hover:border-sky-600",
-                  "hover:from-sky-100/90 hover:to-orange-100/90 dark:hover:from-sky-900/50 dark:hover:to-orange-900/50",
-                  selectedDocumentId === finishProjectAction.id && "ring-2 ring-sky-400 border-sky-500"
+                  "p-4 rounded-lg border text-left transition-all cursor-pointer select-none",
+                  "bg-muted/30 dark:bg-muted/20",
+                  "border-border",
+                  "hover:bg-muted/50 dark:hover:bg-muted/30",
+                  selectedDocumentId === finishProjectAction.id && "ring-2 ring-primary border-primary"
                 )}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "p-2.5 rounded-xl transition-transform",
-                      "bg-gradient-to-br from-[#00D4FF] via-[#00A8E8] to-[#FF8A00] text-white shadow-lg shadow-sky-400/30",
+                      "bg-primary text-primary-foreground",
                       selectedDocumentId === finishProjectAction.id && "scale-110"
                     )}>
                       <finishProjectAction.icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <span className="font-semibold text-base bg-gradient-to-r from-[#0099CC] via-[#00B4D8] to-[#FF8A00] dark:from-[#00D4FF] dark:via-[#48CAE4] dark:to-[#FFA940] bg-clip-text text-transparent">
+                      <span className="font-semibold text-base text-foreground">
                         {finishProjectAction.name}
                       </span>
                       <p className="text-sm text-muted-foreground mt-0.5">
@@ -2018,14 +2017,8 @@ export const ProjectCommandCenter = ({
                     </div>
                   </div>
                   <Button
-                    variant="ghost"
                     size="sm"
-                    className={cn(
-                      "h-9 px-4 font-medium transition-all",
-                      "bg-gradient-to-r from-[#00D4FF] via-[#00A8E8] to-[#FF8A00] text-white",
-                      "hover:from-[#00BFFF] hover:via-[#0099CC] hover:to-[#FF7700] hover:text-white",
-                      "shadow-lg shadow-sky-400/40 hover:shadow-xl hover:shadow-orange-400/30"
-                    )}
+                    className="h-9 px-4"
                     onClick={(e) => {
                       e.stopPropagation();
                       finishProjectAction.action();
