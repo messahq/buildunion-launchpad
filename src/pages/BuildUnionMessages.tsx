@@ -17,7 +17,9 @@ import {
   FileText,
   Users,
   Plus,
-  Trash2
+  Trash2,
+  Upload,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -251,6 +253,121 @@ export default function BuildUnionMessages() {
     setBulkRecipients(prev => prev.map((r, i) => 
       i === index ? { ...r, [field]: value } : r
     ));
+  };
+
+  // CSV Import functionality
+  const handleCSVImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      toast.error("Please upload a CSV file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+        
+        if (lines.length === 0) {
+          toast.error("CSV file is empty");
+          return;
+        }
+
+        // Detect header row
+        const firstLine = lines[0].toLowerCase();
+        const hasHeader = firstLine.includes('email') || firstLine.includes('name') || firstLine.includes('e-mail');
+        const startIndex = hasHeader ? 1 : 0;
+
+        const importedRecipients: Array<{ email: string; name: string }> = [];
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        for (let i = startIndex; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          // Parse CSV line (handle quoted values)
+          const values: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if ((char === ',' || char === ';') && !inQuotes) {
+              values.push(current.trim().replace(/^"|"$/g, ''));
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/^"|"$/g, ''));
+
+          // Try to find email and name
+          let email = '';
+          let name = '';
+
+          for (const val of values) {
+            const trimmedVal = val.trim();
+            if (emailRegex.test(trimmedVal) && !email) {
+              email = trimmedVal;
+            } else if (trimmedVal && !name && !emailRegex.test(trimmedVal)) {
+              name = trimmedVal;
+            }
+          }
+
+          if (email) {
+            importedRecipients.push({ email, name });
+          }
+        }
+
+        if (importedRecipients.length === 0) {
+          toast.error("No valid email addresses found in the CSV file");
+          return;
+        }
+
+        // Merge with existing recipients (remove empty ones first)
+        const existingNonEmpty = bulkRecipients.filter(r => r.email.trim());
+        const allRecipients = [...existingNonEmpty, ...importedRecipients];
+        
+        // Remove duplicates by email
+        const uniqueRecipients = allRecipients.filter((r, index, self) => 
+          index === self.findIndex(t => t.email.toLowerCase() === r.email.toLowerCase())
+        );
+
+        setBulkRecipients(uniqueRecipients.length > 0 ? uniqueRecipients : [{ email: "", name: "" }]);
+        toast.success(`Imported ${importedRecipients.length} recipients from CSV`, {
+          description: uniqueRecipients.length !== importedRecipients.length + existingNonEmpty.length 
+            ? `${(importedRecipients.length + existingNonEmpty.length) - uniqueRecipients.length} duplicates removed`
+            : undefined
+        });
+      } catch (err) {
+        console.error("CSV parsing error:", err);
+        toast.error("Failed to parse CSV file");
+      }
+    };
+
+    reader.onerror = () => {
+      toast.error("Failed to read the file");
+    };
+
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    event.target.value = '';
+  };
+
+  // Download CSV template
+  const downloadCSVTemplate = () => {
+    const csvContent = "email,name\nexample@email.com,John Doe\nanother@email.com,Jane Smith";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'bulk_email_template.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
 
   const resetAdminEmailDialog = () => {
@@ -795,21 +912,55 @@ export default function BuildUnionMessages() {
               {/* Recipients Section */}
               {isBulkMode ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <Label className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-amber-500" />
                       Recipients ({bulkRecipients.filter(r => r.email.trim()).length})
                     </Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addBulkRecipient}
-                      className="gap-1"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add Recipient
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* CSV Import */}
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={handleCSVImport}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          title="Import CSV"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 pointer-events-none"
+                        >
+                          <Upload className="h-3 w-3" />
+                          Import CSV
+                        </Button>
+                      </div>
+                      {/* Download Template */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={downloadCSVTemplate}
+                        className="gap-1 text-muted-foreground hover:text-foreground"
+                        title="Download CSV template"
+                      >
+                        <Download className="h-3 w-3" />
+                        Template
+                      </Button>
+                      {/* Add Recipient */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addBulkRecipient}
+                        className="gap-1"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Add
+                      </Button>
+                    </div>
                   </div>
                   
                   <ScrollArea className="max-h-48 pr-4">
