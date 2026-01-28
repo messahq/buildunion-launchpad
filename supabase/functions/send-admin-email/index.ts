@@ -68,10 +68,14 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
+    
+    // Create service role client for logging (bypasses RLS)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Verify user
     const token = authHeader.replace("Bearer ", "");
@@ -508,20 +512,57 @@ serve(async (req) => {
 
     console.log(`Sending admin email to: ${recipientEmail}, subject: ${subject}`);
 
-    const emailResponse = await resend.send({
-      from: "BuildUnion Admin <admin@buildunion.ca>",
-      to: [recipientEmail],
-      subject: subject,
-      html: htmlContent,
-      reply_to: replyTo || "admin@buildunion.ca",
-    });
-
-    console.log("Email sent successfully:", emailResponse);
+    let emailStatus = 'sent';
+    let errorMessage: string | null = null;
+    let emailResponse;
+    
+    try {
+      emailResponse = await resend.send({
+        from: "BuildUnion Admin <admin@buildunion.ca>",
+        to: [recipientEmail],
+        subject: subject,
+        html: htmlContent,
+        reply_to: replyTo || "admin@buildunion.ca",
+      });
+      console.log("Email sent successfully:", emailResponse);
+    } catch (sendError) {
+      emailStatus = 'failed';
+      errorMessage = sendError instanceof Error ? sendError.message : "Unknown error";
+      console.error("Email send failed:", errorMessage);
+    }
+    
+    // Log the email to admin_email_logs table (using service role to bypass RLS)
+    try {
+      const messagePreview = message.length > 200 ? message.substring(0, 200) + '...' : message;
+      await supabaseAdmin.from('admin_email_logs').insert({
+        sender_id: userId,
+        recipient_email: recipientEmail,
+        recipient_name: recipientName || null,
+        subject: subject,
+        message_preview: messagePreview,
+        status: emailStatus,
+        error_message: errorMessage,
+      });
+      console.log("Email logged successfully");
+    } catch (logError) {
+      console.error("Failed to log email:", logError);
+      // Don't fail the request if logging fails
+    }
+    
+    if (emailStatus === 'failed') {
+      return new Response(
+        JSON.stringify({ error: errorMessage }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        messageId: emailResponse.id,
+        messageId: emailResponse?.id,
         sentTo: recipientEmail,
         subject: subject,
       }),

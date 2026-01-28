@@ -20,7 +20,10 @@ import {
   Trash2,
   Upload,
   Download,
-  Eye
+  Eye,
+  History,
+  Calendar,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,7 +232,18 @@ export default function BuildUnionMessages() {
   ]);
   const [bulkSendProgress, setBulkSendProgress] = useState<{ sent: number; total: number; errors: string[] } | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [emailLogs, setEmailLogs] = useState<Array<{
+    id: string;
+    recipient_email: string;
+    recipient_name: string | null;
+    subject: string;
+    message_preview: string | null;
+    status: string;
+    error_message: string | null;
+    sent_at: string;
+  }>>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   // Handle template selection
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -696,6 +710,33 @@ export default function BuildUnionMessages() {
     }
   };
 
+  // Fetch email logs
+  const fetchEmailLogs = async () => {
+    if (!user) return;
+    setIsLoadingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('admin_email_logs')
+        .select('*')
+        .order('sent_at', { ascending: false })
+        .limit(100);
+      
+      if (error) throw error;
+      setEmailLogs(data || []);
+    } catch (err) {
+      console.error("Error fetching email logs:", err);
+      toast.error("Failed to load email history");
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+  // Open history dialog and fetch logs
+  const openHistoryDialog = () => {
+    setIsHistoryOpen(true);
+    fetchEmailLogs();
+  };
+
   // Generate Email Preview HTML
   const generateEmailPreviewHtml = () => {
     const now = new Date();
@@ -949,16 +990,26 @@ export default function BuildUnionMessages() {
             </p>
           </div>
           
-          {/* Admin Email Button */}
+          {/* Admin Email Buttons */}
           {isAdmin && (
-            <Button
-              onClick={() => setIsAdminEmailDialogOpen(true)}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
-            >
-              <Shield className="h-4 w-4" />
-              <Mail className="h-4 w-4" />
-              Admin Email
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={openHistoryDialog}
+                className="gap-2"
+              >
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">History</span>
+              </Button>
+              <Button
+                onClick={() => setIsAdminEmailDialogOpen(true)}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
+              >
+                <Shield className="h-4 w-4" />
+                <Mail className="h-4 w-4" />
+                Admin Email
+              </Button>
+            </div>
           )}
         </div>
 
@@ -1278,6 +1329,107 @@ export default function BuildUnionMessages() {
               >
                 <Send className="h-4 w-4 mr-2" />
                 {isBulkMode ? `Send to ${bulkRecipients.filter(r => r.email.trim()).length} Recipients` : "Send Email"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Email History Dialog */}
+        <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-amber-500" />
+                Email History
+              </DialogTitle>
+              <DialogDescription>
+                View all sent admin emails with status and details
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-auto">
+              {isLoadingLogs ? (
+                <div className="space-y-3 p-4">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : emailLogs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
+                  <Mail className="h-12 w-12 mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No emails sent yet</p>
+                  <p className="text-sm">Your sent emails will appear here</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {emailLogs.map((log) => (
+                    <div key={log.id} className="p-4 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium truncate">
+                              {log.recipient_name || log.recipient_email}
+                            </span>
+                            {log.recipient_name && (
+                              <span className="text-sm text-muted-foreground truncate">
+                                ({log.recipient_email})
+                              </span>
+                            )}
+                            <Badge 
+                              variant={log.status === 'sent' ? 'default' : 'destructive'}
+                              className={log.status === 'sent' ? 'bg-green-500' : ''}
+                            >
+                              {log.status === 'sent' ? (
+                                <><Check className="h-3 w-3 mr-1" /> Sent</>
+                              ) : (
+                                <><AlertCircle className="h-3 w-3 mr-1" /> Failed</>
+                              )}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-medium mt-1 text-foreground">
+                            {log.subject}
+                          </p>
+                          {log.message_preview && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {log.message_preview}
+                            </p>
+                          )}
+                          {log.error_message && (
+                            <p className="text-sm text-destructive mt-1">
+                              Error: {log.error_message}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
+                          <Calendar className="h-4 w-4" />
+                          {new Date(log.sent_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter className="pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setIsHistoryOpen(false)}
+              >
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                onClick={fetchEmailLogs}
+                disabled={isLoadingLogs}
+              >
+                Refresh
               </Button>
             </DialogFooter>
           </DialogContent>
