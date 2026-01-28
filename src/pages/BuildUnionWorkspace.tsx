@@ -984,8 +984,16 @@ const BuildUnionProjects2 = () => {
                                       <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
                                           <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{project.name}</h3>
-                                          <Badge variant="outline" className="capitalize text-xs">
-                                            {project.status}
+                                          <Badge 
+                                            variant="outline" 
+                                            className={cn(
+                                              "text-xs",
+                                              project.status === 'completed' 
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800" 
+                                                : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
+                                            )}
+                                          >
+                                            {project.status === 'completed' ? t("workspace.completed") : t("workspace.inProgress")}
                                           </Badge>
                                         </div>
                                         <p className="text-sm text-muted-foreground line-clamp-2">

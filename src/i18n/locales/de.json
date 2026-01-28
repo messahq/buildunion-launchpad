@@ -517,7 +517,11 @@
     "analyzing": "Analysiere...",
     "noDescription": "Keine Beschreibung",
     "teamMembers": "Teammitglieder",
-    "upTo": "Bis zu"
+    "upTo": "Bis zu",
+    "inProgress": "In Bearbeitung",
+    "completed": "Abgeschlossen",
+    "pendingTasks": "Ausstehende Aufgaben",
+    "active": "Aktiv"
   },
   "footer": {
     "tagline": "Projektmanagement auf Bauniveau für Teams, die die reale Welt bauen.",

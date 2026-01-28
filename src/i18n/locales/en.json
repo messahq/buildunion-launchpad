@@ -535,7 +535,11 @@
     "analyzing": "Analyzing...",
     "noDescription": "No description",
     "teamMembers": "team members",
-    "upTo": "Up to"
+    "upTo": "Up to",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "pendingTasks": "Pending Tasks",
+    "active": "Active"
   },
   "footer": {
     "tagline": "Construction grade project management for teams who build the real world.",

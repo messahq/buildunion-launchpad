@@ -535,7 +535,11 @@
     "analyzing": "Elemzés...",
     "noDescription": "Nincs leírás",
     "teamMembers": "csapattag",
-    "upTo": "Maximum"
+    "upTo": "Maximum",
+    "inProgress": "Folyamatban",
+    "completed": "Befejezve",
+    "pendingTasks": "Függőben lévő feladatok",
+    "active": "Aktív"
   },
   "footer": {
     "tagline": "Építőipari szintű projektmenedzsment azoknak a csapatoknak, akik a valós világot építik.",

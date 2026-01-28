@@ -517,7 +517,11 @@
     "analyzing": "分析中...",
     "noDescription": "无描述",
     "teamMembers": "名团队成员",
-    "upTo": "最多"
+    "upTo": "最多",
+    "inProgress": "进行中",
+    "completed": "已完成",
+    "pendingTasks": "待处理任务",
+    "active": "活跃"
   },
   "footer": {
     "tagline": "为建设真实世界的团队打造的建筑级项目管理。",
