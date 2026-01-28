@@ -958,60 +958,63 @@ export default function BuildUnionMessages() {
       <BuildUnionHeader />
       
       <main className="flex-1 container max-w-6xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-3 mb-6">
+        {/* Header - Compact for mobile */}
+        <div className="flex items-center gap-2 mb-4">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => navigate("/buildunion/workspace")}
+            className="h-8 w-8 shrink-0"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <MessageSquare className="h-6 w-6 text-cyan-500" />
-                Messages
-                {totalUnread > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {totalUnread}
-                  </Badge>
-                )}
-              </h1>
-              {!hasPremiumAccess && (
-                <Badge variant="outline" className="bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950 dark:border-cyan-800 dark:text-cyan-300">
-                  <Crown className="h-3 w-3 mr-1" />
-                  Premium Feature
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Direct messages with your connections
-            </p>
+          
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <MessageSquare className="h-5 w-5 text-cyan-500 shrink-0" />
+            <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
+              Messages
+            </h1>
+            {totalUnread > 0 && (
+              <Badge variant="destructive" className="shrink-0">
+                {totalUnread}
+              </Badge>
+            )}
+            {!hasPremiumAccess && (
+              <Badge variant="outline" className="hidden sm:flex bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950 dark:border-cyan-800 dark:text-cyan-300 shrink-0">
+                <Crown className="h-3 w-3 mr-1" />
+                Premium
+              </Badge>
+            )}
           </div>
           
-          {/* Admin Email Buttons */}
+          {/* Admin Email Buttons - Always visible, icon-only on mobile */}
           {isAdmin && (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1 shrink-0">
               <Button
                 variant="outline"
+                size="icon"
                 onClick={openHistoryDialog}
-                className="gap-2"
+                className="h-8 w-8"
+                title="Email History"
               >
                 <History className="h-4 w-4" />
-                <span className="hidden sm:inline">History</span>
               </Button>
               <Button
+                size="icon"
                 onClick={() => setIsAdminEmailDialogOpen(true)}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
+                className="h-8 w-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                title="Send Admin Email"
               >
-                <Shield className="h-4 w-4" />
                 <Mail className="h-4 w-4" />
-                Admin Email
               </Button>
             </div>
           )}
         </div>
+        
+        {/* Subtitle - separate row for mobile */}
+        <p className="text-sm text-muted-foreground mb-4 pl-10">
+          Direct messages with your connections
+        </p>
 
         {/* Admin Email Compose Dialog */}
         <Dialog open={isAdminEmailDialogOpen} onOpenChange={(open) => {
