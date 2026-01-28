@@ -232,6 +232,7 @@ serve(async (req) => {
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
+      padding-left: 16px;
     }
     .meta-item {
       display: inline-flex;
