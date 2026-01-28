@@ -1123,10 +1123,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     const calcProgress = (phaseTasks: TaskWithBudget[]) => 
       phaseTasks.length === 0 ? 0 : Math.round((phaseTasks.filter(t => t.status === "completed").length / phaseTasks.length) * 100);
 
+    // Calculate locking status - phases are locked if previous phase is not 100% complete
+    const prepProgress = calcProgress(preparationTasks);
+    const execProgress = calcProgress(executionTasks);
+    const verProgress = calcProgress(verificationTasks);
+    
+    const executionLocked = prepProgress < 100;
+    const verificationLocked = execProgress < 100 || executionLocked;
+
     return {
       phases: [
-        { name: "Preparation", progress: calcProgress(preparationTasks), taskCount: preparationTasks.length, color: "bg-blue-500" },
-        { name: "Execution", progress: calcProgress(executionTasks), taskCount: executionTasks.length, color: "bg-amber-500" },
+        { name: "Preparation", progress: prepProgress, taskCount: preparationTasks.length, color: "bg-blue-500" },
+        { name: "Execution", progress: executionLocked ? 0 : execProgress, taskCount: executionTasks.length, color: executionLocked ? "bg-muted" : "bg-amber-500" },
+        { name: "Verification", progress: verificationLocked ? 0 : verProgress, taskCount: verificationTasks.length, color: verificationLocked ? "bg-muted" : "bg-green-500" },
       ],
       completedCount: tasks.filter(t => t.status === "completed").length,
       totalCount: tasks.length,
