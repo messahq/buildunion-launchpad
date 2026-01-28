@@ -645,5 +645,26 @@
       "joinButton": "無料で始める",
       "communityButton": "コミュニティを探索"
     }
+  },
+  "citations": {
+    "title": "引用レジストリ",
+    "totalCitations": "引用総数",
+    "linkedCitations": "柱にリンク済み",
+    "sitePhotos": "現場写真",
+    "documents": "文書",
+    "blueprints": "図面",
+    "regulations": "規制",
+    "copyAll": "すべてコピー",
+    "copyTag": "タグをコピー",
+    "linkToPillar": "柱にリンク",
+    "linked": "リンク先",
+    "notLinked": "未リンク",
+    "area": "確認済み面積",
+    "materials": "材料",
+    "blueprint": "図面",
+    "obc": "OBCコンプライアンス",
+    "conflict": "コンフリクトチェック",
+    "citationCopied": "引用をコピーしました",
+    "allCitationsCopied": "すべての引用をコピーしました"
   }
 }

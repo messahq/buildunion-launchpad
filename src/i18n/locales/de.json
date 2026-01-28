@@ -645,5 +645,26 @@
       "joinButton": "Kostenlos Starten",
       "communityButton": "Community Erkunden"
     }
+  },
+  "citations": {
+    "title": "Zitatregister",
+    "totalCitations": "Gesamtzitate",
+    "linkedCitations": "Mit Säulen Verknüpft",
+    "sitePhotos": "Baustellenfotos",
+    "documents": "Dokumente",
+    "blueprints": "Baupläne",
+    "regulations": "Vorschriften",
+    "copyAll": "Alle Kopieren",
+    "copyTag": "Tag kopieren",
+    "linkToPillar": "Mit Säule Verknüpfen",
+    "linked": "Verknüpft mit",
+    "notLinked": "Nicht verknüpft",
+    "area": "Bestätigte Fläche",
+    "materials": "Materialien",
+    "blueprint": "Bauplan",
+    "obc": "OBC Konformität",
+    "conflict": "Konfliktprüfung",
+    "citationCopied": "Zitat kopiert",
+    "allCitationsCopied": "Alle Zitate kopiert"
   }
 }

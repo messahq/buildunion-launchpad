@@ -645,5 +645,26 @@
       "joinButton": "Начать Бесплатно",
       "communityButton": "Исследовать Сообщество"
     }
+  },
+  "citations": {
+    "title": "Реестр Цитирований",
+    "totalCitations": "Всего Цитирований",
+    "linkedCitations": "Связаны со Столпами",
+    "sitePhotos": "Фото Объекта",
+    "documents": "Документы",
+    "blueprints": "Чертежи",
+    "regulations": "Регламенты",
+    "copyAll": "Копировать Все",
+    "copyTag": "Копировать тег",
+    "linkToPillar": "Связать со Столпом",
+    "linked": "Связан с",
+    "notLinked": "Не связан",
+    "area": "Подтверждённая Площадь",
+    "materials": "Материалы",
+    "blueprint": "Чертёж",
+    "obc": "Соответствие OBC",
+    "conflict": "Проверка Конфликтов",
+    "citationCopied": "Цитирование скопировано",
+    "allCitationsCopied": "Все цитирования скопированы"
   }
 }

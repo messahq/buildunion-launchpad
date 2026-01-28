@@ -645,5 +645,26 @@
       "joinButton": "ابدأ مجاناً",
       "communityButton": "استكشف المجتمع"
     }
+  },
+  "citations": {
+    "title": "سجل الاستشهادات",
+    "totalCitations": "إجمالي الاستشهادات",
+    "linkedCitations": "مرتبطة بالأركان",
+    "sitePhotos": "صور الموقع",
+    "documents": "المستندات",
+    "blueprints": "المخططات",
+    "regulations": "اللوائح",
+    "copyAll": "نسخ الكل",
+    "copyTag": "نسخ العلامة",
+    "linkToPillar": "ربط بالركن",
+    "linked": "مرتبط بـ",
+    "notLinked": "غير مرتبط",
+    "area": "المساحة المؤكدة",
+    "materials": "المواد",
+    "blueprint": "المخطط",
+    "obc": "امتثال OBC",
+    "conflict": "فحص التعارض",
+    "citationCopied": "تم نسخ الاستشهاد",
+    "allCitationsCopied": "تم نسخ جميع الاستشهادات"
   }
 }

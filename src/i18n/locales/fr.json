@@ -645,5 +645,26 @@
       "joinButton": "Commencer Gratuitement",
       "communityButton": "Explorer la Communauté"
     }
+  },
+  "citations": {
+    "title": "Registre de Citations",
+    "totalCitations": "Total des Citations",
+    "linkedCitations": "Liées aux Piliers",
+    "sitePhotos": "Photos du Site",
+    "documents": "Documents",
+    "blueprints": "Plans",
+    "regulations": "Réglementations",
+    "copyAll": "Copier Tout",
+    "copyTag": "Copier l'étiquette",
+    "linkToPillar": "Lier au Pilier",
+    "linked": "Lié à",
+    "notLinked": "Non lié",
+    "area": "Surface Confirmée",
+    "materials": "Matériaux",
+    "blueprint": "Plan",
+    "obc": "Conformité OBC",
+    "conflict": "Vérification des Conflits",
+    "citationCopied": "Citation copiée",
+    "allCitationsCopied": "Toutes les citations copiées"
   }
 }
