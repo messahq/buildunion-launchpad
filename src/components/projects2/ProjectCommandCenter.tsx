@@ -78,11 +78,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateProjectReport, generatePDFBlob, ProjectReportParams, ConflictData, buildProjectReportHTML } from "@/lib/pdfGenerator";
 import { OperationalTruth } from "@/types/operationalTruth";
+import { CitationSource } from "@/types/citation";
 import { ProBadge } from "@/components/ui/pro-badge";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ReactMarkdown from "react-markdown";
 import { saveDocumentToProject, saveAIBriefToProject, saveReportToProject } from "@/lib/documentUtils";
+import CitationRegistry from "@/components/citations/CitationRegistry";
 
 // ============================================
 // DATA SOURCE STATUS TYPES
@@ -160,6 +162,10 @@ interface ProjectCommandCenterProps {
   // Client info management
   clientInfo?: ClientInfoData;
   onClientInfoUpdate?: (info: ClientInfoData) => void;
+  // Citation Registry
+  citations?: CitationSource[];
+  onCitationClick?: (citation: CitationSource) => void;
+  onLinkCitationToPillar?: (sourceId: string, pillar: string) => void;
 }
 
 // ============================================
@@ -181,6 +187,9 @@ export const ProjectCommandCenter = ({
   dataSourcesInfo,
   clientInfo,
   onClientInfoUpdate,
+  citations = [],
+  onCitationClick,
+  onLinkCitationToPillar,
 }: ProjectCommandCenterProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -1462,6 +1471,16 @@ export const ProjectCommandCenter = ({
                 </div>
               </div>
           </div>
+
+          {/* Citation Registry Panel */}
+          {citations.length > 0 && (
+            <CitationRegistry
+              citations={citations}
+              onCitationClick={onCitationClick}
+              onLinkToPillar={onLinkCitationToPillar}
+              compact={true}
+            />
+          )}
 
           {/* Conflict Monitor Warning Banner */}
           {conflictMonitorData.hasConflict && (
