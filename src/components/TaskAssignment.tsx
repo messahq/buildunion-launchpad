@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { format, differenceInDays, isPast, isToday, isTomorrow, startOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,10 +54,13 @@ import {
   Wrench,
   Lock,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  WifiOff,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import TaskTimelineCalendar from "./TaskTimelineCalendar";
 import TaskTemplateManager from "./projects2/TaskTemplateManager";
 
@@ -110,6 +114,7 @@ const STATUSES = [
 
 const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated, isSoloMode = false }: TaskAssignmentProps) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +128,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     verification: false,
   });
 
+
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -130,6 +136,73 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Fetch tasks and members - defined as useCallback so it can be called from offline sync
+  const fetchData = useCallback(async () => {
+    if (!projectId) return;
+
+    setLoading(true);
+    try {
+      // Fetch tasks
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("project_tasks")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (tasksError) throw tasksError;
+
+      // Fetch team members
+      const { data: membersData, error: membersError } = await supabase
+        .from("project_members")
+        .select("id, user_id, role")
+        .eq("project_id", projectId);
+
+      if (membersError) throw membersError;
+
+      // Get profile info for each member
+      const membersWithProfiles = await Promise.all(
+        (membersData || []).map(async (member) => {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("user_id", member.user_id)
+            .maybeSingle();
+
+          return {
+            ...member,
+            full_name: profile?.full_name || "Team Member",
+            avatar_url: profile?.avatar_url,
+          };
+        })
+      );
+
+      setMembers(membersWithProfiles);
+
+      // Enrich tasks with assignee info
+      const enrichedTasks = (tasksData || []).map((task) => {
+        const assignee = membersWithProfiles.find((m) => m.user_id === task.assigned_to);
+        return {
+          ...task,
+          assignee_name: assignee?.full_name || "Unknown",
+          assignee_avatar: assignee?.avatar_url,
+        };
+      });
+
+      setTasks(enrichedTasks);
+    } catch (err) {
+      console.error("Error fetching task data:", err);
+      toast.error(t("tasks.loadError", "Failed to load tasks"));
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId, t]);
+
+  // Offline sync hook
+  const { online, pendingCount, isSyncing, queueTaskUpdate, syncAllPending } = useOfflineSync({
+    projectId,
+    onSyncComplete: fetchData,
+  });
 
   // Handle force calendar view from parent (e.g., from Operational Truth reschedule button)
   useEffect(() => {
@@ -139,71 +212,11 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     }
   }, [forceCalendarView, onCalendarViewActivated]);
 
-  // Fetch tasks and members
+  // Initial data fetch and realtime subscription
   useEffect(() => {
-    const fetchData = async () => {
-      if (!projectId) return;
-
-      setLoading(true);
-      try {
-        // Fetch tasks
-        const { data: tasksData, error: tasksError } = await supabase
-          .from("project_tasks")
-          .select("*")
-          .eq("project_id", projectId)
-          .order("created_at", { ascending: false });
-
-        if (tasksError) throw tasksError;
-
-        // Fetch team members
-        const { data: membersData, error: membersError } = await supabase
-          .from("project_members")
-          .select("id, user_id, role")
-          .eq("project_id", projectId);
-
-        if (membersError) throw membersError;
-
-        // Get profile info for each member
-        const membersWithProfiles = await Promise.all(
-          (membersData || []).map(async (member) => {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("user_id", member.user_id)
-              .maybeSingle();
-
-            return {
-              ...member,
-              full_name: profile?.full_name || "Team Member",
-              avatar_url: profile?.avatar_url,
-            };
-          })
-        );
-
-        setMembers(membersWithProfiles);
-
-        // Enrich tasks with assignee info
-        const enrichedTasks = (tasksData || []).map((task) => {
-          const assignee = membersWithProfiles.find((m) => m.user_id === task.assigned_to);
-          return {
-            ...task,
-            assignee_name: assignee?.full_name || "Unknown",
-            assignee_avatar: assignee?.avatar_url,
-          };
-        });
-
-        setTasks(enrichedTasks);
-      } catch (err) {
-        console.error("Error fetching task data:", err);
-        toast.error("Failed to load tasks");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
 
-    // Subscribe to realtime updates
+    // Subscribe to realtime updates (only when online)
     const channel = supabase
       .channel(`project_tasks_${projectId}`)
       .on(
@@ -215,7 +228,9 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
           filter: `project_id=eq.${projectId}`,
         },
         () => {
-          fetchData();
+          if (online) {
+            fetchData();
+          }
         }
       )
       .subscribe();
@@ -223,7 +238,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId]);
+  }, [projectId, fetchData, online]);
 
   const resetForm = () => {
     setTitle("");
@@ -252,7 +267,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
 
   const handleSaveTask = async () => {
     if (!title.trim() || !assignedTo) {
-      toast.error("Please fill in title and assign to a member");
+      toast.error(t("tasks.fillRequired", "Please fill in title and assign to a member"));
       return;
     }
 
@@ -269,58 +284,108 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
       };
 
       if (editingTask) {
-        const { error } = await supabase
-          .from("project_tasks")
-          .update(taskData)
-          .eq("id", editingTask.id);
+        // Try offline queue first
+        const handledOffline = await queueTaskUpdate(editingTask.id, "update", taskData);
+        
+        if (!handledOffline) {
+          // Online - do the update directly
+          const { error } = await supabase
+            .from("project_tasks")
+            .update(taskData)
+            .eq("id", editingTask.id);
 
-        if (error) throw error;
-        toast.success("Task updated");
+          if (error) throw error;
+          toast.success(t("tasks.updated", "Task updated"));
+        } else {
+          // Optimistically update local state
+          setTasks(prev => prev.map(t => 
+            t.id === editingTask.id ? { ...t, ...taskData } : t
+          ));
+        }
       } else {
-        const { error } = await supabase
-          .from("project_tasks")
-          .insert(taskData);
+        // For new tasks, we need a temporary ID for offline mode
+        const tempId = crypto.randomUUID();
+        const handledOffline = await queueTaskUpdate(tempId, "create", taskData);
+        
+        if (!handledOffline) {
+          // Online - insert directly
+          const { error } = await supabase
+            .from("project_tasks")
+            .insert(taskData);
 
-        if (error) throw error;
-        toast.success("Task created");
+          if (error) throw error;
+          toast.success(t("tasks.created", "Task created"));
+        } else {
+          // Optimistically add to local state
+          const newTask: Task = {
+            id: tempId,
+            ...taskData,
+            status: "pending",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            assignee_name: members.find(m => m.user_id === assignedTo)?.full_name || "Unknown",
+            assignee_avatar: members.find(m => m.user_id === assignedTo)?.avatar_url,
+          };
+          setTasks(prev => [newTask, ...prev]);
+        }
       }
 
       setDialogOpen(false);
       resetForm();
     } catch (err: any) {
-      toast.error(err.message || "Failed to save task");
+      toast.error(err.message || t("tasks.saveFailed", "Failed to save task"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm("Delete this task?")) return;
+    if (!confirm(t("tasks.deleteConfirm", "Delete this task?"))) return;
 
     try {
-      const { error } = await supabase
-        .from("project_tasks")
-        .delete()
-        .eq("id", taskId);
+      // Try offline queue first
+      const handledOffline = await queueTaskUpdate(taskId, "delete", {});
+      
+      if (!handledOffline) {
+        // Online - delete directly
+        const { error } = await supabase
+          .from("project_tasks")
+          .delete()
+          .eq("id", taskId);
 
-      if (error) throw error;
-      toast.success("Task deleted");
+        if (error) throw error;
+        toast.success(t("tasks.deleted", "Task deleted"));
+      } else {
+        // Optimistically remove from local state
+        setTasks(prev => prev.filter(t => t.id !== taskId));
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete task");
+      toast.error(err.message || t("tasks.deleteFailed", "Failed to delete task"));
     }
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from("project_tasks")
-        .update({ status: newStatus })
-        .eq("id", taskId);
+      // Try offline queue first
+      const handledOffline = await queueTaskUpdate(taskId, "complete", { status: newStatus });
+      
+      if (!handledOffline) {
+        // Online - update directly
+        const { error } = await supabase
+          .from("project_tasks")
+          .update({ status: newStatus })
+          .eq("id", taskId);
 
-      if (error) throw error;
-      toast.success("Status updated");
+        if (error) throw error;
+        toast.success(t("tasks.statusUpdated", "Status updated"));
+      } else {
+        // Optimistically update local state
+        setTasks(prev => prev.map(t => 
+          t.id === taskId ? { ...t, status: newStatus } : t
+        ));
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to update status");
+      toast.error(err.message || t("tasks.statusFailed", "Failed to update status"));
     }
   };
 
@@ -348,26 +413,40 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
         .insert(tasksToInsert);
 
       if (error) throw error;
-      toast.success(`Applied ${templateTasks.length} tasks from template`);
+      toast.success(t("tasks.templateApplied", `Applied ${templateTasks.length} tasks from template`));
     } catch (err: any) {
       console.error("Error applying template:", err);
-      toast.error(err.message || "Failed to apply template");
+      toast.error(err.message || t("tasks.templateFailed", "Failed to apply template"));
     }
   };
 
   const handleUpdateAssignee = async (taskId: string, newAssigneeId: string) => {
     try {
-      const { error } = await supabase
-        .from("project_tasks")
-        .update({ assigned_to: newAssigneeId })
-        .eq("id", taskId);
-
-      if (error) throw error;
+      // Try offline queue first
+      const handledOffline = await queueTaskUpdate(taskId, "update", { assigned_to: newAssigneeId });
       
-      const member = members.find(m => m.user_id === newAssigneeId);
-      toast.success(`Task assigned to ${member?.full_name || 'team member'}`);
+      if (!handledOffline) {
+        // Online - update directly
+        const { error } = await supabase
+          .from("project_tasks")
+          .update({ assigned_to: newAssigneeId })
+          .eq("id", taskId);
+
+        if (error) throw error;
+        
+        const member = members.find(m => m.user_id === newAssigneeId);
+        toast.success(t("tasks.assigned", `Task assigned to ${member?.full_name || 'team member'}`));
+      } else {
+        // Optimistically update local state
+        const member = members.find(m => m.user_id === newAssigneeId);
+        setTasks(prev => prev.map(t => 
+          t.id === taskId 
+            ? { ...t, assigned_to: newAssigneeId, assignee_name: member?.full_name || "Unknown", assignee_avatar: member?.avatar_url } 
+            : t
+        ));
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to update assignee");
+      toast.error(err.message || t("tasks.assignFailed", "Failed to update assignee"));
     }
   };
 
@@ -515,17 +594,63 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
         </div>
       )}
 
+      {/* Offline Status Banner */}
+      {(!online || pendingCount > 0) && (
+        <div className={cn(
+          "mb-4 flex items-center justify-between rounded-lg p-3 border",
+          !online 
+            ? "bg-amber-50 border-amber-200" 
+            : "bg-blue-50 border-blue-200"
+        )}>
+          <div className="flex items-center gap-2">
+            {!online ? (
+              <>
+                <WifiOff className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">
+                  {t("offline.workingOffline", "Working offline")}
+                </span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className={cn("h-4 w-4 text-blue-600", isSyncing && "animate-spin")} />
+                <span className="text-sm font-medium text-blue-800">
+                  {pendingCount} {t("offline.pendingChanges", "pending changes")}
+                </span>
+              </>
+            )}
+          </div>
+          {online && pendingCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={syncAllPending}
+              disabled={isSyncing}
+              className="gap-1.5 text-blue-700 border-blue-300 hover:bg-blue-100"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+              {t("offline.syncNow", "Sync now")}
+            </Button>
+          )}
+        </div>
+      )}
+
       <Card className="border-slate-200 bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                 <ListTodo className="h-5 w-5 text-amber-600" />
-                {filterByMemberId ? `${filteredMemberInfo?.full_name || "Member"} Tasks` : "Tasks"}
+                {filterByMemberId ? `${filteredMemberInfo?.full_name || "Member"} ${t("tasks.tasks", "Tasks")}` : t("tasks.tasks", "Tasks")}
+                {!online && (
+                  <Badge variant="outline" className="ml-2 text-xs bg-amber-50 text-amber-700 border-amber-200">
+                    <WifiOff className="h-3 w-3 mr-1" />
+                    {t("offline.offline", "Offline")}
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
-                {filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""} 
-                {inProgressTasks.length > 0 && ` • ${inProgressTasks.length} in progress`}
+                {filteredTasks.length} {t("tasks.task", "task")}{filteredTasks.length !== 1 ? "s" : ""} 
+                {inProgressTasks.length > 0 && ` • ${inProgressTasks.length} ${t("tasks.inProgress", "in progress")}`}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">

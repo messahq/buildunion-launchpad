@@ -4,9 +4,30 @@
     "syncFailed": "{{count}}件の変更の同期に失敗しました",
     "savedLocally": "変更をローカルに保存しました - オンライン時に同期されます",
     "backOnline": "オンラインに復帰 - 変更を同期中...",
-    "offline": "オフラインです - 変更はローカルに保存されます",
-    "pendingChanges": "{{count}}件の保留中の変更",
-    "syncing": "同期中..."
+    "offline": "オフライン",
+    "pendingChanges": "保留中の変更",
+    "syncing": "同期中...",
+    "workingOffline": "オフライン作業中",
+    "syncNow": "今すぐ同期"
+  },
+  "tasks": {
+    "tasks": "タスク",
+    "task": "タスク",
+    "inProgress": "進行中",
+    "loadError": "タスクの読み込みに失敗しました",
+    "fillRequired": "タイトルを入力し、メンバーに割り当ててください",
+    "updated": "タスクを更新しました",
+    "created": "タスクを作成しました",
+    "saveFailed": "タスクの保存に失敗しました",
+    "deleteConfirm": "このタスクを削除しますか？",
+    "deleted": "タスクを削除しました",
+    "deleteFailed": "タスクの削除に失敗しました",
+    "statusUpdated": "ステータスを更新しました",
+    "statusFailed": "ステータスの更新に失敗しました",
+    "templateApplied": "テンプレートから{{count}}件のタスクを適用しました",
+    "templateFailed": "テンプレートの適用に失敗しました",
+    "assigned": "タスクを{{name}}に割り当てました",
+    "assignFailed": "割り当ての更新に失敗しました"
   },
   "commandCenter": {
     "solo": {
