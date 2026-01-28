@@ -70,7 +70,6 @@ export const MemberDirectory = () => {
   const [selectedTrade, setSelectedTrade] = useState("all");
   const [selectedAvailability, setSelectedAvailability] = useState("all");
   const [showContractorsOnly, setShowContractorsOnly] = useState(false);
-  const [showUnionOnly, setShowUnionOnly] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(false);
   const [selectedMember, setSelectedMember] = useState<PublicMember | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -175,7 +174,7 @@ export const MemberDirectory = () => {
 
   useEffect(() => {
     fetchMembers();
-  }, [selectedTrade, selectedAvailability, showContractorsOnly, showUnionOnly]);
+  }, [selectedTrade, selectedAvailability, showContractorsOnly]);
 
   useEffect(() => {
     checkUserPublicStatus();
@@ -254,14 +253,6 @@ export const MemberDirectory = () => {
           className="whitespace-nowrap"
         >
           Contractors Only
-        </Button>
-        <Button
-          variant={showUnionOnly ? "default" : "outline"}
-          onClick={() => setShowUnionOnly(!showUnionOnly)}
-          className="whitespace-nowrap bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 data-[active=true]:bg-amber-500 data-[active=true]:text-white dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/40"
-          data-active={showUnionOnly}
-        >
-          Union Members
         </Button>
       </div>
 
