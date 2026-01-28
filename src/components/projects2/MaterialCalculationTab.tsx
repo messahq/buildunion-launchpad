@@ -20,14 +20,16 @@ import {
   Loader2,
   MapPin,
   PenLine,
-  RotateCcw
+  RotateCcw,
+  Save
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { downloadPDF } from "@/lib/pdfGenerator";
+import { downloadPDF, generatePDFBlob } from "@/lib/pdfGenerator";
 import { toast } from "sonner";
 import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CostItem {
   id: string;
@@ -58,6 +60,7 @@ interface MaterialCalculationTabProps {
   materials: TaskBasedEntry[];
   labor: TaskBasedEntry[];
   projectTotal: number;
+  projectId?: string;
   projectName?: string;
   projectAddress?: string;
   companyName?: string;
@@ -147,6 +150,7 @@ export function MaterialCalculationTab({
   materials: initialMaterials,
   labor: initialLabor,
   projectTotal,
+  projectId,
   projectName = "Project",
   projectAddress = "",
   companyName,
@@ -812,13 +816,76 @@ export function MaterialCalculationTab({
         </html>
       `;
 
-      await downloadPDF(htmlContent, {
-        filename: `cost-breakdown-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`,
+      const filename = `cost-breakdown-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // First, save costs to database if onSave is available
+      if (onSave) {
+        try {
+          await onSave({
+            materials: materialItems,
+            labor: laborItems,
+            other: otherItems,
+            grandTotal,
+          });
+          setHasUnsavedChanges(false);
+          setCurrentDataSource('saved');
+        } catch (saveError) {
+          console.error("Save error:", saveError);
+        }
+      }
+
+      // Generate PDF blob for storage upload
+      const pdfBlob = await generatePDFBlob(htmlContent, {
+        filename,
         pageFormat: 'a4',
         margin: 10
       });
 
-      toast.success(t("materials.pdfExported", "Cost breakdown exported to PDF"));
+      // Save to storage and register in documents table if projectId is provided
+      if (projectId) {
+        const filePath = `${projectId}/${filename}`;
+        
+        // Check for existing cost breakdown and remove it
+        const { data: existingDocs } = await supabase
+          .from("project_documents")
+          .select("id, file_path")
+          .eq("project_id", projectId)
+          .ilike("file_name", "Cost Breakdown%");
+        
+        if (existingDocs && existingDocs.length > 0) {
+          for (const doc of existingDocs) {
+            await supabase.storage.from("project-documents").remove([doc.file_path]);
+            await supabase.from("project_documents").delete().eq("id", doc.id);
+          }
+        }
+
+        const { error: uploadError } = await supabase.storage
+          .from("project-documents")
+          .upload(filePath, pdfBlob, {
+            contentType: "application/pdf",
+            upsert: true,
+          });
+
+        if (!uploadError) {
+          await supabase
+            .from("project_documents")
+            .insert({
+              project_id: projectId,
+              file_name: `Cost Breakdown - ${projectName}.pdf`,
+              file_path: filePath,
+              file_size: pdfBlob.size,
+            });
+        }
+      }
+
+      // Also download the PDF locally
+      await downloadPDF(htmlContent, {
+        filename,
+        pageFormat: 'a4',
+        margin: 10
+      });
+
+      toast.success(t("materials.savedAndExported", "Cost breakdown saved & exported to PDF"));
     } catch (error) {
       console.error("PDF export error:", error);
       toast.error(t("materials.pdfError", "Failed to export PDF"));
@@ -1038,9 +1105,9 @@ export function MaterialCalculationTab({
             <RotateCcw className="h-4 w-4" />
             <span className="hidden sm:inline">{t("materials.reset", "Reset")}</span>
           </Button>
-          {/* Export PDF Button */}
+          {/* Save & Export PDF Button */}
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={handleExportPDF}
             disabled={isExporting}
@@ -1049,9 +1116,9 @@ export function MaterialCalculationTab({
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Download className="h-4 w-4" />
+              <Save className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">{t("materials.exportPdf", "Export PDF")}</span>
+            <span className="hidden sm:inline">{t("materials.saveAndExportPdf", "Save & Export PDF")}</span>
           </Button>
         </div>
       </div>
