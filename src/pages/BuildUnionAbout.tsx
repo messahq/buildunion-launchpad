@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Users, Target, Heart, Shield, Award, Globe } from "lucide-react";
+import { Users, Target, Heart, Shield, Award, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
+import aboutLogo from "@/assets/buildunion-logo-about.png";
 
 const BuildUnionAbout = () => {
   const { t } = useTranslation();
@@ -51,17 +52,12 @@ const BuildUnionAbout = () => {
         {/* Hero Section */}
         <section className="relative py-16 md:py-24 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20">
           <div className="container mx-auto px-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(-1)}
-              className="mb-6 gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {t("common.back")}
-            </Button>
-
-            <div className="max-w-3xl">
+            <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+              <img 
+                src={aboutLogo} 
+                alt="BuildUnion Logo" 
+                className="w-48 md:w-64 h-auto mb-8"
+              />
               <h1 className="text-4xl md:text-5xl font-bold mb-6">
                 <span className="text-foreground">{t("about.hero.titlePart1")}</span>{" "}
                 <span className="text-amber-500">{t("about.hero.titlePart2")}</span>
