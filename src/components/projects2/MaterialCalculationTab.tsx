@@ -835,47 +835,80 @@ export function MaterialCalculationTab({
       }
 
       // Generate PDF blob for storage upload
+      console.log("[Cost Breakdown] Generating PDF blob...");
       const pdfBlob = await generatePDFBlob(htmlContent, {
         filename,
         pageFormat: 'a4',
         margin: 10
       });
+      console.log("[Cost Breakdown] PDF blob generated:", { size: pdfBlob.size, type: pdfBlob.type });
 
       // Save to storage and register in documents table if projectId is provided
       if (projectId) {
-        const filePath = `${projectId}/${filename}`;
+        // Get current user for proper file path
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error("[Cost Breakdown] No authenticated user found");
+          toast.error("Authentication required to save document");
+          setIsExporting(false);
+          return;
+        }
+
+        const filePath = `${user.id}/${projectId}/${filename}`;
+        console.log("[Cost Breakdown] Saving to storage path:", filePath);
         
         // Check for existing cost breakdown and remove it
-        const { data: existingDocs } = await supabase
+        const { data: existingDocs, error: fetchError } = await supabase
           .from("project_documents")
           .select("id, file_path")
           .eq("project_id", projectId)
-          .ilike("file_name", "Cost Breakdown%");
+          .ilike("file_name", "%Cost Breakdown%");
+        
+        console.log("[Cost Breakdown] Existing docs check:", { existingDocs, fetchError });
         
         if (existingDocs && existingDocs.length > 0) {
           for (const doc of existingDocs) {
+            console.log("[Cost Breakdown] Removing old file:", doc.file_path);
             await supabase.storage.from("project-documents").remove([doc.file_path]);
             await supabase.from("project_documents").delete().eq("id", doc.id);
           }
         }
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from("project-documents")
           .upload(filePath, pdfBlob, {
             contentType: "application/pdf",
             upsert: true,
           });
 
-        if (!uploadError) {
-          await supabase
+        console.log("[Cost Breakdown] Storage upload result:", { uploadError, uploadData });
+
+        if (uploadError) {
+          console.error("[Cost Breakdown] Upload failed:", uploadError);
+          toast.error(`Failed to save document: ${uploadError.message}`);
+        } else {
+          const { data: insertData, error: insertError } = await supabase
             .from("project_documents")
             .insert({
               project_id: projectId,
               file_name: `Cost Breakdown - ${projectName}.pdf`,
               file_path: filePath,
               file_size: pdfBlob.size,
-            });
+            })
+            .select()
+            .single();
+          
+          console.log("[Cost Breakdown] Document record insert:", { insertData, insertError });
+          
+          if (insertError) {
+            console.error("[Cost Breakdown] DB insert failed:", insertError);
+            toast.error(`Failed to register document: ${insertError.message}`);
+          } else {
+            console.log("[Cost Breakdown] Document saved successfully:", insertData);
+          }
         }
+      } else {
+        console.warn("[Cost Breakdown] No projectId provided, skipping storage upload");
       }
 
       // Also download the PDF locally
@@ -887,7 +920,7 @@ export function MaterialCalculationTab({
 
       toast.success(t("materials.savedAndExported", "Cost breakdown saved & exported to PDF"));
     } catch (error) {
-      console.error("PDF export error:", error);
+      console.error("[Cost Breakdown] PDF export error:", error);
       toast.error(t("materials.pdfError", "Failed to export PDF"));
     } finally {
       setIsExporting(false);
