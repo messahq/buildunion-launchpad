@@ -440,7 +440,7 @@ export const ProjectCommandCenter = ({
       category: "workflow",
       status: docsStatus,
       value: isSoloMode 
-        ? (hasDocs ? `${info.documentCount} files` : "N/A (Solo)")
+        ? (hasDocs ? `${info.documentCount} files` : t("commandCenter.solo.notRequired", "N/A (Solo)"))
         : hasDocs 
           ? `${info.documentCount} files${hasContracts ? ` + ${info.contractCount} contract${info.contractCount > 1 ? 's' : ''}` : ''}`
           : hasContracts 
@@ -476,7 +476,7 @@ export const ProjectCommandCenter = ({
       category: "workflow",
       status: contractStatus,
       value: isSoloMode
-        ? (info.contractCount > 0 ? `${info.contractCount} created` : "N/A (Solo)")
+        ? (info.contractCount > 0 ? `${info.contractCount} created` : t("commandCenter.solo.notRequired", "N/A (Solo)"))
         : info.contractCount > 0 
           ? (info.signedContracts > 0 
               ? `${info.signedContracts}/${info.contractCount} signed` 
@@ -498,7 +498,7 @@ export const ProjectCommandCenter = ({
       name: "Team",
       category: "workflow",
       status: isSoloMode ? "complete" : (hasTeamMembers ? "complete" : "pending"),
-      value: isSoloMode ? "N/A (Solo)" : (hasTeamMembers ? `${info.teamSize} members` : "Owner only"),
+      value: isSoloMode ? t("commandCenter.solo.notRequired", "N/A (Solo)") : (hasTeamMembers ? `${info.teamSize} members` : "Owner only"),
       icon: Users,
       missingItems: teamMissing.length > 0 ? teamMissing : undefined,
     });
