@@ -36,7 +36,9 @@
       "contractsOptional": "个人项目不需要合同",
       "teamNotApplicable": "个人模式下团队功能已禁用",
       "healthScoreNote": "健康分数根据{{count}}个相关数据源计算"
-    }
+    },
+    "completeDesc": "将项目标记为已完成",
+    "reopenDesc": "将项目重新标记为进行中"
   },
   "baseline": {
     "title": "项目基线",

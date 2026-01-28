@@ -36,7 +36,9 @@
       "contractsOptional": "個人プロジェクトには契約は必要ありません",
       "teamNotApplicable": "ソロモードではチーム機能は無効です",
       "healthScoreNote": "ヘルススコアは{{count}}件の関連データソースから計算されています"
-    }
+    },
+    "completeDesc": "プロジェクトを完了としてマーク",
+    "reopenDesc": "プロジェクトを再度アクティブとしてマーク"
   },
   "baseline": {
     "title": "プロジェクトベースライン",

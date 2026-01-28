@@ -36,7 +36,9 @@
       "contractsOptional": "Szerződések nem szükségesek személyes projektekhez",
       "teamNotApplicable": "Csapat funkciók letiltva Egyéni módban",
       "healthScoreNote": "Egészségi pontszám {{count}} releváns adatforrásból számolva"
-    }
+    },
+    "completeDesc": "Projekt befejezettnek jelölése",
+    "reopenDesc": "Projekt újranyitása aktívként"
   },
   "baseline": {
     "title": "Projekt Alapállapot",

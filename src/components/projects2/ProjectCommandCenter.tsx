@@ -38,6 +38,7 @@ import {
   Download,
   Loader2,
   CheckCircle,
+  CheckCircle2,
   FileSpreadsheet,
   FileSignature,
   Receipt,
@@ -73,6 +74,7 @@ import {
   Radio,
   CircleAlert,
   Lock,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -145,6 +147,7 @@ interface ProjectCommandCenterProps {
   projectAddress?: string;
   projectTrade?: string;
   projectCreatedAt: string;
+  projectStatus?: string;
   operationalTruth: OperationalTruth;
   companyBranding?: {
     name?: string;
@@ -159,6 +162,8 @@ interface ProjectCommandCenterProps {
   isPremium?: boolean;
   subscriptionTier?: "free" | "pro" | "premium" | "enterprise";
   onNavigateToTab?: (tabId: string) => void;
+  // Project completion callback
+  onCompleteProject?: () => Promise<void>;
   // Extended data sources info
   dataSourcesInfo?: DataSourcesInfo;
   // Client info management
@@ -180,12 +185,14 @@ export const ProjectCommandCenter = ({
   projectAddress,
   projectTrade,
   projectCreatedAt,
+  projectStatus,
   operationalTruth,
   companyBranding,
   conflicts = [],
   isPremium = false,
   subscriptionTier = "free",
   onNavigateToTab,
+  onCompleteProject,
   dataSourcesInfo,
   clientInfo,
   onClientInfoUpdate,
@@ -1314,6 +1321,24 @@ export const ProjectCommandCenter = ({
         ? `**Team Report**\n\n${teamReportContent.substring(0, 500)}...` 
         : "**Team Report Preview**\n\n• Team size and roles\n• Task assignments per member\n• Completion rates\n• Activity timeline\n• Performance metrics\n• Workload distribution",
       action: async () => { generateTeamReport(); },
+    },
+    // Complete Project Action
+    {
+      id: "complete-project",
+      name: projectStatus === 'completed' ? t("workspace.reopenProject", "Reopen Project") : t("workspace.completeProject", "Complete Project"),
+      description: projectStatus === 'completed' 
+        ? t("commandCenter.reopenDesc", "Mark project as active again") 
+        : t("commandCenter.completeDesc", "Mark project as finished"),
+      icon: projectStatus === 'completed' ? RotateCcw : CheckCircle2,
+      category: "team",
+      previewContent: projectStatus === 'completed'
+        ? "**Reopen Project**\n\nThis will mark the project as 'Active' again.\n\n• Project will appear in active projects list\n• You can continue working on tasks\n• Status will be updated across the app"
+        : "**Complete Project**\n\nThis will mark the project as 'Completed'.\n\n• Project will move to completed list\n• All data will be preserved\n• Status updates across Global Fleet View",
+      action: async () => { 
+        if (onCompleteProject) {
+          await onCompleteProject();
+        }
+      },
     },
   ];
 

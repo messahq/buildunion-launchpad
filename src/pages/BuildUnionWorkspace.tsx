@@ -1054,46 +1054,34 @@ const BuildUnionProjects2 = () => {
                                         <ArrowLeft className="h-4 w-4 rotate-180" />
                                       </Button>
                                       {/* Desktop complete button */}
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className={cn(
-                                              "hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity",
-                                              project.status === 'completed' 
-                                                ? "text-emerald-600 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" 
-                                                : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                                            )}
-                                            onClick={handleCompleteProject}
-                                          >
-                                            <CheckCircle2 className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          {project.status === 'completed' ? t("workspace.reopenProject", "Reopen project") : t("workspace.completeProject", "Mark as completed")}
-                                        </TooltipContent>
-                                      </Tooltip>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={cn(
+                                          "hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity",
+                                          project.status === 'completed' 
+                                            ? "text-emerald-600 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" 
+                                            : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                        )}
+                                        onClick={handleCompleteProject}
+                                        title={project.status === 'completed' ? t("workspace.reopenProject", "Reopen project") : t("workspace.completeProject", "Mark as completed")}
+                                      >
+                                        <CheckCircle2 className="h-4 w-4" />
+                                      </Button>
                                       {/* Desktop delete button */}
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                            onClick={async (e) => {
-                                              e.stopPropagation();
-                                              if (!confirm(`${t("workspace.deleteConfirm", "Delete")} "${project.name}"? ${t("workspace.cannotUndo", "This cannot be undone.")}`)) return;
-                                              handleDelete();
-                                            }}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          {t("workspace.deleteProject", "Delete project")}
-                                        </TooltipContent>
-                                      </Tooltip>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (!confirm(`${t("workspace.deleteConfirm", "Delete")} "${project.name}"? ${t("workspace.cannotUndo", "This cannot be undone.")}`)) return;
+                                          handleDelete();
+                                        }}
+                                        title={t("workspace.deleteProject", "Delete project")}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-xs text-muted-foreground">
