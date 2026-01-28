@@ -1,7 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import AskMessaChat from "@/components/AskMessaChat";
+import FAQDialog from "@/components/community/FAQDialog";
+import UnionBenefitsDialog from "@/components/community/UnionBenefitsDialog";
+import CertificationsDialog from "@/components/community/CertificationsDialog";
+import QuickStartDialog from "@/components/community/QuickStartDialog";
 import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +50,12 @@ const processSteps = [
 ];
 
 const BuildUnionCommunity = () => {
+  const navigate = useNavigate();
   const [isMessaChatOpen, setIsMessaChatOpen] = useState(false);
+  const [isFAQOpen, setIsFAQOpen] = useState(false);
+  const [isUnionBenefitsOpen, setIsUnionBenefitsOpen] = useState(false);
+  const [isCertificationsOpen, setIsCertificationsOpen] = useState(false);
+  const [isQuickStartOpen, setIsQuickStartOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -350,7 +360,10 @@ const BuildUnionCommunity = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
+              <button 
+                onClick={() => setIsFAQOpen(true)}
+                className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group text-left w-full"
+              >
                 <div className="w-12 h-12 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
                   <HelpCircle className="h-6 w-6 text-cyan-600" />
                 </div>
@@ -358,9 +371,12 @@ const BuildUnionCommunity = () => {
                   <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Construction FAQ</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">Common questions about permits, safety, and contracts.</p>
                 </div>
-              </a>
+              </button>
 
-              <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
+              <button 
+                onClick={() => setIsUnionBenefitsOpen(true)}
+                className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group text-left w-full"
+              >
                 <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                   <Shield className="h-6 w-6 text-orange-600" />
                 </div>
@@ -368,9 +384,12 @@ const BuildUnionCommunity = () => {
                   <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Union Benefits</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">Guide to wages, health coverage, and job security.</p>
                 </div>
-              </a>
+              </button>
 
-              <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
+              <button 
+                onClick={() => setIsCertificationsOpen(true)}
+                className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group text-left w-full"
+              >
                 <div className="w-12 h-12 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
                   <FileText className="h-6 w-6 text-cyan-600" />
                 </div>
@@ -378,9 +397,12 @@ const BuildUnionCommunity = () => {
                   <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Ontario Certifications</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">Mandatory and recommended certifications guide.</p>
                 </div>
-              </a>
+              </button>
 
-              <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
+              <button 
+                onClick={() => setIsQuickStartOpen(true)}
+                className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group text-left w-full"
+              >
                 <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                   <Link2 className="h-6 w-6 text-orange-600" />
                 </div>
@@ -388,9 +410,12 @@ const BuildUnionCommunity = () => {
                   <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Quick Start Guide</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">Get your profile and portfolio ready in minutes.</p>
                 </div>
-              </a>
+              </button>
 
-              <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
+              <button 
+                onClick={() => navigate("/buildunion/members")}
+                className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group text-left w-full"
+              >
                 <div className="w-12 h-12 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0">
                   <Users className="h-6 w-6 text-cyan-600" />
                 </div>
@@ -398,7 +423,7 @@ const BuildUnionCommunity = () => {
                   <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Join the Community</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">Connect with other professionals.</p>
                 </div>
-              </a>
+              </button>
 
               <button 
                 onClick={() => setIsMessaChatOpen(true)}
@@ -647,8 +672,12 @@ const BuildUnionCommunity = () => {
       
       <BuildUnionFooter />
       
-      {/* Ask Messa Chat Modal */}
+      {/* Dialogs */}
       <AskMessaChat isOpen={isMessaChatOpen} onClose={() => setIsMessaChatOpen(false)} />
+      <FAQDialog isOpen={isFAQOpen} onClose={() => setIsFAQOpen(false)} />
+      <UnionBenefitsDialog isOpen={isUnionBenefitsOpen} onClose={() => setIsUnionBenefitsOpen(false)} />
+      <CertificationsDialog isOpen={isCertificationsOpen} onClose={() => setIsCertificationsOpen(false)} />
+      <QuickStartDialog isOpen={isQuickStartOpen} onClose={() => setIsQuickStartOpen(false)} />
     </div>
   );
 };
