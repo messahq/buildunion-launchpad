@@ -31,6 +31,7 @@ import DockRegister from "./pages/DockRegister";
 import OrbPage from "./pages/OrbPage";
 import ContractView from "./pages/ContractView";
 import AdminDashboard from "./pages/AdminDashboard";
+import BuildUnionAbout from "./pages/BuildUnionAbout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
                   <Route path="/orb" element={<OrbPage />} />
                   <Route path="/contract/view/:token" element={<ContractView />} />
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/buildunion/about" element={<BuildUnionAbout />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

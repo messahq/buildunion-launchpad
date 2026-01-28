@@ -608,5 +608,55 @@
     "regenerateTitle": "Jobb minőséget szeretnél?",
     "regenerateDesc": "Pro felhasználók fejlettebb AI elemzést kapnak nagyobb pontossággal",
     "upgradeToPro": "Frissítés Pro-ra"
+  },
+  "about": {
+    "hero": {
+      "titlePart1": "Együtt Építjük",
+      "titlePart2": "a Jövőt",
+      "description": "A BuildUnion egy forradalmi platform, amely összeköti az építőipari szakembereket a legmodernebb AI technológiával a projektmenedzsment egyszerűsítéséhez, az együttműködés fokozásához és a kiemelkedő eredmények eléréséhez."
+    },
+    "mission": {
+      "title": "Küldetésünk",
+      "description": "Hiszünk abban, hogy minden építési projekt pontosságot, átláthatóságot és hatékonyságot érdemel. Küldetésünk, hogy intelligens eszközökkel lássuk el a vállalkozókat, projektmenedzsereket és szakembereket, amelyek átalakítják a projektek tervezését, végrehajtását és átadását."
+    },
+    "values": {
+      "title": "Értékeink",
+      "community": {
+        "title": "Közösség Első",
+        "description": "Azoknak építünk, akik a világunkat építik. Minden funkció valódi építőipari szakemberek igényei alapján készül."
+      },
+      "precision": {
+        "title": "Precizitás",
+        "description": "Az AI-alapú becslésektől a részletes projektkövetésig a pontosság áll minden tevékenységünk középpontjában."
+      },
+      "passion": {
+        "title": "Szenvedély",
+        "description": "Szenvedélyesen rajongunk az építészetért és a technológiáért, innovációt hozva egy olyan iparágba, amely formálja mindennapi életünket."
+      },
+      "trust": {
+        "title": "Bizalom",
+        "description": "A biztonság és a megbízhatóság nem alku tárgya. Adataidat és projektjeidet vállalati szintű biztonsággal védjük."
+      },
+      "excellence": {
+        "title": "Kiválóság",
+        "description": "Minden kódsorban, minden funkcióban és minden felhasználói interakcióban a kiválóságra törekszünk."
+      },
+      "global": {
+        "title": "Globális Elérés",
+        "description": "11 nyelv támogatásával szolgáljuk ki az építőipari szakembereket világszerte, helyi vállalkozóktól nemzetközi csapatokig."
+      }
+    },
+    "story": {
+      "title": "Történetünk",
+      "paragraph1": "A BuildUnion egy egyszerű megfigyelésből született: az építőipar, a világ egyik legnagyobb és legfontosabb szektora, alulszolgált volt a modern technológia szempontjából. Míg más iparágak átölelték a digitális átalakulást, az építőipari szakemberek elavult eszközökkel és széttöredezett munkafolyamatokkal maradtak.",
+      "paragraph2": "Elhatároztuk, hogy változtatunk ezen. Az AI-alapú elemzés, a valós idejű együttműködés és az intuitív dizájn kombinálásával létrehoztunk egy platformot, amely az építőipar nyelvén beszél. Az egyéni vállalkozóktól, akik lakóépületeket kezelnek, a nagy csapatokig, akik kereskedelmi fejlesztéseket koordinálnak, a BuildUnion alkalmazkodik az igényeidhez.",
+      "paragraph3": "Ma is folyamatosan innoválunk, olyan funkciókat adva hozzá, mint a kettős motorú AI verifikáció, az Ontario Építési Kódex megfelelőség ellenőrzés és az átfogó projekt szintézis. De alapvető küldetésünk változatlan marad: segíteni az építőipari szakembereket okosabban, nem keményebben dolgozni."
+    },
+    "cta": {
+      "title": "Készen állsz átalakítani projektjeidet?",
+      "description": "Csatlakozz az építőipari szakemberek ezreihez, akik a BuildUnionban bíznak projektjeik időben, költségvetésen belül és az elvárásokon felül történő átadásában.",
+      "joinButton": "Kezdd Ingyen",
+      "communityButton": "Közösség Felfedezése"
+    }
   }
 }

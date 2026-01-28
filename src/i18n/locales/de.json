@@ -595,5 +595,55 @@
     "regenerateTitle": "Möchten Sie bessere Qualität?",
     "regenerateDesc": "Pro-Benutzer erhalten erweiterte KI-Analyse mit höherer Genauigkeit",
     "upgradeToPro": "Auf Pro upgraden"
+  },
+  "about": {
+    "hero": {
+      "titlePart1": "Die Zukunft Bauen",
+      "titlePart2": "Gemeinsam",
+      "description": "BuildUnion ist eine revolutionäre Plattform, die Bauprofis mit modernster KI-Technologie verbindet, um Projektmanagement zu optimieren, Zusammenarbeit zu verbessern und außergewöhnliche Ergebnisse zu liefern."
+    },
+    "mission": {
+      "title": "Unsere Mission",
+      "description": "Wir glauben, dass jedes Bauprojekt Präzision, Transparenz und Effizienz verdient. Unsere Mission ist es, Auftragnehmer, Projektmanager und Handwerker mit intelligenten Werkzeugen auszustatten, die die Art und Weise transformieren, wie Projekte geplant, ausgeführt und geliefert werden."
+    },
+    "values": {
+      "title": "Unsere Werte",
+      "community": {
+        "title": "Gemeinschaft Zuerst",
+        "description": "Wir bauen für die Menschen, die unsere Welt bauen. Jede Funktion wird mit echten Bauprofis im Sinn entwickelt."
+      },
+      "precision": {
+        "title": "Präzision",
+        "description": "Von KI-gestützten Schätzungen bis hin zur detaillierten Projektverfolgung steht Genauigkeit im Mittelpunkt von allem, was wir tun."
+      },
+      "passion": {
+        "title": "Leidenschaft",
+        "description": "Wir sind leidenschaftlich für Bauwesen und Technologie und bringen Innovation in eine Branche, die unser tägliches Leben prägt."
+      },
+      "trust": {
+        "title": "Vertrauen",
+        "description": "Sicherheit und Zuverlässigkeit sind nicht verhandelbar. Ihre Daten und Projekte sind mit Enterprise-Level-Sicherheit geschützt."
+      },
+      "excellence": {
+        "title": "Exzellenz",
+        "description": "Wir streben nach Exzellenz in jeder Codezeile, jeder Funktion und jeder Interaktion mit unseren Benutzern."
+      },
+      "global": {
+        "title": "Globale Reichweite",
+        "description": "Mit Unterstützung von 11 Sprachen bedienen wir Bauprofis weltweit, von lokalen Auftragnehmern bis zu internationalen Teams."
+      }
+    },
+    "story": {
+      "title": "Unsere Geschichte",
+      "paragraph1": "BuildUnion entstand aus einer einfachen Beobachtung: Die Bauindustrie, einer der größten und wichtigsten Sektoren weltweit, wurde von moderner Technologie nicht ausreichend bedient. Während andere Branchen die digitale Transformation annahmen, blieben Bauprofis mit veralteten Werkzeugen und fragmentierten Arbeitsabläufen zurück.",
+      "paragraph2": "Wir haben uns vorgenommen, das zu ändern. Durch die Kombination von KI-gestützter Analyse, Echtzeit-Zusammenarbeit und intuitivem Design haben wir eine Plattform geschaffen, die die Sprache des Bauwesens spricht. Von Einzelunternehmern, die Wohnprojekte verwalten, bis zu großen Teams, die kommerzielle Entwicklungen koordinieren, passt sich BuildUnion Ihren Bedürfnissen an.",
+      "paragraph3": "Heute innovieren wir weiter und fügen Funktionen wie die KI-Verifizierung mit Doppelmotor, die Konformitätsprüfung des Ontario Building Code und die umfassende Projektsynthese hinzu. Aber unsere Kernmission bleibt dieselbe: Bauprofis dabei zu helfen, intelligenter zu arbeiten, nicht härter."
+    },
+    "cta": {
+      "title": "Bereit, Ihre Projekte zu Transformieren?",
+      "description": "Schließen Sie sich Tausenden von Bauprofis an, die BuildUnion vertrauen, um ihre Projekte pünktlich, im Budget und über den Erwartungen zu liefern.",
+      "joinButton": "Kostenlos Starten",
+      "communityButton": "Community Erkunden"
+    }
   }
 }
