@@ -168,20 +168,45 @@ export function MaterialCalculationTab({
   const [isSaving, setIsSaving] = useState(false);
   
   // Helper to create initial material items
+  // IMPORTANT: AI data arrives as BASE (net) quantities - we apply waste here
+  // Saved data arrives as FINAL quantities - we back-calculate base
   const createInitialMaterialItems = useCallback(() => {
     const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
-    const laminateQty = laminateEntry?.quantity || 0;
+    const laminateBaseQtyFromInput = laminateEntry?.quantity || 0;
     
     return initialMaterials.map((m, idx) => {
       const isEssential = isEssentialMaterial(m.item);
-      let baseQty = m.quantity;
       
-      // Sync underlayment with laminate flooring
-      if (/^underlayment$/i.test(m.item.trim()) && laminateQty > 0) {
-        baseQty = laminateQty;
+      // For saved data (dataSource === 'saved'), quantities are already final with waste
+      // For AI data (dataSource === 'ai' or 'tasks'), quantities are BASE - apply waste
+      if (dataSource === 'saved') {
+        // Back-calculate base from saved final quantity
+        const finalQty = m.quantity;
+        const baseQty = isEssential 
+          ? Math.round(finalQty / (1 + WASTE_PERCENTAGE)) 
+          : finalQty;
+        
+        return {
+          id: `material-${idx}`,
+          item: m.item,
+          baseQuantity: baseQty,
+          quantity: finalQty,
+          unit: m.unit,
+          unitPrice: m.unitPrice || 0,
+          totalPrice: finalQty * (m.unitPrice || 0),
+          isEssential,
+        };
       }
       
-      // Apply 10% waste for essential materials
+      // AI/Tasks data: input is BASE quantity, calculate waste-included quantity
+      let baseQty = m.quantity;
+      
+      // Sync underlayment with laminate flooring base quantity
+      if (/^underlayment$/i.test(m.item.trim()) && laminateBaseQtyFromInput > 0) {
+        baseQty = laminateBaseQtyFromInput;
+      }
+      
+      // Calculate final quantity with waste for essential materials
       const quantityWithWaste = isEssential 
         ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE)) 
         : baseQty;
@@ -197,7 +222,7 @@ export function MaterialCalculationTab({
         isEssential,
       };
     });
-  }, [initialMaterials]);
+  }, [initialMaterials, dataSource]);
 
   // Helper to create initial labor items
   const createInitialLaborItems = useCallback(() => 
