@@ -185,6 +185,72 @@ export function useCitationRegistry(projectId: string | undefined): UseCitationR
   };
 }
 
+// Auto-link helper: Determine pillar based on file type and name
+export function getAutoPillarLink(
+  fileName: string, 
+  documentType: CitationSource['documentType']
+): CitationSource['linkedPillar'] | undefined {
+  const lowerName = fileName.toLowerCase();
+  
+  // Site photos → Area (photos are typically used for area detection)
+  if (documentType === 'site_photo' || documentType === 'image') {
+    // Check if it's a materials-related photo
+    if (lowerName.includes('material') || lowerName.includes('supply') || lowerName.includes('inventory')) {
+      return 'materials';
+    }
+    // Default site photos to Area
+    return 'area';
+  }
+  
+  // Blueprint detection
+  if (
+    lowerName.includes('blueprint') || 
+    lowerName.includes('floorplan') || 
+    lowerName.includes('floor_plan') ||
+    lowerName.includes('floor-plan') ||
+    lowerName.includes('architectural') ||
+    lowerName.includes('drawing') ||
+    lowerName.includes('cad') ||
+    lowerName.includes('layout') ||
+    lowerName.includes('plan.pdf') ||
+    lowerName.includes('plans.pdf')
+  ) {
+    return 'blueprint';
+  }
+  
+  // OBC/Permit detection
+  if (
+    lowerName.includes('permit') ||
+    lowerName.includes('license') ||
+    lowerName.includes('obc') ||
+    lowerName.includes('building_code') ||
+    lowerName.includes('building-code') ||
+    lowerName.includes('inspection') ||
+    lowerName.includes('compliance') ||
+    lowerName.includes('regulation') ||
+    lowerName.includes('certificate') ||
+    lowerName.includes('approval')
+  ) {
+    return 'obc';
+  }
+  
+  // Materials/BOM detection
+  if (
+    lowerName.includes('material') ||
+    lowerName.includes('bom') ||
+    lowerName.includes('bill_of_materials') ||
+    lowerName.includes('supply') ||
+    lowerName.includes('inventory') ||
+    lowerName.includes('quote') ||
+    lowerName.includes('estimate')
+  ) {
+    return 'materials';
+  }
+  
+  // No auto-link for generic documents
+  return undefined;
+}
+
 // Helper hook to auto-register documents as citations
 export function useAutoRegisterCitations(
   projectId: string | undefined,
@@ -198,10 +264,13 @@ export function useAutoRegisterCitations(
 
     const citationsToRegister: Omit<CitationSource, 'id' | 'registeredAt' | 'registeredBy'>[] = [];
 
-    // Register site photos
+    // Register site photos with auto-link to Area
     siteImages?.forEach((path, index) => {
       const sourceId = generateCitationId('P', index);
       if (!citations.some(c => c.sourceId === sourceId)) {
+        const fileName = path.split('/').pop() || `Site Photo ${index + 1}`;
+        const autoPillar = getAutoPillarLink(fileName, 'site_photo');
+        
         citationsToRegister.push({
           sourceId,
           documentName: `Site Photo ${index + 1}`,
@@ -209,22 +278,30 @@ export function useAutoRegisterCitations(
           contextSnippet: 'Site photo uploaded during project creation',
           filePath: path,
           timestamp: new Date().toISOString(),
+          linkedPillar: autoPillar,
         });
       }
     });
 
-    // Register documents
+    // Register documents with auto-link based on file name
     documents.forEach((doc, index) => {
       const isPdf = doc.file_name.toLowerCase().endsWith('.pdf');
-      const sourceId = generateCitationId('D', index);
+      const isBlueprint = doc.file_name.toLowerCase().includes('blueprint') || 
+                          doc.file_name.toLowerCase().includes('plan');
+      const sourceId = generateCitationId(isBlueprint ? 'B' : 'D', index);
+      
       if (!citations.some(c => c.sourceId === sourceId)) {
+        const docType: CitationSource['documentType'] = isBlueprint ? 'blueprint' : (isPdf ? 'pdf' : 'image');
+        const autoPillar = getAutoPillarLink(doc.file_name, docType);
+        
         citationsToRegister.push({
           sourceId,
           documentName: doc.file_name,
-          documentType: isPdf ? 'pdf' : 'image',
+          documentType: docType,
           contextSnippet: `Uploaded document: ${doc.file_name}`,
           filePath: doc.file_path,
           timestamp: doc.uploaded_at,
+          linkedPillar: autoPillar,
         });
       }
     });

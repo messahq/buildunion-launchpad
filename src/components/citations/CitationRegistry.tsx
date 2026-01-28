@@ -173,18 +173,25 @@ export default function CitationRegistry({
         </p>
       </div>
 
-      {/* Linked Pillar Badge */}
+      {/* Linked Pillar Badge - shows auto-linked indicator */}
       {citation.linkedPillar && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 gap-1">
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-[10px] px-1.5 py-0.5 gap-1",
+                  "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                )}
+              >
                 {getPillarIcon(citation.linkedPillar)}
                 <span className="hidden sm:inline">{getPillarLabel(citation.linkedPillar)}</span>
+                <span className="text-[8px] opacity-70">⚡</span>
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Linked to: {getPillarLabel(citation.linkedPillar)}</p>
+              <p>Auto-linked to: {getPillarLabel(citation.linkedPillar)}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
