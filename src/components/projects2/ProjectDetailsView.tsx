@@ -2158,107 +2158,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 other: costs.other,
               }));
               
-              // Generate a Markdown document for the cost breakdown
               const now = new Date();
-              const dateStr = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
-              const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              
-              console.log('[Materials Save] Generating document:', `Cost-Breakdown-${dateStr}.md`);
-              
-              let markdownContent = `# Cost Breakdown - ${project.name}\n\n`;
-              markdownContent += `**Generated:** ${dateStr} at ${timeStr}\n\n`;
-              markdownContent += `**Project:** ${project.name}\n`;
-              if (project.address) markdownContent += `**Address:** ${project.address}\n`;
-              markdownContent += `\n---\n\n`;
-              
-              // Materials section
-              if (costs.materials.length > 0) {
-                markdownContent += `## Materials\n\n`;
-                markdownContent += `| Item | Qty | Unit | Unit Price | Total |\n`;
-                markdownContent += `|------|-----|------|------------|-------|\n`;
-                costs.materials.forEach((m: { item: string; quantity: number; unit: string; unitPrice: number; totalPrice: number }) => {
-                  markdownContent += `| ${m.item} | ${m.quantity} | ${m.unit} | $${m.unitPrice.toFixed(2)} | $${m.totalPrice.toFixed(2)} |\n`;
-                });
-                const materialsTotal = costs.materials.reduce((sum: number, m: { totalPrice: number }) => sum + m.totalPrice, 0);
-                markdownContent += `\n**Materials Subtotal:** $${materialsTotal.toLocaleString()}\n\n`;
-              }
-              
-              // Labor section
-              if (costs.labor.length > 0) {
-                markdownContent += `## Labor\n\n`;
-                markdownContent += `| Item | Qty | Unit | Unit Price | Total |\n`;
-                markdownContent += `|------|-----|------|------------|-------|\n`;
-                costs.labor.forEach((l: { item: string; quantity: number; unit: string; unitPrice: number; totalPrice: number }) => {
-                  markdownContent += `| ${l.item} | ${l.quantity} | ${l.unit} | $${l.unitPrice.toFixed(2)} | $${l.totalPrice.toFixed(2)} |\n`;
-                });
-                const laborTotal = costs.labor.reduce((sum: number, l: { totalPrice: number }) => sum + l.totalPrice, 0);
-                markdownContent += `\n**Labor Subtotal:** $${laborTotal.toLocaleString()}\n\n`;
-              }
-              
-              // Other section
-              if (costs.other.length > 0) {
-                markdownContent += `## Other Costs\n\n`;
-                markdownContent += `| Item | Qty | Unit | Unit Price | Total |\n`;
-                markdownContent += `|------|-----|------|------------|-------|\n`;
-                costs.other.forEach((o: { item: string; quantity: number; unit: string; unitPrice: number; totalPrice: number }) => {
-                  markdownContent += `| ${o.item} | ${o.quantity} | ${o.unit} | $${o.unitPrice.toFixed(2)} | $${o.totalPrice.toFixed(2)} |\n`;
-                });
-                const otherTotal = costs.other.reduce((sum: number, o: { totalPrice: number }) => sum + o.totalPrice, 0);
-                markdownContent += `\n**Other Subtotal:** $${otherTotal.toLocaleString()}\n\n`;
-              }
-              
-              markdownContent += `---\n\n`;
-              markdownContent += `## Grand Total: $${costs.grandTotal.toLocaleString()}\n`;
-              
-              // Upload the markdown file to storage and register in project_documents
-              const docFileName = `Cost-Breakdown-${dateStr}.md`;
-              const docId = crypto.randomUUID();
-              const docPath = `${user.id}/${project.id}/${docId}-${docFileName}`;
-              
-              // Upload to storage (use text/plain as markdown mime type is not supported)
-              console.log('[Materials Save] Uploading to storage path:', docPath);
-              const blob = new Blob([markdownContent], { type: 'text/plain' });
-              const { error: uploadError, data: uploadData } = await supabase.storage
-                .from('project-documents')
-                .upload(docPath, blob, { upsert: true, contentType: 'text/plain' });
-              
-              if (uploadError) {
-                console.error('[Materials Save] Failed to upload cost breakdown document:', uploadError);
-                toast.error('Failed to save document: ' + uploadError.message);
-              } else {
-                console.log('[Materials Save] Upload successful:', uploadData);
-                
-                // Check if we already have a cost breakdown document for today, update or insert
-                const { data: existingDocs } = await supabase
-                  .from('project_documents')
-                  .select('id, file_path')
-                  .eq('project_id', project.id)
-                  .like('file_name', `Cost-Breakdown-${dateStr}%`);
-                
-                console.log('[Materials Save] Existing docs for today:', existingDocs);
-                
-                if (existingDocs && existingDocs.length > 0) {
-                  // Delete old one(s) from storage and DB
-                  for (const oldDoc of existingDocs) {
-                    await supabase.storage.from('project-documents').remove([oldDoc.file_path]);
-                    await supabase.from('project_documents').delete().eq('id', oldDoc.id);
-                  }
-                }
-                
-                // Insert new document record
-                const { error: insertError } = await supabase.from('project_documents').insert({
-                  project_id: project.id,
-                  file_name: docFileName,
-                  file_path: docPath,
-                  file_size: blob.size,
-                });
-                
-                if (insertError) {
-                  console.error('[Materials Save] Failed to insert document record:', insertError);
-                } else {
-                  console.log('[Materials Save] Document record inserted successfully');
-                }
-              }
+              const dateStr = now.toLocaleDateString('en-CA');
+              const docFileName = `Cost-Breakdown-${dateStr}.pdf`;
               
               // Get existing verified_facts to update citation registry
               const existingFacts = (summary.verified_facts || {}) as Record<string, unknown>;
@@ -2272,7 +2174,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 documentName: docFileName,
                 documentType: 'log',
                 linkedPillar: 'materials',
-                filePath: docPath,
                 contextSnippet: `Cost breakdown saved: ${costs.materials.length} materials, ${costs.labor.length} labor items, ${costs.other.length} other items. Grand total: $${costs.grandTotal.toLocaleString()}`,
                 timestamp: new Date().toISOString(),
                 registeredAt: new Date().toISOString(),
