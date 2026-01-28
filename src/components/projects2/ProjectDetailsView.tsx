@@ -2116,6 +2116,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               return Object.values(laborMap);
             })()}
             projectTotal={summary?.total_cost || 0}
+            projectId={project.id}
             projectName={project.name}
             projectAddress={project.address || ""}
             companyName={companyBranding.name}
