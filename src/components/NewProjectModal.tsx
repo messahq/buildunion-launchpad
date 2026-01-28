@@ -143,7 +143,7 @@ export const NewProjectModal = ({ open, onOpenChange }: NewProjectModalProps) =>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold text-foreground text-lg">Blueprint Analysis</h3>
-                    <Badge className="text-xs bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
+                    <Badge className="text-xs bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
                       PRO
                     </Badge>
                     {/* Tier indicator */}

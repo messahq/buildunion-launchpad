@@ -122,7 +122,7 @@ export default function ProjectTimelineBar({
   const getProgressColor = () => {
     if (isOverdue) return "bg-destructive";
     if (progressPercent > 75) return "bg-amber-500";
-    return "bg-gradient-to-r from-cyan-500 to-teal-500";
+    return "bg-gradient-to-r from-emerald-500 to-teal-500";
   };
 
   return (

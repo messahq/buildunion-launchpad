@@ -987,7 +987,7 @@ export default function BuildUnionMessages() {
           </Button>
           
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <MessageSquare className="h-5 w-5 text-cyan-500 shrink-0" />
+            <MessageSquare className="h-5 w-5 text-emerald-500 shrink-0" />
             <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
               Messages
             </h1>
@@ -997,7 +997,7 @@ export default function BuildUnionMessages() {
               </Badge>
             )}
             {!hasPremiumAccess && (
-              <Badge variant="outline" className="hidden sm:flex bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-950 dark:border-cyan-800 dark:text-cyan-300 shrink-0">
+              <Badge variant="outline" className="hidden sm:flex bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-300 shrink-0">
                 <Crown className="h-3 w-3 mr-1" />
                 Premium
               </Badge>
@@ -1516,7 +1516,7 @@ export default function BuildUnionMessages() {
                               </AvatarFallback>
                             </Avatar>
                             {conv.unreadCount > 0 && (
-                              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-cyan-500 text-white text-xs flex items-center justify-center">
+                              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center">
                                 {conv.unreadCount}
                               </span>
                             )}
@@ -1586,7 +1586,7 @@ export default function BuildUnionMessages() {
                 <ScrollArea className="flex-1 p-4">
                   {isLoadingMessages ? (
                     <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -1606,20 +1606,20 @@ export default function BuildUnionMessages() {
                             <div
                               className={`max-w-[80%] rounded-2xl px-4 py-2 ${
                                 isMine
-                                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-br-sm"
+                                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-br-sm"
                                   : "bg-muted text-foreground rounded-bl-sm"
                               }`}
                             >
                               <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
                               <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
-                                <p className={`text-[10px] ${isMine ? "text-cyan-100" : "text-muted-foreground"}`}>
+                                <p className={`text-[10px] ${isMine ? "text-emerald-100" : "text-muted-foreground"}`}>
                                   {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
                                 </p>
                                 {isMine && (
                                   msg.isRead ? (
-                                    <CheckCheck className="h-3 w-3 text-cyan-100" />
+                                    <CheckCheck className="h-3 w-3 text-emerald-100" />
                                   ) : (
-                                    <Check className="h-3 w-3 text-cyan-200" />
+                                    <Check className="h-3 w-3 text-emerald-200" />
                                   )
                                 )}
                               </div>
@@ -1647,15 +1647,15 @@ export default function BuildUnionMessages() {
                       <Button
                         onClick={sendMessage}
                         disabled={isSending || !newMessage.trim()}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                        className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
                       >
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between gap-4 p-3 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                    <div className="flex items-center justify-between gap-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
                       <div className="flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-cyan-600" />
+                        <Lock className="h-4 w-4 text-emerald-600" />
                         <span className="text-sm text-slate-700 dark:text-slate-300">
                           Direct messaging is a Premium feature
                         </span>
@@ -1663,7 +1663,7 @@ export default function BuildUnionMessages() {
                       <Button
                         size="sm"
                         onClick={() => navigate("/buildunion/pricing")}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                        className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
                       >
                         <Crown className="h-4 w-4 mr-1" />
                         Upgrade

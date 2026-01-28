@@ -2049,9 +2049,9 @@ export const ProjectCommandCenter = ({
                   
                   {/* Regenerate with Pro Quality upsell for free users */}
                   {subscriptionTier === "free" && (
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500">
+                        <div className="p-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500">
                           <Sparkles className="h-3.5 w-3.5 text-white" />
                         </div>
                         <div>
@@ -2061,7 +2061,7 @@ export const ProjectCommandCenter = ({
                       </div>
                       <Button 
                         size="sm" 
-                        className="gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-md"
+                        className="gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md"
                         onClick={() => {
                           window.location.href = "/buildunion/pricing";
                         }}
@@ -2206,9 +2206,9 @@ export const ProjectCommandCenter = ({
               
               {/* Regenerate with Pro Quality upsell for free users */}
               {subscriptionTier === "free" && (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500">
+                    <div className="p-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500">
                       <Sparkles className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div>
@@ -2218,7 +2218,7 @@ export const ProjectCommandCenter = ({
                   </div>
                   <Button 
                     size="sm" 
-                    className="gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-md"
+                    className="gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md"
                     onClick={() => {
                       window.location.href = "/buildunion/pricing";
                     }}

@@ -411,7 +411,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                 {!isOwnProfile && (
                   <Button 
                     onClick={handleStartChat}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     {t("memberDirectory.sendMessage")}

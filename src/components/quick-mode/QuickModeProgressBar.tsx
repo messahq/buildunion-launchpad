@@ -112,7 +112,7 @@ export const QuickModeProgressBar = ({
                 {statusLabel}
               </Badge>
               {soloComplete && !isPro && (
-                <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[10px]">
+                <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px]">
                   <Crown className="w-3 h-3 mr-1" />
                   Unlock Team
                 </Badge>
@@ -186,9 +186,9 @@ export const QuickModeProgressBar = ({
       {/* Team Steps Section */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-medium text-cyan-600">Team Mode</span>
-          <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[9px] px-1.5 py-0">PRO</Badge>
-          <div className="flex-1 h-px bg-cyan-200" />
+          <span className="text-xs font-medium text-emerald-600">Team Mode</span>
+          <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[9px] px-1.5 py-0">PRO</Badge>
+          <div className="flex-1 h-px bg-emerald-200" />
           {teamComplete && (
             <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">
               <CheckCircle2 className="w-3 h-3 mr-1" /> Complete
@@ -304,7 +304,7 @@ const StepButton = ({
         {step.isLocked && step.tier && (
           <Badge className={cn(
             "mt-1 text-[9px] px-1.5 py-0",
-            step.tier === "PRO" && "bg-gradient-to-r from-cyan-500 to-blue-500 text-white",
+            step.tier === "PRO" && "bg-gradient-to-r from-emerald-500 to-teal-500 text-white",
             step.tier === "PREMIUM" && "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
           )}>
             {step.tier}

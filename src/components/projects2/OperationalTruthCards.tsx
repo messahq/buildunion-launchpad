@@ -962,11 +962,11 @@ export default function OperationalTruthCards({
       {/* Verification Progress + Run All Button - Matching ProjectTimelineBar style */}
       <div className={cn(
         "flex items-center gap-4 p-4 rounded-xl border-2 border-amber-400/40 bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20 transition-all duration-500",
-        syncAnimationActive && "ring-2 ring-cyan-400 ring-offset-2 animate-pulse shadow-lg shadow-cyan-400/30"
+        syncAnimationActive && "ring-2 ring-emerald-400 ring-offset-2 animate-pulse shadow-lg shadow-emerald-400/30"
       )}>
         <div className={cn(
           "w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/20 text-amber-600 transition-all duration-500",
-          syncAnimationActive && "bg-cyan-500/30 text-cyan-500 scale-110"
+          syncAnimationActive && "bg-emerald-500/30 text-emerald-500 scale-110"
         )}>
           <Brain className={cn("h-5 w-5", syncAnimationActive && "animate-spin")} />
         </div>
@@ -976,12 +976,12 @@ export default function OperationalTruthCards({
             <span className="font-semibold text-foreground">{t("operationalTruth.title")}</span>
             <span className={cn(
               "text-xs text-muted-foreground transition-all duration-300",
-              syncAnimationActive && "text-cyan-500 font-medium"
+              syncAnimationActive && "text-emerald-500 font-medium"
             )}>
               {Math.round((8 - pendingChecksCount) * (100/8))}% verified
             </span>
             {syncAnimationActive && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 font-medium animate-pulse flex items-center gap-1">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 font-medium animate-pulse flex items-center gap-1">
                 <RefreshCw className="h-3 w-3 animate-spin" />
                 SYNCING
               </span>
@@ -1007,8 +1007,8 @@ export default function OperationalTruthCards({
                 className={cn(
                   "h-full rounded-full transition-all duration-500 ease-out",
                   syncAnimationActive
-                    ? "bg-gradient-to-r from-cyan-400 to-cyan-500"
-                    : verificationRate === 100 
+                    ? "bg-gradient-to-r from-emerald-400 to-emerald-500"
+                    : verificationRate === 100
                       ? "bg-gradient-to-r from-green-500 to-emerald-500" 
                       : "bg-gradient-to-r from-amber-500 to-orange-500"
                 )}
@@ -1031,7 +1031,7 @@ export default function OperationalTruthCards({
             </div>
             <span className={cn(
               "text-sm font-medium text-foreground min-w-[40px] text-right transition-all duration-300",
-              syncAnimationActive && "text-cyan-500 scale-110"
+              syncAnimationActive && "text-emerald-500 scale-110"
             )}>
               {displayProgress}%
             </span>
@@ -1046,7 +1046,7 @@ export default function OperationalTruthCards({
             variant="outline"
             onClick={autoSyncDataSources}
             disabled={isSyncingAll || isRunningAll || !projectId}
-            className="gap-2 min-w-[110px] border-cyan-500/50 text-cyan-600 hover:bg-cyan-500/10"
+            className="gap-2 min-w-[110px] border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10"
           >
             {isSyncingAll ? (
               <>
@@ -1224,7 +1224,7 @@ export default function OperationalTruthCards({
           label={t("operationalTruth.projectMode")}
           value={projectMode === "team" ? t("projects.teamMode") : t("projects.soloMode")}
           status="verified"
-          iconColor={projectMode === "team" ? "text-cyan-500" : "text-amber-500"}
+          iconColor={projectMode === "team" ? "text-emerald-500" : "text-amber-500"}
           sourceOrigin={dataSourceOrigins.mode || "config"}
         />
 
@@ -1401,7 +1401,7 @@ export default function OperationalTruthCards({
                                   });
                                   onNavigateToTaskTimeline();
                                 }}
-                                className="h-6 px-2 text-xs gap-1 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-500/10"
+                                className="h-6 px-2 text-xs gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
                               >
                                 <CalendarDays className="h-3 w-3" />
                                 {t("operationalTruth.rescheduleTasks", "Reschedule Tasks")}

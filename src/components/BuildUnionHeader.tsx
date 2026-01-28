@@ -460,21 +460,21 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
               <DropdownMenuContent align="start" className="w-48 bg-popover border border-border shadow-lg z-50">
                 <DropdownMenuItem 
                   onClick={() => navigate("/buildunion/community")}
-                  className="cursor-pointer gap-2 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
+                  className="cursor-pointer gap-2"
                 >
                   <Newspaper className="h-4 w-4" />
                   News & Updates
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate("/buildunion/forum")}
-                  className="cursor-pointer gap-2 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
+                  className="cursor-pointer gap-2"
                 >
                   <MessageSquare className="h-4 w-4" />
                   Discussion Forum
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate("/buildunion/members")}
-                  className="cursor-pointer gap-2 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
+                  className="cursor-pointer gap-2"
                 >
                   <User className="h-4 w-4" />
                   Member Directory
@@ -523,7 +523,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                       e.preventDefault();
                       handleLanguageChange(lang.code);
                     }}
-                    className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10 ${selectedLanguage === lang.code ? "bg-cyan-50 dark:bg-cyan-950/30 font-medium" : ""}`}
+                    className={`cursor-pointer ${selectedLanguage === lang.code ? "bg-muted font-medium" : ""}`}
                   >
                     {lang.name}
                   </DropdownMenuItem>

@@ -26,7 +26,7 @@ export function ProBadge({
   const tierConfig = {
     pro: {
       label: "PRO",
-      gradient: "from-cyan-500 to-blue-500",
+      gradient: "from-emerald-500 to-teal-500",
       description: t("tiers.proDescription", "Unlock advanced AI analysis & team features"),
     },
     premium: {

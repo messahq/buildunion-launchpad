@@ -236,7 +236,7 @@ const ContractPathSelector = ({
           className={cn(
             "cursor-pointer transition-all duration-200 border-2 hover:shadow-lg",
             canAccessTeam 
-              ? "hover:border-cyan-400 border-border" 
+              ? "hover:border-emerald-400 border-border" 
               : "opacity-75 border-border"
           )}
           onClick={handleBlueprintSelect}
@@ -245,19 +245,19 @@ const ContractPathSelector = ({
             {isCreating && (
               <div className="absolute inset-0 bg-background/80 rounded-lg flex items-center justify-center z-10">
                 <div className="flex items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-cyan-600" />
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                   <span className="text-sm font-medium">Creating project...</span>
                 </div>
               </div>
             )}
             
-            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-              <FileUp className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <FileUp className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
             </div>
             
             <div className="flex items-center justify-center gap-2 mb-2">
               <h3 className="text-lg font-semibold text-foreground">Blueprint Team Project</h3>
-              <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-0">
+              <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0">
                 <Crown className="w-3 h-3 mr-1" />
                 PRO
               </Badge>
@@ -268,28 +268,28 @@ const ContractPathSelector = ({
             </p>
             
             <div className="flex flex-wrap justify-center gap-2 text-xs mb-4">
-              <span className="px-2 py-1 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 rounded flex items-center gap-1">
+              <span className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded flex items-center gap-1">
                 <Users className="w-3 h-3" />
                 Team Members
               </span>
-              <span className="px-2 py-1 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 rounded flex items-center gap-1">
+              <span className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded flex items-center gap-1">
                 <Brain className="w-3 h-3" />
                 Blueprint AI
               </span>
-              <span className="px-2 py-1 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 rounded flex items-center gap-1">
+              <span className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded flex items-center gap-1">
                 <ListTodo className="w-3 h-3" />
                 Task Tracking
               </span>
             </div>
             
             {!isPremium && hasTrialsRemaining && (
-              <Badge variant="outline" className="bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 border-cyan-200">
+              <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200">
                 {remainingTrials} trial{remainingTrials !== 1 ? 's' : ''} remaining
               </Badge>
             )}
             
             {isPremium && (
-              <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-0">
+              <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0">
                 Unlimited Access
               </Badge>
             )}
