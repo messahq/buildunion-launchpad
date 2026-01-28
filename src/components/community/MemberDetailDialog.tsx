@@ -27,6 +27,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Public member data - sensitive fields excluded for public profiles
 interface MemberDetailDialogProps {
@@ -97,6 +98,7 @@ const availabilityColors: Record<string, string> = {
 };
 
 export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: MemberDetailDialogProps) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { subscription } = useSubscription();
@@ -259,14 +261,14 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
       }]);
 
       setNewMessage("");
-      toast.success("Message sent!");
+      toast.success(t("memberDirectory.messageSent"));
 
       // Send push notification to recipient
       const senderName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Someone";
       sendPushNotification(member.user_id, senderName, messageText);
     } catch (err) {
       console.error("Error sending message:", err);
-      toast.error("Failed to send message");
+      toast.error(t("memberDirectory.messageFailed"));
     } finally {
       setIsSending(false);
     }
@@ -274,13 +276,13 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
 
   const handleStartChat = () => {
     if (!user) {
-      toast.error("Please log in to send messages");
+      toast.error(t("memberDirectory.pleaseLogin"));
       return;
     }
     if (!hasPremiumAccess) {
-      toast.info("Direct messaging is a Premium feature", {
+      toast.info(t("memberDirectory.premiumRequired"), {
         action: {
-          label: "Upgrade",
+          label: t("memberDirectory.upgrade"),
           onClick: () => navigate("/buildunion/pricing"),
         },
       });
@@ -295,7 +297,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="sr-only">Member Profile</DialogTitle>
+          <DialogTitle className="sr-only">{t("memberDirectory.memberProfile")}</DialogTitle>
         </DialogHeader>
 
         {!showChat ? (
@@ -332,7 +334,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                   {member.is_contractor && (
                     <Badge variant="outline">
                       <Briefcase className="h-3 w-3 mr-1" />
-                      Contractor
+                      {t("memberDirectory.contractor")}
                     </Badge>
                   )}
                   {member.experience_level && (
@@ -350,7 +352,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
             <div className="grid gap-3">
               {member.bio && (
                 <div>
-                  <p className="text-sm font-medium text-foreground mb-1">About</p>
+                  <p className="text-sm font-medium text-foreground mb-1">{t("memberDirectory.about")}</p>
                   <p className="text-sm text-muted-foreground">{member.bio}</p>
                 </div>
               )}
@@ -365,7 +367,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                 {member.experience_years && member.experience_years > 0 && (
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{member.experience_years} years experience</span>
+                    <span>{member.experience_years} {t("memberDirectory.yearsExperience")}</span>
                   </div>
                 )}
               </div>
@@ -373,7 +375,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
               {member.certifications && member.certifications.length > 0 && (
                 <div>
                   <p className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
-                    <Award className="h-4 w-4" /> Certifications
+                    <Award className="h-4 w-4" /> {t("memberDirectory.certifications")}
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {member.certifications.map((cert, i) => (
@@ -387,7 +389,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
 
               {member.secondary_trades && member.secondary_trades.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Other Trades</p>
+                  <p className="text-sm font-medium text-foreground mb-1">{t("memberDirectory.otherTrades")}</p>
                   <div className="flex flex-wrap gap-1">
                     {member.secondary_trades.map((trade) => (
                       <Badge key={trade} variant="outline" className="text-xs">
@@ -403,7 +405,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
 
             {/* Contact Options - Only messaging available for public profiles */}
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-foreground">Contact</p>
+              <p className="text-sm font-medium text-foreground">{t("memberDirectory.contact")}</p>
               <div className="grid grid-cols-1 gap-2">
                 {/* Message Button - Always show for other users' profiles */}
                 {!isOwnProfile && (
@@ -412,15 +414,15 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                     className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
-                    Send Message
+                    {t("memberDirectory.sendMessage")}
                     {!hasPremiumAccess && user && (
-                      <Badge variant="secondary" className="ml-2 text-[10px]">Premium</Badge>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">{t("memberDirectory.premiumFeature")}</Badge>
                     )}
                   </Button>
                 )}
                 {isOwnProfile && (
                   <p className="text-sm text-muted-foreground text-center py-2">
-                    This is your profile
+                    {t("memberDirectory.thisIsYourProfile")}
                   </p>
                 )}
               </div>
@@ -453,8 +455,8 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-4">
                   <MessageSquare className="h-12 w-12 text-muted-foreground/30 mb-2" />
-                  <p className="text-sm text-muted-foreground">No messages yet</p>
-                  <p className="text-xs text-muted-foreground">Send a message to start the conversation</p>
+                  <p className="text-sm text-muted-foreground">{t("memberDirectory.noMessagesYet")}</p>
+                  <p className="text-xs text-muted-foreground">{t("memberDirectory.startConversation")}</p>
                 </div>
               ) : (
                 <div className="space-y-3 px-1">
@@ -487,7 +489,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
 
             <div className="flex gap-2 pt-3 border-t">
               <Input
-                placeholder="Type a message..."
+                placeholder={t("memberDirectory.typeMessage")}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
