@@ -852,17 +852,14 @@ export function MaterialCalculationTab({
     }
   };
 
-  // Reusable item row component
-  const ItemRow = ({ 
-    item, 
-    setItems,
-    isEditing 
-  }: { 
-    item: CostItem; 
-    setItems: React.Dispatch<React.SetStateAction<CostItem[]>>;
-    isEditing: boolean;
-  }) => (
+  // Item row is now a simple render - no nested component to avoid re-creation
+  const renderItemRow = (
+    item: CostItem, 
+    setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,
+    isEditing: boolean
+  ) => (
     <div 
+      key={item.id}
       className={cn(
         "grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg transition-colors",
         isEditing ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50"
@@ -1130,14 +1127,9 @@ export function MaterialCalculationTab({
           <CollapsibleContent>
             <CardContent className="space-y-3 pt-0">
               <TableHeader />
-              {materialItems.map((item) => (
-                <ItemRow 
-                  key={item.id} 
-                  item={item} 
-                  setItems={setMaterialItems}
-                  isEditing={editingId === item.id}
-                />
-              ))}
+              {materialItems.map((item) => 
+                renderItemRow(item, setMaterialItems, editingId === item.id)
+              )}
               {materialItems.length === 0 && (
                 <div className="text-center py-6 text-muted-foreground">
                   <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -1178,14 +1170,9 @@ export function MaterialCalculationTab({
           <CollapsibleContent>
             <CardContent className="space-y-3 pt-0">
               <TableHeader />
-              {laborItems.map((item) => (
-                <ItemRow 
-                  key={item.id} 
-                  item={item} 
-                  setItems={setLaborItems}
-                  isEditing={editingId === item.id}
-                />
-              ))}
+              {laborItems.map((item) => 
+                renderItemRow(item, setLaborItems, editingId === item.id)
+              )}
               {laborItems.length === 0 && (
                 <div className="text-center py-6 text-muted-foreground">
                   <Hammer className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -1228,14 +1215,9 @@ export function MaterialCalculationTab({
               {otherItems.length > 0 && (
                 <>
                   <TableHeader />
-                  {otherItems.map((item) => (
-                    <ItemRow 
-                      key={item.id} 
-                      item={item} 
-                      setItems={setOtherItems}
-                      isEditing={editingId === item.id}
-                    />
-                  ))}
+                  {otherItems.map((item) => 
+                    renderItemRow(item, setOtherItems, editingId === item.id)
+                  )}
                 </>
               )}
               
