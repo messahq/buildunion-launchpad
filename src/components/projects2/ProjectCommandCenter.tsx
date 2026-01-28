@@ -1322,25 +1322,26 @@ export const ProjectCommandCenter = ({
         : "**Team Report Preview**\n\n• Team size and roles\n• Task assignments per member\n• Completion rates\n• Activity timeline\n• Performance metrics\n• Workload distribution",
       action: async () => { generateTeamReport(); },
     },
-    // Complete Project Action
-    {
-      id: "complete-project",
-      name: projectStatus === 'completed' ? t("workspace.reopenProject", "Reopen Project") : t("workspace.completeProject", "Complete Project"),
-      description: projectStatus === 'completed' 
-        ? t("commandCenter.reopenDesc", "Mark project as active again") 
-        : t("commandCenter.completeDesc", "Mark project as finished"),
-      icon: projectStatus === 'completed' ? RotateCcw : CheckCircle2,
-      category: "team",
-      previewContent: projectStatus === 'completed'
-        ? "**Reopen Project**\n\nThis will mark the project as 'Active' again.\n\n• Project will appear in active projects list\n• You can continue working on tasks\n• Status will be updated across the app"
-        : "**Complete Project**\n\nThis will mark the project as 'Completed'.\n\n• Project will move to completed list\n• All data will be preserved\n• Status updates across Global Fleet View",
-      action: async () => { 
-        if (onCompleteProject) {
-          await onCompleteProject();
-        }
-      },
-    },
   ];
+  
+  // Finish Project Action - separate from document actions for special styling
+  const finishProjectAction: DocumentAction = {
+    id: "finish-project",
+    name: projectStatus === 'completed' ? t("workspace.reopenProject", "Reopen Project") : t("commandCenter.finishProject", "Finish Project"),
+    description: projectStatus === 'completed' 
+      ? t("commandCenter.reopenDesc", "Mark project as active again") 
+      : t("commandCenter.finishDesc", "Mark this project as complete"),
+    icon: projectStatus === 'completed' ? RotateCcw : CheckCircle2,
+    category: "team",
+    previewContent: projectStatus === 'completed'
+      ? "**Reopen Project**\n\nThis will mark the project as 'Active' again.\n\n• Project will appear in active projects list\n• You can continue working on tasks\n• Status will be updated across the app"
+      : "**Finish Project**\n\nThis will mark the project as 'Completed'.\n\n• Project will move to completed list\n• All data will be preserved\n• Status updates across Global Fleet View",
+    action: async () => { 
+      if (onCompleteProject) {
+        await onCompleteProject();
+      }
+    },
+  };
 
   const categories = [
     { id: "all", label: "All Documents" },
@@ -1969,6 +1970,81 @@ export const ProjectCommandCenter = ({
 
                 return <div key={action.id} className="group">{cardContent}</div>;
               })}
+            </div>
+            
+            {/* Finish Project - Special Separated Action */}
+            <div className="mt-4 pt-4 border-t border-dashed border-muted-foreground/20">
+              <div
+                onClick={() => !isMobile && handleSingleClick(finishProjectAction)}
+                onDoubleClick={() => !isMobile && finishProjectAction.action()}
+                onTouchEnd={() => {
+                  if (isMobile) {
+                    const now = Date.now();
+                    const lastTap = lastTapRef.current;
+                    if (lastTap && lastTap.id === finishProjectAction.id && now - lastTap.time < 300) {
+                      lastTapRef.current = null;
+                      finishProjectAction.action();
+                    } else {
+                      lastTapRef.current = { id: finishProjectAction.id, time: now };
+                      handleSingleClick(finishProjectAction);
+                    }
+                  }
+                }}
+                className={cn(
+                  "p-4 rounded-lg border-2 text-left transition-all cursor-pointer select-none",
+                  "bg-gradient-to-r from-cyan-50 via-white to-amber-50 dark:from-cyan-950/30 dark:via-background dark:to-amber-950/30",
+                  "border-cyan-200/60 dark:border-cyan-800/40",
+                  "hover:shadow-lg hover:border-cyan-300 dark:hover:border-cyan-700",
+                  "hover:from-cyan-100/80 hover:to-amber-100/80 dark:hover:from-cyan-900/40 dark:hover:to-amber-900/40",
+                  selectedDocumentId === finishProjectAction.id && "ring-2 ring-cyan-300 border-cyan-400"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "p-2.5 rounded-xl transition-transform",
+                      "bg-gradient-to-br from-cyan-500 to-amber-500 text-white shadow-md",
+                      selectedDocumentId === finishProjectAction.id && "scale-110"
+                    )}>
+                      <finishProjectAction.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-base bg-gradient-to-r from-cyan-700 to-amber-700 dark:from-cyan-400 dark:to-amber-400 bg-clip-text text-transparent">
+                        {finishProjectAction.name}
+                      </span>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {finishProjectAction.description}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-9 px-4 font-medium transition-all",
+                      "bg-gradient-to-r from-cyan-500 to-amber-500 text-white",
+                      "hover:from-cyan-600 hover:to-amber-600 hover:text-white",
+                      "shadow-md hover:shadow-lg"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      finishProjectAction.action();
+                    }}
+                  >
+                    {projectStatus === 'completed' ? (
+                      <>
+                        <RotateCcw className="h-4 w-4 mr-1.5" />
+                        {t("workspace.reopen", "Reopen")}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                        {t("workspace.finish", "Finish")}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 

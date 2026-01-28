@@ -38,7 +38,9 @@
       "healthScoreNote": "ヘルススコアは{{count}}件の関連データソースから計算されています"
     },
     "completeDesc": "プロジェクトを完了としてマーク",
-    "reopenDesc": "プロジェクトを再度アクティブとしてマーク"
+    "reopenDesc": "プロジェクトを再度アクティブとしてマーク",
+    "finishProject": "プロジェクトを完了",
+    "finishDesc": "このプロジェクトを完了としてマーク"
   },
   "baseline": {
     "title": "プロジェクトベースライン",
@@ -552,6 +554,8 @@
     "projectReopened": "プロジェクトを再開しました",
     "completeProject": "完了としてマーク",
     "reopenProject": "プロジェクトを再開",
+    "finish": "完了",
+    "reopen": "再開",
     "deleteProject": "プロジェクトを削除",
     "deleteConfirm": "削除",
     "cannotUndo": "この操作は取り消せません。"

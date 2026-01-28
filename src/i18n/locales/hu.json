@@ -38,7 +38,9 @@
       "healthScoreNote": "Egészségi pontszám {{count}} releváns adatforrásból számolva"
     },
     "completeDesc": "Projekt befejezettnek jelölése",
-    "reopenDesc": "Projekt újranyitása aktívként"
+    "reopenDesc": "Projekt újranyitása aktívként",
+    "finishProject": "Projekt befejezése",
+    "finishDesc": "Jelöld befejezettnek ezt a projektet"
   },
   "baseline": {
     "title": "Projekt Alapállapot",
@@ -570,6 +572,8 @@
     "projectReopened": "Projekt újranyitva",
     "completeProject": "Befejezettként jelöl",
     "reopenProject": "Projekt újranyitása",
+    "finish": "Befejez",
+    "reopen": "Újranyit",
     "deleteProject": "Projekt törlése",
     "deleteConfirm": "Törlés",
     "cannotUndo": "Ez nem vonható vissza."

@@ -38,7 +38,9 @@
       "healthScoreNote": "Pontuação de saúde calculada a partir de {{count}} fontes de dados relevantes"
     },
     "completeDesc": "Marcar projeto como concluído",
-    "reopenDesc": "Marcar projeto como ativo novamente"
+    "reopenDesc": "Marcar projeto como ativo novamente",
+    "finishProject": "Finalizar Projeto",
+    "finishDesc": "Marcar este projeto como concluído"
   },
   "baseline": {
     "title": "Linha de Base do Projeto",
@@ -552,6 +554,8 @@
     "projectReopened": "Projeto reaberto",
     "completeProject": "Marcar como concluído",
     "reopenProject": "Reabrir projeto",
+    "finish": "Finalizar",
+    "reopen": "Reabrir",
     "deleteProject": "Excluir projeto",
     "deleteConfirm": "Excluir",
     "cannotUndo": "Esta ação não pode ser desfeita."
