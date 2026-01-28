@@ -244,19 +244,31 @@ async function geminiVisualAnalysis(
   // PRECISION AREA EXTRACTION PROMPT - Zero Tolerance for Estimation Errors
   // =============================================================================
   
-  // Pre-extract area from description for prompt injection
+  // Pre-extract area from description for prompt injection - IMPROVED PATTERNS
   const descriptionAreaPatterns = [
+    // Standard formats: "200 sq ft", "200 sqft", "200 SF", "200 square feet"
     /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*ft|square\s*feet?|sqft|SF)/i,
+    // Just number followed by sq ft variations with optional spaces
+    /(\d+)\s*(?:sq\.?\s*ft|sqft|sf)/i,
+    // "area is 200" or "area: 200" or "area = 200"
     /area\s*(?:is|=|:)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
-    /(\d{1,3}(?:,\d{3})*)\s*(?:négyzetláb|nm|m2)/i,
+    // Hungarian: "200 négyzetláb", "200 nm", "200 m2"
+    /(\d{1,3}(?:,\d{3})*)\s*(?:négyzetláb|nm|m2|m²)/i,
+    // Number at start/end of description like "200 festeni" or "festeni 200"
+    /^(\d+)\s+\w/i,
+    /\w\s+(\d{2,5})$/,
+    // Standalone number between 50 and 50000 (likely area)
+    /\b(\d{2,5})\b/,
   ];
   let descriptionAreaHint: number | null = null;
   for (const pattern of descriptionAreaPatterns) {
     const match = description?.match(pattern);
     if (match?.[1]) {
-      descriptionAreaHint = parseFloat(match[1].replace(/,/g, ""));
-      if (descriptionAreaHint > 10 && descriptionAreaHint < 100000) {
-        console.log(`[GEMINI] Found area in user description: ${descriptionAreaHint} sq ft`);
+      const parsedValue = parseFloat(match[1].replace(/,/g, ""));
+      // Only accept reasonable area values (10-100000 sq ft)
+      if (parsedValue >= 10 && parsedValue <= 100000) {
+        descriptionAreaHint = parsedValue;
+        console.log(`[GEMINI] Found area in user description: ${descriptionAreaHint} sq ft (pattern: ${pattern.source})`);
         break;
       }
     }

@@ -23,7 +23,9 @@ import {
   X,
   Plus,
   Trash2,
-  Crown
+  Crown,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
@@ -97,6 +99,9 @@ export interface AIAnalysisCitationProps {
   // Editable callbacks
   onAreaChange?: (newArea: number | null) => void;
   onMaterialsChange?: (materials: Array<{ item: string; quantity: number; unit: string }>) => void;
+  // Re-analyze callback
+  onReanalyze?: () => void;
+  isReanalyzing?: boolean;
 }
 
 // ============================================
@@ -272,6 +277,8 @@ export default function AIAnalysisCitation({
   hasBlueprint = false,
   onAreaChange,
   onMaterialsChange,
+  onReanalyze,
+  isReanalyzing = false,
 }: AIAnalysisCitationProps) {
   const [showDecisionLog, setShowDecisionLog] = useState(false);
   
@@ -486,12 +493,35 @@ export default function AIAnalysisCitation({
                     </div>
                   </div>
                 ) : (
-                  <button 
-                    onClick={() => setIsEditingArea(true)}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    + Add area manually
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    {onReanalyze && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onReanalyze}
+                        disabled={isReanalyzing}
+                        className="text-sm border-primary/50 text-primary hover:bg-primary/10"
+                      >
+                        {isReanalyzing ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Re-analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Re-analyze
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <button 
+                      onClick={() => setIsEditingArea(true)}
+                      className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      or add manually
+                    </button>
+                  </div>
                 )}
               </>
             )}

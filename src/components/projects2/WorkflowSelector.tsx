@@ -56,6 +56,9 @@ export interface WorkflowSelectorProps {
   aiTriggers?: AITriggers;
   onSelectWorkflow: (mode: "solo" | "team", editedData?: EditedAnalysisData) => void;
   onUpgradeClick: () => void;
+  // Re-analyze callback
+  onReanalyze?: () => void;
+  isReanalyzing?: boolean;
 }
 
 // Tier-based feature mapping
@@ -115,6 +118,8 @@ export default function WorkflowSelector({
   aiTriggers,
   onSelectWorkflow,
   onUpgradeClick,
+  onReanalyze,
+  isReanalyzing = false,
 }: WorkflowSelectorProps) {
   const tierConfig = TIER_FEATURES[tier];
   const canAccessTeam = tierConfig.modes.includes("team");
@@ -257,6 +262,8 @@ export default function WorkflowSelector({
             setEditableMaterials(newMaterials);
             setHasUserEdits(true);
           }}
+          onReanalyze={onReanalyze}
+          isReanalyzing={isReanalyzing}
         />
       )}
 
