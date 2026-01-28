@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -72,6 +72,7 @@ import {
   AlertOctagon,
   Radio,
   CircleAlert,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -85,6 +86,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import ReactMarkdown from "react-markdown";
 import { saveDocumentToProject, saveAIBriefToProject, saveReportToProject } from "@/lib/documentUtils";
 import CitationRegistry from "@/components/citations/CitationRegistry";
+import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 
 // ============================================
 // DATA SOURCE STATUS TYPES
@@ -233,6 +235,16 @@ export const ProjectCommandCenter = ({
   // Double-tap detection for mobile
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
   
+  // ============================================
+  // M.E.S.S.A. BRIEF TRIAL & GATING
+  // ============================================
+  const {
+    remainingTrials: messaTrialsRemaining,
+    hasTrialsRemaining: hasMessaTrials,
+    useOneTrial: useMessaTrial,
+    loading: trialLoading,
+  } = useDbTrialUsage("messa_brief");
+
   // ============================================
   // CONFLICT MONITOR STATE
   // ============================================
@@ -553,6 +565,70 @@ export const ProjectCommandCenter = ({
   const completeCount = dataSources.filter(s => s.status === "complete").length;
 
   // ============================================
+  // M.E.S.S.A. BRIEF GATING LOGIC
+  // ============================================
+  
+  // Calculate separate completion rates for pillars (Op Truth) and workflow (Data Sources)
+  const pillarSources = dataSources.filter(s => s.category === "pillar");
+  const workflowSources = dataSources.filter(s => s.category === "workflow");
+  
+  const pillarCompletionRate = Math.round(
+    (pillarSources.filter(s => s.status === "complete").length / pillarSources.length) * 100
+  );
+  
+  const workflowCompletionRate = Math.round(
+    (workflowSources.filter(s => s.status === "complete").length / workflowSources.length) * 100
+  );
+
+  // Tier-based gating for M.E.S.S.A. Brief:
+  // Free: 3 trials + 100% Op Truth / 80% Data Sources
+  // Pro: Unlimited + 80% both
+  // Premium: Unlimited + no threshold
+  const messaBriefGating = useMemo(() => {
+    const isFree = subscriptionTier === "free";
+    const isPro = subscriptionTier === "pro";
+    const isPremium = subscriptionTier === "premium" || subscriptionTier === "enterprise";
+
+    // Premium: No restrictions
+    if (isPremium) {
+      return {
+        canGenerate: true,
+        reason: null,
+        showTrialCounter: false,
+        trialsRemaining: Infinity,
+      };
+    }
+
+    // Pro: Unlimited but needs 80%+ both pillars and workflow
+    if (isPro) {
+      const meetsThreshold = pillarCompletionRate >= 80 && workflowCompletionRate >= 80;
+      return {
+        canGenerate: meetsThreshold,
+        reason: !meetsThreshold 
+          ? `Complete at least 80% of Operational Truth (${pillarCompletionRate}%) and Data Sources (${workflowCompletionRate}%) to generate`
+          : null,
+        showTrialCounter: false,
+        trialsRemaining: Infinity,
+      };
+    }
+
+    // Free: 3 trials + 100% Op Truth / 80% Data Sources
+    const meetsThreshold = pillarCompletionRate >= 100 && workflowCompletionRate >= 80;
+    const hasTrials = messaTrialsRemaining > 0;
+    
+    return {
+      canGenerate: meetsThreshold && hasTrials,
+      reason: !meetsThreshold
+        ? `Free tier requires 100% Operational Truth (${pillarCompletionRate}%) and 80% Data Sources (${workflowCompletionRate}%)`
+        : !hasTrials
+          ? "No free trials remaining. Upgrade to Pro for unlimited briefs."
+          : null,
+      showTrialCounter: true,
+      trialsRemaining: messaTrialsRemaining,
+    };
+  }, [subscriptionTier, pillarCompletionRate, workflowCompletionRate, messaTrialsRemaining]);
+
+  // ============================================
   // CONFLICT MONITOR - Cross-Check Logic (5 min interval)
   // ============================================
   const runConflictCheck = useCallback(() => {
@@ -630,6 +706,21 @@ export const ProjectCommandCenter = ({
 
   // Generate AI Brief and save to documents
   const generateAIBrief = useCallback(async (saveToDocuments = true) => {
+    // Check gating first
+    if (!messaBriefGating.canGenerate) {
+      toast.error(messaBriefGating.reason || "Cannot generate brief at this time");
+      return;
+    }
+
+    // For free tier, use one trial
+    if (subscriptionTier === "free") {
+      const trialUsed = await useMessaTrial();
+      if (!trialUsed) {
+        toast.error("Failed to use trial. Please try again.");
+        return;
+      }
+    }
+
     setIsGeneratingBrief(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -675,7 +766,7 @@ export const ProjectCommandCenter = ({
     } finally {
       setIsGeneratingBrief(false);
     }
-  }, [projectId, projectName, subscriptionTier]);
+  }, [projectId, projectName, subscriptionTier, messaBriefGating, useMessaTrial]);
 
   // Generate Team Report and save to documents
   const generateTeamReport = useCallback(async (saveToDocuments = true) => {
@@ -1548,41 +1639,79 @@ export const ProjectCommandCenter = ({
 
           {/* Quick Action: AI Brief - with gradient background wrapper */}
           <div className="flex flex-col sm:flex-row gap-3 p-4 -mx-4 rounded-xl bg-gradient-to-r from-amber-100 via-orange-50 to-cyan-100 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-cyan-900/20 border border-amber-200/50 dark:border-amber-700/30">
-            <Button
-              onClick={() => generateAIBrief()}
-              disabled={isGeneratingBrief}
-              className={cn(
-                "flex-1 h-auto py-4 text-white shadow-md relative overflow-hidden",
-                conflictMonitorData.hasConflict
-                  ? "bg-gradient-to-r from-amber-600 via-orange-500 to-red-500 hover:from-amber-700 hover:via-orange-600 hover:to-red-600"
-                  : "bg-gradient-to-r from-amber-500 via-amber-400 to-cyan-500 hover:from-amber-600 hover:via-amber-500 hover:to-cyan-600"
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex-1">
+                  <Button
+                    onClick={() => generateAIBrief()}
+                    disabled={isGeneratingBrief || !messaBriefGating.canGenerate}
+                    className={cn(
+                      "w-full h-auto py-4 text-white shadow-md relative overflow-hidden",
+                      !messaBriefGating.canGenerate
+                        ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed"
+                        : conflictMonitorData.hasConflict
+                          ? "bg-gradient-to-r from-amber-600 via-orange-500 to-red-500 hover:from-amber-700 hover:via-orange-600 hover:to-red-600"
+                          : "bg-gradient-to-r from-amber-500 via-amber-400 to-cyan-500 hover:from-amber-600 hover:via-amber-500 hover:to-cyan-600"
+                    )}
+                  >
+                    {/* Lock indicator when gated */}
+                    {!messaBriefGating.canGenerate && (
+                      <span className="absolute top-2 right-2">
+                        <Lock className="h-4 w-4 text-white/80" />
+                      </span>
+                    )}
+                    {/* Flashing conflict indicator */}
+                    {conflictMonitorData.hasConflict && messaBriefGating.canGenerate && (
+                      <span className="absolute top-2 right-2">
+                        <AlertTriangle className="h-4 w-4 text-white animate-pulse" />
+                      </span>
+                    )}
+                    {/* Trial counter badge for Free tier */}
+                    {messaBriefGating.showTrialCounter && messaBriefGating.trialsRemaining !== Infinity && (
+                      <span className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-medium">
+                        {messaBriefGating.trialsRemaining}/3 trials
+                      </span>
+                    )}
+                    {isGeneratingBrief ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Analyzing 16 Data Sources...
+                      </>
+                    ) : (
+                      <>
+                        {!messaBriefGating.canGenerate ? (
+                          <Lock className="h-5 w-5 mr-2" />
+                        ) : (
+                          <Sparkles className="h-5 w-5 mr-2" />
+                        )}
+                        <div className="text-left">
+                          <div className="font-semibold">
+                            {!messaBriefGating.canGenerate ? "M.E.S.S.A. Brief Locked" : "Generate M.E.S.S.A. Brief"}
+                          </div>
+                          <div className="text-xs opacity-90">
+                            {!messaBriefGating.canGenerate
+                              ? `Complete more data to unlock`
+                              : conflictMonitorData.hasConflict 
+                                ? "⚠️ Data conflicts detected" 
+                                : "Executive summary from all project data"}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              {messaBriefGating.reason && (
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="text-sm">{messaBriefGating.reason}</p>
+                  {subscriptionTier === "free" && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upgrade to Pro for unlimited briefs with 80% threshold
+                    </p>
+                  )}
+                </TooltipContent>
               )}
-            >
-              {/* Flashing conflict indicator */}
-              {conflictMonitorData.hasConflict && (
-                <span className="absolute top-2 right-2">
-                  <AlertTriangle className="h-4 w-4 text-white animate-pulse" />
-                </span>
-              )}
-              {isGeneratingBrief ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Analyzing 16 Data Sources...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  <div className="text-left">
-                    <div className="font-semibold">Generate AI Brief</div>
-                    <div className="text-xs opacity-90">
-                      {conflictMonitorData.hasConflict 
-                        ? "⚠️ Data conflicts detected" 
-                        : "Executive summary from all project data"}
-                    </div>
-                  </div>
-                </>
-              )}
-            </Button>
+            </Tooltip>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
