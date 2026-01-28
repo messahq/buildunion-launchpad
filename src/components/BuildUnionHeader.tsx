@@ -460,21 +460,21 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
               <DropdownMenuContent align="start" className="w-48 bg-popover border border-border shadow-lg z-50">
                 <DropdownMenuItem 
                   onClick={() => navigate("/buildunion/community")}
-                  className="cursor-pointer gap-2"
+                  className="cursor-pointer gap-2 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
                 >
                   <Newspaper className="h-4 w-4" />
                   News & Updates
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate("/buildunion/forum")}
-                  className="cursor-pointer gap-2"
+                  className="cursor-pointer gap-2 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
                 >
                   <MessageSquare className="h-4 w-4" />
                   Discussion Forum
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate("/buildunion/members")}
-                  className="cursor-pointer gap-2"
+                  className="cursor-pointer gap-2 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
                 >
                   <User className="h-4 w-4" />
                   Member Directory
@@ -523,7 +523,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                       e.preventDefault();
                       handleLanguageChange(lang.code);
                     }}
-                    className={`cursor-pointer ${selectedLanguage === lang.code ? "bg-accent font-medium" : ""}`}
+                    className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10 ${selectedLanguage === lang.code ? "bg-cyan-50 dark:bg-cyan-950/30 font-medium" : ""}`}
                   >
                     {lang.name}
                   </DropdownMenuItem>
@@ -572,7 +572,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/buildunion/profile/view")}>
+                <DropdownMenuItem onClick={() => navigate("/buildunion/profile/view")} className="hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10">
                   <Eye className="h-4 w-4 mr-2" />
                   View Profile
                 </DropdownMenuItem>
@@ -591,22 +591,22 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                           <ChevronDown className="h-3 w-3 ml-auto" />
                         </DropdownMenuItem>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent side="left" align="start" className="w-40 bg-popover border border-border">
-                        {(["free", "pro", "premium", "enterprise"] as const).map((tier) => (
-                          <DropdownMenuItem
-                            key={tier}
-                            onClick={() => {
-                              localStorage.setItem("dev_tier_override", tier);
-                              window.location.reload();
-                            }}
-                            className={`capitalize ${localStorage.getItem("dev_tier_override") === tier ? "bg-accent font-medium" : ""}`}
-                          >
-                            {tier === "free" && "🆓 Free"}
-                            {tier === "pro" && "⚡ Pro"}
-                            {tier === "premium" && "👑 Premium"}
-                            {tier === "enterprise" && "🏢 Enterprise"}
-                          </DropdownMenuItem>
-                        ))}
+                        <DropdownMenuContent side="left" align="start" className="w-40 bg-popover border border-border">
+                          {(["free", "pro", "premium", "enterprise"] as const).map((tier) => (
+                            <DropdownMenuItem
+                              key={tier}
+                              onClick={() => {
+                                localStorage.setItem("dev_tier_override", tier);
+                                window.location.reload();
+                              }}
+                              className={`capitalize hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10 ${localStorage.getItem("dev_tier_override") === tier ? "bg-cyan-50 dark:bg-cyan-950/30 font-medium" : ""}`}
+                            >
+                              {tier === "free" && "🆓 Free"}
+                              {tier === "pro" && "⚡ Pro"}
+                              {tier === "premium" && "👑 Premium"}
+                              {tier === "enterprise" && "🏢 Enterprise"}
+                            </DropdownMenuItem>
+                          ))}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => {
@@ -624,7 +624,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 )}
                 {subscription.subscribed && (
                   <>
-                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")}>
+                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10">
                       Manage Subscription
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -632,7 +632,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 )}
                 {!subscription.subscribed && (
                   <>
-                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="text-amber-600">
+                    <DropdownMenuItem onClick={() => navigate("/buildunion/pricing")} className="text-cyan-600 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10">
                       <Zap className="h-4 w-4 mr-2" />
                       Upgrade to Pro
                     </DropdownMenuItem>
@@ -642,7 +642,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 {/* Language selector - collapsible in dropdown */}
                 <div className="sm:hidden">
                   <DropdownMenuItem 
-                    className="text-xs text-muted-foreground py-1 cursor-pointer hover:bg-accent"
+                    className="text-xs text-muted-foreground py-1 cursor-pointer hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10"
                     onClick={(e) => {
                       e.preventDefault();
                       setLanguageExpanded(!languageExpanded);
@@ -661,7 +661,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                             handleLanguageChange(lang.code);
                             setLanguageExpanded(false);
                           }}
-                          className={`pl-7 ${selectedLanguage === lang.code ? "bg-accent font-medium" : ""}`}
+                          className={`pl-7 hover:bg-gradient-to-r hover:from-cyan-50/80 hover:via-sky-50/60 hover:to-blue-50/40 dark:hover:from-cyan-950/30 dark:hover:via-sky-950/20 dark:hover:to-blue-950/10 ${selectedLanguage === lang.code ? "bg-cyan-50 dark:bg-cyan-950/30 font-medium" : ""}`}
                         >
                           {lang.name}
                         </DropdownMenuItem>
