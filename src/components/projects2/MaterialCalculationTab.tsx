@@ -74,6 +74,7 @@ interface MaterialCalculationTabProps {
   onSave?: (costs: { materials: CostItem[]; labor: CostItem[]; other: CostItem[]; grandTotal: number }) => Promise<void>;
   currency?: string;
   dataSource?: 'saved' | 'ai' | 'tasks';
+  isSoloMode?: boolean;
 }
 
 // Essential material patterns that get 10% waste calculation
@@ -163,7 +164,8 @@ export function MaterialCalculationTab({
   onGrandTotalChange,
   onSave,
   currency = "CAD",
-  dataSource = "ai"
+  dataSource = "ai",
+  isSoloMode = false
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
@@ -1351,82 +1353,84 @@ export function MaterialCalculationTab({
         </Card>
       </Collapsible>
 
-      {/* Client Signature Section */}
-      <Collapsible open={signatureOpen} onOpenChange={setSignatureOpen}>
-        <Card className="border-green-200 dark:border-green-800">
-          <CardHeader className="pb-3">
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center justify-between w-full text-left">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <PenLine className="h-4 w-4 text-green-600" />
-                  {t("materials.signatures", "Signatures")}
-                  {(clientSignature || contractorSignature) && (
-                    <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
-                      <Check className="h-3 w-3 mr-1" />
-                      {clientSignature && contractorSignature ? '2/2' : '1/2'}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <div className="flex items-center gap-3">
-                  {signatureOpen ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="pt-0">
-              <div className="bg-green-50/50 dark:bg-green-950/20 rounded-lg p-4 border border-green-100 dark:border-green-900 space-y-6">
-                <p className="text-xs text-muted-foreground">
-                  {t("materials.signatureHint", "Capture signatures for cost breakdown approval. Draw or type signatures below.")}
-                </p>
-                
-                {/* Dual Signature Grid */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Client Signature */}
-                  <div className="space-y-2">
-                    <SignatureCapture
-                      onSignatureChange={setClientSignature}
-                      label={t("materials.clientApproval", "Client Signature")}
-                      placeholder={t("materials.typeClientName", "Type client's full name")}
-                    />
+      {/* Client Signature Section - Only show in Team Mode (not Solo) */}
+      {!isSoloMode && (
+        <Collapsible open={signatureOpen} onOpenChange={setSignatureOpen}>
+          <Card className="border-green-200 dark:border-green-800">
+            <CardHeader className="pb-3">
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full text-left">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <PenLine className="h-4 w-4 text-green-600" />
+                    {t("materials.signatures", "Signatures")}
+                    {(clientSignature || contractorSignature) && (
+                      <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                        <Check className="h-3 w-3 mr-1" />
+                        {clientSignature && contractorSignature ? '2/2' : '1/2'}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <div className="flex items-center gap-3">
+                    {signatureOpen ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </button>
+              </CollapsibleTrigger>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="bg-green-50/50 dark:bg-green-950/20 rounded-lg p-4 border border-green-100 dark:border-green-900 space-y-6">
+                  <p className="text-xs text-muted-foreground">
+                    {t("materials.signatureHint", "Capture signatures for cost breakdown approval. Draw or type signatures below.")}
+                  </p>
+                  
+                  {/* Dual Signature Grid */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Client Signature */}
+                    <div className="space-y-2">
+                      <SignatureCapture
+                        onSignatureChange={setClientSignature}
+                        label={t("materials.clientApproval", "Client Signature")}
+                        placeholder={t("materials.typeClientName", "Type client's full name")}
+                      />
+                    </div>
+                    
+                    {/* Contractor Signature */}
+                    <div className="space-y-2">
+                      <SignatureCapture
+                        onSignatureChange={setContractorSignature}
+                        label={t("materials.contractorApproval", "Contractor Signature")}
+                        placeholder={t("materials.typeContractorName", "Type contractor's full name")}
+                      />
+                    </div>
                   </div>
                   
-                  {/* Contractor Signature */}
-                  <div className="space-y-2">
-                    <SignatureCapture
-                      onSignatureChange={setContractorSignature}
-                      label={t("materials.contractorApproval", "Contractor Signature")}
-                      placeholder={t("materials.typeContractorName", "Type contractor's full name")}
-                    />
-                  </div>
+                  {/* Status Summary */}
+                  {(clientSignature || contractorSignature) && (
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-green-200 dark:border-green-800">
+                      {clientSignature && (
+                        <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+                          <Check className="h-3 w-3 mr-1" />
+                          Client signed
+                        </Badge>
+                      )}
+                      {contractorSignature && (
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
+                          <Check className="h-3 w-3 mr-1" />
+                          Contractor signed
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
-                
-                {/* Status Summary */}
-                {(clientSignature || contractorSignature) && (
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-green-200 dark:border-green-800">
-                    {clientSignature && (
-                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
-                        <Check className="h-3 w-3 mr-1" />
-                        Client signed
-                      </Badge>
-                    )}
-                    {contractorSignature && (
-                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
-                        <Check className="h-3 w-3 mr-1" />
-                        Contractor signed
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
 
       {/* Grand Total - matching project total with beige background and tax */}
       <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">

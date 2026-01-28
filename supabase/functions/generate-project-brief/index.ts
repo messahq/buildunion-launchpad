@@ -443,6 +443,22 @@ Status: ${project.status}
 Description: ${project.description || "No description"}
 Created: ${project.created_at}
 
+== PROJECT MODE ==
+**Mode: ${(summary?.mode || "solo").toUpperCase()}**
+${summary?.mode === "team" 
+  ? `This is a TEAM PROJECT with collaborative features enabled:
+- Team coordination and member management
+- Task assignment to multiple workers  
+- Client signatures required on documents
+- Full Contracts workflow available
+- Team Map with member locations`
+  : `This is a SOLO PROJECT focused on individual contractor work:
+- Single contractor workflow optimization
+- Personal task tracking (no team assignment required)
+- Streamlined cost estimation without client signatures
+- Quick quote and estimate generation
+- Materials and timeline focus`}
+
 == 8 PILLARS OF OPERATIONAL TRUTH ==
 | Pillar | Value | Source | Verified |
 |--------|-------|--------|----------|
@@ -516,11 +532,32 @@ ${weatherSection}
       });
     }
 
+    // Determine if this is a Solo or Team project for context-aware reporting
+    const projectMode = summary?.mode || "solo";
+    const isSoloProject = projectMode === "solo";
+    
     // M.E.S.S.A. (Multi-Engine Structural Site Analysis) Audit Report Prompt
     const aiPrompt = `You are a Senior Construction Engineer performing a **M.E.S.S.A. AUDIT REPORT** (Multi-Engine Structural Site Analysis) for BuildUnion. This is an engineering-grade project integrity assessment.
 
 ## YOUR ROLE
 You are conducting a ZERO-TOLERANCE engineering audit. Every data point must be verified. Conflicts must be flagged. Missing information must be explicitly stated. Do NOT assume compliance - verify it.
+
+## PROJECT MODE CONTEXT
+**This is a ${projectMode.toUpperCase()} PROJECT**
+${isSoloProject 
+  ? `SOLO MODE means:
+- Single contractor workflow - NO team members expected
+- Task completion is self-assigned (owner = assignee)
+- Signatures on Materials tab are NOT required
+- Focus on: estimates, materials, timeline, cost tracking
+- Team-related metrics should be marked as "N/A (Solo Mode)" not as failures
+- Client signatures are still relevant for Contracts (if used)`
+  : `TEAM MODE means:
+- Collaborative project with multiple workers
+- Task assignment to team members is expected
+- Client AND Contractor signatures may be required
+- Full team coordination features are available
+- All 8 Workflow Data Sources are relevant`}
 
 ## PROJECT DATA - ${weatherData ? "17" : "16"} VERIFIED SOURCES
 ${projectContext}
