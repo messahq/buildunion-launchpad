@@ -143,15 +143,25 @@ serve(async (req) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { 
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif; 
+      font-family: 'Space Grotesk', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif; 
       line-height: 1.7; 
       color: #374151; 
       margin: 0; 
       padding: 0; 
       background-color: #f8fafc; 
     }
+    .brand-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    .brand-build { color: #475569; }
+    .brand-union { color: #f59e0b; }
     .wrapper {
       padding: 40px 20px;
       background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
@@ -321,9 +331,11 @@ serve(async (req) => {
       opacity: 0.9;
     }
     .footer-company-name {
-      font-size: 20px;
-      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
       margin-top: 12px;
+      letter-spacing: -0.5px;
     }
     .footer-build { color: #ffffff; }
     .footer-union { color: #f59e0b; }
@@ -412,7 +424,9 @@ serve(async (req) => {
     <div class="container">
       <!-- HEADER -->
       <div class="header">
-        <img src="${logoUrl}" alt="BuildUnion Logo" class="logo-img" />
+        <div class="brand-name" style="font-size: 28px; margin-bottom: 8px;">
+          <span class="brand-build">Build</span><span class="brand-union">Union</span>
+        </div>
         <div class="header-content">
           <div class="company-name">Construction Management Platform</div>
         </div>
@@ -486,7 +500,6 @@ serve(async (req) => {
       <!-- FOOTER -->
       <div class="footer">
         <div class="footer-logo-section">
-          <img src="${logoUrl}" alt="BuildUnion" class="footer-logo-img" style="filter: brightness(10);" />
           <div class="footer-company-name">
             <span class="footer-build">Build</span><span class="footer-union">Union</span>
           </div>
@@ -501,24 +514,9 @@ serve(async (req) => {
           <span class="footer-contact-row">📍 Toronto, Ontario, Canada</span>
         </div>
 
-        <div class="footer-links">
-          <a href="https://buildunion.ca" class="footer-link-btn">Visit Our Website</a>
-        </div>
-
-        <div class="footer-badges">
-          <span class="footer-badge">🛡️ Licensed</span>
-          <span class="footer-badge">✓ Insured</span>
-          <span class="footer-badge">🇨🇦 Canadian</span>
-        </div>
-
         <div class="footer-legal">
           <p class="footer-copyright">© 2026 BuildUnion. All rights reserved.</p>
-          <p>This email was sent by BuildUnion Administration.</p>
-          <p>If you received this email in error, please disregard it.</p>
-          <p style="margin-top: 8px;">
-            <a href="https://buildunion.ca/privacy" style="color: #64748b; text-decoration: none; margin: 0 8px;">Privacy Policy</a> |
-            <a href="https://buildunion.ca/terms" style="color: #64748b; text-decoration: none; margin: 0 8px;">Terms of Service</a>
-          </p>
+          <p>This is an official communication from BuildUnion Admin.</p>
         </div>
       </div>
     </div>
