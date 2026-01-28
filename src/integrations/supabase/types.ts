@@ -1155,6 +1155,117 @@ export type Database = {
       }
     }
     Views: {
+      bu_profiles_collaborator: {
+        Row: {
+          availability: string | null
+          avatar_url: string | null
+          bio: string | null
+          certifications: string[] | null
+          company_logo_url: string | null
+          company_name: string | null
+          company_website: string | null
+          created_at: string | null
+          experience_level:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years: number | null
+          hourly_rate: number | null
+          id: string | null
+          is_contractor: boolean | null
+          is_public_profile: boolean | null
+          is_union_member: boolean | null
+          is_verified: boolean | null
+          latitude: number | null
+          location_status: string | null
+          location_updated_at: string | null
+          longitude: number | null
+          phone: string | null
+          primary_trade:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          profile_completed: boolean | null
+          secondary_trades:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area: string | null
+          union_name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          availability?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          company_logo_url?: string | null
+          company_name?: string | null
+          company_website?: string | null
+          created_at?: string | null
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years?: number | null
+          hourly_rate?: number | null
+          id?: string | null
+          is_contractor?: boolean | null
+          is_public_profile?: boolean | null
+          is_union_member?: boolean | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          location_status?: string | null
+          location_updated_at?: string | null
+          longitude?: number | null
+          phone?: never
+          primary_trade?:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          profile_completed?: boolean | null
+          secondary_trades?:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area?: string | null
+          union_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          availability?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[] | null
+          company_logo_url?: string | null
+          company_name?: string | null
+          company_website?: string | null
+          created_at?: string | null
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          experience_years?: number | null
+          hourly_rate?: number | null
+          id?: string | null
+          is_contractor?: boolean | null
+          is_public_profile?: boolean | null
+          is_union_member?: boolean | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          location_status?: string | null
+          location_updated_at?: string | null
+          longitude?: number | null
+          phone?: never
+          primary_trade?:
+            | Database["public"]["Enums"]["construction_trade"]
+            | null
+          profile_completed?: boolean | null
+          secondary_trades?:
+            | Database["public"]["Enums"]["construction_trade"][]
+            | null
+          service_area?: string | null
+          union_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       bu_profiles_public: {
         Row: {
           availability: string | null
@@ -1232,6 +1343,10 @@ export type Database = {
       add_project_member_validated: {
         Args: { _project_id: string; _role: string; _user_id: string }
         Returns: Json
+      }
+      can_view_phone: {
+        Args: { _profile_user_id: string; _viewer_id: string }
+        Returns: boolean
       }
       get_public_profiles: {
         Args: {
