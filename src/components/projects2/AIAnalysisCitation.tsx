@@ -596,13 +596,6 @@ export default function AIAnalysisCitation({
                 </Badge>
               )}
             </div>
-            {/* Last Modified Timestamp */}
-            {areaLastModified && (
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-                <RefreshCw className="h-3 w-3" />
-                <span>Modified: {areaLastModified.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-            )}
             {hasBlueprint && (
               <div className="text-xs text-primary mt-1">📄 Blueprint data included</div>
             )}
@@ -715,6 +708,14 @@ export default function AIAnalysisCitation({
               >
                 + Add materials
               </button>
+            )}
+            
+            {/* Materials calculation timestamp - shows when materials were synced with area */}
+            {areaLastModified && editableMaterials.length > 0 && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-2 pt-2 border-t border-muted/30">
+                <RefreshCw className="h-3 w-3" />
+                <span>Synced with {editableArea?.toLocaleString()} {areaUnit} @ {areaLastModified.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
             )}
           </div>
         </div>
