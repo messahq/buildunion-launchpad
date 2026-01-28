@@ -1787,33 +1787,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span className="hidden xs:inline">Total:</span> ${(summary?.total_cost || 0).toLocaleString()}
           </Badge>
-          {/* Generate Report Button - Premium Feature */}
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateReport}
-              disabled={isGeneratingReport || !isPremium}
-              className={cn(
-                "gap-1.5 sm:gap-2",
-                isPremium 
-                  ? "border-amber-500/50 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20" 
-                  : "opacity-70"
-              )}
-            >
-              {isGeneratingReport ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">{t("report.generateReport")}</span>
-            </Button>
-            {!isPremium && (
-              <div className="absolute -top-2 -right-2">
-                <ProBadge tier="premium" size="sm" />
-              </div>
-            )}
-          </div>
 
           {/* Conflict Status Indicator */}
           <ConflictStatusIndicator
