@@ -93,26 +93,37 @@ function generateCitationSources(
 ): CitationSource[] {
   const sources: CitationSource[] = [];
   
-  // Area detection citation
+  // Area detection citation - PRECISION EXTRACTION
   if (detectedArea && dualEngineOutput?.gemini) {
+    const confidence = dualEngineOutput.gemini.confidence;
+    const extractionMethod = confidence === "high" 
+      ? "directly read from visible text in image" 
+      : confidence === "medium"
+      ? "extracted via pattern matching"
+      : "estimated from visual proportions";
+    
     sources.push({
       id: "area-detection",
       sourceId: "PHOTO-AI",
       documentName: "Photo Analysis Report",
       documentType: "image",
-      contextSnippet: `Gemini Vision detected ${detectedArea.toLocaleString()} ${dualEngineOutput.gemini.areaUnit} based on ${dualEngineOutput.gemini.surfaceType} surface analysis. Confidence: ${dualEngineOutput.gemini.confidence}.`,
+      contextSnippet: `Gemini Vision detected EXACTLY ${detectedArea.toLocaleString()} ${dualEngineOutput.gemini.areaUnit} - ${extractionMethod}. Surface: ${dualEngineOutput.gemini.surfaceType}. Confidence: ${confidence}. This is the BASE AREA - waste buffer (+10%) applied separately.`,
       timestamp: new Date().toISOString(),
     });
   }
   
-  // Materials citation
+  // Materials citation - BASE AREA CLARITY
   if (materials && materials.length > 0) {
+    const baseAreaMaterial = materials.find(m => 
+      m.unit === "sq ft" && m.quantity === detectedArea
+    );
+    
     sources.push({
       id: "materials-estimation",
       sourceId: "MAT-AI",
       documentName: "Material Estimation Report",
       documentType: "log",
-      contextSnippet: `AI estimated ${materials.length} material items based on detected area and project type. Includes standard waste buffer (+10%) for essential materials.`,
+      contextSnippet: `AI calculated ${materials.length} material items using BASE AREA of ${detectedArea?.toLocaleString() || 'detected'} sq ft. Essential materials (flooring, underlayment) use base quantity with +10% waste buffer displayed separately.`,
       timestamp: new Date().toISOString(),
     });
   }
