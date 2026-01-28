@@ -65,12 +65,20 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   const { unreadCount } = useUnreadMessages();
   const { isAdmin } = useAdminRole();
   const { t, i18n } = useTranslation();
-  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
+  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'en');
+
+  // Sync selectedLanguage with i18n.language on mount and language changes
+  useEffect(() => {
+    setSelectedLanguage(i18n.language);
+  }, [i18n.language]);
 
   // Sync language changes
   const handleLanguageChange = (langCode: string) => {
-    setSelectedLanguage(langCode);
-    i18n.changeLanguage(langCode);
+    console.log('Changing language to:', langCode);
+    i18n.changeLanguage(langCode).then(() => {
+      setSelectedLanguage(langCode);
+      localStorage.setItem('language', langCode);
+    });
   };
   const [isTogglingMode, setIsTogglingMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -491,12 +499,15 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   <span className="text-sm hidden lg:inline">{currentLang?.name}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[140px] bg-popover">
+              <DropdownMenuContent align="end" className="min-w-[140px] bg-popover border border-border shadow-lg z-50">
                 {languages.map((lang) => (
                   <DropdownMenuItem
                     key={lang.code}
-                    onClick={() => handleLanguageChange(lang.code)}
-                    className={selectedLanguage === lang.code ? "bg-accent" : ""}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      handleLanguageChange(lang.code);
+                    }}
+                    className={`cursor-pointer ${selectedLanguage === lang.code ? "bg-accent font-medium" : ""}`}
                   >
                     {lang.name}
                   </DropdownMenuItem>
