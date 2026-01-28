@@ -269,15 +269,68 @@ export default function CitationRegistry({
                 <Quote className="h-4 w-4 text-amber-500" />
                 Citation Registry
                 <Badge variant="secondary" className="text-xs">
-                  {citations.length}
+                  {citations.length} total
                 </Badge>
               </CardTitle>
               <div className="flex items-center gap-2">
                 {linkedCount > 0 && (
-                  <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
-                    <Link2 className="h-3 w-3 mr-1" />
-                    {linkedCount} linked
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30 cursor-help">
+                          <Link2 className="h-3 w-3 mr-1" />
+                          {linkedCount} linked
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs">
+                        <p className="font-semibold mb-1">Linked to Pillars:</p>
+                        <div className="space-y-0.5 text-xs">
+                          {citations.filter(c => c.linkedPillar === 'area').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Ruler className="h-3 w-3 text-blue-500" />
+                              <span>Area: {citations.filter(c => c.linkedPillar === 'area').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'materials').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Package className="h-3 w-3 text-orange-500" />
+                              <span>Materials: {citations.filter(c => c.linkedPillar === 'materials').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'blueprint').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <FileText className="h-3 w-3 text-purple-500" />
+                              <span>Blueprint: {citations.filter(c => c.linkedPillar === 'blueprint').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'obc').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Shield className="h-3 w-3 text-green-500" />
+                              <span>OBC: {citations.filter(c => c.linkedPillar === 'obc').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'conflict').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3 text-amber-500" />
+                              <span>Conflict: {citations.filter(c => c.linkedPillar === 'conflict').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'mode').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs">🎯</span>
+                              <span>Mode: {citations.filter(c => c.linkedPillar === 'mode').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'confidence').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs">📊</span>
+                              <span>Confidence: {citations.filter(c => c.linkedPillar === 'confidence').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                   {isExpanded ? (
