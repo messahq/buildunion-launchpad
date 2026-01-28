@@ -1808,7 +1808,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn(
           "grid w-full bg-muted/50",
-          isTeamMode ? "grid-cols-7" : "grid-cols-6"
+          isTeamMode ? "grid-cols-7" : "grid-cols-5"
         )}>
           <TabsTrigger 
             value="overview" 
@@ -1849,17 +1849,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.documents")}</span>
           </TabsTrigger>
-          {/* Contracts Tab - Always visible */}
-          <TabsTrigger 
-            value="contracts" 
-            className={cn(
-              "gap-2 transition-all duration-300",
-              flashingTab === "contracts" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
-            )}
-          >
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Contracts</span>
-          </TabsTrigger>
+          {/* Contracts Tab - Only for Team Mode */}
+          {isTeamMode && (
+            <TabsTrigger 
+              value="contracts" 
+              className={cn(
+                "gap-2 transition-all duration-300",
+                flashingTab === "contracts" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+              )}
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Contracts</span>
+            </TabsTrigger>
+          )}
           {/* Site Map Tab - Only for Team Mode */}
           {isTeamMode && (
             <TabsTrigger 
@@ -2010,22 +2012,24 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           />
         </TabsContent>
 
-        {/* Contracts Tab - Always visible */}
-        <TabsContent value="contracts" className="mt-6">
-          <ContractsTab
-            projectId={projectId}
-            isOwner={isOwner}
-            projectName={project.name}
-            projectAddress={project.address || undefined}
-            projectDescription={project.description || undefined}
-            clientInfo={{
-              name: summary?.client_name || undefined,
-              email: summary?.client_email || undefined,
-              phone: summary?.client_phone || undefined,
-              address: summary?.client_address || undefined,
-            }}
-          />
-        </TabsContent>
+        {/* Contracts Tab - Only for Team Mode */}
+        {isTeamMode && (
+          <TabsContent value="contracts" className="mt-6">
+            <ContractsTab
+              projectId={projectId}
+              isOwner={isOwner}
+              projectName={project.name}
+              projectAddress={project.address || undefined}
+              projectDescription={project.description || undefined}
+              clientInfo={{
+                name: summary?.client_name || undefined,
+                email: summary?.client_email || undefined,
+                phone: summary?.client_phone || undefined,
+                address: summary?.client_address || undefined,
+              }}
+            />
+          </TabsContent>
+        )}
 
         {/* Team Map Tab - Only for Team Mode */}
         {isTeamMode && (

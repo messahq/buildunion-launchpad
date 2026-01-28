@@ -179,7 +179,9 @@
     "generatedSuccess": "Tasks generated successfully",
     "generateError": "Failed to generate tasks",
     "addMembersFirst": "Add team members first",
-    "noMaterials": "No AI-detected materials to generate tasks from"
+    "noMaterials": "No AI-detected materials to generate tasks from",
+    "projectTasks": "Project Tasks",
+    "appliedFromTemplate": "Applied tasks from template"
   },
   "common": {
     "loading": "Loading...",
