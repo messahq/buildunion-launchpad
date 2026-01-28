@@ -645,5 +645,26 @@
       "joinButton": "免费开始",
       "communityButton": "探索社区"
     }
+  },
+  "citations": {
+    "title": "引用注册表",
+    "totalCitations": "引用总数",
+    "linkedCitations": "已关联到支柱",
+    "sitePhotos": "现场照片",
+    "documents": "文档",
+    "blueprints": "蓝图",
+    "regulations": "法规",
+    "copyAll": "复制全部",
+    "copyTag": "复制标签",
+    "linkToPillar": "关联到支柱",
+    "linked": "已关联到",
+    "notLinked": "未关联",
+    "area": "确认面积",
+    "materials": "材料",
+    "blueprint": "蓝图",
+    "obc": "OBC合规",
+    "conflict": "冲突检查",
+    "citationCopied": "引用已复制",
+    "allCitationsCopied": "所有引用已复制"
   }
 }

@@ -645,5 +645,26 @@
       "joinButton": "Começar Grátis",
       "communityButton": "Explorar Comunidade"
     }
+  },
+  "citations": {
+    "title": "Registro de Citações",
+    "totalCitations": "Total de Citações",
+    "linkedCitations": "Vinculadas a Pilares",
+    "sitePhotos": "Fotos do Local",
+    "documents": "Documentos",
+    "blueprints": "Plantas",
+    "regulations": "Regulamentos",
+    "copyAll": "Copiar Tudo",
+    "copyTag": "Copiar tag",
+    "linkToPillar": "Vincular ao Pilar",
+    "linked": "Vinculado a",
+    "notLinked": "Não vinculado",
+    "area": "Área Confirmada",
+    "materials": "Materiais",
+    "blueprint": "Planta",
+    "obc": "Conformidade OBC",
+    "conflict": "Verificação de Conflitos",
+    "citationCopied": "Citação copiada",
+    "allCitationsCopied": "Todas as citações copiadas"
   }
 }

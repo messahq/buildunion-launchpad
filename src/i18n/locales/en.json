@@ -658,5 +658,26 @@
       "joinButton": "Get Started Free",
       "communityButton": "Explore Community"
     }
+  },
+  "citations": {
+    "title": "Citation Registry",
+    "totalCitations": "Total Citations",
+    "linkedCitations": "Linked to Pillars",
+    "sitePhotos": "Site Photos",
+    "documents": "Documents",
+    "blueprints": "Blueprints",
+    "regulations": "Regulations",
+    "copyAll": "Copy All",
+    "copyTag": "Copy tag",
+    "linkToPillar": "Link to Pillar",
+    "linked": "Linked to",
+    "notLinked": "Not linked",
+    "area": "Confirmed Area",
+    "materials": "Materials",
+    "blueprint": "Blueprint",
+    "obc": "OBC Compliance",
+    "conflict": "Conflict Check",
+    "citationCopied": "Citation copied",
+    "allCitationsCopied": "All citations copied"
   }
 }

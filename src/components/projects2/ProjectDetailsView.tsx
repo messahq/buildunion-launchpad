@@ -50,6 +50,8 @@ import { useProjectTeam } from "@/hooks/useProjectTeam";
 import { useAuth } from "@/hooks/useAuth";
 import { generateProjectReport, ConflictData } from "@/lib/pdfGenerator";
 import { ProBadge } from "@/components/ui/pro-badge";
+import { useCitationRegistry } from "@/hooks/useCitationRegistry";
+import { CitationSource, generateCitationId } from "@/types/citation";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -518,6 +520,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const { subscription, isDevOverride } = useSubscription();
   const { members } = useProjectTeam(projectId);
   
+  // Citation Registry for tracking document references
+  const { 
+    citations, 
+    registerMultipleCitations, 
+    linkCitationToPillar,
+    refreshCitations,
+    totalCitations,
+    linkedCitations 
+  } = useCitationRegistry(projectId);
+  
+  // Document list for citation auto-registration
+  const [projectDocuments, setProjectDocuments] = useState<{ id: string; file_name: string; file_path: string; uploaded_at: string }[]>([]);
+  
   // Derive tier status - check for Pro or higher
   const isPro = isDevOverride || 
     subscription?.tier === "pro" || 
@@ -937,6 +952,117 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       supabase.removeChannel(contractChannel);
     };
   }, [projectId]);
+
+  // Fetch documents list for citation auto-registration
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!projectId) return;
+      
+      try {
+        const { data: docs } = await supabase
+          .from("project_documents")
+          .select("id, file_name, file_path, uploaded_at")
+          .eq("project_id", projectId)
+          .order("uploaded_at", { ascending: true });
+        
+        if (docs) {
+          setProjectDocuments(docs);
+        }
+      } catch (error) {
+        console.error("Error fetching documents for citations:", error);
+      }
+    };
+
+    fetchDocuments();
+
+    // Subscribe to document changes for real-time citation updates
+    const channel = supabase
+      .channel(`project_docs_citations_${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_documents",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => fetchDocuments()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId]);
+
+  // Auto-register citations when documents or site images change
+  useEffect(() => {
+    if (!projectId || !project) return;
+
+    const citationsToRegister: Omit<CitationSource, 'id' | 'registeredAt' | 'registeredBy'>[] = [];
+
+    // Register site photos
+    project.site_images?.forEach((path, index) => {
+      const sourceId = generateCitationId('P', index);
+      if (!citations.some(c => c.sourceId === sourceId)) {
+        citationsToRegister.push({
+          sourceId,
+          documentName: `Site Photo ${index + 1}`,
+          documentType: 'site_photo',
+          contextSnippet: 'Site photo uploaded during project creation',
+          filePath: path,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    // Register documents
+    projectDocuments.forEach((doc, index) => {
+      const isPdf = doc.file_name.toLowerCase().endsWith('.pdf');
+      const isBlueprint = doc.file_name.toLowerCase().includes('blueprint') || 
+                          doc.file_name.toLowerCase().includes('plan') ||
+                          doc.file_name.toLowerCase().includes('drawing');
+      const sourceId = isBlueprint 
+        ? generateCitationId('B', index) 
+        : generateCitationId('D', index);
+      
+      if (!citations.some(c => c.sourceId === sourceId)) {
+        citationsToRegister.push({
+          sourceId,
+          documentName: doc.file_name,
+          documentType: isBlueprint ? 'blueprint' : (isPdf ? 'pdf' : 'image'),
+          contextSnippet: `Uploaded document: ${doc.file_name}`,
+          filePath: doc.file_path,
+          timestamp: doc.uploaded_at,
+        });
+      }
+    });
+
+    // Register all new citations
+    if (citationsToRegister.length > 0) {
+      registerMultipleCitations(citationsToRegister);
+    }
+  }, [projectId, project?.site_images, projectDocuments, citations, registerMultipleCitations]);
+
+  // Handle citation click - open source proof panel
+  const handleCitationClick = useCallback((citation: CitationSource) => {
+    // Navigate to Documents tab if it's a document citation
+    if (citation.documentType !== 'site_photo') {
+      setActiveTab("documents");
+    }
+    toast.info(`Citation ${citation.sourceId}: ${citation.documentName}`);
+  }, []);
+
+  // Handle linking citation to operational truth pillar
+  const handleLinkCitationToPillar = useCallback(async (sourceId: string, pillar: string) => {
+    try {
+      await linkCitationToPillar(sourceId, pillar as CitationSource['linkedPillar']);
+      toast.success(`Citation linked to ${pillar} pillar`);
+    } catch (error) {
+      console.error("Error linking citation:", error);
+      toast.error("Failed to link citation");
+    }
+  }, [linkCitationToPillar]);
 
   // ============================================
   // CLIENT INFO MANAGEMENT
@@ -1826,6 +1952,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               address: summary?.client_address || "",
             }}
             onClientInfoUpdate={handleClientInfoUpdate}
+            citations={citations}
+            onCitationClick={handleCitationClick}
+            onLinkCitationToPillar={handleLinkCitationToPillar}
           />
         </TabsContent>
 

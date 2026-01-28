@@ -658,5 +658,26 @@
       "joinButton": "Kezdd Ingyen",
       "communityButton": "Közösség Felfedezése"
     }
+  },
+  "citations": {
+    "title": "Hivatkozási Nyilvántartás",
+    "totalCitations": "Összes Hivatkozás",
+    "linkedCitations": "Pillérhez Kapcsolva",
+    "sitePhotos": "Helyszíni Fotók",
+    "documents": "Dokumentumok",
+    "blueprints": "Tervrajzok",
+    "regulations": "Szabályzatok",
+    "copyAll": "Összes Másolása",
+    "copyTag": "Címke másolása",
+    "linkToPillar": "Pillérhez Kapcsolás",
+    "linked": "Kapcsolva",
+    "notLinked": "Nincs kapcsolva",
+    "area": "Megerősített Terület",
+    "materials": "Anyagok",
+    "blueprint": "Tervrajz",
+    "obc": "OBC Megfelelőség",
+    "conflict": "Konfliktus Ellenőrzés",
+    "citationCopied": "Hivatkozás másolva",
+    "allCitationsCopied": "Összes hivatkozás másolva"
   }
 }

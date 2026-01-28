@@ -645,5 +645,26 @@
       "joinButton": "मुफ्त में शुरू करें",
       "communityButton": "समुदाय खोजें"
     }
+  },
+  "citations": {
+    "title": "उद्धरण रजिस्ट्री",
+    "totalCitations": "कुल उद्धरण",
+    "linkedCitations": "स्तंभों से जुड़े",
+    "sitePhotos": "साइट फोटो",
+    "documents": "दस्तावेज़",
+    "blueprints": "ब्लूप्रिंट",
+    "regulations": "विनियम",
+    "copyAll": "सभी कॉपी करें",
+    "copyTag": "टैग कॉपी करें",
+    "linkToPillar": "स्तंभ से जोड़ें",
+    "linked": "से जुड़ा",
+    "notLinked": "जुड़ा नहीं",
+    "area": "पुष्टि किया गया क्षेत्र",
+    "materials": "सामग्री",
+    "blueprint": "ब्लूप्रिंट",
+    "obc": "OBC अनुपालन",
+    "conflict": "विवाद जांच",
+    "citationCopied": "उद्धरण कॉपी किया गया",
+    "allCitationsCopied": "सभी उद्धरण कॉपी किए गए"
   }
 }
