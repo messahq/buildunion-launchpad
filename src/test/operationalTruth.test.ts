@@ -232,3 +232,48 @@ describe("Conflict Check - Solo Mode Exclusions", () => {
     expect(contractSource?.status).toBe("complete");
   });
 });
+
+describe("Command Center Integration", () => {
+  it("should provide correct M.E.S.S.A. context for Solo Mode", () => {
+    const sources = buildDataSourcesStatus(mockSoloProject);
+    const isSoloMode = true;
+    
+    const relevantSources = sources.filter(s => !SOLO_EXCLUDED_IDS.includes(s.id));
+    const completeSources = relevantSources.filter(s => s.status === "complete");
+    
+    // M.E.S.S.A. should receive only relevant sources
+    expect(relevantSources.length).toBe(13);
+    expect(completeSources.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it("should provide correct M.E.S.S.A. context for Team Mode", () => {
+    const sources = buildDataSourcesStatus(mockTeamProject);
+    const isSoloMode = false;
+    
+    // M.E.S.S.A. should receive all 16 sources
+    expect(sources.length).toBe(16);
+    
+    const completeSources = sources.filter(s => s.status === "complete");
+    expect(completeSources.length).toBeGreaterThanOrEqual(14);
+  });
+
+  it("should identify N/A sources for UI display", () => {
+    const sources = buildDataSourcesStatus(mockSoloProject);
+    const naSources = sources.filter(s => s.isSoloNA === true);
+    
+    expect(naSources.length).toBe(3);
+    expect(naSources.map(s => s.id)).toEqual(
+      expect.arrayContaining(["documents", "contracts", "team"])
+    );
+  });
+
+  it("should maintain data source priority order", () => {
+    const sources = buildDataSourcesStatus(mockSoloProject);
+    
+    // Critical sources should come first
+    const criticalIds = ["documents", "contracts", "team", "tasks", "timeline", "site_map"];
+    const firstSix = sources.slice(0, 6).map(s => s.id);
+    
+    expect(firstSix).toEqual(criticalIds);
+  });
+});
