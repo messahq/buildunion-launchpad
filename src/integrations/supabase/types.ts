@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_email_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_preview: string | null
+          recipient_email: string
+          recipient_name: string | null
+          sender_id: string
+          sent_at: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_preview?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          sender_id: string
+          sent_at?: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_preview?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          sender_id?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       baseline_versions: {
         Row: {
           change_reason: string
