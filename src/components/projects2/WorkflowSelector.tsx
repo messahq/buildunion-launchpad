@@ -537,7 +537,7 @@ export default function WorkflowSelector({
                     e.stopPropagation();
                     onUpgradeClick();
                   }}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
                 >
                   Upgrade to PRO
                 </Button>
@@ -545,10 +545,10 @@ export default function WorkflowSelector({
             )}
             
             <div className="flex items-center gap-2 mb-2">
-              <Users className="h-5 w-5 text-cyan-500" />
+              <Users className="h-5 w-5 text-emerald-500" />
               <span className="font-medium text-foreground">Team Mode</span>
               {!canAccessTeam && (
-                <Badge className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[10px]">
+                <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px]">
                   PRO
                 </Badge>
               )}

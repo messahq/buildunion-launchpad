@@ -96,7 +96,7 @@ export function ProjectModeToggle({
           disabled={isLoading}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors rounded-md hover:bg-muted/50 ${
             isTeamMode
-              ? "text-cyan-600 dark:text-cyan-400"
+              ? "text-emerald-600 dark:text-emerald-400"
               : "text-foreground"
           }`}
         >
@@ -131,14 +131,14 @@ export function ProjectModeToggle({
               disabled={isLoading}
               className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 isTeamMode
-                  ? "bg-cyan-100 hover:bg-cyan-200 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700"
+                  ? "bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-700"
                   : "bg-amber-100 hover:bg-amber-200 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-700"
               }`}
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               ) : isTeamMode ? (
-                <Users className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               ) : (
                 <User className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               )}
@@ -175,7 +175,7 @@ export function ProjectModeToggle({
               disabled={isLoading}
               className={`gap-1.5 ${
                 isTeamMode
-                  ? "text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50"
+                  ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                   : "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
               }`}
             >
@@ -222,7 +222,7 @@ export function ProjectModeToggle({
           variant={isTeamMode ? "default" : "outline"}
           className={`gap-2 ${
             isTeamMode
-              ? "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+              ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
               : "border-amber-200 hover:bg-amber-50 hover:border-amber-300"
           }`}
         >
@@ -237,7 +237,7 @@ export function ProjectModeToggle({
             <span>{isTeamMode ? "Team Mode" : "Solo Mode"}</span>
           )}
           {!canAccessTeamMode && !isTeamMode && (
-            <Badge variant="outline" className="ml-1 text-xs bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-600 border-cyan-200">
+            <Badge variant="outline" className="ml-1 text-xs bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-600 border-emerald-200">
               PRO
             </Badge>
           )}
@@ -275,18 +275,18 @@ export function ProjectModeToggle({
           checked={isTeamMode}
           onCheckedChange={handleToggle}
           disabled={isLoading}
-          className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-cyan-500 data-[state=checked]:to-blue-500"
+          className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-500"
         />
 
         {/* Team mode label with active background */}
         <div className={`flex items-center gap-2 px-2 py-1 rounded-md transition-all ${
           isTeamMode 
-            ? "bg-cyan-100 border border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700" 
+            ? "bg-emerald-100 border border-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-700" 
             : ""
         }`}>
-          <Users className={`h-4 w-4 ${isTeamMode ? "text-cyan-600 dark:text-cyan-400" : "text-muted-foreground"}`} />
+          <Users className={`h-4 w-4 ${isTeamMode ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`} />
           {showLabel && (
-            <span className={`text-sm font-medium ${isTeamMode ? "text-cyan-700 dark:text-cyan-300" : "text-muted-foreground"}`}>
+            <span className={`text-sm font-medium ${isTeamMode ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}`}>
               Team
             </span>
           )}
@@ -379,7 +379,7 @@ function UpgradeDialog({ open, onOpenChange, onUpgrade, features }: UpgradeDialo
           </Button>
           <Button
             onClick={onUpgrade}
-            className="flex-1 gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+            className="flex-1 gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
           >
             <Crown className="h-4 w-4" />
             Upgrade to Pro

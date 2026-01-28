@@ -213,7 +213,7 @@ export function SaveAndSendContractDialog({
                         
                         <Avatar className="h-9 w-9">
                           <AvatarImage src={member.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-500 text-white text-xs">
+                          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-xs">
                             {displayName.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>

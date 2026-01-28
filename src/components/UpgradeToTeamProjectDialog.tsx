@@ -203,7 +203,7 @@ export function UpgradeToTeamProjectDialog({
                   </p>
                   <Button
                     size="sm"
-                    className="mt-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                    className="mt-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
                     onClick={() => {
                       setOpen(false);
                       navigate("/buildunion/pricing");
@@ -225,7 +225,7 @@ export function UpgradeToTeamProjectDialog({
             <Button
               onClick={handleUpgrade}
               disabled={upgrading}
-              className="flex-1 gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+              className="flex-1 gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
             >
               {upgrading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
