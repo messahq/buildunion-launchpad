@@ -264,6 +264,9 @@ export const ProjectCommandCenter = ({
   // BUILD 16 DATA SOURCES STATUS
   // ============================================
   
+  // Determine if Solo Mode for conditional requirements
+  const isSoloMode = operationalTruth.projectMode === "solo";
+  
   const buildDataSourcesStatus = useCallback((): DataSourceStatus[] => {
     const sources: DataSourceStatus[] = [];
     
@@ -410,74 +413,92 @@ export const ProjectCommandCenter = ({
       missingItems: tasksMissing.length > 0 ? tasksMissing : undefined,
     });
     
-    // Documents - require at least 1 uploaded document AND 1 contract for complete
+    // Documents - SOLO MODE: not required, so show as complete if docs exist OR mark as N/A (complete)
     const docsMissing: string[] = [];
-    if (info.documentCount === 0) docsMissing.push("No documents uploaded");
-    if (info.contractCount === 0) docsMissing.push("No contract created");
+    if (!isSoloMode) {
+      // Team mode: require at least 1 uploaded document AND 1 contract for complete
+      if (info.documentCount === 0) docsMissing.push("No documents uploaded");
+      if (info.contractCount === 0) docsMissing.push("No contract created");
+    }
+    // Solo mode: documents are optional
     
     // Status: complete = has docs AND contracts, partial = has one or the other, pending = neither
+    // SOLO MODE: Always "complete" (not a requirement)
     const hasDocs = info.documentCount > 0;
     const hasContracts = info.contractCount > 0;
-    const docsStatus = (hasDocs && hasContracts) 
-      ? "complete" 
-      : (hasDocs || hasContracts) 
-        ? "partial" 
-        : "pending";
+    const docsStatus = isSoloMode 
+      ? "complete" // Solo: not required, auto-complete
+      : (hasDocs && hasContracts) 
+        ? "complete" 
+        : (hasDocs || hasContracts) 
+          ? "partial" 
+          : "pending";
     
     sources.push({
       id: "documents",
       name: "Documents",
       category: "workflow",
       status: docsStatus,
-      value: hasDocs 
-        ? `${info.documentCount} files${hasContracts ? ` + ${info.contractCount} contract${info.contractCount > 1 ? 's' : ''}` : ''}`
-        : hasContracts 
-          ? `${info.contractCount} contract${info.contractCount > 1 ? 's' : ''} only`
-          : undefined,
+      value: isSoloMode 
+        ? (hasDocs ? `${info.documentCount} files` : "N/A (Solo)")
+        : hasDocs 
+          ? `${info.documentCount} files${hasContracts ? ` + ${info.contractCount} contract${info.contractCount > 1 ? 's' : ''}` : ''}`
+          : hasContracts 
+            ? `${info.contractCount} contract${info.contractCount > 1 ? 's' : ''} only`
+            : undefined,
       icon: FileText,
       missingItems: docsMissing.length > 0 ? docsMissing : undefined,
     });
     
-    // Contracts - REQUIRE SIGNATURE for complete status (not just existence)
+    // Contracts - SOLO MODE: Not required, auto-complete
     const contractsMissing: string[] = [];
-    if (info.contractCount === 0) {
-      contractsMissing.push("No contract created");
-    } else if (info.signedContracts === 0) {
-      contractsMissing.push("Contract not signed by client");
+    if (!isSoloMode) {
+      if (info.contractCount === 0) {
+        contractsMissing.push("No contract created");
+      } else if (info.signedContracts === 0) {
+        contractsMissing.push("Contract not signed by client");
+      }
     }
     
     // Status: complete = signed, partial = created but not signed, pending = none
-    const contractStatus = info.signedContracts > 0 
-      ? "complete" 
-      : info.contractCount > 0 
-        ? "partial" 
-        : "pending";
+    // SOLO MODE: Always "complete" (not a requirement)
+    const contractStatus = isSoloMode
+      ? "complete" // Solo: not required
+      : info.signedContracts > 0 
+        ? "complete" 
+        : info.contractCount > 0 
+          ? "partial" 
+          : "pending";
     
     sources.push({
       id: "contracts",
       name: "Contracts",
       category: "workflow",
       status: contractStatus,
-      value: info.contractCount > 0 
-        ? (info.signedContracts > 0 
-            ? `${info.signedContracts}/${info.contractCount} signed` 
-            : `${info.contractCount} created (unsigned)`)
-        : undefined,
+      value: isSoloMode
+        ? (info.contractCount > 0 ? `${info.contractCount} created` : "N/A (Solo)")
+        : info.contractCount > 0 
+          ? (info.signedContracts > 0 
+              ? `${info.signedContracts}/${info.contractCount} signed` 
+              : `${info.contractCount} created (unsigned)`)
+          : undefined,
       icon: FileSignature,
       missingItems: contractsMissing.length > 0 ? contractsMissing : undefined,
     });
     
-    // Team - pending if only owner (no members), complete if owner + at least 1 member
+    // Team - SOLO MODE: Not required, auto-complete
     const teamMissing: string[] = [];
     const hasTeamMembers = info.teamSize > 1; // More than just owner
-    if (!hasTeamMembers) teamMissing.push("No team members added (only owner)");
+    if (!isSoloMode && !hasTeamMembers) {
+      teamMissing.push("No team members added (only owner)");
+    }
     
     sources.push({
       id: "team",
       name: "Team",
       category: "workflow",
-      status: hasTeamMembers ? "complete" : "pending",
-      value: hasTeamMembers ? `${info.teamSize} members` : "Owner only",
+      status: isSoloMode ? "complete" : (hasTeamMembers ? "complete" : "pending"),
+      value: isSoloMode ? "N/A (Solo)" : (hasTeamMembers ? `${info.teamSize} members` : "Owner only"),
       icon: Users,
       missingItems: teamMissing.length > 0 ? teamMissing : undefined,
     });
@@ -551,7 +572,7 @@ export const ProjectCommandCenter = ({
     });
     
     return sources;
-  }, [operationalTruth, dataSourcesInfo, projectAddress]);
+  }, [operationalTruth, dataSourcesInfo, projectAddress, isSoloMode]);
 
   const dataSources = buildDataSourcesStatus();
   
@@ -679,8 +700,8 @@ export const ProjectCommandCenter = ({
       severity = severity === "critical" ? "critical" : "warning";
     }
     
-    // Check 7: Tasks assigned but team incomplete
-    if (tasksSource?.status !== "pending") {
+    // Check 7: Tasks assigned but team incomplete (ONLY for Team Mode)
+    if (!isSoloMode && tasksSource?.status !== "pending") {
       const info = dataSourcesInfo || { teamSize: 1, taskCount: 0 };
       if (info.taskCount > 5 && info.teamSize < 2) {
         conflictDetails.push("Multiple tasks but only solo team member");
@@ -695,7 +716,7 @@ export const ProjectCommandCenter = ({
       severity,
     });
     
-  }, [dataSources, operationalTruth, healthScore, dataSourcesInfo]);
+  }, [dataSources, operationalTruth, healthScore, dataSourcesInfo, isSoloMode]);
   
   // Run conflict check on mount and every 5 minutes
   useEffect(() => {
