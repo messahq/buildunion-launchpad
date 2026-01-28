@@ -696,76 +696,112 @@ const HierarchicalTimeline = ({
         </Alert>
       )}
 
-      {/* Dependency Flow Indicator - Gear-like status display */}
-      <div className="flex items-center justify-center gap-3 py-3 px-4 rounded-lg bg-muted/30 border">
-        {phases.map((phase, idx) => {
+      {/* Phase Progress Bars - Vertical Layout */}
+      <div className="space-y-2 py-3 px-4 rounded-lg bg-muted/30 border">
+        {phases.map((phase) => {
           const completedTasks = phase.subTimelines.flatMap(s => s.tasks).filter(t => t.status === "completed").length;
           const totalTasks = phase.subTimelines.flatMap(s => s.tasks).length;
           
           return (
             <div key={phase.id} className="flex items-center gap-3">
-              <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all",
-                phase.locked 
-                  ? "bg-muted/50 border-muted text-muted-foreground" 
-                  : phase.verificationProgress === 100 
-                    ? "bg-green-50 border-green-300 text-green-700 dark:bg-green-950/30 dark:border-green-700 dark:text-green-300"
-                    : phase.color === "blue"
-                      ? "bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950/30 dark:border-blue-700 dark:text-blue-300"
-                      : phase.color === "amber"
-                        ? "bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/30 dark:border-amber-700 dark:text-amber-300"
-                        : "bg-green-50 border-green-300 text-green-700 dark:bg-green-950/30 dark:border-green-700 dark:text-green-300"
-              )}>
-                {/* Phase icon with gear-like indicator */}
-                <div className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center",
-                  phase.locked 
-                    ? "bg-muted" 
-                    : phase.verificationProgress === 100 
-                      ? "bg-green-200 dark:bg-green-800"
-                      : phase.color === "blue"
-                        ? "bg-blue-200 dark:bg-blue-800"
-                        : phase.color === "amber"
-                          ? "bg-amber-200 dark:bg-amber-800"
-                          : "bg-green-200 dark:bg-green-800"
+              {/* Lock indicator */}
+              <div className="w-5 flex items-center justify-center">
+                {phase.locked ? (
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                ) : phase.verificationProgress === 100 ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground/50" />
+                )}
+              </div>
+              
+              {/* Phase name */}
+              <div className="w-24 flex items-center gap-2">
+                <span className={cn(
+                  "text-sm font-medium",
+                  phase.locked && "text-muted-foreground"
                 )}>
-                  {phase.locked ? (
-                    <Lock className="h-3 w-3" />
-                  ) : phase.verificationProgress === 100 ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    phase.icon
+                  {phase.name}
+                </span>
+                {phase.locked && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0">
+                    {t("timeline.locked", "Locked")}
+                  </Badge>
+                )}
+              </div>
+              
+              {/* Progress bar */}
+              <div className="flex-1 relative">
+                <Progress 
+                  value={phase.verificationProgress} 
+                  className={cn(
+                    "h-3",
+                    phase.locked && "opacity-50"
                   )}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium">{phase.name}</span>
-                  <span className="text-[10px] opacity-70">
-                    {completedTasks}/{totalTasks} tasks
-                  </span>
-                </div>
-                {/* Circular progress indicator */}
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border-2",
-                  phase.locked 
-                    ? "border-muted-foreground/30 text-muted-foreground"
-                    : phase.verificationProgress === 100
-                      ? "border-green-500 text-green-600"
-                      : phase.verificationProgress > 0
-                        ? "border-amber-400 text-amber-600"
-                        : "border-muted-foreground/30 text-muted-foreground"
-                )}>
-                  {phase.verificationProgress}%
+                />
+                {/* Progress fill color override */}
+                <div 
+                  className={cn(
+                    "absolute inset-0 rounded-full overflow-hidden pointer-events-none"
+                  )}
+                  style={{ width: `${phase.verificationProgress}%` }}
+                >
+                  <div className={cn(
+                    "h-full w-full",
+                    phase.verificationProgress === 100 
+                      ? "bg-green-500" 
+                      : phase.color === "blue"
+                        ? "bg-blue-500"
+                        : phase.color === "amber"
+                          ? "bg-amber-500"
+                          : "bg-green-500"
+                  )} />
                 </div>
               </div>
-              {idx < phases.length - 1 && (
-                <ArrowRight className={cn(
-                  "h-5 w-5",
-                  phases[idx + 1]?.locked ? "text-muted-foreground/30" : "text-amber-500"
-                )} />
-              )}
+              
+              {/* Percentage and count */}
+              <div className="flex items-center gap-2 min-w-[80px] justify-end">
+                <span className={cn(
+                  "text-sm font-semibold",
+                  phase.verificationProgress === 100 
+                    ? "text-green-600" 
+                    : phase.verificationProgress > 0 
+                      ? "text-foreground" 
+                      : "text-muted-foreground"
+                )}>
+                  {phase.verificationProgress}%
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {completedTasks}/{totalTasks}
+                </span>
+              </div>
             </div>
           );
         })}
+        
+        {/* Total Progress */}
+        {(() => {
+          const totalCompleted = phases.reduce((acc, phase) => 
+            acc + phase.subTimelines.flatMap(s => s.tasks).filter(t => t.status === "completed").length, 0
+          );
+          const totalTasks = phases.reduce((acc, phase) => 
+            acc + phase.subTimelines.flatMap(s => s.tasks).length, 0
+          );
+          const totalProgress = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+          
+          return (
+            <div className="pt-2 mt-2 border-t border-border/50">
+              <div className="text-center">
+                <span className={cn(
+                  "text-sm font-medium",
+                  totalProgress === 100 ? "text-green-600" : "text-muted-foreground"
+                )}>
+                  {totalProgress}% {t("timeline.complete", "complete")}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Phase Timelines */}
