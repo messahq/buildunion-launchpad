@@ -26,9 +26,9 @@ const AI_MODELS = {
 } as const;
 
 const TOKEN_LIMITS = {
-  FREE: 1200,     // Limited tokens for free tier
-  PRO: 2000,      // Standard tokens
-  PREMIUM: 2500,  // Full tokens
+  FREE: 1500,     // Limited tokens for free tier
+  PRO: 3500,      // Extended for M.E.S.S.A. Audit Report
+  PREMIUM: 4500,  // Full engineering report
 } as const;
 
 function selectModelForTier(tier: string): { model: string; maxTokens: number } {
@@ -312,44 +312,170 @@ ${weatherSection}
       });
     }
 
-    const aiPrompt = `You are a professional construction project analyst for BuildUnion. Generate a comprehensive PROJECT BRIEF based on the following ${weatherData ? "17" : "16"} data sources.
+    // M.E.S.S.A. (Multi-Engine Structural Site Analysis) Audit Report Prompt
+    const aiPrompt = `You are a Senior Construction Engineer performing a **M.E.S.S.A. AUDIT REPORT** (Multi-Engine Structural Site Analysis) for BuildUnion. This is an engineering-grade project integrity assessment.
 
+## YOUR ROLE
+You are conducting a ZERO-TOLERANCE engineering audit. Every data point must be verified. Conflicts must be flagged. Missing information must be explicitly stated. Do NOT assume compliance - verify it.
+
+## PROJECT DATA - ${weatherData ? "17" : "16"} VERIFIED SOURCES
 ${projectContext}
 
-Generate a detailed project brief with the following sections in clean Markdown format:
+## AUDIT METHODOLOGY
+This analysis follows the M.E.S.S.A. Protocol:
+- **PHASE 1**: Data Completeness Verification (8 Pillars + 8 Workflow Sources)
+- **PHASE 2**: Cross-Reference Validation (detect conflicts between sources)
+- **PHASE 3**: Regulatory Alignment Check (OBC Preliminary Assessment)
+- **PHASE 4**: Operational Readiness Score Calculation
 
-## 📋 Executive Summary
-(2-3 sentences summarizing the project status, key achievements, and overall health)
+---
 
-## 📊 Key Metrics
-(Bullet points with the most important numbers: area, budget, completion %, team size, contracts)
+Generate a professional **M.E.S.S.A. AUDIT REPORT** with the following structure:
 
-## ✅ Current Status Assessment
-(Detailed breakdown of:)
-- Preparation Phase Progress
-- Execution Phase Progress  
-- Documentation Completeness
-- Contract Status
-- Team Coordination
+# 🔬 M.E.S.S.A. AUDIT REPORT
+**Project:** [Project Name]
+**Audit Date:** [Today]
+**Classification:** [VERIFIED | CONDITIONAL | INCOMPLETE]
 
-## 🎯 Top Recommendations
-(3-5 actionable next steps based on current project state)
+---
 
-## ⚠️ Risk Factors
-(Potential issues or blockers to monitor, based on missing data or delays)
-${weatherData && weatherData.alerts && weatherData.alerts.length > 0 ? "\n**IMPORTANT: Include weather-related risks prominently based on active weather alerts!**" : ""}
+## 1. EXECUTIVE AUDIT SUMMARY
+| Metric | Status |
+|--------|--------|
+| Data Completeness | [X/16 sources verified] |
+| Operational Readiness | [X%] |
+| Risk Classification | [LOW/MEDIUM/HIGH/CRITICAL] |
+| Audit Verdict | [PASS/CONDITIONAL/FAIL] |
 
-${weatherData ? `## 🌤️ Weather Impact Assessment
-(Based on current conditions and forecast, assess:)
-- Impact on outdoor work scheduling
-- Any weather alerts that could delay progress
-- Recommendations for weather-related planning
+**Summary Statement:** (2-3 sentences with engineering precision about project state)
+
+---
+
+## 2. OPERATIONAL TRUTH VERIFICATION (8 Pillars)
+
+### ✅ Confirmed Data Points
+(List verified pillars with values and confidence)
+
+### ⚠️ Pending Verification
+(List pillars needing manual validation)
+
+### ❌ Missing/Conflicting Data
+(List any data gaps or conflicts detected)
+
+---
+
+## 3. WORKFLOW STATUS MATRIX
+
+| Data Source | Status | Last Updated | Notes |
+|-------------|--------|--------------|-------|
+| Tasks | [Complete/Partial/Missing] | [Date] | [Details] |
+| Documents | [X files] | [Date] | [Types] |
+| Contracts | [Draft/Sent/Signed] | [Date] | [Client Status] |
+| Team | [X members] | [Date] | [Roles] |
+| Timeline | [Set/Pending] | [Date] | [Duration] |
+| Client Info | [Complete/Partial] | [Date] | [Contact Status] |
+| Site Map | [Available/Missing] | [Date] | [Address] |
+| Budget | [$X CAD] | [Date] | [Breakdown] |
+
+---
+
+## 4. STRUCTURAL ANALYSIS
+
+### 4.1 Area & Material Assessment
+- **Confirmed Area:** [Value with confidence %]
+- **Material Count:** [X items verified]
+- **Cost Estimate Basis:** [Source of truth]
+
+### 4.2 Blueprint/Document Analysis
+- **Blueprint Status:** [Analyzed/Pending/None]
+- **Document Integration:** [X documents contributing to analysis]
+
+---
+
+## 5. REGULATORY ALIGNMENT (OBC Preliminary)
+
+**OBC Status:** [PASS | CONDITIONAL | REQUIRES REVIEW]
+**Risk Level:** [LOW | MEDIUM | HIGH]
+
+### Compliance Notes:
+(Based on project scope, flag any OBC-relevant considerations)
+
+### Requires Professional Review If:
+(List conditions requiring licensed professional sign-off)
+
+---
+
+## 6. CONFLICT DETECTION LOG
+
+${weatherData && weatherData.alerts && weatherData.alerts.length > 0 ? `### ⚠️ ACTIVE WEATHER CONFLICTS
+${weatherData.alerts.map(a => `- **[${a.severity.toUpperCase()}]** ${a.type}: ${a.message}`).join("\n")}
 ` : ""}
+### Data Consistency Check:
+(Flag any mismatches between sources - e.g., task costs vs budget, timeline vs contract dates)
 
-## 📅 Timeline Analysis
-(Assessment of project timeline health and any scheduling concerns)
+---
 
-Keep the tone professional but accessible. Use Canadian English and CAD currency. Format for easy reading.`;
+## 7. RISK ASSESSMENT MATRIX
+
+| Risk Factor | Severity | Impact | Mitigation |
+|-------------|----------|--------|------------|
+| [Risk 1] | [H/M/L] | [Description] | [Action] |
+| [Risk 2] | [H/M/L] | [Description] | [Action] |
+
+---
+
+${weatherData ? `## 8. ENVIRONMENTAL IMPACT ANALYSIS
+
+**Current Conditions:** ${weatherData.temperature ?? "N/A"}°C - ${weatherData.description || "N/A"}
+
+### Weather Risk Assessment:
+- Construction Impact: [Analysis of current/forecast conditions]
+- Schedule Risk: [Weather-related delays potential]
+- Safety Considerations: [Worker safety factors]
+
+### 3-Day Operational Forecast:
+${weatherData.forecast?.slice(0, 3).map(f => `- **${f.date}:** ${f.temp_min}°C to ${f.temp_max}°C - ${f.description}`).join("\n") || "Forecast unavailable"}
+
+---
+
+` : ""}
+## 9. ACTIONABLE RECOMMENDATIONS
+
+### Immediate Actions (Next 24-48h):
+1. [Critical action 1]
+2. [Critical action 2]
+
+### Short-Term Actions (This Week):
+1. [Action with specific deliverable]
+2. [Action with specific deliverable]
+
+### Documentation Gaps to Address:
+- [Missing document/verification 1]
+- [Missing document/verification 2]
+
+---
+
+## 10. AUDIT CONCLUSION
+
+**Final Verdict:** [VERIFIED | CONDITIONAL | INCOMPLETE]
+
+**Confidence Level:** [X% based on data completeness]
+
+**Next Audit Recommended:** [Date or trigger condition]
+
+---
+*M.E.S.S.A. Audit Report generated by BuildUnion AI Engine*
+*Report Classification: Engineering-Grade Project Intelligence*
+
+---
+
+**IMPORTANT GUIDELINES:**
+- Use Canadian English and CAD currency
+- Be precise with numbers - no rounding without noting it
+- Flag ALL missing data explicitly
+- If data conflicts exist, report them prominently
+- Professional engineering tone throughout
+- Every claim must trace to a data source`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -360,7 +486,7 @@ Keep the tone professional but accessible. Use Canadian English and CAD currency
       body: JSON.stringify({
         model: selectedModel,
         messages: [
-          { role: "system", content: "You are a professional construction project analyst. Generate clear, actionable project briefs." },
+          { role: "system", content: "You are a Senior Construction Engineer performing M.E.S.S.A. (Multi-Engine Structural Site Analysis) audits. Generate precise, engineering-grade project intelligence reports. Zero tolerance for assumptions - verify all data, flag all gaps, detect all conflicts. Professional Canadian construction industry standards apply." },
           { role: "user", content: aiPrompt },
         ],
         max_tokens: maxTokens,
