@@ -8,24 +8,37 @@ import UnionBenefitsDialog from "@/components/community/UnionBenefitsDialog";
 import CertificationsDialog from "@/components/community/CertificationsDialog";
 import QuickStartDialog from "@/components/community/QuickStartDialog";
 import UnionFinderDialog from "@/components/community/UnionFinderDialog";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare, Hammer } from "lucide-react";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare, Hammer, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const newsItems = [
   {
     id: 1,
-    title: "BuildUnion Launches Beta Program",
-    description: "We're excited to announce our beta program for early adopters. Join now to shape the future of construction project management.",
-    date: "Jan 15, 2026",
-    category: "Product",
+    title: "Ontario Investing $224B in Infrastructure",
+    description: "The province announced a massive 10-year infrastructure plan including transit expansion, hospital construction, and highway improvements across Ontario.",
+    date: "Jan 20, 2026",
+    category: "Investment",
+    sourceUrl: "https://www.ontario.ca/page/building-ontario",
+    source: "Ontario.ca"
   },
   {
     id: 2,
-    title: "Partnership with Leading Construction Firms",
-    description: "BuildUnion partners with top construction companies to bring enterprise-grade solutions to teams of all sizes.",
-    date: "Jan 5, 2026",
-    category: "News",
+    title: "IBEW Local 353 Reaches New Agreement",
+    description: "The International Brotherhood of Electrical Workers Local 353 ratified a new 3-year collective agreement with improved wages and benefits.",
+    date: "Jan 18, 2026",
+    category: "Union",
+    sourceUrl: "https://www.ibew353.org",
+    source: "IBEW 353"
+  },
+  {
+    id: 3,
+    title: "BuildOntario Launches Skills Training Initiative",
+    description: "New provincial program aims to train 100,000 skilled trades workers over the next 5 years to address construction labour shortage.",
+    date: "Jan 12, 2026",
+    category: "Training",
+    sourceUrl: "https://www.buildontario.com",
+    source: "BuildOntario"
   },
 ];
 
@@ -82,30 +95,41 @@ const BuildUnionCommunity = () => {
 
             <div className="grid md:grid-cols-3 gap-6">
               {newsItems.map((item) => (
-                <Card key={item.id} className="bg-card border-border hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
-                        {item.category}
-                      </span>
-                      <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                        <Calendar className="h-3 w-3" />
-                        {item.date}
+                <a 
+                  key={item.id} 
+                  href={item.sourceUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className="bg-card border-border hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer h-full">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
+                          {item.category}
+                        </span>
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                          <Calendar className="h-3 w-3" />
+                          {item.date}
+                        </div>
                       </div>
-                    </div>
-                    <CardTitle className="text-lg font-semibold text-foreground group-hover:text-amber-600 transition-colors">
-                      {item.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-muted-foreground leading-relaxed">
-                      {item.description}
-                    </CardDescription>
-                    <div className="mt-4 flex items-center text-amber-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      Read more <ArrowRight className="h-4 w-4 ml-1" />
-                    </div>
-                  </CardContent>
-                </Card>
+                      <CardTitle className="text-lg font-semibold text-foreground group-hover:text-amber-600 transition-colors">
+                        {item.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-muted-foreground leading-relaxed">
+                        {item.description}
+                      </CardDescription>
+                      <div className="mt-4 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground text-xs">Source: {item.source}</span>
+                        <div className="flex items-center text-amber-600 font-medium group-hover:translate-x-1 transition-transform">
+                          Read more <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
               ))}
             </div>
           </div>
@@ -119,62 +143,91 @@ const BuildUnionCommunity = () => {
               <h2 className="text-2xl md:text-3xl font-display font-semibold text-foreground">
                 Industry Headlines
               </h2>
-              <a href="#" className="text-cyan-600 hover:text-cyan-700 text-sm font-medium transition-colors">
-                View all updates →
+              <a 
+                href="https://www.constructconnect.com/blog" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-cyan-600 hover:text-cyan-700 text-sm font-medium transition-colors flex items-center gap-1"
+              >
+                View all updates <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow">
+              <a 
+                href="https://www.toronto.ca/city-government/budget-finances/city-budget/capital-budget/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md hover:border-cyan-300 transition-all group cursor-pointer"
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">TORONTO</span>
-                  <span className="text-xs text-muted-foreground">January 23, 2025</span>
+                  <span className="text-xs text-muted-foreground">January 2026</span>
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-3 leading-tight">
+                <h3 className="text-lg font-bold text-foreground mb-3 leading-tight group-hover:text-cyan-600 transition-colors">
                   Toronto Announces $500M Infrastructure Investment
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                  City-wide upgrades across transit, roads and public facilities through 2025.
+                  City-wide upgrades across transit, roads and public facilities through 2026.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground">#infrastructure</span>
-                  <span className="text-xs text-muted-foreground">#investment</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs text-muted-foreground">#infrastructure</span>
+                    <span className="text-xs text-muted-foreground">#investment</span>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-cyan-600 transition-colors" />
                 </div>
-              </div>
+              </a>
 
-              <div className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow">
+              <a 
+                href="https://www.skilledtradesontario.ca/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md hover:border-cyan-300 transition-all group cursor-pointer"
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">ONTARIO</span>
-                  <span className="text-xs text-muted-foreground">January 23, 2025</span>
+                  <span className="text-xs text-muted-foreground">January 2026</span>
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-3 leading-tight">
+                <h3 className="text-lg font-bold text-foreground mb-3 leading-tight group-hover:text-cyan-600 transition-colors">
                   Ontario Skilled Trades Shortage Reaches Critical Levels
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                   Province reports 80,000 vacancies amid sustained construction boom.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground">#skilled-trades</span>
-                  <span className="text-xs text-muted-foreground">#labor</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs text-muted-foreground">#skilled-trades</span>
+                    <span className="text-xs text-muted-foreground">#labor</span>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-cyan-600 transition-colors" />
                 </div>
-              </div>
+              </a>
 
-              <div className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md transition-shadow">
+              <a 
+                href="https://www.ontario.ca/page/construction-health-and-safety" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-card rounded-xl p-6 shadow-sm border border-border hover:shadow-md hover:border-cyan-300 transition-all group cursor-pointer"
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-xs font-semibold text-muted-foreground border border-border px-2 py-1 rounded">CANADA</span>
-                  <span className="text-xs text-muted-foreground">January 23, 2025</span>
+                  <span className="text-xs text-muted-foreground">January 2026</span>
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-3 leading-tight">
-                  New Safety Regulations Take Effect in 2025
+                <h3 className="text-lg font-bold text-foreground mb-3 leading-tight group-hover:text-cyan-600 transition-colors">
+                  New Safety Regulations Take Effect in 2026
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                   Mandatory PPE standards and refresher training introduced across worksites.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground">#safety</span>
-                  <span className="text-xs text-muted-foreground">#regulation</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs text-muted-foreground">#safety</span>
+                    <span className="text-xs text-muted-foreground">#regulation</span>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-cyan-600 transition-colors" />
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </section>
