@@ -50,7 +50,7 @@ import { useProjectTeam } from "@/hooks/useProjectTeam";
 import { useAuth } from "@/hooks/useAuth";
 import { generateProjectReport, ConflictData } from "@/lib/pdfGenerator";
 import { ProBadge } from "@/components/ui/pro-badge";
-import { useCitationRegistry } from "@/hooks/useCitationRegistry";
+import { useCitationRegistry, getAutoPillarLink } from "@/hooks/useCitationRegistry";
 import { CitationSource, generateCitationId } from "@/types/citation";
 
 // ============================================
@@ -527,8 +527,31 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     linkCitationToPillar,
     refreshCitations,
     totalCitations,
-    linkedCitations 
+    linkedCitations,
+    getCitationsForPillar
   } = useCitationRegistry(projectId);
+  
+  // Compute pillar citations for display on Operational Truth cards
+  const pillarCitations = useMemo(() => {
+    const pillarMap: Record<string, string[]> = {
+      area: [],
+      materials: [],
+      blueprint: [],
+      obc: [],
+      conflict: [],
+      mode: [],
+      size: [],
+      confidence: [],
+    };
+    
+    citations.forEach(citation => {
+      if (citation.linkedPillar && pillarMap[citation.linkedPillar]) {
+        pillarMap[citation.linkedPillar].push(citation.sourceId);
+      }
+    });
+    
+    return pillarMap;
+  }, [citations]);
   
   // Document list for citation auto-registration
   const [projectDocuments, setProjectDocuments] = useState<{ id: string; file_name: string; file_path: string; uploaded_at: string }[]>([]);
@@ -1001,10 +1024,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
 
     const citationsToRegister: Omit<CitationSource, 'id' | 'registeredAt' | 'registeredBy'>[] = [];
 
-    // Register site photos
+    // Register site photos with auto-link to Area
     project.site_images?.forEach((path, index) => {
       const sourceId = generateCitationId('P', index);
       if (!citations.some(c => c.sourceId === sourceId)) {
+        const fileName = path.split('/').pop() || `Site Photo ${index + 1}`;
+        const autoPillar = getAutoPillarLink(fileName, 'site_photo');
+        
         citationsToRegister.push({
           sourceId,
           documentName: `Site Photo ${index + 1}`,
@@ -1012,11 +1038,12 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           contextSnippet: 'Site photo uploaded during project creation',
           filePath: path,
           timestamp: new Date().toISOString(),
+          linkedPillar: autoPillar,
         });
       }
     });
 
-    // Register documents
+    // Register documents with auto-link based on file name
     projectDocuments.forEach((doc, index) => {
       const isPdf = doc.file_name.toLowerCase().endsWith('.pdf');
       const isBlueprint = doc.file_name.toLowerCase().includes('blueprint') || 
@@ -1027,13 +1054,17 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         : generateCitationId('D', index);
       
       if (!citations.some(c => c.sourceId === sourceId)) {
+        const docType: CitationSource['documentType'] = isBlueprint ? 'blueprint' : (isPdf ? 'pdf' : 'image');
+        const autoPillar = getAutoPillarLink(doc.file_name, docType);
+        
         citationsToRegister.push({
           sourceId,
           documentName: doc.file_name,
-          documentType: isBlueprint ? 'blueprint' : (isPdf ? 'pdf' : 'image'),
+          documentType: docType,
           contextSnippet: `Uploaded document: ${doc.file_name}`,
           filePath: doc.file_path,
           timestamp: doc.uploaded_at,
+          linkedPillar: autoPillar,
         });
       }
     });
@@ -1876,6 +1907,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             projectId={projectId}
             projectAddress={project.address || undefined}
             dataSourceOrigins={dataSourceOrigins}
+            pillarCitations={pillarCitations}
             onBlueprintValidated={handleBlueprintValidated}
             onConflictsIgnored={handleConflictsIgnored}
             initialBlueprintValidated={manuallyValidatedBlueprint}
