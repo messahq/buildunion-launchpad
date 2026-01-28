@@ -38,7 +38,9 @@
       "healthScoreNote": "Gesundheitswert aus {{count}} relevanten Datenquellen berechnet"
     },
     "completeDesc": "Projekt als abgeschlossen markieren",
-    "reopenDesc": "Projekt wieder als aktiv markieren"
+    "reopenDesc": "Projekt wieder als aktiv markieren",
+    "finishProject": "Projekt abschließen",
+    "finishDesc": "Dieses Projekt als abgeschlossen markieren"
   },
   "baseline": {
     "title": "Projekt-Baseline",
@@ -552,6 +554,8 @@
     "projectReopened": "Projekt wiedereröffnet",
     "completeProject": "Als abgeschlossen markieren",
     "reopenProject": "Projekt wiedereröffnen",
+    "finish": "Abschließen",
+    "reopen": "Wiedereröffnen",
     "deleteProject": "Projekt löschen",
     "deleteConfirm": "Löschen",
     "cannotUndo": "Dies kann nicht rückgängig gemacht werden."

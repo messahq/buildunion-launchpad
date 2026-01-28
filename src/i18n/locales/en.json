@@ -38,7 +38,9 @@
       "healthScoreNote": "Health score calculated from {{count}} relevant data sources"
     },
     "completeDesc": "Mark project as finished",
-    "reopenDesc": "Mark project as active again"
+    "reopenDesc": "Mark project as active again",
+    "finishProject": "Finish Project",
+    "finishDesc": "Mark this project as complete"
   },
   "baseline": {
     "title": "Project Baseline",
@@ -570,6 +572,8 @@
     "projectReopened": "Project reopened",
     "completeProject": "Mark as completed",
     "reopenProject": "Reopen project",
+    "finish": "Finish",
+    "reopen": "Reopen",
     "deleteProject": "Delete project",
     "deleteConfirm": "Delete",
     "cannotUndo": "This cannot be undone."

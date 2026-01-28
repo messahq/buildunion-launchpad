@@ -38,7 +38,9 @@
       "healthScoreNote": "تم حساب درجة الصحة من {{count}} مصادر بيانات ذات صلة"
     },
     "completeDesc": "وضع علامة على المشروع كمكتمل",
-    "reopenDesc": "وضع علامة على المشروع كنشط مرة أخرى"
+    "reopenDesc": "وضع علامة على المشروع كنشط مرة أخرى",
+    "finishProject": "إنهاء المشروع",
+    "finishDesc": "وضع علامة على هذا المشروع كمكتمل"
   },
   "baseline": {
     "title": "خط الأساس للمشروع",
@@ -552,6 +554,8 @@
     "projectReopened": "تم إعادة فتح المشروع",
     "completeProject": "وضع علامة كمكتمل",
     "reopenProject": "إعادة فتح المشروع",
+    "finish": "إنهاء",
+    "reopen": "إعادة فتح",
     "deleteProject": "حذف المشروع",
     "deleteConfirm": "حذف",
     "cannotUndo": "لا يمكن التراجع عن هذا الإجراء."

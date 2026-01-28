@@ -38,7 +38,9 @@
       "healthScoreNote": "健康分数根据{{count}}个相关数据源计算"
     },
     "completeDesc": "将项目标记为已完成",
-    "reopenDesc": "将项目重新标记为进行中"
+    "reopenDesc": "将项目重新标记为进行中",
+    "finishProject": "完成项目",
+    "finishDesc": "将此项目标记为完成"
   },
   "baseline": {
     "title": "项目基线",
@@ -552,6 +554,8 @@
     "projectReopened": "项目已重新打开",
     "completeProject": "标记为完成",
     "reopenProject": "重新打开项目",
+    "finish": "完成",
+    "reopen": "重新打开",
     "deleteProject": "删除项目",
     "deleteConfirm": "删除",
     "cannotUndo": "此操作无法撤销。"

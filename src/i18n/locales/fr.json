@@ -38,7 +38,9 @@
       "healthScoreNote": "Score de santé calculé à partir de {{count}} sources de données pertinentes"
     },
     "completeDesc": "Marquer le projet comme terminé",
-    "reopenDesc": "Marquer le projet comme actif à nouveau"
+    "reopenDesc": "Marquer le projet comme actif à nouveau",
+    "finishProject": "Terminer le Projet",
+    "finishDesc": "Marquer ce projet comme terminé"
   },
   "baseline": {
     "title": "Référence du Projet",
@@ -552,6 +554,8 @@
     "projectReopened": "Projet rouvert",
     "completeProject": "Marquer comme terminé",
     "reopenProject": "Rouvrir le projet",
+    "finish": "Terminer",
+    "reopen": "Rouvrir",
     "deleteProject": "Supprimer le projet",
     "deleteConfirm": "Supprimer",
     "cannotUndo": "Cette action est irréversible."
