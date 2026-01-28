@@ -405,7 +405,6 @@ serve(async (req) => {
     <div class="container">
       <!-- HEADER -->
       <div class="header">
-        <img src="${logoUrl}" alt="BuildUnion Logo" class="logo-img" />
         <div class="brand-name" style="font-size: 32px; margin-bottom: 8px;">
           <span class="brand-build">Build</span><span class="brand-union">Union</span>
         </div>
@@ -482,7 +481,6 @@ serve(async (req) => {
       <!-- FOOTER -->
       <div class="footer">
         <div class="footer-logo-section">
-          <img src="${logoUrl}" alt="BuildUnion Logo" class="footer-logo-img" />
           <div class="footer-company-name">
             <span class="footer-build">Build</span><span class="footer-union">Union</span>
           </div>
@@ -493,6 +491,7 @@ serve(async (req) => {
         <div class="footer-contact">
           <span class="footer-contact-row">🌐 <a href="https://buildunion.ca">buildunion.ca</a></span>
           <span class="footer-contact-row">📧 <a href="mailto:admin@buildunion.ca">admin@buildunion.ca</a></span>
+          <span class="footer-contact-row">📞 <a href="tel:+14376011426">437-601-1426</a></span>
           <span class="footer-contact-row">📍 Toronto, Ontario, Canada</span>
         </div>
 
