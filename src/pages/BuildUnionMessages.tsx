@@ -14,7 +14,10 @@ import {
   Mail,
   Shield,
   X,
-  FileText
+  FileText,
+  Users,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -209,12 +212,19 @@ export default function BuildUnionMessages() {
   
   // Admin Email Compose State
   const [isAdminEmailDialogOpen, setIsAdminEmailDialogOpen] = useState(false);
+  const [isBulkMode, setIsBulkMode] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("custom");
   const [adminEmailTo, setAdminEmailTo] = useState("");
   const [adminEmailName, setAdminEmailName] = useState("");
   const [adminEmailSubject, setAdminEmailSubject] = useState("");
   const [adminEmailMessage, setAdminEmailMessage] = useState("");
   const [isSendingAdminEmail, setIsSendingAdminEmail] = useState(false);
+  
+  // Bulk email recipients
+  const [bulkRecipients, setBulkRecipients] = useState<Array<{ email: string; name: string }>>([
+    { email: "", name: "" }
+  ]);
+  const [bulkSendProgress, setBulkSendProgress] = useState<{ sent: number; total: number; errors: string[] } | null>(null);
 
   // Handle template selection
   const handleTemplateChange = (templateId: string) => {
@@ -224,6 +234,35 @@ export default function BuildUnionMessages() {
       setAdminEmailSubject(template.subject);
       setAdminEmailMessage(template.message);
     }
+  };
+
+  // Bulk recipient helpers
+  const addBulkRecipient = () => {
+    setBulkRecipients(prev => [...prev, { email: "", name: "" }]);
+  };
+
+  const removeBulkRecipient = (index: number) => {
+    if (bulkRecipients.length > 1) {
+      setBulkRecipients(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateBulkRecipient = (index: number, field: "email" | "name", value: string) => {
+    setBulkRecipients(prev => prev.map((r, i) => 
+      i === index ? { ...r, [field]: value } : r
+    ));
+  };
+
+  const resetAdminEmailDialog = () => {
+    setSelectedTemplate("custom");
+    setAdminEmailTo("");
+    setAdminEmailName("");
+    setAdminEmailSubject("");
+    setAdminEmailMessage("");
+    setBulkRecipients([{ email: "", name: "" }]);
+    setBulkSendProgress(null);
+    setIsBulkMode(false);
+    setIsAdminEmailDialogOpen(false);
   };
 
   // Premium access check
@@ -538,56 +577,105 @@ export default function BuildUnionMessages() {
     }
   };
 
-  // Send Admin Email
+  // Send Admin Email (single or bulk)
   const sendAdminEmail = async () => {
-    if (!adminEmailTo.trim() || !adminEmailSubject.trim() || !adminEmailMessage.trim()) {
-      toast.error("Please fill in all required fields");
+    if (!adminEmailSubject.trim() || !adminEmailMessage.trim()) {
+      toast.error("Please fill in subject and message");
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(adminEmailTo.trim())) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
 
-    setIsSendingAdminEmail(true);
-
-    try {
-      const response = await supabase.functions.invoke("send-admin-email", {
-        body: {
-          recipientEmail: adminEmailTo.trim(),
-          recipientName: adminEmailName.trim() || undefined,
-          subject: adminEmailSubject.trim(),
-          message: adminEmailMessage.trim(),
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
+    if (isBulkMode) {
+      // Bulk send mode
+      const validRecipients = bulkRecipients.filter(r => r.email.trim() && emailRegex.test(r.email.trim()));
+      
+      if (validRecipients.length === 0) {
+        toast.error("Please add at least one valid recipient email");
+        return;
       }
 
-      if (response.data?.success) {
-        toast.success(`Email sent to ${adminEmailTo}`, {
-          description: `Subject: ${adminEmailSubject}`,
-        });
-        
-        // Clear form and close dialog
-        setSelectedTemplate("custom");
-        setAdminEmailTo("");
-        setAdminEmailName("");
-        setAdminEmailSubject("");
-        setAdminEmailMessage("");
-        setIsAdminEmailDialogOpen(false);
+      setIsSendingAdminEmail(true);
+      setBulkSendProgress({ sent: 0, total: validRecipients.length, errors: [] });
+
+      const errors: string[] = [];
+      let sent = 0;
+
+      for (const recipient of validRecipients) {
+        try {
+          const response = await supabase.functions.invoke("send-admin-email", {
+            body: {
+              recipientEmail: recipient.email.trim(),
+              recipientName: recipient.name.trim() || undefined,
+              subject: adminEmailSubject.trim(),
+              message: adminEmailMessage.trim(),
+            },
+          });
+
+          if (response.error || !response.data?.success) {
+            errors.push(`${recipient.email}: ${response.data?.error || response.error?.message || "Failed"}`);
+          } else {
+            sent++;
+          }
+        } catch (err) {
+          errors.push(`${recipient.email}: ${err instanceof Error ? err.message : "Unknown error"}`);
+        }
+
+        setBulkSendProgress({ sent, total: validRecipients.length, errors });
+      }
+
+      if (errors.length === 0) {
+        toast.success(`All ${sent} emails sent successfully!`);
+        resetAdminEmailDialog();
+      } else if (sent > 0) {
+        toast.warning(`Sent ${sent}/${validRecipients.length} emails. ${errors.length} failed.`);
       } else {
-        throw new Error(response.data?.error || "Failed to send email");
+        toast.error("All emails failed to send");
       }
-    } catch (err) {
-      console.error("Error sending admin email:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to send email");
-    } finally {
+
       setIsSendingAdminEmail(false);
+    } else {
+      // Single email mode
+      if (!adminEmailTo.trim()) {
+        toast.error("Please enter recipient email");
+        return;
+      }
+
+      if (!emailRegex.test(adminEmailTo.trim())) {
+        toast.error("Please enter a valid email address");
+        return;
+      }
+
+      setIsSendingAdminEmail(true);
+
+      try {
+        const response = await supabase.functions.invoke("send-admin-email", {
+          body: {
+            recipientEmail: adminEmailTo.trim(),
+            recipientName: adminEmailName.trim() || undefined,
+            subject: adminEmailSubject.trim(),
+            message: adminEmailMessage.trim(),
+          },
+        });
+
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+
+        if (response.data?.success) {
+          toast.success(`Email sent to ${adminEmailTo}`, {
+            description: `Subject: ${adminEmailSubject}`,
+          });
+          resetAdminEmailDialog();
+        } else {
+          throw new Error(response.data?.error || "Failed to send email");
+        }
+      } catch (err) {
+        console.error("Error sending admin email:", err);
+        toast.error(err instanceof Error ? err.message : "Failed to send email");
+      } finally {
+        setIsSendingAdminEmail(false);
+      }
     }
   };
 
@@ -644,19 +732,44 @@ export default function BuildUnionMessages() {
         </div>
 
         {/* Admin Email Compose Dialog */}
-        <Dialog open={isAdminEmailDialogOpen} onOpenChange={setIsAdminEmailDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
+        <Dialog open={isAdminEmailDialogOpen} onOpenChange={(open) => {
+          if (!open) resetAdminEmailDialog();
+          else setIsAdminEmailDialogOpen(true);
+        }}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-amber-500" />
-                Send Email as Admin
+                {isBulkMode ? "Bulk Email - Send to Multiple Recipients" : "Send Email as Admin"}
               </DialogTitle>
               <DialogDescription>
-                Send an email from <span className="font-medium text-amber-600">admin@buildunion.ca</span> to any recipient.
+                Send an email from <span className="font-medium text-amber-600">admin@buildunion.ca</span> to {isBulkMode ? "multiple recipients" : "any recipient"}.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
+              {/* Mode Toggle */}
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border">
+                <Button
+                  variant={!isBulkMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsBulkMode(false)}
+                  className={!isBulkMode ? "bg-amber-500 hover:bg-amber-600" : ""}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Single Email
+                </Button>
+                <Button
+                  variant={isBulkMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setIsBulkMode(true)}
+                  className={isBulkMode ? "bg-amber-500 hover:bg-amber-600" : ""}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Bulk Send
+                </Button>
+              </div>
+
               {/* Template Selector */}
               <div className="space-y-2">
                 <Label htmlFor="email-template" className="flex items-center gap-2">
@@ -675,34 +788,113 @@ export default function BuildUnionMessages() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose a pre-written template or write a custom email
-                </p>
               </div>
 
               <div className="h-px bg-border" />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email-to">Recipient Email *</Label>
-                  <Input
-                    id="admin-email-to"
-                    type="email"
-                    placeholder="recipient@example.com"
-                    value={adminEmailTo}
-                    onChange={(e) => setAdminEmailTo(e.target.value)}
-                  />
+              {/* Recipients Section */}
+              {isBulkMode ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-amber-500" />
+                      Recipients ({bulkRecipients.filter(r => r.email.trim()).length})
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addBulkRecipient}
+                      className="gap-1"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Recipient
+                    </Button>
+                  </div>
+                  
+                  <ScrollArea className="max-h-48 pr-4">
+                    <div className="space-y-2">
+                      {bulkRecipients.map((recipient, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Input
+                            type="email"
+                            placeholder="email@example.com"
+                            value={recipient.email}
+                            onChange={(e) => updateBulkRecipient(index, "email", e.target.value)}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="Name (optional)"
+                            value={recipient.name}
+                            onChange={(e) => updateBulkRecipient(index, "name", e.target.value)}
+                            className="w-36"
+                          />
+                          {bulkRecipients.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeBulkRecipient(index)}
+                              className="h-9 w-9 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+
+                  {/* Bulk Progress */}
+                  {bulkSendProgress && (
+                    <div className="p-3 bg-muted rounded-lg border space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Sending progress:</span>
+                        <span className="font-medium">{bulkSendProgress.sent} / {bulkSendProgress.total}</span>
+                      </div>
+                      <div className="w-full bg-muted-foreground/20 rounded-full h-2">
+                        <div 
+                          className="bg-amber-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(bulkSendProgress.sent / bulkSendProgress.total) * 100}%` }}
+                        />
+                      </div>
+                      {bulkSendProgress.errors.length > 0 && (
+                        <div className="text-xs text-destructive mt-2">
+                          <p className="font-medium">Errors:</p>
+                          {bulkSendProgress.errors.slice(0, 3).map((err, i) => (
+                            <p key={i} className="truncate">• {err}</p>
+                          ))}
+                          {bulkSendProgress.errors.length > 3 && (
+                            <p>...and {bulkSendProgress.errors.length - 3} more</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email-name">Recipient Name</Label>
-                  <Input
-                    id="admin-email-name"
-                    placeholder="John Doe (optional)"
-                    value={adminEmailName}
-                    onChange={(e) => setAdminEmailName(e.target.value)}
-                  />
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-email-to">Recipient Email *</Label>
+                    <Input
+                      id="admin-email-to"
+                      type="email"
+                      placeholder="recipient@example.com"
+                      value={adminEmailTo}
+                      onChange={(e) => setAdminEmailTo(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-email-name">Recipient Name</Label>
+                    <Input
+                      id="admin-email-name"
+                      placeholder="John Doe (optional)"
+                      value={adminEmailName}
+                      onChange={(e) => setAdminEmailName(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div className="space-y-2">
                 <Label htmlFor="admin-email-subject">Subject *</Label>
@@ -721,7 +913,7 @@ export default function BuildUnionMessages() {
                   placeholder="Write your message here..."
                   value={adminEmailMessage}
                   onChange={(e) => setAdminEmailMessage(e.target.value)}
-                  rows={8}
+                  rows={6}
                   className="resize-none font-mono text-sm"
                 />
               </div>
@@ -729,7 +921,10 @@ export default function BuildUnionMessages() {
               <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
                 <p className="flex items-center gap-1">
                   <Mail className="h-3 w-3 text-amber-600" />
-                  Email will be sent from: <span className="font-medium text-amber-700 dark:text-amber-400">admin@buildunion.ca</span>
+                  {isBulkMode 
+                    ? `Emails will be sent individually to ${bulkRecipients.filter(r => r.email.trim()).length} recipient(s) from admin@buildunion.ca`
+                    : "Email will be sent from: admin@buildunion.ca"
+                  }
                 </p>
               </div>
             </div>
@@ -737,25 +932,30 @@ export default function BuildUnionMessages() {
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setIsAdminEmailDialogOpen(false)}
+                onClick={resetAdminEmailDialog}
                 disabled={isSendingAdminEmail}
               >
                 Cancel
               </Button>
               <Button
                 onClick={sendAdminEmail}
-                disabled={isSendingAdminEmail || !adminEmailTo || !adminEmailSubject || !adminEmailMessage}
+                disabled={
+                  isSendingAdminEmail || 
+                  !adminEmailSubject || 
+                  !adminEmailMessage ||
+                  (isBulkMode ? bulkRecipients.filter(r => r.email.trim()).length === 0 : !adminEmailTo)
+                }
                 className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
               >
                 {isSendingAdminEmail ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Sending...
+                    {isBulkMode ? `Sending ${bulkSendProgress?.sent || 0}/${bulkSendProgress?.total || 0}...` : "Sending..."}
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />
-                    Send Email
+                    {isBulkMode ? `Send to ${bulkRecipients.filter(r => r.email.trim()).length} Recipients` : "Send Email"}
                   </>
                 )}
               </Button>
