@@ -542,7 +542,17 @@
     "inProgress": "En Cours",
     "completed": "Terminé",
     "pendingTasks": "Tâches en Attente",
-    "active": "Actif"
+    "active": "Actif",
+    "deleteFailed": "Échec de la suppression du projet",
+    "projectDeleted": "Projet supprimé",
+    "statusUpdateFailed": "Échec de la mise à jour du statut",
+    "projectCompleted": "Projet marqué comme terminé!",
+    "projectReopened": "Projet rouvert",
+    "completeProject": "Marquer comme terminé",
+    "reopenProject": "Rouvrir le projet",
+    "deleteProject": "Supprimer le projet",
+    "deleteConfirm": "Supprimer",
+    "cannotUndo": "Cette action est irréversible."
   },
   "footer": {
     "tagline": "Gestion de projet de niveau construction pour les équipes qui bâtissent le monde réel.",

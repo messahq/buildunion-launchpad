@@ -542,7 +542,17 @@
     "inProgress": "قيد التنفيذ",
     "completed": "مكتمل",
     "pendingTasks": "المهام المعلقة",
-    "active": "نشط"
+    "active": "نشط",
+    "deleteFailed": "فشل حذف المشروع",
+    "projectDeleted": "تم حذف المشروع",
+    "statusUpdateFailed": "فشل تحديث الحالة",
+    "projectCompleted": "تم وضع علامة على المشروع كمكتمل!",
+    "projectReopened": "تم إعادة فتح المشروع",
+    "completeProject": "وضع علامة كمكتمل",
+    "reopenProject": "إعادة فتح المشروع",
+    "deleteProject": "حذف المشروع",
+    "deleteConfirm": "حذف",
+    "cannotUndo": "لا يمكن التراجع عن هذا الإجراء."
   },
   "footer": {
     "tagline": "إدارة مشاريع بمستوى البناء للفرق التي تبني العالم الحقيقي.",

@@ -560,7 +560,17 @@
     "inProgress": "Folyamatban",
     "completed": "Befejezve",
     "pendingTasks": "Függőben lévő feladatok",
-    "active": "Aktív"
+    "active": "Aktív",
+    "deleteFailed": "Projekt törlése sikertelen",
+    "projectDeleted": "Projekt törölve",
+    "statusUpdateFailed": "Státusz frissítése sikertelen",
+    "projectCompleted": "Projekt befejezettként jelölve!",
+    "projectReopened": "Projekt újranyitva",
+    "completeProject": "Befejezettként jelöl",
+    "reopenProject": "Projekt újranyitása",
+    "deleteProject": "Projekt törlése",
+    "deleteConfirm": "Törlés",
+    "cannotUndo": "Ez nem vonható vissza."
   },
   "footer": {
     "tagline": "Építőipari szintű projektmenedzsment azoknak a csapatoknak, akik a valós világot építik.",

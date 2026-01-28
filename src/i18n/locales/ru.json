@@ -542,7 +542,17 @@
     "inProgress": "В работе",
     "completed": "Завершено",
     "pendingTasks": "Ожидающие задачи",
-    "active": "Активный"
+    "active": "Активный",
+    "deleteFailed": "Не удалось удалить проект",
+    "projectDeleted": "Проект удален",
+    "statusUpdateFailed": "Не удалось обновить статус",
+    "projectCompleted": "Проект отмечен как завершенный!",
+    "projectReopened": "Проект переоткрыт",
+    "completeProject": "Отметить как завершенный",
+    "reopenProject": "Переоткрыть проект",
+    "deleteProject": "Удалить проект",
+    "deleteConfirm": "Удалить",
+    "cannotUndo": "Это действие нельзя отменить."
   },
   "footer": {
     "tagline": "Управление проектами строительного уровня для команд, которые строят реальный мир.",

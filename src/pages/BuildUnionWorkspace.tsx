@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users, Download } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users, Download, CheckCircle2 } from "lucide-react";
 import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
@@ -935,11 +935,33 @@ const BuildUnionProjects2 = () => {
                                   .eq("id", project.id);
                                 
                                 if (error) {
-                                  toast.error("Failed to delete project");
+                                  toast.error(t("workspace.deleteFailed", "Failed to delete project"));
                                 } else {
                                   setProjects(prev => prev.filter(p => p.id !== project.id));
                                   if (sidebarProjectId === project.id) setSidebarProjectId(null);
-                                  toast.success("Project deleted");
+                                  toast.success(t("workspace.projectDeleted", "Project deleted"));
+                                }
+                              };
+
+                              const handleCompleteProject = async (e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                const newStatus = project.status === 'completed' ? 'active' : 'completed';
+                                const { error } = await supabase
+                                  .from("projects")
+                                  .update({ status: newStatus })
+                                  .eq("id", project.id);
+                                
+                                if (error) {
+                                  toast.error(t("workspace.statusUpdateFailed", "Failed to update status"));
+                                } else {
+                                  setProjects(prev => prev.map(p => 
+                                    p.id === project.id ? { ...p, status: newStatus } : p
+                                  ));
+                                  toast.success(
+                                    newStatus === 'completed' 
+                                      ? t("workspace.projectCompleted", "Project marked as completed!") 
+                                      : t("workspace.projectReopened", "Project reopened")
+                                  );
                                 }
                               };
 
@@ -1031,19 +1053,47 @@ const BuildUnionProjects2 = () => {
                                       >
                                         <ArrowLeft className="h-4 w-4 rotate-180" />
                                       </Button>
+                                      {/* Desktop complete button */}
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className={cn(
+                                              "hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity",
+                                              project.status === 'completed' 
+                                                ? "text-emerald-600 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" 
+                                                : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                            )}
+                                            onClick={handleCompleteProject}
+                                          >
+                                            <CheckCircle2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          {project.status === 'completed' ? t("workspace.reopenProject", "Reopen project") : t("workspace.completeProject", "Mark as completed")}
+                                        </TooltipContent>
+                                      </Tooltip>
                                       {/* Desktop delete button */}
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
-                                          handleDelete();
-                                        }}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              if (!confirm(`${t("workspace.deleteConfirm", "Delete")} "${project.name}"? ${t("workspace.cannotUndo", "This cannot be undone.")}`)) return;
+                                              handleDelete();
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          {t("workspace.deleteProject", "Delete project")}
+                                        </TooltipContent>
+                                      </Tooltip>
                                     </div>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-xs text-muted-foreground">

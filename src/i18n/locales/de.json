@@ -542,7 +542,17 @@
     "inProgress": "In Bearbeitung",
     "completed": "Abgeschlossen",
     "pendingTasks": "Ausstehende Aufgaben",
-    "active": "Aktiv"
+    "active": "Aktiv",
+    "deleteFailed": "Projekt konnte nicht gelöscht werden",
+    "projectDeleted": "Projekt gelöscht",
+    "statusUpdateFailed": "Status konnte nicht aktualisiert werden",
+    "projectCompleted": "Projekt als abgeschlossen markiert!",
+    "projectReopened": "Projekt wiedereröffnet",
+    "completeProject": "Als abgeschlossen markieren",
+    "reopenProject": "Projekt wiedereröffnen",
+    "deleteProject": "Projekt löschen",
+    "deleteConfirm": "Löschen",
+    "cannotUndo": "Dies kann nicht rückgängig gemacht werden."
   },
   "footer": {
     "tagline": "Projektmanagement auf Bauniveau für Teams, die die reale Welt bauen.",
