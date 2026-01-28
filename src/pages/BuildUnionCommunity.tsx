@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
@@ -7,9 +7,17 @@ import FAQDialog from "@/components/community/FAQDialog";
 import UnionBenefitsDialog from "@/components/community/UnionBenefitsDialog";
 import CertificationsDialog from "@/components/community/CertificationsDialog";
 import QuickStartDialog from "@/components/community/QuickStartDialog";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare, Hammer, FolderKanban, ClipboardCheck, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+interface PlatformStats {
+  activeProjects: number;
+  communityMembers: number;
+  tasksCompleted: number;
+  contractsGenerated: number;
+}
 
 const newsItems = [
   {
@@ -56,6 +64,55 @@ const BuildUnionCommunity = () => {
   const [isUnionBenefitsOpen, setIsUnionBenefitsOpen] = useState(false);
   const [isCertificationsOpen, setIsCertificationsOpen] = useState(false);
   const [isQuickStartOpen, setIsQuickStartOpen] = useState(false);
+  const [platformStats, setPlatformStats] = useState<PlatformStats>({
+    activeProjects: 0,
+    communityMembers: 0,
+    tasksCompleted: 0,
+    contractsGenerated: 0,
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  useEffect(() => {
+    const fetchPlatformStats = async () => {
+      try {
+        // Fetch active projects count
+        const { count: projectsCount } = await supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true })
+          .in("status", ["active", "draft"]);
+
+        // Fetch community members (public profiles)
+        const { count: membersCount } = await supabase
+          .from("bu_profiles")
+          .select("*", { count: "exact", head: true })
+          .eq("profile_completed", true);
+
+        // Fetch completed tasks
+        const { count: tasksCount } = await supabase
+          .from("project_tasks")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "completed");
+
+        // Fetch contracts generated
+        const { count: contractsCount } = await supabase
+          .from("contracts")
+          .select("*", { count: "exact", head: true });
+
+        setPlatformStats({
+          activeProjects: projectsCount || 0,
+          communityMembers: membersCount || 0,
+          tasksCompleted: tasksCount || 0,
+          contractsGenerated: contractsCount || 0,
+        });
+      } catch (error) {
+        console.error("Error fetching platform stats:", error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchPlatformStats();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -441,71 +498,91 @@ const BuildUnionCommunity = () => {
           </div>
         </section>
 
-        {/* Industry Standards & OBC Section */}
+        {/* Platform Activity Section */}
         <section className="py-20 px-6 bg-card border-y border-border">
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <Scale className="h-5 w-5 text-amber-600" />
-                  <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">Industry Standards</span>
+                  <Zap className="h-5 w-5 text-amber-600" />
+                  <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">Live Platform</span>
                 </div>
                 <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-                  Ontario Building Code
-                  <span className="block text-amber-600">2024 Updates</span>
+                  Community Activity
+                  <span className="block text-amber-600">Real-Time Stats</span>
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-6">
-                  Stay compliant with the latest OBC amendments. Our platform automatically cross-references 
-                  your documents against current building codes.
+                  Join a growing community of construction professionals. Track projects, collaborate with teams, 
+                  and streamline your workflows with AI-powered tools.
                 </p>
                 
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <FolderKanban className="h-4 w-4 text-amber-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-foreground">Fire Safety Updates</h4>
-                      <p className="text-muted-foreground text-sm">New requirements for high-rise residential buildings</p>
+                      <h4 className="font-semibold text-foreground">Project Management</h4>
+                      <p className="text-muted-foreground text-sm">Track progress across Solo and Team projects</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Building2 className="h-4 w-4 text-cyan-600" />
+                      <Users className="h-4 w-4 text-cyan-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-foreground">Accessibility Standards</h4>
-                      <p className="text-muted-foreground text-sm">Enhanced AODA compliance for commercial structures</p>
+                      <h4 className="font-semibold text-foreground">Team Collaboration</h4>
+                      <p className="text-muted-foreground text-sm">Assign tasks, share documents, and coordinate in real-time</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      <ClipboardCheck className="h-4 w-4 text-green-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-foreground">Energy Efficiency</h4>
-                      <p className="text-muted-foreground text-sm">Updated insulation and HVAC requirements</p>
+                      <h4 className="font-semibold text-foreground">Smart Contracts</h4>
+                      <p className="text-muted-foreground text-sm">Generate professional quotes and contracts instantly</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted/50 rounded-xl p-6 border border-border">
-                  <div className="text-3xl font-bold text-amber-600 mb-1">2,847</div>
-                  <div className="text-muted-foreground text-sm">Code sections analyzed</div>
+                <div className="bg-muted/50 rounded-xl p-6 border border-border hover:border-amber-300 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FolderKanban className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div className="text-3xl font-bold text-amber-600 mb-1">
+                    {isLoadingStats ? "..." : platformStats.activeProjects.toLocaleString()}
+                  </div>
+                  <div className="text-muted-foreground text-sm">Active projects</div>
                 </div>
-                <div className="bg-muted/50 rounded-xl p-6 border border-border">
-                  <div className="text-3xl font-bold text-cyan-600 mb-1">99.2%</div>
-                  <div className="text-muted-foreground text-sm">Compliance accuracy</div>
+                <div className="bg-muted/50 rounded-xl p-6 border border-border hover:border-cyan-300 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-5 w-5 text-cyan-600" />
+                  </div>
+                  <div className="text-3xl font-bold text-cyan-600 mb-1">
+                    {isLoadingStats ? "..." : platformStats.communityMembers.toLocaleString()}
+                  </div>
+                  <div className="text-muted-foreground text-sm">Community members</div>
                 </div>
-                <div className="bg-muted/50 rounded-xl p-6 border border-border">
-                  <div className="text-3xl font-bold text-green-600 mb-1">24h</div>
-                  <div className="text-muted-foreground text-sm">Update cycle</div>
+                <div className="bg-muted/50 rounded-xl p-6 border border-border hover:border-green-300 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ClipboardCheck className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-1">
+                    {isLoadingStats ? "..." : platformStats.tasksCompleted.toLocaleString()}
+                  </div>
+                  <div className="text-muted-foreground text-sm">Tasks completed</div>
                 </div>
-                <div className="bg-muted/50 rounded-xl p-6 border border-border">
-                  <div className="text-3xl font-bold text-cyan-600 mb-1">156</div>
-                  <div className="text-muted-foreground text-sm">Amendments tracked</div>
+                <div className="bg-muted/50 rounded-xl p-6 border border-border hover:border-orange-300 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div className="text-3xl font-bold text-orange-600 mb-1">
+                    {isLoadingStats ? "..." : platformStats.contractsGenerated.toLocaleString()}
+                  </div>
+                  <div className="text-muted-foreground text-sm">Contracts generated</div>
                 </div>
               </div>
             </div>
