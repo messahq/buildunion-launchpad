@@ -1,5 +1,7 @@
+import { useState } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
+import AskMessaChat from "@/components/AskMessaChat";
 import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,7 @@ const processSteps = [
 ];
 
 const BuildUnionCommunity = () => {
+  const [isMessaChatOpen, setIsMessaChatOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -397,7 +400,10 @@ const BuildUnionCommunity = () => {
                 </div>
               </a>
 
-              <a href="#" className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group">
+              <button 
+                onClick={() => setIsMessaChatOpen(true)}
+                className="bg-card rounded-xl p-5 shadow-sm border border-border flex items-start gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 group text-left w-full"
+              >
                 <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                   <MessageSquare className="h-6 w-6 text-orange-600" />
                 </div>
@@ -405,7 +411,7 @@ const BuildUnionCommunity = () => {
                   <h3 className="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors mb-1">Ask Messa</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">Need specific help? Chat with our AI assistant.</p>
                 </div>
-              </a>
+              </button>
             </div>
           </div>
         </section>
@@ -640,6 +646,9 @@ const BuildUnionCommunity = () => {
       </main>
       
       <BuildUnionFooter />
+      
+      {/* Ask Messa Chat Modal */}
+      <AskMessaChat isOpen={isMessaChatOpen} onClose={() => setIsMessaChatOpen(false)} />
     </div>
   );
 };
