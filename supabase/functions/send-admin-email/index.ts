@@ -217,7 +217,7 @@ serve(async (req) => {
       border-right: none;
     }
     .header-info-item a {
-      color: #06b6d4;
+      color: #374151;
       text-decoration: none;
       font-weight: 500;
     }
@@ -251,15 +251,14 @@ serve(async (req) => {
     }
     .meta-timezone {
       font-size: 11px;
-      color: #94a3b8;
+      color: #64748b;
       font-weight: 500;
-      text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .badge {
       display: inline-block;
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: #ffffff;
+      background: #ffffff;
+      color: #f59e0b;
       padding: 8px 16px;
       border-radius: 20px;
       font-size: 11px;
@@ -267,6 +266,7 @@ serve(async (req) => {
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-left: 8px;
+      border: 2px solid #f59e0b;
     }
     .content { 
       padding: 40px 32px; 
@@ -374,11 +374,11 @@ serve(async (req) => {
       color: #64748b;
     }
     .footer-contact-row a {
-      color: #06b6d4;
+      color: #374151;
       text-decoration: none;
     }
     .footer-contact-row a:hover {
-      color: #0891b2;
+      color: #1f2937;
       text-decoration: underline;
     }
     .footer-links {
@@ -452,7 +452,7 @@ serve(async (req) => {
           </div>
           <span class="meta-separator">•</span>
           <div class="meta-item">
-            🕐 ${torontoTime} <span class="meta-timezone">(Toronto EST)</span>
+            🕐 ${torontoTime} <span class="meta-timezone">(Toronto)</span>
           </div>
           <span class="badge">✉️ Official Message</span>
         </div>
