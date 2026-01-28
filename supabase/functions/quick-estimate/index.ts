@@ -243,19 +243,44 @@ async function geminiVisualAnalysis(
   // =============================================================================
   // PRECISION AREA EXTRACTION PROMPT - Zero Tolerance for Estimation Errors
   // =============================================================================
-  const basePrompt = `You are a PRECISION VISUAL ANALYSIS specialist for construction. Your PRIMARY task is to EXTRACT EXACT MEASUREMENTS from the image.
+  
+  // Pre-extract area from description for prompt injection
+  const descriptionAreaPatterns = [
+    /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*ft|square\s*feet?|sqft|SF)/i,
+    /area\s*(?:is|=|:)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
+    /(\d{1,3}(?:,\d{3})*)\s*(?:négyzetláb|nm|m2)/i,
+  ];
+  let descriptionAreaHint: number | null = null;
+  for (const pattern of descriptionAreaPatterns) {
+    const match = description?.match(pattern);
+    if (match?.[1]) {
+      descriptionAreaHint = parseFloat(match[1].replace(/,/g, ""));
+      if (descriptionAreaHint > 10 && descriptionAreaHint < 100000) {
+        console.log(`[GEMINI] Found area in user description: ${descriptionAreaHint} sq ft`);
+        break;
+      }
+    }
+  }
+  
+  const basePrompt = `You are a PRECISION VISUAL ANALYSIS specialist for construction. Your PRIMARY task is to EXTRACT EXACT MEASUREMENTS.
 
 === CRITICAL: EXACT AREA EXTRACTION ===
-Your FIRST and MOST IMPORTANT job is to find and read ANY area measurement visible in the image.
-Look for text like:
-- "Total Area = 1302 sq ft" → Return 1302
-- "1,500 sq ft" → Return 1500
-- "Area: 850 square feet" → Return 850
-- "Floor Area = 2,100 sqft" → Return 2100
+Your FIRST and MOST IMPORTANT job is to find and read ANY area measurement.
 
-DO NOT estimate or calculate. READ THE EXACT NUMBER from the image.
-DO NOT apply any buffers or adjustments - return the RAW number you see.
-DO NOT round or approximate - if you see "1302", return 1302, NOT 1300 or 1100.
+LOOK IN TWO PLACES:
+1. THE IMAGE - Look for text like "Total Area = 1302 sq ft" or any visible measurement
+2. THE USER DESCRIPTION - The user may have written the area in their message
+
+${descriptionAreaHint ? `
+⚠️ USER PROVIDED AREA: The user wrote "${descriptionAreaHint} sq ft" in their description.
+Use this value: ${descriptionAreaHint}
+Set confidence to "high" because this is user-confirmed data.
+` : ''}
+
+RULES:
+- DO NOT estimate or calculate - READ THE EXACT NUMBER
+- DO NOT apply any buffers or adjustments - return the RAW number
+- DO NOT round or approximate - if you see "150", return 150, NOT 165
 
 === SECONDARY ANALYSIS (only after area extraction) ===
 1. SURFACE TYPE - What material is visible? (tile, hardwood, laminate, concrete, carpet, etc.)
@@ -275,18 +300,18 @@ DO NOT round or approximate - if you see "1302", return 1302, NOT 1300 or 1100.
   const geminiPrompt = `${basePrompt}
 ${premiumAdditions}
 
-${description ? `User notes: "${description}"` : ""}
+User notes: "${description || 'No description provided'}"
 
 === RESPOND IN THIS EXACT JSON FORMAT ===
 {
-  "total_area": EXACT_NUMBER_FROM_IMAGE_OR_NULL,
+  "total_area": ${descriptionAreaHint ? descriptionAreaHint : 'EXACT_NUMBER_OR_NULL'},
   "unit": "sq ft",
   "surface_type": "detected surface material",
   "surface_condition": "current condition assessment", 
   "visible_features": ["feature1", "feature2"],
   "room_type": "room type",
-  "confidence": "high/medium/low",
-  "area_source": "visible_text" | "blueprint_label" | "estimated"${isPremium ? `,
+  "confidence": "${descriptionAreaHint ? 'high' : 'high/medium/low'}",
+  "area_source": "${descriptionAreaHint ? 'user_description' : 'visible_text | blueprint_label | estimated'}"${isPremium ? `,
   "structural_elements": ["element1", "element2"],
   "utilities_detected": ["utility1", "utility2"],
   "complexity_rating": "simple/moderate/complex/highly complex",
@@ -294,12 +319,10 @@ ${description ? `User notes: "${description}"` : ""}
 }
 
 === ZERO TOLERANCE RULES ===
-1. If you see "1302 sq ft" in the image, total_area MUST be 1302, NOT 1100 or 1300
-2. If you see ANY number followed by "sq ft", "sqft", "square feet", or "SF" - that is your total_area
-3. NEVER subtract a percentage from the area - we add waste buffer LATER, not here
-4. Set confidence to "high" if you read the number directly from visible text
-5. Set confidence to "low" ONLY if no area text is visible and you must estimate
-6. Set area_source to "visible_text" if you read it directly from the image`;
+1. ${descriptionAreaHint ? `User said ${descriptionAreaHint} sq ft - USE EXACTLY ${descriptionAreaHint}` : 'Read the exact number from visible text'}
+2. NEVER add or subtract percentages - return the RAW base area
+3. Set confidence to "high" if the user provided the number or you read it from text
+4. The number 150 must stay 150, NOT become 165 (waste buffer is added LATER)`;
 
   console.log(`GEMINI: Using ${modelConfig.visualModel} (max_tokens: ${modelConfig.maxTokensVisual})`);
   

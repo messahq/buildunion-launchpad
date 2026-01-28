@@ -370,17 +370,19 @@ export const useProjectAIAnalysis = () => {
       );
 
       // Build dual-engine structured output for Synthesis Bridge
-      const dualEngineOutput: DualEngineOutput | undefined = imageAnalysisResult?.dualEngine ? {
+      // ALWAYS create this if we have area data, even without full dualEngine response
+      const resolvedArea = imageAnalysisResult?.area || blueprintAnalysis?.detectedArea || null;
+      const dualEngineOutput: DualEngineOutput | undefined = resolvedArea ? {
         gemini: {
-          role: imageAnalysisResult.dualEngine.gemini?.role || "Visual Specialist",
-          model: imageAnalysisResult.dualEngine.gemini?.model || "gemini-2.5-flash",
-          area: imageAnalysisResult.area,
-          areaUnit: imageAnalysisResult.areaUnit || "sq ft",
-          confidence: imageAnalysisResult.areaConfidence || "medium",
-          surfaceType: imageAnalysisResult.surfaceType || "unknown",
-          roomType: imageAnalysisResult.roomType || "unknown",
-          visualFindings: imageAnalysisResult.dualEngine.gemini?.findings?.visible_features as string[] || [],
-          rawExcerpt: imageAnalysisResult.dualEngine.gemini?.rawExcerpt,
+          role: imageAnalysisResult?.dualEngine?.gemini?.role || "Visual Specialist",
+          model: imageAnalysisResult?.dualEngine?.gemini?.model || "gemini-2.5-flash",
+          area: resolvedArea,
+          areaUnit: imageAnalysisResult?.areaUnit || "sq ft",
+          confidence: imageAnalysisResult?.areaConfidence || (imageAnalysisResult?.area ? "high" : "medium"),
+          surfaceType: imageAnalysisResult?.surfaceType || "unknown",
+          roomType: imageAnalysisResult?.roomType || "unknown",
+          visualFindings: imageAnalysisResult?.dualEngine?.gemini?.findings?.visible_features as string[] || [],
+          rawExcerpt: imageAnalysisResult?.dualEngine?.gemini?.rawExcerpt,
         },
         openai: {
           role: "Regulatory Validator",
@@ -389,7 +391,7 @@ export const useProjectAIAnalysis = () => {
           regulatoryNotes: [],
           permitRequired: filterAnswers?.technicalFilter?.affectsStructure || filterAnswers?.technicalFilter?.affectsMechanical || false,
           validationStatus: "pending",
-          rawExcerpt: imageAnalysisResult.dualEngine.gpt?.rawExcerpt,
+          rawExcerpt: imageAnalysisResult?.dualEngine?.gpt?.rawExcerpt,
         }
       } : undefined;
 
