@@ -168,61 +168,43 @@ export function MaterialCalculationTab({
   const [isSaving, setIsSaving] = useState(false);
   
   // Helper to create initial material items
-  // IMPORTANT: AI data arrives as BASE (net) quantities - we apply waste here
-  // Saved data arrives as FINAL quantities - we back-calculate base
+  // IMPORTANT: All incoming data (AI, saved, tasks) arrives as FINAL quantities (with waste already applied)
+  // We back-calculate BASE for display, then show the waste calculation
   const createInitialMaterialItems = useCallback(() => {
+    // Find laminate to sync underlayment
     const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
-    const laminateBaseQtyFromInput = laminateEntry?.quantity || 0;
+    const laminateFinalQty = laminateEntry?.quantity || 0;
     
     return initialMaterials.map((m, idx) => {
       const isEssential = isEssentialMaterial(m.item);
       
-      // For saved data (dataSource === 'saved'), quantities are already final with waste
-      // For AI data (dataSource === 'ai' or 'tasks'), quantities are BASE - apply waste
-      if (dataSource === 'saved') {
-        // Back-calculate base from saved final quantity
-        const finalQty = m.quantity;
-        const baseQty = isEssential 
-          ? Math.round(finalQty / (1 + WASTE_PERCENTAGE)) 
-          : finalQty;
-        
-        return {
-          id: `material-${idx}`,
-          item: m.item,
-          baseQuantity: baseQty,
-          quantity: finalQty,
-          unit: m.unit,
-          unitPrice: m.unitPrice || 0,
-          totalPrice: finalQty * (m.unitPrice || 0),
-          isEssential,
-        };
+      // The incoming quantity is FINAL (with waste already applied for essential items)
+      let finalQty = m.quantity;
+      
+      // Sync underlayment with laminate flooring
+      if (/^underlayment$/i.test(m.item.trim()) && laminateFinalQty > 0) {
+        finalQty = laminateFinalQty;
       }
       
-      // AI/Tasks data: input is BASE quantity, calculate waste-included quantity
-      let baseQty = m.quantity;
-      
-      // Sync underlayment with laminate flooring base quantity
-      if (/^underlayment$/i.test(m.item.trim()) && laminateBaseQtyFromInput > 0) {
-        baseQty = laminateBaseQtyFromInput;
-      }
-      
-      // Calculate final quantity with waste for essential materials
-      const quantityWithWaste = isEssential 
-        ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE)) 
-        : baseQty;
+      // Back-calculate BASE from the FINAL quantity
+      // For essential items: BASE = FINAL / 1.1
+      // For non-essential: BASE = FINAL (no waste applied)
+      const baseQty = isEssential 
+        ? Math.round(finalQty / (1 + WASTE_PERCENTAGE)) 
+        : finalQty;
       
       return {
         id: `material-${idx}`,
         item: m.item,
         baseQuantity: baseQty,
-        quantity: quantityWithWaste,
+        quantity: finalQty,
         unit: m.unit,
         unitPrice: m.unitPrice || 0,
-        totalPrice: quantityWithWaste * (m.unitPrice || 0),
+        totalPrice: finalQty * (m.unitPrice || 0),
         isEssential,
       };
     });
-  }, [initialMaterials, dataSource]);
+  }, [initialMaterials]);
 
   // Helper to create initial labor items
   const createInitialLaborItems = useCallback(() => 
