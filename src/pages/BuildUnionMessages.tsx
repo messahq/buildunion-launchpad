@@ -13,7 +13,8 @@ import {
   Lock,
   Mail,
   Shield,
-  X
+  X,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +48,105 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
+// Email Templates
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  message: string;
+}
+
+const emailTemplates: EmailTemplate[] = [
+  {
+    id: "custom",
+    name: "✍️ Custom Email",
+    subject: "",
+    message: "",
+  },
+  {
+    id: "welcome",
+    name: "👋 Welcome Email",
+    subject: "Welcome to BuildUnion!",
+    message: `Welcome to BuildUnion - Canada's leading construction management platform!
+
+We're excited to have you join our growing community of construction professionals. Here's what you can do with BuildUnion:
+
+• Create and manage construction projects
+• Connect with skilled tradespeople in your area
+• Generate professional quotes and contracts
+• Track project progress in real-time
+
+If you have any questions, don't hesitate to reach out. We're here to help you build better, together.
+
+Best regards,
+The BuildUnion Team`,
+  },
+  {
+    id: "reminder",
+    name: "⏰ Reminder",
+    subject: "Reminder: Action Required",
+    message: `This is a friendly reminder regarding your BuildUnion account.
+
+We noticed that there are pending items that require your attention. Please log in to your account to review and complete any outstanding tasks.
+
+If you need any assistance, our support team is always ready to help.
+
+Thank you for being a valued member of the BuildUnion community.
+
+Best regards,
+The BuildUnion Team`,
+  },
+  {
+    id: "project-update",
+    name: "📋 Project Update",
+    subject: "Project Update from BuildUnion",
+    message: `We wanted to keep you updated on recent developments.
+
+Here are the latest updates:
+
+• [Project milestone or status update]
+• [New features or improvements]
+• [Important deadlines or dates]
+
+Please review these updates and let us know if you have any questions or concerns.
+
+We appreciate your continued partnership with BuildUnion.
+
+Best regards,
+The BuildUnion Team`,
+  },
+  {
+    id: "invoice-reminder",
+    name: "💰 Invoice Reminder",
+    subject: "Invoice Reminder - Payment Due",
+    message: `This is a reminder regarding an outstanding invoice.
+
+We wanted to bring to your attention that payment is due for services rendered. Please review the invoice details and arrange for payment at your earliest convenience.
+
+If you have already made the payment, please disregard this message. If you have any questions about the invoice, please don't hesitate to contact us.
+
+Thank you for your prompt attention to this matter.
+
+Best regards,
+The BuildUnion Team`,
+  },
+  {
+    id: "thank-you",
+    name: "🙏 Thank You",
+    subject: "Thank You from BuildUnion",
+    message: `Thank you for your recent interaction with BuildUnion!
+
+We truly appreciate your trust in our platform and are committed to providing you with the best construction management experience possible.
+
+Your feedback and continued support help us improve and grow. If there's anything we can do to better serve you, please don't hesitate to let us know.
+
+Wishing you success in all your projects!
+
+Warm regards,
+The BuildUnion Team`,
+  },
+];
 
 interface Conversation {
   partnerId: string;
@@ -102,11 +209,22 @@ export default function BuildUnionMessages() {
   
   // Admin Email Compose State
   const [isAdminEmailDialogOpen, setIsAdminEmailDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("custom");
   const [adminEmailTo, setAdminEmailTo] = useState("");
   const [adminEmailName, setAdminEmailName] = useState("");
   const [adminEmailSubject, setAdminEmailSubject] = useState("");
   const [adminEmailMessage, setAdminEmailMessage] = useState("");
   const [isSendingAdminEmail, setIsSendingAdminEmail] = useState(false);
+
+  // Handle template selection
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      setAdminEmailSubject(template.subject);
+      setAdminEmailMessage(template.message);
+    }
+  };
 
   // Premium access check
   const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
@@ -456,6 +574,7 @@ export default function BuildUnionMessages() {
         });
         
         // Clear form and close dialog
+        setSelectedTemplate("custom");
         setAdminEmailTo("");
         setAdminEmailName("");
         setAdminEmailSubject("");
@@ -538,6 +657,31 @@ export default function BuildUnionMessages() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
+              {/* Template Selector */}
+              <div className="space-y-2">
+                <Label htmlFor="email-template" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-amber-500" />
+                  Email Template
+                </Label>
+                <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Select a template..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {emailTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose a pre-written template or write a custom email
+                </p>
+              </div>
+
+              <div className="h-px bg-border" />
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="admin-email-to">Recipient Email *</Label>
@@ -577,15 +721,15 @@ export default function BuildUnionMessages() {
                   placeholder="Write your message here..."
                   value={adminEmailMessage}
                   onChange={(e) => setAdminEmailMessage(e.target.value)}
-                  rows={6}
-                  className="resize-none"
+                  rows={8}
+                  className="resize-none font-mono text-sm"
                 />
               </div>
               
-              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
                 <p className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  Email will be sent from: <span className="font-medium">admin@buildunion.ca</span>
+                  <Mail className="h-3 w-3 text-amber-600" />
+                  Email will be sent from: <span className="font-medium text-amber-700 dark:text-amber-400">admin@buildunion.ca</span>
                 </p>
               </div>
             </div>
