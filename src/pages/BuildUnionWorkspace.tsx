@@ -650,20 +650,20 @@ const BuildUnionProjects2 = () => {
           {!showQuestionnaire && !showFilterQuestions && !selectedProjectId && (
             <>
               {/* Header */}
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
-                    <Wrench className="h-6 w-6 text-white" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shrink-0">
+                    <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-foreground">Projects 2.0</h1>
-                    <p className="text-muted-foreground">Smart workflow based on AI analysis</p>
+                  <div className="min-w-0">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Projects 2.0</h1>
+                    <p className="text-sm text-muted-foreground truncate">Smart workflow based on AI analysis</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {/* Tier indicator */}
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  {/* Tier indicator - hidden on mobile */}
                   {subscription.tier !== "free" && (
-                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400">
+                    <span className="hidden md:inline-block px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400 whitespace-nowrap">
                       {subscription.tier.toUpperCase()} • Up to {TEAM_LIMITS[subscription.tier] === Infinity ? "∞" : TEAM_LIMITS[subscription.tier]} team members
                     </span>
                   )}
@@ -685,10 +685,12 @@ const BuildUnionProjects2 = () => {
                   <Button 
                     onClick={() => setShowQuestionnaire(true)}
                     disabled={!user}
+                    size={isMobile ? "sm" : "default"}
                     className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
                     <Plus className="h-4 w-4" />
-                    New Project
+                    <span className="hidden xs:inline">New Project</span>
+                    <span className="xs:hidden">New</span>
                   </Button>
                 </div>
               </div>

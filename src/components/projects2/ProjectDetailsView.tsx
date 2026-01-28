@@ -1509,72 +1509,75 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
+      <div className="flex flex-col gap-4">
+        {/* Top row: Back button + Title */}
+        <div className="flex items-start gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="mt-1"
+            className="mt-0.5 shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "capitalize",
-                  isTeamMode 
-                    ? "border-cyan-500 text-cyan-600 dark:text-cyan-400"
-                    : "border-amber-500 text-amber-600 dark:text-amber-400"
-                )}
-              >
-                {isTeamMode ? t("projects.teamMode") : t("projects.soloMode")}
-              </Badge>
-              <Badge 
-                variant="outline" 
-                className="capitalize bg-muted/50"
-              >
-                {project.status}
-              </Badge>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate max-w-[200px] sm:max-w-none">{project.name}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "capitalize text-xs",
+                    isTeamMode 
+                      ? "border-cyan-500 text-cyan-600 dark:text-cyan-400"
+                      : "border-amber-500 text-amber-600 dark:text-amber-400"
+                  )}
+                >
+                  {isTeamMode ? t("projects.teamMode") : t("projects.soloMode")}
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="capitalize bg-muted/50 text-xs"
+                >
+                  {project.status}
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-muted-foreground">
               {project.address && (
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {project.address}
+                  <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="truncate max-w-[150px] sm:max-w-none">{project.address}</span>
                 </span>
               )}
               {project.trade && (
                 <span className="flex items-center gap-1">
-                  <Wrench className="h-3.5 w-3.5" />
+                  <Wrench className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                   {project.trade.replace("_", " ")}
                 </span>
               )}
               <span className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
+                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                 {format(new Date(project.created_at), "MMM d, yyyy")}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Header Actions */}
-        <div className="flex items-center gap-3">
+        {/* Header Actions - separate row on mobile */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:justify-end">
           {/* Total Budget Display - synced with Materials tab */}
           <Badge
             variant="outline"
             className={cn(
-              "text-sm font-semibold gap-1.5 hidden sm:flex",
+              "text-xs sm:text-sm font-semibold gap-1.5",
               (summary?.total_cost || 0) > 0
                 ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
                 : "border-muted"
             )}
           >
-            <DollarSign className="h-3.5 w-3.5" />
-            Total: ${(summary?.total_cost || 0).toLocaleString()}
+            <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <span className="hidden xs:inline">Total:</span> ${(summary?.total_cost || 0).toLocaleString()}
           </Badge>
           {/* Generate Report Button - Premium Feature */}
           <div className="relative">
@@ -1584,7 +1587,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               onClick={handleGenerateReport}
               disabled={isGeneratingReport || !isPremium}
               className={cn(
-                "gap-2",
+                "gap-1.5 sm:gap-2",
                 isPremium 
                   ? "border-amber-500/50 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20" 
                   : "opacity-70"
