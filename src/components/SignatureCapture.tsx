@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, forwardRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,12 @@ interface SignatureCaptureProps {
   initialSignature?: SignatureData | null;
 }
 
-const SignatureCapture = ({ 
+const SignatureCapture = forwardRef<HTMLDivElement, SignatureCaptureProps>(({ 
   onSignatureChange, 
   label = "Signature",
   placeholder = "Type your full name",
   initialSignature
-}: SignatureCaptureProps) => {
+}, ref) => {
   const [activeTab, setActiveTab] = useState<'draw' | 'type'>('type');
   const [typedName, setTypedName] = useState("");
   const [isDrawing, setIsDrawing] = useState(false);
@@ -199,7 +199,7 @@ const SignatureCapture = ({
   // Render locked/existing signature view
   if (isLocked && lockedSignature) {
     return (
-      <div className="space-y-3">
+      <div ref={ref} className="space-y-3">
         <Label className="text-sm font-medium">{label}</Label>
         
         <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
@@ -244,7 +244,7 @@ const SignatureCapture = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div ref={ref} className="space-y-3">
       <Label className="text-sm font-medium">{label}</Label>
       
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'draw' | 'type')}>
@@ -333,6 +333,8 @@ const SignatureCapture = ({
       )}
     </div>
   );
-};
+});
+
+SignatureCapture.displayName = "SignatureCapture";
 
 export default SignatureCapture;
