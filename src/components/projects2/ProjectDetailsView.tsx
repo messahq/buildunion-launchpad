@@ -1182,6 +1182,39 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   }, [summary?.id]);
 
   // ============================================
+  // PROJECT COMPLETION HANDLER
+  // ============================================
+  
+  const handleCompleteProject = useCallback(async () => {
+    if (!project?.id) {
+      toast.error(t("workspace.statusUpdateFailed", "Failed to update status"));
+      return;
+    }
+    
+    try {
+      const newStatus = project.status === 'completed' ? 'active' : 'completed';
+      const { error } = await supabase
+        .from("projects")
+        .update({ status: newStatus })
+        .eq("id", project.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setProject(prev => prev ? { ...prev, status: newStatus } : null);
+      
+      toast.success(
+        newStatus === 'completed' 
+          ? t("workspace.projectCompleted", "Project marked as completed!") 
+          : t("workspace.projectReopened", "Project reopened")
+      );
+    } catch (error) {
+      console.error("Error updating project status:", error);
+      toast.error(t("workspace.statusUpdateFailed", "Failed to update status"));
+    }
+  }, [project?.id, project?.status, t]);
+
+  // ============================================
   // MANUAL OVERRIDE PERSISTENCE (Blueprint & Conflicts)
   // ============================================
   
@@ -1940,6 +1973,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             projectAddress={project.address || undefined}
             projectTrade={project.trade || undefined}
             projectCreatedAt={project.created_at}
+            projectStatus={project.status}
             operationalTruth={operationalTruth}
             companyBranding={{
               name: companyBranding.name,
@@ -1963,6 +1997,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 setFlashingTab(null);
               }, 300);
             }}
+            onCompleteProject={handleCompleteProject}
             dataSourcesInfo={{
               taskCount: tasks.length,
               completedTasks: tasks.filter(t => t.status === "completed").length,

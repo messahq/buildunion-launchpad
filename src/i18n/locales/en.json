@@ -36,7 +36,9 @@
       "contractsOptional": "Contracts not needed for personal projects",
       "teamNotApplicable": "Team features disabled in Solo Mode",
       "healthScoreNote": "Health score calculated from {{count}} relevant data sources"
-    }
+    },
+    "completeDesc": "Mark project as finished",
+    "reopenDesc": "Mark project as active again"
   },
   "baseline": {
     "title": "Project Baseline",

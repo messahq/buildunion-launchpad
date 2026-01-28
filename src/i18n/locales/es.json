@@ -36,7 +36,9 @@
       "contractsOptional": "No se necesitan contratos para proyectos personales",
       "teamNotApplicable": "Funciones de equipo deshabilitadas en Modo Solo",
       "healthScoreNote": "Puntuación de salud calculada de {{count}} fuentes de datos relevantes"
-    }
+    },
+    "completeDesc": "Marcar proyecto como terminado",
+    "reopenDesc": "Marcar proyecto como activo nuevamente"
   },
   "baseline": {
     "title": "Línea Base del Proyecto",

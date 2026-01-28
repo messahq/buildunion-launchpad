@@ -36,7 +36,9 @@
       "contractsOptional": "Contratos não são necessários para projetos pessoais",
       "teamNotApplicable": "Recursos de equipe desativados no Modo Solo",
       "healthScoreNote": "Pontuação de saúde calculada a partir de {{count}} fontes de dados relevantes"
-    }
+    },
+    "completeDesc": "Marcar projeto como concluído",
+    "reopenDesc": "Marcar projeto como ativo novamente"
   },
   "baseline": {
     "title": "Linha de Base do Projeto",
