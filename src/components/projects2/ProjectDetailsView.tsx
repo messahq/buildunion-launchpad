@@ -2264,12 +2264,12 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               const docId = crypto.randomUUID();
               const docPath = `${user.id}/${project.id}/${docId}-${docFileName}`;
               
-              // Upload to storage
+              // Upload to storage (use text/plain as markdown mime type is not supported)
               console.log('[Materials Save] Uploading to storage path:', docPath);
-              const blob = new Blob([markdownContent], { type: 'text/markdown' });
+              const blob = new Blob([markdownContent], { type: 'text/plain' });
               const { error: uploadError, data: uploadData } = await supabase.storage
                 .from('project-documents')
-                .upload(docPath, blob, { upsert: true, contentType: 'text/markdown' });
+                .upload(docPath, blob, { upsert: true, contentType: 'text/plain' });
               
               if (uploadError) {
                 console.error('[Materials Save] Failed to upload cost breakdown document:', uploadError);
