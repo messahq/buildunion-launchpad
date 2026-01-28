@@ -2057,13 +2057,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         <TabsContent value="materials" className="mt-6">
           <MaterialCalculationTab 
             materials={(() => {
-              // First check if we have saved line_items in the summary
+              // First check if we have saved line_items in the summary (must be object with materials array)
               const savedLineItems = summary?.line_items as { materials?: Array<{ item: string; quantity: number; unit: string; unitPrice: number }> } | null;
-              if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
+              if (savedLineItems && typeof savedLineItems === 'object' && !Array.isArray(savedLineItems) && 
+                  savedLineItems.materials && savedLineItems.materials.length > 0) {
                 return savedLineItems.materials;
               }
               
-              // Otherwise aggregate materials from "Order" tasks
+              // Priority 2: Use AI-detected materials from photo_estimate or ai_workflow_config
+              if (aiAnalysis?.materials && aiAnalysis.materials.length > 0) {
+                return aiAnalysis.materials;
+              }
+              
+              // Priority 3: Aggregate materials from "Order" tasks
               type CostEntry = { item: string; quantity: number; unit: string; unitPrice: number };
               const materialMap: Record<string, CostEntry> = {};
               
@@ -2083,11 +2089,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 }
               });
               
-              const result = Object.values(materialMap);
-              if (result.length === 0 && aiAnalysis?.materials) {
-                return aiAnalysis.materials;
-              }
-              return result;
+              return Object.values(materialMap);
             })()}
             labor={(() => {
               // First check if we have saved line_items in the summary
