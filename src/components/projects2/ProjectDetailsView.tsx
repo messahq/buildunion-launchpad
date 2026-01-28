@@ -701,11 +701,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     fetchCompanyBranding();
   }, [user?.id, user?.email]);
 
+  // Extract stable values from summary for dependency tracking
+  // This prevents infinite re-fetching when summary object reference changes
+  const summaryId = summary?.id;
+  const photoEstimateMaterialsCount = (summary?.photo_estimate as PhotoEstimateData | undefined)?.materials?.length || 0;
+  
   // Fetch tasks with budget data - wait for summary to load first
   useEffect(() => {
     // Don't run until we have summary data loaded (to check for AI materials)
     // The summary contains photo_estimate.materials which we need for auto-generation
-    if (loading || !summary) return;
+    if (loading || !summaryId) return;
+    
+    // Use isMounted flag to prevent state updates after unmount
+    let isMounted = true;
     
     const fetchTasks = async () => {
       if (!projectId) return;
@@ -719,6 +727,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           .order("due_date", { ascending: true });
 
         if (tasksError) throw tasksError;
+        
+        if (!isMounted) return;
 
         // Fetch team members for enrichment
         const { data: membersData } = await supabase
@@ -726,10 +736,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           .select("user_id, role")
           .eq("project_id", projectId);
 
+        if (!isMounted) return;
+
         // Get profile info for each member
         const memberProfiles: Record<string, { full_name: string; avatar_url?: string }> = {};
         if (membersData) {
           for (const member of membersData) {
+            if (!isMounted) return;
             const { data: profile } = await supabase
               .from("profiles")
               .select("full_name, avatar_url")
@@ -744,6 +757,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             }
           }
         }
+
+        if (!isMounted) return;
 
         // Enrich tasks
         const enrichedTasks = (tasksData || []).map((task) => ({
@@ -773,7 +788,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               project?.description || undefined
             );
             
-            if (generatedTasks.length > 0) {
+            if (generatedTasks.length > 0 && isMounted) {
               // Save to database
               const tasksToInsert = generatedTasks.map(t => ({
                 project_id: t.project_id,
@@ -794,6 +809,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 .insert(tasksToInsert)
                 .select();
               
+              if (!isMounted) return;
+              
               if (insertError) {
                 console.error("[TaskAutoGen] Error saving tasks:", insertError);
                 // Still show generated tasks in memory as fallback
@@ -811,24 +828,28 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 }));
                 setTasks(enrichedInserted);
               }
-            } else {
+            } else if (isMounted) {
               setTasks([]);
             }
-          } else {
+          } else if (isMounted) {
             setTasks([]);
           }
-          setTotalTaskBudget(0);
+          if (isMounted) setTotalTaskBudget(0);
         } else {
-          setTasks(enrichedTasks);
-          
-          // Calculate total budget
-          const total = enrichedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
-          setTotalTaskBudget(total);
+          if (isMounted) {
+            setTasks(enrichedTasks);
+            
+            // Calculate total budget
+            const total = enrichedTasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+            setTotalTaskBudget(total);
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
+        // Ignore abort errors - they're expected on cleanup
+        if (err?.message?.includes('abort') || err?.name === 'AbortError') return;
         console.error("Error fetching tasks:", err);
       } finally {
-        setTasksLoading(false);
+        if (isMounted) setTasksLoading(false);
       }
     };
 
@@ -905,9 +926,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [projectId, user?.id, summary, project?.description, loading]);
+  // Use stable primitive values instead of object references to prevent infinite loops
+  }, [projectId, user?.id, summaryId, photoEstimateMaterialsCount, project?.description, loading]);
 
   // Fetch document and contract counts for Data Sources synchronization
   useEffect(() => {
