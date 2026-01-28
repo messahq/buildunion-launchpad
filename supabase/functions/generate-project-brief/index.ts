@@ -187,10 +187,166 @@ Other Uploaded Files: ${otherDocs.map((d: any) => d.file_name).join(", ")}
       }
     }
 
-    // Parse AI analysis from summary
-    const aiAnalysis = summary?.blueprint_analysis || {};
-    const calculatorResults = summary?.calculator_results || {};
+    // ============================================
+    // COMPREHENSIVE DATA EXTRACTION FROM ALL SOURCES
+    // ============================================
+    
+    // Parse ALL data sources from project_summaries (CRITICAL: read from multiple fields)
+    const blueprintAnalysis = summary?.blueprint_analysis || {};
+    const photoEstimate = summary?.photo_estimate || {};
+    const calculatorResults = summary?.calculator_results || [];
     const workflowConfig = summary?.ai_workflow_config || {};
+    const verifiedFacts = summary?.verified_facts || {};
+    const lineItems = summary?.line_items || [];
+    const templateItems = summary?.template_items || [];
+    
+    // ============================================
+    // AREA DETECTION - PRIORITY CHAIN
+    // ============================================
+    // Priority: photo_estimate > ai_workflow_config > blueprint_analysis > calculator_results > task extraction
+    
+    let detectedArea: number | null = null;
+    let areaUnit = "sq ft";
+    let areaSource = "Not detected";
+    
+    // 1. Check photo_estimate first (highest priority)
+    if (photoEstimate.area && typeof photoEstimate.area === "number" && photoEstimate.area > 0) {
+      detectedArea = photoEstimate.area;
+      areaUnit = photoEstimate.areaUnit || "sq ft";
+      areaSource = "Photo AI Analysis";
+    }
+    // 2. Check ai_workflow_config
+    else if (workflowConfig.detectedArea && typeof workflowConfig.detectedArea === "number" && workflowConfig.detectedArea > 0) {
+      detectedArea = workflowConfig.detectedArea;
+      areaUnit = workflowConfig.areaUnit || "sq ft";
+      areaSource = "AI Workflow Config";
+    }
+    // 3. Check blueprint_analysis
+    else if (blueprintAnalysis.area && typeof blueprintAnalysis.area === "number" && blueprintAnalysis.area > 0) {
+      detectedArea = blueprintAnalysis.area;
+      areaUnit = blueprintAnalysis.areaUnit || "sq ft";
+      areaSource = "Blueprint Analysis";
+    }
+    // 4. Check calculator_results (may be array)
+    else if (Array.isArray(calculatorResults) && calculatorResults.length > 0) {
+      const calcWithArea = calculatorResults.find((c: any) => c.detectedArea && c.detectedArea > 0);
+      if (calcWithArea) {
+        detectedArea = calcWithArea.detectedArea;
+        areaUnit = calcWithArea.areaUnit || "sq ft";
+        areaSource = "Calculator Results";
+      }
+    } else if (typeof calculatorResults === "object" && calculatorResults.detectedArea) {
+      detectedArea = calculatorResults.detectedArea;
+      areaUnit = calculatorResults.areaUnit || "sq ft";
+      areaSource = "Calculator Results";
+    }
+    // 5. Extract from task descriptions (regex fallback)
+    if (detectedArea === null && tasks.length > 0) {
+      const allTaskText = tasks.map(t => `${t.title} ${t.description || ""}`).join(" ");
+      const areaMatch = allTaskText.match(/(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*ft|square\s*feet|m²|sq\.?\s*m|sqft)/i);
+      if (areaMatch) {
+        detectedArea = parseFloat(areaMatch[1].replace(/,/g, ""));
+        areaSource = "Task Extraction";
+      }
+    }
+    
+    // ============================================
+    // MATERIALS DETECTION - COMPREHENSIVE MERGE
+    // ============================================
+    // Merge materials from ALL sources
+    
+    let allMaterials: Array<{ item: string; quantity: number; unit: string; source?: string }> = [];
+    
+    // 1. photo_estimate.materials
+    if (photoEstimate.materials && Array.isArray(photoEstimate.materials)) {
+      photoEstimate.materials.forEach((m: any) => {
+        allMaterials.push({
+          item: m.item || m.name || "Unknown",
+          quantity: m.quantity || m.amount || 0,
+          unit: m.unit || "pcs",
+          source: "Photo AI"
+        });
+      });
+    }
+    
+    // 2. ai_workflow_config.materials
+    if (workflowConfig.materials && Array.isArray(workflowConfig.materials)) {
+      workflowConfig.materials.forEach((m: any) => {
+        allMaterials.push({
+          item: m.item || m.name || "Unknown",
+          quantity: m.quantity || m.amount || 0,
+          unit: m.unit || "pcs",
+          source: "Workflow Config"
+        });
+      });
+    }
+    
+    // 3. blueprint_analysis.materials
+    if (blueprintAnalysis.materials && Array.isArray(blueprintAnalysis.materials)) {
+      blueprintAnalysis.materials.forEach((m: any) => {
+        allMaterials.push({
+          item: m.item || m.name || "Unknown",
+          quantity: m.quantity || m.amount || 0,
+          unit: m.unit || "pcs",
+          source: "Blueprint"
+        });
+      });
+    }
+    
+    // 4. line_items (saved materials from Materials tab)
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      lineItems.forEach((li: any) => {
+        if (li.description || li.item || li.name) {
+          allMaterials.push({
+            item: li.description || li.item || li.name || "Item",
+            quantity: li.quantity || 1,
+            unit: li.unit || "pcs",
+            source: "Line Items (Saved)"
+          });
+        }
+      });
+    }
+    
+    // 5. Extract materials from tasks
+    if (tasks.length > 0) {
+      tasks.forEach(t => {
+        // Check if task has material-like info
+        if (t.description) {
+          const materialMatch = t.description.match(/(\d+(?:\.\d+)?)\s*(?:pcs|boxes|bags|rolls|sheets|sqft|sq ft)/gi);
+          if (materialMatch) {
+            allMaterials.push({
+              item: t.title,
+              quantity: parseFloat(materialMatch[0]) || 1,
+              unit: materialMatch[0].replace(/[\d.]/g, "").trim() || "pcs",
+              source: "Task"
+            });
+          }
+        }
+      });
+    }
+    
+    // Deduplicate materials by item name
+    const materialMap = new Map<string, typeof allMaterials[0]>();
+    allMaterials.forEach(m => {
+      const key = m.item.toLowerCase().trim();
+      if (!materialMap.has(key) || (materialMap.get(key)?.source === "Task" && m.source !== "Task")) {
+        materialMap.set(key, m);
+      }
+    });
+    const uniqueMaterials = Array.from(materialMap.values());
+    
+    // ============================================
+    // COST CALCULATIONS
+    // ============================================
+    const materialCost = summary?.material_cost || 0;
+    const laborCost = summary?.labor_cost || 0;
+    const totalCost = summary?.total_cost || 0;
+    const taskBudgetTotal = tasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+    
+    // Line items total (if separately tracked)
+    const lineItemsTotal = lineItems.reduce((sum: number, li: any) => {
+      return sum + ((li.quantity || 1) * (li.unitPrice || li.unit_price || 0));
+    }, 0);
 
     // Calculate task statistics
     const taskStats = {
@@ -199,11 +355,6 @@ Other Uploaded Files: ${otherDocs.map((d: any) => d.file_name).join(", ")}
       inProgress: tasks.filter(t => t.status === "in_progress").length,
       pending: tasks.filter(t => t.status === "pending").length,
     };
-
-    // Calculate budget from tasks
-    const totalBudget = tasks.reduce((sum, t) => sum + (t.total_cost || 0), 0);
-    const materialCost = summary?.material_cost || 0;
-    const laborCost = summary?.labor_cost || 0;
 
     // Contract statistics
     const contractStats = {
@@ -238,10 +389,50 @@ ${weatherData.forecast.slice(0, 3).map(f =>
 `;
       }
     }
+    
+    // ============================================
+    // CALCULATE 16 DATA SOURCES VERIFICATION STATUS
+    // ============================================
+    
+    // 8 Pillars of Operational Truth
+    const pillarStatus = {
+      area: detectedArea !== null && detectedArea > 0,
+      materials: uniqueMaterials.length > 0,
+      blueprint: blueprintAnalysis.hasBlueprint === true || blueprintAnalysis.analyzed === true,
+      obc: workflowConfig.obcStatus && workflowConfig.obcStatus !== "pending",
+      conflict: workflowConfig.conflictStatus && workflowConfig.conflictStatus !== "pending",
+      mode: true, // Always verified
+      size: true, // Always verified
+      confidence: blueprintAnalysis.confidence && blueprintAnalysis.confidence !== "low",
+    };
+    
+    const verifiedPillars = Object.values(pillarStatus).filter(Boolean).length;
+    
+    // 8 Workflow Data Sources
+    const workflowStatus = {
+      tasks: taskStats.total > 0 && taskStats.completed === taskStats.total,
+      documents: documents.length > 0 && contracts.length > 0,
+      contracts: contractStats.signed > 0,
+      team: members.length > 0, // More than owner
+      timeline: summary?.project_start_date && summary?.project_end_date,
+      clientInfo: summary?.client_name && summary?.client_email,
+      siteMap: project.address && project.address.length > 0,
+      budget: (materialCost > 0 || laborCost > 0 || totalCost > 0),
+    };
+    
+    const verifiedWorkflow = Object.values(workflowStatus).filter(Boolean).length;
+    const totalVerified = verifiedPillars + verifiedWorkflow;
+    
+    // Calculate operational readiness percentage
+    const operationalReadiness = Math.round((totalVerified / 16) * 100);
 
-    // Build comprehensive context for AI
+    // ============================================
+    // BUILD COMPREHENSIVE PROJECT CONTEXT FOR AI
+    // ============================================
+    
     const projectContext = `
 PROJECT DATA SUMMARY - ${weatherData ? "17" : "16"} DATA SOURCES
+(COMPREHENSIVE INGESTION FROM ALL DATABASE FIELDS)
 
 == PROJECT BASICS ==
 Name: ${project.name}
@@ -252,55 +443,67 @@ Description: ${project.description || "No description"}
 Created: ${project.created_at}
 
 == 8 PILLARS OF OPERATIONAL TRUTH ==
-1. Confirmed Area: ${aiAnalysis.area || "Not detected"} ${aiAnalysis.areaUnit || "sq ft"}
-2. Materials Count: ${aiAnalysis.materials?.length || 0} items
-3. Blueprint Status: ${aiAnalysis.hasBlueprint ? "Analyzed" : "None/Pending"}
-4. OBC Compliance: ${workflowConfig.obcStatus || "Pending"}
-5. Conflict Status: ${workflowConfig.conflictStatus || "Pending"}
-6. Project Mode: ${summary?.mode || "solo"}
-7. Project Size: ${workflowConfig.projectSize || "medium"}
-8. AI Confidence: ${aiAnalysis.confidence || "Unknown"}
+| Pillar | Value | Source | Verified |
+|--------|-------|--------|----------|
+| 1. Confirmed Area | ${detectedArea ? `${detectedArea} ${areaUnit}` : "Not detected"} | ${areaSource} | ${pillarStatus.area ? "✅" : "❌"} |
+| 2. Materials Count | ${uniqueMaterials.length} items | ${uniqueMaterials.length > 0 ? uniqueMaterials[0].source || "Multiple" : "None"} | ${pillarStatus.materials ? "✅" : "❌"} |
+| 3. Blueprint Status | ${blueprintAnalysis.hasBlueprint ? "Analyzed" : "None/Pending"} | ${blueprintAnalysis.hasBlueprint ? "Blueprint AI" : "N/A"} | ${pillarStatus.blueprint ? "✅" : "❌"} |
+| 4. OBC Compliance | ${workflowConfig.obcStatus || "Pending"} | ${workflowConfig.obcSource || "N/A"} | ${pillarStatus.obc ? "✅" : "❌"} |
+| 5. Conflict Status | ${workflowConfig.conflictStatus || "Pending"} | Dual-Engine | ${pillarStatus.conflict ? "✅" : "❌"} |
+| 6. Project Mode | ${summary?.mode || "solo"} | Config | ✅ |
+| 7. Project Size | ${workflowConfig.projectSize || "medium"} | AI Analysis | ✅ |
+| 8. AI Confidence | ${blueprintAnalysis.confidence || photoEstimate.confidence || "Unknown"} | AI Engine | ${pillarStatus.confidence ? "✅" : "❌"} |
 
-== TASK PROGRESS (Tab 2: Team & Tasks) ==
-Total Tasks: ${taskStats.total}
-Completed: ${taskStats.completed} (${taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0}%)
-In Progress: ${taskStats.inProgress}
-Pending: ${taskStats.pending}
+**Pillars Verified: ${verifiedPillars}/8**
 
-== DOCUMENTS (Tab 3: Documents) ==
-Uploaded Files: ${documents.length}
-Document Types: ${[...new Set(documents.map(d => d.file_name.split('.').pop()))].join(", ") || "None"}
-${uploadedDocumentsSummary}
-== CONTRACTS (Tab 4: Contracts) ==
-Draft: ${contractStats.draft}
-Sent to Client: ${contractStats.sent}
-Signed: ${contractStats.signed}
-Total Contracts: ${contracts.length}
+== 8 WORKFLOW DATA SOURCES ==
+| Data Source | Status | Value | Verified |
+|-------------|--------|-------|----------|
+| 1. Tasks | ${taskStats.total > 0 ? `${taskStats.completed}/${taskStats.total} completed` : "None"} | ${taskStats.total > 0 ? `${Math.round((taskStats.completed / taskStats.total) * 100)}%` : "0%"} | ${workflowStatus.tasks ? "✅" : "❌"} |
+| 2. Documents | ${documents.length} files | Types: ${[...new Set(documents.map(d => d.file_name.split('.').pop()))].join(", ") || "None"} | ${workflowStatus.documents ? "✅" : "❌"} |
+| 3. Contracts | ${contracts.length} total | Draft: ${contractStats.draft}, Sent: ${contractStats.sent}, Signed: ${contractStats.signed} | ${workflowStatus.contracts ? "✅" : "❌"} |
+| 4. Team | ${members.length + 1} members | ${members.map(m => m.role).join(", ") || "Owner only"} | ${workflowStatus.team ? "✅" : "❌"} |
+| 5. Timeline | ${summary?.project_start_date || "Not set"} to ${summary?.project_end_date || "Not set"} | ${summary?.project_start_date && summary?.project_end_date ? `${Math.ceil((new Date(summary.project_end_date).getTime() - new Date(summary.project_start_date).getTime()) / (1000 * 60 * 60 * 24))} days` : "N/A"} | ${workflowStatus.timeline ? "✅" : "❌"} |
+| 6. Client Info | ${summary?.client_name || "Not specified"} | Email: ${summary?.client_email || "N/A"}, Phone: ${summary?.client_phone || "N/A"} | ${workflowStatus.clientInfo ? "✅" : "❌"} |
+| 7. Site Map | ${project.address ? "Available" : "Missing"} | ${project.address || "No address"} | ${workflowStatus.siteMap ? "✅" : "❌"} |
+| 8. Budget | $${totalCost > 0 ? totalCost.toLocaleString() : "0"} CAD | Material: $${materialCost.toLocaleString()}, Labor: $${laborCost.toLocaleString()} | ${workflowStatus.budget ? "✅" : "❌"} |
 
-== SITE MAP (Tab 5) ==
-Address Available: ${project.address ? "Yes" : "No"}
+**Workflow Sources Verified: ${verifiedWorkflow}/8**
 
-== BUDGET BREAKDOWN (Tab 6: Materials) ==
+== OVERALL VERIFICATION ==
+**Total Data Sources Verified: ${totalVerified}/16 (${operationalReadiness}%)**
+**Operational Readiness: ${operationalReadiness}%**
+**Classification: ${operationalReadiness >= 75 ? "VERIFIED" : operationalReadiness >= 50 ? "CONDITIONAL" : "INCOMPLETE"}**
+
+== DETAILED TASK BREAKDOWN ==
+${tasks.length > 0 ? tasks.map(t => `- [${t.status?.toUpperCase() || "PENDING"}] ${t.title}${t.due_date ? ` (Due: ${t.due_date})` : ""}${t.total_cost ? ` - $${t.total_cost}` : ""}`).join("\n") : "No tasks created"}
+
+== MATERIALS LIST (${uniqueMaterials.length} items detected) ==
+${uniqueMaterials.length > 0 ? uniqueMaterials.map(m => `- ${m.item}: ${m.quantity} ${m.unit} [Source: ${m.source}]`).join("\n") : "No materials detected - CRITICAL DATA GAP"}
+
+== COST BREAKDOWN ==
 Material Cost: $${materialCost.toLocaleString()} CAD
 Labor Cost: $${laborCost.toLocaleString()} CAD
-Total Project Cost: $${(summary?.total_cost || totalBudget).toLocaleString()} CAD
-Task Budget Total: $${totalBudget.toLocaleString()} CAD
+Line Items Total: $${lineItemsTotal.toLocaleString()} CAD
+Task Budget Total: $${taskBudgetTotal.toLocaleString()} CAD
+**Total Project Cost: $${totalCost > 0 ? totalCost.toLocaleString() : (materialCost + laborCost + taskBudgetTotal).toLocaleString()} CAD**
 
-== TEAM (Tab 7: Team) ==
-Team Members: ${members.length + 1} (including owner)
-Roles: ${members.map(m => m.role).join(", ") || "Owner only"}
-
-== CLIENT INFO ==
+== CLIENT INFORMATION ==
 Client Name: ${summary?.client_name || "Not specified"}
 Client Email: ${summary?.client_email || "Not specified"}
 Client Phone: ${summary?.client_phone || "Not specified"}
+Client Address: ${summary?.client_address || "Not specified"}
 
-== MATERIALS LIST ==
-${aiAnalysis.materials?.map((m: any) => `- ${m.item}: ${m.quantity} ${m.unit}`).join("\n") || "No materials detected"}
+== DOCUMENTS UPLOADED ==
+${documents.length > 0 ? documents.map(d => `- ${d.file_name} (${d.file_size ? Math.round(d.file_size / 1024) + "KB" : "Size unknown"})`).join("\n") : "No documents uploaded"}
+${uploadedDocumentsSummary}
 
 == PROJECT TIMELINE ==
 Start Date: ${summary?.project_start_date || "Not set"}
 End Date: ${summary?.project_end_date || "Not set"}
+Duration: ${summary?.project_start_date && summary?.project_end_date 
+  ? `${Math.ceil((new Date(summary.project_end_date).getTime() - new Date(summary.project_start_date).getTime()) / (1000 * 60 * 60 * 24))} calendar days` 
+  : "Timeline not established"}
 ${weatherSection}
 `;
 
@@ -526,7 +729,7 @@ ${weatherData.forecast?.slice(0, 3).map(f => `- **${f.date}:** ${f.temp_min}°C 
         dataSources: weatherData ? 17 : 16,
         taskCount: taskStats.total,
         completionRate: taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0,
-        totalBudget: summary?.total_cost || totalBudget,
+        totalBudget: summary?.total_cost || taskBudgetTotal,
         contractCount: contracts.length,
         documentCount: documents.length,
         teamSize: members.length + 1,
