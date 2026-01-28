@@ -271,15 +271,9 @@ export const ProjectCommandCenter = ({
       missingItems: areaMissing.length > 0 ? areaMissing : undefined,
     });
     
-    // Materials - Check if contract is signed for warning
+    // Materials - Only show materials-related warnings
     const materialsMissing: string[] = [];
     if (operationalTruth.materialsCount === 0) materialsMissing.push("No materials detected by AI");
-    
-    // Add warning if materials exist but contract not signed
-    const signedCount = dataSourcesInfo?.signedContracts ?? 0;
-    if (operationalTruth.materialsCount > 0 && signedCount === 0) {
-      materialsMissing.push("⚠️ Contract not signed - client approval pending");
-    }
     
     sources.push({
       id: "materials",

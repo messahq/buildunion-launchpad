@@ -176,6 +176,7 @@ function generateCitationSources(
         documentType: "image",
         contextSnippet: `Gemini Vision detected EXACTLY ${detectedArea.toLocaleString()} ${dualEngineOutput.gemini.areaUnit} - ${extractionMethod}. Surface: ${dualEngineOutput.gemini.surfaceType}. Confidence: ${confidence}. This is the BASE AREA - waste buffer (+10%) applied separately.`,
         timestamp: new Date().toISOString(),
+        linkedPillar: 'area', // Auto-link to Area pillar
       });
     } else {
       // Fallback: area exists but no AI engine output (rare case)
@@ -203,6 +204,7 @@ function generateCitationSources(
       documentType: "log",
       contextSnippet: `${materialsNote} Essential materials (${workTypeDesc}) use base quantity with +10% waste buffer displayed separately.`,
       timestamp: lastModified?.toISOString() || new Date().toISOString(),
+      linkedPillar: 'materials', // Auto-link to Materials pillar
     });
   }
   

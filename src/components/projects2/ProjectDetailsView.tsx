@@ -1069,11 +1069,29 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       }
     });
 
+    // Register AI analysis citations (MAT-AI for materials, linked to materials pillar)
+    const photoEstimate = summary?.photo_estimate;
+    const aiConfig = summary?.ai_workflow_config;
+    const materials = photoEstimate?.materials || aiConfig?.aiAnalysis?.materials || [];
+    const detectedArea = photoEstimate?.area || aiConfig?.aiAnalysis?.area;
+    
+    // Register Materials AI citation if materials exist
+    if (materials.length > 0 && !citations.some(c => c.sourceId === 'MAT-AI')) {
+      citationsToRegister.push({
+        sourceId: 'MAT-AI',
+        documentName: 'Material Estimation Report',
+        documentType: 'log',
+        contextSnippet: `AI calculated ${materials.length} material items using BASE AREA of ${detectedArea?.toLocaleString() || 'detected'} sq ft. Essential materials use base quantity with +10% waste buffer applied in Materials tab.`,
+        timestamp: new Date().toISOString(),
+        linkedPillar: 'materials', // Link to Materials pillar
+      });
+    }
+
     // Register all new citations
     if (citationsToRegister.length > 0) {
       registerMultipleCitations(citationsToRegister);
     }
-  }, [projectId, project?.site_images, projectDocuments, citations, registerMultipleCitations]);
+  }, [projectId, project?.site_images, projectDocuments, citations, registerMultipleCitations, summary?.photo_estimate, summary?.ai_workflow_config]);
 
   // Handle citation click - open source proof panel
   const handleCitationClick = useCallback((citation: CitationSource) => {
