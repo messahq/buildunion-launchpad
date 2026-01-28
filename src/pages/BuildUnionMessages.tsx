@@ -10,7 +10,10 @@ import {
   Check,
   CheckCheck,
   Crown,
-  Lock
+  Lock,
+  Mail,
+  Shield,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,11 +22,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -74,6 +88,7 @@ export default function BuildUnionMessages() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { subscription } = useSubscription();
+  const { isAdmin } = useAdminRole();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -84,6 +99,14 @@ export default function BuildUnionMessages() {
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Admin Email Compose State
+  const [isAdminEmailDialogOpen, setIsAdminEmailDialogOpen] = useState(false);
+  const [adminEmailTo, setAdminEmailTo] = useState("");
+  const [adminEmailName, setAdminEmailName] = useState("");
+  const [adminEmailSubject, setAdminEmailSubject] = useState("");
+  const [adminEmailMessage, setAdminEmailMessage] = useState("");
+  const [isSendingAdminEmail, setIsSendingAdminEmail] = useState(false);
 
   // Premium access check
   const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
@@ -397,6 +420,58 @@ export default function BuildUnionMessages() {
     }
   };
 
+  // Send Admin Email
+  const sendAdminEmail = async () => {
+    if (!adminEmailTo.trim() || !adminEmailSubject.trim() || !adminEmailMessage.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(adminEmailTo.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSendingAdminEmail(true);
+
+    try {
+      const response = await supabase.functions.invoke("send-admin-email", {
+        body: {
+          recipientEmail: adminEmailTo.trim(),
+          recipientName: adminEmailName.trim() || undefined,
+          subject: adminEmailSubject.trim(),
+          message: adminEmailMessage.trim(),
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.success) {
+        toast.success(`Email sent to ${adminEmailTo}`, {
+          description: `Subject: ${adminEmailSubject}`,
+        });
+        
+        // Clear form and close dialog
+        setAdminEmailTo("");
+        setAdminEmailName("");
+        setAdminEmailSubject("");
+        setAdminEmailMessage("");
+        setIsAdminEmailDialogOpen(false);
+      } else {
+        throw new Error(response.data?.error || "Failed to send email");
+      }
+    } catch (err) {
+      console.error("Error sending admin email:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to send email");
+    } finally {
+      setIsSendingAdminEmail(false);
+    }
+  };
+
   const totalUnread = conversations.reduce((acc, c) => acc + c.unreadCount, 0);
 
   return (
@@ -435,7 +510,114 @@ export default function BuildUnionMessages() {
               Direct messages with your connections
             </p>
           </div>
+          
+          {/* Admin Email Button */}
+          {isAdmin && (
+            <Button
+              onClick={() => setIsAdminEmailDialogOpen(true)}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              <Mail className="h-4 w-4" />
+              Admin Email
+            </Button>
+          )}
         </div>
+
+        {/* Admin Email Compose Dialog */}
+        <Dialog open={isAdminEmailDialogOpen} onOpenChange={setIsAdminEmailDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-amber-500" />
+                Send Email as Admin
+              </DialogTitle>
+              <DialogDescription>
+                Send an email from <span className="font-medium text-amber-600">admin@buildunion.ca</span> to any recipient.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-email-to">Recipient Email *</Label>
+                  <Input
+                    id="admin-email-to"
+                    type="email"
+                    placeholder="recipient@example.com"
+                    value={adminEmailTo}
+                    onChange={(e) => setAdminEmailTo(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-email-name">Recipient Name</Label>
+                  <Input
+                    id="admin-email-name"
+                    placeholder="John Doe (optional)"
+                    value={adminEmailName}
+                    onChange={(e) => setAdminEmailName(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="admin-email-subject">Subject *</Label>
+                <Input
+                  id="admin-email-subject"
+                  placeholder="Email subject..."
+                  value={adminEmailSubject}
+                  onChange={(e) => setAdminEmailSubject(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="admin-email-message">Message *</Label>
+                <Textarea
+                  id="admin-email-message"
+                  placeholder="Write your message here..."
+                  value={adminEmailMessage}
+                  onChange={(e) => setAdminEmailMessage(e.target.value)}
+                  rows={6}
+                  className="resize-none"
+                />
+              </div>
+              
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <p className="flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  Email will be sent from: <span className="font-medium">admin@buildunion.ca</span>
+                </p>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsAdminEmailDialogOpen(false)}
+                disabled={isSendingAdminEmail}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={sendAdminEmail}
+                disabled={isSendingAdminEmail || !adminEmailTo || !adminEmailSubject || !adminEmailMessage}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              >
+                {isSendingAdminEmail ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Email
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-280px)] min-h-[500px]">
           {/* Conversations List */}
