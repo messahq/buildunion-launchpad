@@ -322,7 +322,7 @@ const BuildUnionProjects2 = () => {
   };
 
   // Handle workflow selection from WorkflowSelector
-  const handleWorkflowSelect = async (mode: "solo" | "team", editedData?: EditedAnalysisData) => {
+  const handleWorkflowSelect = async (mode: "solo" | "team", editedData?: EditedAnalysisData, allCitations?: CollectedCitation[]) => {
     if (!createdProjectId || !aiAnalysisForSelector) return;
 
     try {
@@ -362,7 +362,30 @@ const BuildUnionProjects2 = () => {
         } : {}),
       };
 
-      // Save workflow selection and any user edits
+      // Convert CollectedCitation[] to CitationSource[] format for database storage
+      const citationRegistry = (allCitations || []).map(citation => ({
+        id: crypto.randomUUID(),
+        sourceId: citation.sourceId,
+        documentName: citation.documentName,
+        documentType: citation.documentType,
+        contextSnippet: citation.contextSnippet,
+        filePath: citation.filePath,
+        timestamp: citation.timestamp,
+        linkedPillar: citation.linkedPillar,
+        registeredAt: new Date().toISOString(),
+        registeredBy: user?.id,
+        // Store source type for traceability
+        sourceType: citation.sourceType,
+      }));
+
+      // Build verified_facts with citation registry
+      const verifiedFacts = {
+        citationRegistry,
+        citationRegistryUpdatedAt: new Date().toISOString(),
+        totalCitations: citationRegistry.length,
+      };
+
+      // Save workflow selection, photo estimate, and citations
       await supabase
         .from("project_summaries")
         .update({
@@ -370,6 +393,7 @@ const BuildUnionProjects2 = () => {
           status: "active",
           photo_estimate: JSON.parse(JSON.stringify(photoEstimate)),
           ai_workflow_config: JSON.parse(JSON.stringify(workflowConfig)),
+          verified_facts: JSON.parse(JSON.stringify(verifiedFacts)),
         })
         .eq("project_id", createdProjectId);
 
