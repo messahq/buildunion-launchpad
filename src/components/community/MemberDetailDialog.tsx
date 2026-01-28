@@ -4,10 +4,7 @@ import {
   Briefcase, 
   Clock, 
   CheckCircle, 
-  Users, 
   MessageSquare, 
-  Phone, 
-  Globe, 
   Send,
   Award,
   X
@@ -31,6 +28,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
+// Public member data - sensitive fields excluded for public profiles
 interface MemberDetailDialogProps {
   member: {
     id: string;
@@ -44,11 +42,7 @@ interface MemberDetailDialogProps {
     experience_years?: number;
     is_verified?: boolean;
     is_contractor?: boolean;
-    is_union_member?: boolean;
-    union_name?: string;
     bio?: string;
-    phone?: string;
-    company_website?: string;
     certifications?: string[];
     experience_level?: string;
   } | null;
@@ -341,12 +335,6 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                       Contractor
                     </Badge>
                   )}
-                  {member.is_union_member && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                      <Users className="h-3 w-3 mr-1" />
-                      Union
-                    </Badge>
-                  )}
                   {member.experience_level && (
                     <Badge variant="outline">
                       {experienceLevelLabels[member.experience_level] || member.experience_level}
@@ -382,13 +370,6 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                 )}
               </div>
 
-              {member.union_name && member.is_union_member && (
-                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
-                  <Users className="h-4 w-4" />
-                  <span>{member.union_name}</span>
-                </div>
-              )}
-
               {member.certifications && member.certifications.length > 0 && (
                 <div>
                   <p className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
@@ -420,7 +401,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
 
             <Separator />
 
-            {/* Contact Options */}
+            {/* Contact Options - Only messaging available for public profiles */}
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-foreground">Contact</p>
               <div className="grid grid-cols-1 gap-2">
@@ -437,38 +418,11 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                     )}
                   </Button>
                 )}
-                
-                {/* Call and Website buttons */}
-                <div className="flex gap-2">
-                  {member.phone && (
-                    <Button
-                      variant="outline"
-                      asChild
-                      className="flex-1"
-                    >
-                      <a href={`tel:${member.phone}`}>
-                        <Phone className="h-4 w-4 mr-2" />
-                        Call
-                      </a>
-                    </Button>
-                  )}
-                  {member.company_website && (
-                    <Button
-                      variant="outline"
-                      asChild
-                      className="flex-1"
-                    >
-                      <a 
-                        href={member.company_website.startsWith('http') ? member.company_website : `https://${member.company_website}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        <Globe className="h-4 w-4 mr-2" />
-                        Website
-                      </a>
-                    </Button>
-                  )}
-                </div>
+                {isOwnProfile && (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    This is your profile
+                  </p>
+                )}
               </div>
             </div>
           </div>

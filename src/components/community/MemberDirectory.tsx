@@ -18,7 +18,8 @@ import { MemberCard } from "./MemberCard";
 import { MemberDetailDialog } from "./MemberDetailDialog";
 import { toast } from "sonner";
 
-interface Member {
+// Public member data - excludes sensitive fields like phone, location, hourly_rate
+interface PublicMember {
   id: string;
   user_id: string;
   avatar_url?: string;
@@ -30,14 +31,10 @@ interface Member {
   experience_years?: number;
   is_verified?: boolean;
   is_contractor?: boolean;
-  is_public_profile?: boolean;
-  is_union_member?: boolean;
-  union_name?: string;
   bio?: string;
-  phone?: string;
-  company_website?: string;
   certifications?: string[];
   experience_level?: string;
+  created_at?: string;
 }
 
 const trades = [
@@ -66,7 +63,7 @@ const availabilityOptions = [
 ];
 
 export const MemberDirectory = () => {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<PublicMember[]>([]);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,22 +72,21 @@ export const MemberDirectory = () => {
   const [showContractorsOnly, setShowContractorsOnly] = useState(false);
   const [showUnionOnly, setShowUnionOnly] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMember, setSelectedMember] = useState<PublicMember | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
 
   const fetchMembers = async () => {
     setIsLoading(true);
     try {
+      // Use the secure public view that excludes sensitive data
       let query = supabase
-        .from("bu_profiles")
+        .from("bu_profiles_public" as any)
         .select("*")
-        .eq("is_public_profile", true)
-        .eq("profile_completed", true)
-        .order("updated_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (selectedTrade !== "all") {
-        query = query.eq("primary_trade", selectedTrade as any);
+        query = query.eq("primary_trade", selectedTrade);
       }
 
       if (selectedAvailability !== "all") {
@@ -101,16 +97,15 @@ export const MemberDirectory = () => {
         query = query.eq("is_contractor", true);
       }
 
-      if (showUnionOnly) {
-        query = query.eq("is_union_member", true);
-      }
-
       const { data, error } = await query.limit(50);
 
       if (error) throw error;
 
+      // Cast data to PublicMember array since view isn't in types
+      const membersData = (data as unknown as PublicMember[]) || [];
+
       // Fetch names from profiles table
-      const userIds = data?.map(m => m.user_id) || [];
+      const userIds = membersData.map(m => m.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name")
@@ -124,13 +119,13 @@ export const MemberDirectory = () => {
       });
 
       // Filter by search query
-      let filteredData = data || [];
+      let filteredData = membersData;
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+        const q = searchQuery.toLowerCase();
         filteredData = filteredData.filter(m => 
-          m.company_name?.toLowerCase().includes(query) ||
-          namesMap[m.user_id]?.toLowerCase().includes(query) ||
-          m.service_area?.toLowerCase().includes(query)
+          m.company_name?.toLowerCase().includes(q) ||
+          namesMap[m.user_id]?.toLowerCase().includes(q) ||
+          m.service_area?.toLowerCase().includes(q)
         );
       }
 
