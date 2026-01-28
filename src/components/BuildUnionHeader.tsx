@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { GlobalSearch, GlobalSearchTrigger } from "@/components/GlobalSearch";
+import AskMessaChat from "@/components/AskMessaChat";
 
 const languages = [
   { code: "en", name: "English" },
@@ -83,6 +84,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   const [isTogglingMode, setIsTogglingMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [messaChatOpen, setMessaChatOpen] = useState(false);
   const [languageExpanded, setLanguageExpanded] = useState(false);
   const [sheetLanguageExpanded, setSheetLanguageExpanded] = useState(false);
 
@@ -228,6 +230,26 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
 
         {/* Right - Navigation & Auth */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          {/* Ask Messa Button - Always visible */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMessaChatOpen(true)}
+                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2"
+                  aria-label="Ask Messa AI"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ask Messa - AI Assistant</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {/* Global Search Button */}
           <GlobalSearchTrigger onClick={() => setSearchOpen(true)} />
 
@@ -309,6 +331,14 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 >
                   <Info className="h-4 w-4" />
                   About Us
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="justify-start gap-3 h-11 text-amber-600"
+                  onClick={() => { setMessaChatOpen(true); setMobileMenuOpen(false); }}
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  Ask Messa AI
                 </Button>
 
                 {/* Messages - only for logged in users */}
@@ -719,6 +749,9 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
 
     {/* Global Search Modal */}
     <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+    
+    {/* Ask Messa Chat Modal */}
+    <AskMessaChat isOpen={messaChatOpen} onClose={() => setMessaChatOpen(false)} />
     </>
   );
 };
