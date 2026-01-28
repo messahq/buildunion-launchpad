@@ -1,31 +1,6 @@
 import { Link } from "react-router-dom";
 import { Linkedin, Twitter, Youtube, Mail } from "lucide-react";
-
-const footerLinks = {
-  product: [
-    { label: "Features", href: "#" },
-    { label: "Pricing", href: "/buildunion/pricing" },
-    { label: "Integrations", href: "#" },
-    { label: "Changelog", href: "#" },
-  ],
-  company: [
-    { label: "About", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Press", href: "#" },
-    { label: "Contact", href: "#" },
-  ],
-  resources: [
-    { label: "Documentation", href: "#" },
-    { label: "Help Center", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Community", href: "#" },
-  ],
-  legal: [
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
-    { label: "Security", href: "#" },
-  ],
-};
+import { useTranslation } from "react-i18next";
 
 const socialLinks = [
   { icon: Linkedin, href: "#", label: "LinkedIn" },
@@ -35,6 +10,34 @@ const socialLinks = [
 ];
 
 const BuildUnionFooter = () => {
+  const { t } = useTranslation();
+
+  const footerLinks = {
+    product: [
+      { label: t("footer.features"), href: "#" },
+      { label: t("footer.pricing"), href: "/buildunion/pricing" },
+      { label: t("footer.integrations"), href: "#" },
+      { label: t("footer.changelog"), href: "#" },
+    ],
+    company: [
+      { label: t("footer.about"), href: "#" },
+      { label: t("footer.careers"), href: "#" },
+      { label: t("footer.press"), href: "#" },
+      { label: t("footer.contact"), href: "#" },
+    ],
+    resources: [
+      { label: t("footer.documentation"), href: "#" },
+      { label: t("footer.helpCenter"), href: "#" },
+      { label: t("footer.blog"), href: "#" },
+      { label: t("footer.community"), href: "#" },
+    ],
+    legal: [
+      { label: t("footer.privacy"), href: "#" },
+      { label: t("footer.terms"), href: "#" },
+      { label: t("footer.security"), href: "#" },
+    ],
+  };
+
   return (
     <footer className="bg-secondary text-foreground border-t border-border transition-colors">
       {/* Main Footer */}
@@ -49,7 +52,7 @@ const BuildUnionFooter = () => {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              Construction grade project management for teams who build the real world.
+              {t("footer.tagline")}
             </p>
             <div className="flex items-center gap-3">
               {socialLinks.map((social) => (
@@ -68,7 +71,7 @@ const BuildUnionFooter = () => {
           {/* Product Links */}
           <div>
             <h4 className="text-foreground font-semibold text-sm uppercase tracking-wider mb-4">
-              Product
+              {t("footer.product")}
             </h4>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
@@ -96,7 +99,7 @@ const BuildUnionFooter = () => {
           {/* Company Links */}
           <div>
             <h4 className="text-foreground font-semibold text-sm uppercase tracking-wider mb-4">
-              Company
+              {t("footer.company")}
             </h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
@@ -115,7 +118,7 @@ const BuildUnionFooter = () => {
           {/* Resources Links */}
           <div>
             <h4 className="text-foreground font-semibold text-sm uppercase tracking-wider mb-4">
-              Resources
+              {t("footer.resources")}
             </h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
@@ -134,7 +137,7 @@ const BuildUnionFooter = () => {
           {/* Legal Links */}
           <div>
             <h4 className="text-foreground font-semibold text-sm uppercase tracking-wider mb-4">
-              Legal
+              {t("footer.legal")}
             </h4>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
@@ -156,10 +159,10 @@ const BuildUnionFooter = () => {
       <div className="border-t border-border">
         <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} BuildUnion. All rights reserved.
+            © {new Date().getFullYear()} BuildUnion. {t("footer.copyright")}
           </p>
           <p className="text-sm text-muted-foreground">
-            Crafted with precision for those who build.
+            {t("footer.craftedWith")}
           </p>
         </div>
       </div>

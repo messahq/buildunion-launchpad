@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -15,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ForumPostCard } from "./ForumPostCard";
 import { CreatePostDialog } from "./CreatePostDialog";
 import { PostDetailDialog } from "./PostDetailDialog";
+import { useTranslation } from "react-i18next";
 
 interface Post {
   id: string;
@@ -32,20 +32,8 @@ interface Post {
   };
 }
 
-const categories = [
-  { value: "all", label: "All Categories" },
-  { value: "general", label: "General Discussion" },
-  { value: "electrical", label: "Electrical" },
-  { value: "plumbing", label: "Plumbing" },
-  { value: "carpentry", label: "Carpentry" },
-  { value: "masonry", label: "Masonry" },
-  { value: "hvac", label: "HVAC" },
-  { value: "safety", label: "Safety" },
-  { value: "tools", label: "Tools & Equipment" },
-  { value: "jobs", label: "Jobs & Opportunities" },
-];
-
 export const CommunityForum = () => {
+  const { t } = useTranslation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,6 +41,19 @@ export const CommunityForum = () => {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const { user } = useAuth();
+
+  const categories = [
+    { value: "all", label: t("forum.allCategories") },
+    { value: "general", label: t("forum.generalDiscussion") },
+    { value: "electrical", label: t("forum.electrical") },
+    { value: "plumbing", label: t("forum.plumbing") },
+    { value: "carpentry", label: t("forum.carpentry") },
+    { value: "masonry", label: t("forum.masonry") },
+    { value: "hvac", label: t("forum.hvac") },
+    { value: "safety", label: t("forum.safety") },
+    { value: "tools", label: t("forum.toolsEquipment") },
+    { value: "jobs", label: t("forum.jobsOpportunities") },
+  ];
 
   const fetchPosts = async () => {
     setIsLoading(true);
@@ -143,9 +144,9 @@ export const CommunityForum = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Discussion Forum</h2>
+          <h2 className="text-xl font-semibold text-foreground">{t("forum.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Ask questions, share knowledge, and connect with fellow professionals
+            {t("forum.subtitle")}
           </p>
         </div>
         {user && <CreatePostDialog onPostCreated={fetchPosts} />}
@@ -156,7 +157,7 @@ export const CommunityForum = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search discussions..."
+            placeholder={t("forum.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -186,9 +187,9 @@ export const CommunityForum = () => {
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg">No discussions found</p>
+          <p className="text-lg">{t("forum.noDiscussions")}</p>
           <p className="text-sm">
-            {user ? "Be the first to start a conversation!" : "Log in to start a discussion"}
+            {user ? t("forum.beFirst") : t("forum.loginToPost")}
           </p>
         </div>
       ) : (
