@@ -5,4 +5,6 @@ export { SourceTag } from "./SourceTag";
 export { SourceProofPanel } from "./SourceProofPanel";
 export { ReferencesSection } from "./ReferencesSection";
 export { CitationProvider, useCitation } from "./CitationProvider";
-export type { CitationSource, CitationMetadata, AIResponseWithCitations } from "@/types/citation";
+export { default as CitationRegistry } from "./CitationRegistry";
+export type { CitationSource, CitationMetadata, AIResponseWithCitations, CitationRegistry as CitationRegistryType } from "@/types/citation";
+export { generateCitationId, getCitationTypeLabel } from "@/types/citation";
