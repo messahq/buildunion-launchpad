@@ -13,6 +13,9 @@ export interface NumericInputProps
  * NumericInput - A text-based input for numbers that allows free typing.
  * Uses local string state during editing and converts to number on blur.
  * This avoids the issues with type="number" inputs (spinners, awkward editing).
+ * 
+ * IMPORTANT: This component uses a stable internal state that doesn't get
+ * overwritten by parent updates while the user is focused/typing.
  */
 const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
   ({ className, value, onChange, allowNegative = false, decimalPlaces, ...props }, ref) => {
@@ -22,20 +25,42 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
       return String(value);
     });
     const [isFocused, setIsFocused] = React.useState(false);
+    
+    // Track if user has modified the value since focusing
+    const hasLocalEditsRef = React.useRef(false);
+    
+    // Store the input element ref for focus state checking
+    const inputRef = React.useRef<HTMLInputElement | null>(null);
+    
+    // Combine refs
+    const setRefs = React.useCallback((node: HTMLInputElement | null) => {
+      inputRef.current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    }, [ref]);
 
-    // Sync external value changes when not focused
+    // Sync external value changes ONLY when not focused AND no local edits
     React.useEffect(() => {
-      if (!isFocused) {
-        if (value === null || value === undefined || value === 0) {
-          setLocalValue("");
-        } else {
-          setLocalValue(String(value));
-        }
+      // Never update while focused - this prevents input "jumping"
+      if (isFocused || hasLocalEditsRef.current) {
+        return;
+      }
+      
+      if (value === null || value === undefined || value === 0) {
+        setLocalValue("");
+      } else {
+        setLocalValue(String(value));
       }
     }, [value, isFocused]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const inputValue = e.target.value;
+      
+      // Mark that user has made local edits
+      hasLocalEditsRef.current = true;
       
       // Allow empty string
       if (inputValue === "") {
@@ -57,6 +82,7 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
 
     const handleBlur = () => {
       setIsFocused(false);
+      hasLocalEditsRef.current = false;
       
       // Convert to number on blur
       if (localValue === "" || localValue === "-" || localValue === ".") {
@@ -82,6 +108,7 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
 
     const handleFocus = () => {
       setIsFocused(true);
+      hasLocalEditsRef.current = false;
     };
 
     return (
@@ -92,7 +119,7 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
           "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           className
         )}
-        ref={ref}
+        ref={setRefs}
         value={localValue}
         onChange={handleChange}
         onBlur={handleBlur}
