@@ -8,6 +8,7 @@ const TRIAL_LIMITS: Record<string, number> = {
   blueprint_analysis: 3,
   quick_estimate: 3,
   project_creation: 1,
+  messa_brief: 3, // Free tier: 3 trial briefs
 };
 
 const getDefaultMaxTrials = (feature: string): number => {
