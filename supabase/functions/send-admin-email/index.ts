@@ -126,6 +126,27 @@ serve(async (req) => {
       });
     }
 
+    // HTML escape function to prevent XSS in emails
+    const escapeHtml = (text: string): string => {
+      if (!text) return '';
+      const map: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, (m) => map[m]);
+    };
+
+    // Escape all user-controlled values to prevent XSS
+    const safeRecipientName = escapeHtml(recipientName || '');
+    const safeRecipientEmail = escapeHtml(recipientEmail);
+    const safeSubject = escapeHtml(subject);
+    const safeMessage = message.split('\n').map((line: string) => 
+      line.trim() ? `<p>${escapeHtml(line)}</p>` : ''
+    ).join('');
+
     // Always use Toronto timezone (America/Toronto)
     const torontoDate = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
@@ -444,11 +465,11 @@ serve(async (req) => {
       <!-- CONTENT -->
       <div class="content">
         <p class="greeting">
-          ${recipientName ? `Dear ${recipientName},` : 'Hello,'}
+          ${safeRecipientName ? `Dear ${safeRecipientName},` : 'Hello,'}
         </p>
         
         <div class="message-box">
-          ${message.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
+          ${safeMessage}
         </div>
 
         <div class="divider"></div>
@@ -464,11 +485,11 @@ serve(async (req) => {
           <div class="info-grid">
             <div class="info-row">
               <span class="info-label">Recipient:</span>
-              <span class="info-value">${recipientEmail}</span>
+              <span class="info-value">${safeRecipientEmail}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Subject:</span>
-              <span class="info-value">${subject}</span>
+              <span class="info-value">${safeSubject}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Sent From:</span>

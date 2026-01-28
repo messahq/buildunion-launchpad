@@ -737,6 +737,19 @@ export default function BuildUnionMessages() {
     fetchEmailLogs();
   };
 
+  // HTML escape function to prevent XSS
+  const escapeHtml = (text: string): string => {
+    if (!text) return '';
+    const map: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  };
+
   // Generate Email Preview HTML
   const generateEmailPreviewHtml = () => {
     const now = new Date();
@@ -758,8 +771,12 @@ export default function BuildUnionMessages() {
       ? (bulkRecipients.find(r => r.name.trim())?.name || "Recipient")
       : (adminEmailName || "Recipient");
     
+    // Escape all user-controlled values to prevent XSS
+    const safeRecipientName = escapeHtml(recipientName);
+    const safeSubject = escapeHtml(adminEmailSubject);
+    
     const messageHtml = adminEmailMessage.split('\n').map(line => 
-      line.trim() ? `<p style="margin: 0 0 12px 0; line-height: 1.6;">${line}</p>` : ''
+      line.trim() ? `<p style="margin: 0 0 12px 0; line-height: 1.6;">${escapeHtml(line)}</p>` : ''
     ).join('');
 
     return `
@@ -799,12 +816,12 @@ export default function BuildUnionMessages() {
         <!-- CONTENT -->
         <div style="padding: 40px 32px;">
           <p style="font-size: 18px; color: #1e293b; margin-bottom: 24px; font-weight: 500;">
-            Dear ${recipientName},
+            Dear ${safeRecipientName},
           </p>
           
           <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-left: 4px solid #f59e0b; padding: 24px; margin: 24px 0; border-radius: 0 8px 8px 0;">
             <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">
-              📝 Subject: ${adminEmailSubject || 'No subject'}
+              📝 Subject: ${safeSubject || 'No subject'}
             </p>
             <div style="font-size: 15px; color: #1e293b; line-height: 1.7;">
               ${messageHtml || '<p style="color: #64748b;">No message content</p>'}
