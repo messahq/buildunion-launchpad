@@ -112,7 +112,8 @@ function generateCitationSources(
   dualEngineOutput?: DualEngineOutput,
   detectedArea?: number | null,
   materials?: Array<{ item: string; quantity: number; unit: string }>,
-  surfaceType?: string
+  surfaceType?: string,
+  isUserProvidedArea?: boolean
 ): CitationSource[] {
   const sources: CitationSource[] = [];
   
@@ -145,23 +146,46 @@ function generateCitationSources(
   
   const workTypeDesc = getWorkTypeDescription(surfaceType);
   
-  // Area detection citation - PRECISION EXTRACTION
-  if (detectedArea && dualEngineOutput?.gemini) {
-    const confidence = dualEngineOutput.gemini.confidence;
-    const extractionMethod = confidence === "high" 
-      ? "directly read from visible text in image" 
-      : confidence === "medium"
-      ? "extracted via pattern matching"
-      : "estimated from visual proportions";
-    
-    sources.push({
-      id: "area-detection",
-      sourceId: "PHOTO-AI",
-      documentName: "Photo Analysis Report",
-      documentType: "image",
-      contextSnippet: `Gemini Vision detected EXACTLY ${detectedArea.toLocaleString()} ${dualEngineOutput.gemini.areaUnit} - ${extractionMethod}. Surface: ${dualEngineOutput.gemini.surfaceType}. Confidence: ${confidence}. This is the BASE AREA - waste buffer (+10%) applied separately.`,
-      timestamp: new Date().toISOString(),
-    });
+  // Area detection citation - handle both AI and user-provided
+  if (detectedArea) {
+    if (isUserProvidedArea) {
+      // User-provided area citation
+      sources.push({
+        id: "area-user-input",
+        sourceId: "USER",
+        documentName: "User Input",
+        documentType: "log",
+        contextSnippet: `User manually specified ${detectedArea.toLocaleString()} sq ft as the project area. This is the BASE AREA - waste buffer (+10%) applied separately.`,
+        timestamp: new Date().toISOString(),
+      });
+    } else if (dualEngineOutput?.gemini) {
+      // AI-detected area citation
+      const confidence = dualEngineOutput.gemini.confidence;
+      const extractionMethod = confidence === "high" 
+        ? "directly read from visible text in image" 
+        : confidence === "medium"
+        ? "extracted via pattern matching"
+        : "estimated from visual proportions";
+      
+      sources.push({
+        id: "area-detection",
+        sourceId: "PHOTO-AI",
+        documentName: "Photo Analysis Report",
+        documentType: "image",
+        contextSnippet: `Gemini Vision detected EXACTLY ${detectedArea.toLocaleString()} ${dualEngineOutput.gemini.areaUnit} - ${extractionMethod}. Surface: ${dualEngineOutput.gemini.surfaceType}. Confidence: ${confidence}. This is the BASE AREA - waste buffer (+10%) applied separately.`,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      // Fallback: area exists but no engine output (e.g. manual edit without user flag)
+      sources.push({
+        id: "area-edited",
+        sourceId: "EDIT",
+        documentName: "Manual Edit",
+        documentType: "log",
+        contextSnippet: `Area was manually set to ${detectedArea.toLocaleString()} sq ft. This is the BASE AREA - waste buffer (+10%) applied separately.`,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
   
   // Materials citation - DYNAMIC WORK TYPE
@@ -290,13 +314,19 @@ export default function AIAnalysisCitation({
   const [newMaterialName, setNewMaterialName] = useState("");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
   
+  // Track if area was user-provided (manual input) vs AI detected
+  const [isUserProvidedArea, setIsUserProvidedArea] = useState(false);
+  
   // Sync with props - prioritize raw AI detection from dualEngineOutput
   useEffect(() => {
     if (detectedArea) {
       setEditableArea(detectedArea);
+      // If we have AI output with area, it's AI detected; otherwise it came from user input
+      setIsUserProvidedArea(!dualEngineOutput?.gemini?.area);
     } else if (dualEngineOutput?.gemini?.area) {
       // Use the raw Gemini-detected area (true base, no waste)
       setEditableArea(dualEngineOutput.gemini.area);
+      setIsUserProvidedArea(false);
     } else if (materials && materials.length > 0) {
       // Last resort: back-calculate from materials
       // Materials quantity includes +10% waste, so calculate base: total / 1.1
@@ -304,6 +334,7 @@ export default function AIAnalysisCitation({
       if (areaFromMaterials && areaFromMaterials > 0) {
         const baseArea = Math.round(areaFromMaterials / 1.1);
         setEditableArea(baseArea);
+        setIsUserProvidedArea(false);
       }
     }
   }, [detectedArea, materials, dualEngineOutput]);
@@ -320,6 +351,7 @@ export default function AIAnalysisCitation({
   const handleAreaChange = (newArea: number) => {
     setEditableArea(newArea);
     setIsEditingArea(false);
+    setIsUserProvidedArea(true); // User manually edited, mark as user-provided
     onAreaChange?.(newArea);
   };
 
@@ -350,11 +382,19 @@ export default function AIAnalysisCitation({
     onMaterialsChange?.(updated);
   };
   
-  // Generate citation sources from analysis data - pass surfaceType for work type detection
-  const citationSources = generateCitationSources(dualEngineOutput, editableArea, editableMaterials, surfaceType);
+  // Generate citation sources from analysis data - pass surfaceType and user-provided flag
+  const citationSources = generateCitationSources(
+    dualEngineOutput, 
+    editableArea, 
+    editableMaterials, 
+    surfaceType,
+    isUserProvidedArea
+  );
   
-  // Find specific sources for inline citations
-  const areaSource = citationSources.find(s => s.sourceId === "PHOTO-AI");
+  // Find specific sources for inline citations (check for any area source type)
+  const areaSource = citationSources.find(s => 
+    s.sourceId === "PHOTO-AI" || s.sourceId === "USER" || s.sourceId === "EDIT"
+  );
   const materialsSource = citationSources.find(s => s.sourceId === "MAT-AI");
   const obcSource = citationSources.find(s => s.sourceId === "OBC-REG");
   
@@ -758,10 +798,11 @@ export default function AIAnalysisCitation({
           )}
         </div>
 
-        {/* References Section */}
-        {citationSources.length > 0 && (
-          <ReferencesSection references={citationSources} />
-        )}
+        {/* References Section - Always visible */}
+        <ReferencesSection 
+          references={citationSources} 
+          defaultExpanded={citationSources.length > 0}
+        />
 
         {/* Decision Log (Collapsible) */}
         <Collapsible open={showDecisionLog} onOpenChange={setShowDecisionLog}>
