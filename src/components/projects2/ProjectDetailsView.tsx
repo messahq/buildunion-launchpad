@@ -2194,7 +2194,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               setSummary(prev => prev ? { ...prev, total_cost: newTotal } : null);
             }}
             onSave={async (costs) => {
-              if (!summary) return;
+              if (!summary || !user) return;
               
               // Serialize to JSON-compatible format
               const lineItemsData = JSON.parse(JSON.stringify({
@@ -2202,6 +2202,94 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 labor: costs.labor,
                 other: costs.other,
               }));
+              
+              // Generate a Markdown document for the cost breakdown
+              const now = new Date();
+              const dateStr = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+              const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              
+              let markdownContent = `# Cost Breakdown - ${project.name}\n\n`;
+              markdownContent += `**Generated:** ${dateStr} at ${timeStr}\n\n`;
+              markdownContent += `**Project:** ${project.name}\n`;
+              if (project.address) markdownContent += `**Address:** ${project.address}\n`;
+              markdownContent += `\n---\n\n`;
+              
+              // Materials section
+              if (costs.materials.length > 0) {
+                markdownContent += `## Materials\n\n`;
+                markdownContent += `| Item | Qty | Unit | Unit Price | Total |\n`;
+                markdownContent += `|------|-----|------|------------|-------|\n`;
+                costs.materials.forEach((m: { item: string; quantity: number; unit: string; unitPrice: number; totalPrice: number }) => {
+                  markdownContent += `| ${m.item} | ${m.quantity} | ${m.unit} | $${m.unitPrice.toFixed(2)} | $${m.totalPrice.toFixed(2)} |\n`;
+                });
+                const materialsTotal = costs.materials.reduce((sum: number, m: { totalPrice: number }) => sum + m.totalPrice, 0);
+                markdownContent += `\n**Materials Subtotal:** $${materialsTotal.toLocaleString()}\n\n`;
+              }
+              
+              // Labor section
+              if (costs.labor.length > 0) {
+                markdownContent += `## Labor\n\n`;
+                markdownContent += `| Item | Qty | Unit | Unit Price | Total |\n`;
+                markdownContent += `|------|-----|------|------------|-------|\n`;
+                costs.labor.forEach((l: { item: string; quantity: number; unit: string; unitPrice: number; totalPrice: number }) => {
+                  markdownContent += `| ${l.item} | ${l.quantity} | ${l.unit} | $${l.unitPrice.toFixed(2)} | $${l.totalPrice.toFixed(2)} |\n`;
+                });
+                const laborTotal = costs.labor.reduce((sum: number, l: { totalPrice: number }) => sum + l.totalPrice, 0);
+                markdownContent += `\n**Labor Subtotal:** $${laborTotal.toLocaleString()}\n\n`;
+              }
+              
+              // Other section
+              if (costs.other.length > 0) {
+                markdownContent += `## Other Costs\n\n`;
+                markdownContent += `| Item | Qty | Unit | Unit Price | Total |\n`;
+                markdownContent += `|------|-----|------|------------|-------|\n`;
+                costs.other.forEach((o: { item: string; quantity: number; unit: string; unitPrice: number; totalPrice: number }) => {
+                  markdownContent += `| ${o.item} | ${o.quantity} | ${o.unit} | $${o.unitPrice.toFixed(2)} | $${o.totalPrice.toFixed(2)} |\n`;
+                });
+                const otherTotal = costs.other.reduce((sum: number, o: { totalPrice: number }) => sum + o.totalPrice, 0);
+                markdownContent += `\n**Other Subtotal:** $${otherTotal.toLocaleString()}\n\n`;
+              }
+              
+              markdownContent += `---\n\n`;
+              markdownContent += `## Grand Total: $${costs.grandTotal.toLocaleString()}\n`;
+              
+              // Upload the markdown file to storage and register in project_documents
+              const docFileName = `Cost-Breakdown-${dateStr}.md`;
+              const docId = crypto.randomUUID();
+              const docPath = `${user.id}/${project.id}/${docId}-${docFileName}`;
+              
+              // Upload to storage
+              const blob = new Blob([markdownContent], { type: 'text/markdown' });
+              const { error: uploadError } = await supabase.storage
+                .from('project-documents')
+                .upload(docPath, blob, { upsert: true, contentType: 'text/markdown' });
+              
+              if (uploadError) {
+                console.error('Failed to upload cost breakdown document:', uploadError);
+              } else {
+                // Check if we already have a cost breakdown document for today, update or insert
+                const { data: existingDocs } = await supabase
+                  .from('project_documents')
+                  .select('id, file_path')
+                  .eq('project_id', project.id)
+                  .like('file_name', `Cost-Breakdown-${dateStr}%`);
+                
+                if (existingDocs && existingDocs.length > 0) {
+                  // Delete old one(s) from storage and DB
+                  for (const oldDoc of existingDocs) {
+                    await supabase.storage.from('project-documents').remove([oldDoc.file_path]);
+                    await supabase.from('project_documents').delete().eq('id', oldDoc.id);
+                  }
+                }
+                
+                // Insert new document record
+                await supabase.from('project_documents').insert({
+                  project_id: project.id,
+                  file_name: docFileName,
+                  file_path: docPath,
+                  file_size: blob.size,
+                });
+              }
               
               // Get existing verified_facts to update citation registry
               const existingFacts = (summary.verified_facts || {}) as Record<string, unknown>;
@@ -2212,10 +2300,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               const newCitation: CitationSource = {
                 id: crypto.randomUUID(),
                 sourceId: 'MAT-EDIT',
-                documentName: 'Manual Cost Breakdown Edit',
+                documentName: docFileName,
                 documentType: 'log',
                 linkedPillar: 'materials',
-                contextSnippet: `User manually edited cost breakdown: ${costs.materials.length} materials, ${costs.labor.length} labor items, ${costs.other.length} other items. Grand total: $${costs.grandTotal.toLocaleString()}`,
+                filePath: docPath,
+                contextSnippet: `Cost breakdown saved: ${costs.materials.length} materials, ${costs.labor.length} labor items, ${costs.other.length} other items. Grand total: $${costs.grandTotal.toLocaleString()}`,
                 timestamp: new Date().toISOString(),
                 registeredAt: new Date().toISOString(),
                 registeredBy: user?.id || 'unknown',
@@ -2223,15 +2312,12 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               
               let updatedCitations: CitationSource[];
               if (matEditIndex >= 0) {
-                // Update existing
                 updatedCitations = [...existingCitations];
                 updatedCitations[matEditIndex] = newCitation;
               } else {
-                // Add new
                 updatedCitations = [...existingCitations, newCitation];
               }
               
-              // Serialize updatedFacts properly for Supabase JSON column
               const updatedFacts = JSON.parse(JSON.stringify({
                 ...existingFacts,
                 citationRegistry: updatedCitations,
@@ -2239,7 +2325,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 totalCitations: updatedCitations.length,
               }));
               
-              // Save to project_summaries as line_items, total_cost, and updated verified_facts
+              // Save to project_summaries
               const { error } = await supabase
                 .from('project_summaries')
                 .update({
@@ -2252,7 +2338,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               
               if (error) throw error;
               
-              // Update local state
               setSummary(prev => prev ? {
                 ...prev,
                 line_items: lineItemsData as unknown[],
@@ -2260,8 +2345,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 verified_facts: updatedFacts as Record<string, unknown>,
               } : null);
               
-              // Refresh citations in the registry hook
               await refreshCitations();
+              toast.success('Cost breakdown saved to Documents tab');
             }}
           />
         </TabsContent>
