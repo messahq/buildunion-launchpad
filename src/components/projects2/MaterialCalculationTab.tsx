@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { NumericInput } from "@/components/ui/numeric-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -895,9 +894,11 @@ export function MaterialCalculationTab({
             />
           </div>
           <div className="col-span-2">
-            <NumericInput
-              value={editValues.unitPrice}
-              onChange={(val) => setEditValues(prev => ({ ...prev, unitPrice: val }))}
+            <Input
+              type="text"
+              inputMode="decimal"
+              value={editValues.unitPrice || ''}
+              onChange={(e) => setEditValues(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
               className="h-8 text-sm text-right"
               placeholder="0"
             />
@@ -938,9 +939,11 @@ export function MaterialCalculationTab({
             {item.isEssential && item.baseQuantity !== undefined ? (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-1">
-                  <NumericInput
-                    value={item.baseQuantity}
-                    onChange={(val) => handleBaseQuantityChange(item.id, val)}
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={item.baseQuantity || ''}
+                    onChange={(e) => handleBaseQuantityChange(item.id, parseFloat(e.target.value) || 0)}
                     className="h-6 w-16 text-xs text-center p-1 border-dashed"
                     title={t("materials.editBaseQty", "Edit base quantity")}
                   />
@@ -957,9 +960,11 @@ export function MaterialCalculationTab({
             {item.unit}
           </div>
           <div className="col-span-2">
-            <NumericInput
-              value={item.unitPrice}
-              onChange={(val) => handleItemChange(setItems, item.id, 'unitPrice', val)}
+            <Input
+              type="text"
+              inputMode="decimal"
+              value={item.unitPrice || ''}
+              onChange={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
               className="h-8 text-sm text-right"
               placeholder="0"
             />
@@ -1255,9 +1260,11 @@ export function MaterialCalculationTab({
                     <label className="text-xs text-muted-foreground mb-1 block">
                       {t("materials.quantity", "Quantity")}
                     </label>
-                    <NumericInput
-                      value={otherQuantity}
-                      onChange={(val) => setOtherQuantity(val || 1)}
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={otherQuantity || ''}
+                      onChange={(e) => setOtherQuantity(parseFloat(e.target.value) || 1)}
                       className="h-9 text-center"
                     />
                   </div>
@@ -1275,9 +1282,11 @@ export function MaterialCalculationTab({
                     <label className="text-xs text-muted-foreground mb-1 block">
                       {t("materials.unitPrice", "Unit Price")}
                     </label>
-                    <NumericInput
-                      value={otherUnitPrice}
-                      onChange={(val) => setOtherUnitPrice(val)}
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={otherUnitPrice || ''}
+                      onChange={(e) => setOtherUnitPrice(parseFloat(e.target.value) || 0)}
                       className="h-9 text-right"
                       placeholder="0"
                     />
