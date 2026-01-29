@@ -171,30 +171,30 @@ export function MaterialCalculationTab({
   const [isExporting, setIsExporting] = useState(false);
   
   // Helper to create initial material items
-  // IMPORTANT: All incoming data (AI, saved, tasks) arrives as FINAL quantities (with waste already applied)
-  // We back-calculate BASE for display, then show the waste calculation
+  // IMPORTANT: All incoming data (AI, saved, tasks) arrives as BASE quantities
+  // We calculate FINAL by adding 10% waste for essential materials
   const createInitialMaterialItems = useCallback(() => {
     // Find laminate to sync underlayment
     const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
-    const laminateFinalQty = laminateEntry?.quantity || 0;
+    const laminateBaseQtyEntry = laminateEntry?.quantity || 0;
     
     return initialMaterials.map((m, idx) => {
       const isEssential = isEssentialMaterial(m.item);
       
-      // The incoming quantity is FINAL (with waste already applied for essential items)
-      let finalQty = m.quantity;
+      // The incoming quantity is BASE (before waste)
+      let baseQty = m.quantity;
       
       // Sync underlayment with laminate flooring
-      if (/^underlayment$/i.test(m.item.trim()) && laminateFinalQty > 0) {
-        finalQty = laminateFinalQty;
+      if (/^underlayment$/i.test(m.item.trim()) && laminateBaseQtyEntry > 0) {
+        baseQty = laminateBaseQtyEntry;
       }
       
-      // Back-calculate BASE from the FINAL quantity
-      // For essential items: BASE = FINAL / 1.1
-      // For non-essential: BASE = FINAL (no waste applied)
-      const baseQty = isEssential 
-        ? Math.round(finalQty / (1 + WASTE_PERCENTAGE)) 
-        : finalQty;
+      // Calculate FINAL quantity by adding 10% waste for essential items
+      // For essential items: FINAL = BASE * 1.1
+      // For non-essential: FINAL = BASE (no waste applied)
+      const finalQty = isEssential 
+        ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE)) 
+        : baseQty;
       
       return {
         id: `material-${idx}`,
