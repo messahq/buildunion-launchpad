@@ -171,9 +171,30 @@ export function MaterialCalculationTab({
   const [isExporting, setIsExporting] = useState(false);
   
   // Helper to create initial material items
-  // IMPORTANT: Incoming data already includes the +10% waste buffer (e.g., 1560)
-  // This is the BASE. We then add another +10% for waste (FINAL = 1716)
+  // CRITICAL: When dataSource='saved', use the saved quantities as-is (no recalculation)
+  // When dataSource='ai', apply +10% waste buffer on top of AI-detected base quantities
   const createInitialMaterialItems = useCallback(() => {
+    // For SAVED data: use exactly what was saved (quantities already include waste)
+    if (dataSource === 'saved') {
+      return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
+        const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
+        // Use saved baseQuantity if available, otherwise calculate it from quantity
+        const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(m.quantity / (1 + WASTE_PERCENTAGE)) : m.quantity);
+        
+        return {
+          id: `material-${idx}`,
+          item: m.item,
+          baseQuantity: savedBaseQty,
+          quantity: m.quantity, // Use saved quantity directly - no recalculation!
+          unit: m.unit,
+          unitPrice: m.unitPrice || 0,
+          totalPrice: m.totalPrice ?? (m.quantity * (m.unitPrice || 0)),
+          isEssential,
+        };
+      });
+    }
+    
+    // For AI/TASKS data: calculate waste buffer
     // Find laminate to sync underlayment
     const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
     const laminateBaseQty = laminateEntry?.quantity || 0;
@@ -181,12 +202,12 @@ export function MaterialCalculationTab({
     return initialMaterials.map((m, idx) => {
       const isEssential = isEssentialMaterial(m.item);
       
-      // The incoming quantity already includes +10% waste buffer
-      // This is our BASE quantity (what's shown elsewhere as 1560)
+      // The incoming AI quantity is the BASE (e.g., 3857)
+      // We add +10% waste buffer for essential materials
       let baseQty = m.quantity;
       
-      // Sync underlayment with laminate flooring
-      if (/^underlayment$/i.test(m.item.trim()) && laminateBaseQty > 0) {
+      // Sync underlayment with laminate flooring base quantity
+      if (/^underlayment/i.test(m.item.trim()) && laminateBaseQty > 0) {
         baseQty = laminateBaseQty;
       }
       
@@ -207,17 +228,18 @@ export function MaterialCalculationTab({
         isEssential,
       };
     });
-  }, [initialMaterials]);
+  }, [initialMaterials, dataSource]);
 
   // Helper to create initial labor items
+  // When saved, preserve the saved totalPrice to avoid recalculation
   const createInitialLaborItems = useCallback(() => 
-    initialLabor.map((l, idx) => ({
+    initialLabor.map((l: TaskBasedEntry & { totalPrice?: number }, idx) => ({
       id: `labor-${idx}`,
       item: l.item,
       quantity: l.quantity,
       unit: l.unit,
       unitPrice: l.unitPrice || 0,
-      totalPrice: l.quantity * (l.unitPrice || 0),
+      totalPrice: l.totalPrice ?? (l.quantity * (l.unitPrice || 0)),
     }))
   , [initialLabor]);
   
@@ -227,7 +249,7 @@ export function MaterialCalculationTab({
   // Labor items
   const [laborItems, setLaborItems] = useState<CostItem[]>(createInitialLaborItems);
   
-  // Other/custom items
+  // Other/custom items - note: other items are not passed as props yet, initialized empty
   const [otherItems, setOtherItems] = useState<CostItem[]>([]);
   
   // Track unsaved changes and current data source
