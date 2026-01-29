@@ -527,10 +527,21 @@ export function MaterialCalculationTab({
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+            tr { page-break-inside: avoid; break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
             td, th { word-wrap: break-word; overflow: hidden; }
+            /* Page break controls */
+            .page-break { page-break-before: always; break-before: always; }
+            .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+            .section { page-break-inside: avoid; break-inside: avoid; margin-bottom: 12px; }
+            .signature-block { page-break-inside: avoid; break-inside: avoid; }
+            .footer-block { page-break-inside: avoid; break-inside: avoid; }
+            .totals-block { page-break-inside: avoid; break-inside: avoid; }
             @media print {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
             }
           </style>
         </head>
@@ -577,7 +588,7 @@ export function MaterialCalculationTab({
 
             <!-- Materials Section - Compact -->
             ${materialItems.length > 0 ? `
-              <div style="margin-bottom: 12px;">
+              <div class="section" style="margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                   <span style="font-size: 12px;">📦</span>
                   <h2 style="font-size: 12px; font-weight: 600; color: #1e40af;">Materials</h2>
@@ -602,7 +613,7 @@ export function MaterialCalculationTab({
 
             <!-- Labor Section - Compact -->
             ${laborItems.length > 0 ? `
-              <div style="margin-bottom: 12px;">
+              <div class="section" style="margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                   <span style="font-size: 12px;">🔨</span>
                   <h2 style="font-size: 12px; font-weight: 600; color: #b45309;">Labor</h2>
@@ -627,7 +638,7 @@ export function MaterialCalculationTab({
 
             <!-- Other Section - Compact -->
             ${otherItems.length > 0 ? `
-              <div style="margin-bottom: 12px;">
+              <div class="section" style="margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                   <span style="font-size: 12px;">⋯</span>
                   <h2 style="font-size: 12px; font-weight: 600; color: #7c3aed;">Other</h2>
@@ -651,7 +662,7 @@ export function MaterialCalculationTab({
             ` : ''}
 
             <!-- Summary & Grand Total with Tax - Beige styling -->
-            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 6px; padding: 14px; margin-top: 16px;">
+            <div class="totals-block avoid-break" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 6px; padding: 14px; margin-top: 16px;">
               <!-- Subtotals -->
               <div style="margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 10px;">
@@ -710,7 +721,7 @@ export function MaterialCalculationTab({
             </div>
 
             <!-- Client Signature Section - Compact -->
-            <div style="margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px;">
+            <div class="signature-block avoid-break" style="margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; page-break-inside: avoid;">
               <h3 style="font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Client Approval</h3>
               <p style="font-size: 8px; color: #64748b; margin-bottom: 12px;">
                 By signing below, client approves this cost breakdown for: <strong>${projectName}</strong>
@@ -796,7 +807,7 @@ export function MaterialCalculationTab({
             </div>
 
             <!-- Footer with Company Branding - Compact -->
-            <div style="margin-top: 16px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 12px; border-radius: 6px;">
+            <div class="footer-block avoid-break" style="margin-top: 16px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 12px; border-radius: 6px; page-break-inside: avoid;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   ${companyLogoUrl ? `
