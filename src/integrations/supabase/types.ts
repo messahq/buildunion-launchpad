@@ -139,6 +139,13 @@ export type Database = {
             referencedRelation: "project_summaries"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_baseline_versions_summary"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "project_summaries_team"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bu_profiles: {
@@ -1371,6 +1378,111 @@ export type Database = {
         }
         Relationships: []
       }
+      project_summaries_team: {
+        Row: {
+          ai_workflow_config: Json | null
+          baseline_locked_at: string | null
+          baseline_locked_by: string | null
+          baseline_snapshot: Json | null
+          blueprint_analysis: Json | null
+          calculator_results: Json | null
+          created_at: string | null
+          current_baseline_version_id: string | null
+          id: string | null
+          invoice_id: string | null
+          invoice_sent_at: string | null
+          invoice_status: string | null
+          labor_cost: number | null
+          line_items: Json | null
+          material_cost: number | null
+          mode: string | null
+          notes: string | null
+          photo_estimate: Json | null
+          project_end_date: string | null
+          project_id: string | null
+          project_start_date: string | null
+          status: string | null
+          template_items: Json | null
+          total_cost: number | null
+          updated_at: string | null
+          user_id: string | null
+          verified_facts: Json | null
+        }
+        Insert: {
+          ai_workflow_config?: Json | null
+          baseline_locked_at?: string | null
+          baseline_locked_by?: string | null
+          baseline_snapshot?: Json | null
+          blueprint_analysis?: Json | null
+          calculator_results?: Json | null
+          created_at?: string | null
+          current_baseline_version_id?: string | null
+          id?: string | null
+          invoice_id?: string | null
+          invoice_sent_at?: string | null
+          invoice_status?: string | null
+          labor_cost?: number | null
+          line_items?: Json | null
+          material_cost?: number | null
+          mode?: string | null
+          notes?: string | null
+          photo_estimate?: Json | null
+          project_end_date?: string | null
+          project_id?: string | null
+          project_start_date?: string | null
+          status?: string | null
+          template_items?: Json | null
+          total_cost?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified_facts?: Json | null
+        }
+        Update: {
+          ai_workflow_config?: Json | null
+          baseline_locked_at?: string | null
+          baseline_locked_by?: string | null
+          baseline_snapshot?: Json | null
+          blueprint_analysis?: Json | null
+          calculator_results?: Json | null
+          created_at?: string | null
+          current_baseline_version_id?: string | null
+          id?: string | null
+          invoice_id?: string | null
+          invoice_sent_at?: string | null
+          invoice_status?: string | null
+          labor_cost?: number | null
+          line_items?: Json | null
+          material_cost?: number | null
+          mode?: string | null
+          notes?: string | null
+          photo_estimate?: Json | null
+          project_end_date?: string | null
+          project_id?: string | null
+          project_start_date?: string | null
+          status?: string | null
+          template_items?: Json | null
+          total_cost?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          verified_facts?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_summaries_current_baseline_version_id_fkey"
+            columns: ["current_baseline_version_id"]
+            isOneToOne: false
+            referencedRelation: "baseline_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_summaries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_project_member_validated: {
@@ -1396,6 +1508,39 @@ export type Database = {
       can_view_phone: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
+      }
+      get_collaborator_profiles: {
+        Args: { _viewer_id: string }
+        Returns: {
+          availability: string
+          avatar_url: string
+          bio: string
+          certifications: string[]
+          company_logo_url: string
+          company_name: string
+          company_website: string
+          created_at: string
+          experience_level: Database["public"]["Enums"]["experience_level"]
+          experience_years: number
+          hourly_rate: number
+          id: string
+          is_contractor: boolean
+          is_public_profile: boolean
+          is_union_member: boolean
+          is_verified: boolean
+          latitude: number
+          location_status: string
+          location_updated_at: string
+          longitude: number
+          phone: string
+          primary_trade: Database["public"]["Enums"]["construction_trade"]
+          profile_completed: boolean
+          secondary_trades: Database["public"]["Enums"]["construction_trade"][]
+          service_area: string
+          union_name: string
+          updated_at: string
+          user_id: string
+        }[]
       }
       get_project_role: {
         Args: { _project_id: string; _user_id: string }
