@@ -75,6 +75,7 @@ import {
   CircleAlert,
   Lock,
   RotateCcw,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -231,6 +232,15 @@ export const ProjectCommandCenter = ({
   const [isEditingTeamReport, setIsEditingTeamReport] = useState(false);
   const [isSavingBrief, setIsSavingBrief] = useState(false);
   const [isSavingTeamReport, setIsSavingTeamReport] = useState(false);
+  
+  // Team Report Send to Team state
+  const [isSendToTeamDialogOpen, setIsSendToTeamDialogOpen] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<Array<{ user_id: string; email: string; name: string; role: string }>>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [customRecipientEmail, setCustomRecipientEmail] = useState("");
+  const [customRecipients, setCustomRecipients] = useState<string[]>([]);
+  const [isSendingToTeam, setIsSendingToTeam] = useState(false);
+  const [sendProgress, setSendProgress] = useState({ sent: 0, total: 0, errors: 0 });
   
   // Preview state
   const [previewDocument, setPreviewDocument] = useState<DocumentAction | null>(null);
@@ -1177,6 +1187,157 @@ export const ProjectCommandCenter = ({
     setIsEditingTeamReport(false);
     setEditableTeamReportContent("");
   }, []);
+
+  // Fetch team members for "Send to Team"
+  const fetchTeamMembersForSend = useCallback(async () => {
+    try {
+      // Get project members
+      const { data: members, error: membersError } = await supabase
+        .from("project_members")
+        .select("user_id, role")
+        .eq("project_id", projectId);
+
+      if (membersError) throw membersError;
+
+      if (!members || members.length === 0) {
+        setTeamMembers([]);
+        return;
+      }
+
+      // Get profiles for these members
+      const userIds = members.map(m => m.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+
+      // Get auth emails (we'll need to get this from bu_profiles or use user_id lookup)
+      const { data: buProfiles, error: buError } = await supabase
+        .from("bu_profiles")
+        .select("user_id, phone, company_name")
+        .in("user_id", userIds);
+
+      // Combine data - for email, we'll use the profiles table or fallback
+      const combinedMembers = members.map(m => {
+        const profile = profiles?.find(p => p.user_id === m.user_id);
+        const buProfile = buProfiles?.find(bp => bp.user_id === m.user_id);
+        return {
+          user_id: m.user_id,
+          email: "", // We'll need to get this from auth or have users add it
+          name: profile?.full_name || buProfile?.company_name || "Team Member",
+          role: m.role
+        };
+      });
+
+      setTeamMembers(combinedMembers);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      setTeamMembers([]);
+    }
+  }, [projectId]);
+
+  // Open Send to Team dialog
+  const openSendToTeamDialog = useCallback(async () => {
+    await fetchTeamMembersForSend();
+    setSelectedRecipients([]);
+    setCustomRecipients([]);
+    setCustomRecipientEmail("");
+    setSendProgress({ sent: 0, total: 0, errors: 0 });
+    setIsSendToTeamDialogOpen(true);
+  }, [fetchTeamMembersForSend]);
+
+  // Add custom recipient
+  const addCustomRecipient = useCallback(() => {
+    const email = customRecipientEmail.trim().toLowerCase();
+    if (!email) return;
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    
+    if (customRecipients.includes(email)) {
+      toast.error("Email already added");
+      return;
+    }
+    
+    setCustomRecipients(prev => [...prev, email]);
+    setCustomRecipientEmail("");
+  }, [customRecipientEmail, customRecipients]);
+
+  // Remove custom recipient
+  const removeCustomRecipient = useCallback((email: string) => {
+    setCustomRecipients(prev => prev.filter(e => e !== email));
+  }, []);
+
+  // Send Team Report to selected recipients
+  const sendTeamReportToRecipients = useCallback(async () => {
+    const allRecipients = [...customRecipients];
+    
+    // Get emails from selected team members
+    for (const userId of selectedRecipients) {
+      const member = teamMembers.find(m => m.user_id === userId);
+      if (member?.email) {
+        allRecipients.push(member.email);
+      }
+    }
+    
+    // Deduplicate
+    const uniqueRecipients = [...new Set(allRecipients.filter(e => e))];
+    
+    if (uniqueRecipients.length === 0) {
+      toast.error("Please add at least one recipient email");
+      return;
+    }
+    
+    setIsSendingToTeam(true);
+    setSendProgress({ sent: 0, total: uniqueRecipients.length, errors: 0 });
+    
+    let sent = 0;
+    let errors = 0;
+    const contentToSend = isEditingTeamReport ? editableTeamReportContent : teamReportContent;
+    
+    for (const email of uniqueRecipients) {
+      try {
+        const { error } = await supabase.functions.invoke("send-admin-email", {
+          body: {
+            recipientEmail: email,
+            recipientName: email.split("@")[0],
+            subject: `Team Report: ${projectName}`,
+            message: `<h2>Team Performance Report</h2>
+              <p><strong>Project:</strong> ${projectName}</p>
+              <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+              <hr/>
+              <div style="white-space: pre-wrap; font-family: system-ui, sans-serif; line-height: 1.6;">
+                ${contentToSend?.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') || ''}
+              </div>
+              <hr/>
+              <p style="color: #666; font-size: 12px;">Generated with BuildUnion AI • Professional Construction Intelligence</p>
+            `,
+          },
+        });
+        
+        if (error) throw error;
+        sent++;
+      } catch (err) {
+        console.error(`Failed to send to ${email}:`, err);
+        errors++;
+      }
+      
+      setSendProgress({ sent, total: uniqueRecipients.length, errors });
+    }
+    
+    setIsSendingToTeam(false);
+    
+    if (errors === 0) {
+      toast.success(`Team Report sent to ${sent} recipient${sent > 1 ? 's' : ''}!`);
+      setIsSendToTeamDialogOpen(false);
+    } else {
+      toast.warning(`Sent to ${sent}/${uniqueRecipients.length}. ${errors} failed.`);
+    }
+  }, [customRecipients, selectedRecipients, teamMembers, projectName, teamReportContent, editableTeamReportContent, isEditingTeamReport]);
 
   // Handle single click - show preview
   const handleSingleClick = useCallback((action: DocumentAction) => {
@@ -2486,6 +2647,15 @@ export const ProjectCommandCenter = ({
                     <Download className="h-4 w-4 mr-1" />
                     Export PDF
                   </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="gap-1 border-purple-300 text-purple-700 hover:bg-purple-50"
+                    onClick={openSendToTeamDialog}
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    Send to Team
+                  </Button>
                 </div>
               ) : (
                 <div className="flex gap-2">
@@ -2657,6 +2827,157 @@ export const ProjectCommandCenter = ({
                 <Save className="h-4 w-4" />
               )}
               Save Client Info
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send to Team Dialog */}
+      <Dialog open={isSendToTeamDialogOpen} onOpenChange={setIsSendToTeamDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-500" />
+              Send Team Report
+            </DialogTitle>
+            <DialogDescription>
+              Send the Team Report to multiple team members via email
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Custom Recipients */}
+            <div className="space-y-2">
+              <Label>Add Recipients</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  value={customRecipientEmail}
+                  onChange={(e) => setCustomRecipientEmail(e.target.value)}
+                  placeholder="Enter email address"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addCustomRecipient();
+                    }
+                  }}
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={addCustomRecipient}
+                  className="shrink-0"
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {/* Added Recipients List */}
+            {customRecipients.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Recipients ({customRecipients.length})</Label>
+                <ScrollArea className="max-h-[150px]">
+                  <div className="space-y-1.5">
+                    {customRecipients.map((email) => (
+                      <div 
+                        key={email} 
+                        className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{email}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeCustomRecipient(email)}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+
+            {/* Team Members (if any have emails) */}
+            {teamMembers.length > 0 && teamMembers.some(m => m.email) && (
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Team Members</Label>
+                <div className="space-y-1.5">
+                  {teamMembers.filter(m => m.email).map((member) => (
+                    <label 
+                      key={member.user_id} 
+                      className="flex items-center justify-between p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedRecipients.includes(member.user_id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRecipients(prev => [...prev, member.user_id]);
+                            } else {
+                              setSelectedRecipients(prev => prev.filter(id => id !== member.user_id));
+                            }
+                          }}
+                        />
+                        <span className="text-sm font-medium">{member.name}</span>
+                        <Badge variant="outline" className="text-[10px]">{member.role}</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{member.email}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No recipients warning */}
+            {customRecipients.length === 0 && selectedRecipients.length === 0 && (
+              <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  Add at least one email address to send the report.
+                </p>
+              </div>
+            )}
+
+            {/* Send Progress */}
+            {isSendingToTeam && sendProgress.total > 0 && (
+              <div className="space-y-2 p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Sending...</span>
+                  <span>{sendProgress.sent}/{sendProgress.total}</span>
+                </div>
+                <Progress value={(sendProgress.sent / sendProgress.total) * 100} />
+                {sendProgress.errors > 0 && (
+                  <p className="text-xs text-destructive">{sendProgress.errors} failed</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsSendToTeamDialogOpen(false)}
+              disabled={isSendingToTeam}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={sendTeamReportToRecipients}
+              disabled={isSendingToTeam || (customRecipients.length === 0 && selectedRecipients.length === 0)}
+              className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500"
+            >
+              {isSendingToTeam ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              Send to {customRecipients.length + selectedRecipients.length} Recipient{(customRecipients.length + selectedRecipients.length) !== 1 ? 's' : ''}
             </Button>
           </DialogFooter>
         </DialogContent>
