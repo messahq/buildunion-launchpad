@@ -215,7 +215,6 @@ export default function OperationalTruthCards({
   const { t } = useTranslation();
   const [loadingPillar, setLoadingPillar] = useState<string | null>(null);
   const [isRunningAll, setIsRunningAll] = useState(false);
-  const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [runAllProgress, setRunAllProgress] = useState(0);
   const [reports, setReports] = useState<VerificationReport[]>([]);
   // Initialize from database-persisted values
@@ -891,105 +890,7 @@ export default function OperationalTruthCards({
   ].filter(Boolean).length;
 
   // Display progress: pillar-based verification rate (using effective rate)
-  const displayProgress = isRunningAll || isSyncingAll ? runAllProgress : verificationRate;
-
-  // Auto-Sync: Re-analyze all 16 data sources
-  const autoSyncDataSources = useCallback(async () => {
-    if (!projectId) {
-      toast.error("Project ID required");
-      return;
-    }
-
-    setIsSyncingAll(true);
-    setRunAllProgress(0);
-    
-    toast.info("Syncing all 16 data sources...");
-
-    try {
-      // Step 1: Refresh project data (20%)
-      setRunAllProgress(10);
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Step 2: Fetch fresh data from database
-      const { data: summaryData, error } = await supabase
-        .from("project_summaries")
-        .select("photo_estimate, blueprint_analysis, ai_workflow_config, calculator_results")
-        .eq("project_id", projectId)
-        .maybeSingle();
-
-      if (error) throw error;
-      setRunAllProgress(30);
-
-      // Step 3: Fetch tasks for task-based data points
-      const { data: tasksData } = await supabase
-        .from("project_tasks")
-        .select("*")
-        .eq("project_id", projectId);
-
-      setRunAllProgress(50);
-
-      // Step 4: Fetch documents count
-      const { count: docCount } = await supabase
-        .from("project_documents")
-        .select("*", { count: "exact", head: true })
-        .eq("project_id", projectId);
-
-      setRunAllProgress(70);
-
-      // Step 5: Fetch team members
-      const { data: teamData } = await supabase
-        .from("project_members")
-        .select("*")
-        .eq("project_id", projectId);
-
-      setRunAllProgress(85);
-
-      // Compile sync report
-      const photoEstimate = summaryData?.photo_estimate as any;
-      const blueprintAnalysis = summaryData?.blueprint_analysis as any;
-      const aiConfig = summaryData?.ai_workflow_config as any;
-      
-      const syncedSources: string[] = [];
-      
-      // Check each data source
-      if (photoEstimate?.area) syncedSources.push("Photo AI Area");
-      if (photoEstimate?.materials?.length) syncedSources.push("Photo AI Materials");
-      if (blueprintAnalysis?.analyzed) syncedSources.push("Blueprint Analysis");
-      if (tasksData?.length) syncedSources.push(`${tasksData.length} Tasks`);
-      if (docCount) syncedSources.push(`${docCount} Documents`);
-      if (teamData?.length) syncedSources.push(`${teamData.length} Team Members`);
-      if (aiConfig?.filterAnswers) syncedSources.push("Workflow Config");
-
-      setRunAllProgress(100);
-
-      addReport({
-        pillar: "🔄 Auto-Sync Complete",
-        engine: "dual",
-        status: "success",
-        message: `${syncedSources.length} data sources synchronized`,
-        details: syncedSources.length > 0 
-          ? `Active sources: ${syncedSources.join(", ")}`
-          : "No additional data sources found. Upload photos, blueprints, or create tasks to populate."
-      });
-
-      toast.success(`Synced ${syncedSources.length} data sources`);
-      onUpdate?.();
-
-    } catch (error) {
-      console.error("Auto-sync error:", error);
-      addReport({
-        pillar: "🔄 Auto-Sync",
-        engine: "dual",
-        status: "error",
-        message: "Sync failed",
-        details: error instanceof Error ? error.message : "Unknown error"
-      });
-      toast.error("Failed to sync data sources");
-    } finally {
-      setIsSyncingAll(false);
-      setRunAllProgress(0);
-    }
-  }, [projectId, onUpdate]);
+  const displayProgress = isRunningAll ? runAllProgress : verificationRate;
 
   return (
     <div className="space-y-4">
@@ -1079,7 +980,7 @@ export default function OperationalTruthCards({
             size="sm"
             variant="outline"
             onClick={runAllVerifications}
-            disabled={isRunningAll || isSyncingAll || !projectId || pendingChecksCount === 0}
+            disabled={isRunningAll || !projectId || pendingChecksCount === 0}
             className={cn(
               "gap-2 min-w-[140px] font-medium transition-all",
               pendingChecksCount > 0 
