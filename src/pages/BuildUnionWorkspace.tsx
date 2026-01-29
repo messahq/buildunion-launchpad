@@ -30,6 +30,8 @@ import { ExportDialog, ExportOptions, ExportFormat } from "@/components/ExportDi
 import { exportToCSV, exportToJSON, projectExportColumns, generateExportFilename } from "@/lib/exportUtils";
 import { downloadPDF, buildProjectSummaryHTML } from "@/lib/pdfGenerator";
 import { useTranslation } from "react-i18next";
+import { RoleBadge } from "@/components/PermissionGate";
+import { ProjectRole } from "@/hooks/useProjectPermissions";
 
 interface SavedProject {
   id: string;
@@ -41,6 +43,7 @@ interface SavedProject {
   created_at: string;
   owner_name?: string;
   is_shared?: boolean;
+  role?: string; // Role in shared projects (foreman, worker, etc.)
 }
 
 // Questionnaire data stored for filter step
@@ -171,6 +174,7 @@ const BuildUnionProjects2 = () => {
               created_at: project.created_at,
               owner_name: ownerProfile?.full_name || "Unknown",
               is_shared: true,
+              role: member.role,
             });
           }
         }
@@ -1269,6 +1273,9 @@ const BuildUnionProjects2 = () => {
                                           <Badge variant="outline" className="capitalize text-xs">
                                             {project.status}
                                           </Badge>
+                                          {project.role && (
+                                            <RoleBadge role={project.role as ProjectRole} size="sm" />
+                                          )}
                                           <Badge variant="secondary" className="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 text-xs">
                                             Shared
                                           </Badge>
