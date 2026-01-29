@@ -2116,8 +2116,48 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         <TabsContent value="materials" className="mt-6">
           <MaterialCalculationTab 
             materials={(() => {
-              // First check if we have saved line_items in the summary (must be object with materials array)
-              // CRITICAL: Include all saved fields (baseQuantity, isEssential, totalPrice) for proper restoration
+              // Get the confirmed area from operational truth (the single source of truth)
+              const confirmedAreaValue = operationalTruth.confirmedArea;
+              
+              // Helper to sync materials with confirmed area
+              const syncMaterialsWithArea = (materials: Array<{ 
+                item: string; 
+                quantity: number; 
+                unit: string; 
+                unitPrice?: number;
+                baseQuantity?: number;
+                isEssential?: boolean;
+                totalPrice?: number;
+              }>) => {
+                // Find the current flooring/laminate area to calculate ratio
+                const flooringMaterial = materials.find(m => 
+                  /laminate|flooring/i.test(m.item) && m.unit === 'sq ft'
+                );
+                const currentMaterialArea = flooringMaterial?.baseQuantity || flooringMaterial?.quantity || null;
+                
+                // If we have a confirmed area that differs from material quantities, sync them
+                if (confirmedAreaValue && currentMaterialArea && Math.abs(confirmedAreaValue - currentMaterialArea) > 1) {
+                  const ratio = confirmedAreaValue / currentMaterialArea;
+                  return materials.map(m => {
+                    if (m.unit === 'sq ft') {
+                      const newBaseQty = Math.round((m.baseQuantity || m.quantity) * ratio);
+                      const isEssential = m.isEssential ?? /laminate|flooring|underlayment|baseboard|trim|adhesive/i.test(m.item);
+                      const newFinalQty = isEssential ? Math.ceil(newBaseQty * 1.1) : newBaseQty;
+                      return {
+                        ...m,
+                        baseQuantity: newBaseQty,
+                        quantity: newFinalQty,
+                        totalPrice: newFinalQty * (m.unitPrice || 0),
+                      };
+                    }
+                    return m;
+                  });
+                }
+                return materials;
+              };
+              
+              // First check if we have saved line_items in the summary
+              // CRITICAL: Even saved data must be synced with the current confirmed area
               const savedLineItems = summary?.line_items as { 
                 materials?: Array<{ 
                   item: string; 
@@ -2131,31 +2171,14 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               } | null;
               if (savedLineItems && typeof savedLineItems === 'object' && !Array.isArray(savedLineItems) && 
                   savedLineItems.materials && savedLineItems.materials.length > 0) {
-                return savedLineItems.materials;
+                // Sync saved materials with the current confirmed area
+                return syncMaterialsWithArea(savedLineItems.materials);
               }
               
               // Priority 2: Use AI-detected materials from photo_estimate or ai_workflow_config
               // IMPORTANT: Sync material quantities with the confirmed area from citation
               if (aiAnalysis?.materials && aiAnalysis.materials.length > 0) {
-                // Use the confirmed area from operational truth (same as displayed in citation [P-001])
-                const confirmedAreaValue = operationalTruth.confirmedArea;
-                
-                // Find the original area from materials (if flooring/laminate exists)
-                const flooringMaterial = aiAnalysis.materials.find(m => 
-                  /laminate|flooring/i.test(m.item) && m.unit === 'sq ft'
-                );
-                const originalMaterialArea = flooringMaterial?.quantity || null;
-                
-                // If we have a confirmed area that differs from material quantities, sync them
-                if (confirmedAreaValue && originalMaterialArea && confirmedAreaValue !== originalMaterialArea) {
-                  const ratio = confirmedAreaValue / originalMaterialArea;
-                  return aiAnalysis.materials.map(m => ({
-                    ...m,
-                    quantity: m.unit === 'sq ft' ? Math.round(m.quantity * ratio) : m.quantity,
-                  }));
-                }
-                
-                return aiAnalysis.materials;
+                return syncMaterialsWithArea(aiAnalysis.materials);
               }
               
               // Priority 3: Aggregate materials from "Order" tasks
