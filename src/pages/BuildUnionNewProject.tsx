@@ -829,7 +829,7 @@ const BuildUnionNewProject = () => {
                   <AddressAutocomplete
                     value={address}
                     onChange={setAddress}
-                    placeholder="e.g., Toronto, ON"
+                    placeholder="e.g., 123 Queen Street, Toronto, ON"
                     className="border-slate-200"
                   />
                 </div>

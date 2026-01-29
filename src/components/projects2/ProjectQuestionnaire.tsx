@@ -357,7 +357,7 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tie
               id="location"
               value={answers.location}
               onChange={(e) => updateAnswers({ location: e.target.value })}
-              placeholder="e.g., Toronto, ON"
+              placeholder="e.g., 123 Queen Street, Toronto, ON"
               className="h-11 pl-10"
             />
           </div>
