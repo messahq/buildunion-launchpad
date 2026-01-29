@@ -929,7 +929,7 @@ export function MaterialCalculationTab({
     }
   };
 
-  // Item row is now a simple render - no nested component to avoid re-creation
+  // Mobile-responsive item row - uses cards on mobile, grid on desktop
   const renderItemRow = (
     item: CostItem, 
     setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,
@@ -938,163 +938,189 @@ export function MaterialCalculationTab({
     <div 
       key={item.id}
       className={cn(
-        "grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg transition-colors",
+        "py-3 px-3 rounded-lg transition-colors",
         isEditing ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50"
       )}
     >
       {isEditing ? (
-        <>
-          <div className="col-span-4">
-            <Input
-              value={editValues.item || ""}
-              onChange={(e) => setEditValues(prev => ({ ...prev, item: e.target.value }))}
-              className="h-8 text-sm"
-            />
+        // Edit mode - stack on mobile
+        <div className="space-y-3">
+          <Input
+            value={editValues.item || ""}
+            onChange={(e) => setEditValues(prev => ({ ...prev, item: e.target.value }))}
+            className="h-9 text-sm"
+            placeholder={t("materials.description", "Description")}
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("materials.quantity", "Qty")}</label>
+              <Input
+                type="text"
+                inputMode="decimal"
+                defaultValue={editValues.quantity || 0}
+                onBlur={(e) => setEditValues(prev => ({ ...prev, quantity: parseFloat(e.target.value.replace(',', '.')) || 0 }))}
+                className="h-9 text-sm text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("materials.unit", "Unit")}</label>
+              <Input
+                value={editValues.unit || ""}
+                onChange={(e) => setEditValues(prev => ({ ...prev, unit: e.target.value }))}
+                className="h-9 text-sm text-center"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("materials.unitPrice", "Price")}</label>
+              <Input
+                type="text"
+                inputMode="decimal"
+                defaultValue={editValues.unitPrice || ''}
+                onBlur={(e) => setEditValues(prev => ({ ...prev, unitPrice: parseFloat(e.target.value.replace(',', '.')) || 0 }))}
+                className="h-9 text-sm text-right"
+                placeholder="0"
+              />
+            </div>
           </div>
-          <div className="col-span-2">
-            <Input
-              type="text"
-              inputMode="decimal"
-              defaultValue={editValues.quantity || 0}
-              onBlur={(e) => setEditValues(prev => ({ ...prev, quantity: parseFloat(e.target.value.replace(',', '.')) || 0 }))}
-              className="h-8 text-sm text-center"
-            />
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {t("materials.total", "Total")}: {formatCurrency((editValues.quantity || 0) * (editValues.unitPrice || 0))}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 gap-1"
+                onClick={() => saveEdit(setItems, item.id)}
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{t("common.save", "Save")}</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1"
+                onClick={cancelEdit}
+              >
+                <X className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{t("common.cancel", "Cancel")}</span>
+              </Button>
+            </div>
           </div>
-          <div className="col-span-1">
-            <Input
-              value={editValues.unit || ""}
-              onChange={(e) => setEditValues(prev => ({ ...prev, unit: e.target.value }))}
-              className="h-8 text-sm text-center"
-            />
-          </div>
-          <div className="col-span-2">
-            <Input
-              type="text"
-              inputMode="decimal"
-              defaultValue={editValues.unitPrice || ''}
-              onBlur={(e) => setEditValues(prev => ({ ...prev, unitPrice: parseFloat(e.target.value.replace(',', '.')) || 0 }))}
-              className="h-8 text-sm text-right"
-              placeholder="0"
-            />
-          </div>
-          <div className="col-span-2 text-right font-medium text-sm">
-            {formatCurrency((editValues.quantity || 0) * (editValues.unitPrice || 0))}
-          </div>
-          <div className="col-span-1 flex gap-1 justify-end">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-100"
-              onClick={() => saveEdit(setItems, item.id)}
-            >
-              <Check className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={cancelEdit}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </>
+        </div>
       ) : (
-        <>
-          <div className="col-span-4 font-medium text-sm truncate flex items-center gap-2" title={item.item}>
-            {item.item}
-            {item.isEssential && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800">
-                +10%
-              </Badge>
-            )}
-          </div>
-          <div className="col-span-2 text-center text-sm text-muted-foreground">
-            {item.isEssential && item.baseQuantity !== undefined ? (
-              <div className="flex flex-col items-center gap-0.5">
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    defaultValue={item.baseQuantity || ''}
-                    onBlur={(e) => handleBaseQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                    className="h-6 w-16 text-xs text-center p-1 border-dashed"
-                    title={t("materials.editBaseQty", "Edit base quantity")}
-                  />
-                </div>
-                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                  → {item.quantity.toLocaleString()} (+10%)
-                </span>
+        // View mode - responsive layout
+        <div className="space-y-2">
+          {/* Row 1: Description + Actions */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-sm break-words">{item.item}</span>
+                {item.isEssential && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 shrink-0">
+                    +10%
+                  </Badge>
+                )}
               </div>
-            ) : (
-              item.quantity.toLocaleString()
-            )}
+            </div>
+            <div className="flex gap-1 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={() => startEditing(item)}
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => deleteItem(setItems, item.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
-          <div className="col-span-1 text-center text-xs text-muted-foreground">
-            {item.unit}
+          
+          {/* Row 2: Qty/Unit + Price + Total */}
+          <div className="grid grid-cols-3 gap-2 items-center">
+            {/* Quantity + Unit */}
+            <div className="text-sm text-muted-foreground">
+              {item.isEssential && item.baseQuantity !== undefined ? (
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      defaultValue={item.baseQuantity || ''}
+                      onBlur={(e) => handleBaseQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                      className="h-7 w-16 text-xs text-center p-1 border-dashed"
+                      title={t("materials.editBaseQty", "Edit base quantity")}
+                    />
+                    <span className="text-xs">{item.unit}</span>
+                  </div>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium block">
+                    → {item.quantity.toLocaleString()} (+10%)
+                  </span>
+                </div>
+              ) : (
+                <span>{item.quantity.toLocaleString()} {item.unit}</span>
+              )}
+            </div>
+            
+            {/* Unit Price */}
+            <div>
+              <Input
+                type="text"
+                inputMode="decimal"
+                defaultValue={item.unitPrice || ''}
+                onBlur={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value.replace(',', '.')) || 0)}
+                className="h-8 text-sm text-right w-full"
+                placeholder="$0"
+              />
+            </div>
+            
+            {/* Total */}
+            <div className="text-right font-medium text-sm">
+              {item.totalPrice > 0 ? formatCurrency(item.totalPrice) : "-"}
+            </div>
           </div>
-          <div className="col-span-2">
-            <Input
-              type="text"
-              inputMode="decimal"
-              defaultValue={item.unitPrice || ''}
-              onBlur={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value.replace(',', '.')) || 0)}
-              className="h-8 text-sm text-right"
-              placeholder="0"
-            />
-          </div>
-          <div className="col-span-2 text-right font-medium text-sm">
-            {item.totalPrice > 0 ? formatCurrency(item.totalPrice) : "-"}
-          </div>
-          <div className="col-span-1 flex gap-1 justify-end">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => startEditing(item)}
-            >
-              <Edit2 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => deleteItem(setItems, item.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
 
-  // Table header component
+  // Table header - only shown on desktop
   const TableHeader = () => (
-    <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-2 pb-2 border-b">
-      <div className="col-span-4">{t("materials.description", "Description")}</div>
-      <div className="col-span-2 text-center">{t("materials.quantity", "Qty")}</div>
-      <div className="col-span-1 text-center">{t("materials.unit", "Unit")}</div>
-      <div className="col-span-2 text-right">{t("materials.unitPrice", "Unit Price")}</div>
-      <div className="col-span-2 text-right">{t("materials.total", "Total")}</div>
-      <div className="col-span-1"></div>
+    <div className="hidden md:grid grid-cols-3 gap-2 text-xs font-medium text-muted-foreground px-3 pb-2 border-b">
+      <div>{t("materials.description", "Description")}</div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="text-center">{t("materials.qtyUnit", "Qty/Unit")}</div>
+        <div className="text-right">{t("materials.unitPrice", "Unit Price")}</div>
+        <div className="text-right">{t("materials.total", "Total")}</div>
+      </div>
+      <div></div>
     </div>
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calculator className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">
-            {t("materials.calculation", "Cost Breakdown")}
-          </h3>
+    <div className="space-y-4 md:space-y-6">
+      {/* Header - stacked on mobile */}
+      <div className="space-y-3">
+        {/* Title row */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-primary" />
+            <h3 className="text-base md:text-lg font-semibold">
+              {t("materials.calculation", "Cost Breakdown")}
+            </h3>
+          </div>
           {/* Data source indicator */}
           <Badge 
             variant="outline" 
             className={cn(
-              "text-xs",
+              "text-xs shrink-0",
               currentDataSource === 'saved' 
                 ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
                 : currentDataSource === 'ai'
@@ -1103,58 +1129,63 @@ export function MaterialCalculationTab({
             )}
           >
             {currentDataSource === 'saved' 
-              ? "💾 Saved Edits" 
+              ? "💾 Saved" 
               : currentDataSource === 'ai' 
-              ? "🤖 AI Generated" 
-              : "📋 From Tasks"}
+              ? "🤖 AI" 
+              : "📋 Tasks"}
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-sm">
+        
+        {/* Badges + Actions row - wrap on mobile */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-xs md:text-sm">
             {materialItems.length + laborItems.length + otherItems.length} {t("materials.items", "items")}
           </Badge>
           {/* Show project total for reference */}
           <Badge 
             variant="outline" 
-            className="text-sm border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
+            className="text-xs md:text-sm border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
           >
-            Project: {formatCurrency(projectTotal)}
+            {formatCurrency(projectTotal)}
           </Badge>
           {/* Unsaved changes indicator */}
           {hasUnsavedChanges && (
             <Badge 
               variant="outline" 
-              className="text-sm border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 animate-pulse"
+              className="text-xs md:text-sm border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 animate-pulse"
             >
               {t("materials.unsaved", "Unsaved")}
             </Badge>
           )}
-          {/* Reset Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-            disabled={!hasUnsavedChanges}
-            className="gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("materials.reset", "Reset")}</span>
-          </Button>
-          {/* Save & Export PDF Button */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleExportPDF}
-            disabled={isExporting}
-            className="gap-2"
-          >
-            {isExporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            <span className="hidden sm:inline">{t("materials.saveAndExportPdf", "Save & Export PDF")}</span>
-          </Button>
+          
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Reset Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              disabled={!hasUnsavedChanges}
+              className="h-8 px-2 md:px-3"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">{t("materials.reset", "Reset")}</span>
+            </Button>
+            {/* Save & Export PDF Button */}
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              className="h-8 px-2 md:px-3"
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline ml-1">{t("materials.saveAndExportPdf", "Save & Export")}</span>
+            </Button>
+          </div>
         </div>
       </div>
 
