@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   format,
   differenceInDays,
@@ -240,12 +241,24 @@ const HierarchicalTimeline = ({
   onProjectDatesChange,
 }: HierarchicalTimelineProps) => {
   const { t } = useTranslation();
-  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
-    preparation: true,
-    execution: true,
+  const isMobile = useIsMobile();
+  
+  // On mobile, collapse all phases by default; on desktop, expand first two
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>(() => ({
+    preparation: !isMobile,
+    execution: !isMobile,
     verification: false,
-  });
+  }));
   const [expandedSubTimelines, setExpandedSubTimelines] = useState<Record<string, boolean>>({});
+  
+  // Update expanded state when switching between mobile/desktop
+  useEffect(() => {
+    setExpandedPhases({
+      preparation: !isMobile,
+      execution: !isMobile,
+      verification: false,
+    });
+  }, [isMobile]);
   const [autoShiftPending, setAutoShiftPending] = useState<Array<{ taskId: string; newDueDate: string; shiftDays: number }>>([]);
   const [showAutoShiftAlert, setShowAutoShiftAlert] = useState(false);
   const [projectDateShiftPending, setProjectDateShiftPending] = useState<{
