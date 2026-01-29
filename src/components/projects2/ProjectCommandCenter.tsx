@@ -828,8 +828,8 @@ export const ProjectCommandCenter = ({
         // Save to documents
         if (saveToDocuments) {
           const timestamp = new Date().toISOString().split('T')[0];
-          const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.md`;
-          const blob = new Blob([response.data.report], { type: 'text/markdown' });
+          const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.txt`;
+          const blob = new Blob([response.data.report], { type: 'text/plain' });
           
           const result = await saveDocumentToProject({
             projectId,
@@ -1063,8 +1063,8 @@ export const ProjectCommandCenter = ({
       }
 
       const timestamp = new Date().toISOString().split('T')[0];
-      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.md`;
-      const blob = new Blob([editableTeamReportContent], { type: 'text/markdown' });
+      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.txt`;
+      const blob = new Blob([editableTeamReportContent], { type: 'text/plain' });
       
       const result = await saveDocumentToProject({
         projectId,
@@ -2374,7 +2374,7 @@ export const ProjectCommandCenter = ({
                 </DialogDescription>
               </div>
               {!isEditingTeamReport ? (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="sm" onClick={startEditingTeamReport}>
                     <Pencil className="h-4 w-4 mr-1" />
                     Edit
@@ -2396,6 +2396,95 @@ export const ProjectCommandCenter = ({
                   }}>
                     <Mail className="h-4 w-4 mr-1" />
                     Email
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={async () => {
+                      if (!teamReportContent) return;
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) {
+                        toast.error("Please sign in to save");
+                        return;
+                      }
+                      const timestamp = new Date().toISOString().split('T')[0];
+                      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.txt`;
+                      const blob = new Blob([teamReportContent], { type: 'text/plain' });
+                      const result = await saveDocumentToProject({
+                        projectId,
+                        userId: session.user.id,
+                        fileName,
+                        fileBlob: blob,
+                        documentType: 'team-report'
+                      });
+                      if (result.success) {
+                        toast.success("Team Report saved to Documents!");
+                      } else {
+                        toast.error("Failed to save report");
+                      }
+                    }}
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    Save
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="gap-1 bg-gradient-to-r from-purple-500 to-pink-500"
+                    onClick={() => {
+                      if (!teamReportContent) return;
+                      // Create a printable window with formatted content
+                      const printWindow = window.open("", "_blank");
+                      if (!printWindow) {
+                        toast.error("Please allow popups to export PDF");
+                        return;
+                      }
+                      const html = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <title>Team Report - ${projectName}</title>
+                          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+                          <style>
+                            * { margin: 0; padding: 0; box-sizing: border-box; }
+                            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1a1a1a; background: #fff; line-height: 1.6; }
+                            h1 { font-size: 24px; color: #1e293b; margin-bottom: 8px; }
+                            h2 { font-size: 18px; color: #334155; margin: 24px 0 12px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+                            h3 { font-size: 14px; color: #475569; margin: 16px 0 8px 0; }
+                            p, li { font-size: 13px; color: #64748b; margin-bottom: 8px; }
+                            ul { padding-left: 20px; }
+                            .header { background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%); color: white; padding: 24px; margin: -40px -40px 40px -40px; }
+                            .header h1 { color: white; }
+                            .header p { color: rgba(255,255,255,0.85); }
+                            .meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+                            .meta-item { background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 6px; font-size: 12px; }
+                            .content { white-space: pre-wrap; }
+                            @media print { body { padding: 20px; } .header { margin: -20px -20px 20px -20px; } }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="header">
+                            <h1>Team Performance Report</h1>
+                            <p>${projectName}</p>
+                            <div class="meta">
+                              ${teamReportMetadata ? `
+                                <span class="meta-item">👥 ${teamReportMetadata.teamSize} Members</span>
+                                <span class="meta-item">📋 ${teamReportMetadata.totalTasks} Tasks</span>
+                                <span class="meta-item">✅ ${teamReportMetadata.completionRate}% Complete</span>
+                                <span class="meta-item">💰 $${teamReportMetadata.totalBudget?.toLocaleString()} CAD</span>
+                              ` : ''}
+                            </div>
+                          </div>
+                          <div class="content">${teamReportContent.replace(/\n/g, '<br/>').replace(/#{1,3}\s/g, '<strong>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>
+                        </body>
+                        </html>
+                      `;
+                      printWindow.document.write(html);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Export PDF
                   </Button>
                 </div>
               ) : (
