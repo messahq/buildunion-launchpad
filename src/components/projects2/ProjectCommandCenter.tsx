@@ -835,17 +835,39 @@ export const ProjectCommandCenter = ({
         setTeamReportMetadata(response.data.metadata);
         setIsTeamReportDialogOpen(true);
 
-        // Save to documents
+        // Save to documents as PDF (storage doesn't support text/plain)
         if (saveToDocuments) {
           const timestamp = new Date().toISOString().split('T')[0];
-          const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.txt`;
-          const blob = new Blob([response.data.report], { type: 'text/plain' });
+          const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.pdf`;
+          
+          // Convert markdown to simple PDF using jsPDF
+          const { jsPDF } = await import('jspdf');
+          const doc = new jsPDF();
+          
+          // Add title
+          doc.setFontSize(18);
+          doc.text(`Team Report: ${projectName}`, 20, 20);
+          
+          // Add metadata
+          doc.setFontSize(10);
+          doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+          if (response.data.metadata) {
+            doc.text(`Team Size: ${response.data.metadata.teamSize || 'N/A'}`, 20, 36);
+            doc.text(`Task Completion: ${response.data.metadata.taskCompletion || 'N/A'}%`, 20, 42);
+          }
+          
+          // Add content
+          doc.setFontSize(11);
+          const lines = doc.splitTextToSize(response.data.report.replace(/\*\*/g, '').replace(/#{1,3}\s/g, ''), 170);
+          doc.text(lines, 20, 55);
+          
+          const pdfBlob = doc.output('blob');
           
           const result = await saveDocumentToProject({
             projectId,
             userId: session.user.id,
             fileName,
-            fileBlob: blob,
+            fileBlob: pdfBlob,
             documentType: 'team-report'
           });
           
@@ -1073,14 +1095,32 @@ export const ProjectCommandCenter = ({
       }
 
       const timestamp = new Date().toISOString().split('T')[0];
-      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.txt`;
-      const blob = new Blob([editableTeamReportContent], { type: 'text/plain' });
+      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.pdf`;
+      
+      // Convert markdown to PDF (storage doesn't support text/plain)
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text(`Team Report: ${projectName}`, 20, 20);
+      
+      // Add metadata
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+      
+      // Add content
+      doc.setFontSize(11);
+      const lines = doc.splitTextToSize(editableTeamReportContent.replace(/\*\*/g, '').replace(/#{1,3}\s/g, ''), 170);
+      doc.text(lines, 20, 45);
+      
+      const pdfBlob = doc.output('blob');
       
       const result = await saveDocumentToProject({
         projectId,
         userId: session.user.id,
         fileName,
-        fileBlob: blob,
+        fileBlob: pdfBlob,
         documentType: 'team-report'
       });
       
@@ -2653,13 +2693,25 @@ export const ProjectCommandCenter = ({
                         return;
                       }
                       const timestamp = new Date().toISOString().split('T')[0];
-                      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.txt`;
-                      const blob = new Blob([teamReportContent], { type: 'text/plain' });
+                      const fileName = `Team_Report_${projectName.replace(/\s+/g, '_')}_${timestamp}.pdf`;
+                      
+                      // Convert to PDF (storage doesn't support text/plain)
+                      const { jsPDF } = await import('jspdf');
+                      const doc = new jsPDF();
+                      doc.setFontSize(18);
+                      doc.text(`Team Report: ${projectName}`, 20, 20);
+                      doc.setFontSize(10);
+                      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+                      doc.setFontSize(11);
+                      const lines = doc.splitTextToSize(teamReportContent.replace(/\*\*/g, '').replace(/#{1,3}\s/g, ''), 170);
+                      doc.text(lines, 20, 45);
+                      
+                      const pdfBlob = doc.output('blob');
                       const result = await saveDocumentToProject({
                         projectId,
                         userId: session.user.id,
                         fileName,
-                        fileBlob: blob,
+                        fileBlob: pdfBlob,
                         documentType: 'team-report'
                       });
                       if (result.success) {
