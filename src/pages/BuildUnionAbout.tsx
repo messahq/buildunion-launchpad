@@ -6,10 +6,12 @@ import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import aboutLogo from "@/assets/buildunion-logo-about.png";
+import { useAuth } from "@/hooks/useAuth";
 
 const BuildUnionAbout = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const values = [
     {
@@ -151,9 +153,9 @@ const BuildUnionAbout = () => {
               <Button
                 size="lg"
                 className="bg-amber-500 hover:bg-amber-600 text-white"
-                onClick={() => navigate("/buildunion/register")}
+                onClick={() => navigate(user ? "/buildunion/workspace" : "/buildunion/register")}
               >
-                {t("about.cta.joinButton")}
+                {user ? t("login.goToWorkspace", "Go to Workspace") : t("about.cta.joinButton")}
               </Button>
               <Button
                 size="lg"
