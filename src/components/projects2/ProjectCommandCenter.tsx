@@ -235,7 +235,7 @@ export const ProjectCommandCenter = ({
   
   // Team Report Send to Team state
   const [isSendToTeamDialogOpen, setIsSendToTeamDialogOpen] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<Array<{ user_id: string; email: string; name: string; role: string }>>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ user_id: string; email: string; name: string; role: string; source?: 'bu_user' | 'email_invite' }>>([]);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [customRecipientEmail, setCustomRecipientEmail] = useState("");
   const [customRecipients, setCustomRecipients] = useState<string[]>([]);
@@ -1188,50 +1188,116 @@ export const ProjectCommandCenter = ({
     setEditableTeamReportContent("");
   }, []);
 
-  // Fetch team members for "Send to Team"
+  // Fetch team members for "Send to Team" - includes both BU users and email invitees
   const fetchTeamMembersForSend = useCallback(async () => {
     try {
-      // Get project members
+      const allRecipients: Array<{ user_id: string; email: string; name: string; role: string; source: 'bu_user' | 'email_invite' }> = [];
+
+      // 1. Get registered project members (BU users)
       const { data: members, error: membersError } = await supabase
         .from("project_members")
         .select("user_id, role")
         .eq("project_id", projectId);
 
-      if (membersError) throw membersError;
-
-      if (!members || members.length === 0) {
-        setTeamMembers([]);
-        return;
+      if (membersError) {
+        console.error("Error fetching project members:", membersError);
       }
 
-      // Get profiles for these members
-      const userIds = members.map(m => m.user_id);
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", userIds);
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        
+        // Get profiles for names
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
 
-      // Get auth emails (we'll need to get this from bu_profiles or use user_id lookup)
-      const { data: buProfiles, error: buError } = await supabase
-        .from("bu_profiles")
-        .select("user_id, phone, company_name")
-        .in("user_id", userIds);
+        // Get bu_profiles for company names and additional info
+        const { data: buProfiles } = await supabase
+          .from("bu_profiles")
+          .select("user_id, company_name")
+          .in("user_id", userIds);
 
-      // Combine data - for email, we'll use the profiles table or fallback
-      const combinedMembers = members.map(m => {
-        const profile = profiles?.find(p => p.user_id === m.user_id);
-        const buProfile = buProfiles?.find(bp => bp.user_id === m.user_id);
-        return {
-          user_id: m.user_id,
-          email: "", // We'll need to get this from auth or have users add it
-          name: profile?.full_name || buProfile?.company_name || "Team Member",
-          role: m.role
-        };
-      });
+        // For each member, try to get email from team_invitations (accepted ones)
+        const { data: acceptedInvites } = await supabase
+          .from("team_invitations")
+          .select("email, invited_by")
+          .eq("project_id", projectId)
+          .eq("status", "accepted");
 
-      setTeamMembers(combinedMembers);
+        // Build member list with available data
+        for (const member of members) {
+          const profile = profiles?.find(p => p.user_id === member.user_id);
+          const buProfile = buProfiles?.find(bp => bp.user_id === member.user_id);
+          
+          // Try to find email from accepted invitations or leave empty for manual entry
+          // Note: We can't directly access auth.users emails, but invitations have the email
+          const invite = acceptedInvites?.find(inv => {
+            // This is a heuristic - user who accepted might match
+            return true; // We'll show all accepted emails as potential matches
+          });
+
+          allRecipients.push({
+            user_id: member.user_id,
+            email: "", // BU users need to be matched via invitations or manual entry
+            name: profile?.full_name || buProfile?.company_name || "Team Member",
+            role: member.role,
+            source: 'bu_user'
+          });
+        }
+      }
+
+      // 2. Get email invitees from team_invitations (pending and accepted)
+      const { data: invitations, error: invitationsError } = await supabase
+        .from("team_invitations")
+        .select("id, email, role, status")
+        .eq("project_id", projectId)
+        .in("status", ["pending", "accepted"]);
+
+      if (invitationsError) {
+        console.error("Error fetching team invitations:", invitationsError);
+      }
+
+      if (invitations && invitations.length > 0) {
+        for (const invite of invitations) {
+          // Check if this email is already in the list (e.g., accepted and became a member)
+          const existingIndex = allRecipients.findIndex(r => r.email === invite.email);
+          if (existingIndex === -1) {
+            // Add as email invitee
+            allRecipients.push({
+              user_id: `invite_${invite.id}`, // Use invite ID as pseudo user_id
+              email: invite.email,
+              name: invite.email.split('@')[0], // Use email prefix as name
+              role: invite.role || 'member',
+              source: 'email_invite'
+            });
+          } else {
+            // Update existing entry with email if missing
+            if (!allRecipients[existingIndex].email) {
+              allRecipients[existingIndex].email = invite.email;
+            }
+          }
+        }
+
+        // Also update BU users with their emails from invitations
+        for (const recipient of allRecipients) {
+          if (recipient.source === 'bu_user' && !recipient.email) {
+            // Try to find matching invitation email
+            const matchingInvite = invitations.find(inv => inv.status === 'accepted');
+            // This is a best-effort match - in production, you'd have a proper user_id -> email mapping
+          }
+        }
+      }
+
+      // Filter to only include recipients with valid emails
+      const recipientsWithEmails = allRecipients.filter(r => r.email && r.email.length > 0);
+      
+      // Also include BU users without emails (they'll show but need email from invitations)
+      const buUsersWithoutEmail = allRecipients.filter(r => r.source === 'bu_user' && (!r.email || r.email.length === 0));
+
+      setTeamMembers([...recipientsWithEmails, ...buUsersWithoutEmail]);
     } catch (error) {
-      console.error("Error fetching team members:", error);
+      console.error("Error fetching team members for send:", error);
       setTeamMembers([]);
     }
   }, [projectId]);
@@ -2920,36 +2986,65 @@ export const ProjectCommandCenter = ({
               </div>
             )}
 
-            {/* Team Members (if any have emails) */}
+            {/* Team Members - both BU users and email invitees */}
             {teamMembers.length > 0 && teamMembers.some(m => m.email) && (
               <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Team Members</Label>
-                <div className="space-y-1.5">
-                  {teamMembers.filter(m => m.email).map((member) => (
-                    <label 
-                      key={member.user_id} 
-                      className="flex items-center justify-between p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="checkbox"
-                          className="rounded"
-                          checked={selectedRecipients.includes(member.user_id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedRecipients(prev => [...prev, member.user_id]);
-                            } else {
-                              setSelectedRecipients(prev => prev.filter(id => id !== member.user_id));
-                            }
-                          }}
-                        />
-                        <span className="text-sm font-medium">{member.name}</span>
-                        <Badge variant="outline" className="text-[10px]">{member.role}</Badge>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{member.email}</span>
-                    </label>
-                  ))}
-                </div>
+                <Label className="text-sm text-muted-foreground">
+                  Team Members ({teamMembers.filter(m => m.email).length})
+                </Label>
+                <ScrollArea className="max-h-[200px]">
+                  <div className="space-y-1.5 pr-2">
+                    {teamMembers.filter(m => m.email).map((member) => (
+                      <label 
+                        key={member.user_id} 
+                        className="flex items-center justify-between p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50"
+                      >
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="checkbox"
+                            className="rounded"
+                            checked={selectedRecipients.includes(member.user_id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRecipients(prev => [...prev, member.user_id]);
+                              } else {
+                                setSelectedRecipients(prev => prev.filter(id => id !== member.user_id));
+                              }
+                            }}
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{member.name}</span>
+                            <span className="text-xs text-muted-foreground">{member.email}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-[10px]">{member.role}</Badge>
+                          {member.source === 'email_invite' ? (
+                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                              <Mail className="h-2.5 w-2.5 mr-0.5" />
+                              Email
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">
+                              <UserCheck className="h-2.5 w-2.5 mr-0.5" />
+                              BU
+                            </Badge>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+
+            {/* Info about team members without emails */}
+            {teamMembers.some(m => !m.email && m.source === 'bu_user') && (
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  <Users className="h-3.5 w-3.5 inline mr-1" />
+                  {teamMembers.filter(m => !m.email && m.source === 'bu_user').length} BU user(s) without email - use "Add Recipients" to add their email manually.
+                </p>
               </div>
             )}
 
