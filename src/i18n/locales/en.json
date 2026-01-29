@@ -576,7 +576,29 @@
     "reopen": "Reopen",
     "deleteProject": "Delete project",
     "deleteConfirm": "Delete",
-    "cannotUndo": "This cannot be undone."
+    "cannotUndo": "This cannot be undone.",
+    "selectedSwipeHint": "Selected — Swipe left for options"
+  },
+  "archive": {
+    "archived": "Archived",
+    "archive": "Archive",
+    "archivedProjects": "Archived Projects",
+    "archivedDescription": "Projects you've archived can be restored or permanently deleted",
+    "noArchivedProjects": "No archived projects",
+    "archiveHint": "Swipe left on any project to archive it",
+    "moveToArchive": "Move to Archive",
+    "projectArchived": "Project moved to archive",
+    "archiveFailed": "Failed to archive project",
+    "restore": "Restore",
+    "projectRestored": "Project restored",
+    "restoreFailed": "Failed to restore project",
+    "delete": "Delete",
+    "deletePermanently": "Delete Permanently",
+    "deleteProject": "Delete Project?",
+    "deleteConfirmation": "Are you sure you want to delete",
+    "archiveOption": "You can archive it instead to restore it later, or delete it permanently.",
+    "archivedProject": "Archived Project",
+    "restoreOrDelete": "Would you like to restore this project or permanently delete it?"
   },
   "footer": {
     "tagline": "Construction grade project management for teams who build the real world.",
