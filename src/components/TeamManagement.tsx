@@ -34,10 +34,166 @@ import {
   Lock,
   Search,
   Building2,
-  UserCheck
+  UserCheck,
+  Shield,
+  Check,
+  Ban
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ROLE_LABELS, ProjectRole } from "@/hooks/useProjectPermissions";
+
+// Permission display configuration
+const PERMISSION_GROUPS = {
+  tasks: {
+    label: "Tasks",
+    icon: "📋",
+    permissions: [
+      { key: "canCreateTasks", label: "Create tasks" },
+      { key: "canEditAllTasks", label: "Edit all tasks" },
+      { key: "canAssignTasks", label: "Assign tasks" },
+      { key: "canDeleteTasks", label: "Delete tasks" },
+    ]
+  },
+  documents: {
+    label: "Documents",
+    icon: "📄",
+    permissions: [
+      { key: "canViewDocuments", label: "View documents" },
+      { key: "canUploadDocuments", label: "Upload documents" },
+      { key: "canDeleteDocuments", label: "Delete documents" },
+    ]
+  },
+  team: {
+    label: "Team",
+    icon: "👥",
+    permissions: [
+      { key: "canViewTeamDetails", label: "View team details" },
+      { key: "canViewAllData", label: "View all project data" },
+      { key: "canSendToTeam", label: "Send to team" },
+    ]
+  },
+  project: {
+    label: "Project",
+    icon: "🏗️",
+    permissions: [
+      { key: "canGenerateReports", label: "Generate reports" },
+      { key: "canRunAIAnalysis", label: "Run AI analysis" },
+      { key: "canEditAIResults", label: "Edit AI results" },
+    ]
+  },
+};
+
+// Permission matrix (simplified for display)
+const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
+  owner: {
+    canCreateTasks: true, canEditAllTasks: true, canAssignTasks: true, canDeleteTasks: true,
+    canViewDocuments: true, canUploadDocuments: true, canDeleteDocuments: true,
+    canViewTeamDetails: true, canViewAllData: true, canSendToTeam: true,
+    canGenerateReports: true, canRunAIAnalysis: true, canEditAIResults: true,
+  },
+  foreman: {
+    canCreateTasks: true, canEditAllTasks: true, canAssignTasks: true, canDeleteTasks: false,
+    canViewDocuments: true, canUploadDocuments: true, canDeleteDocuments: false,
+    canViewTeamDetails: true, canViewAllData: true, canSendToTeam: true,
+    canGenerateReports: true, canRunAIAnalysis: true, canEditAIResults: true,
+  },
+  inspector: {
+    canCreateTasks: false, canEditAllTasks: false, canAssignTasks: false, canDeleteTasks: false,
+    canViewDocuments: true, canUploadDocuments: false, canDeleteDocuments: false,
+    canViewTeamDetails: true, canViewAllData: true, canSendToTeam: false,
+    canGenerateReports: true, canRunAIAnalysis: false, canEditAIResults: false,
+  },
+  subcontractor: {
+    canCreateTasks: false, canEditAllTasks: false, canAssignTasks: false, canDeleteTasks: false,
+    canViewDocuments: true, canUploadDocuments: true, canDeleteDocuments: false,
+    canViewTeamDetails: false, canViewAllData: false, canSendToTeam: false,
+    canGenerateReports: false, canRunAIAnalysis: false, canEditAIResults: false,
+  },
+  worker: {
+    canCreateTasks: false, canEditAllTasks: false, canAssignTasks: false, canDeleteTasks: false,
+    canViewDocuments: true, canUploadDocuments: false, canDeleteDocuments: false,
+    canViewTeamDetails: false, canViewAllData: false, canSendToTeam: false,
+    canGenerateReports: false, canRunAIAnalysis: false, canEditAIResults: false,
+  },
+  member: {
+    canCreateTasks: false, canEditAllTasks: false, canAssignTasks: false, canDeleteTasks: false,
+    canViewDocuments: true, canUploadDocuments: false, canDeleteDocuments: false,
+    canViewTeamDetails: false, canViewAllData: false, canSendToTeam: false,
+    canGenerateReports: false, canRunAIAnalysis: false, canEditAIResults: false,
+  },
+};
+
+interface RolePermissionsPreviewProps {
+  role: TeamRole;
+  compact?: boolean;
+}
+
+function RolePermissionsPreview({ role, compact = false }: RolePermissionsPreviewProps) {
+  const rolePerms = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.member;
+  const roleInfo = ROLE_LABELS[role as ProjectRole];
+  
+  // Count allowed permissions
+  const allowedCount = Object.values(rolePerms).filter(Boolean).length;
+  const totalCount = Object.keys(rolePerms).length;
+  
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Shield className="h-3 w-3" />
+        <span>{allowedCount}/{totalCount} permissions</span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mt-3 p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-3">
+      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+        <Shield className="h-4 w-4 text-amber-600" />
+        <span>Permissions for {roleInfo?.label || role}</span>
+        <Badge variant="outline" className="ml-auto text-xs">
+          {allowedCount}/{totalCount}
+        </Badge>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3">
+        {Object.entries(PERMISSION_GROUPS).map(([groupKey, group]) => (
+          <div key={groupKey} className="space-y-1.5">
+            <p className="text-xs font-medium text-slate-500 flex items-center gap-1">
+              <span>{group.icon}</span>
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.permissions.map(({ key, label }) => {
+                const allowed = rolePerms[key];
+                return (
+                  <div 
+                    key={key} 
+                    className={cn(
+                      "flex items-center gap-1.5 text-xs",
+                      allowed ? "text-slate-700" : "text-slate-400"
+                    )}
+                  >
+                    {allowed ? (
+                      <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <Ban className="h-3 w-3 text-slate-300 flex-shrink-0" />
+                    )}
+                    <span className="truncate">{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <p className="text-xs text-slate-500 pt-1 border-t border-slate-200">
+        All roles can update their own assigned task status.
+      </p>
+    </div>
+  );
+}
 
 interface TeamManagementProps {
   projectId: string;
@@ -755,6 +911,11 @@ const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementPro
                 )}
               </div>
 
+              {/* Role Permissions Preview */}
+              {canSelectRoles && (
+                <RolePermissionsPreview role={selectedRole} />
+              )}
+
               <Button
                 onClick={handleSendInvitation}
                 disabled={!inviteEmail.trim() || sending}
@@ -879,6 +1040,11 @@ const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementPro
                     <p className="text-xs text-slate-500">
                       Will be added as Team Member
                     </p>
+                  )}
+                  
+                  {/* Role Permissions Preview for BU User */}
+                  {canSelectRoles && (
+                    <RolePermissionsPreview role={selectedRole} />
                   )}
                 </div>
               )}
