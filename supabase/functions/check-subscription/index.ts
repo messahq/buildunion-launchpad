@@ -108,27 +108,49 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
+    // Check for active or trialing subscriptions
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
       limit: 1,
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
+    // Filter for active or trialing subscriptions
+    const validSubscription = subscriptions.data.find((sub: Stripe.Subscription) => 
+      sub.status === "active" || sub.status === "trialing"
+    );
+
+    const hasValidSub = !!validSubscription;
     let tier: string | null = null;
     let interval: string | null = null;
     let subscriptionEnd: string | null = null;
     let productId: string | null = null;
+    let isTrialing = false;
+    let trialEnd: string | null = null;
+    let trialDaysRemaining: number | null = null;
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
+    if (hasValidSub && validSubscription) {
+      const subscription = validSubscription;
+      isTrialing = subscription.status === "trialing";
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       productId = subscription.items.data[0].price.product as string;
       const productInfo = PRODUCT_TIERS[productId];
       tier = productInfo?.tier || null;
       interval = productInfo?.interval || null;
-      logStep("Active subscription found", { 
+      
+      // Calculate trial info
+      if (isTrialing && subscription.trial_end) {
+        trialEnd = new Date(subscription.trial_end * 1000).toISOString();
+        const now = Date.now();
+        const trialEndMs = subscription.trial_end * 1000;
+        trialDaysRemaining = Math.max(0, Math.ceil((trialEndMs - now) / (1000 * 60 * 60 * 24)));
+      }
+      
+      logStep("Valid subscription found", { 
         subscriptionId: subscription.id, 
+        status: subscription.status,
+        isTrialing,
+        trialEnd,
+        trialDaysRemaining,
         endDate: subscriptionEnd,
         productId,
         tier,
@@ -139,11 +161,14 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
+      subscribed: hasValidSub,
       tier,
       interval,
       product_id: productId,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      is_trialing: isTrialing,
+      trial_end: trialEnd,
+      trial_days_remaining: trialDaysRemaining
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

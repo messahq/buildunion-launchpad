@@ -54,8 +54,24 @@ serve(async (req) => {
       logStep("Existing customer found", { customerId });
     }
 
+    // Check if customer has already used a trial
+    let hasUsedTrial = false;
+    if (customerId) {
+      const existingSubscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        limit: 100,
+      });
+      // Check if any subscription ever had a trial
+      hasUsedTrial = existingSubscriptions.data.some((sub: Stripe.Subscription) => 
+        sub.trial_start !== null || sub.trial_end !== null
+      );
+      logStep("Trial usage check", { hasUsedTrial, subscriptionCount: existingSubscriptions.data.length });
+    }
+
     const origin = req.headers.get("origin") || "https://lovable.dev";
-    const session = await stripe.checkout.sessions.create({
+    
+    // Build checkout session config with 14-day trial for new users
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       payment_method_types: ["card"],
@@ -66,9 +82,19 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/buildunion/workspace?checkout=success`,
+      success_url: `${origin}/buildunion/workspace?checkout=success&trial=${!hasUsedTrial}`,
       cancel_url: `${origin}/buildunion/pricing?checkout=cancelled`,
-    });
+    };
+
+    // Add 14-day trial for users who haven't used it before
+    if (!hasUsedTrial) {
+      sessionConfig.subscription_data = {
+        trial_period_days: 14,
+      };
+      logStep("Adding 14-day trial period");
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
