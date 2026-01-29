@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 
 interface UseGoogleMapsApiReturn {
   apiKey: string | null;
@@ -12,30 +11,20 @@ export const useGoogleMapsApi = (): UseGoogleMapsApiReturn => {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchApiKey = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
+        // Get session if available (for logged-in users)
         const { data: { session } } = await supabase.auth.getSession();
-        const tokenToUse = session?.access_token;
-
-        if (!tokenToUse) {
-          console.warn("No valid session for maps key fetch");
-          setError(true);
-          setIsLoading(false);
-          return;
+        
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+          headers.Authorization = `Bearer ${session.access_token}`;
         }
 
         const { data, error: fetchError } = await supabase.functions.invoke("get-maps-key", {
-          headers: {
-            Authorization: `Bearer ${tokenToUse}`,
-          },
+          headers,
         });
 
         if (fetchError) throw fetchError;
@@ -53,7 +42,7 @@ export const useGoogleMapsApi = (): UseGoogleMapsApiReturn => {
     };
 
     fetchApiKey();
-  }, [user]);
+  }, []);
 
   return { apiKey, isLoading, error };
 };
