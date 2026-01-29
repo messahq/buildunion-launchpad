@@ -1014,131 +1014,142 @@ const TaskItem = ({ task, isOwner, members, onEdit, onDelete, onStatusChange, on
   const [assignPopoverOpen, setAssignPopoverOpen] = useState(false);
 
   return (
-    <div className={`
-      flex items-start gap-3 p-3 rounded-lg border transition-colors
-      ${task.status === "completed" ? "bg-slate-50 opacity-75" : "bg-white hover:bg-slate-50"}
-      ${isOverdue ? "border-red-200" : "border-slate-200"}
-    `}>
-      <div className="flex-shrink-0 pt-0.5">
-        {isLocked ? (
-          <div className="h-6 w-6 flex items-center justify-center" title="Complete previous phase first">
-            <Lock className="h-4 w-4 text-muted-foreground" />
-          </div>
-        ) : (
-          <Select value={task.status} onValueChange={onStatusChange}>
-            <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent">
-              <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUSES.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  <div className="flex items-center gap-2">
-                    <s.icon className={`h-4 w-4 ${s.color}`} />
-                    <span>{s.label}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${task.status === "completed" ? "line-through text-slate-500" : "text-slate-900"}`}>
-          {task.title}
-        </p>
-        {task.description && (
-          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{task.description}</p>
-        )}
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
-          {getPriorityBadge(task.priority)}
-          
-          {/* Assignee with reassign popover */}
-          <Popover open={assignPopoverOpen} onOpenChange={setAssignPopoverOpen}>
-            <PopoverTrigger asChild>
-              <button 
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-600 transition-colors group"
-                disabled={!isOwner}
-              >
-                <Avatar className="h-4 w-4">
-                  <AvatarImage src={task.assignee_avatar || undefined} />
-                  <AvatarFallback className="text-[8px]">
-                    {(task.assignee_name || "?").slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span>{task.assignee_name}</span>
-                {isOwner && members.length > 1 && (
-                  <UserPlus className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-amber-600" />
-                )}
-              </button>
-            </PopoverTrigger>
-            {isOwner && members.length > 0 && (
-              <PopoverContent className="w-56 p-2" align="start">
-                <p className="text-xs font-medium text-slate-500 mb-2 px-2">Reassign to:</p>
-                <div className="space-y-1">
-                  {members.map((member) => (
-                    <button
-                      key={member.user_id}
-                      onClick={() => {
-                        onAssigneeChange(member.user_id);
-                        setAssignPopoverOpen(false);
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-2 p-2 rounded-md text-sm transition-colors",
-                        task.assigned_to === member.user_id 
-                          ? "bg-amber-100 text-amber-800" 
-                          : "hover:bg-slate-100"
-                      )}
-                    >
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={member.avatar_url || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {(member.full_name || "?").slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium">{member.full_name}</p>
-                        <p className="text-xs text-slate-500 capitalize">{member.role}</p>
-                      </div>
-                      {task.assigned_to === member.user_id && (
-                        <CheckCircle2 className="h-4 w-4 text-amber-600" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            )}
-          </Popover>
-          
-          {task.due_date && (
-            <div className={`flex items-center gap-1 text-xs ${dueDateInfo?.color || (isOverdue ? "text-red-600" : "text-slate-500")}`}>
-              {isOverdue || dueDateInfo?.urgent ? <AlertCircle className="h-3 w-3" /> : <CalendarIcon className="h-3 w-3" />}
-              <span>{dueDateInfo?.label || new Date(task.due_date).toLocaleDateString()}</span>
+    <div className={cn(
+      "p-3 rounded-lg border transition-colors",
+      task.status === "completed" ? "bg-slate-50 opacity-75" : "bg-white hover:bg-slate-50",
+      isOverdue ? "border-red-200" : "border-slate-200"
+    )}>
+      {/* Main row: Status icon + Title + Actions */}
+      <div className="flex items-start gap-3">
+        {/* Status Icon - fixed width */}
+        <div className="flex-shrink-0 pt-0.5">
+          {isLocked ? (
+            <div className="h-6 w-6 flex items-center justify-center" title="Complete previous phase first">
+              <Lock className="h-4 w-4 text-muted-foreground" />
             </div>
+          ) : (
+            <Select value={task.status} onValueChange={onStatusChange}>
+              <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent">
+                <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUSES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    <div className="flex items-center gap-2">
+                      <s.icon className={`h-4 w-4 ${s.color}`} />
+                      <span>{s.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
+
+        {/* Task Content - flexible, takes remaining space */}
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <p className={cn(
+            "text-sm font-medium break-words",
+            task.status === "completed" ? "line-through text-slate-500" : "text-slate-900"
+          )}>
+            {task.title}
+          </p>
+          {task.description && (
+            <p className="text-xs text-slate-500 mt-1 break-words line-clamp-2">{task.description}</p>
+          )}
+        </div>
+
+        {/* Action Buttons - fixed, never shrinks */}
+        {isOwner && !isLocked && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-amber-600"
+              onClick={onEdit}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-slate-400 hover:text-red-600"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
-      {isOwner && !isLocked && (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-slate-400 hover:text-amber-600"
-            onClick={onEdit}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-slate-400 hover:text-red-600"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      {/* Metadata row - wraps on mobile */}
+      <div className="flex items-center gap-2 mt-2 ml-9 flex-wrap">
+        {getPriorityBadge(task.priority)}
+        
+        {/* Assignee with reassign popover */}
+        <Popover open={assignPopoverOpen} onOpenChange={setAssignPopoverOpen}>
+          <PopoverTrigger asChild>
+            <button 
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-600 transition-colors group"
+              disabled={!isOwner}
+            >
+              <Avatar className="h-4 w-4">
+                <AvatarImage src={task.assignee_avatar || undefined} />
+                <AvatarFallback className="text-[8px]">
+                  {(task.assignee_name || "?").slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="max-w-[100px] truncate">{task.assignee_name}</span>
+              {isOwner && members.length > 1 && (
+                <UserPlus className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-amber-600" />
+              )}
+            </button>
+          </PopoverTrigger>
+          {isOwner && members.length > 0 && (
+            <PopoverContent className="w-56 p-2" align="start">
+              <p className="text-xs font-medium text-slate-500 mb-2 px-2">Reassign to:</p>
+              <div className="space-y-1">
+                {members.map((member) => (
+                  <button
+                    key={member.user_id}
+                    onClick={() => {
+                      onAssigneeChange(member.user_id);
+                      setAssignPopoverOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 p-2 rounded-md text-sm transition-colors",
+                      task.assigned_to === member.user_id 
+                        ? "bg-amber-100 text-amber-800" 
+                        : "hover:bg-slate-100"
+                    )}
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={member.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {(member.full_name || "?").slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-medium truncate">{member.full_name}</p>
+                      <p className="text-xs text-slate-500 capitalize">{member.role}</p>
+                    </div>
+                    {task.assigned_to === member.user_id && (
+                      <CheckCircle2 className="h-4 w-4 text-amber-600 shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          )}
+        </Popover>
+        
+        {task.due_date && (
+          <div className={`flex items-center gap-1 text-xs ${dueDateInfo?.color || (isOverdue ? "text-red-600" : "text-slate-500")}`}>
+            {isOverdue || dueDateInfo?.urgent ? <AlertCircle className="h-3 w-3 shrink-0" /> : <CalendarIcon className="h-3 w-3 shrink-0" />}
+            <span className="whitespace-nowrap">{dueDateInfo?.label || new Date(task.due_date).toLocaleDateString()}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
