@@ -225,7 +225,7 @@ const BuildUnionProfile = () => {
   // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/login');
+      navigate('/buildunion/login');
     }
   }, [user, authLoading, navigate]);
 
