@@ -2135,9 +2135,10 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               }
               
               // Priority 2: Use AI-detected materials from photo_estimate or ai_workflow_config
-              // IMPORTANT: Sync material quantities with the confirmed area
+              // IMPORTANT: Sync material quantities with the confirmed area from citation
               if (aiAnalysis?.materials && aiAnalysis.materials.length > 0) {
-                const confirmedArea = aiAnalysis.area;
+                // Use the confirmed area from operational truth (same as displayed in citation [P-001])
+                const confirmedAreaValue = operationalTruth.confirmedArea;
                 
                 // Find the original area from materials (if flooring/laminate exists)
                 const flooringMaterial = aiAnalysis.materials.find(m => 
@@ -2146,8 +2147,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 const originalMaterialArea = flooringMaterial?.quantity || null;
                 
                 // If we have a confirmed area that differs from material quantities, sync them
-                if (confirmedArea && originalMaterialArea && confirmedArea !== originalMaterialArea) {
-                  const ratio = confirmedArea / originalMaterialArea;
+                if (confirmedAreaValue && originalMaterialArea && confirmedAreaValue !== originalMaterialArea) {
+                  const ratio = confirmedAreaValue / originalMaterialArea;
                   return aiAnalysis.materials.map(m => ({
                     ...m,
                     quantity: m.unit === 'sq ft' ? Math.round(m.quantity * ratio) : m.quantity,
@@ -2221,6 +2222,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             projectId={project.id}
             projectName={project.name}
             projectAddress={project.address || ""}
+            confirmedArea={operationalTruth.confirmedArea}
+            confirmedAreaUnit={aiAnalysis?.areaUnit || "sq ft"}
             companyName={companyBranding.name}
             companyLogoUrl={companyBranding.logoUrl}
             companyPhone={companyBranding.phone}

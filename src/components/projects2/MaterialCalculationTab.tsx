@@ -63,6 +63,8 @@ interface MaterialCalculationTabProps {
   projectId?: string;
   projectName?: string;
   projectAddress?: string;
+  confirmedArea?: number | null; // The confirmed area from citation system
+  confirmedAreaUnit?: string;
   companyName?: string;
   companyLogoUrl?: string | null;
   companyPhone?: string | null;
@@ -154,6 +156,8 @@ export function MaterialCalculationTab({
   projectId,
   projectName = "Project",
   projectAddress = "",
+  confirmedArea,
+  confirmedAreaUnit = "sq ft",
   companyName,
   companyLogoUrl,
   companyPhone,
