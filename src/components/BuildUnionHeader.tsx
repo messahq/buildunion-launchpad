@@ -169,9 +169,15 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    toast.success("Signed out successfully");
-    navigate("/buildunion");
+    try {
+      await signOut();
+      toast.success("Signed out successfully");
+      // Use window.location for a full page reload to clear all state
+      window.location.href = "/buildunion";
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("Failed to sign out");
+    }
   };
 
   const getTierIcon = () => {
