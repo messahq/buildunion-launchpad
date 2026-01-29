@@ -433,26 +433,17 @@ const TaskTemplateManager = ({
 
   return (
     <>
-      {/* Template Action Buttons */}
-      <div className="flex items-center gap-2">
+      {/* Template Action Buttons - compact on mobile */}
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <Button
           variant="outline"
           size="sm"
           onClick={() => setLoadDialogOpen(true)}
-          className="gap-1.5 text-xs"
+          className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3 h-8"
         >
-          <FolderOpen className="h-3.5 w-3.5" />
-          Load Template
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setAddTaskDialogOpen(true)}
-          className="gap-1.5 text-xs"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Task
+          <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden sm:inline">Load Template</span>
+          <span className="sm:hidden">Load</span>
         </Button>
         
         {currentTasks.length > 0 && (
@@ -460,10 +451,11 @@ const TaskTemplateManager = ({
             variant="outline"
             size="sm"
             onClick={() => setSaveDialogOpen(true)}
-            className="gap-1.5 text-xs"
+            className="gap-1 sm:gap-1.5 text-xs px-2 sm:px-3 h-8"
           >
-            <Save className="h-3.5 w-3.5" />
-            Save as Template
+            <Save className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline">Save as Template</span>
+            <span className="sm:hidden">Save</span>
           </Button>
         )}
       </div>

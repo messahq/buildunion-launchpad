@@ -636,32 +636,52 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
 
       <Card className="border-slate-200 bg-white">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <ListTodo className="h-5 w-5 text-amber-600" />
-                {filterByMemberId ? `${filteredMemberInfo?.full_name || "Member"} ${t("tasks.tasks", "Tasks")}` : t("tasks.tasks", "Tasks")}
-                {!online && (
-                  <Badge variant="outline" className="ml-2 text-xs bg-amber-50 text-amber-700 border-amber-200">
-                    <WifiOff className="h-3 w-3 mr-1" />
-                    {t("offline.offline", "Offline")}
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                {filteredTasks.length} {t("tasks.task", "task")}{filteredTasks.length !== 1 ? "s" : ""} 
-                {inProgressTasks.length > 0 && ` • ${inProgressTasks.length} ${t("tasks.inProgress", "in progress")}`}
-              </CardDescription>
+          {/* Header row - stacks on mobile */}
+          <div className="flex flex-col gap-3">
+            {/* Title row */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2 flex-wrap">
+                  <ListTodo className="h-5 w-5 text-amber-600 shrink-0" />
+                  <span className="truncate">
+                    {filterByMemberId ? `${filteredMemberInfo?.full_name || "Member"} ${t("tasks.tasks", "Tasks")}` : t("tasks.tasks", "Tasks")}
+                  </span>
+                  {!online && (
+                    <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 shrink-0">
+                      <WifiOff className="h-3 w-3 mr-1" />
+                      {t("offline.offline", "Offline")}
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-1">
+                  {filteredTasks.length} {t("tasks.task", "task")}{filteredTasks.length !== 1 ? "s" : ""} 
+                  {inProgressTasks.length > 0 && ` • ${inProgressTasks.length} ${t("tasks.inProgress", "in progress")}`}
+                </CardDescription>
+              </div>
+              
+              {/* Add Task button - always visible in header on mobile */}
+              {isOwner && (members.length > 0 || isSoloMode) && (
+                <Button
+                  size="sm"
+                  className="gap-1 bg-amber-600 hover:bg-amber-700 shrink-0"
+                  onClick={openCreateDialog}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden xs:inline">Add Task</span>
+                </Button>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Controls row - scrollable on mobile */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
               {/* View Toggle */}
               {filteredTasks.length > 0 && (
-                <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+                <div className="flex items-center bg-slate-100 rounded-lg p-0.5 shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "h-7 px-2.5 text-xs gap-1.5 rounded-md transition-colors",
+                      "h-7 px-2 sm:px-2.5 text-xs gap-1 sm:gap-1.5 rounded-md transition-colors",
                       viewMode === "list"
                         ? "bg-white shadow-sm text-slate-900"
                         : "text-slate-600 hover:text-slate-900"
@@ -669,13 +689,13 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                     onClick={() => setViewMode("list")}
                   >
                     <List className="h-3.5 w-3.5" />
-                    List
+                    <span className="hidden xs:inline">List</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "h-7 px-2.5 text-xs gap-1.5 rounded-md transition-colors",
+                      "h-7 px-2 sm:px-2.5 text-xs gap-1 sm:gap-1.5 rounded-md transition-colors",
                       viewMode === "calendar"
                         ? "bg-white shadow-sm text-slate-900"
                         : "text-slate-600 hover:text-slate-900"
@@ -683,7 +703,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                     onClick={() => setViewMode("calendar")}
                   >
                     <CalendarDays className="h-3.5 w-3.5" />
-                    Timeline
+                    <span className="hidden xs:inline">Timeline</span>
                   </Button>
                 </div>
               )}
@@ -694,16 +714,6 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                   onApplyTemplate={handleApplyTemplate}
                   isOwner={isOwner}
                 />
-              )}
-              {isOwner && (members.length > 0 || isSoloMode) && (
-                <Button
-                  size="sm"
-                  className="gap-1 bg-amber-600 hover:bg-amber-700"
-                  onClick={openCreateDialog}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Task
-                </Button>
               )}
             </div>
           </div>
