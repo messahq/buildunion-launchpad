@@ -16,17 +16,8 @@ import {
   Map,
   Download,
   Users,
-  DollarSign,
-  AlertTriangle
+  DollarSign
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -500,8 +491,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(initialTab || "overview");
   const [flashingTab, setFlashingTab] = useState<string | null>(null);
-  const [showWorkflowWarningModal, setShowWorkflowWarningModal] = useState(false);
-  const [pendingReportAction, setPendingReportAction] = useState<(() => void) | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [tasks, setTasks] = useState<TaskWithBudget[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -1329,6 +1318,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   }, [tasks]);
 
   // Helper to categorize tasks by phase (used by both Timeline and OperationalTruth)
+  // MUST match TaskAssignment.tsx getPhaseForTask exactly for consistency
   const getPhaseForTask = useCallback((task: TaskWithBudget): "preparation" | "execution" | "verification" => {
     const titleLower = task.title.toLowerCase();
     const descLower = (task.description || "").toLowerCase();
@@ -1622,71 +1612,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     };
   }, [aiAnalysis, blueprintAnalysis, dualEngineOutput, synthesisResult, filterAnswers, photoEstimate, aiConfig, manuallyValidatedBlueprint, manuallyIgnoredConflicts, obcAcknowledged, summary?.mode]);
 
-  // ============================================
-  // WORKFLOW GUIDANCE - Calculate next step tab
-  // ============================================
-  
-  // Determine which tab the user should focus on next based on incomplete data sources
-  const nextStepTab = useMemo(() => {
-    const isTeamModeProject = summary?.mode === "team";
-    const hasStartDate = !!summary?.project_start_date;
-    const hasEndDate = !!summary?.project_end_date;
-    const hasClientInfoData = !!(summary?.client_name || summary?.client_email);
-    
-    // Priority order for workflow guidance:
-    // 1. Overview - if area/materials not confirmed (from AI analysis)
-    // 2. Team & Tasks - if no tasks exist or none completed
-    // 3. Documents - if no documents uploaded
-    // 4. Contracts - if team mode and no contract
-    // 5. Materials - if no cost breakdown exists
-    // 6. Weather - always last (auto-fills from address)
-    
-    // Check overview pillars (area and materials are key)
-    const hasArea = !!operationalTruth.confirmedArea;
-    const hasMaterialsData = operationalTruth.materialsCount > 0;
-    
-    if (!hasArea || !hasMaterialsData) {
-      return "overview"; // Need to review AI analysis or upload photos
-    }
-    
-    // Check tasks
-    if (tasks.length === 0) {
-      return "team"; // Need to create tasks
-    }
-    
-    // Check timeline dates
-    if (!hasStartDate || !hasEndDate) {
-      return "team"; // Need to set project dates in timeline
-    }
-    
-    // Check documents (only for team mode)
-    if (isTeamModeProject && documentCount === 0) {
-      return "documents";
-    }
-    
-    // Check contracts (only for team mode)
-    if (isTeamModeProject && contractCount === 0) {
-      return "contracts";
-    }
-    
-    // Check materials cost breakdown
-    const savedLineItems = summary?.line_items as { materials?: Array<unknown> } | null;
-    const hasSavedMaterials = savedLineItems && typeof savedLineItems === 'object' && 
-                               !Array.isArray(savedLineItems) && savedLineItems.materials && 
-                               savedLineItems.materials.length > 0;
-    if (!hasSavedMaterials && !(aiAnalysis?.materials?.length)) {
-      return "materials";
-    }
-    
-    // Check client info
-    if (!hasClientInfoData) {
-      return "overview"; // Client info is in Command Center on Overview
-    }
-    
-    // All done - no highlight needed
-    return null;
-  }, [summary, tasks, documentCount, contractCount, operationalTruth, aiAnalysis]);
-
   // Determine data source origins for transparency
   const dataSourceOrigins = useMemo(() => {
     const origins: {
@@ -1921,25 +1846,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           <TabsTrigger 
             value="overview" 
             className={cn(
-              "gap-2 transition-all duration-300 relative",
-              flashingTab === "overview" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse",
-              // Next step pulsing highlight - persistent gentle glow
-              activeTab !== "overview" && nextStepTab === "overview" && "ring-2 ring-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse"
+              "gap-2 transition-all duration-300",
+              flashingTab === "overview" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
             )}
           >
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.overview")}</span>
-            {activeTab !== "overview" && nextStepTab === "overview" && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-amber-500 rounded-full animate-ping" />
-            )}
           </TabsTrigger>
           {/* Tasks Tab - Always visible, different label for solo/team */}
           <TabsTrigger 
             value="team" 
             className={cn(
-              "gap-2 transition-all duration-300 relative",
-              flashingTab === "team" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse",
-              activeTab !== "team" && nextStepTab === "team" && "ring-2 ring-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse"
+              "gap-2 transition-all duration-300",
+              flashingTab === "team" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
             )}
           >
             <Users className="h-4 w-4" />
@@ -1951,40 +1870,29 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 {members.length}
               </Badge>
             )}
-            {activeTab !== "team" && nextStepTab === "team" && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-amber-500 rounded-full animate-ping" />
-            )}
           </TabsTrigger>
           {/* Documents Tab - Always visible */}
           <TabsTrigger 
             value="documents" 
             className={cn(
-              "gap-2 transition-all duration-300 relative",
-              flashingTab === "documents" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse",
-              activeTab !== "documents" && nextStepTab === "documents" && "ring-2 ring-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse"
+              "gap-2 transition-all duration-300",
+              flashingTab === "documents" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
             )}
           >
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.documents")}</span>
-            {activeTab !== "documents" && nextStepTab === "documents" && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-amber-500 rounded-full animate-ping" />
-            )}
           </TabsTrigger>
           {/* Contracts Tab - Only for Team Mode */}
           {isTeamMode && (
             <TabsTrigger 
               value="contracts" 
               className={cn(
-                "gap-2 transition-all duration-300 relative",
-                flashingTab === "contracts" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse",
-                activeTab !== "contracts" && nextStepTab === "contracts" && "ring-2 ring-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse"
+                "gap-2 transition-all duration-300",
+                flashingTab === "contracts" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
               )}
             >
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Contracts</span>
-              {activeTab !== "contracts" && nextStepTab === "contracts" && (
-                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-amber-500 rounded-full animate-ping" />
-              )}
             </TabsTrigger>
           )}
           {/* Site Map Tab - Only for Team Mode */}
@@ -2003,16 +1911,12 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           <TabsTrigger 
             value="materials" 
             className={cn(
-              "gap-2 transition-all duration-300 relative",
-              flashingTab === "materials" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse",
-              activeTab !== "materials" && nextStepTab === "materials" && "ring-2 ring-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse"
+              "gap-2 transition-all duration-300",
+              flashingTab === "materials" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
             )}
           >
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">{t("projects.materials", "Materials")}</span>
-            {activeTab !== "materials" && nextStepTab === "materials" && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-amber-500 rounded-full animate-ping" />
-            )}
           </TabsTrigger>
           <TabsTrigger 
             value="weather" 
@@ -2116,11 +2020,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             citations={citations}
             onCitationClick={handleCitationClick}
             onLinkCitationToPillar={handleLinkCitationToPillar}
-            nextStepTab={nextStepTab}
-            onShowWorkflowWarning={(action) => {
-              setPendingReportAction(() => action);
-              setShowWorkflowWarningModal(true);
-            }}
           />
         </TabsContent>
 
@@ -2381,51 +2280,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         </TabsContent>
       </Tabs>
 
-      {/* Workflow Warning Modal - Shows when user tries to generate report before completing flow */}
-      <Dialog open={showWorkflowWarningModal} onOpenChange={setShowWorkflowWarningModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600">
-              <AlertTriangle className="h-5 w-5" />
-              {t("workspace.workflowIncomplete", "Workflow Incomplete")}
-            </DialogTitle>
-            <DialogDescription className="pt-2">
-              {t("workspace.workflowWarningMessage", "Some project data sources are still incomplete. The generated report may be missing important information.")}
-              {nextStepTab && (
-                <p className="mt-2 text-sm font-medium text-foreground">
-                  {t("workspace.nextStepHint", "Next step:")} {" "}
-                  <span className="text-amber-600 capitalize">{nextStepTab === "team" ? "Tasks" : nextStepTab}</span>
-                </p>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setShowWorkflowWarningModal(false)}>
-              {t("common.cancel", "Cancel")}
-            </Button>
-            {nextStepTab && (
-              <Button 
-                variant="default"
-                onClick={() => {
-                  setShowWorkflowWarningModal(false);
-                  setActiveTab(nextStepTab);
-                }}
-              >
-                {t("workspace.goToNextStep", "Go to Next Step")}
-              </Button>
-            )}
-            <Button 
-              variant="secondary"
-              onClick={() => {
-                setShowWorkflowWarningModal(false);
-                pendingReportAction?.();
-              }}
-            >
-              {t("workspace.generateAnyway", "Generate Anyway")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
     </div>
   );
