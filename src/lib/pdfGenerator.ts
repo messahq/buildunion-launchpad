@@ -231,7 +231,7 @@ export const buildProjectSummaryHTML = (data: {
 
   // Build photo estimate section with HTML escaping
   const photoMaterialsSection = photoData?.materials?.length > 0 || photoData?.area ? `
-    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #93c5fd; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <div class="section avoid-break" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #93c5fd; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 16px; font-weight: 600; color: #1e40af; margin: 0 0 16px 0;">📸 AI Photo Analysis - Detected Materials</h3>
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;">
         <div style="background: white; border-radius: 8px; padding: 12px 16px; text-align: center;">
@@ -265,7 +265,7 @@ export const buildProjectSummaryHTML = (data: {
 
   // Calculator results section
   const calculatorSection = calculatorResults.length > 0 ? `
-    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #86efac; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <div class="section avoid-break" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #86efac; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 16px; font-weight: 600; color: #166534; margin: 0 0 16px 0;">🧮 Calculator Results</h3>
       <div style="display: grid; gap: 12px;">
         ${calculatorResults.map(calc => `
@@ -283,7 +283,7 @@ export const buildProjectSummaryHTML = (data: {
 
   // Template items section
   const templateSection = templateItems.length > 0 ? `
-    <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 1px solid #d8b4fe; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <div class="section avoid-break" style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 1px solid #d8b4fe; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 16px; font-weight: 600; color: #7e22ce; margin: 0 0 16px 0;">📋 Template Items Applied</h3>
       <div style="display: grid; gap: 8px;">
         ${templateItems.slice(0, 5).map(item => `
@@ -299,7 +299,7 @@ export const buildProjectSummaryHTML = (data: {
 
   // Dual Engine Analysis section
   const dualEngineSection = dualEngineAnalysis ? `
-    <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <div class="section avoid-break" style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde047; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 16px; font-weight: 600; color: #854d0e; margin: 0 0 16px 0;">🔬 Dual Engine AI Verification</h3>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
         <div style="background: white; border-radius: 8px; padding: 16px; border-left: 4px solid #3b82f6;">
@@ -323,7 +323,7 @@ export const buildProjectSummaryHTML = (data: {
 
   // Documents section
   const documentsSection = projectDocuments.length > 0 ? `
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <div class="section avoid-break" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0 0 16px 0;">📁 Project Documents (${projectDocuments.length})</h3>
       <div style="display: flex; flex-wrap: wrap; gap: 12px;">
         ${projectDocuments.map(doc => `
@@ -338,7 +338,7 @@ export const buildProjectSummaryHTML = (data: {
 
   // Contracts section
   const contractsSection = contracts.length > 0 ? `
-    <div style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <div class="section avoid-break" style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: 1px solid #fca5a5; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h3 style="font-size: 16px; font-weight: 600; color: #991b1b; margin: 0 0 16px 0;">📝 Associated Contracts (${contracts.length})</h3>
       <div style="display: grid; gap: 12px;">
         ${contracts.map(contract => `
@@ -373,6 +373,14 @@ export const buildProjectSummaryHTML = (data: {
           line-height: 1.5;
           font-size: 12px;
         }
+        /* Page break controls */
+        .page-break { page-break-before: always; break-before: always; }
+        .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+        .section { page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px; }
+        table { page-break-inside: auto; }
+        tr { page-break-inside: avoid; break-inside: avoid; page-break-after: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
       </style>
     </head>
     <body>
@@ -485,7 +493,7 @@ export const buildProjectSummaryHTML = (data: {
 
         <!-- Signatures -->
         <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
-        <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div class="avoid-break" style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; page-break-inside: avoid;">
           <div style="padding-top: 12px; border-top: 2px solid #1e293b;">
             <p style="font-size: 12px; color: #64748b; margin: 0;"><strong>Client Signature</strong></p>
             ${clientSignature 
@@ -507,7 +515,7 @@ export const buildProjectSummaryHTML = (data: {
         </div>
       </div>
 
-      <div style="margin-top: 32px; padding: 24px 32px; background: #1e293b; color: white;">
+      <div class="avoid-break" style="margin-top: 32px; padding: 24px 32px; background: #1e293b; color: white; page-break-inside: avoid;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
           <div style="display: flex; align-items: center; gap: 12px;">
             ${companyLogoUrl ? `
@@ -640,6 +648,9 @@ export const buildContractHTML = (data: {
           line-height: 1.6;
           font-size: 12px;
         }
+        /* Page break controls */
+        .page-break { page-break-before: always; break-before: always; }
+        .avoid-break { page-break-inside: avoid; break-inside: avoid; }
         .header { 
           background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); 
           color: white; 
@@ -655,20 +666,20 @@ export const buildContractHTML = (data: {
         .contract-date { font-size: 11px; opacity: 0.9; margin-top: 2px; }
         .contact-bar { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.3); display: flex; gap: 24px; font-size: 11px; flex-wrap: wrap; }
         .content { padding: 24px 40px; }
-        .section { margin-bottom: 24px; }
+        .section { margin-bottom: 24px; page-break-inside: avoid; break-inside: avoid; }
         .section-title { font-size: 14px; font-weight: 700; color: #0e7490; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #0891b2; text-transform: uppercase; letter-spacing: 0.5px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .party-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+        .party-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; page-break-inside: avoid; break-inside: avoid; }
         .party-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-bottom: 8px; }
         .party-name { font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 6px; }
         .party-detail { font-size: 11px; color: #64748b; margin-bottom: 2px; }
-        .highlight-box { background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); border: 1px solid #22d3ee; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+        .highlight-box { background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); border: 1px solid #22d3ee; border-radius: 8px; padding: 16px; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
         .terms-list { margin-left: 20px; color: #475569; }
-        .terms-list li { margin-bottom: 10px; }
-        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
-        .sig-box { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .terms-list li { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }
+        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; page-break-inside: avoid; break-inside: avoid; }
+        .sig-box { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; page-break-inside: avoid; break-inside: avoid; }
         .sig-line { margin-top: 12px; padding-top: 8px; border-top: 1px dashed #94a3b8; }
-        .footer { margin-top: 40px; padding: 24px 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; }
+        .footer { margin-top: 40px; padding: 24px 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; page-break-inside: avoid; break-inside: avoid; }
         .footer-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
         .footer-brand { display: flex; align-items: center; gap: 12px; }
         .footer-logo { height: 40px; width: auto; border-radius: 6px; background: white; padding: 4px; }
@@ -1264,6 +1275,18 @@ export const buildProjectReportHTML = (params: ProjectReportParams): string => {
           line-height: 1.5;
           font-size: 12px;
         }
+        /* Page break controls */
+        .page-break { page-break-before: always; break-before: always; }
+        .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+        .section-block { page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px; }
+        table { page-break-inside: auto; }
+        tr { page-break-inside: avoid; break-inside: avoid; page-break-after: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        /* Ensure signature section stays together */
+        .signature-block { page-break-inside: avoid; break-inside: avoid; }
+        /* Footer should not be split */
+        .footer-block { page-break-inside: avoid; break-inside: avoid; }
       </style>
     </head>
     <body>
@@ -1327,7 +1350,7 @@ export const buildProjectReportHTML = (params: ProjectReportParams): string => {
         ${workflowHTML}
 
         <!-- Signature Section -->
-        <div style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div class="signature-block avoid-break" style="margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; page-break-inside: avoid;">
           <div style="padding-top: 12px; border-top: 2px solid #1e293b;">
             <p style="font-size: 12px; color: #64748b; margin: 0;"><strong>Project Manager Signature</strong></p>
             <div style="height: 50px; margin: 8px 0;"></div>
@@ -1342,7 +1365,7 @@ export const buildProjectReportHTML = (params: ProjectReportParams): string => {
       </div>
 
       <!-- Footer -->
-      <div style="margin-top: 32px; padding: 24px 32px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white;">
+      <div class="footer-block avoid-break" style="margin-top: 32px; padding: 24px 32px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; page-break-inside: avoid;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
           <div style="display: flex; align-items: center; gap: 12px;">
             ${companyBranding?.logo ? `
