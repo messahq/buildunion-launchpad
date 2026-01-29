@@ -83,15 +83,31 @@ export function useWeather(options: UseWeatherOptions = {}) {
     setError(null);
     
     try {
-      const { data: result, error: fnError } = await supabase.functions.invoke("get-weather", {
+      const response = await supabase.functions.invoke("get-weather", {
         body: { lat, lon, location, days }
       });
       
-      if (fnError) throw fnError;
-      if (result.error) {
+      const result = response.data;
+      const fnError = response.error;
+      
+      // Handle FunctionsHttpError - extract message from response body
+      if (fnError) {
+        // Try to parse error body for user-friendly message
+        if (result?.code === 'INVALID_LOCATION' || result?.code === 'LOCATION_NOT_FOUND' || 
+            result?.code === 'GEOCODING_FAILED' || result?.code === 'NO_LOCATION') {
+          setError(result.message || "Location could not be found. Try a more specific address.");
+          return;
+        }
+        // Generic error fallback
+        setError(result?.message || "Failed to fetch weather data");
+        return;
+      }
+      
+      if (result?.error) {
         // Handle specific error codes gracefully
-        if (result.code === 'INVALID_LOCATION' || result.code === 'LOCATION_NOT_FOUND') {
-          setError(result.message || "Invalid location");
+        if (result.code === 'INVALID_LOCATION' || result.code === 'LOCATION_NOT_FOUND' ||
+            result.code === 'GEOCODING_FAILED' || result.code === 'NO_LOCATION') {
+          setError(result.message || "Location could not be found");
           return;
         }
         throw new Error(result.message || result.error);
@@ -100,7 +116,13 @@ export function useWeather(options: UseWeatherOptions = {}) {
       setData(result);
     } catch (err: any) {
       console.error("Weather fetch error:", err);
-      setError(err.message || "Failed to fetch weather data");
+      // Provide user-friendly message for location issues
+      const msg = err.message || "Failed to fetch weather data";
+      if (msg.includes("Location") || msg.includes("geocod")) {
+        setError("Could not find this location. Try a more specific address like '123 Main St, Toronto, ON'");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
