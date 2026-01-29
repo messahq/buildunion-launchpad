@@ -165,7 +165,7 @@ interface MESSAAuditReport {
 // Model tiers for cost optimization
 const AI_MODELS = {
   // Visual analysis models (ordered by cost: low → high)
-  GEMINI_FLASH_LITE: "google/gemini-2.5-flash-lite", // Cheapest - simple tasks
+  GEMINI_FLASH_LITE: "google/gemini-2.5-flash-lite", // Cheapest - simple tasks, OCR
   GEMINI_FLASH: "google/gemini-2.5-flash",           // Mid-tier - standard tasks
   GEMINI_PRO: "google/gemini-2.5-pro",               // Premium - complex tasks
   
@@ -178,10 +178,13 @@ interface ModelSelection {
   visualModel: string;
   estimationModel: string;
   validationModel: string;
+  ocrModel: string; // NEW: Dedicated OCR model
   maxTokensVisual: number;
   maxTokensEstimation: number;
+  maxTokensOCR: number; // NEW: OCR token limit
   runDualEngine: boolean;
   runOBCValidation: boolean;
+  enableMultiPassOCR: boolean; // NEW: Enable precision OCR pipeline
 }
 
 function selectModelsForTier(
@@ -193,16 +196,19 @@ function selectModelsForTier(
   const affectsMechanical = filterAnswers?.technicalFilter?.affectsMechanical || false;
   const isComplex = affectsStructure || affectsMechanical;
   
-  // Premium: Full power, always dual engine
+  // Premium: Full power, always dual engine, always multi-pass OCR
   if (tier === "premium") {
     return {
       visualModel: AI_MODELS.GEMINI_PRO,
       estimationModel: AI_MODELS.GEMINI_FLASH,
       validationModel: AI_MODELS.GPT5_MINI,
+      ocrModel: AI_MODELS.GEMINI_FLASH, // Better OCR accuracy
       maxTokensVisual: 1500,
       maxTokensEstimation: 1200,
+      maxTokensOCR: 500,
       runDualEngine: true,
       runOBCValidation: isComplex,
+      enableMultiPassOCR: true,
     };
   }
   
@@ -212,23 +218,165 @@ function selectModelsForTier(
       visualModel: AI_MODELS.GEMINI_FLASH,
       estimationModel: AI_MODELS.GEMINI_FLASH_LITE,
       validationModel: AI_MODELS.GEMINI_3_FLASH,
+      ocrModel: AI_MODELS.GEMINI_FLASH_LITE, // Fast OCR
       maxTokensVisual: 800,
       maxTokensEstimation: 600,
+      maxTokensOCR: 300,
       runDualEngine: isComplex || hasConflict === true,
       runOBCValidation: isComplex,
+      enableMultiPassOCR: true,
     };
   }
   
-  // Free: Flash-Lite only, single engine, no OBC
+  // Free: Flash-Lite only, single engine, no OBC, still has OCR pass
   return {
     visualModel: AI_MODELS.GEMINI_FLASH_LITE,
     estimationModel: AI_MODELS.GEMINI_FLASH_LITE,
     validationModel: AI_MODELS.GEMINI_FLASH_LITE,
+    ocrModel: AI_MODELS.GEMINI_FLASH_LITE,
     maxTokensVisual: 400,
     maxTokensEstimation: 400,
+    maxTokensOCR: 200,
     runDualEngine: false,
     runOBCValidation: false,
+    enableMultiPassOCR: true, // Still enable for free tier!
   };
+}
+
+// ============================================
+// PASS 0: DEDICATED OCR EXTRACTION
+// Separates text reading from analysis for precision
+// ============================================
+
+interface OCRResult {
+  allText: string;
+  areaValues: Array<{ value: number; unit: string; context: string }>;
+  dimensions: Array<{ label: string; value: string }>;
+  confidence: "high" | "medium" | "low";
+  rawResponse?: string;
+}
+
+async function dedicatedOCRPass(
+  image: string,
+  apiKey: string,
+  modelConfig: ModelSelection
+): Promise<OCRResult> {
+  const ocrPrompt = `You are a PRECISION OCR SPECIALIST. Your ONLY job is to READ and EXTRACT ALL TEXT from this image.
+
+=== CRITICAL INSTRUCTIONS ===
+1. READ EVERY piece of text visible in the image
+2. FOCUS especially on NUMBERS with units (sq ft, sqm, m², feet, inches, meters)
+3. Look for area labels like "Total Area", "Floor Area", "Gross Area", "Net Area"
+4. Look for dimension labels like "Length", "Width", "Height"
+5. Read any blueprint annotations, stamps, labels, or handwritten notes
+
+=== DO NOT ANALYZE - JUST READ ===
+- Do NOT estimate or calculate anything
+- Do NOT interpret what the numbers mean
+- JUST report what text you can see
+
+=== OUTPUT FORMAT (JSON) ===
+{
+  "allText": "Literal transcription of all visible text, separated by newlines",
+  "areaValues": [
+    {"value": 1302, "unit": "sq ft", "context": "Total Area = 1302 sq ft"},
+    {"value": 150, "unit": "sq ft", "context": "Room area 150 sq ft"}
+  ],
+  "dimensions": [
+    {"label": "Length", "value": "25'-6\""},
+    {"label": "Width", "value": "12'-0\""}
+  ],
+  "confidence": "high/medium/low"
+}
+
+IMPORTANT: The "areaValues" array should contain EVERY number that appears to be an area measurement.
+If you see "1302 sq ft" anywhere, report value: 1302, unit: "sq ft".
+Even partial text like "...1302..." should be captured as a potential area.`;
+
+  console.log(`[OCR PASS] Starting dedicated text extraction with ${modelConfig.ocrModel}`);
+  
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: modelConfig.ocrModel,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: ocrPrompt },
+            { type: "image_url", image_url: { url: image } }
+          ]
+        }],
+        max_tokens: modelConfig.maxTokensOCR,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("[OCR PASS] API error:", response.status);
+      return { allText: "", areaValues: [], dimensions: [], confidence: "low" };
+    }
+
+    const result = await response.json();
+    const rawContent = result.choices?.[0]?.message?.content || "";
+    console.log("[OCR PASS] Raw response:", rawContent.substring(0, 500));
+
+    // Parse JSON response
+    try {
+      let cleanContent = rawContent.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const jsonStart = cleanContent.indexOf("{");
+      const jsonEnd = cleanContent.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanContent = cleanContent.substring(jsonStart, jsonEnd + 1);
+      }
+      const parsed = JSON.parse(cleanContent);
+      console.log("[OCR PASS] Parsed:", { 
+        areaCount: parsed.areaValues?.length || 0,
+        dimensionCount: parsed.dimensions?.length || 0,
+        confidence: parsed.confidence
+      });
+      return { ...parsed, rawResponse: rawContent.substring(0, 300) };
+    } catch (parseError) {
+      // Fallback: try regex extraction from raw response
+      console.log("[OCR PASS] JSON parse failed, trying regex fallback");
+      
+      const areaPatterns = [
+        /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:sq\.?\s*ft|square\s*feet|sqft|SF)/gi,
+        /total\s*area\s*[=:]\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/gi,
+        /(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s*(?:m²|sq\.?\s*m|square\s*meters?)/gi,
+      ];
+      
+      const areaValues: Array<{ value: number; unit: string; context: string }> = [];
+      
+      for (const pattern of areaPatterns) {
+        let match;
+        while ((match = pattern.exec(rawContent)) !== null) {
+          const value = parseFloat(match[1].replace(/,/g, ""));
+          if (value > 10 && value < 100000) {
+            areaValues.push({
+              value,
+              unit: "sq ft",
+              context: match[0]
+            });
+          }
+        }
+      }
+
+      return {
+        allText: rawContent,
+        areaValues,
+        dimensions: [],
+        confidence: areaValues.length > 0 ? "medium" : "low",
+        rawResponse: rawContent.substring(0, 300)
+      };
+    }
+  } catch (error) {
+    console.error("[OCR PASS] Error:", error);
+    return { allText: "", areaValues: [], dimensions: [], confidence: "low" };
+  }
 }
 
 // STEP 1: Gemini Visual Analysis - Model selected by tier
@@ -870,36 +1018,98 @@ function extractAreaFromDescription(description: string): number | null {
   return null;
 }
 
-// Main dual-engine analysis - MESSA AUDIT PROTOCOL
+// Main dual-engine analysis - MESSA AUDIT PROTOCOL with Multi-Pass OCR
 async function dualEngineAnalysis(
   image: string, 
   description: string, 
   apiKey: string, 
   modelConfig: ModelSelection,
   filterAnswers?: FilterAnswers | null,
-  obcData?: OpenAIOBCData | null
+  obcData?: OpenAIOBCData | null,
+  additionalImages?: string[] // NEW: Support for multi-image analysis
 ) {
   const tier = modelConfig.visualModel === AI_MODELS.GEMINI_PRO ? "premium" as const : 
                modelConfig.visualModel === AI_MODELS.GEMINI_FLASH ? "pro" as const : "free" as const;
-  console.log(`=== MESSA DUAL ENGINE AUDIT START === (Tier: ${tier.toUpperCase()}) - DualEngine: ${modelConfig.runDualEngine}`);
+  console.log(`=== MESSA DUAL ENGINE AUDIT START === (Tier: ${tier.toUpperCase()}) - DualEngine: ${modelConfig.runDualEngine} - MultiPassOCR: ${modelConfig.enableMultiPassOCR}`);
   
-  // STEP 0: Try to extract area from description first (user-provided data)
+  // ============================================
+  // PASS 0: DEDICATED OCR EXTRACTION (NEW!)
+  // Run BEFORE visual analysis to get clean text data
+  // ============================================
+  let ocrResult: OCRResult = { allText: "", areaValues: [], dimensions: [], confidence: "low" };
+  let ocrArea: number | null = null;
+  
+  if (modelConfig.enableMultiPassOCR) {
+    console.log("[MULTI-PASS] Starting dedicated OCR pipeline...");
+    
+    // OCR on primary image
+    ocrResult = await dedicatedOCRPass(image, apiKey, modelConfig);
+    console.log("[OCR PASS] Primary image result:", {
+      areaValuesFound: ocrResult.areaValues.length,
+      dimensionsFound: ocrResult.dimensions.length,
+      confidence: ocrResult.confidence
+    });
+    
+    // If additional images provided, OCR them too and merge results
+    if (additionalImages && additionalImages.length > 0) {
+      console.log(`[OCR PASS] Processing ${additionalImages.length} additional images...`);
+      for (let i = 0; i < additionalImages.length; i++) {
+        const additionalOCR = await dedicatedOCRPass(additionalImages[i], apiKey, modelConfig);
+        // Merge area values from all images
+        ocrResult.areaValues = [...ocrResult.areaValues, ...additionalOCR.areaValues];
+        ocrResult.dimensions = [...ocrResult.dimensions, ...additionalOCR.dimensions];
+        ocrResult.allText += "\n---IMAGE " + (i + 2) + "---\n" + additionalOCR.allText;
+        
+        // Upgrade confidence if we found more data
+        if (additionalOCR.areaValues.length > 0 && ocrResult.confidence === "low") {
+          ocrResult.confidence = "medium";
+        }
+      }
+    }
+    
+    // Extract best area from OCR results
+    if (ocrResult.areaValues.length > 0) {
+      // Find the largest area (usually the total area)
+      const sortedAreas = [...ocrResult.areaValues].sort((a, b) => b.value - a.value);
+      ocrArea = sortedAreas[0].value;
+      console.log(`[OCR PASS] Extracted area from OCR: ${ocrArea} sq ft (from "${sortedAreas[0].context}")`);
+      
+      // If multiple areas found, log them all for transparency
+      if (sortedAreas.length > 1) {
+        console.log(`[OCR PASS] All detected areas: ${sortedAreas.map(a => `${a.value} ${a.unit}`).join(", ")}`);
+      }
+    }
+  }
+  
+  // STEP 0.5: Try to extract area from description (user-provided data)
   const descriptionArea = extractAreaFromDescription(description);
   if (descriptionArea) {
     console.log(`[AREA] User provided area in description: ${descriptionArea} sq ft`);
   }
   
+  // ============================================
   // STEP 1: GEMINI VISUAL EXTRACTION
-  // Role: Spatial analysis of blueprints, dimensions, site photos
+  // Now enhanced with OCR data as context
+  // ============================================
+  
+  // Enhance description with OCR findings for better visual analysis
+  let enhancedDescription = description || "";
+  if (ocrArea && modelConfig.enableMultiPassOCR) {
+    enhancedDescription = `[OCR-DETECTED AREA: ${ocrArea} sq ft - USE THIS VALUE]\n${enhancedDescription}`;
+    console.log("[GEMINI] Injecting OCR-detected area into visual analysis prompt");
+  }
+  
   console.log(`[GEMINI] Starting visual extraction with ${modelConfig.visualModel}`);
-  const geminiData = await geminiVisualAnalysis(image, description, apiKey, modelConfig);
+  const geminiData = await geminiVisualAnalysis(image, enhancedDescription, apiKey, modelConfig);
   console.log("[GEMINI] Extraction complete:", { 
     area: geminiData.total_area, 
     surface: geminiData.surface_type,
     confidence: geminiData.confidence 
   });
   
+  // ============================================
   // STEP 2: ESTIMATION ENGINE (Material Calculations)
+  // ============================================
   console.log(`[ESTIMATION] Starting material calculation with ${modelConfig.estimationModel}`);
   const gptData = await gptEstimationAnalysis(image, description, geminiData, apiKey, modelConfig);
   console.log("[ESTIMATION] Calculation complete:", { 
@@ -907,24 +1117,54 @@ async function dualEngineAnalysis(
     areaUsed: gptData.total_material_area
   });
   
-  // STEP 2.5: AREA FALLBACK CHAIN
-  // Priority: 1. Gemini visual detection, 2. User description, 3. Estimation engine area
-  let finalArea = geminiData.total_area;
-  let areaSource = "gemini_visual";
-  let areaConfidence = geminiData.confidence;
+  // ============================================
+  // STEP 2.5: PRECISION AREA RESOLUTION CHAIN
+  // Priority: 1. OCR (most reliable), 2. Gemini visual, 3. User description, 4. Estimation engine
+  // ============================================
+  let finalArea = null;
+  let areaSource = "none";
+  let areaConfidence: "high" | "medium" | "low" = "low";
   
+  // Priority 1: OCR-extracted area (highest precision for text-in-image)
+  if (ocrArea && modelConfig.enableMultiPassOCR) {
+    finalArea = ocrArea;
+    areaSource = "ocr_extraction";
+    areaConfidence = ocrResult.confidence === "high" ? "high" : "medium";
+    console.log(`[AREA] Priority 1: Using OCR-extracted area: ${finalArea} sq ft`);
+  }
+  
+  // Priority 2: Gemini visual detection (if OCR didn't find anything)
+  if (!finalArea && geminiData.total_area) {
+    finalArea = geminiData.total_area;
+    areaSource = "gemini_visual";
+    areaConfidence = geminiData.confidence;
+    console.log(`[AREA] Priority 2: Using Gemini visual area: ${finalArea} sq ft`);
+  }
+  
+  // Priority 3: User-provided description
   if (!finalArea && descriptionArea) {
     finalArea = descriptionArea;
     areaSource = "user_description";
     areaConfidence = "high"; // User-provided data is high confidence
-    console.log(`[AREA] Using user-provided area: ${finalArea} sq ft`);
+    console.log(`[AREA] Priority 3: Using user-provided area: ${finalArea} sq ft`);
   }
   
+  // Priority 4: Estimation engine calculated area (last resort)
   if (!finalArea && gptData.total_material_area && gptData.total_material_area > 10) {
     finalArea = gptData.total_material_area;
     areaSource = "estimation_engine";
     areaConfidence = "medium";
-    console.log(`[AREA] Using estimation engine area: ${finalArea} sq ft`);
+    console.log(`[AREA] Priority 4: Using estimation engine area: ${finalArea} sq ft`);
+  }
+  
+  // Cross-check OCR vs Gemini for validation
+  if (ocrArea && geminiData.total_area && Math.abs(ocrArea - geminiData.total_area) < 50) {
+    // Both engines agree - upgrade confidence
+    areaConfidence = "high";
+    console.log(`[AREA] Cross-validation: OCR (${ocrArea}) and Gemini (${geminiData.total_area}) agree - HIGH CONFIDENCE`);
+  } else if (ocrArea && geminiData.total_area) {
+    // Engines disagree - log for Decision Log
+    console.log(`[AREA] Warning: OCR (${ocrArea}) and Gemini (${geminiData.total_area}) differ - using OCR as priority`);
   }
   
   // Update geminiData with final area for downstream processing
@@ -933,9 +1173,11 @@ async function dualEngineAnalysis(
     geminiData.confidence = areaConfidence;
   }
   
-  console.log(`[AREA] Final resolved area: ${finalArea} sq ft (source: ${areaSource}, confidence: ${areaConfidence})`);
+  console.log(`[AREA] FINAL resolved area: ${finalArea} sq ft (source: ${areaSource}, confidence: ${areaConfidence})`);
   
+  // ============================================
   // STEP 3: ENGINEERING HANDSHAKE - Cross-Validation
+  // ============================================
   console.log("[CROSS-VALIDATION] Performing engineering handshake...");
   const conflicts = detectConflicts(geminiData, gptData);
   const deltaPercentage = geminiData.total_area && gptData.total_material_area
@@ -972,6 +1214,17 @@ async function dualEngineAnalysis(
       // MESSA AUDIT REPORT - Primary output
       messaAudit: auditReport,
       
+      // NEW: OCR Pipeline Results for Decision Log transparency
+      ocrPipeline: modelConfig.enableMultiPassOCR ? {
+        enabled: true,
+        model: modelConfig.ocrModel,
+        areaValuesFound: ocrResult.areaValues,
+        dimensionsFound: ocrResult.dimensions,
+        confidence: ocrResult.confidence,
+        extractedArea: ocrArea,
+        allTextPreview: ocrResult.allText.substring(0, 500),
+      } : { enabled: false },
+      
       // Dual-engine transparency (legacy format for compatibility)
       dualEngine: {
         gemini: {
@@ -988,6 +1241,17 @@ async function dualEngineAnalysis(
           },
           rawExcerpt: geminiData.raw_response
         },
+        ocr: modelConfig.enableMultiPassOCR ? {
+          role: "OCR Specialist (Text Extraction)",
+          model: modelConfig.ocrModel,
+          findings: {
+            areaValues: ocrResult.areaValues,
+            dimensions: ocrResult.dimensions,
+            confidence: ocrResult.confidence,
+            selectedArea: ocrArea,
+          },
+          rawExcerpt: ocrResult.rawResponse
+        } : undefined,
         estimation: {
           role: "Estimation Specialist (Material Calculations)", 
           model: modelConfig.estimationModel,
@@ -1007,6 +1271,7 @@ async function dualEngineAnalysis(
     },
     // Store raw engine data for Decision Log transparency
     _engineData: {
+      ocr: ocrResult,
       gemini: geminiData,
       estimation: gptData,
     }
