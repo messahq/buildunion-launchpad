@@ -106,7 +106,7 @@ const AddressAutocompleteWithMaps = ({
       onPlaceChanged={onPlaceChanged}
       options={{
         componentRestrictions: { country: "ca" },
-        types: ["address"],
+        types: ["geocode", "establishment"],
         fields: ["formatted_address", "name", "address_components", "geometry"],
       }}
     >
