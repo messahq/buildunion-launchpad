@@ -333,6 +333,7 @@ export type Database = {
           scope_of_work: string | null
           sent_to_client_at: string | null
           share_token: string | null
+          share_token_expires_at: string | null
           start_date: string | null
           status: string
           template_type: string | null
@@ -377,6 +378,7 @@ export type Database = {
           scope_of_work?: string | null
           sent_to_client_at?: string | null
           share_token?: string | null
+          share_token_expires_at?: string | null
           start_date?: string | null
           status?: string
           template_type?: string | null
@@ -421,6 +423,7 @@ export type Database = {
           scope_of_work?: string | null
           sent_to_client_at?: string | null
           share_token?: string | null
+          share_token_expires_at?: string | null
           start_date?: string | null
           status?: string
           template_type?: string | null
@@ -1588,6 +1591,7 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_share_token_valid: { Args: { _contract_id: string }; Returns: boolean }
       users_share_project: {
         Args: { _profile_owner_id: string; _viewer_id: string }
         Returns: boolean
