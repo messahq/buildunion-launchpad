@@ -16,7 +16,6 @@ import {
   MapPin, 
   Users, 
   Building2,
-  Search,
   ExternalLink
 } from "lucide-react";
 
@@ -93,7 +92,6 @@ export function UnionSelector({ value, onChange, primaryTrade, className = "" }:
   const { t } = useTranslation();
   const { region, config } = useRegionSettings();
   const [showCustomInput, setShowCustomInput] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Get unions for current region
   const regionUnions = useMemo(() => {
@@ -114,18 +112,8 @@ export function UnionSelector({ value, onChange, primaryTrade, className = "" }:
       }
     }
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      unions = unions.filter(u => 
-        u.name.toLowerCase().includes(query) || 
-        u.fullName.toLowerCase().includes(query) ||
-        u.location.toLowerCase().includes(query)
-      );
-    }
-
     return unions;
-  }, [regionUnions, primaryTrade, searchQuery]);
+  }, [regionUnions, primaryTrade]);
 
   // Check if current value is a custom entry (not in the list)
   const isCustomValue = value && !regionUnions.find(u => u.name === value);
@@ -153,18 +141,6 @@ export function UnionSelector({ value, onChange, primaryTrade, className = "" }:
 
       {!showCustomInput && !isCustomValue ? (
         <>
-          {/* Search filter for large lists */}
-          {regionUnions.length > 6 && (
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('profile.searchUnions', 'Search unions...')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          )}
 
           {/* Union selector */}
           <Select value={value} onValueChange={handleSelectUnion}>
