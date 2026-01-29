@@ -765,5 +765,12 @@
     "conflict": "Conflict Check",
     "citationCopied": "Citation copied",
     "allCitationsCopied": "All citations copied"
+  },
+  "attachments": {
+    "attachFile": "Attach file",
+    "fileTooLarge": "File too large. Maximum size is 10MB",
+    "fileTypeNotSupported": "File type not supported. Allowed: images, PDF, Word, Excel, TXT, CSV",
+    "uploadFailed": "Failed to upload attachment",
+    "premiumFeature": "Attachments are a Premium feature"
   }
 }

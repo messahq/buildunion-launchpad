@@ -765,5 +765,12 @@
     "conflict": "Konfliktus Ellenőrzés",
     "citationCopied": "Hivatkozás másolva",
     "allCitationsCopied": "Összes hivatkozás másolva"
+  },
+  "attachments": {
+    "attachFile": "Fájl csatolása",
+    "fileTooLarge": "A fájl túl nagy. Maximum méret 10MB",
+    "fileTypeNotSupported": "A fájltípus nem támogatott. Engedélyezett: képek, PDF, Word, Excel, TXT, CSV",
+    "uploadFailed": "Melléklet feltöltése sikertelen",
+    "premiumFeature": "A mellékletek küldése Premium funkció"
   }
 }

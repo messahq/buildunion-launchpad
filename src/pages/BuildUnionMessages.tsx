@@ -22,6 +22,9 @@ import {
   Download,
   Eye,
   History,
+  Paperclip,
+  File,
+  Image,
   Calendar,
   AlertCircle
 } from "lucide-react";
@@ -176,6 +179,8 @@ interface Message {
   message: string;
   isRead: boolean;
   createdAt: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 const tradeLabels: Record<string, string> = {
@@ -215,6 +220,11 @@ export default function BuildUnionMessages() {
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Attachment state
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   
   // Admin Email Compose State
   const [isAdminEmailDialogOpen, setIsAdminEmailDialogOpen] = useState(false);
@@ -398,8 +408,9 @@ export default function BuildUnionMessages() {
     setIsAdminEmailDialogOpen(false);
   };
 
-  // Premium access check
+  // Premium access check - Premium users and Admins can send attachments
   const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
+  const canSendAttachments = hasPremiumAccess || isAdmin;
 
   useEffect(() => {
     if (!user) {
@@ -591,6 +602,8 @@ export default function BuildUnionMessages() {
         message: m.message,
         isRead: m.is_read,
         createdAt: m.created_at,
+        attachmentUrl: m.attachment_url || undefined,
+        attachmentName: m.attachment_name || undefined,
       })) || []);
 
       markMessagesAsRead(partnerId);
@@ -639,11 +652,54 @@ export default function BuildUnionMessages() {
     }
   };
 
-  const sendMessage = async () => {
-    if (!user || !selectedConversation || !newMessage.trim()) return;
+  // Handle file attachment selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("File too large. Maximum size is 10MB");
+      return;
+    }
+    
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain', 'text/csv'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("File type not supported. Allowed: images, PDF, Word, Excel, TXT, CSV");
+      return;
+    }
+    
+    setAttachmentFile(file);
+    e.target.value = ''; // Reset input
+  };
 
-    // Check premium access before sending
-    if (!hasPremiumAccess) {
+  const removeAttachment = () => {
+    setAttachmentFile(null);
+  };
+
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+      return <Image className="h-4 w-4" />;
+    }
+    return <File className="h-4 w-4" />;
+  };
+
+  const sendMessage = async () => {
+    if (!user || !selectedConversation) return;
+    if (!newMessage.trim() && !attachmentFile) return;
+
+    // Check premium access before sending (admins bypass this check)
+    if (!hasPremiumAccess && !isAdmin) {
       toast.error("Direct messaging is a Premium feature", {
         action: {
           label: "Upgrade",
@@ -657,12 +713,45 @@ export default function BuildUnionMessages() {
     const messageText = newMessage.trim();
 
     try {
+      let attachmentUrl: string | null = null;
+      let attachmentName: string | null = null;
+
+      // Upload attachment if present
+      if (attachmentFile && canSendAttachments) {
+        setIsUploadingAttachment(true);
+        const fileExt = attachmentFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('message-attachments')
+          .upload(fileName, attachmentFile);
+        
+        if (uploadError) {
+          throw new Error(`Failed to upload attachment: ${uploadError.message}`);
+        }
+        
+        // Create signed URL for private bucket (1 year expiry)
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('message-attachments')
+          .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
+        
+        if (signedUrlError || !signedUrlData?.signedUrl) {
+          throw new Error(`Failed to create download URL: ${signedUrlError?.message || 'Unknown error'}`);
+        }
+        
+        attachmentUrl = signedUrlData.signedUrl;
+        attachmentName = attachmentFile.name;
+        setIsUploadingAttachment(false);
+      }
+
       const { data, error } = await supabase
         .from("team_messages")
         .insert({
           sender_id: user.id,
           recipient_id: selectedConversation.partnerId,
-          message: messageText,
+          message: messageText || (attachmentName ? `📎 ${attachmentName}` : ''),
+          attachment_url: attachmentUrl,
+          attachment_name: attachmentName,
         })
         .select()
         .single();
@@ -676,6 +765,8 @@ export default function BuildUnionMessages() {
         message: data.message,
         isRead: data.is_read,
         createdAt: data.created_at,
+        attachmentUrl: data.attachment_url || undefined,
+        attachmentName: data.attachment_name || undefined,
       }]);
 
       // Update conversation in list
@@ -691,13 +782,15 @@ export default function BuildUnionMessages() {
       });
 
       setNewMessage("");
+      setAttachmentFile(null);
 
       // Send push notification to recipient
       const senderName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Someone";
-      sendPushNotification(selectedConversation.partnerId, senderName, messageText);
+      sendPushNotification(selectedConversation.partnerId, senderName, messageText || `Sent an attachment: ${attachmentName}`);
     } catch (err) {
       console.error("Error sending message:", err);
-      toast.error("Failed to send message");
+      toast.error(err instanceof Error ? err.message : "Failed to send message");
+      setIsUploadingAttachment(false);
     } finally {
       setIsSending(false);
     }
@@ -1610,7 +1703,33 @@ export default function BuildUnionMessages() {
                                   : "bg-muted text-foreground rounded-bl-sm"
                               }`}
                             >
-                              <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                              {/* Attachment display */}
+                              {msg.attachmentUrl && msg.attachmentName && (
+                                <a
+                                  href={msg.attachmentUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`flex items-center gap-2 mb-2 p-2 rounded-lg transition-colors ${
+                                    isMine 
+                                      ? "bg-white/20 hover:bg-white/30" 
+                                      : "bg-background hover:bg-muted-foreground/10"
+                                  }`}
+                                >
+                                  {msg.attachmentName.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                    <Image className="h-4 w-4 shrink-0" />
+                                  ) : (
+                                    <File className="h-4 w-4 shrink-0" />
+                                  )}
+                                  <span className="text-sm truncate">{msg.attachmentName}</span>
+                                  <Download className="h-3 w-3 shrink-0 opacity-70" />
+                                </a>
+                              )}
+                              {msg.message && !msg.message.startsWith('📎 ') && (
+                                <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                              )}
+                              {msg.message && msg.message.startsWith('📎 ') && !msg.attachmentUrl && (
+                                <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                              )}
                               <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
                                 <p className={`text-[10px] ${isMine ? "text-emerald-100" : "text-muted-foreground"}`}>
                                   {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
@@ -1634,23 +1753,68 @@ export default function BuildUnionMessages() {
 
                 {/* Message Input */}
                 <div className="p-4 border-t">
-                  {hasPremiumAccess ? (
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        disabled={isSending}
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={sendMessage}
-                        disabled={isSending || !newMessage.trim()}
-                        className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
-                      >
-                        <Send className="h-4 w-4" />
-                      </Button>
+                  {(hasPremiumAccess || isAdmin) ? (
+                    <div className="space-y-2">
+                      {/* Attachment preview */}
+                      {attachmentFile && (
+                        <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                          {getFileIcon(attachmentFile.name)}
+                          <span className="text-sm truncate flex-1">{attachmentFile.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {(attachmentFile.size / 1024).toFixed(1)} KB
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={removeAttachment}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        {/* Hidden file input */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          onChange={handleFileSelect}
+                          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                        />
+                        {/* Attachment button - only for premium/admin */}
+                        {canSendAttachments && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isSending || isUploadingAttachment}
+                            className="shrink-0"
+                            title="Attach file (Premium)"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Input
+                          placeholder="Type a message..."
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          disabled={isSending || isUploadingAttachment}
+                          className="flex-1"
+                        />
+                        <Button
+                          onClick={sendMessage}
+                          disabled={isSending || isUploadingAttachment || (!newMessage.trim() && !attachmentFile)}
+                          className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
+                        >
+                          {isUploadingAttachment ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">

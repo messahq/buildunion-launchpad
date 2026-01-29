@@ -1017,6 +1017,8 @@ export type Database = {
       }
       team_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_url: string | null
           created_at: string
           id: string
           is_read: boolean | null
@@ -1025,6 +1027,8 @@ export type Database = {
           sender_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
           created_at?: string
           id?: string
           is_read?: boolean | null
@@ -1033,6 +1037,8 @@ export type Database = {
           sender_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
           created_at?: string
           id?: string
           is_read?: boolean | null
