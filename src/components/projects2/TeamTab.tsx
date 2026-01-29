@@ -49,6 +49,12 @@ interface TeamTabProps {
   onCalendarViewActivated?: () => void;
   existingTaskCount?: number;
   isSoloMode?: boolean;
+  permissions?: {
+    canCreateTasks: boolean;
+    canAssignTasks: boolean;
+    canInviteMembers: boolean;
+    canRemoveMembers: boolean;
+  };
 }
 
 // Map materials to task titles
@@ -73,7 +79,7 @@ const materialToTaskDescription = (material: Material): string => {
   return `${material.quantity} ${material.unit} of ${material.item}${material.notes ? ` - ${material.notes}` : ""}`;
 };
 
-const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate, forceCalendarView, onCalendarViewActivated, existingTaskCount = 0, isSoloMode = false }: TeamTabProps) => {
+const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], projectStartDate, projectEndDate, forceCalendarView, onCalendarViewActivated, existingTaskCount = 0, isSoloMode = false, permissions }: TeamTabProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
@@ -111,11 +117,12 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   const spotsRemaining = teamLimit === Infinity ? Infinity : Math.max(0, teamLimit - spotsUsed);
   const nextTier = getNextTier(currentTier);
 
-  // existingTaskCount now comes from props, synced with parent's task state
+  // Check if user can create tasks
+  const canCreateTasks = permissions?.canCreateTasks ?? isOwner;
 
   // Generate tasks from AI materials
   const handleGenerateTasksFromMaterials = async () => {
-    if (!user || !isOwner || members.length === 0) {
+    if (!user || (!canCreateTasks) || members.length === 0) {
       toast.error(t("tasks.addMembersFirst", "Add team members first"));
       return;
     }

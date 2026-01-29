@@ -53,6 +53,7 @@ import { generateProjectReport, ConflictData } from "@/lib/pdfGenerator";
 import { ProBadge } from "@/components/ui/pro-badge";
 import { useCitationRegistry, getAutoPillarLink } from "@/hooks/useCitationRegistry";
 import { CitationSource, generateCitationId } from "@/types/citation";
+import { useProjectPermissions, useUserProjectRole, ProjectPermissions } from "@/hooks/useProjectPermissions";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -574,6 +575,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   
   // Determine if current user is owner
   const isOwner = project?.user_id === user?.id;
+  
+  // Get user's role in project and compute permissions
+  const userRole = useUserProjectRole(projectId, members);
+  const permissions = useProjectPermissions({ 
+    projectOwnerId: project?.user_id, 
+    memberRole: userRole || undefined 
+  });
   
   // Map team members for the map widget - include GPS from bu_profiles
   const teamMembersForMap = members.map(m => ({
@@ -2027,7 +2035,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         {/* Team/Tasks Tab - Always visible */}
         <TabsContent value="team" className="mt-6">
           {/* Show Worker Dashboard for non-owners, TeamTab for owners */}
-          {isOwner ? (
+          {isOwner || permissions.canCreateTasks ? (
             <TeamTab
               projectId={projectId}
               isOwner={isOwner}
@@ -2039,6 +2047,12 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               onCalendarViewActivated={() => setForceCalendarView(false)}
               existingTaskCount={tasks.length}
               isSoloMode={!isTeamMode}
+              permissions={{
+                canCreateTasks: permissions.canCreateTasks,
+                canAssignTasks: permissions.canAssignTasks,
+                canInviteMembers: permissions.canInviteMembers,
+                canRemoveMembers: permissions.canRemoveMembers,
+              }}
             />
           ) : (
             <WorkerDashboard
@@ -2053,6 +2067,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           <DocumentsPane
             projectId={projectId}
             siteImages={project.site_images}
+            permissions={permissions}
           />
         </TabsContent>
 

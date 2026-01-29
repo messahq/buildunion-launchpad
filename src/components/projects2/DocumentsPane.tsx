@@ -15,6 +15,7 @@ import {
   Quote,
   Copy,
   Check,
+  Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -34,11 +35,14 @@ import {
 } from "@/components/ui/tooltip";
 import { CitationSource } from "@/types/citation";
 import { useCitation } from "@/components/citations/CitationProvider";
+import { ProjectPermissions } from "@/hooks/useProjectPermissions";
+import { PermissionGate, PermissionButton } from "@/components/PermissionGate";
 
 interface DocumentsPaneProps {
   projectId: string;
   siteImages: string[] | null;
   className?: string;
+  permissions?: ProjectPermissions;
 }
 
 interface ProjectDocument {
@@ -69,6 +73,7 @@ export default function DocumentsPane({
   projectId, 
   siteImages, 
   className,
+  permissions,
 }: DocumentsPaneProps) {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
@@ -544,51 +549,67 @@ export default function DocumentsPane({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Drag & Drop Upload Zone */}
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={cn(
-            "relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all",
-            isDragOver 
-              ? "border-primary bg-primary/5" 
-              : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
-            isUploading && "pointer-events-none opacity-60"
-          )}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(',')}
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          
-          {isUploading ? (
+        {/* Drag & Drop Upload Zone - Permission Gated */}
+        {permissions && !permissions.canUploadDocuments ? (
+          <div className="relative border-2 border-dashed rounded-lg p-6 text-center border-muted-foreground/25 opacity-60">
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Uploading...</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <Upload className={cn(
-                "h-8 w-8 transition-colors",
-                isDragOver ? "text-primary" : "text-muted-foreground"
-              )} />
+              <Lock className="h-8 w-8 text-muted-foreground/50" />
               <div>
-                <p className="text-sm font-medium">
-                  {isDragOver ? "Drop files here" : "Drag & drop files here"}
+                <p className="text-sm font-medium text-muted-foreground">
+                  Document upload restricted
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  or click to browse • PDF, DOC, XLS, images up to 50MB
+                  Only owners and foremen can upload documents
                 </p>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all",
+              isDragOver 
+                ? "border-primary bg-primary/5" 
+                : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
+              isUploading && "pointer-events-none opacity-60"
+            )}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(',')}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {isUploading ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Uploading...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <Upload className={cn(
+                  "h-8 w-8 transition-colors",
+                  isDragOver ? "text-primary" : "text-muted-foreground"
+                )} />
+                <div>
+                  <p className="text-sm font-medium">
+                    {isDragOver ? "Drop files here" : "Drag & drop files here"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    or click to browse • PDF, DOC, XLS, images up to 50MB
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Site Images Grid with Citations */}
         {siteImages && siteImages.length > 0 && (

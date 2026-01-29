@@ -113,9 +113,42 @@ const WorkerDashboard = ({ projectId, projectName }: WorkerDashboardProps) => {
     };
   }, [projectId, user?.id, fetchMyTasks]);
 
+  // Notify owner when task is completed
+  const notifyOwnerOfCompletion = async (taskId: string, taskTitle: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.access_token) return;
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-task-completed`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify({
+            taskId,
+            taskTitle,
+            projectId,
+            projectName,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.warn("Failed to notify owner:", await response.text());
+      }
+    } catch (err) {
+      console.error("Error notifying owner:", err);
+    }
+  };
+
   // Update task status
   const handleUpdateStatus = async (taskId: string, newStatus: string) => {
     setUpdatingTaskId(taskId);
+    const task = tasks.find(t => t.id === taskId);
+    
     try {
       const { error } = await supabase
         .from("project_tasks")
@@ -131,6 +164,11 @@ const WorkerDashboard = ({ projectId, projectName }: WorkerDashboardProps) => {
 
       const statusLabel = STATUS_CONFIG[newStatus as keyof typeof STATUS_CONFIG]?.label || newStatus;
       toast.success(t("workerDashboard.statusUpdated", `Task marked as ${statusLabel}`));
+
+      // If task was marked as completed, notify owner
+      if (newStatus === "completed" && task) {
+        notifyOwnerOfCompletion(taskId, task.title);
+      }
     } catch (err: any) {
       console.error("Error updating status:", err);
       toast.error(err.message || t("workerDashboard.updateError", "Failed to update task"));

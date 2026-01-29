@@ -789,6 +789,11 @@
     "alreadyComplete": "Már befejezve",
     "clickToProgress": "Kattints a folytatáshoz",
     "allComplete": "Minden Feladat Kész!",
-    "greatWork": "Szép munka! Minden hozzád rendelt feladat elkészült."
+    "greatWork": "Szép munka! Minden hozzád rendelt feladat elkészült.",
+    "ownerNotified": "A tulajdonos értesítve"
+  },
+  "documents": {
+    "uploadRestricted": "Dokumentum feltöltés korlátozva",
+    "onlyOwnersCanUpload": "Csak tulajdonosok és művezetők tölthetnek fel dokumentumokat"
   }
 }
