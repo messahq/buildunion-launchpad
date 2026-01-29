@@ -195,6 +195,72 @@ function RolePermissionsPreview({ role, compact = false }: RolePermissionsPrevie
   );
 }
 
+// Component for changing member roles (owner only)
+interface MemberRoleSelectorProps {
+  memberId: string;
+  currentRole: TeamRole;
+  memberName: string;
+}
+
+function MemberRoleSelector({ memberId, currentRole, memberName }: MemberRoleSelectorProps) {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [role, setRole] = useState<TeamRole>(currentRole);
+  
+  const handleRoleChange = async (newRole: TeamRole) => {
+    if (newRole === role) return;
+    
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("project_members")
+        .update({ role: newRole })
+        .eq("id", memberId);
+      
+      if (error) throw error;
+      
+      setRole(newRole);
+      const roleLabel = ROLE_LABELS[newRole as ProjectRole]?.label || newRole;
+      toast.success(`${memberName}'s role changed to ${roleLabel}`);
+    } catch (err: any) {
+      console.error("Error updating role:", err);
+      toast.error(err.message || "Failed to update role");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+  
+  const roleInfo = ROLE_LABELS[role as ProjectRole];
+  
+  return (
+    <Select value={role} onValueChange={(v) => handleRoleChange(v as TeamRole)} disabled={isUpdating}>
+      <SelectTrigger className="h-7 w-auto min-w-[100px] text-xs border-slate-200 bg-white">
+        <SelectValue>
+          <span className="flex items-center gap-1.5">
+            {isUpdating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <span>{roleInfo?.icon}</span>
+            )}
+            <span>{roleInfo?.label || role}</span>
+          </span>
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className="z-50 bg-white border shadow-lg">
+        {Object.entries(TEAM_ROLES)
+          .filter(([key]) => key !== "owner") // Can't assign owner role
+          .map(([key, info]) => (
+            <SelectItem key={key} value={key} className="text-xs">
+              <span className="flex items-center gap-2">
+                <span>{info.icon}</span>
+                <span>{info.label}</span>
+              </span>
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 interface TeamManagementProps {
   projectId: string;
   isOwner: boolean;
@@ -737,9 +803,17 @@ const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementPro
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-slate-600 capitalize">
-                    {roleInfo.label}
-                  </Badge>
+                  {isOwner ? (
+                    <MemberRoleSelector
+                      memberId={member.id}
+                      currentRole={member.role as TeamRole}
+                      memberName={member.full_name || "Member"}
+                    />
+                  ) : (
+                    <Badge variant="outline" className="text-slate-600 capitalize">
+                      {roleInfo.label}
+                    </Badge>
+                  )}
                   {isOwner && (
                     <Button
                       variant="ghost"
