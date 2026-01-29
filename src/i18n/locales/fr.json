@@ -730,5 +730,45 @@
     "alreadyLoggedIn": "Vous êtes déjà connecté",
     "alreadyLoggedInDesc": "Vous êtes actuellement connecté à votre compte.",
     "goToWorkspace": "Aller à l'Espace de Travail"
+  },
+  "onboarding": {
+    "back": "Retour",
+    "next": "Suivant",
+    "getStarted": "Commencer!",
+    "restartTour": "Redémarrer le Tour",
+    "steps": {
+      "welcome": {
+        "title": "Bienvenue sur BuildUnion",
+        "description": "Votre plateforme de gestion de construction propulsée par l'IA. Laissez-nous vous guider!"
+      },
+      "quickMode": {
+        "title": "Mode Rapide",
+        "description": "Générez des estimations instantanées à partir de photos, créez des devis professionnels et envoyez des contrats en quelques minutes."
+      },
+      "messa": {
+        "title": "Moteur IA M.E.S.S.A.",
+        "description": "Système d'IA double combinant Gemini pour l'analyse visuelle et GPT pour la conformité réglementaire."
+      },
+      "calculator": {
+        "title": "Calculatrice Intelligente",
+        "description": "Calculez les matériaux, les coûts de main-d'œuvre et les délais avec une précision alimentée par l'IA."
+      },
+      "projects": {
+        "title": "Gestion de Projet",
+        "description": "Diagrammes de Gantt, attribution de tâches, collaboration d'équipe et suivi en temps réel."
+      },
+      "contracts": {
+        "title": "Contrats Intelligents",
+        "description": "Générez, envoyez et suivez les contrats avec signatures numériques et suivi du statut."
+      },
+      "community": {
+        "title": "Communauté Professionnelle",
+        "description": "Connectez-vous avec des entrepreneurs vérifiés, partagez vos connaissances et développez votre réseau."
+      },
+      "obc": {
+        "title": "Conformité OBC",
+        "description": "Vérifications intégrées de conformité au Code du Bâtiment de l'Ontario."
+      }
+    }
   }
 }

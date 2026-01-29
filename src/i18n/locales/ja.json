@@ -730,5 +730,45 @@
     "alreadyLoggedIn": "既にログインしています",
     "alreadyLoggedInDesc": "現在アカウントにログインしています。",
     "goToWorkspace": "ワークスペースへ"
+  },
+  "onboarding": {
+    "back": "戻る",
+    "next": "次へ",
+    "getStarted": "始めましょう！",
+    "restartTour": "ツアーを再開",
+    "steps": {
+      "welcome": {
+        "title": "BuildUnionへようこそ",
+        "description": "AI搭載の建設管理プラットフォームです。ご案内します！"
+      },
+      "quickMode": {
+        "title": "クイックモード",
+        "description": "写真から即座に見積もりを作成し、プロの見積書を作成、数分で契約書を送信。"
+      },
+      "messa": {
+        "title": "M.E.S.S.A. AIエンジン",
+        "description": "視覚分析のGeminiと規制遵守のGPTを組み合わせたデュアルAIシステム。"
+      },
+      "calculator": {
+        "title": "スマート計算機",
+        "description": "材料、人件費、スケジュールをAI精度で計算。"
+      },
+      "projects": {
+        "title": "プロジェクト管理",
+        "description": "ガントチャート、タスク割り当て、チームコラボレーション、リアルタイム追跡。"
+      },
+      "contracts": {
+        "title": "スマート契約",
+        "description": "デジタル署名とステータス追跡で契約を作成、送信、追跡。"
+      },
+      "community": {
+        "title": "プロフェッショナルコミュニティ",
+        "description": "認証済み請負業者とつながり、知識を共有し、ネットワークを拡大。"
+      },
+      "obc": {
+        "title": "OBCコンプライアンス",
+        "description": "オンタリオ建築基準法の組み込みコンプライアンスチェック。"
+      }
+    }
   }
 }

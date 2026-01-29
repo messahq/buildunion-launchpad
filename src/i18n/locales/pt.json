@@ -730,5 +730,45 @@
     "alreadyLoggedIn": "Você já está conectado",
     "alreadyLoggedInDesc": "Você está atualmente conectado à sua conta.",
     "goToWorkspace": "Ir para o Espaço de Trabalho"
+  },
+  "onboarding": {
+    "back": "Voltar",
+    "next": "Próximo",
+    "getStarted": "Começar!",
+    "restartTour": "Reiniciar Tour",
+    "steps": {
+      "welcome": {
+        "title": "Bem-vindo ao BuildUnion",
+        "description": "Sua plataforma de gestão de construção com IA. Deixe-nos mostrar!"
+      },
+      "quickMode": {
+        "title": "Modo Rápido",
+        "description": "Gere estimativas instantâneas de fotos, crie orçamentos profissionais e envie contratos em minutos."
+      },
+      "messa": {
+        "title": "Motor IA M.E.S.S.A.",
+        "description": "Sistema de IA duplo combinando Gemini para análise visual e GPT para conformidade regulatória."
+      },
+      "calculator": {
+        "title": "Calculadora Inteligente",
+        "description": "Calcule materiais, custos de mão de obra e cronogramas com precisão alimentada por IA."
+      },
+      "projects": {
+        "title": "Gestão de Projetos",
+        "description": "Gráficos de Gantt, atribuição de tarefas, colaboração em equipe e acompanhamento em tempo real."
+      },
+      "contracts": {
+        "title": "Contratos Inteligentes",
+        "description": "Gere, envie e acompanhe contratos com assinaturas digitais e rastreamento de status."
+      },
+      "community": {
+        "title": "Comunidade Profissional",
+        "description": "Conecte-se com empreiteiros verificados, compartilhe conhecimento e expanda sua rede."
+      },
+      "obc": {
+        "title": "Conformidade OBC",
+        "description": "Verificações integradas de conformidade com o Código de Construção de Ontário."
+      }
+    }
   }
 }

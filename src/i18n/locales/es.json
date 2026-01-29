@@ -730,5 +730,45 @@
     "alreadyLoggedIn": "Ya has iniciado sesión",
     "alreadyLoggedInDesc": "Actualmente estás conectado a tu cuenta.",
     "goToWorkspace": "Ir al Espacio de Trabajo"
+  },
+  "onboarding": {
+    "back": "Atrás",
+    "next": "Siguiente",
+    "getStarted": "¡Empezar!",
+    "restartTour": "Reiniciar Tour",
+    "steps": {
+      "welcome": {
+        "title": "Bienvenido a BuildUnion",
+        "description": "Tu plataforma de gestión de construcción impulsada por IA. ¡Te mostramos!"
+      },
+      "quickMode": {
+        "title": "Modo Rápido",
+        "description": "Genera estimaciones instantáneas desde fotos, crea cotizaciones profesionales y envía contratos en minutos."
+      },
+      "messa": {
+        "title": "Motor IA M.E.S.S.A.",
+        "description": "Sistema dual de IA que combina Gemini para análisis visual y GPT para cumplimiento normativo."
+      },
+      "calculator": {
+        "title": "Calculadora Inteligente",
+        "description": "Calcula materiales, costos de mano de obra y cronogramas con precisión impulsada por IA."
+      },
+      "projects": {
+        "title": "Gestión de Proyectos",
+        "description": "Diagramas de Gantt, asignación de tareas, colaboración en equipo y seguimiento en tiempo real."
+      },
+      "contracts": {
+        "title": "Contratos Inteligentes",
+        "description": "Genera, envía y rastrea contratos con firmas digitales y seguimiento de estado."
+      },
+      "community": {
+        "title": "Comunidad Profesional",
+        "description": "Conecta con contratistas verificados, comparte conocimientos y amplía tu red."
+      },
+      "obc": {
+        "title": "Cumplimiento OBC",
+        "description": "Verificaciones integradas de cumplimiento del Código de Construcción de Ontario."
+      }
+    }
   }
 }

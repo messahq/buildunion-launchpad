@@ -730,5 +730,45 @@
     "alreadyLoggedIn": "Sie sind bereits angemeldet",
     "alreadyLoggedInDesc": "Sie sind derzeit in Ihrem Konto angemeldet.",
     "goToWorkspace": "Zum Arbeitsbereich"
+  },
+  "onboarding": {
+    "back": "Zurück",
+    "next": "Weiter",
+    "getStarted": "Los geht's!",
+    "restartTour": "Tour Neustarten",
+    "steps": {
+      "welcome": {
+        "title": "Willkommen bei BuildUnion",
+        "description": "Ihre KI-gestützte Baumanagement-Plattform. Lassen Sie uns Ihnen zeigen!"
+      },
+      "quickMode": {
+        "title": "Schnellmodus",
+        "description": "Erstellen Sie sofortige Schätzungen aus Fotos, professionelle Angebote und senden Sie Verträge in Minuten."
+      },
+      "messa": {
+        "title": "M.E.S.S.A. KI-Motor",
+        "description": "Duales KI-System mit Gemini für visuelle Analyse und GPT für regulatorische Konformität."
+      },
+      "calculator": {
+        "title": "Intelligenter Rechner",
+        "description": "Berechnen Sie Materialien, Arbeitskosten und Zeitpläne mit KI-gestützter Präzision."
+      },
+      "projects": {
+        "title": "Projektmanagement",
+        "description": "Gantt-Diagramme, Aufgabenzuweisung, Teamzusammenarbeit und Echtzeit-Tracking."
+      },
+      "contracts": {
+        "title": "Intelligente Verträge",
+        "description": "Erstellen, senden und verfolgen Sie Verträge mit digitalen Signaturen und Statusverfolgung."
+      },
+      "community": {
+        "title": "Professionelle Community",
+        "description": "Verbinden Sie sich mit verifizierten Auftragnehmern, teilen Sie Wissen und erweitern Sie Ihr Netzwerk."
+      },
+      "obc": {
+        "title": "OBC-Konformität",
+        "description": "Integrierte Konformitätsprüfungen für den Ontario Building Code."
+      }
+    }
   }
 }
