@@ -1904,19 +1904,17 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               <span className="hidden sm:inline">Contracts</span>
             </TabsTrigger>
           )}
-          {/* Site Map Tab - Only for Team Mode */}
-          {isTeamMode && (
-            <TabsTrigger 
-              value="map" 
-              className={cn(
-                "gap-2 transition-all duration-300",
-                flashingTab === "map" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
-              )}
-            >
-              <Map className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("projects.siteMap")}</span>
-            </TabsTrigger>
-          )}
+          {/* Site Map Tab - Available for all users */}
+          <TabsTrigger 
+            value="map" 
+            className={cn(
+              "gap-2 transition-all duration-300",
+              flashingTab === "map" && "ring-2 ring-amber-400 bg-amber-100 dark:bg-amber-900/50 animate-pulse"
+            )}
+          >
+            <Map className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("projects.siteMap")}</span>
+          </TabsTrigger>
           <TabsTrigger 
             value="materials" 
             className={cn(
@@ -2090,27 +2088,25 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           </TabsContent>
         )}
 
-        {/* Team Map Tab - Only for Team Mode */}
-        {isTeamMode && (
-          <TabsContent value="map" className="mt-6">
-            {project.address ? (
-              <TeamMapWidget
-                projectAddress={project.address}
-                projectName={project.name}
-                conflicts={projectConflicts}
-                isPremium={isPremium}
-                teamMembers={teamMembersForMap}
-              />
-            ) : (
-              <Card className="border-dashed">
-                <CardContent className="py-12 text-center">
-                  <Map className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-                  <p className="text-muted-foreground">Add a project address to view site map</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        )}
+        {/* Site Map Tab - Available for all users */}
+        <TabsContent value="map" className="mt-6">
+          {project.address ? (
+            <TeamMapWidget
+              projectAddress={project.address}
+              projectName={project.name}
+              conflicts={projectConflicts}
+              isPremium={isPremium}
+              teamMembers={isTeamMode ? teamMembersForMap : []}
+            />
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <Map className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                <p className="text-muted-foreground">Add a project address to view site map</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         {/* Materials Tab - Cost Breakdown from AI-analyzed tasks */}
         <TabsContent value="materials" className="mt-6">
