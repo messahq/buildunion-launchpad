@@ -61,8 +61,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Use scope: 'global' to sign out from all devices/sessions
-    await supabase.auth.signOut({ scope: 'global' });
+    try {
+      // Use scope: 'global' to sign out from all devices/sessions
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (error) {
+      console.error("Sign out error:", error);
+      // Even if server signOut fails, clear local state
+    }
+    // Always clear local state regardless of server response
+    setUser(null);
+    setSession(null);
   };
 
   return (
