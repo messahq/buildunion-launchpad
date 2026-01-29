@@ -730,5 +730,45 @@
     "alreadyLoggedIn": "您已登录",
     "alreadyLoggedInDesc": "您当前已登录到您的账户。",
     "goToWorkspace": "前往工作区"
+  },
+  "onboarding": {
+    "back": "返回",
+    "next": "下一步",
+    "getStarted": "开始使用！",
+    "restartTour": "重新开始导览",
+    "steps": {
+      "welcome": {
+        "title": "欢迎使用 BuildUnion",
+        "description": "您的AI驱动建筑管理平台。让我们带您了解！"
+      },
+      "quickMode": {
+        "title": "快速模式",
+        "description": "从照片生成即时报价，创建专业报价单，几分钟内发送合同。"
+      },
+      "messa": {
+        "title": "M.E.S.S.A. AI引擎",
+        "description": "双AI系统，结合Gemini进行视觉分析和GPT进行法规合规。"
+      },
+      "calculator": {
+        "title": "智能计算器",
+        "description": "使用AI精确计算材料、人工成本和时间表。"
+      },
+      "projects": {
+        "title": "项目管理",
+        "description": "甘特图、任务分配、团队协作和实时进度跟踪。"
+      },
+      "contracts": {
+        "title": "智能合同",
+        "description": "生成、发送和跟踪带有数字签名和状态跟踪的合同。"
+      },
+      "community": {
+        "title": "专业社区",
+        "description": "与认证承包商联系，分享知识，扩展您的人脉。"
+      },
+      "obc": {
+        "title": "OBC合规",
+        "description": "内置安大略省建筑规范合规检查。"
+      }
+    }
   }
 }

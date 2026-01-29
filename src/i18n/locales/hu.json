@@ -800,5 +800,45 @@
     "alreadyLoggedIn": "Már be vagy jelentkezve",
     "alreadyLoggedInDesc": "Jelenleg be vagy jelentkezve a fiókodba.",
     "goToWorkspace": "Munkaterületre"
+  },
+  "onboarding": {
+    "back": "Vissza",
+    "next": "Tovább",
+    "getStarted": "Kezdjük!",
+    "restartTour": "Túra Újraindítása",
+    "steps": {
+      "welcome": {
+        "title": "Üdvözöl a BuildUnion",
+        "description": "Az AI-alapú építőipari menedzsment platformod. Hadd mutassuk meg!"
+      },
+      "quickMode": {
+        "title": "Gyors Mód",
+        "description": "Készíts azonnali árajánlatokat fotókból, professzionális ajánlatokat és szerződéseket percek alatt."
+      },
+      "messa": {
+        "title": "M.E.S.S.A. AI Motor",
+        "description": "Kettős AI rendszer: Gemini vizuális elemzéshez és GPT szabályozási megfelelőséghez."
+      },
+      "calculator": {
+        "title": "Okos Kalkulátor",
+        "description": "Számold ki az anyagokat, munkadíjakat és ütemezéseket AI-alapú pontossággal."
+      },
+      "projects": {
+        "title": "Projektmenedzsment",
+        "description": "Gantt-diagramok, feladat-hozzárendelés, csapat együttműködés és valós idejű nyomon követés."
+      },
+      "contracts": {
+        "title": "Okos Szerződések",
+        "description": "Készíts, küldj és kövesd nyomon a szerződéseket digitális aláírással."
+      },
+      "community": {
+        "title": "Szakmai Közösség",
+        "description": "Kapcsolódj ellenőrzött vállalkozókkal, ossz meg tudást és építsd a hálózatod."
+      },
+      "obc": {
+        "title": "OBC Megfelelőség",
+        "description": "Beépített Ontario Building Code megfelelőségi ellenőrzések a projektjeid nyomon követésére."
+      }
+    }
   }
 }

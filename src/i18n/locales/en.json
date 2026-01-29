@@ -800,5 +800,45 @@
     "alreadyLoggedIn": "You are already logged in",
     "alreadyLoggedInDesc": "You are currently signed in to your account.",
     "goToWorkspace": "Go to Workspace"
+  },
+  "onboarding": {
+    "back": "Back",
+    "next": "Next",
+    "getStarted": "Get Started",
+    "restartTour": "Restart Tour",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to BuildUnion",
+        "description": "Your AI-powered construction management platform. Let us show you around!"
+      },
+      "quickMode": {
+        "title": "Quick Mode",
+        "description": "Generate instant estimates from photos, create professional quotes, and send contracts in minutes."
+      },
+      "messa": {
+        "title": "M.E.S.S.A. AI Engine",
+        "description": "Dual AI system combining Gemini for visual analysis and GPT for regulatory compliance."
+      },
+      "calculator": {
+        "title": "Smart Calculator",
+        "description": "Calculate materials, labor costs, and timelines with AI-powered precision."
+      },
+      "projects": {
+        "title": "Project Management",
+        "description": "Gantt charts, task assignment, team collaboration, and real-time progress tracking."
+      },
+      "contracts": {
+        "title": "Smart Contracts",
+        "description": "Generate, send, and track contracts with digital signatures and status tracking."
+      },
+      "community": {
+        "title": "Professional Community",
+        "description": "Connect with verified contractors, share knowledge, and grow your network."
+      },
+      "obc": {
+        "title": "OBC Compliance",
+        "description": "Built-in Ontario Building Code compliance checks to keep your projects on track."
+      }
+    }
   }
 }
