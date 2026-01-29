@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import NotificationSettings from "@/components/NotificationSettings";
+import SecuritySettings from "@/components/SecuritySettings";
 import { UnionSelector } from "@/components/UnionSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -724,6 +725,9 @@ const BuildUnionProfile = () => {
 
           {/* Notification Settings */}
           <NotificationSettings />
+
+          {/* Security Settings */}
+          <SecuritySettings />
 
           <Separator />
 

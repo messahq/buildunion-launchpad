@@ -27,6 +27,8 @@ import BuildUnionMembers from "./pages/BuildUnionMembers";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ConfirmEmail from "./pages/ConfirmEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import DockLogin from "./pages/DockLogin";
 import DockRegister from "./pages/DockRegister";
 import OrbPage from "./pages/OrbPage";
@@ -69,6 +71,8 @@ const App = () => (
                     <Route path="/buildunion/login" element={<Login />} />
                     <Route path="/buildunion/register" element={<Register />} />
                     <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />
+                    <Route path="/buildunion/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/buildunion/reset-password" element={<ResetPassword />} />
                     <Route path="/dock/login" element={<DockLogin />} />
                     <Route path="/dock/register" element={<DockRegister />} />
                     <Route path="/orb" element={<OrbPage />} />
