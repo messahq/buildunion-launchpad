@@ -60,7 +60,7 @@ export type Database = {
           ip_address: string | null
           key_type: string
           user_agent: string | null
-          user_id: string
+          user_identifier: string
         }
         Insert: {
           created_at?: string
@@ -68,7 +68,7 @@ export type Database = {
           ip_address?: string | null
           key_type?: string
           user_agent?: string | null
-          user_id: string
+          user_identifier: string
         }
         Update: {
           created_at?: string
@@ -76,7 +76,7 @@ export type Database = {
           ip_address?: string | null
           key_type?: string
           user_agent?: string | null
-          user_id?: string
+          user_identifier?: string
         }
         Relationships: []
       }

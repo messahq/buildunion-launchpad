@@ -59,7 +59,7 @@ serve(async (req) => {
     const { count, error: countError } = await supabaseAdmin
       .from("api_key_requests")
       .select("*", { count: "exact", head: true })
-      .eq("user_id", rateIdentifier)
+      .eq("user_identifier", rateIdentifier)
       .eq("key_type", "google_maps")
       .gte("created_at", windowStart);
 
@@ -94,7 +94,7 @@ serve(async (req) => {
     const { error: logError } = await supabaseAdmin
       .from("api_key_requests")
       .insert({
-        user_id: rateIdentifier,
+        user_identifier: rateIdentifier,
         key_type: "google_maps",
         ip_address: clientIp,
         user_agent: req.headers.get("user-agent") || null,
