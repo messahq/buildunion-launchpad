@@ -1026,7 +1026,7 @@ const HierarchicalTimeline = ({
                                 <div 
                                   key={task.id}
                                   className={cn(
-                                    "flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all cursor-pointer group",
+                                    "flex items-start gap-3 p-2.5 sm:p-3 rounded-lg transition-all cursor-pointer group",
                                     isCompleted 
                                       ? "bg-green-50/70 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
                                       : weatherAlert
@@ -1035,24 +1035,26 @@ const HierarchicalTimeline = ({
                                   )}
                                   onClick={() => handleCheckboxChange(!isCompleted)}
                                 >
-                                  {/* Checkbox */}
-                                  <Checkbox
-                                    checked={isCompleted}
-                                    onCheckedChange={handleCheckboxChange}
-                                    className={cn(
-                                      "h-4 w-4 sm:h-5 sm:w-5 rounded-full border-2 transition-all shrink-0",
-                                      isCompleted 
-                                        ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500" 
-                                        : "border-muted-foreground/50 group-hover:border-primary"
-                                    )}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
+                                  {/* Checkbox - fixed size, never shrinks */}
+                                  <div className="pt-0.5 shrink-0">
+                                    <Checkbox
+                                      checked={isCompleted}
+                                      onCheckedChange={handleCheckboxChange}
+                                      className={cn(
+                                        "h-5 w-5 rounded-full border-2 transition-all",
+                                        isCompleted 
+                                          ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500" 
+                                          : "border-muted-foreground/50 group-hover:border-primary"
+                                      )}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
                                   
-                                  {/* Task Content */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                  {/* Task Content - takes remaining space, allows text to wrap on mobile */}
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <div className="flex flex-wrap items-start gap-1.5">
                                       <span className={cn(
-                                        "text-xs sm:text-sm font-medium line-clamp-1",
+                                        "text-sm font-medium break-words",
                                         isCompleted && "line-through text-muted-foreground"
                                       )}>
                                         {task.title}
@@ -1061,7 +1063,7 @@ const HierarchicalTimeline = ({
                                         <TooltipProvider>
                                           <Tooltip>
                                             <TooltipTrigger>
-                                              <Cloud className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                              <Cloud className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
                                             </TooltipTrigger>
                                             <TooltipContent>
                                               <p className="text-red-600">⚠ {weatherAlert.message}</p>
@@ -1072,7 +1074,7 @@ const HierarchicalTimeline = ({
                                     </div>
                                     {task.description && (
                                       <p className={cn(
-                                        "text-xs truncate mt-0.5",
+                                        "text-xs mt-1 break-words",
                                         isCompleted ? "text-muted-foreground/50" : "text-muted-foreground"
                                       )}>
                                         {task.description}
@@ -1080,12 +1082,14 @@ const HierarchicalTimeline = ({
                                     )}
                                   </div>
 
-                                  {/* Status indicator */}
-                                  {isCompleted ? (
-                                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                                  ) : (
-                                    <Circle className="h-4 w-4 text-muted-foreground/30 flex-shrink-0 group-hover:text-muted-foreground/50" />
-                                  )}
+                                  {/* Status indicator - always visible, fixed position */}
+                                  <div className="pt-0.5 shrink-0">
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                      <Circle className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
