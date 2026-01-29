@@ -173,6 +173,9 @@ interface ProjectCommandCenterProps {
   citations?: CitationSource[];
   onCitationClick?: (citation: CitationSource) => void;
   onLinkCitationToPillar?: (sourceId: string, pillar: string) => void;
+  // Workflow guidance
+  nextStepTab?: string | null;
+  onShowWorkflowWarning?: (action: () => void) => void;
 }
 
 // ============================================
@@ -199,6 +202,8 @@ export const ProjectCommandCenter = ({
   citations = [],
   onCitationClick,
   onLinkCitationToPillar,
+  nextStepTab,
+  onShowWorkflowWarning,
 }: ProjectCommandCenterProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
