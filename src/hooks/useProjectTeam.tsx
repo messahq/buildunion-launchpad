@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { ProjectRole, ROLE_LABELS } from "./useProjectPermissions";
 
 interface TeamMember {
   id: string;
@@ -17,12 +18,37 @@ interface TeamMember {
 
 export type TeamRole = "foreman" | "worker" | "inspector" | "subcontractor" | "member";
 
-export const TEAM_ROLES: Record<TeamRole, { label: string; description: string; icon: string }> = {
-  foreman: { label: "Foreman", description: "Leads and supervises the work crew", icon: "👷‍♂️" },
-  worker: { label: "Worker", description: "Performs construction tasks", icon: "🔧" },
-  inspector: { label: "Inspector", description: "Ensures quality and compliance", icon: "🔍" },
-  subcontractor: { label: "Subcontractor", description: "Specialized trade contractor", icon: "🏗️" },
-  member: { label: "Team Member", description: "General project access", icon: "👤" },
+export const TEAM_ROLES: Record<TeamRole, { label: string; description: string; icon: string; permissions: string[] }> = {
+  foreman: { 
+    label: "Foreman", 
+    description: "Leads and supervises the work crew", 
+    icon: "👷‍♂️",
+    permissions: ["Create tasks", "Edit tasks", "Upload documents", "Generate reports", "View all data"]
+  },
+  worker: { 
+    label: "Worker", 
+    description: "Performs construction tasks", 
+    icon: "🔧",
+    permissions: ["View assigned tasks", "Update own task status", "View documents"]
+  },
+  inspector: { 
+    label: "Inspector", 
+    description: "Ensures quality and compliance", 
+    icon: "🔍",
+    permissions: ["View all data", "Generate reports", "View team details"]
+  },
+  subcontractor: { 
+    label: "Subcontractor", 
+    description: "Specialized trade contractor", 
+    icon: "🏗️",
+    permissions: ["View assigned tasks", "Upload documents", "Update own task status"]
+  },
+  member: { 
+    label: "Team Member", 
+    description: "General project access", 
+    icon: "👤",
+    permissions: ["View assigned tasks", "Update own task status", "View documents"]
+  },
 };
 
 interface TeamInvitation {
