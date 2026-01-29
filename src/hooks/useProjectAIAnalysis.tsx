@@ -252,9 +252,10 @@ export const useProjectAIAnalysis = () => {
           body: {
             image: base64Image,
             description: enhancedDescription,
+            type: "photo_estimate", // CRITICAL: Enables OCR pipeline and dual-engine analysis
             isPremium: tierConfig.isPremium,
-            tier: tierConfig.tierName, // NEW: explicit tier for model selection
-            forceDualEngine: tierConfig.forceDualEngine, // NEW: premium always dual
+            tier: tierConfig.tierName, // explicit tier for model selection
+            forceDualEngine: tierConfig.forceDualEngine, // premium always dual
             // Pass filter data for targeted analysis
             filterAnswers: filterAnswers || null,
             aiTriggers: aiTriggers || null,
