@@ -71,6 +71,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Always clear local state
     setUser(null);
     setSession(null);
+    
+    // Force clear localStorage to handle stale sessions on PC browsers
+    try {
+      localStorage.removeItem('sb-dfsuptqouzhhcnwhrukg-auth-token');
+    } catch (e) {
+      console.error("Failed to clear localStorage:", e);
+    }
   };
 
   return (
