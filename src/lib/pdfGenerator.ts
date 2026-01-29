@@ -87,16 +87,14 @@ export const generatePDFBlob = async (
   document.body.appendChild(container);
 
   try {
-    const canvas = await html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-      logging: false
-    });
-
     const imgWidth = options.pageFormat === 'letter' ? 215.9 : 210; // A4 width in mm
     const pageHeight = options.pageFormat === 'letter' ? 279.4 : 297; // A4 height in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
     const margin = options.margin || 10;
+    const usablePageHeight = pageHeight - (margin * 2);
+    const usableWidth = imgWidth - (margin * 2);
+    
+    // Scale factor for converting px to mm (at 800px container width)
+    const pxToMm = usableWidth / 800;
 
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -104,20 +102,132 @@ export const generatePDFBlob = async (
       format: options.pageFormat || 'a4'
     });
 
-    let heightLeft = imgHeight;
-    let position = margin;
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    // Find all sections that should avoid page breaks
+    const sections = container.querySelectorAll('.section, .avoid-break, .party-box, .highlight-box, .sig-box, thead, tbody tr, .grid-2 > div');
+    
+    // Get all top-level children or sections for intelligent page breaking
+    const allElements = sections.length > 0 ? Array.from(sections) : Array.from(container.children);
+    
+    // If no sections found, fall back to rendering the whole container
+    if (allElements.length === 0 || sections.length === 0) {
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
 
-    // Add first page
-    pdf.addImage(imgData, 'JPEG', margin, position, imgWidth - (margin * 2), imgHeight);
-    heightLeft -= (pageHeight - margin * 2);
+      const imgHeight = (canvas.height * usableWidth) / canvas.width;
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      
+      let heightLeft = imgHeight;
+      let position = margin;
 
-    // Add additional pages if content overflows
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + margin;
-      pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', margin, position, imgWidth - (margin * 2), imgHeight);
-      heightLeft -= (pageHeight - margin * 2);
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', margin, position, usableWidth, imgHeight);
+      heightLeft -= usablePageHeight;
+
+      // Add additional pages by slicing the image
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = margin - (imgHeight - heightLeft);
+        pdf.addImage(imgData, 'JPEG', margin, position, usableWidth, imgHeight);
+        heightLeft -= usablePageHeight;
+      }
+    } else {
+      // Smart page break: render each logical section and track page positions
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const scaleFactor = 2; // html2canvas scale
+      
+      // Calculate the page height in canvas pixels
+      const pageHeightInCanvasPx = (usablePageHeight / pxToMm) * scaleFactor;
+      
+      // Find natural break points by analyzing section positions
+      const breakPoints: number[] = [0]; // Start with 0
+      let currentPageBottom = pageHeightInCanvasPx;
+      
+      // Get positions of all sections to find where natural breaks should occur
+      const sectionPositions: Array<{ top: number; bottom: number; height: number }> = [];
+      
+      allElements.forEach((section) => {
+        const rect = (section as HTMLElement).getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const relativeTop = (rect.top - containerRect.top) * scaleFactor;
+        const relativeBottom = (rect.bottom - containerRect.top) * scaleFactor;
+        const height = (rect.height) * scaleFactor;
+        sectionPositions.push({ top: relativeTop, bottom: relativeBottom, height });
+      });
+      
+      // Find optimal break points that don't cut through sections
+      let scanPosition = pageHeightInCanvasPx;
+      while (scanPosition < canvasHeight) {
+        let bestBreakPoint = scanPosition;
+        
+        // Look for a section boundary near the ideal break point
+        for (const section of sectionPositions) {
+          // If a section spans the break point, move break to before the section
+          if (section.top < scanPosition && section.bottom > scanPosition) {
+            // This section would be cut - move break point to before it
+            if (section.top > breakPoints[breakPoints.length - 1] + 100) { // Ensure minimum page content
+              bestBreakPoint = section.top;
+            }
+            break;
+          }
+          // If section ends just before break point, that's a good break
+          if (section.bottom <= scanPosition && section.bottom > bestBreakPoint - pageHeightInCanvasPx * 0.2) {
+            bestBreakPoint = Math.max(bestBreakPoint, section.bottom);
+          }
+        }
+        
+        // Ensure we don't create too small pages (minimum 30% of page height)
+        if (bestBreakPoint - breakPoints[breakPoints.length - 1] < pageHeightInCanvasPx * 0.3) {
+          bestBreakPoint = scanPosition;
+        }
+        
+        breakPoints.push(Math.min(bestBreakPoint, canvasHeight));
+        scanPosition = bestBreakPoint + pageHeightInCanvasPx;
+      }
+      
+      // Ensure last break point covers the end
+      if (breakPoints[breakPoints.length - 1] < canvasHeight) {
+        breakPoints.push(canvasHeight);
+      }
+
+      // Render each page segment
+      for (let i = 0; i < breakPoints.length - 1; i++) {
+        if (i > 0) pdf.addPage();
+        
+        const startY = breakPoints[i];
+        const endY = breakPoints[i + 1];
+        const segmentHeight = endY - startY;
+        
+        // Create a canvas for this segment
+        const segmentCanvas = document.createElement('canvas');
+        segmentCanvas.width = canvasWidth;
+        segmentCanvas.height = segmentHeight;
+        const ctx = segmentCanvas.getContext('2d');
+        
+        if (ctx) {
+          // Draw the portion of the main canvas onto the segment canvas
+          ctx.drawImage(
+            canvas,
+            0, startY, canvasWidth, segmentHeight, // Source rectangle
+            0, 0, canvasWidth, segmentHeight // Destination rectangle
+          );
+          
+          const imgData = segmentCanvas.toDataURL('image/jpeg', 0.98);
+          const segmentHeightMm = (segmentHeight / scaleFactor) * pxToMm;
+          
+          // Add the segment image to PDF, centered vertically if it's shorter than page
+          pdf.addImage(imgData, 'JPEG', margin, margin, usableWidth, segmentHeightMm);
+        }
+      }
     }
 
     return pdf.output('blob');
