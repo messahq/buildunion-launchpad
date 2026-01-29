@@ -24,6 +24,9 @@ export interface SubscriptionData {
   productId: string | null;
   subscriptionEnd: string | null;
   billingInterval: "monthly" | "yearly" | null;
+  isTrialing: boolean;
+  trialEnd: string | null;
+  trialDaysRemaining: number | null;
 }
 
 // Team member limits per tier
@@ -100,6 +103,9 @@ export const useSubscription = () => {
     productId: null,
     subscriptionEnd: null,
     billingInterval: null,
+    isTrialing: false,
+    trialEnd: null,
+    trialDaysRemaining: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,14 +124,19 @@ export const useSubscription = () => {
   const checkInProgress = useRef(false);
 
   const checkSubscription = useCallback(async (forceRefresh = false) => {
+    const defaultFreeData: SubscriptionData = {
+      subscribed: false,
+      tier: "free",
+      productId: null,
+      subscriptionEnd: null,
+      billingInterval: null,
+      isTrialing: false,
+      trialEnd: null,
+      trialDaysRemaining: null,
+    };
+
     if (!session?.access_token || !user?.id) {
-      setSubscription({
-        subscribed: false,
-        tier: "free",
-        productId: null,
-        subscriptionEnd: null,
-        billingInterval: null,
-      });
+      setSubscription(defaultFreeData);
       return;
     }
 
@@ -165,15 +176,8 @@ export const useSubscription = () => {
       // If token was expired, the edge function returns token_expired flag
       if (data?.token_expired) {
         console.warn("Token expired during subscription check - session may need refresh");
-        const freeData: SubscriptionData = {
-          subscribed: false,
-          tier: "free",
-          productId: null,
-          subscriptionEnd: null,
-          billingInterval: null,
-        };
-        setSubscription(freeData);
-        subscriptionCache = { data: freeData, timestamp: now, userId: user.id };
+        setSubscription(defaultFreeData);
+        subscriptionCache = { data: defaultFreeData, timestamp: now, userId: user.id };
         return;
       }
 
@@ -185,6 +189,9 @@ export const useSubscription = () => {
         productId: data.product_id,
         subscriptionEnd: data.subscription_end,
         billingInterval: productInfo?.interval || null,
+        isTrialing: data.is_trialing || false,
+        trialEnd: data.trial_end || null,
+        trialDaysRemaining: data.trial_days_remaining ?? null,
       };
       
       setSubscription(newSubscription);
@@ -194,15 +201,8 @@ export const useSubscription = () => {
       console.error("Error checking subscription:", err);
       setError(err instanceof Error ? err.message : "Failed to check subscription");
       // On error, default to free tier instead of crashing
-      const freeData: SubscriptionData = {
-        subscribed: false,
-        tier: "free",
-        productId: null,
-        subscriptionEnd: null,
-        billingInterval: null,
-      };
-      setSubscription(freeData);
-      subscriptionCache = { data: freeData, timestamp: now, userId: user.id };
+      setSubscription(defaultFreeData);
+      subscriptionCache = { data: defaultFreeData, timestamp: now, userId: user.id };
     } finally {
       setLoading(false);
       checkInProgress.current = false;
