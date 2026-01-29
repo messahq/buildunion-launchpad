@@ -61,14 +61,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Use scope: 'local' to only clear local session without server request
+    // This is more reliable as it doesn't depend on server-side session state
     try {
-      // Use scope: 'global' to sign out from all devices/sessions
-      await supabase.auth.signOut({ scope: 'global' });
+      await supabase.auth.signOut({ scope: 'local' });
     } catch (error) {
       console.error("Sign out error:", error);
-      // Even if server signOut fails, clear local state
     }
-    // Always clear local state regardless of server response
+    // Always clear local state
     setUser(null);
     setSession(null);
   };
