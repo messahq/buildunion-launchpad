@@ -1474,14 +1474,18 @@ export const ProjectCommandCenter = ({
     {
       id: "team-report",
       name: "Team Report",
-      description: "Member activity & assignments",
+      description: isGeneratingTeamReport ? "Generating..." : "Member activity & assignments",
       icon: Users,
       category: "team",
       isPremium: true,
       previewContent: teamReportContent 
         ? `**Team Report**\n\n${teamReportContent.substring(0, 500)}...` 
         : "**Team Report Preview**\n\n• Team size and roles\n• Task assignments per member\n• Completion rates\n• Activity timeline\n• Performance metrics\n• Workload distribution",
-      action: async () => { generateTeamReport(); },
+      action: async () => { 
+        if (!isGeneratingTeamReport) {
+          generateTeamReport(); 
+        }
+      },
     },
   ];
   
@@ -2018,7 +2022,7 @@ export const ProjectCommandCenter = ({
                     
                     <div className="flex items-start gap-3">
                       <div className={cn(
-                        "p-2 rounded-lg transition-transform",
+                        "p-2 rounded-lg transition-transform relative",
                         isSelected && "scale-110",
                         action.category === "report" && "bg-amber-100 text-amber-600",
                         action.category === "financial" && "bg-emerald-100 text-emerald-600",
@@ -2026,7 +2030,12 @@ export const ProjectCommandCenter = ({
                         action.category === "team" && "bg-purple-100 text-purple-600",
                         action.id === "ai-brief" && conflictMonitorData.hasConflict && conflictMonitorData.severity === "critical" && "bg-red-100 text-red-600"
                       )}>
-                        <Icon className="h-4 w-4" />
+                        {/* Loading spinner for Team Report */}
+                        {action.id === "team-report" && isGeneratingTeamReport ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Icon className="h-4 w-4" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -2038,6 +2047,15 @@ export const ProjectCommandCenter = ({
                               className="text-[9px] px-1.5 py-0 h-4 animate-pulse"
                             >
                               !
+                            </Badge>
+                          )}
+                          {/* Loading badge for Team Report */}
+                          {action.id === "team-report" && isGeneratingTeamReport && (
+                            <Badge 
+                              variant="secondary" 
+                              className="text-[9px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700"
+                            >
+                              Loading...
                             </Badge>
                           )}
                         </div>

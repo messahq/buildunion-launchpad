@@ -77,7 +77,8 @@ export const saveDocumentToProject = async ({
 };
 
 /**
- * Saves an AI Brief as a markdown document to project documents
+ * Saves an AI Brief as a text document to project documents
+ * (Using .txt and text/plain for storage compatibility)
  */
 export const saveAIBriefToProject = async (
   projectId: string,
@@ -86,8 +87,8 @@ export const saveAIBriefToProject = async (
   projectName: string
 ): Promise<{ success: boolean; document?: any }> => {
   const timestamp = new Date().toISOString().split('T')[0];
-  const fileName = `AI_Brief_${projectName.replace(/\s+/g, '_')}_${timestamp}.md`;
-  const blob = new Blob([briefContent], { type: 'text/markdown' });
+  const fileName = `AI_Brief_${projectName.replace(/\s+/g, '_')}_${timestamp}.txt`;
+  const blob = new Blob([briefContent], { type: 'text/plain' });
   
   return saveDocumentToProject({
     projectId,
