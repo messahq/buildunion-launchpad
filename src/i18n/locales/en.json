@@ -772,5 +772,23 @@
     "fileTypeNotSupported": "File type not supported. Allowed: images, PDF, Word, Excel, TXT, CSV",
     "uploadFailed": "Failed to upload attachment",
     "premiumFeature": "Attachments are a Premium feature"
+  },
+  "workerDashboard": {
+    "myTasks": "My Tasks",
+    "noTasks": "No tasks assigned to you",
+    "waitAssignment": "Wait for the project owner to assign tasks",
+    "statusUpdated": "Task marked as {{status}}",
+    "updateError": "Failed to update task",
+    "completed": "completed",
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "done": "Done",
+    "overdue": "overdue",
+    "start": "Start",
+    "complete": "Complete",
+    "alreadyComplete": "Already completed",
+    "clickToProgress": "Click to progress",
+    "allComplete": "All Tasks Complete!",
+    "greatWork": "Great work! All your assigned tasks are done."
   }
 }

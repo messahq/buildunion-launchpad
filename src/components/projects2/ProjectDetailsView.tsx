@@ -39,6 +39,7 @@ import { ProjectCommandCenter } from "./ProjectCommandCenter";
 
 import HierarchicalTimeline from "./HierarchicalTimeline";
 import TeamMemberTimeline from "./TeamMemberTimeline";
+import WorkerDashboard from "./WorkerDashboard";
 import BaselineLockCard from "./BaselineLockCard";
 import ProjectTimelineBar from "./ProjectTimelineBar";
 import { buildOperationalTruth, OperationalTruth } from "@/types/operationalTruth";
@@ -2025,18 +2026,26 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
 
         {/* Team/Tasks Tab - Always visible */}
         <TabsContent value="team" className="mt-6">
-          <TeamTab
-            projectId={projectId}
-            isOwner={isOwner}
-            projectAddress={project.address || undefined}
-            aiMaterials={aiAnalysis?.materials}
-            projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
-            projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
-            forceCalendarView={forceCalendarView}
-            onCalendarViewActivated={() => setForceCalendarView(false)}
-            existingTaskCount={tasks.length}
-            isSoloMode={!isTeamMode}
-          />
+          {/* Show Worker Dashboard for non-owners, TeamTab for owners */}
+          {isOwner ? (
+            <TeamTab
+              projectId={projectId}
+              isOwner={isOwner}
+              projectAddress={project.address || undefined}
+              aiMaterials={aiAnalysis?.materials}
+              projectStartDate={summary?.project_start_date ? new Date(summary.project_start_date) : null}
+              projectEndDate={summary?.project_end_date ? new Date(summary.project_end_date) : null}
+              forceCalendarView={forceCalendarView}
+              onCalendarViewActivated={() => setForceCalendarView(false)}
+              existingTaskCount={tasks.length}
+              isSoloMode={!isTeamMode}
+            />
+          ) : (
+            <WorkerDashboard
+              projectId={projectId}
+              projectName={project.name}
+            />
+          )}
         </TabsContent>
 
         {/* Documents Tab - Always visible */}
