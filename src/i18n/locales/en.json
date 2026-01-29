@@ -789,6 +789,11 @@
     "alreadyComplete": "Already completed",
     "clickToProgress": "Click to progress",
     "allComplete": "All Tasks Complete!",
-    "greatWork": "Great work! All your assigned tasks are done."
+    "greatWork": "Great work! All your assigned tasks are done.",
+    "ownerNotified": "Owner has been notified"
+  },
+  "documents": {
+    "uploadRestricted": "Document upload restricted",
+    "onlyOwnersCanUpload": "Only owners and foremen can upload documents"
   }
 }
