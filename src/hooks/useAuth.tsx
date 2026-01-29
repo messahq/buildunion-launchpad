@@ -61,7 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Use scope: 'global' to sign out from all devices/sessions
+    await supabase.auth.signOut({ scope: 'global' });
   };
 
   return (

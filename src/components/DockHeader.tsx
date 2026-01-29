@@ -57,12 +57,13 @@ const DockHeader = ({
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast.success("Signed out successfully");
-      // Use window.location for a full page reload to clear all state
-      window.location.href = "/buildunion";
     } catch (error) {
       console.error("Sign out error:", error);
-      toast.error("Failed to sign out");
+    } finally {
+      // Always redirect regardless of signOut result
+      // This ensures user is redirected even if session was already expired
+      toast.success("Signed out successfully");
+      window.location.href = "/buildunion";
     }
   };
 
