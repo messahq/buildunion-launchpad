@@ -1074,27 +1074,6 @@ export default function OperationalTruthCards({
         
         {/* Buttons container */}
         <div className="flex items-center gap-2">
-          {/* Auto-Sync Button */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={autoSyncDataSources}
-            disabled={isSyncingAll || isRunningAll || !projectId}
-            className="gap-2 min-w-[110px] border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10"
-          >
-            {isSyncingAll ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Auto-Sync
-              </>
-            )}
-          </Button>
-
           {/* Run All Verifications Button - Amber themed */}
           <Button
             size="sm"
