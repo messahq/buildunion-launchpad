@@ -1377,9 +1377,29 @@ export type Database = {
         Args: { _project_id: string; _role: string; _user_id: string }
         Returns: Json
       }
+      can_manage_tasks: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_update_task_status: {
+        Args: { _project_id: string; _task_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_upload_documents: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_all_project_data: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_phone: {
         Args: { _profile_user_id: string; _viewer_id: string }
         Returns: boolean
+      }
+      get_project_role: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: string
       }
       get_public_profiles: {
         Args: {
@@ -1456,6 +1476,13 @@ export type Database = {
         | "master"
         | "supervisor"
         | "manager"
+      project_role:
+        | "owner"
+        | "foreman"
+        | "worker"
+        | "inspector"
+        | "subcontractor"
+        | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1611,6 +1638,14 @@ export const Constants = {
         "master",
         "supervisor",
         "manager",
+      ],
+      project_role: [
+        "owner",
+        "foreman",
+        "worker",
+        "inspector",
+        "subcontractor",
+        "member",
       ],
     },
   },
