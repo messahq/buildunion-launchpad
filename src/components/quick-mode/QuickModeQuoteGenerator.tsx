@@ -18,7 +18,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import SignatureCapture from "@/components/SignatureCapture";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
-
+import { saveDocumentToProject } from "@/lib/documentUtils";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 interface LineItem {
   id: string;
   description: string;
@@ -391,6 +393,8 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
 
   // Auto-save project and generate PDF (but stay on page)
   const generatePDFAndSave = async () => {
+    let projectId = savedProjectId;
+    
     // First, auto-save the project if user is authenticated
     if (user && !savedProjectId) {
       const projectName = quote.projectName.trim() || quote.clientName.trim() || `Quote ${quote.quoteNumber}`;
@@ -431,6 +435,7 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
             }]);
           
           setSavedProjectId(project.id);
+          projectId = project.id;
           toast.success("Project saved! You can now continue to Contracts.");
           
           // Call onQuoteGenerated to update quote data for contracts
@@ -444,307 +449,197 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
       }
     }
     
-    // Then generate PDF
+    // Then generate PDF and save to documents
     setHasGeneratedPDF(true);
-    generatePDF();
+    await generatePDFWithSaveToDocuments(projectId);
   };
 
-  const generatePDF = () => {
+  // Generate PDF and optionally save to project documents
+  const generatePDFWithSaveToDocuments = async (projectId: string | null) => {
     // Always use current date for issued date
     const currentDate = new Date().toISOString().split("T")[0];
     const validUntilDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    
-    // Create a printable version
+
+    const html = generateQuoteHTML(currentDate, validUntilDate);
+
+    // Create a hidden container to render the HTML for PDF generation
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px'; // A4 width in pixels at 96dpi
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    try {
+      // Capture the HTML as canvas
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageHeight = 297; // A4 height in mm
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(
+        canvas.toDataURL('image/jpeg', 0.95),
+        'JPEG',
+        0,
+        position,
+        imgWidth,
+        imgHeight
+      );
+      heightLeft -= pageHeight;
+
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          0,
+          position,
+          imgWidth,
+          imgHeight
+        );
+        heightLeft -= pageHeight;
+      }
+
+      // Get PDF as blob
+      const pdfBlob = pdf.output('blob');
+
+      // Save to project documents if we have a project
+      if (projectId && user) {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const fileName = `Quote_${quote.quoteNumber}_${timestamp}.pdf`;
+        
+        await saveDocumentToProject({
+          projectId,
+          userId: user.id,
+          fileName,
+          fileBlob: pdfBlob,
+          documentType: 'quote',
+          onSuccess: () => {
+            toast.success("Quote saved to Documents!");
+          },
+          onError: (error) => {
+            console.error("Failed to save quote to documents:", error);
+          }
+        });
+      }
+
+      // Open PDF in new tab for user to download/print
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, '_blank');
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      // Fallback to print method
+      generatePDFFallback();
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
+  // Fallback print-based PDF generation
+  const generatePDFFallback = () => {
+    const currentDate = new Date().toISOString().split("T")[0];
+    const validUntilDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Please allow popups to generate PDF");
       return;
     }
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Quote ${quote.quoteNumber}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-            padding: 0; 
-            color: #1a1a1a; 
-            background: #fff;
-            line-height: 1.5;
-          }
-          
-          /* Professional Header */
-          .header-bar {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            color: white;
-            padding: 24px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-          }
-          .company-brand h1 { 
-            font-size: 26px; 
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 4px;
-          }
-          .company-brand p {
-            font-size: 13px;
-            opacity: 0.85;
-          }
-          .quote-badge {
-            background: rgba(255,255,255,0.15);
-            border-radius: 8px;
-            padding: 16px 24px;
-            text-align: right;
-          }
-          .quote-badge .number {
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 1px;
-          }
-          .quote-badge .dates {
-            font-size: 12px;
-            opacity: 0.8;
-            margin-top: 4px;
-          }
+    const html = generateQuoteHTMLForPrint(currentDate, validUntilDate);
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+  };
 
-          /* Main Content */
-          .content { padding: 40px; }
-          
-          /* Info Grid */
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            margin-bottom: 40px;
-          }
-          .info-box {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-            background: #fafafa;
-          }
-          .info-box h3 {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #64748b;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e2e8f0;
-          }
-          .info-box .name {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 4px;
-          }
-          .info-box .details {
-            font-size: 13px;
-            color: #64748b;
-          }
-
-          /* Table */
-          .items-section { margin-bottom: 32px; }
-          .items-section h3 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #1e293b;
-          }
-          table { 
-            width: 100%; 
-            border-collapse: collapse; 
-          }
-          thead tr {
-            background: #f8fafc;
-          }
-          th { 
-            padding: 14px 16px; 
-            text-align: left; 
-            font-weight: 600; 
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #475569;
-            border-bottom: 2px solid #e2e8f0;
-          }
-          td { 
-            padding: 16px; 
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 14px;
-          }
-          tbody tr:hover { background: #fafafa; }
-          .text-right { text-align: right; }
-          .item-desc { font-weight: 500; }
-
-          /* Totals */
-          .totals-section {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 24px;
-          }
-          .totals-box {
-            width: 320px;
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 20px;
-          }
-          .totals-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            font-size: 14px;
-            border-bottom: 1px solid #e2e8f0;
-          }
-          .totals-row.total {
-            border: none;
-            padding-top: 16px;
-            margin-top: 8px;
-            font-size: 20px;
-            font-weight: 700;
-            color: #1e293b;
-          }
-          .totals-row .label { color: #64748b; }
-          .totals-row .value { font-weight: 600; }
-
-          /* Terms */
-          .terms-section {
-            margin-top: 40px;
-            padding: 24px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border-left: 4px solid #1e293b;
-          }
-          .terms-section h3 {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 16px;
-          }
-          .terms-section p {
-            font-size: 12px;
-            color: #64748b;
-            margin-bottom: 8px;
-          }
-
-          /* Signature */
-          .signature-section {
-            margin-top: 60px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 48px;
-          }
-          .sig-box {
-            padding-top: 16px;
-            border-top: 2px solid #1e293b;
-          }
-          .sig-box p {
-            font-size: 12px;
-            color: #64748b;
-          }
-
-          /* Footer */
-          .footer {
-            margin-top: 48px;
-            padding-top: 24px;
-            border-top: 1px solid #e2e8f0;
-            text-align: center;
-            font-size: 11px;
-            color: #94a3b8;
-          }
-
-          /* Ontario HST Badge */
-          .hst-badge {
-            display: inline-block;
-            background: #dbeafe;
-            color: #1e40af;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin-left: 8px;
-          }
-
-          @media print { 
-            body { padding: 0; }
-            .header-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header-bar">
-          <div class="company-brand" style="display: flex; align-items: center; gap: 16px;">
+  // Generate quote HTML content (reusable)
+  const generateQuoteHTML = (currentDate: string, validUntilDate: string) => {
+    return `
+      <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #1a1a1a; background: #fff; line-height: 1.5;">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 24px 40px; display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 16px;">
             ${profileData?.companyLogoUrl ? `
               <img src="${profileData.companyLogoUrl}" alt="Company Logo" style="height: 60px; width: auto; border-radius: 8px; background: white; padding: 4px;" />
             ` : ''}
             <div>
-              <h1>${quote.companyName || profileData?.companyName || "Your Company Name"}</h1>
-              <p>${quote.companyAddress || "Address"}</p>
-              <p style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+              <h1 style="font-size: 26px; font-weight: 700; margin: 0 0 4px 0;">${quote.companyName || profileData?.companyName || "Your Company Name"}</h1>
+              <p style="font-size: 13px; opacity: 0.85; margin: 0;">${quote.companyAddress || "Address"}</p>
+              <p style="font-size: 13px; opacity: 0.85; margin: 0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
                 ${quote.companyPhone || profileData?.phone ? `<span>📞 ${quote.companyPhone || profileData?.phone}</span>` : ''}
                 ${quote.companyEmail || user?.email ? `<span>✉️ ${quote.companyEmail || user?.email}</span>` : ''}
-                ${profileData?.companyWebsite ? `<span>🌐 ${profileData.companyWebsite}</span>` : ''}
               </p>
             </div>
           </div>
-          <div class="quote-badge">
-            <div class="number">QUOTE #${quote.quoteNumber}</div>
-            <div class="dates">
+          <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 16px 24px; text-align: right;">
+            <div style="font-size: 22px; font-weight: 700; letter-spacing: 1px;">QUOTE #${quote.quoteNumber}</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">
               Issued: ${new Date(currentDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}<br/>
               Valid Until: ${new Date(validUntilDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
             </div>
           </div>
         </div>
 
-        <div class="content">
-          <div class="info-grid">
-            <div class="info-box">
-              <h3>Bill To</h3>
-              <p class="name">${quote.clientName || "Client Name"}</p>
-              <p class="details">
+        <div style="padding: 40px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 40px;">
+            <div style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; background: #fafafa;">
+              <h3 style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">Bill To</h3>
+              <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 4px;">${quote.clientName || "Client Name"}</p>
+              <p style="font-size: 13px; color: #64748b; margin: 0;">
                 ${quote.clientAddress || ""}<br/>
                 ${quote.clientPhone || ""}<br/>
                 ${quote.clientEmail || ""}
               </p>
             </div>
-            <div class="info-box">
-              <h3>Project Details</h3>
-              <p class="name">${quote.projectName || "Project Name"}</p>
-              <p class="details">${quote.projectAddress || "Same as billing address"}</p>
+            <div style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; background: #fafafa;">
+              <h3 style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">Project Details</h3>
+              <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 4px;">${quote.projectName || "Project Name"}</p>
+              <p style="font-size: 13px; color: #64748b; margin: 0;">${quote.projectAddress || "Same as billing address"}</p>
             </div>
           </div>
 
-          <div class="items-section">
-            <h3>Itemized Quote</h3>
-            <table>
+          <div style="margin-bottom: 32px;">
+            <h3 style="font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #1e293b;">Itemized Quote</h3>
+            <table style="width: 100%; border-collapse: collapse;">
               <thead>
-                <tr>
-                  <th style="width: 45%">Description</th>
-                  <th class="text-right">Qty</th>
-                  <th>Unit</th>
-                  <th class="text-right">Rate</th>
-                  <th class="text-right">Amount</th>
+                <tr style="background: #f8fafc;">
+                  <th style="padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b; width: 45%;">Description</th>
+                  <th style="padding: 12px 16px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Qty</th>
+                  <th style="padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Unit</th>
+                  <th style="padding: 12px 16px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Rate</th>
+                  <th style="padding: 12px 16px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 ${quote.lineItems
                   .map(
                     (item) => `
-                  <tr>
-                    <td class="item-desc">${item.description || "—"}</td>
-                    <td class="text-right">${item.quantity}</td>
-                    <td>${item.unit}</td>
-                    <td class="text-right">$${item.unitPrice.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</td>
-                    <td class="text-right"><strong>$${(item.quantity * item.unitPrice).toLocaleString('en-CA', { minimumFractionDigits: 2 })}</strong></td>
+                  <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 14px 16px; font-size: 14px; color: #1e293b;">${item.description || "—"}</td>
+                    <td style="padding: 14px 16px; text-align: right; font-size: 14px;">${item.quantity}</td>
+                    <td style="padding: 14px 16px; font-size: 14px; color: #64748b;">${item.unit}</td>
+                    <td style="padding: 14px 16px; text-align: right; font-size: 14px;">$${item.unitPrice.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</td>
+                    <td style="padding: 14px 16px; text-align: right; font-size: 14px; font-weight: 600;">$${(item.quantity * item.unitPrice).toLocaleString('en-CA', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 `
                   )
@@ -752,19 +647,19 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
               </tbody>
             </table>
 
-            <div class="totals-section">
-              <div class="totals-box">
-                <div class="totals-row">
-                  <span class="label">Subtotal</span>
-                  <span class="value">$${subtotal.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
+            <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+              <div style="width: 280px; background: #f8fafc; border-radius: 12px; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 14px; border-bottom: 1px solid #e2e8f0;">
+                  <span style="color: #64748b;">Subtotal</span>
+                  <span style="font-weight: 600;">$${subtotal.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
                 </div>
                 ${taxResult.breakdown.map((t, i) => `
-                <div class="totals-row">
-                  <span class="label">${t.name} (${(config.tax.components[i]?.rate * 100).toFixed(t.name === "QST" ? 3 : 0)}%) <span class="hst-badge">${config.shortName}</span></span>
-                  <span class="value">$${t.amount.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 14px; border-bottom: 1px solid #e2e8f0;">
+                  <span style="color: #64748b;">${t.name} (${(config.tax.components[i]?.rate * 100).toFixed(t.name === "QST" ? 3 : 0)}%) <span style="display: inline-block; background: #dbeafe; color: #1e40af; font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: 4px; margin-left: 8px;">${config.shortName}</span></span>
+                  <span style="font-weight: 600;">$${t.amount.toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
                 </div>
                 `).join("")}
-                <div class="totals-row total">
+                <div style="display: flex; justify-content: space-between; padding-top: 16px; margin-top: 8px; font-size: 20px; font-weight: 700; color: #1e293b;">
                   <span>Total</span>
                   <span>$${total.toLocaleString('en-CA', { minimumFractionDigits: 2 })} CAD</span>
                 </div>
@@ -772,35 +667,35 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
             </div>
           </div>
 
-          <div class="terms-section">
-            <h3>Terms & Conditions</h3>
-            <p><strong>Payment:</strong> ${quote.paymentTerms}</p>
-            ${quote.warranty ? `<p><strong>Warranty:</strong> ${quote.warranty}</p>` : ""}
-            ${quote.notes ? `<p><strong>Additional Notes:</strong> ${quote.notes}</p>` : ""}
+          <div style="margin-top: 40px; padding: 24px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #1e293b;">
+            <h3 style="font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 16px;">Terms & Conditions</h3>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 8px;"><strong>Payment:</strong> ${quote.paymentTerms}</p>
+            ${quote.warranty ? `<p style="font-size: 12px; color: #64748b; margin-bottom: 8px;"><strong>Warranty:</strong> ${quote.warranty}</p>` : ""}
+            ${quote.notes ? `<p style="font-size: 12px; color: #64748b; margin-bottom: 8px;"><strong>Additional Notes:</strong> ${quote.notes}</p>` : ""}
           </div>
 
-          <div class="signature-section">
-            <div class="sig-box">
-              <p><strong>Client Acceptance</strong></p>
+          <div style="margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px;">
+            <div style="padding-top: 16px; border-top: 2px solid #1e293b;">
+              <p style="font-size: 12px; color: #64748b;"><strong>Client Acceptance</strong></p>
               ${clientSignature 
                 ? clientSignature.type === 'drawn' 
                   ? '<img src="' + clientSignature.data + '" alt="Client Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
-                  : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + clientSignature.data + '</p>'
+                  : '<p style="font-family: cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + clientSignature.data + '</p>'
                 : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
               <p style="font-size: 11px; color: #666;">Signature & Date</p>
             </div>
-            <div class="sig-box">
-              <p><strong>Contractor Authorization</strong></p>
+            <div style="padding-top: 16px; border-top: 2px solid #1e293b;">
+              <p style="font-size: 12px; color: #64748b;"><strong>Contractor Authorization</strong></p>
               ${contractorSignature 
                 ? contractorSignature.type === 'drawn' 
                   ? '<img src="' + contractorSignature.data + '" alt="Contractor Signature" style="max-height: 60px; margin: 8px 0; display: block;" />'
-                  : '<p style="font-family: \'Dancing Script\', cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + contractorSignature.data + '</p>'
+                  : '<p style="font-family: cursive; font-size: 28px; margin: 8px 0; color: #1e293b;">' + contractorSignature.data + '</p>'
                 : '<div style="height: 40px; border-bottom: 1px solid #ccc; margin: 8px 0;"></div>'}
               <p style="font-size: 11px; color: #666;">Signature & Date</p>
             </div>
           </div>
 
-          <div class="footer" style="margin-top: 48px; padding: 24px 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+          <div style="margin-top: 48px; padding: 24px 40px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; display: flex; justify-content: space-between; align-items: center; border-radius: 12px;">
             <div style="display: flex; align-items: center; gap: 16px;">
               ${profileData?.companyLogoUrl ? `
                 <img src="${profileData.companyLogoUrl}" alt="Logo" style="height: 40px; width: auto; border-radius: 6px; background: white; padding: 3px;" />
@@ -820,13 +715,29 @@ const QuickModeQuoteGenerator = ({ collectedData, onSkipToSummary, onQuoteGenera
             </div>
           </div>
         </div>
+      </div>
+    `;
+  };
+
+  // Generate quote HTML for print (with full document structure)
+  const generateQuoteHTMLForPrint = (currentDate: string, validUntilDate: string) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Quote ${quote.quoteNumber}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; padding: 0; color: #1a1a1a; background: #fff; line-height: 1.5; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        ${generateQuoteHTML(currentDate, validUntilDate)}
       </body>
       </html>
     `;
-
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
   };
 
   return (
