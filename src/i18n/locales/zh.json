@@ -725,5 +725,10 @@
     "conflict": "冲突检查",
     "citationCopied": "引用已复制",
     "allCitationsCopied": "所有引用已复制"
+  },
+  "login": {
+    "alreadyLoggedIn": "您已登录",
+    "alreadyLoggedInDesc": "您当前已登录到您的账户。",
+    "goToWorkspace": "前往工作区"
   }
 }

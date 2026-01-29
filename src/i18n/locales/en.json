@@ -795,5 +795,10 @@
   "documents": {
     "uploadRestricted": "Document upload restricted",
     "onlyOwnersCanUpload": "Only owners and foremen can upload documents"
+  },
+  "login": {
+    "alreadyLoggedIn": "You are already logged in",
+    "alreadyLoggedInDesc": "You are currently signed in to your account.",
+    "goToWorkspace": "Go to Workspace"
   }
 }

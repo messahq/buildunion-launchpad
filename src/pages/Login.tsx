@@ -4,16 +4,54 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // If user is already logged in, show message
+  if (!authLoading && user) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex flex-col">
+        <header className="w-full bg-white border-b border-gray-200 px-6 py-4">
+          <div className="container mx-auto flex items-center justify-center">
+            <img
+              src={buildUnionLogo}
+              alt="BuildUnion Logo"
+              className="h-10 w-auto object-contain"
+            />
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="w-full max-w-md">
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+                {t('login.alreadyLoggedIn', 'You are already logged in')}
+              </h1>
+              <p className="text-gray-500 mb-6">
+                {t('login.alreadyLoggedInDesc', 'You are currently signed in to your account.')}
+              </p>
+              <Button
+                onClick={() => navigate("/buildunion/workspace")}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {t('login.goToWorkspace', 'Go to Workspace')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
