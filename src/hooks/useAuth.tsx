@@ -72,11 +72,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setSession(null);
     
-    // Force clear localStorage to handle stale sessions on PC browsers
+    // Force clear all Supabase auth storage (Chrome-specific fix)
     try {
-      localStorage.removeItem('sb-dfsuptqouzhhcnwhrukg-auth-token');
+      const keysToRemove = Object.keys(localStorage).filter(key => 
+        key.startsWith('sb-') || key.includes('supabase')
+      );
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Also clear sessionStorage
+      const sessionKeysToRemove = Object.keys(sessionStorage).filter(key => 
+        key.startsWith('sb-') || key.includes('supabase')
+      );
+      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
     } catch (e) {
-      console.error("Failed to clear localStorage:", e);
+      console.error("Failed to clear storage:", e);
     }
   };
 
