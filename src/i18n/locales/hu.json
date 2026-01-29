@@ -772,5 +772,23 @@
     "fileTypeNotSupported": "A fájltípus nem támogatott. Engedélyezett: képek, PDF, Word, Excel, TXT, CSV",
     "uploadFailed": "Melléklet feltöltése sikertelen",
     "premiumFeature": "A mellékletek küldése Premium funkció"
+  },
+  "workerDashboard": {
+    "myTasks": "Feladataim",
+    "noTasks": "Nincs hozzád rendelt feladat",
+    "waitAssignment": "Várd meg, amíg a projekt tulajdonos feladatokat rendel hozzád",
+    "statusUpdated": "Feladat: {{status}}",
+    "updateError": "Feladat frissítése sikertelen",
+    "completed": "befejezve",
+    "pending": "Függőben",
+    "inProgress": "Folyamatban",
+    "done": "Kész",
+    "overdue": "késésben",
+    "start": "Indítás",
+    "complete": "Befejezés",
+    "alreadyComplete": "Már befejezve",
+    "clickToProgress": "Kattints a folytatáshoz",
+    "allComplete": "Minden Feladat Kész!",
+    "greatWork": "Szép munka! Minden hozzád rendelt feladat elkészült."
   }
 }
