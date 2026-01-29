@@ -795,5 +795,10 @@
   "documents": {
     "uploadRestricted": "Dokumentum feltöltés korlátozva",
     "onlyOwnersCanUpload": "Csak tulajdonosok és művezetők tölthetnek fel dokumentumokat"
+  },
+  "login": {
+    "alreadyLoggedIn": "Már be vagy jelentkezve",
+    "alreadyLoggedInDesc": "Jelenleg be vagy jelentkezve a fiókodba.",
+    "goToWorkspace": "Munkaterületre"
   }
 }

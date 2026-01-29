@@ -725,5 +725,10 @@
     "conflict": "コンフリクトチェック",
     "citationCopied": "引用をコピーしました",
     "allCitationsCopied": "すべての引用をコピーしました"
+  },
+  "login": {
+    "alreadyLoggedIn": "既にログインしています",
+    "alreadyLoggedInDesc": "現在アカウントにログインしています。",
+    "goToWorkspace": "ワークスペースへ"
   }
 }

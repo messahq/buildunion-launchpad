@@ -725,5 +725,10 @@
     "conflict": "Verificação de Conflitos",
     "citationCopied": "Citação copiada",
     "allCitationsCopied": "Todas as citações copiadas"
+  },
+  "login": {
+    "alreadyLoggedIn": "Você já está conectado",
+    "alreadyLoggedInDesc": "Você está atualmente conectado à sua conta.",
+    "goToWorkspace": "Ir para o Espaço de Trabalho"
   }
 }

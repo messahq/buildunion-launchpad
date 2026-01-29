@@ -725,5 +725,10 @@
     "conflict": "विवाद जांच",
     "citationCopied": "उद्धरण कॉपी किया गया",
     "allCitationsCopied": "सभी उद्धरण कॉपी किए गए"
+  },
+  "login": {
+    "alreadyLoggedIn": "आप पहले से लॉग इन हैं",
+    "alreadyLoggedInDesc": "आप वर्तमान में अपने खाते में साइन इन हैं।",
+    "goToWorkspace": "कार्यस्थल पर जाएं"
   }
 }

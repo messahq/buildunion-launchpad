@@ -725,5 +725,10 @@
     "conflict": "فحص التعارض",
     "citationCopied": "تم نسخ الاستشهاد",
     "allCitationsCopied": "تم نسخ جميع الاستشهادات"
+  },
+  "login": {
+    "alreadyLoggedIn": "أنت مسجل الدخول بالفعل",
+    "alreadyLoggedInDesc": "أنت حالياً مسجل الدخول إلى حسابك.",
+    "goToWorkspace": "الذهاب إلى مساحة العمل"
   }
 }

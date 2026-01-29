@@ -725,5 +725,10 @@
     "conflict": "Konfliktprüfung",
     "citationCopied": "Zitat kopiert",
     "allCitationsCopied": "Alle Zitate kopiert"
+  },
+  "login": {
+    "alreadyLoggedIn": "Sie sind bereits angemeldet",
+    "alreadyLoggedInDesc": "Sie sind derzeit in Ihrem Konto angemeldet.",
+    "goToWorkspace": "Zum Arbeitsbereich"
   }
 }
