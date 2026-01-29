@@ -2100,7 +2100,25 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               }
               
               // Priority 2: Use AI-detected materials from photo_estimate or ai_workflow_config
+              // IMPORTANT: Sync material quantities with the confirmed area
               if (aiAnalysis?.materials && aiAnalysis.materials.length > 0) {
+                const confirmedArea = aiAnalysis.area;
+                
+                // Find the original area from materials (if flooring/laminate exists)
+                const flooringMaterial = aiAnalysis.materials.find(m => 
+                  /laminate|flooring/i.test(m.item) && m.unit === 'sq ft'
+                );
+                const originalMaterialArea = flooringMaterial?.quantity || null;
+                
+                // If we have a confirmed area that differs from material quantities, sync them
+                if (confirmedArea && originalMaterialArea && confirmedArea !== originalMaterialArea) {
+                  const ratio = confirmedArea / originalMaterialArea;
+                  return aiAnalysis.materials.map(m => ({
+                    ...m,
+                    quantity: m.unit === 'sq ft' ? Math.round(m.quantity * ratio) : m.quantity,
+                  }));
+                }
+                
                 return aiAnalysis.materials;
               }
               
