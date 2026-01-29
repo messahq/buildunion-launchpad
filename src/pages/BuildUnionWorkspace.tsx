@@ -880,7 +880,7 @@ const BuildUnionProjects2 = () => {
                     <p className="text-muted-foreground">{t("workspace.createAccountToStart")}</p>
                   </div>
                   <Button 
-                    onClick={() => navigate("/login")}
+                    onClick={() => navigate("/buildunion/login")}
                     className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
                     {t("workspace.signIn")}
