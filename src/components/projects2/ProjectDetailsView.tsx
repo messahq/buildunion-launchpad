@@ -2102,7 +2102,18 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           <MaterialCalculationTab 
             materials={(() => {
               // First check if we have saved line_items in the summary (must be object with materials array)
-              const savedLineItems = summary?.line_items as { materials?: Array<{ item: string; quantity: number; unit: string; unitPrice: number }> } | null;
+              // CRITICAL: Include all saved fields (baseQuantity, isEssential, totalPrice) for proper restoration
+              const savedLineItems = summary?.line_items as { 
+                materials?: Array<{ 
+                  item: string; 
+                  quantity: number; 
+                  unit: string; 
+                  unitPrice: number;
+                  baseQuantity?: number;
+                  isEssential?: boolean;
+                  totalPrice?: number;
+                }> 
+              } | null;
               if (savedLineItems && typeof savedLineItems === 'object' && !Array.isArray(savedLineItems) && 
                   savedLineItems.materials && savedLineItems.materials.length > 0) {
                 return savedLineItems.materials;
@@ -2155,7 +2166,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             })()}
             labor={(() => {
               // First check if we have saved line_items in the summary
-              const savedLineItems = summary?.line_items as { labor?: Array<{ item: string; quantity: number; unit: string; unitPrice: number }> } | null;
+              // Include totalPrice for proper restoration
+              const savedLineItems = summary?.line_items as { 
+                labor?: Array<{ 
+                  item: string; 
+                  quantity: number; 
+                  unit: string; 
+                  unitPrice: number;
+                  totalPrice?: number;
+                }> 
+              } | null;
               if (savedLineItems?.labor && savedLineItems.labor.length > 0) {
                 return savedLineItems.labor;
               }
