@@ -22,6 +22,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate token format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(token)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid token format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
@@ -47,6 +56,17 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Contract not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // SECURITY FIX: Check if share token has expired
+    if (contract.share_token_expires_at) {
+      const expiresAt = new Date(contract.share_token_expires_at);
+      if (expiresAt < new Date()) {
+        return new Response(
+          JSON.stringify({ error: "This contract link has expired. Please contact the contractor for a new link." }),
+          { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
@@ -114,22 +134,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Return contract data for viewing (exclude sensitive owner info)
+    // SECURITY FIX: Mask sensitive client contact info in shared view
+    // Only show client name (needed for contract display) but mask phone/email
+    // The client viewing the contract is the client - they know their own info
+    const maskClientInfo = (value: string | null): string | null => {
+      if (!value) return null;
+      // Return masked version - client can verify it's theirs without exposing to scrapers
+      if (value.includes("@")) {
+        // Email - show first 2 chars and domain
+        const [local, domain] = value.split("@");
+        return local.substring(0, 2) + "***@" + domain;
+      }
+      // Phone - show last 4 digits
+      const digits = value.replace(/\D/g, "");
+      if (digits.length >= 4) {
+        return "***-***-" + digits.slice(-4);
+      }
+      return "***";
+    };
+
+    // Return contract data for viewing (with masked client contact info)
     return new Response(
       JSON.stringify({
         contract: {
           id: contract.id,
           contract_number: contract.contract_number,
           contract_date: contract.contract_date,
+          // Contractor info - needed for client to verify
           contractor_name: contract.contractor_name,
           contractor_address: contract.contractor_address,
           contractor_phone: contract.contractor_phone,
           contractor_email: contract.contractor_email,
           contractor_license: contract.contractor_license,
+          // Client info - name needed, but mask contact details
           client_name: contract.client_name,
-          client_address: contract.client_address,
-          client_phone: contract.client_phone,
-          client_email: contract.client_email,
+          client_address: contract.client_address, // Needed for contract validity
+          client_phone: maskClientInfo(contract.client_phone),
+          client_email: maskClientInfo(contract.client_email),
+          // Project details
           project_name: contract.project_name,
           project_address: contract.project_address,
           scope_of_work: contract.scope_of_work,
@@ -153,6 +195,7 @@ Deno.serve(async (req) => {
           status: contract.status,
         },
         alreadySigned: !!contract.client_signature,
+        expiresAt: contract.share_token_expires_at,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
