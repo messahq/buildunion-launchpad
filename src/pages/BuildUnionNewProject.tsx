@@ -5,6 +5,7 @@ import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 import { useSubscription } from "@/hooks/useSubscription";
 import { TRADE_LABELS, ConstructionTrade } from "@/hooks/useBuProfile";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -823,13 +824,12 @@ const BuildUnionNewProject = () => {
                 <div className="space-y-2">
                   <Label htmlFor="address" className="text-slate-700 font-medium flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    Toronto Address *
+                    Location *
                   </Label>
-                  <Input
-                    id="address"
-                    placeholder="e.g., 123 King Street West, Toronto, ON M5H 1A1"
+                  <AddressAutocomplete
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={setAddress}
+                    placeholder="e.g., Toronto, ON"
                     className="border-slate-200"
                   />
                 </div>
