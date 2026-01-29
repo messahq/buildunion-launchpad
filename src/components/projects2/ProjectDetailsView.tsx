@@ -1840,8 +1840,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       {/* Main Content Tabs - Between Timeline Bar and Phases */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className={cn(
-          "grid w-full bg-muted/50",
-          isTeamMode ? "grid-cols-7" : "grid-cols-5"
+          "grid w-full bg-muted/50 h-auto p-1",
+          isTeamMode ? "grid-cols-4 sm:grid-cols-7" : "grid-cols-3 sm:grid-cols-5"
         )}>
           <TabsTrigger 
             value="overview" 

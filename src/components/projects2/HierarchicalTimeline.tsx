@@ -697,15 +697,15 @@ const HierarchicalTimeline = ({
       )}
 
       {/* Phase Progress Bars - Vertical Layout */}
-      <div className="space-y-2 py-3 px-4 rounded-lg bg-muted/30 border">
+      <div className="space-y-2 py-3 px-2 sm:px-4 rounded-lg bg-muted/30 border">
         {phases.map((phase) => {
           const completedTasks = phase.subTimelines.flatMap(s => s.tasks).filter(t => t.status === "completed").length;
           const totalTasks = phase.subTimelines.flatMap(s => s.tasks).length;
           
           return (
-            <div key={phase.id} className="flex items-center gap-3">
+            <div key={phase.id} className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
               {/* Lock indicator */}
-              <div className="w-5 flex items-center justify-center">
+              <div className="w-5 flex items-center justify-center shrink-0">
                 {phase.locked ? (
                   <Lock className="h-4 w-4 text-muted-foreground" />
                 ) : phase.verificationProgress === 100 ? (
@@ -715,27 +715,27 @@ const HierarchicalTimeline = ({
                 )}
               </div>
               
-              {/* Phase name */}
-              <div className="w-24 flex items-center gap-2">
+              {/* Phase name - shorter on mobile */}
+              <div className="w-16 sm:w-24 flex items-center gap-1 shrink-0">
                 <span className={cn(
-                  "text-sm font-medium",
+                  "text-xs sm:text-sm font-medium truncate",
                   phase.locked && "text-muted-foreground"
                 )}>
                   {phase.name}
                 </span>
                 {phase.locked && (
-                  <Badge variant="outline" className="text-[9px] px-1 py-0">
+                  <Badge variant="outline" className="hidden sm:inline-flex text-[9px] px-1 py-0">
                     {t("timeline.locked", "Locked")}
                   </Badge>
                 )}
               </div>
               
               {/* Progress bar */}
-              <div className="flex-1 relative">
+              <div className="flex-1 min-w-[60px] relative">
                 <Progress 
                   value={phase.verificationProgress} 
                   className={cn(
-                    "h-3",
+                    "h-2 sm:h-3",
                     phase.locked && "opacity-50"
                   )}
                 />
@@ -760,9 +760,9 @@ const HierarchicalTimeline = ({
               </div>
               
               {/* Percentage and count */}
-              <div className="flex items-center gap-2 min-w-[80px] justify-end">
+              <div className="flex items-center gap-1 sm:gap-2 min-w-[50px] sm:min-w-[80px] justify-end shrink-0">
                 <span className={cn(
-                  "text-sm font-semibold",
+                  "text-xs sm:text-sm font-semibold",
                   phase.verificationProgress === 100 
                     ? "text-green-600" 
                     : phase.verificationProgress > 0 
@@ -771,7 +771,7 @@ const HierarchicalTimeline = ({
                 )}>
                   {phase.verificationProgress}%
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   {completedTasks}/{totalTasks}
                 </span>
               </div>
@@ -877,10 +877,10 @@ const HierarchicalTimeline = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                     {!phase.locked && (
                       <>
-                        {/* Bulk Action Button */}
+                        {/* Bulk Action Button - icon only on mobile */}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -888,7 +888,7 @@ const HierarchicalTimeline = ({
                                 variant="ghost"
                                 size="sm"
                                 className={cn(
-                                  "h-7 px-2 gap-1",
+                                  "h-7 px-1.5 sm:px-2 gap-1",
                                   phase.progress === 100 
                                     ? "text-green-600 hover:text-amber-600" 
                                     : "text-muted-foreground hover:text-green-600"
@@ -901,12 +901,12 @@ const HierarchicalTimeline = ({
                                 {phase.progress === 100 ? (
                                   <>
                                     <Square className="h-3.5 w-3.5" />
-                                    <span className="text-xs hidden sm:inline">{t("timeline.resetAll", "Reset")}</span>
+                                    <span className="text-xs hidden lg:inline">{t("timeline.resetAll", "Reset")}</span>
                                   </>
                                 ) : (
                                   <>
                                     <CheckSquare className="h-3.5 w-3.5" />
-                                    <span className="text-xs hidden sm:inline">{t("timeline.completeAll", "Complete All")}</span>
+                                    <span className="text-xs hidden lg:inline">{t("timeline.completeAll", "Complete All")}</span>
                                   </>
                                 )}
                               </Button>
@@ -919,14 +919,14 @@ const HierarchicalTimeline = ({
                           </Tooltip>
                         </TooltipProvider>
                         
-                        <div className="w-24">
+                        <div className="hidden sm:block w-24">
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="text-muted-foreground">{t("common.progress", "Progress")}</span>
                             <span className="font-medium">{phase.progress}%</span>
                           </div>
                           <Progress value={phase.progress} className="h-1.5" />
                         </div>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs">
                           {phase.subTimelines.reduce((sum, s) => sum + s.tasks.length, 0)} {t("common.tasks", "tasks")}
                         </Badge>
                       </>
@@ -937,7 +937,7 @@ const HierarchicalTimeline = ({
 
               {/* Sub-Timelines */}
               <CollapsibleContent>
-                <div className="ml-6 mt-2 space-y-2">
+                <div className="ml-3 sm:ml-6 mt-2 space-y-2">
                   {phase.subTimelines.map(sub => {
                     const subExpanded = expandedSubTimelines[sub.id];
 
@@ -946,7 +946,7 @@ const HierarchicalTimeline = ({
                         <CollapsibleTrigger asChild>
                           <div
                             className={cn(
-                              "flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors",
+                              "flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 p-2 rounded-md border cursor-pointer transition-colors",
                               sub.conflictStatus !== "none"
                                 ? "bg-red-50/50 border-red-300 dark:bg-red-950/30 dark:border-red-700 ring-1 ring-red-200"
                                 : sub.delayed 
@@ -954,83 +954,54 @@ const HierarchicalTimeline = ({
                                   : "bg-muted/30 border-border hover:bg-muted/50"
                             )}
                           >
-                            <div className="flex items-center gap-2">
-                              {subExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                              <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="text-sm font-medium">{sub.name}</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                              {subExpanded ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
+                              <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0 hidden sm:block" />
+                              <span className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">{sub.name}</span>
                               {sub.delayed && (
-                                <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700">
-                                  <AlertTriangle className="h-3 w-3 mr-0.5" />
+                                <Badge variant="outline" className="text-[9px] sm:text-[10px] border-amber-500 text-amber-700 shrink-0">
+                                  <AlertTriangle className="h-2.5 sm:h-3 w-2.5 sm:w-3 mr-0.5" />
                                   +{sub.delayDays}d
                                 </Badge>
                               )}
                               {sub.conflictStatus === "weather" && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Cloud className="h-3.5 w-3.5 text-red-500" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="text-red-600">{sub.conflictMessage}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                                <Cloud className="h-3 w-3 text-red-500 shrink-0" />
                               )}
                               {sub.conflictStatus === "gps" && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <MapPin className="h-3.5 w-3.5 text-red-500" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="text-red-600">{sub.conflictMessage}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                                <MapPin className="h-3 w-3 text-red-500 shrink-0" />
                               )}
                               {sub.conflictStatus === "both" && (
-                                <Badge variant="destructive" className="text-[10px]">
-                                  <AlertOctagon className="h-3 w-3 mr-0.5" />
-                                  2 conflicts
+                                <Badge variant="destructive" className="text-[9px] shrink-0">
+                                  <AlertOctagon className="h-2.5 w-2.5 mr-0.5" />
+                                  2
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                               {/* Bulk Action for Category */}
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className={cn(
-                                        "h-6 w-6 p-0",
-                                        sub.progress === 100 
-                                          ? "text-green-600 hover:text-amber-600" 
-                                          : "text-muted-foreground hover:text-green-600"
-                                      )}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleBulkCompleteCategory(sub.id, phase.id, sub.progress < 100);
-                                      }}
-                                    >
-                                      {sub.progress === 100 ? (
-                                        <Square className="h-3.5 w-3.5" />
-                                      ) : (
-                                        <CheckSquare className="h-3.5 w-3.5" />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {sub.progress === 100 
-                                      ? t("timeline.resetCategory", "Reset all {{category}} tasks", { category: sub.name })
-                                      : t("timeline.completeCategory", "Complete all {{category}} tasks", { category: sub.name })}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={cn(
+                                  "h-6 w-6 p-0",
+                                  sub.progress === 100 
+                                    ? "text-green-600 hover:text-amber-600" 
+                                    : "text-muted-foreground hover:text-green-600"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBulkCompleteCategory(sub.id, phase.id, sub.progress < 100);
+                                }}
+                              >
+                                {sub.progress === 100 ? (
+                                  <Square className="h-3 w-3" />
+                                ) : (
+                                  <CheckSquare className="h-3 w-3" />
+                                )}
+                              </Button>
                               
-                              <Progress value={sub.progress} className="h-1 w-16" />
-                              <Badge variant="outline" className="text-xs">
+                              <Progress value={sub.progress} className="h-1 w-10 sm:w-16 hidden xs:block" />
+                              <Badge variant="outline" className="text-[10px] sm:text-xs">
                                 {sub.tasks.length}
                               </Badge>
                             </div>
@@ -1038,7 +1009,7 @@ const HierarchicalTimeline = ({
                         </CollapsibleTrigger>
 
                         <CollapsibleContent>
-                          <div className="ml-5 mt-2 space-y-1.5">
+                          <div className="ml-3 sm:ml-5 mt-2 space-y-1.5">
                             {sub.tasks.map(task => {
                               const weatherAlert = hasWeatherIssue(task);
                               const isCompleted = task.status === "completed";
@@ -1055,7 +1026,7 @@ const HierarchicalTimeline = ({
                                 <div 
                                   key={task.id}
                                   className={cn(
-                                    "flex items-center gap-3 p-2.5 rounded-lg transition-all cursor-pointer group",
+                                    "flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all cursor-pointer group",
                                     isCompleted 
                                       ? "bg-green-50/70 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
                                       : weatherAlert
@@ -1069,7 +1040,7 @@ const HierarchicalTimeline = ({
                                     checked={isCompleted}
                                     onCheckedChange={handleCheckboxChange}
                                     className={cn(
-                                      "h-5 w-5 rounded-full border-2 transition-all",
+                                      "h-4 w-4 sm:h-5 sm:w-5 rounded-full border-2 transition-all shrink-0",
                                       isCompleted 
                                         ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500" 
                                         : "border-muted-foreground/50 group-hover:border-primary"
@@ -1081,7 +1052,7 @@ const HierarchicalTimeline = ({
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       <span className={cn(
-                                        "text-sm font-medium truncate",
+                                        "text-xs sm:text-sm font-medium line-clamp-1",
                                         isCompleted && "line-through text-muted-foreground"
                                       )}>
                                         {task.title}
