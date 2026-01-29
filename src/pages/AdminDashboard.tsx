@@ -134,7 +134,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!authLoading && !adminLoading) {
       if (!user) {
-        navigate("/login");
+        navigate("/buildunion/login");
       } else if (!isAdmin) {
         toast.error("Access denied. Admin privileges required.");
         navigate("/buildunion");
