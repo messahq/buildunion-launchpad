@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import NotificationSettings from "@/components/NotificationSettings";
+import { UnionSelector } from "@/components/UnionSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -710,17 +711,12 @@ const BuildUnionProfile = () => {
               </div>
 
               {isUnionMember && (
-                <div className="space-y-2 pl-6 border-l-2 border-primary/20">
-                  <Label htmlFor="unionName">Union Name</Label>
-                  <Input 
-                    id="unionName"
-                    placeholder="e.g., IBEW Local 353, Carpenters Union Local 27"
+                <div className="pl-6 border-l-2 border-amber-500/30">
+                  <UnionSelector
                     value={unionName}
-                    onChange={(e) => setUnionName(e.target.value)}
+                    onChange={setUnionName}
+                    primaryTrade={primaryTrade}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Enter the name of your trade union or local chapter
-                  </p>
                 </div>
               )}
             </CardContent>
