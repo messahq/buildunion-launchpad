@@ -1838,24 +1838,46 @@ export default function BuildUnionMessages() {
                             >
                               {/* Attachment display */}
                               {msg.attachmentUrl && msg.attachmentName && (
-                                <a
-                                  href={msg.attachmentUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={`flex items-center gap-2 mb-2 p-2 rounded-lg transition-colors ${
-                                    isMine 
-                                      ? "bg-white/20 hover:bg-white/30" 
-                                      : "bg-background hover:bg-muted-foreground/10"
-                                  }`}
-                                >
+                                <>
+                                  {/* Inline image preview for image files */}
                                   {msg.attachmentName.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                    <Image className="h-4 w-4 shrink-0" />
+                                    <a
+                                      href={msg.attachmentUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block mb-2"
+                                    >
+                                      <img
+                                        src={msg.attachmentUrl}
+                                        alt={msg.attachmentName}
+                                        className="max-w-full max-h-64 rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                        loading="lazy"
+                                      />
+                                      <span className={`text-xs mt-1 flex items-center gap-1 ${
+                                        isMine ? "text-emerald-100" : "text-muted-foreground"
+                                      }`}>
+                                        <Download className="h-3 w-3" />
+                                        {msg.attachmentName}
+                                      </span>
+                                    </a>
                                   ) : (
-                                    <File className="h-4 w-4 shrink-0" />
+                                    /* Regular file attachment */
+                                    <a
+                                      href={msg.attachmentUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`flex items-center gap-2 mb-2 p-2 rounded-lg transition-colors ${
+                                        isMine 
+                                          ? "bg-white/20 hover:bg-white/30" 
+                                          : "bg-background hover:bg-muted-foreground/10"
+                                      }`}
+                                    >
+                                      <File className="h-4 w-4 shrink-0" />
+                                      <span className="text-sm truncate">{msg.attachmentName}</span>
+                                      <Download className="h-3 w-3 shrink-0 opacity-70" />
+                                    </a>
                                   )}
-                                  <span className="text-sm truncate">{msg.attachmentName}</span>
-                                  <Download className="h-3 w-3 shrink-0 opacity-70" />
-                                </a>
+                                </>
                               )}
                               {msg.message && !msg.message.startsWith('📎 ') && (
                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
