@@ -90,16 +90,33 @@ export function useWeather(options: UseWeatherOptions = {}) {
       const result = response.data;
       const fnError = response.error;
       
-      // Handle FunctionsHttpError - extract message from response body
+      // Handle FunctionsHttpError - extract message from error context
       if (fnError) {
-        // Try to parse error body for user-friendly message
-        if (result?.code === 'INVALID_LOCATION' || result?.code === 'LOCATION_NOT_FOUND' || 
-            result?.code === 'GEOCODING_FAILED' || result?.code === 'NO_LOCATION') {
-          setError(result.message || "Location could not be found. Try a more specific address.");
+        let errorMessage = "Failed to fetch weather data";
+        let errorCode = "";
+        
+        // Try to get error details from the error context
+        try {
+          // FunctionsHttpError has a context property with the response
+          if (fnError.context && typeof fnError.context.json === 'function') {
+            const errorBody = await fnError.context.json();
+            errorMessage = errorBody?.message || errorBody?.error || errorMessage;
+            errorCode = errorBody?.code || "";
+          }
+        } catch {
+          // If we can't parse the error body, use the error message
+          errorMessage = fnError.message || errorMessage;
+        }
+        
+        // Handle location-related errors gracefully
+        if (errorCode === 'INVALID_LOCATION' || errorCode === 'LOCATION_NOT_FOUND' || 
+            errorCode === 'GEOCODING_FAILED' || errorCode === 'NO_LOCATION' ||
+            errorMessage.toLowerCase().includes('location')) {
+          setError(errorMessage || "Location could not be found. Try a more specific address.");
           return;
         }
-        // Generic error fallback
-        setError(result?.message || "Failed to fetch weather data");
+        
+        setError(errorMessage);
         return;
       }
       
@@ -118,7 +135,7 @@ export function useWeather(options: UseWeatherOptions = {}) {
       console.error("Weather fetch error:", err);
       // Provide user-friendly message for location issues
       const msg = err.message || "Failed to fetch weather data";
-      if (msg.includes("Location") || msg.includes("geocod")) {
+      if (msg.toLowerCase().includes("location") || msg.toLowerCase().includes("geocod")) {
         setError("Could not find this location. Try a more specific address like '123 Main St, Toronto, ON'");
       } else {
         setError(msg);
