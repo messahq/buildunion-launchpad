@@ -236,6 +236,11 @@ export default function BuildUnionMessages() {
   const [adminEmailMessage, setAdminEmailMessage] = useState("");
   const [isSendingAdminEmail, setIsSendingAdminEmail] = useState(false);
   
+  // Admin email attachment state
+  const [adminEmailAttachment, setAdminEmailAttachment] = useState<File | null>(null);
+  const [isUploadingAdminAttachment, setIsUploadingAdminAttachment] = useState(false);
+  const adminEmailFileInputRef = useRef<HTMLInputElement>(null);
+  
   // Bulk email recipients
   const [bulkRecipients, setBulkRecipients] = useState<Array<{ email: string; name: string }>>([
     { email: "", name: "" }
@@ -402,10 +407,40 @@ export default function BuildUnionMessages() {
     setAdminEmailName("");
     setAdminEmailSubject("");
     setAdminEmailMessage("");
+    setAdminEmailAttachment(null);
     setBulkRecipients([{ email: "", name: "" }]);
     setBulkSendProgress(null);
     setIsBulkMode(false);
     setIsAdminEmailDialogOpen(false);
+  };
+
+  // Handle admin email attachment selection
+  const handleAdminEmailAttachmentSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be under 10MB");
+      return;
+    }
+    
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain', 'text/csv'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("File type not supported. Please use images, PDF, Word, Excel, or text files.");
+      return;
+    }
+    
+    setAdminEmailAttachment(file);
+    e.target.value = '';
   };
 
   // Premium access check - Premium users and Admins can send attachments
@@ -968,6 +1003,44 @@ export default function BuildUnionMessages() {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    // Upload attachment if present
+    let attachmentUrl: string | null = null;
+    let attachmentName: string | null = null;
+    
+    if (adminEmailAttachment) {
+      setIsUploadingAdminAttachment(true);
+      try {
+        const fileExt = adminEmailAttachment.name.split('.').pop();
+        const fileName = `admin-emails/${user?.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('message-attachments')
+          .upload(fileName, adminEmailAttachment);
+        
+        if (uploadError) {
+          throw new Error(`Failed to upload attachment: ${uploadError.message}`);
+        }
+        
+        // Create signed URL for private bucket (1 year expiry)
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('message-attachments')
+          .createSignedUrl(fileName, 60 * 60 * 24 * 365);
+        
+        if (signedUrlError || !signedUrlData?.signedUrl) {
+          throw new Error(`Failed to create download URL: ${signedUrlError?.message || 'Unknown error'}`);
+        }
+        
+        attachmentUrl = signedUrlData.signedUrl;
+        attachmentName = adminEmailAttachment.name;
+      } catch (err) {
+        console.error("Error uploading attachment:", err);
+        toast.error(err instanceof Error ? err.message : "Failed to upload attachment");
+        setIsUploadingAdminAttachment(false);
+        return;
+      }
+      setIsUploadingAdminAttachment(false);
+    }
+
     if (isBulkMode) {
       // Bulk send mode
       const validRecipients = bulkRecipients.filter(r => r.email.trim() && emailRegex.test(r.email.trim()));
@@ -991,6 +1064,8 @@ export default function BuildUnionMessages() {
               recipientName: recipient.name.trim() || undefined,
               subject: adminEmailSubject.trim(),
               message: adminEmailMessage.trim(),
+              attachmentUrl,
+              attachmentName,
             },
           });
 
@@ -1037,6 +1112,8 @@ export default function BuildUnionMessages() {
             recipientName: adminEmailName.trim() || undefined,
             subject: adminEmailSubject.trim(),
             message: adminEmailMessage.trim(),
+            attachmentUrl,
+            attachmentName,
           },
         });
 
@@ -1347,6 +1424,59 @@ export default function BuildUnionMessages() {
                 />
               </div>
               
+              {/* Attachment Section */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Paperclip className="h-4 w-4 text-amber-500" />
+                  Attachment (optional)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={adminEmailFileInputRef}
+                    onChange={handleAdminEmailAttachmentSelect}
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                    className="hidden"
+                  />
+                  {adminEmailAttachment ? (
+                    <div className="flex items-center gap-2 flex-1 p-2 bg-muted rounded-lg border">
+                      {adminEmailAttachment.type.startsWith('image/') ? (
+                        <Image className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <File className="h-4 w-4 text-blue-500" />
+                      )}
+                      <span className="text-sm truncate flex-1">{adminEmailAttachment.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(adminEmailAttachment.size / 1024).toFixed(1)} KB)
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive hover:text-destructive"
+                        onClick={() => setAdminEmailAttachment(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => adminEmailFileInputRef.current?.click()}
+                      className="gap-2"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      Attach File
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Max 10MB. Supported: images, PDF, Word, Excel, text files.
+                </p>
+              </div>
+              
               <div className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
                 <p className="flex items-center gap-1">
                   <Mail className="h-3 w-3 text-amber-600" />
@@ -1354,6 +1484,9 @@ export default function BuildUnionMessages() {
                     ? `Emails will be sent individually to ${bulkRecipients.filter(r => r.email.trim()).length} recipient(s) from admin@buildunion.ca`
                     : "Email will be sent from: admin@buildunion.ca"
                   }
+                  {adminEmailAttachment && (
+                    <span className="ml-2">• Attachment: {adminEmailAttachment.name}</span>
+                  )}
                 </p>
               </div>
             </div>

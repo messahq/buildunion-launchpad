@@ -49,6 +49,8 @@ interface AdminEmailRequest {
   subject: string;
   message: string;
   replyTo?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 serve(async (req) => {
@@ -107,7 +109,7 @@ serve(async (req) => {
       });
     }
 
-    const { recipientEmail, recipientName, subject, message, replyTo }: AdminEmailRequest = await req.json();
+    const { recipientEmail, recipientName, subject, message, replyTo, attachmentUrl, attachmentName }: AdminEmailRequest = await req.json();
 
     // Validate required fields
     if (!recipientEmail || !subject || !message) {
@@ -116,6 +118,21 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Generate attachment HTML section if attachment exists
+    const attachmentHtml = attachmentUrl && attachmentName ? `
+      <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">
+          📎 Attachment
+        </p>
+        <a href="${attachmentUrl}" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">
+          📥 Download: ${attachmentName}
+        </a>
+      </div>
+    ` : '';
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -471,6 +488,8 @@ serve(async (req) => {
         <div class="message-box">
           ${safeMessage}
         </div>
+
+        ${attachmentHtml}
 
         <div class="divider"></div>
         
