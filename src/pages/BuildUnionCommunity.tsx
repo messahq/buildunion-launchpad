@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import AskMessaChat from "@/components/AskMessaChat";
@@ -8,7 +9,7 @@ import UnionBenefitsDialog from "@/components/community/UnionBenefitsDialog";
 import CertificationsDialog from "@/components/community/CertificationsDialog";
 import QuickStartDialog from "@/components/community/QuickStartDialog";
 import UnionFinderDialog from "@/components/community/UnionFinderDialog";
-import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare, Hammer, ExternalLink } from "lucide-react";
+import { FileUp, Brain, CheckCircle, Calendar, ArrowRight, Newspaper, HelpCircle, Shield, FileText, Link2, Building2, Scale, TrendingUp, Heart, DollarSign, Briefcase, BookOpen, AlertTriangle, Users, MessageSquare, Hammer, ExternalLink, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -65,6 +66,7 @@ const processSteps = [
 
 const BuildUnionCommunity = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isMessaChatOpen, setIsMessaChatOpen] = useState(false);
   const [isFAQOpen, setIsFAQOpen] = useState(false);
   const [isUnionBenefitsOpen, setIsUnionBenefitsOpen] = useState(false);
@@ -77,6 +79,19 @@ const BuildUnionCommunity = () => {
       <BuildUnionHeader />
       
       <main className="flex-1">
+        {/* Back Button */}
+        <div className="container mx-auto px-4 pt-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion")}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t("common.backToHome", "Back to Home")}
+          </Button>
+        </div>
+
         {/* News & Updates Section - At the top */}
         <section className="py-12 px-6 bg-gradient-to-b from-amber-50/50 to-background dark:from-amber-900/10 dark:to-background">
           <div className="max-w-6xl mx-auto">

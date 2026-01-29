@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Users, Target, Heart, Shield, Award, Globe } from "lucide-react";
+import { Users, Target, Heart, Shield, Award, Globe, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -49,6 +49,18 @@ const BuildUnionAbout = () => {
       <BuildUnionHeader />
 
       <main className="flex-1">
+        {/* Back Button */}
+        <div className="container mx-auto px-4 pt-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/buildunion")}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t("common.backToHome", "Back to Home")}
+          </Button>
+        </div>
         {/* Hero Section */}
         <section className="relative py-10 md:py-14 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20">
           <div className="container mx-auto px-4">
