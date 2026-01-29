@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users, Download, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Wrench, Plus, FolderOpen, Loader2, Sparkles, Trash2, Users, Download, CheckCircle2, Archive, Undo2 } from "lucide-react";
 import ProjectDashboardWidget from "@/components/ProjectDashboardWidget";
 import { useNavigate } from "react-router-dom";
 import ProjectQuestionnaire, { 
@@ -77,8 +77,11 @@ const BuildUnionProjects2 = () => {
   // Sidebar project selection (just highlights in list, updates sidebar)
   const [sidebarProjectId, setSidebarProjectId] = useState<string | null>(null);
   
-  // Tab state for My Projects / Shared With Me
-  const [projectsTab, setProjectsTab] = useState<"my" | "shared">("my");
+  // Tab state for My Projects / Shared With Me / Archived
+  const [projectsTab, setProjectsTab] = useState<"my" | "shared" | "archived">("my");
+  
+  // Archived projects state
+  const [archivedProjects, setArchivedProjects] = useState<SavedProject[]>([]);
   
   // Re-analyze state - stores files for re-analysis
   const [reanalyzeImages, setReanalyzeImages] = useState<File[]>([]);
@@ -105,11 +108,12 @@ const BuildUnionProjects2 = () => {
     }
 
     const loadProjects = async () => {
-      // Load my projects
+      // Load my active projects (not archived)
       const { data: myProjectsData, error: myError } = await supabase
         .from("projects")
         .select("id, name, address, trade, status, description, created_at")
         .eq("user_id", user.id)
+        .neq("status", "archived")
         .order("created_at", { ascending: false });
 
       if (myError) {
@@ -117,6 +121,18 @@ const BuildUnionProjects2 = () => {
         toast.error("Failed to load projects");
       } else {
         setProjects(myProjectsData || []);
+      }
+
+      // Load archived projects
+      const { data: archivedData, error: archivedError } = await supabase
+        .from("projects")
+        .select("id, name, address, trade, status, description, created_at")
+        .eq("user_id", user.id)
+        .eq("status", "archived")
+        .order("created_at", { ascending: false });
+
+      if (!archivedError && archivedData) {
+        setArchivedProjects(archivedData);
       }
 
       // Load shared projects (where user is a team member but not owner)
@@ -879,18 +895,29 @@ const BuildUnionProjects2 = () => {
               {!authLoading && !loading && user && (
                 <>
                   {/* Tab Switcher */}
-                  <Tabs value={projectsTab} onValueChange={(v) => setProjectsTab(v as "my" | "shared")} className="mb-6">
-                    <TabsList className="bg-muted/50">
+                  <Tabs value={projectsTab} onValueChange={(v) => setProjectsTab(v as "my" | "shared" | "archived")} className="mb-6">
+                    <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
                       <TabsTrigger value="my" className="gap-2 data-[state=active]:bg-background">
                         <FolderOpen className="h-4 w-4" />
-                        {t("workspace.myProjects")}
+                        <span className="hidden xs:inline">{t("workspace.myProjects")}</span>
+                        <span className="xs:hidden">{t("workspace.projects")}</span>
                       </TabsTrigger>
                       <TabsTrigger value="shared" className="gap-2 data-[state=active]:bg-background">
                         <Users className="h-4 w-4" />
-                        {t("workspace.sharedWithMe")}
+                        <span className="hidden xs:inline">{t("workspace.sharedWithMe")}</span>
+                        <span className="xs:hidden">{t("workspace.shared")}</span>
                         {sharedProjects.length > 0 && (
                           <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                             {sharedProjects.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger value="archived" className="gap-2 data-[state=active]:bg-background">
+                        <Archive className="h-4 w-4" />
+                        <span className="hidden xs:inline">{t("archive.archived", "Archived")}</span>
+                        {archivedProjects.length > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                            {archivedProjects.length}
                           </Badge>
                         )}
                       </TabsTrigger>
@@ -928,6 +955,22 @@ const BuildUnionProjects2 = () => {
                           {/* Projects List */}
                           <div className="lg:col-span-2 space-y-4">
                             {projects.map((project) => {
+                              const handleArchive = async () => {
+                                const { error } = await supabase
+                                  .from("projects")
+                                  .update({ status: "archived" })
+                                  .eq("id", project.id);
+                                
+                                if (error) {
+                                  toast.error(t("archive.archiveFailed", "Failed to archive project"));
+                                } else {
+                                  setProjects(prev => prev.filter(p => p.id !== project.id));
+                                  setArchivedProjects(prev => [{ ...project, status: "archived" }, ...prev]);
+                                  if (sidebarProjectId === project.id) setSidebarProjectId(null);
+                                  toast.success(t("archive.projectArchived", "Project moved to archive"));
+                                }
+                              };
+
                               const handleDelete = async () => {
                                 const { error } = await supabase
                                   .from("projects")
@@ -1068,6 +1111,19 @@ const BuildUnionProjects2 = () => {
                                       >
                                         <CheckCircle2 className="h-4 w-4" />
                                       </Button>
+                                      {/* Desktop archive button */}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleArchive();
+                                        }}
+                                        title={t("archive.moveToArchive", "Move to Archive")}
+                                      >
+                                        <Archive className="h-4 w-4" />
+                                      </Button>
                                       {/* Desktop delete button */}
                                       <Button
                                         variant="ghost"
@@ -1075,7 +1131,7 @@ const BuildUnionProjects2 = () => {
                                         className="hidden sm:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                         onClick={async (e) => {
                                           e.stopPropagation();
-                                          if (!confirm(`${t("workspace.deleteConfirm", "Delete")} "${project.name}"? ${t("workspace.cannotUndo", "This cannot be undone.")}`)) return;
+                                          if (!confirm(`${t("archive.deletePermanently", "Delete permanently")} "${project.name}"? ${t("workspace.cannotUndo", "This cannot be undone.")}`)) return;
                                           handleDelete();
                                         }}
                                         title={t("workspace.deleteProject", "Delete project")}
@@ -1091,19 +1147,22 @@ const BuildUnionProjects2 = () => {
                                   {/* Mobile hint for selected project */}
                                   {sidebarProjectId === project.id && (
                                     <p className="sm:hidden text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
-                                      ✓ Selected — Swipe left to delete
+                                      ✓ {t("workspace.selectedSwipeHint", "Selected — Swipe left for options")}
                                     </p>
                                   )}
                                 </div>
                               );
 
-                              // Mobile: wrap in swipeable container
+                              // Mobile: wrap in swipeable container with archive option
                               if (isMobile) {
                                 return (
                                   <SwipeableProjectCard
                                     key={project.id}
                                     onDelete={handleDelete}
-                                    deleteLabel="Delete"
+                                    onArchive={handleArchive}
+                                    deleteLabel={t("common.delete", "Delete")}
+                                    archiveLabel={t("archive.archive", "Archive")}
+                                    showArchiveOption={true}
                                   >
                                     {cardContent}
                                   </SwipeableProjectCard>
@@ -1279,6 +1338,112 @@ const BuildUnionProjects2 = () => {
                               }}
                             />
                           </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Archived Tab */}
+                  {projectsTab === "archived" && (
+                    <>
+                      {/* Header */}
+                      <div className="mb-4">
+                        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                          <Archive className="h-5 w-5 text-muted-foreground" />
+                          {t("archive.archivedProjects", "Archived Projects")}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                          {t("archive.archivedDescription", "Projects you've archived can be restored or permanently deleted")}
+                        </p>
+                      </div>
+
+                      {archivedProjects.length === 0 ? (
+                        <div className="min-h-[300px] border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                          <Archive className="h-16 w-16 text-muted-foreground/40" />
+                          <div className="text-center">
+                            <p className="text-lg font-medium text-foreground">{t("archive.noArchivedProjects", "No archived projects")}</p>
+                            <p className="text-muted-foreground">{t("archive.archiveHint", "Swipe left on any project to archive it")}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {archivedProjects.map((project) => {
+                            const handleRestore = async () => {
+                              const { error } = await supabase
+                                .from("projects")
+                                .update({ status: "active" })
+                                .eq("id", project.id);
+                              
+                              if (error) {
+                                toast.error(t("archive.restoreFailed", "Failed to restore project"));
+                              } else {
+                                setArchivedProjects(prev => prev.filter(p => p.id !== project.id));
+                                setProjects(prev => [{ ...project, status: "active" }, ...prev]);
+                                toast.success(t("archive.projectRestored", "Project restored"));
+                              }
+                            };
+
+                            const handlePermanentDelete = async () => {
+                              if (!confirm(`${t("archive.deletePermanently", "Delete permanently")} "${project.name}"? ${t("workspace.cannotUndo", "This cannot be undone.")}`)) return;
+                              
+                              const { error } = await supabase
+                                .from("projects")
+                                .delete()
+                                .eq("id", project.id);
+                              
+                              if (error) {
+                                toast.error(t("workspace.deleteFailed", "Failed to delete project"));
+                              } else {
+                                setArchivedProjects(prev => prev.filter(p => p.id !== project.id));
+                                toast.success(t("workspace.projectDeleted", "Project deleted permanently"));
+                              }
+                            };
+
+                            return (
+                              <div 
+                                key={project.id}
+                                className="p-4 sm:p-6 rounded-xl border bg-muted/30 border-muted-foreground/20"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                                      <Archive className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <h3 className="font-semibold text-muted-foreground truncate">{project.name}</h3>
+                                      {project.description && (
+                                        <p className="text-sm text-muted-foreground/70 truncate mt-1">{project.description}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={handleRestore}
+                                      className="gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                    >
+                                      <Undo2 className="h-4 w-4" />
+                                      <span className="hidden sm:inline">{t("archive.restore", "Restore")}</span>
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={handlePermanentDelete}
+                                      className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span className="hidden sm:inline">{t("archive.delete", "Delete")}</span>
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-xs text-muted-foreground">
+                                  <span>📅 {format(new Date(project.created_at), "MMM d, yyyy")}</span>
+                                  {project.address && <span className="truncate max-w-[200px]">📍 {project.address}</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </>

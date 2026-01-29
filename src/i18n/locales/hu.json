@@ -576,7 +576,29 @@
     "reopen": "Újranyit",
     "deleteProject": "Projekt törlése",
     "deleteConfirm": "Törlés",
-    "cannotUndo": "Ez nem vonható vissza."
+    "cannotUndo": "Ez nem vonható vissza.",
+    "selectedSwipeHint": "Kiválasztva — Húzd balra az opciókért"
+  },
+  "archive": {
+    "archived": "Archivált",
+    "archive": "Archiválás",
+    "archivedProjects": "Archivált Projektek",
+    "archivedDescription": "Az archivált projektek visszaállíthatók vagy véglegesen törölhetők",
+    "noArchivedProjects": "Nincsenek archivált projektek",
+    "archiveHint": "Húzd balra bármely projektet az archiváláshoz",
+    "moveToArchive": "Áthelyezés Archívumba",
+    "projectArchived": "Projekt áthelyezve az archívumba",
+    "archiveFailed": "Projekt archiválása sikertelen",
+    "restore": "Visszaállítás",
+    "projectRestored": "Projekt visszaállítva",
+    "restoreFailed": "Projekt visszaállítása sikertelen",
+    "delete": "Törlés",
+    "deletePermanently": "Végleges Törlés",
+    "deleteProject": "Törlöd a projektet?",
+    "deleteConfirmation": "Biztosan törlöd",
+    "archiveOption": "Archiválhatod is, hogy később visszaállíthasd, vagy véglegesen töröld.",
+    "archivedProject": "Archivált Projekt",
+    "restoreOrDelete": "Szeretnéd visszaállítani ezt a projektet, vagy véglegesen törölni?"
   },
   "footer": {
     "tagline": "Építőipari szintű projektmenedzsment azoknak a csapatoknak, akik a valós világot építik.",
