@@ -171,6 +171,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   const handleSignOut = async () => {
     await signOut();
     toast.success("Signed out successfully");
+    navigate("/buildunion");
   };
 
   const getTierIcon = () => {
