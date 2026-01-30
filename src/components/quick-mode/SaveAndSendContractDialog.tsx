@@ -131,7 +131,41 @@ export function SaveAndSendContractDialog({
   };
 
   const handleSendAndSave = async () => {
-    await onSaveAndSend(Array.from(selectedMembers));
+    const selectedMemberIds = Array.from(selectedMembers);
+    
+    // Send data to Make.com webhook
+    try {
+      const webhookPayload = {
+        contractNumber,
+        projectId,
+        selectedMemberIds,
+        teamMembers: teamMembers
+          .filter(m => selectedMemberIds.includes(m.user_id))
+          .map(m => ({
+            userId: m.user_id,
+            role: m.role,
+            name: m.profile?.full_name || m.bu_profile?.company_name || "Team Member",
+            trade: m.bu_profile?.primary_trade,
+          })),
+        timestamp: new Date().toISOString(),
+        senderId: user?.id,
+      };
+
+      await fetch("https://hook.us2.make.com/6xtfmz8rq7klp7m9yf2dohp77i3ews5y", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(webhookPayload),
+      });
+      
+      console.log("Webhook sent successfully:", webhookPayload);
+    } catch (webhookError) {
+      console.error("Webhook error (non-blocking):", webhookError);
+      // Continue with save even if webhook fails
+    }
+
+    await onSaveAndSend(selectedMemberIds);
   };
 
   const formatRole = (role: string) => {
