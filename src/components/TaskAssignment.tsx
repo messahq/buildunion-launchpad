@@ -61,7 +61,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import TaskTimelineCalendar from "./TaskTimelineCalendar";
+import CompactGanttChart from "./CompactGanttChart";
 import TaskTemplateManager from "./projects2/TaskTemplateManager";
 
 interface TaskAssignmentProps {
@@ -732,7 +732,7 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
               {isOwner && <p className="text-xs mt-1">{isSoloMode ? "Use templates or add tasks manually" : "Create tasks for your team"}</p>}
             </div>
           ) : viewMode === "calendar" ? (
-            <TaskTimelineCalendar
+            <CompactGanttChart
               tasks={tasks}
               isOwner={isOwner}
               onTaskClick={(task) => openEditDialog(task)}
