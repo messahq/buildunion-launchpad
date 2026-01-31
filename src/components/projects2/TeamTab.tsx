@@ -492,6 +492,9 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
             <PhaseGanttChart
               tasks={tasks}
               onTaskClick={handleGanttTaskClick}
+              projectStartDate={projectStartDate}
+              projectEndDate={projectEndDate}
+              onTasksUpdated={fetchTasks}
             />
           )}
         </TabsContent>
