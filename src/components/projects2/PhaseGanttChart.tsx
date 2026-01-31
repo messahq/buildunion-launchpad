@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   format,
   differenceInDays,
@@ -11,6 +11,7 @@ import {
 } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -32,10 +33,14 @@ import {
   ClipboardCheck,
   Wrench,
   ShieldCheck,
+  Wand2,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Task {
   id: string;
@@ -56,6 +61,9 @@ interface Task {
 interface PhaseGanttChartProps {
   tasks: Task[];
   onTaskClick?: (task: Task) => void;
+  projectStartDate?: Date | null;
+  projectEndDate?: Date | null;
+  onTasksUpdated?: () => void;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -130,7 +138,7 @@ const getPhaseForTask = (task: Task): "preparation" | "execution" | "verificatio
   return "execution";
 };
 
-const PhaseGanttChart = ({ tasks, onTaskClick }: PhaseGanttChartProps) => {
+const PhaseGanttChart = ({ tasks, onTaskClick, projectStartDate, projectEndDate, onTasksUpdated }: PhaseGanttChartProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
@@ -138,6 +146,85 @@ const PhaseGanttChart = ({ tasks, onTaskClick }: PhaseGanttChartProps) => {
     execution: true,
     verification: true,
   });
+  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+
+  // Count tasks without due dates
+  const tasksWithoutDates = useMemo(() => 
+    tasks.filter(t => !t.due_date && t.status !== "completed"), 
+    [tasks]
+  );
+
+  // Auto-schedule tasks based on project dates and phases
+  const handleAutoSchedule = async () => {
+    if (!projectStartDate || !projectEndDate) {
+      toast.error(t("gantt.needProjectDates", "Set project start and end dates first"));
+      return;
+    }
+
+    if (tasksWithoutDates.length === 0) {
+      toast.info(t("gantt.allTasksScheduled", "All tasks already have due dates"));
+      return;
+    }
+
+    setIsAutoScheduling(true);
+    try {
+      const totalDuration = differenceInDays(projectEndDate, projectStartDate);
+      
+      // Phase distribution: Preparation 20%, Execution 60%, Verification 20%
+      const phaseRanges = {
+        preparation: { start: 0, end: Math.floor(totalDuration * 0.2) },
+        execution: { start: Math.floor(totalDuration * 0.2), end: Math.floor(totalDuration * 0.8) },
+        verification: { start: Math.floor(totalDuration * 0.8), end: totalDuration },
+      };
+
+      // Group unscheduled tasks by phase
+      const unscheduledByPhase = {
+        preparation: tasksWithoutDates.filter(t => getPhaseForTask(t) === "preparation"),
+        execution: tasksWithoutDates.filter(t => getPhaseForTask(t) === "execution"),
+        verification: tasksWithoutDates.filter(t => getPhaseForTask(t) === "verification"),
+      };
+
+      const updates: { id: string; due_date: string }[] = [];
+
+      // Distribute tasks within each phase
+      (["preparation", "execution", "verification"] as const).forEach(phase => {
+        const phaseTasks = unscheduledByPhase[phase];
+        const { start, end } = phaseRanges[phase];
+        const phaseDuration = end - start;
+
+        phaseTasks.forEach((task, index) => {
+          // Distribute evenly within the phase
+          const offset = phaseDuration > 0 
+            ? Math.floor(start + (phaseDuration * (index + 1)) / (phaseTasks.length + 1))
+            : start;
+          const dueDate = addDays(projectStartDate, offset);
+          
+          updates.push({
+            id: task.id,
+            due_date: dueDate.toISOString(),
+          });
+        });
+      });
+
+      // Batch update tasks
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("project_tasks")
+          .update({ due_date: update.due_date })
+          .eq("id", update.id);
+        
+        if (error) throw error;
+      }
+
+      toast.success(t("gantt.autoScheduleSuccess", `Scheduled ${updates.length} tasks`));
+      onTasksUpdated?.();
+    } catch (error: any) {
+      console.error("Auto-schedule error:", error);
+      toast.error(t("gantt.autoScheduleError", "Failed to schedule tasks"));
+    } finally {
+      setIsAutoScheduling(false);
+    }
+  };
 
   // Group tasks by phase
   const phaseData = useMemo(() => {
@@ -221,23 +308,62 @@ const PhaseGanttChart = ({ tasks, onTaskClick }: PhaseGanttChartProps) => {
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-4 w-4 text-amber-600" />
           <span className="text-sm font-medium">{t("timeline.phaseView", "Phase Timeline")}</span>
+          {tasksWithoutDates.length > 0 && (
+            <Badge variant="outline" className="text-xs bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
+              <Clock className="h-3 w-3 mr-1" />
+              {tasksWithoutDates.length} {t("gantt.unscheduled", "unscheduled")}
+            </Badge>
+          )}
         </div>
-        <div className="flex flex-wrap gap-2 text-xs">
-          {[
-            { color: "bg-slate-400", label: "Low" },
-            { color: "bg-amber-500", label: "Med" },
-            { color: "bg-orange-500", label: "High" },
-            { color: "bg-red-500", label: "Urg" },
-          ].map((p) => (
-            <div key={p.label} className="flex items-center gap-1">
-              <div className={cn("w-2.5 h-2 rounded", p.color)} />
-              <span className="text-muted-foreground">{p.label}</span>
-            </div>
-          ))}
+        <div className="flex items-center gap-3">
+          {/* Auto-schedule button */}
+          {tasksWithoutDates.length > 0 && projectStartDate && projectEndDate && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAutoSchedule}
+                    disabled={isAutoScheduling}
+                    className="gap-1.5 h-7 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                  >
+                    {isAutoScheduling ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-3.5 w-3.5" />
+                    )}
+                    {!isMobile && t("gantt.autoSchedule", "Auto-schedule")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">{t("gantt.autoScheduleHint", "Distribute tasks across project phases")}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {format(projectStartDate, "MMM d")} - {format(projectEndDate, "MMM d")}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {/* Priority legend */}
+          <div className="flex flex-wrap gap-2 text-xs">
+            {[
+              { color: "bg-slate-400", label: "Low" },
+              { color: "bg-amber-500", label: "Med" },
+              { color: "bg-orange-500", label: "High" },
+              { color: "bg-red-500", label: "Urg" },
+            ].map((p) => (
+              <div key={p.label} className="flex items-center gap-1">
+                <div className={cn("w-2.5 h-2 rounded", p.color)} />
+                <span className="text-muted-foreground">{p.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
