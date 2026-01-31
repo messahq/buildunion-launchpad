@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,8 @@ import {
   Plus,
   Loader2,
   AlertTriangle,
-  Lock
+  Lock,
+  GanttChart
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import TeamManagement from "@/components/TeamManagement";
 import TaskAssignment from "@/components/TaskAssignment";
+import PhaseGanttChart from "./PhaseGanttChart";
 import { ProBadge } from "@/components/ui/pro-badge";
 import {
   Dialog,
@@ -36,6 +38,22 @@ interface Material {
   quantity: number;
   unit: string;
   notes?: string;
+}
+
+interface Task {
+  id: string;
+  project_id: string;
+  assigned_to: string;
+  assigned_by: string;
+  title: string;
+  description: string | null;
+  priority: string;
+  status: string;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  assignee_name?: string;
+  assignee_avatar?: string;
 }
 
 interface TeamTabProps {
@@ -84,10 +102,78 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   const { user } = useAuth();
   const { subscription, isDevOverride } = useSubscription();
   const { members, loading: membersLoading } = useProjectTeam(projectId);
-  const [activeSubTab, setActiveSubTab] = useState<"team" | "tasks">("team");
+  const [activeSubTab, setActiveSubTab] = useState<"team" | "tasks" | "gantt">("team");
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
   const [generateTasksDialogOpen, setGenerateTasksDialogOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [editTaskFromGantt, setEditTaskFromGantt] = useState<Task | null>(null);
+
+  // Fetch tasks for Gantt chart
+  const fetchTasks = useCallback(async () => {
+    if (!projectId) return;
+    setTasksLoading(true);
+    try {
+      const { data: tasksData, error } = await supabase
+        .from("project_tasks")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Enrich with member names
+      const membersWithProfiles = await Promise.all(
+        (members || []).map(async (member) => {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("user_id", member.user_id)
+            .maybeSingle();
+          return { ...member, full_name: profile?.full_name, avatar_url: profile?.avatar_url };
+        })
+      );
+
+      const enrichedTasks = (tasksData || []).map((task) => {
+        const assignee = membersWithProfiles.find((m) => m.user_id === task.assigned_to);
+        return {
+          ...task,
+          assignee_name: assignee?.full_name || "Unknown",
+          assignee_avatar: assignee?.avatar_url,
+        };
+      });
+
+      setTasks(enrichedTasks);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [projectId, members]);
+
+  // Fetch tasks when tab is gantt or on mount
+  useEffect(() => {
+    if (activeSubTab === "gantt" || !tasksLoading) {
+      fetchTasks();
+    }
+  }, [activeSubTab, fetchTasks]);
+
+  // Realtime subscription for tasks
+  useEffect(() => {
+    const channel = supabase
+      .channel(`team_tab_tasks_${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_tasks", filter: `project_id=eq.${projectId}` },
+        () => fetchTasks()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, fetchTasks]);
 
   // Auto-switch to tasks tab when forceCalendarView is triggered
   useEffect(() => {
@@ -95,6 +181,12 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
       setActiveSubTab("tasks");
     }
   }, [forceCalendarView]);
+
+  // Handle task click from Gantt - switch to tasks tab with edit
+  const handleGanttTaskClick = (task: Task) => {
+    setEditTaskFromGantt(task);
+    setActiveSubTab("tasks");
+  };
   const handleMemberClick = (memberId: string, memberName: string) => {
     setSelectedMemberId(memberId);
     setActiveSubTab("tasks");
@@ -339,21 +431,33 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
         </CardContent>
       </Card>
 
-      {/* Sub-tabs for Team and Tasks */}
-      <Tabs value={activeSubTab} onValueChange={(v) => setActiveSubTab(v as "team" | "tasks")} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-          <TabsTrigger value="team" className="gap-2">
+      {/* Sub-tabs for Team, Tasks, and Gantt */}
+      <Tabs value={activeSubTab} onValueChange={(v) => setActiveSubTab(v as "team" | "tasks" | "gantt")} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-muted/50">
+          <TabsTrigger value="team" className="gap-1.5 text-xs sm:text-sm">
             <Users className="h-4 w-4" />
-            {t("team.manageTeam", "Team")}
+            <span className="hidden xs:inline">{t("team.manageTeam", "Team")}</span>
+            <span className="xs:hidden">Team</span>
             {members.length > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">
+              <Badge variant="secondary" className="ml-1 text-xs hidden sm:inline-flex">
                 {members.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="gap-2">
+          <TabsTrigger value="tasks" className="gap-1.5 text-xs sm:text-sm">
             <ListTodo className="h-4 w-4" />
-            {t("team.tasks", "Tasks")}
+            <span className="hidden xs:inline">{t("team.tasks", "Tasks")}</span>
+            <span className="xs:hidden">Tasks</span>
+            {tasks.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs hidden sm:inline-flex">
+                {tasks.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="gantt" className="gap-1.5 text-xs sm:text-sm">
+            <GanttChart className="h-4 w-4" />
+            <span className="hidden xs:inline">{t("team.gantt", "Gantt")}</span>
+            <span className="xs:hidden">Gantt</span>
           </TabsTrigger>
         </TabsList>
 
@@ -374,7 +478,22 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
             onClearFilter={handleClearMemberFilter}
             forceCalendarView={forceCalendarView}
             onCalendarViewActivated={onCalendarViewActivated}
+            initialEditTaskId={editTaskFromGantt?.id}
+            onEditTaskHandled={() => setEditTaskFromGantt(null)}
           />
+        </TabsContent>
+
+        <TabsContent value="gantt" className="mt-4">
+          {tasksLoading ? (
+            <div className="py-8 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+            </div>
+          ) : (
+            <PhaseGanttChart
+              tasks={tasks}
+              onTaskClick={handleGanttTaskClick}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
