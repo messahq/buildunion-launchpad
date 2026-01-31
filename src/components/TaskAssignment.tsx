@@ -73,6 +73,8 @@ interface TaskAssignmentProps {
   forceCalendarView?: boolean;
   onCalendarViewActivated?: () => void;
   isSoloMode?: boolean;
+  initialEditTaskId?: string;
+  onEditTaskHandled?: () => void;
 }
 
 interface TeamMember {
@@ -112,7 +114,7 @@ const STATUSES = [
   { value: "completed", label: "Completed", icon: CheckCircle2, color: "text-green-600" },
 ];
 
-const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated, isSoloMode = false }: TaskAssignmentProps) => {
+const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated, isSoloMode = false, initialEditTaskId, onEditTaskHandled }: TaskAssignmentProps) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -127,6 +129,23 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
     execution: true,
     verification: false,
   });
+
+  // Handle initial edit task from Gantt chart
+  useEffect(() => {
+    if (initialEditTaskId && tasks.length > 0) {
+      const taskToEdit = tasks.find(t => t.id === initialEditTaskId);
+      if (taskToEdit) {
+        setEditingTask(taskToEdit);
+        setTitle(taskToEdit.title);
+        setDescription(taskToEdit.description || "");
+        setAssignedTo(taskToEdit.assigned_to);
+        setPriority(taskToEdit.priority);
+        setDueDate(taskToEdit.due_date ? new Date(taskToEdit.due_date) : undefined);
+        setDialogOpen(true);
+        onEditTaskHandled?.();
+      }
+    }
+  }, [initialEditTaskId, tasks, onEditTaskHandled]);
 
 
   // Form state
