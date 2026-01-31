@@ -5,7 +5,13 @@ import { cn } from "@/lib/utils";
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
-const Tooltip = TooltipPrimitive.Root;
+const Tooltip = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>
+>(({ children, ...props }, _ref) => (
+  <TooltipPrimitive.Root {...props}>{children}</TooltipPrimitive.Root>
+));
+Tooltip.displayName = "Tooltip";
 
 const TooltipTrigger = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Trigger>,
