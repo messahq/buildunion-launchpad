@@ -1,5 +1,6 @@
 // Push notification event handlers for the service worker
 // This file is imported by the PWA plugin
+// VERSION: 2.0.0 - PWA Fix 2026-02-01 - Forces cache refresh
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
@@ -99,6 +100,29 @@ self.addEventListener("message", (event) => {
   }
   
   if (event.data && event.data.type === "GET_VERSION") {
-    event.ports[0].postMessage({ version: "1.1.0-offline-sync" });
+    event.ports[0].postMessage({ version: "2.0.0-pwa-fix" });
   }
+});
+
+// Force cache clear on install for PWA fix
+self.addEventListener("install", (event) => {
+  console.log("[SW] v2.0.0 Installing - clearing old caches");
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          console.log("[SW] Deleting old cache:", cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => {
+      console.log("[SW] Old caches cleared, activating immediately");
+      return self.skipWaiting();
+    })
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  console.log("[SW] v2.0.0 Activated");
+  event.waitUntil(self.clients.claim());
 });
