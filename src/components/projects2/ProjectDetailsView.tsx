@@ -2369,6 +2369,17 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               return 'tasks' as const;
             })()}
             isSoloMode={!isTeamMode}
+            onCostsChange={(costs) => {
+              // === IMMEDIATE SYNC to centralFinancials (Dashboard reads from here) ===
+              const laborTotal = costs.labor.reduce((sum, l) => sum + (l.totalPrice || l.quantity * (l.unitPrice || 0)), 0);
+              const otherTotal = costs.other.reduce((sum, o) => sum + (o.totalPrice || o.quantity * (o.unitPrice || 0)), 0);
+              
+              // Update centralFinancials immediately for real-time Dashboard sync
+              projectActions.setCentralFinancials({
+                laborCost: laborTotal,
+                otherCost: otherTotal,
+              });
+            }}
             onGrandTotalChange={(newTotal) => {
               // Update summary.total_cost so header stays in sync
               setSummary(prev => prev ? { ...prev, total_cost: newTotal } : null);
