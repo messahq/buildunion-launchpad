@@ -623,9 +623,10 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   // Fetch project and summary
   useEffect(() => {
     let isMounted = true;
-    const controller = new AbortController();
     
     const loadProject = async () => {
+      if (!projectId) return;
+      
       setLoading(true);
       
       // CRITICAL: Reset central data to neutral state BEFORE loading new project
@@ -651,13 +652,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             .from("projects")
             .select("*")
             .eq("id", projectId)
-            .abortSignal(controller.signal)
             .maybeSingle(),
           supabase
             .from("project_summaries")
             .select("*")
             .eq("project_id", projectId)
-            .abortSignal(controller.signal)
             .maybeSingle()
         ]);
 
@@ -708,8 +707,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           }
         }
       } catch (error: any) {
-        // Ignore abort errors - they're expected on cleanup
-        if (error?.name === 'AbortError' || error?.message?.includes('abort')) return;
+        if (!isMounted) return;
         console.error("Error loading project:", error);
         toast.error("Failed to load project");
       } finally {
@@ -724,7 +722,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     
     return () => {
       isMounted = false;
-      controller.abort();
     };
   }, [projectId, onBack]);
 
