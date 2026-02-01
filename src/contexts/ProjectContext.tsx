@@ -900,6 +900,31 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     });
     dispatch({ type: "MARK_DIRTY", payload: "workType" });
     
+    // CRITICAL: First reset central data to ensure clean state
+    // This ensures no data from previous projects persists
+    dispatch({
+      type: "SET_CENTRAL_MATERIALS",
+      payload: {
+        items: [],
+        source: "template",
+      },
+    });
+    dispatch({
+      type: "SET_CENTRAL_FINANCIALS",
+      payload: {
+        materialCost: 0,
+        laborCost: 0,
+        otherCost: 0,
+        subtotal: 0,
+        taxAmount: 0,
+        grandTotal: 0,
+        markupPercent: 0,
+        markupAmount: 0,
+        grandTotalWithMarkup: 0,
+        isDraft: true,
+      },
+    });
+    
     // Smart mapping: Auto-load materials based on work type
     const workTypeId = workType.toLowerCase() as WorkTypeId;
     const confirmedArea = state.operationalTruth.confirmedArea.value || undefined;
@@ -929,6 +954,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             items: materials,
             source: "template",
           },
+        },
+      });
+      
+      // CRITICAL: Also set central materials from template
+      // This ensures Materials tab shows clean template data
+      dispatch({
+        type: "SET_CENTRAL_MATERIALS",
+        payload: {
+          items: materials,
+          source: "template",
+        },
+      });
+      
+      // Set initial labor cost in central financials
+      dispatch({
+        type: "SET_CENTRAL_FINANCIALS",
+        payload: {
+          laborCost: estimate.laborCost,
         },
       });
     }

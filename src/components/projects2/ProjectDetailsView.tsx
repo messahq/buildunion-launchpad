@@ -620,6 +620,23 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   useEffect(() => {
     const loadProject = async () => {
       setLoading(true);
+      
+      // CRITICAL: Reset central data to neutral state BEFORE loading new project
+      // This ensures no data from previous projects persists
+      projectActions.setCentralMaterials([], "template");
+      projectActions.setCentralFinancials({
+        materialCost: 0,
+        laborCost: 0,
+        otherCost: 0,
+        subtotal: 0,
+        taxAmount: 0,
+        grandTotal: 0,
+        markupPercent: 0,
+        markupAmount: 0,
+        grandTotalWithMarkup: 0,
+        isDraft: true,
+      });
+      
       try {
         // Fetch project and summary in parallel
         const [projectResult, summaryResult] = await Promise.all([
@@ -689,7 +706,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     };
 
     loadProject();
-  }, [projectId, onBack]);
+  }, [projectId, onBack, projectActions]);
 
   // Fetch user's company branding and name from bu_profiles
   useEffect(() => {
@@ -738,21 +755,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   // ==========================================
   // SYNC: Populate centralMaterials from DB on project load
   // This ensures Materials tab and Dashboard read from the same source
+  // Priority: 1. Saved line_items, 2. AI photo_estimate, 3. Work Type Template
   // ==========================================
   useEffect(() => {
     if (!summary || loading) return;
-    
-    // Don't overwrite if centralMaterials already has data from AI Analysis
-    if (projectState.centralMaterials.items.length > 0) {
-      console.log("[ProjectDetailsView] centralMaterials already populated, skipping sync");
-      return;
-    }
     
     // Helper to check if material is essential
     const essentialKeywords = ["flooring", "laminate", "tile", "drywall", "underlayment", "baseboard", "trim", "hardwood"];
     const checkEssential = (item: string) => essentialKeywords.some(k => item.toLowerCase().includes(k));
     
-    // Priority 1: Use saved line_items
+    // Priority 1: Use saved line_items (manual overrides from previous session)
     const savedLineItems = summary.line_items as { 
       materials?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number; baseQuantity?: number; isEssential?: boolean }>;
       labor?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number }>;
@@ -773,8 +785,18 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         wastePercentage: m.isEssential ?? checkEssential(m.item) ? 10 : 0,
       }));
       
-      console.log("[ProjectDetailsView] Syncing saved materials to centralMaterials:", centralItems.length);
+      console.log("[ProjectDetailsView] Loading saved materials to centralMaterials:", centralItems.length);
       projectActions.setCentralMaterials(centralItems, "manual");
+      
+      // Also load saved labor/other costs to centralFinancials
+      if (savedLineItems.labor && savedLineItems.labor.length > 0) {
+        const laborTotal = savedLineItems.labor.reduce((sum, l) => sum + (l.quantity * (l.unitPrice || 0)), 0);
+        projectActions.setCentralFinancials({ laborCost: laborTotal });
+      }
+      if (savedLineItems.other && savedLineItems.other.length > 0) {
+        const otherTotal = savedLineItems.other.reduce((sum, o) => sum + (o.quantity * (o.unitPrice || 0)), 0);
+        projectActions.setCentralFinancials({ otherCost: otherTotal });
+      }
       return;
     }
     
@@ -794,7 +816,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         wastePercentage: checkEssential(m.item) ? 10 : 0,
       }));
       
-      console.log("[ProjectDetailsView] Syncing AI materials to centralMaterials:", centralItems.length);
+      console.log("[ProjectDetailsView] Loading AI materials to centralMaterials:", centralItems.length);
       projectActions.setCentralMaterials(centralItems, "ai_analysis");
       
       // Also sync confirmed area if available
@@ -813,8 +835,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           detectedAt: new Date().toISOString(),
         });
       }
+      return;
     }
-  }, [summary, loading, projectState.centralMaterials.items.length, projectActions]);
+    
+    // Priority 3: centralMaterials stays empty (will be loaded from Work Type template when selected)
+    // This is the "neutral" state for new projects without AI analysis
+    console.log("[ProjectDetailsView] No saved or AI materials - centralMaterials stays neutral");
+  }, [summary, loading, projectActions]);
 
   // Extract stable values from summary for dependency tracking
   // This prevents infinite re-fetching when summary object reference changes
