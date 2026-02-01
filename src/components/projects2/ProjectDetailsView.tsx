@@ -2361,13 +2361,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               address: summary?.client_address || undefined,
             }}
             dataSource={(() => {
-              // Derive dataSource from centralMaterials.source
-              const centralSource = projectState.centralMaterials.source;
-              if (centralSource === "manual" || centralSource === "merged") return 'saved' as const;
-              if (centralSource === "ai_analysis") return 'ai' as const;
-              if (centralSource === "template") return 'ai' as const;
-              // Fallback check
-              if (projectState.centralMaterials.items.length > 0) return 'ai' as const;
+              // IMPORTANT: centralMaterials items are ALWAYS gross (waste-applied) values
+              // They should be used as-is without re-applying waste
+              // Only return 'ai' for fresh task-based data that hasn't been processed
+              if (projectState.centralMaterials.items.length > 0) {
+                // Central materials have been set - use as 'saved' (already gross)
+                return 'saved' as const;
+              }
               return 'tasks' as const;
             })()}
             isSoloMode={!isTeamMode}

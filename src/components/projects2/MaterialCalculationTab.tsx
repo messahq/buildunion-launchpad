@@ -682,6 +682,9 @@ export function MaterialCalculationTab({
                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                   <span style="font-size: 12px;">📦</span>
                   <h2 style="font-size: 12px; font-weight: 600; color: #1e40af;">Materials</h2>
+                  <span style="background: #fef3c7; color: #b45309; font-size: 8px; padding: 2px 6px; border-radius: 3px; font-weight: 500;">
+                    Waste: ${wastePercent}%
+                  </span>
                   <span style="margin-left: auto; font-weight: 600; color: #1e40af; font-size: 11px;">${formatCurrency(materialsTotal)}</span>
                 </div>
                 <table style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden;">
@@ -1303,7 +1306,7 @@ export function MaterialCalculationTab({
                     {materialItems.length}
                   </Badge>
                   <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800">
-                    {t("materials.wasteBuffer", "Waste")}: {(WASTE_PERCENTAGE * 100).toFixed(0)}%
+                    {t("materials.wasteBuffer", "Waste")}: {wastePercent.toFixed(0)}%
                   </Badge>
                 </CardTitle>
                 <div className="flex items-center gap-3">
