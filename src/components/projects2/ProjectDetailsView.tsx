@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -616,15 +616,22 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     enabled: !!project?.address,
   });
 
+  // Store projectActions in a ref to avoid dependency issues
+  const projectActionsRef = useRef(projectActions);
+  projectActionsRef.current = projectActions;
+
   // Fetch project and summary
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+    
     const loadProject = async () => {
       setLoading(true);
       
       // CRITICAL: Reset central data to neutral state BEFORE loading new project
       // This ensures no data from previous projects persists
-      projectActions.setCentralMaterials([], "template");
-      projectActions.setCentralFinancials({
+      projectActionsRef.current.setCentralMaterials([], "template");
+      projectActionsRef.current.setCentralFinancials({
         materialCost: 0,
         laborCost: 0,
         otherCost: 0,
@@ -644,13 +651,17 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             .from("projects")
             .select("*")
             .eq("id", projectId)
+            .abortSignal(controller.signal)
             .maybeSingle(),
           supabase
             .from("project_summaries")
             .select("*")
             .eq("project_id", projectId)
+            .abortSignal(controller.signal)
             .maybeSingle()
         ]);
+
+        if (!isMounted) return;
 
         if (projectResult.error) throw projectResult.error;
         if (!projectResult.data) {
@@ -696,17 +707,26 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             setObcAcknowledged(true);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
+        // Ignore abort errors - they're expected on cleanup
+        if (error?.name === 'AbortError' || error?.message?.includes('abort')) return;
         console.error("Error loading project:", error);
         toast.error("Failed to load project");
       } finally {
-        setLoading(false);
-        setIsLoadingOverrides(false);
+        if (isMounted) {
+          setLoading(false);
+          setIsLoadingOverrides(false);
+        }
       }
     };
 
     loadProject();
-  }, [projectId, onBack, projectActions]);
+    
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [projectId, onBack]);
 
   // Fetch user's company branding and name from bu_profiles
   useEffect(() => {
@@ -786,16 +806,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       }));
       
       console.log("[ProjectDetailsView] Loading saved materials to centralMaterials:", centralItems.length);
-      projectActions.setCentralMaterials(centralItems, "manual");
+      projectActionsRef.current.setCentralMaterials(centralItems, "manual");
       
       // Also load saved labor/other costs to centralFinancials
       if (savedLineItems.labor && savedLineItems.labor.length > 0) {
         const laborTotal = savedLineItems.labor.reduce((sum, l) => sum + (l.quantity * (l.unitPrice || 0)), 0);
-        projectActions.setCentralFinancials({ laborCost: laborTotal });
+        projectActionsRef.current.setCentralFinancials({ laborCost: laborTotal });
       }
       if (savedLineItems.other && savedLineItems.other.length > 0) {
         const otherTotal = savedLineItems.other.reduce((sum, o) => sum + (o.quantity * (o.unitPrice || 0)), 0);
-        projectActions.setCentralFinancials({ otherCost: otherTotal });
+        projectActionsRef.current.setCentralFinancials({ otherCost: otherTotal });
       }
       return;
     }
@@ -817,7 +837,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       }));
       
       console.log("[ProjectDetailsView] Loading AI materials to centralMaterials:", centralItems.length);
-      projectActions.setCentralMaterials(centralItems, "ai_analysis");
+      projectActionsRef.current.setCentralMaterials(centralItems, "ai_analysis");
       
       // Also sync confirmed area if available
       const detectedArea = photoEstimate.area;
@@ -827,7 +847,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
           ? rawConfidence 
           : "medium" as const;
         
-        projectActions.updatePillar("confirmedArea", {
+        projectActionsRef.current.updatePillar("confirmedArea", {
           value: detectedArea,
           unit: photoEstimate.areaUnit || "sq ft",
           source: "ai-photo",
@@ -841,7 +861,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     // Priority 3: centralMaterials stays empty (will be loaded from Work Type template when selected)
     // This is the "neutral" state for new projects without AI analysis
     console.log("[ProjectDetailsView] No saved or AI materials - centralMaterials stays neutral");
-  }, [summary, loading, projectActions]);
+  }, [summary, loading]);
 
   // Extract stable values from summary for dependency tracking
   // This prevents infinite re-fetching when summary object reference changes
