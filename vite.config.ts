@@ -31,13 +31,20 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         orientation: "portrait-primary",
         scope: "/",
-        start_url: "/buildunion",
+        start_url: "/",
+        id: "buildunion-pwa-v2",
         icons: [
           {
             src: "/pwa-icons/icon-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable"
+          },
+          {
+            src: "/pwa-icons/icon-512x512.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any"
           }
         ],
         categories: ["business", "productivity"],
