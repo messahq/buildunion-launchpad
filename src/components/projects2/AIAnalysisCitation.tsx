@@ -98,8 +98,10 @@ export interface AIAnalysisCitationProps {
   // Editable callbacks
   onAreaChange?: (newArea: number | null) => void;
   onMaterialsChange?: (materials: Array<{ item: string; quantity: number; unit: string }>) => void;
-  // Atomic save callback for Power Modal
-  onPowerSaveAndSync?: (area: number, materials: Array<{ item: string; quantity: number; unit: string }>) => Promise<void>;
+  // Atomic save callback for Power Modal (includes wastePercent)
+  onPowerSaveAndSync?: (area: number, materials: Array<{ item: string; quantity: number; unit: string }>, wastePercent: number) => Promise<void>;
+  // Current waste percent from saved data
+  currentWastePercent?: number;
   // Re-analyze callback
   onReanalyze?: () => void;
   isReanalyzing?: boolean;
@@ -311,6 +313,7 @@ export default function AIAnalysisCitation({
   onAreaChange,
   onMaterialsChange,
   onPowerSaveAndSync,
+  currentWastePercent = 10,
   onReanalyze,
   isReanalyzing = false,
 }: AIAnalysisCitationProps) {
@@ -350,8 +353,8 @@ export default function AIAnalysisCitation({
     setEditableMaterials([...materials]);
   }, [materials]);
   
-  // Calculate waste buffer (10%)
-  const wasteBuffer = editableArea ? Math.round(editableArea * 0.1) : 0;
+  // Calculate waste buffer based on currentWastePercent
+  const wasteBuffer = editableArea ? Math.round(editableArea * (currentWastePercent / 100)) : 0;
   const totalWithWaste = editableArea ? editableArea + wasteBuffer : null;
   
   // Handlers - recalculate materials when area changes
@@ -563,7 +566,7 @@ export default function AIAnalysisCitation({
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-muted-foreground">+{wasteBuffer.toLocaleString()} {areaUnit}</span>
                       <Badge className="text-[10px] bg-amber-500/20 text-amber-600 border-amber-500/50">
-                        +10% waste
+                        +{currentWastePercent}% waste
                       </Badge>
                       <span className="text-foreground font-semibold">= {totalWithWaste?.toLocaleString()} {areaUnit}</span>
                     </div>
@@ -652,7 +655,7 @@ export default function AIAnalysisCitation({
             {areaLastModified && editableMaterials.length > 0 && (
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-2 pt-2 border-t border-muted/30">
                 <RefreshCw className="h-3 w-3" />
-                <span>Synced with {editableArea?.toLocaleString()} {areaUnit} @ {areaLastModified.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>Synced with {editableArea?.toLocaleString()} {areaUnit} (+{currentWastePercent}% waste) @ {areaLastModified.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
             )}
           </div>
@@ -860,9 +863,10 @@ export default function AIAnalysisCitation({
           currentArea={editableArea}
           areaUnit={areaUnit}
           currentMaterials={editableMaterials}
+          currentWastePercent={currentWastePercent}
           surfaceType={surfaceType}
-          onSaveAndSync={async (area, mats) => {
-            await onPowerSaveAndSync(area, mats);
+          onSaveAndSync={async (area, mats, wastePercent) => {
+            await onPowerSaveAndSync(area, mats, wastePercent);
             // Update local state after successful save
             setEditableArea(area);
             setEditableMaterials(mats);

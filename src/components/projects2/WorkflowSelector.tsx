@@ -44,6 +44,7 @@ export interface AIAnalysisResult {
   projectSize: "small" | "medium" | "large";
   projectSizeReason: string;
   confidence: "low" | "medium" | "high";
+  wastePercent?: number; // Custom waste percentage (default 10%)
   // Dual-engine output for synthesis
   dualEngineOutput?: DualEngineOutput;
   synthesisResult?: SynthesisResult;
@@ -67,8 +68,8 @@ export interface WorkflowSelectorProps {
   // Re-analyze callback
   onReanalyze?: () => void;
   isReanalyzing?: boolean;
-  // Atomic save callback for Power Modal
-  onPowerSaveAndSync?: (area: number, materials: Array<{ item: string; quantity: number; unit: string }>) => Promise<void>;
+  // Atomic save callback for Power Modal (includes wastePercent)
+  onPowerSaveAndSync?: (area: number, materials: Array<{ item: string; quantity: number; unit: string }>, wastePercent: number) => Promise<void>;
 }
 
 // Tier-based feature mapping
@@ -305,6 +306,7 @@ export default function WorkflowSelector({
           surfaceType={analysisResult.surfaceType}
           roomType={analysisResult.roomType}
           hasBlueprint={analysisResult.hasBlueprint}
+          currentWastePercent={analysisResult.wastePercent ?? 10}
           onAreaChange={(newArea) => {
             setEditableArea(newArea);
             setHasUserEdits(true);
@@ -313,13 +315,13 @@ export default function WorkflowSelector({
             setEditableMaterials(newMaterials);
             setHasUserEdits(true);
           }}
-          onPowerSaveAndSync={onPowerSaveAndSync ? async (area, materials) => {
+          onPowerSaveAndSync={onPowerSaveAndSync ? async (area, materials, wastePercent) => {
             // Update local state first
             setEditableArea(area);
             setEditableMaterials(materials);
             setHasUserEdits(true);
             // Then call parent handler for database sync
-            await onPowerSaveAndSync(area, materials);
+            await onPowerSaveAndSync(area, materials, wastePercent);
           } : undefined}
           onReanalyze={onReanalyze}
           isReanalyzing={isReanalyzing}
