@@ -18,9 +18,7 @@ import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectFacts from "./pages/BuildUnionProjectFacts";
 import BuildUnionPricing from "./pages/BuildUnionPricing";
 import BuildUnionProfile from "./pages/BuildUnionProfile";
-import BuildUnionQuickMode from "./pages/BuildUnionQuickMode";
 import BuildUnionProfileView from "./pages/BuildUnionProfileView";
-import BuildUnionProjectSummary from "./pages/BuildUnionProjectSummary";
 import BuildUnionCommunity from "./pages/BuildUnionCommunity";
 import BuildUnionMessages from "./pages/BuildUnionMessages";
 import BuildUnionForum from "./pages/BuildUnionForum";
@@ -63,9 +61,7 @@ const App = () => (
                       <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
                       <Route path="/buildunion/profile" element={<BuildUnionProfile />} />
                       <Route path="/buildunion/profile/view" element={<BuildUnionProfileView />} />
-                      <Route path="/buildunion/quick" element={<BuildUnionQuickMode />} />
-                      <Route path="/buildunion/summary" element={<BuildUnionProjectSummary />} />
-                      <Route path="/buildunion/summary/:summaryId" element={<BuildUnionProjectSummary />} />
+                      {/* Legacy Quick Mode and Summary routes removed - using Projects2 workflow */}
                       <Route path="/buildunion/community" element={<BuildUnionCommunity />} />
                       <Route path="/buildunion/forum" element={<BuildUnionForum />} />
                       <Route path="/buildunion/members" element={<BuildUnionMembers />} />
