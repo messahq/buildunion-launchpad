@@ -156,18 +156,24 @@ export function useDashboardFinancialSync() {
         operationalTruth.confirmedArea.value
       );
       
-      // Get estimated labor from template
-      const workTypeId = page1.workType?.toLowerCase() as WorkTypeId | undefined;
-      const template = workTypeId ? getTemplateByWorkType(workTypeId) : null;
-      const laborCost = template ? calculateTemplateEstimate(template).laborCost : 0;
-      
       // Write to CENTRAL (not page2)
       actions.setCentralMaterials(enrichedMaterials, "ai_analysis");
-      actions.setCentralFinancials({ laborCost });
+      
+      // IMPORTANT: Only set laborCost from template if there's no existing laborCost
+      // This prevents overwriting saved labor values
+      if (!centralFinancials.laborCost || centralFinancials.laborCost === 0) {
+        const workTypeId = page1.workType?.toLowerCase() as WorkTypeId | undefined;
+        const template = workTypeId ? getTemplateByWorkType(workTypeId) : null;
+        const templateLaborCost = template ? calculateTemplateEstimate(template).laborCost : 0;
+        if (templateLaborCost > 0) {
+          actions.setCentralFinancials({ laborCost: templateLaborCost });
+        }
+      }
     }
   }, [
     operationalTruth.materials.items,
     centralMaterials.items,
+    centralFinancials.laborCost,
     page1.workType,
     operationalTruth.confirmedArea.value,
     actions,
