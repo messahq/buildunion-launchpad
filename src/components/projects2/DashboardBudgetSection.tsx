@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Tooltip,
   TooltipContent,
@@ -31,6 +34,9 @@ import {
   Lock,
   FileCheck,
   Plus,
+  Percent,
+  Users,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -41,6 +47,9 @@ import { CitationSource } from "@/contexts/ProjectContext.types";
 interface DashboardBudgetSectionProps {
   currency?: string;
   onFinalizeProject?: () => Promise<void>;
+  projectMode?: "solo" | "team";
+  markupPercent?: number;
+  onMarkupChange?: (percent: number) => void;
 }
 
 // Icon map for citation sources
@@ -56,6 +65,9 @@ const CITATION_ICONS: Record<CitationSource, React.ReactNode> = {
 export function DashboardBudgetSection({
   currency = "CAD",
   onFinalizeProject,
+  projectMode = "solo",
+  markupPercent = 0,
+  onMarkupChange,
 }: DashboardBudgetSectionProps) {
   const { t } = useTranslation();
   const {
@@ -74,6 +86,13 @@ export function DashboardBudgetSection({
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialWithCitation | null>(null);
   const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [localMarkup, setLocalMarkup] = useState(markupPercent);
+
+  const isTeamMode = projectMode === "team";
+
+  // Calculate markup amount (Team mode only)
+  const markupAmount = isTeamMode ? financialSummary.subtotal * (localMarkup / 100) : 0;
+  const grandTotalWithMarkup = financialSummary.grandTotal + markupAmount;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-CA", {
@@ -94,6 +113,11 @@ export function DashboardBudgetSection({
     newValue: string | number
   ) => {
     updateMaterialFromDashboard(materialId, field, newValue);
+  };
+
+  const handleMarkupChange = (value: number[]) => {
+    setLocalMarkup(value[0]);
+    onMarkupChange?.(value[0]);
   };
 
   const handleFinalize = async () => {
@@ -118,6 +142,19 @@ export function DashboardBudgetSection({
               {t("dashboard.budget.title", "Budget Overview")}
             </CardTitle>
             <div className="flex items-center gap-2">
+              {/* Mode Indicator Badge */}
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-xs",
+                  isTeamMode 
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                    : "bg-amber-50 text-amber-700 border-amber-200"
+                )}
+              >
+                {isTeamMode ? <Users className="w-3 h-3 mr-1" /> : <User className="w-3 h-3 mr-1" />}
+                {isTeamMode ? t("dashboard.budget.teamMode", "TEAM") : t("dashboard.budget.soloMode", "SOLO")}
+              </Badge>
               {/* Draft Status Badge */}
               {isDraft ? (
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
@@ -195,13 +232,46 @@ export function DashboardBudgetSection({
                 <p className="text-sm text-amber-700">{t("dashboard.budget.grandTotal", "Grand Total")} (incl. {(financialSummary.taxRate * 100).toFixed(0)}% tax)</p>
                 <p className="text-xs text-amber-500 mt-1">
                   {t("dashboard.budget.subtotal", "Subtotal")}: {formatCurrency(financialSummary.subtotal)} + {t("dashboard.budget.tax", "Tax")}: {formatCurrency(financialSummary.taxAmount)}
+                  {isTeamMode && localMarkup > 0 && (
+                    <> + {t("dashboard.budget.markup", "Markup")}: {formatCurrency(markupAmount)}</>
+                  )}
                 </p>
               </div>
               <p className="text-2xl font-bold text-amber-700">
-                {formatCurrency(financialSummary.grandTotal)}
+                {formatCurrency(isTeamMode ? grandTotalWithMarkup : financialSummary.grandTotal)}
               </p>
             </div>
           </div>
+
+          {/* Team Markup Engine - Only visible in Team Mode */}
+          {isTeamMode && (
+            <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-emerald-600" />
+                <Label className="text-sm font-medium text-emerald-700">
+                  {t("dashboard.budget.teamMarkup", "Team Profit Markup")}
+                </Label>
+                <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
+                  <Percent className="w-3 h-3 mr-1" />
+                  {localMarkup}%
+                </Badge>
+              </div>
+              <Slider
+                value={[localMarkup]}
+                onValueChange={handleMarkupChange}
+                max={50}
+                step={1}
+                className="[&_[role=slider]]:bg-emerald-500 [&_[role=slider]]:border-emerald-600"
+              />
+              <div className="flex justify-between text-xs text-emerald-600 mt-2">
+                <span>{t("dashboard.budget.noMarkup", "0% (Net)")}</span>
+                <span className="font-medium">
+                  +{formatCurrency(markupAmount)} {t("dashboard.budget.profit", "profit")}
+                </span>
+                <span>50% max</span>
+              </div>
+            </div>
+          )}
 
           <Separator />
 

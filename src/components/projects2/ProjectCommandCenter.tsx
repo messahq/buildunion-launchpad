@@ -1966,6 +1966,7 @@ export const ProjectCommandCenter = ({
           <DashboardBudgetSection 
             currency="CAD"
             onFinalizeProject={onCompleteProject}
+            projectMode={isSoloMode ? "solo" : "team"}
           />
 
           {/* Quick Action: AI Brief - with gradient background wrapper */}

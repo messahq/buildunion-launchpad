@@ -105,6 +105,19 @@ const BuildUnionQuickMode = () => {
 
   const isCreateFlow = searchParams.get("flow") === "create";
   const isPremium = subscription?.subscribed === true;
+  const isPro = subscription?.tier === "pro" || subscription?.tier === "premium" || subscription?.tier === "enterprise";
+  
+  // Solo/Team Mode Toggle State - persists to localStorage
+  const [projectMode, setProjectMode] = useState<"solo" | "team">(() => {
+    const stored = localStorage.getItem("quickModeProjectMode");
+    return (stored === "solo" || stored === "team") ? stored : "solo";
+  });
+  
+  // Persist mode changes
+  const handleModeChange = (mode: "solo" | "team") => {
+    setProjectMode(mode);
+    localStorage.setItem("quickModeProjectMode", mode);
+  };
   
   // Check for projectId and template params from Contracts tab
   const projectIdFromUrl = searchParams.get("projectId");
@@ -804,6 +817,7 @@ const BuildUnionQuickMode = () => {
                   collectedData={collectedData}
                   initialTemplate={templateFromUrl || undefined}
                   linkedProjectId={projectIdFromUrl || undefined}
+                  projectMode={projectMode}
                   projectData={loadedProjectData ? {
                     name: loadedProjectData.name,
                     address: loadedProjectData.address,

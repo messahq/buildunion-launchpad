@@ -905,5 +905,31 @@
     "delete": "Delete",
     "cancel": "Cancel",
     "save": "Save"
+  },
+  "dashboard": {
+    "budget": {
+      "title": "Budget Overview",
+      "draft": "DRAFT",
+      "finalized": "FINALIZED",
+      "soloMode": "SOLO",
+      "teamMode": "TEAM",
+      "sources": "Data Sources",
+      "materials": "Materials",
+      "labor": "Labor",
+      "other": "Other",
+      "items": "items",
+      "grandTotal": "Grand Total",
+      "subtotal": "Subtotal",
+      "tax": "Tax",
+      "markup": "Markup",
+      "materialsList": "Materials",
+      "noMaterials": "No materials yet",
+      "clickToEdit": "Click to edit",
+      "finalizing": "Finalizing...",
+      "finalizeProject": "Finalize Project",
+      "teamMarkup": "Team Profit Markup",
+      "noMarkup": "0% (Net)",
+      "profit": "profit"
+    }
   }
 }

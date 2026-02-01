@@ -905,5 +905,31 @@
     "delete": "Törlés",
     "cancel": "Mégse",
     "save": "Mentés"
+  },
+  "dashboard": {
+    "budget": {
+      "title": "Költségvetés Áttekintés",
+      "draft": "TERVEZET",
+      "finalized": "VÉGLEGESÍTVE",
+      "soloMode": "EGYÉNI",
+      "teamMode": "CSAPAT",
+      "sources": "Adatforrások",
+      "materials": "Anyagok",
+      "labor": "Munka",
+      "other": "Egyéb",
+      "items": "tétel",
+      "grandTotal": "Végösszeg",
+      "subtotal": "Részösszeg",
+      "tax": "Adó",
+      "markup": "Árrés",
+      "materialsList": "Anyagok",
+      "noMaterials": "Még nincsenek anyagok",
+      "clickToEdit": "Kattints a szerkesztéshez",
+      "finalizing": "Véglegesítés...",
+      "finalizeProject": "Projekt véglegesítése",
+      "teamMarkup": "Csapat Profit Árrés",
+      "noMarkup": "0% (Nettó)",
+      "profit": "profit"
+    }
   }
 }
