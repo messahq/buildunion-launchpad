@@ -275,7 +275,8 @@ function generateTasksFromMaterials(
   projectId: string,
   userId: string,
   materials: Array<{ item: string; quantity: number; unit: string }>,
-  projectDescription?: string
+  projectDescription?: string,
+  userName?: string
 ): TaskWithBudget[] {
   // Use demo materials if no AI-detected ones, but they're fully editable
   const effectiveMaterials = materials && materials.length > 0 
@@ -285,6 +286,9 @@ function generateTasksFromMaterials(
   if (effectiveMaterials.length === 0) {
     return [];
   }
+  
+  // Dynamic assignee name - use provided name or fallback
+  const assigneeName = userName || "You (Lead)";
 
   const now = new Date();
   const addDays = (date: Date, days: number) => {
@@ -317,7 +321,7 @@ function generateTasksFromMaterials(
       unit_price: 0,
       quantity: material.quantity,
       total_cost: 0,
-      assignee_name: "Project Owner",
+      assignee_name: assigneeName,
     });
 
     // Phase 1: Preparation - Deliver materials
@@ -336,7 +340,7 @@ function generateTasksFromMaterials(
       unit_price: 0,
       quantity: material.quantity,
       total_cost: 0,
-      assignee_name: "Project Owner",
+      assignee_name: assigneeName,
     });
 
     // Phase 2: Execution - Install materials
@@ -355,7 +359,7 @@ function generateTasksFromMaterials(
       unit_price: 0,
       quantity: material.quantity,
       total_cost: 0,
-      assignee_name: "Project Owner",
+      assignee_name: assigneeName,
     });
 
     // Phase 3: Verification - Verify installation
@@ -374,7 +378,7 @@ function generateTasksFromMaterials(
       unit_price: 0,
       quantity: 1,
       total_cost: 0,
-      assignee_name: "Project Owner",
+      assignee_name: assigneeName,
     });
   });
 
@@ -506,6 +510,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const [obcAcknowledged, setObcAcknowledged] = useState(false);
   const [forceCalendarView, setForceCalendarView] = useState(false);
   const [isLoadingOverrides, setIsLoadingOverrides] = useState(true);
+  const [currentUserName, setCurrentUserName] = useState<string>("You (Lead)");
   const [baselineState, setBaselineState] = useState<{
     snapshot: OperationalTruth | null;
     lockedAt: string | null;
@@ -682,34 +687,49 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     loadProject();
   }, [projectId, onBack]);
 
-  // Fetch user's company branding from bu_profiles
+  // Fetch user's company branding and name from bu_profiles
   useEffect(() => {
-    const fetchCompanyBranding = async () => {
+    const fetchUserProfile = async () => {
       if (!user?.id) return;
       
       try {
-        const { data: buProfile } = await supabase
-          .from("bu_profiles")
-          .select("company_name, company_logo_url, phone, company_website")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        // Fetch from both profiles and bu_profiles for comprehensive name resolution
+        const [profileResult, buProfileResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("bu_profiles")
+            .select("company_name, company_logo_url, phone, company_website")
+            .eq("user_id", user.id)
+            .maybeSingle()
+        ]);
 
-        if (buProfile) {
+        // Set user's display name - prefer profile full_name, then metadata, then email prefix
+        const displayName = profileResult.data?.full_name 
+          || user.user_metadata?.full_name 
+          || user.email?.split("@")[0] 
+          || "You (Lead)";
+        setCurrentUserName(displayName);
+
+        if (buProfileResult.data) {
           setCompanyBranding({
-            name: buProfile.company_name || undefined,
-            logoUrl: buProfile.company_logo_url,
-            phone: buProfile.phone,
+            name: buProfileResult.data.company_name || undefined,
+            logoUrl: buProfileResult.data.company_logo_url,
+            phone: buProfileResult.data.phone,
             email: user.email || undefined,
-            website: buProfile.company_website,
+            website: buProfileResult.data.company_website,
           });
         }
       } catch (error) {
-        console.error("Error fetching company branding:", error);
+        console.error("Error fetching user profile:", error);
       }
     };
 
-    fetchCompanyBranding();
-  }, [user?.id, user?.email]);
+    fetchUserProfile();
+  }, [user?.id, user?.email, user?.user_metadata?.full_name]);
 
   // Extract stable values from summary for dependency tracking
   // This prevents infinite re-fetching when summary object reference changes
@@ -795,7 +815,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               projectId,
               user.id,
               aiMats,
-              project?.description || undefined
+              project?.description || undefined,
+              currentUserName
             );
             
             if (generatedTasks.length > 0 && isMounted) {
@@ -833,7 +854,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                   unit_price: task.unit_price || 0,
                   quantity: task.quantity || 1,
                   total_cost: task.total_cost || 0,
-                  assignee_name: "Project Owner",
+                  assignee_name: currentUserName,
                   assignee_avatar: undefined,
                 }));
                 setTasks(enrichedInserted);
@@ -885,7 +906,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               unit_price: payload.new.unit_price || 0,
               quantity: payload.new.quantity || 1,
               total_cost: payload.new.total_cost || 0,
-              assignee_name: "Team Member",
+              assignee_name: currentUserName,
               assignee_avatar: undefined,
             } as TaskWithBudget;
             return [...prev, newTask];
