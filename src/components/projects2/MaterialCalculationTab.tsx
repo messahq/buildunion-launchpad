@@ -330,8 +330,13 @@ export function MaterialCalculationTab({
       return;
     }
     
-    // Skip if no meaningful change
-    const areaChanged = newArea && prevArea && Math.abs(newArea - prevArea) > 1;
+    // Detect meaningful changes:
+    // 1. Area changed from null to value (initial AI analysis)
+    // 2. Area changed from value to different value (Power Modal edit)
+    // 3. Waste percentage changed
+    const areaInitialized = !prevArea && newArea && newArea > 0;
+    const areaModified = prevArea && newArea && Math.abs(newArea - prevArea) > 1;
+    const areaChanged = areaInitialized || areaModified;
     const wasteChanged = newWaste !== prevWaste;
     
     if (!areaChanged && !wasteChanged) {
@@ -339,6 +344,8 @@ export function MaterialCalculationTab({
       prevWasteRef.current = newWaste;
       return;
     }
+    
+    console.log(`[MaterialsSync] baseArea: ${prevArea} -> ${newArea}, waste: ${prevWaste}% -> ${newWaste}% (initialized: ${areaInitialized})`);
     
     console.log(`[MaterialsSync] baseArea: ${prevArea} -> ${newArea}, waste: ${prevWaste}% -> ${newWaste}%`);
     
