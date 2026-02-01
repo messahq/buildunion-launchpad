@@ -179,8 +179,9 @@ export function MaterialCalculationTab({
   const [isExporting, setIsExporting] = useState(false);
   
   // Track previous baseArea for dynamic recalculation
-  const prevBaseAreaRef = useRef<number | null>(baseArea ?? null);
-  const prevWasteRef = useRef<number>(wastePercent);
+  // CRITICAL: Initialize with null to force first useEffect to detect area initialization
+  const prevBaseAreaRef = useRef<number | null>(null);
+  const prevWasteRef = useRef<number>(10); // Default waste, will be updated by useEffect
   
   // Dynamic waste percentage from props (allows live adjustment)
   const DYNAMIC_WASTE = wastePercent / 100;
