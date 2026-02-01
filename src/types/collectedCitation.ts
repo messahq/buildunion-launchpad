@@ -6,7 +6,7 @@ export interface CollectedCitation {
   documentName: string;
   documentType: 'log' | 'site_photo' | 'pdf' | 'blueprint' | 'image';
   contextSnippet: string;
-  linkedPillar?: 'area' | 'materials' | 'blueprint' | 'obc' | 'conflict' | 'mode' | 'size' | 'confidence';
+  linkedPillar?: 'area' | 'materials' | 'blueprint' | 'obc' | 'conflict' | 'mode' | 'size' | 'confidence' | 'tasks' | 'team';
   timestamp: string;
   filePath?: string;
   sourceType: 'USER' | 'PHOTO-AI' | 'CONFIG'; // Attribution for References section
