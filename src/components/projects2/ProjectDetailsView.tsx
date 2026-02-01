@@ -723,7 +723,8 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     return () => {
       isMounted = false;
     };
-  }, [projectId, onBack]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]); // Removed onBack - it's not stable and doesn't need to trigger reload
 
   // Fetch user's company branding and name from bu_profiles
   useEffect(() => {
