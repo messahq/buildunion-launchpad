@@ -1,25 +1,45 @@
-// ============================================
-// MATERIAL CALCULATION TAB
-// ============================================
-//
-// ==================== 3 IRON LAWS ====================
-//
-// 1. DYNAMIC CALCULATION (No Hardcoding):
-//    Essential material QTY = baseArea × (1 + wastePercent/100)
-//    When baseArea or wastePercent props change, quantities MUST recalculate.
-//    See: useEffect at lines ~320-390 for dynamic sync implementation.
-//
-// 2. STATE PERSISTENCE:
-//    dataSource='saved' → use quantities as-is (already includes waste)
-//    dataSource='ai'/'tasks' → apply waste calculation dynamically
-//    wastePercent prop comes from centralMaterials.wastePercent (loaded from DB)
-//
-// 3. DUAL LOGIC:
-//    - MATERIALS: Always show GROSS = baseArea × (1 + waste/100)
-//    - LABOR: Always show NET = baseArea (no waste - workers install actual area)
-//    See: createInitialLaborItems() for NET area logic
-//
-// =====================================================
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ████  PROTECTED ZONE - DO NOT MODIFY WITHOUT EXPLICIT APPROVAL  ████   ║
+ * ║                                                                           ║
+ * ║                    MATERIAL CALCULATION TAB                               ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                           ║
+ * ║   ⚠️  THIS MODULE IMPLEMENTS THE 3 IRON LAWS (3 VASTÖRVÉNY)  ⚠️          ║
+ * ║                                                                           ║
+ * ║   These rules are IMMUTABLE. Any future UI changes or new categories     ║
+ * ║   MUST preserve these calculations. Violating these laws will break      ║
+ * ║   the entire cost estimation system.                                     ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                           ║
+ * ║   IRON LAW #1 - DYNAMIC CALCULATION (No Hardcoding):                     ║
+ * ║     Materials QTY = baseArea × (1 + wastePercent/100)                    ║
+ * ║     The quantity is NEVER a static number - it's always computed.        ║
+ * ║     When baseArea or wastePercent props change, quantities MUST update.  ║
+ * ║                                                                           ║
+ * ║   IRON LAW #2 - STATE PERSISTENCE:                                       ║
+ * ║     The wastePercent is saved to DB (ai_workflow_config.userEdits)       ║
+ * ║     and restored on project load, overriding the 10% default.            ║
+ * ║     dataSource='saved' → quantities already include waste                ║
+ * ║     dataSource='ai'/'tasks' → apply waste calculation dynamically        ║
+ * ║                                                                           ║
+ * ║   IRON LAW #3 - DUAL LOGIC:                                              ║
+ * ║     • Materials → GROSS quantity (base + waste buffer)                   ║
+ * ║     • Labor → NET quantity (base area only, in sq ft)                    ║
+ * ║     Workers install actual area, not the waste buffer.                   ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                           ║
+ * ║   TEST: If changing Waste% doesn't update Materials QTY, code is broken. ║
+ * ║                                                                           ║
+ * ║   Last verified: 2026-02-01                                              ║
+ * ║   Status: STABLE & FINALIZED                                             ║
+ * ║                                                                           ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
