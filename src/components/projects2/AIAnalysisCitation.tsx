@@ -932,6 +932,34 @@ export default function AIAnalysisCitation({
             )}
           </CollapsibleContent>
         </Collapsible>
+
+        {/* Re-analyze button at bottom of card */}
+        {onReanalyze && (
+          <div className="pt-4 border-t border-amber-500/20 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onReanalyze}
+              disabled={isReanalyzing}
+              className="w-full border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
+            >
+              {isReanalyzing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Reviewing dimensions...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Re-analyze with precision
+                </>
+              )}
+            </Button>
+            <p className="text-[10px] text-muted-foreground text-center mt-1">
+              Uses higher accuracy OCR and contextual validation
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
