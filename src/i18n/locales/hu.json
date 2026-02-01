@@ -840,5 +840,42 @@
         "description": "Beépített Ontario Building Code megfelelőségi ellenőrzések a projektjeid nyomon követésére."
       }
     }
+  },
+  "dashboard": {
+    "quickEdit": {
+      "title": "Gyorsszerkesztés",
+      "description": "Anyag részletek szerkesztése. Változások globálisan szinkronizálódnak.",
+      "draftWarning": "Tervezet mód - A változások [MANUAL-OVERRIDE] jelzést kapnak",
+      "itemName": "Tétel neve",
+      "quantity": "Mennyiség",
+      "unitPrice": "Egységár ($)",
+      "unit": "Egység",
+      "total": "Összesen",
+      "changed": "Módosítva innen",
+      "citationId": "Hivatkozás ID"
+    },
+    "budget": {
+      "title": "Költségvetés Áttekintés",
+      "draft": "TERVEZET",
+      "finalized": "VÉGLEGESÍTVE",
+      "sources": "Adatforrások",
+      "materials": "Anyagok",
+      "labor": "Munkaerő",
+      "other": "Egyéb",
+      "items": "tétel",
+      "grandTotal": "Végösszeg",
+      "subtotal": "Részösszeg",
+      "tax": "Adó",
+      "materialsList": "Anyagok",
+      "clickToEdit": "Kattints a szerkesztéshez",
+      "noMaterials": "Még nincsenek anyagok",
+      "finalizing": "Véglegesítés...",
+      "finalizeProject": "Projekt Véglegesítése"
+    }
+  },
+  "common": {
+    "delete": "Törlés",
+    "cancel": "Mégse",
+    "save": "Mentés"
   }
 }
