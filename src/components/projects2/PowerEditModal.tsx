@@ -75,11 +75,26 @@ export default function PowerEditModal({
   const [showAddMaterial, setShowAddMaterial] = useState(false);
 
   // Sync local state when modal opens or props change
+  // IMPORTANT: Initialize essential materials with GROSS values (base * (1 + waste%))
   useEffect(() => {
     if (open) {
-      setEditArea(currentArea || 0);
-      setEditMaterials([...currentMaterials]);
-      setWastePercent(currentWastePercent);
+      const baseArea = currentArea || 0;
+      const waste = currentWastePercent;
+      
+      // Calculate gross quantities for essential materials
+      const grossMaterials = currentMaterials.map(mat => {
+        const isEssential = isEssentialMaterial(mat.item) || mat.unit === "sq ft" || mat.unit === "sq m";
+        if (isEssential && baseArea > 0) {
+          // Calculate gross quantity: baseArea * (1 + waste%)
+          const grossQuantity = Math.ceil(baseArea * (1 + waste / 100));
+          return { ...mat, quantity: grossQuantity };
+        }
+        return { ...mat };
+      });
+      
+      setEditArea(baseArea);
+      setEditMaterials(grossMaterials);
+      setWastePercent(waste);
       setHasChanges(false);
     }
   }, [open, currentArea, currentMaterials, currentWastePercent]);
