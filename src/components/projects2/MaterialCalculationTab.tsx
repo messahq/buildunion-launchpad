@@ -1238,6 +1238,9 @@ export function MaterialCalculationTab({
                   <Badge variant="secondary" className="ml-2 text-xs">
                     {materialItems.length}
                   </Badge>
+                  <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800">
+                    {t("materials.wasteBuffer", "Waste")}: {(WASTE_PERCENTAGE * 100).toFixed(0)}%
+                  </Badge>
                 </CardTitle>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-blue-600">

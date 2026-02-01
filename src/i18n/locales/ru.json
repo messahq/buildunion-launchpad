@@ -770,5 +770,11 @@
         "description": "Встроенные проверки соответствия Строительному кодексу Онтарио."
       }
     }
+  },
+  "materials": {
+    "wasteBuffer": "Отходы",
+    "materialsSection": "Материалы",
+    "laborSection": "Работа",
+    "otherSection": "Прочее"
   }
 }

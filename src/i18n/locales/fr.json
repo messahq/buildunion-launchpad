@@ -798,5 +798,11 @@
     "noMaterials": "Ajoutez des matériaux manuellement pour un projet personnalisé",
     "templateSource": "Modèle",
     "manualSource": "Manuel"
+  },
+  "materials": {
+    "wasteBuffer": "Perte",
+    "materialsSection": "Matériaux",
+    "laborSection": "Main d'œuvre",
+    "otherSection": "Autres"
   }
 }

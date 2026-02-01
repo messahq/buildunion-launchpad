@@ -798,5 +798,11 @@
     "noMaterials": "Materialien manuell für benutzerdefiniertes Projekt hinzufügen",
     "templateSource": "Vorlage",
     "manualSource": "Manuell"
+  },
+  "materials": {
+    "wasteBuffer": "Verschnitt",
+    "materialsSection": "Materialien",
+    "laborSection": "Arbeit",
+    "otherSection": "Sonstiges"
   }
 }

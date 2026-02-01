@@ -901,6 +901,12 @@
     "templateSource": "Sablon",
     "manualSource": "Kézi"
   },
+  "materials": {
+    "wasteBuffer": "Veszteség",
+    "materialsSection": "Anyagok",
+    "laborSection": "Munka",
+    "otherSection": "Egyéb"
+  },
   "common": {
     "delete": "Törlés",
     "cancel": "Mégse",

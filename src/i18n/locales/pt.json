@@ -786,5 +786,11 @@
     "materialsLoaded": "{{count}} materiais carregados do modelo",
     "templateSource": "Modelo",
     "manualSource": "Manual"
+  },
+  "materials": {
+    "wasteBuffer": "Desperdício",
+    "materialsSection": "Materiais",
+    "laborSection": "Mão de Obra",
+    "otherSection": "Outros"
   }
 }

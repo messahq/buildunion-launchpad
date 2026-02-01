@@ -770,5 +770,11 @@
         "description": "ओंटारियो बिल्डिंग कोड अनुपालन की अंतर्निहित जांच।"
       }
     }
+  },
+  "materials": {
+    "wasteBuffer": "अपव्यय",
+    "materialsSection": "सामग्री",
+    "laborSection": "श्रम",
+    "otherSection": "अन्य"
   }
 }

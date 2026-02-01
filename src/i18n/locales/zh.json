@@ -787,5 +787,11 @@
     "materialsLoaded": "已从模板加载{{count}}种材料",
     "templateSource": "模板",
     "manualSource": "手动"
+  },
+  "materials": {
+    "wasteBuffer": "损耗",
+    "materialsSection": "材料",
+    "laborSection": "人工",
+    "otherSection": "其他"
   }
 }
