@@ -395,9 +395,35 @@ function projectReducer(state: ProjectContextState, action: ProjectAction): Proj
       // Calculate ratio for recalculation
       let recalculatedItems = state.centralMaterials.items;
       
-      // If area changed, recalculate all essential materials proportionally
-      if (newArea && prevArea && newArea !== prevArea) {
-        const areaRatio = newArea / prevArea;
+      // CRITICAL: Handle INITIALIZATION case when prevArea is null/undefined but newArea exists
+      // This happens after first AI analysis - essential materials need to use detected area
+      const isInitialization = !prevArea && newArea && newArea > 0;
+      const isAreaChange = prevArea && newArea && Math.abs(newArea - prevArea) > 1;
+      
+      if (isInitialization) {
+        // INITIALIZATION: Set essential sq ft materials to use newArea as base quantity
+        // Then apply waste percentage on top
+        console.log(`[ProjectContext] Initializing essential materials with baseArea: ${newArea}`);
+        recalculatedItems = recalculatedItems.map(m => {
+          const isSqFtUnit = m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft");
+          // Only set area-based essential materials to the detected area
+          if ((m.isEssential || isSqFtUnit) && isSqFtUnit) {
+            // Use newArea as the BASE quantity, then apply waste
+            const baseQty = newArea;
+            const grossQty = Math.ceil(baseQty * (1 + (newWaste / 100)));
+            console.log(`[ProjectContext] ${m.item}: ${m.quantity} -> ${grossQty} (base: ${baseQty}, +${newWaste}% waste)`);
+            return {
+              ...m,
+              quantity: grossQty,
+              totalPrice: grossQty * (m.unitPrice || 0),
+              originalValue: baseQty, // Store the NET (base) quantity
+            };
+          }
+          return m;
+        });
+      } else if (isAreaChange) {
+        // MODIFICATION: Scale existing quantities proportionally
+        const areaRatio = newArea! / prevArea!;
         recalculatedItems = recalculatedItems.map(m => {
           // Only scale essential materials (area-based)
           if (m.isEssential || m.unit === "sq ft" || m.unit === "m²") {
@@ -414,7 +440,7 @@ function projectReducer(state: ProjectContextState, action: ProjectAction): Proj
       }
       
       // If waste percent changed, recalculate essential material quantities
-      if (newWaste !== prevWaste) {
+      if (newWaste !== prevWaste && !isInitialization) {
         const wasteRatio = (100 + newWaste) / (100 + prevWaste);
         recalculatedItems = recalculatedItems.map(m => {
           if (m.isEssential || m.unit === "sq ft" || m.unit === "m²") {
