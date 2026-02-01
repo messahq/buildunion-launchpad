@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
@@ -21,8 +20,6 @@ import {
   Pencil,
   Check,
   X,
-  Plus,
-  Trash2,
   Crown,
   Loader2,
   RefreshCw,
@@ -324,10 +321,6 @@ export default function AIAnalysisCitation({
   const [editableArea, setEditableArea] = useState<number | null>(detectedArea ?? null);
   const [editableMaterials, setEditableMaterials] = useState([...materials]);
   const [isEditingArea, setIsEditingArea] = useState(false);
-  const [editingMaterialIndex, setEditingMaterialIndex] = useState<number | null>(null);
-  const [newMaterialName, setNewMaterialName] = useState("");
-  const [showAddMaterial, setShowAddMaterial] = useState(false);
-  const [isEditingMaterials, setIsEditingMaterials] = useState(false);
   
   // Track if area was manually edited (not just user-provided initially, but actively edited)
   const [wasAreaManuallyEdited, setWasAreaManuallyEdited] = useState(false);
@@ -382,32 +375,7 @@ export default function AIAnalysisCitation({
     }
   };
 
-  const handleMaterialQuantityChange = (index: number, newQuantity: number) => {
-    const updated = [...editableMaterials];
-    updated[index].quantity = newQuantity;
-    setEditableMaterials(updated);
-    setEditingMaterialIndex(null);
-    onMaterialsChange?.(updated);
-  };
-
-  const handleAddMaterial = () => {
-    if (!newMaterialName.trim()) return;
-    
-    const updated = [
-      ...editableMaterials,
-      { item: newMaterialName.trim(), quantity: 1, unit: "units" }
-    ];
-    setEditableMaterials(updated);
-    setNewMaterialName("");
-    setShowAddMaterial(false);
-    onMaterialsChange?.(updated);
-  };
-
-  const handleRemoveMaterial = (index: number) => {
-    const updated = editableMaterials.filter((_, i) => i !== index);
-    setEditableMaterials(updated);
-    onMaterialsChange?.(updated);
-  };
+  // Materials editing removed - use Power Modal instead
   
   // Generate citation sources from analysis data - pass edit flag and timestamp
   const citationSources = generateCitationSources(
@@ -653,7 +621,7 @@ export default function AIAnalysisCitation({
             )}
           </div>
 
-          {/* Materials with Citation - EDITABLE */}
+          {/* Materials with Citation - READ ONLY (edit via Power Modal) */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -663,118 +631,21 @@ export default function AIAnalysisCitation({
                 </span>
                 {materialsSource && <SourceTag source={materialsSource} />}
               </div>
-              <div className="flex items-center gap-1">
-                {!isEditingMaterials ? (
-                  <button 
-                    onClick={() => setIsEditingMaterials(true)}
-                    className="p-1 hover:bg-muted rounded transition-colors"
-                    title="Edit materials"
-                  >
-                    <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => setIsEditingMaterials(false)}
-                    className="p-1 hover:bg-green-500/20 rounded transition-colors text-green-600"
-                    title="Done editing"
-                  >
-                    <Check className="h-3 w-3" />
-                  </button>
-                )}
-                <button 
-                  onClick={() => setShowAddMaterial(true)}
-                  className="p-1 hover:bg-muted rounded transition-colors"
-                  title="Add material"
-                >
-                  <Plus className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                </button>
-              </div>
             </div>
-            
-            {/* Add material input */}
-            {showAddMaterial && (
-              <div className="flex items-center gap-2 mb-2">
-                <Input
-                  value={newMaterialName}
-                  onChange={(e) => setNewMaterialName(e.target.value)}
-                  placeholder="Material name..."
-                  className="h-7 text-xs flex-1"
-                  autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && handleAddMaterial()}
-                />
-                <button 
-                  onClick={handleAddMaterial}
-                  className="p-1 hover:bg-green-500/20 rounded text-green-600"
-                >
-                  <Check className="h-3 w-3" />
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowAddMaterial(false);
-                    setNewMaterialName("");
-                  }}
-                  className="p-1 hover:bg-red-500/20 rounded text-red-600"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
             
             {editableMaterials.length > 0 ? (
               <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
                 {editableMaterials.map((m, i) => (
-                  <div key={i} className="text-xs flex items-center justify-between group">
+                  <div key={i} className="text-xs flex items-center justify-between">
                     <span className="text-foreground truncate max-w-[120px]">{m.item}</span>
-                    
-                    {editingMaterialIndex === i || isEditingMaterials ? (
-                      <div className="flex items-center gap-1">
-                        <NumericInput
-                          value={editableMaterials[i].quantity}
-                          onChange={(val) => {
-                            const updated = [...editableMaterials];
-                            updated[i].quantity = val;
-                            setEditableMaterials(updated);
-                            onMaterialsChange?.(updated);
-                          }}
-                          className="h-6 w-16 text-xs"
-                        />
-                        <span className="text-muted-foreground">{m.unit}</span>
-                        {isEditingMaterials && (
-                          <button 
-                            onClick={() => handleRemoveMaterial(i)}
-                            className="p-0.5 hover:bg-red-500/20 rounded text-red-500"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">{m.quantity} {m.unit}</span>
-                        <button 
-                          onClick={() => setEditingMaterialIndex(i)}
-                          className="p-0.5 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Pencil className="h-3 w-3 text-muted-foreground" />
-                        </button>
-                        <button 
-                          onClick={() => handleRemoveMaterial(i)}
-                          className="p-0.5 hover:bg-red-500/20 rounded opacity-0 group-hover:opacity-100 transition-opacity text-red-500"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
+                    <span className="text-muted-foreground">{m.quantity} {m.unit}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <button 
-                onClick={() => setShowAddMaterial(true)}
-                className="text-sm text-primary hover:underline"
-              >
-                + Add materials
-              </button>
+              <span className="text-xs text-muted-foreground italic">
+                No materials detected
+              </span>
             )}
             
             {/* Materials calculation timestamp - shows when materials were synced with area */}
