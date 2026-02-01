@@ -121,19 +121,20 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
     try {
       const newMode = projectMode === "solo" ? "team" : "solo";
       
-      // If project already exists, just update mode
-      if (projectId) {
-        const { error } = await supabase
-          .from("project_summaries")
-          .update({ mode: newMode })
-          .eq("id", summaryId);
+      // Update mode in database
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({ mode: newMode })
+        .eq("id", summaryId);
 
-        if (error) throw error;
-        
-        onModeChange(newMode);
-        toast.success(`Switched to ${newMode === "team" ? "Team" : "Solo"} mode`);
-      } else if (newMode === "team") {
-        // Need to create project - navigate to project creation
+      if (error) throw error;
+      
+      // Always call onModeChange to update parent state - DO NOT navigate away
+      onModeChange(newMode);
+      toast.success(`Switched to ${newMode === "team" ? "Team" : "Solo"} mode`);
+      
+      // Only navigate to project creation when switching to Team WITHOUT existing project
+      if (newMode === "team" && !projectId) {
         toast.success("Opening Team Project setup...");
         navigate(`/buildunion/workspace/new?fromQuickMode=${encodeURIComponent(JSON.stringify({ summaryId }))}`);
       }
