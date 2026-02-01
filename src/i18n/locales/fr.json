@@ -770,5 +770,33 @@
         "description": "Vérifications intégrées de conformité au Code du Bâtiment de l'Ontario."
       }
     }
+  },
+  "workTypes": {
+    "title": "Sélectionner le Type de Travail",
+    "subtitle": "Choisissez le type de travail pour un mappage intelligent des matériaux",
+    "framing": "Charpente",
+    "framingDesc": "Ossature en bois ou métal pour murs, plafonds et structures",
+    "insulation": "Isolation",
+    "insulationDesc": "Installation d'isolation thermique et acoustique",
+    "taping": "Jointoiement",
+    "tapingDesc": "Bande, jointoiement et finition de cloisons sèches",
+    "painting": "Peinture",
+    "paintingDesc": "Services de peinture intérieure et extérieure",
+    "flooring": "Revêtement de Sol",
+    "flooringDesc": "Installation de parquet, stratifié, carrelage ou vinyle",
+    "plumbing": "Plomberie",
+    "plumbingDesc": "Installation de tuyaux, raccords et drains",
+    "electrical": "Électricité",
+    "electricalDesc": "Câblage, prises, tableaux et installation d'éclairage",
+    "hvac": "CVC",
+    "hvacDesc": "Chauffage, ventilation et climatisation",
+    "demolition": "Démolition",
+    "demolitionDesc": "Démontage, enlèvement et élimination des matériaux existants",
+    "other": "Autre / Personnalisé",
+    "otherDesc": "Type de projet personnalisé avec saisie manuelle des matériaux",
+    "materialsLoaded": "{{count}} matériaux chargés depuis le modèle",
+    "noMaterials": "Ajoutez des matériaux manuellement pour un projet personnalisé",
+    "templateSource": "Modèle",
+    "manualSource": "Manuel"
   }
 }

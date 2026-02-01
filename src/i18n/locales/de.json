@@ -770,5 +770,33 @@
         "description": "Integrierte Konformitätsprüfungen für den Ontario Building Code."
       }
     }
+  },
+  "workTypes": {
+    "title": "Arbeitstyp Auswählen",
+    "subtitle": "Wählen Sie den Arbeitstyp für intelligente Materialzuordnung",
+    "framing": "Rahmenarbeiten",
+    "framingDesc": "Holz- oder Metallrahmen für Wände, Decken und Strukturen",
+    "insulation": "Dämmung",
+    "insulationDesc": "Wärme- und Schalldämmung Installation",
+    "taping": "Verspachteln",
+    "tapingDesc": "Trockenbau Bandieren, Verspachteln und Abschluss",
+    "painting": "Malerarbeiten",
+    "paintingDesc": "Innen- und Außenmalerarbeiten",
+    "flooring": "Bodenbelag",
+    "flooringDesc": "Parkett, Laminat, Fliesen oder Vinyl Installation",
+    "plumbing": "Sanitär",
+    "plumbingDesc": "Rohrinstallation, Armaturen und Abflussarbeiten",
+    "electrical": "Elektrik",
+    "electricalDesc": "Verkabelung, Steckdosen, Verteiler und Beleuchtung",
+    "hvac": "HLK",
+    "hvacDesc": "Heizung, Lüftung und Klimaanlage",
+    "demolition": "Abriss",
+    "demolitionDesc": "Abriss, Entfernung und Entsorgung vorhandener Materialien",
+    "other": "Andere / Benutzerdefiniert",
+    "otherDesc": "Benutzerdefinierter Projekttyp mit manueller Materialeingabe",
+    "materialsLoaded": "{{count}} Materialien aus Vorlage geladen",
+    "noMaterials": "Materialien manuell für benutzerdefiniertes Projekt hinzufügen",
+    "templateSource": "Vorlage",
+    "manualSource": "Manuell"
   }
 }

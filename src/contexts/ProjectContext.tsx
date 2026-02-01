@@ -27,6 +27,13 @@ import {
   WORK_TYPE_CATEGORIES,
   detectWorkTypeCategory,
 } from "./ProjectContext.types";
+import {
+  WorkTypeId,
+  mapWorkTypeToMaterials,
+  getTemplateByWorkType,
+  calculateTemplateEstimate,
+  TORONTO_WORK_TYPES,
+} from "@/lib/workTypeTemplates";
 
 // ============================================
 // INITIAL STATES
@@ -717,29 +724,74 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setWorkType = useCallback((workType: string, category: string) => {
+    const workTypeCategory = category || detectWorkTypeCategory(workType);
+    
     dispatch({
       type: "SET_PAGE1",
       payload: {
         workType,
-        workTypeCategory: category || detectWorkTypeCategory(workType),
+        workTypeCategory,
       },
     });
     dispatch({ type: "MARK_DIRTY", payload: "workType" });
-  }, []);
+    
+    // Smart mapping: Auto-load materials based on work type
+    const workTypeId = workType.toLowerCase() as WorkTypeId;
+    const confirmedArea = state.operationalTruth.confirmedArea.value || undefined;
+    const materials = mapWorkTypeToMaterials(workTypeId, confirmedArea);
+    
+    if (materials.length > 0) {
+      // Get labor estimate from template
+      const template = getTemplateByWorkType(workTypeId);
+      const estimate = template ? calculateTemplateEstimate(template) : { laborCost: 0 };
+      
+      dispatch({
+        type: "SET_PAGE2",
+        payload: {
+          materials,
+          estimatedLaborCost: estimate.laborCost,
+          lastModifiedSource: materials[0].citationSource,
+        },
+      });
+      
+      // Update operational truth materials count
+      dispatch({
+        type: "UPDATE_PILLAR",
+        payload: {
+          pillar: "materials",
+          value: {
+            count: materials.length,
+            items: materials,
+            source: "template",
+          },
+        },
+      });
+    }
+  }, [state.operationalTruth.confirmedArea.value]);
 
   const getRecommendedTemplates = useCallback((): BudgetTemplate[] => {
     const category = state.page1.workTypeCategory || "general";
     const templateIds = WORK_TYPE_CATEGORIES[category] || WORK_TYPE_CATEGORIES["general"];
     
-    // Return mock templates for now - will be replaced with actual template loading
-    return templateIds.map(id => ({
-      id,
-      name: id.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
-      description: `Template for ${id.replace(/-/g, " ")} projects`,
-      category,
-      materials: [],
-    }));
-  }, [state.page1.workTypeCategory]);
+    // Map to BudgetTemplate format using real Toronto work types
+    return TORONTO_WORK_TYPES.filter(wt => wt.id !== "other").map(wt => {
+      const template = getTemplateByWorkType(wt.id);
+      const materials = template 
+        ? mapWorkTypeToMaterials(wt.id, state.operationalTruth.confirmedArea.value || undefined)
+        : [];
+      
+      return {
+        id: wt.id,
+        name: wt.name,
+        description: wt.description,
+        category: wt.id,
+        icon: wt.icon,
+        materials,
+        estimatedArea: state.operationalTruth.confirmedArea.value || undefined,
+        areaUnit: state.operationalTruth.confirmedArea.unit,
+      };
+    });
+  }, [state.page1.workTypeCategory, state.operationalTruth.confirmedArea]);
 
   const setPage2Data = useCallback((data: Partial<Page2State>) => {
     dispatch({ type: "SET_PAGE2", payload: data });

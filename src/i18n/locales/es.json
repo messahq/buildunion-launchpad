@@ -770,5 +770,33 @@
         "description": "Verificaciones integradas de cumplimiento del Código de Construcción de Ontario."
       }
     }
+  },
+  "workTypes": {
+    "title": "Seleccionar Tipo de Trabajo",
+    "subtitle": "Elige el tipo de trabajo para mapeo inteligente de materiales",
+    "framing": "Estructura",
+    "framingDesc": "Estructura de madera o metal para paredes, techos y estructuras",
+    "insulation": "Aislamiento",
+    "insulationDesc": "Instalación de aislamiento térmico y acústico",
+    "taping": "Enlucido",
+    "tapingDesc": "Encintado, enlucido y acabado de paneles de yeso",
+    "painting": "Pintura",
+    "paintingDesc": "Servicios de pintura interior y exterior",
+    "flooring": "Pisos",
+    "flooringDesc": "Instalación de pisos de madera, laminado, baldosas o vinilo",
+    "plumbing": "Plomería",
+    "plumbingDesc": "Instalación de tuberías, accesorios y desagües",
+    "electrical": "Electricidad",
+    "electricalDesc": "Cableado, enchufes, paneles e instalación de iluminación",
+    "hvac": "HVAC",
+    "hvacDesc": "Calefacción, ventilación y aire acondicionado",
+    "demolition": "Demolición",
+    "demolitionDesc": "Derribo, remoción y eliminación de materiales existentes",
+    "other": "Otro / Personalizado",
+    "otherDesc": "Tipo de proyecto personalizado con entrada manual de materiales",
+    "materialsLoaded": "{{count}} materiales cargados de la plantilla",
+    "noMaterials": "Agrega materiales manualmente para proyecto personalizado",
+    "templateSource": "Plantilla",
+    "manualSource": "Manual"
   }
 }
