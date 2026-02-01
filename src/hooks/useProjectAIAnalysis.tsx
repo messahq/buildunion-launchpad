@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, SubscriptionTier } from "@/hooks/useSubscription";
@@ -12,6 +12,7 @@ import {
   setCachedAIResult,
 } from "@/lib/aiCacheUtils";
 import { Json } from "@/integrations/supabase/types";
+import { useProjectContext } from "@/contexts/ProjectContext";
 
 // Project size type - determined by AI
 export type ProjectSize = "small" | "medium" | "large";
@@ -129,6 +130,7 @@ const getTierAnalysisConfig = (tier: SubscriptionTier) => {
 export const useProjectAIAnalysis = () => {
   const { session } = useAuth();
   const { subscription } = useSubscription();
+  const { actions } = useProjectContext();
   const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<string>("");
@@ -515,6 +517,41 @@ export const useProjectAIAnalysis = () => {
         cacheHash: cacheHash || undefined,
       };
       setResult(finalResult);
+      
+      // === SYNC TO CENTRAL MATERIALS (Dashboard reads from here) ===
+      if (analysisResult.estimate.materials && analysisResult.estimate.materials.length > 0) {
+        // Helper to determine if material is essential (needs waste buffer)
+        const essentialKeywords = ["flooring", "laminate", "tile", "drywall", "underlayment", "baseboard", "trim", "hardwood"];
+        const checkEssential = (item: string) => essentialKeywords.some(k => item.toLowerCase().includes(k));
+        
+        const centralItems = analysisResult.estimate.materials.map((m, index) => ({
+          id: `ai-mat-${index}-${Date.now()}`,
+          item: m.item,
+          quantity: m.quantity,
+          unit: m.unit,
+          source: "ai" as const,
+          citationSource: "ai_photo" as const,
+          citationId: `[AI-${index + 1}]`,
+          isEssential: checkEssential(m.item),
+          wastePercentage: checkEssential(m.item) ? 10 : 0,
+          notes: m.notes || "",
+        }));
+        
+        console.log("[AI Analysis] Syncing materials to centralMaterials:", centralItems.length);
+        actions.setCentralMaterials(centralItems, "ai_analysis");
+        
+        // Update operationalTruth.confirmedArea if available
+        const detectedArea = analysisResult.estimate.area || blueprintAnalysis?.detectedArea || null;
+        if (detectedArea !== null) {
+          actions.updatePillar("confirmedArea", {
+            value: detectedArea,
+            unit: analysisResult.estimate.areaUnit || "sq ft",
+            source: blueprintAnalysis?.detectedArea ? "ai-blueprint" : "ai-photo",
+            confidence: analysisResult.estimate.areaConfidence || "medium",
+            detectedAt: new Date().toISOString(),
+          });
+        }
+      }
 
       return finalResult;
     } catch (err) {
