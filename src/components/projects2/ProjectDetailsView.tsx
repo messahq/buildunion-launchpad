@@ -774,21 +774,42 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   // SYNC: Populate centralMaterials from DB on project load
   // This ensures Materials tab and Dashboard read from the same source
   // Priority: 1. Saved line_items, 2. AI photo_estimate, 3. Work Type Template
+  // CRITICAL: Use ref to prevent infinite re-loading loops
   // ==========================================
+  const materialsLoadedForSummaryRef = useRef<string | null>(null);
+  
+  // Extract stable identifiers to prevent object reference issues
+  const summaryIdForMaterials = summary?.id;
+  const savedLineItemsJson = summary?.line_items ? JSON.stringify(summary.line_items) : null;
+  const photoEstimateJson = summary?.photo_estimate ? JSON.stringify(summary.photo_estimate) : null;
+  const workflowConfigJson = summary?.ai_workflow_config ? JSON.stringify(summary.ai_workflow_config) : null;
+  
   useEffect(() => {
-    if (!summary || loading) return;
+    if (!summaryIdForMaterials || loading) return;
+    
+    // CRITICAL: Prevent re-loading if we've already loaded for this summary
+    // This breaks the infinite loop caused by setCentralMaterials triggering re-renders
+    const loadKey = `${summaryIdForMaterials}-${savedLineItemsJson?.slice(0, 50) || 'empty'}-${photoEstimateJson?.slice(0, 50) || 'empty'}`;
+    if (materialsLoadedForSummaryRef.current === loadKey) {
+      return; // Already loaded for this exact data state
+    }
+    materialsLoadedForSummaryRef.current = loadKey;
     
     // Helper to check if material is essential
     const essentialKeywords = ["flooring", "laminate", "tile", "drywall", "underlayment", "baseboard", "trim", "hardwood"];
     const checkEssential = (item: string) => essentialKeywords.some(k => item.toLowerCase().includes(k));
     
-    // Priority 1: Use saved line_items (manual overrides from previous session)
-    const savedLineItems = summary.line_items as { 
+    // Parse the JSON strings back to objects
+    const savedLineItems = savedLineItemsJson ? JSON.parse(savedLineItemsJson) as { 
       materials?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number; baseQuantity?: number; isEssential?: boolean }>;
       labor?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number }>;
       other?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number }>;
-    } | null;
+    } : null;
     
+    const photoEstimate = photoEstimateJson ? JSON.parse(photoEstimateJson) as PhotoEstimateData : undefined;
+    const workflowConfig = workflowConfigJson ? JSON.parse(workflowConfigJson) as { userEdits?: { wastePercent?: number; editedArea?: number } } : undefined;
+    
+    // Priority 1: Use saved line_items (manual overrides from previous session)
     if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
       const centralItems = savedLineItems.materials.map((m, index) => ({
         id: `saved-mat-${index}-${Date.now()}`,
@@ -796,7 +817,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         quantity: m.quantity,
         unit: m.unit,
         unitPrice: m.unitPrice || 0,
-        source: "manual" as const, // Saved data counts as manual
+        source: "manual" as const,
         citationSource: "manual_override" as const,
         citationId: `[SAVED-${index + 1}]`,
         isEssential: m.isEssential ?? checkEssential(m.item),
@@ -819,9 +840,6 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     }
     
     // Priority 2: Use AI-detected materials from photo_estimate
-    const photoEstimate = summary.photo_estimate as PhotoEstimateData | undefined;
-    const workflowConfig = summary.ai_workflow_config as { userEdits?: { wastePercent?: number; editedArea?: number } } | undefined;
-    
     if (photoEstimate?.materials && photoEstimate.materials.length > 0) {
       // Get wastePercent from userEdits (Power Modal saves here) or default to 10%
       const savedWastePercent = workflowConfig?.userEdits?.wastePercent ?? (photoEstimate as { wastePercent?: number }).wastePercent ?? 10;
@@ -871,7 +889,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     // Priority 3: centralMaterials stays empty (will be loaded from Work Type template when selected)
     // This is the "neutral" state for new projects without AI analysis
     console.log("[ProjectDetailsView] No saved or AI materials - centralMaterials stays neutral");
-  }, [summary, loading]);
+  }, [summaryIdForMaterials, savedLineItemsJson, photoEstimateJson, workflowConfigJson, loading]);
 
   // Extract stable values from summary for dependency tracking
   // This prevents infinite re-fetching when summary object reference changes
