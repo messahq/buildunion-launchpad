@@ -192,6 +192,7 @@ const BuildUnionProjects2 = () => {
   const [aiAnalysisForSelector, setAiAnalysisForSelector] = useState<AIAnalysisResult | null>(null);
 
   // Transform analysis result to WorkflowSelector format
+  // CRITICAL: Apply waste% to essential materials during transformation
   const transformToSelectorFormat = (result: typeof analysisResult): AIAnalysisResult | null => {
     if (!result) return null;
 
@@ -203,23 +204,52 @@ const BuildUnionProjects2 = () => {
       || synthesisResult?.operationalTruth?.confirmedArea 
       || null;
     
-    const materials = result.estimate.materials || [];
+    const rawMaterials = result.estimate.materials || [];
     const hasBlueprint = !!result.blueprintAnalysis?.extractedText;
+    
+    // Get waste percentage (default 10%) - check estimate or use default
+    const wastePercent = (result.estimate as { wastePercent?: number }).wastePercent ?? 10;
+    
+    // CRITICAL FIX: Apply waste% to essential sq ft materials BEFORE passing to WorkflowSelector
+    // This ensures the Materials list shows gross quantities (baseArea × 1.1) from first load
+    const essentialKeywords = ["flooring", "laminate", "tile", "drywall", "underlayment", "baseboard", "trim", "hardwood"];
+    const checkEssential = (item: string) => essentialKeywords.some(k => item.toLowerCase().includes(k));
+    
+    const materialsWithWaste = rawMaterials.slice(0, 10).map(m => {
+      const isEssential = checkEssential(m.item);
+      const isSqFtUnit = m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft");
+      
+      // Apply waste% to essential sq ft materials
+      const grossQuantity = (isEssential && isSqFtUnit) 
+        ? Math.ceil(m.quantity * (1 + wastePercent / 100))
+        : m.quantity;
+      
+      return { 
+        item: m.item, 
+        quantity: grossQuantity, // GROSS quantity with waste applied
+        unit: m.unit 
+      };
+    });
+    
+    console.log("[BuildUnionWorkspace] Transform with waste applied:", 
+      materialsWithWaste.map(m => `${m.item}: ${m.quantity}`), 
+      `wastePercent: ${wastePercent}%`);
     
     // Derive confidence from dual engine or fallback
     const confidence = dualEngineOutput?.gemini?.confidence 
-      || (materials.length > 3 ? "high" : area ? "medium" : "low");
+      || (rawMaterials.length > 3 ? "high" : area ? "medium" : "low");
 
     return {
       area,
       areaUnit: result.estimate.areaUnit || dualEngineOutput?.gemini?.areaUnit || "sq ft",
-      materials: materials.slice(0, 10).map(m => ({ item: m.item, quantity: m.quantity, unit: m.unit })),
+      materials: materialsWithWaste, // GROSS quantities with waste applied
       hasBlueprint,
       surfaceType: result.estimate.surfaceType || dualEngineOutput?.gemini?.surfaceType || "unknown",
       roomType: result.estimate.roomType || dualEngineOutput?.gemini?.roomType || "unknown",
       projectSize: projectSize as "small" | "medium" | "large",
       projectSizeReason: projectSizeReason || "AI analysis complete",
       confidence: confidence as "low" | "medium" | "high",
+      wastePercent, // Pass waste% for display
       // CRITICAL: Pass dual-engine data for citation display
       dualEngineOutput,
       synthesisResult,
