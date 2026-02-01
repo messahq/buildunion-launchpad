@@ -820,7 +820,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     
     // Priority 2: Use AI-detected materials from photo_estimate
     const photoEstimate = summary.photo_estimate as PhotoEstimateData | undefined;
+    const workflowConfig = summary.ai_workflow_config as { userEdits?: { wastePercent?: number; editedArea?: number } } | undefined;
+    
     if (photoEstimate?.materials && photoEstimate.materials.length > 0) {
+      // Get wastePercent from userEdits (Power Modal saves here) or default to 10%
+      const savedWastePercent = workflowConfig?.userEdits?.wastePercent ?? (photoEstimate as { wastePercent?: number }).wastePercent ?? 10;
+      const detectedArea = photoEstimate.area || workflowConfig?.userEdits?.editedArea;
+      
       const centralItems = photoEstimate.materials.map((m, index) => ({
         id: `ai-mat-${index}-${Date.now()}`,
         item: m.item,
@@ -831,14 +837,20 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         citationSource: "ai_photo" as const,
         citationId: `[AI-${index + 1}]`,
         isEssential: checkEssential(m.item),
-        wastePercentage: checkEssential(m.item) ? 10 : 0,
+        wastePercentage: checkEssential(m.item) ? savedWastePercent : 0,
       }));
       
-      console.log("[ProjectDetailsView] Loading AI materials to centralMaterials:", centralItems.length);
+      console.log("[ProjectDetailsView] Loading AI materials to centralMaterials:", centralItems.length, "wastePercent:", savedWastePercent);
       projectActionsRef.current.setCentralMaterials(centralItems, "ai_analysis");
       
+      // IMPORTANT: Set wastePercent and baseArea AFTER materials are loaded
+      if (detectedArea) {
+        projectActionsRef.current.setWasteAndArea(savedWastePercent, detectedArea);
+      } else {
+        projectActionsRef.current.setWasteAndArea(savedWastePercent, undefined);
+      }
+      
       // Also sync confirmed area if available
-      const detectedArea = photoEstimate.area;
       if (detectedArea) {
         const rawConfidence = photoEstimate.areaConfidence || "medium";
         const confidence = (rawConfidence === "high" || rawConfidence === "medium" || rawConfidence === "low") 
@@ -2361,12 +2373,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               address: summary?.client_address || undefined,
             }}
             dataSource={(() => {
-              // IMPORTANT: centralMaterials items are ALWAYS gross (waste-applied) values
-              // They should be used as-is without re-applying waste
-              // Only return 'ai' for fresh task-based data that hasn't been processed
-              if (projectState.centralMaterials.items.length > 0) {
-                // Central materials have been set - use as 'saved' (already gross)
+              // Determine dataSource based on centralMaterials source:
+              // - "manual" or "merged": GROSS values already stored -> 'saved'
+              // - "ai_analysis" or "template": BASE values -> 'ai' (apply waste)
+              const source = projectState.centralMaterials.source;
+              if (source === "manual" || source === "merged") {
                 return 'saved' as const;
+              }
+              if (projectState.centralMaterials.items.length > 0) {
+                // AI analysis or template data - apply waste calculation
+                return 'ai' as const;
               }
               return 'tasks' as const;
             })()}
