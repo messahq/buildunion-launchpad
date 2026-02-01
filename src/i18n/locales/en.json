@@ -840,5 +840,42 @@
         "description": "Built-in Ontario Building Code compliance checks to keep your projects on track."
       }
     }
+  },
+  "dashboard": {
+    "quickEdit": {
+      "title": "Quick Edit Material",
+      "description": "Edit material details. Changes sync globally.",
+      "draftWarning": "Draft Mode - Changes will be marked as [MANUAL-OVERRIDE]",
+      "itemName": "Item Name",
+      "quantity": "Quantity",
+      "unitPrice": "Unit Price ($)",
+      "unit": "Unit",
+      "total": "Total",
+      "changed": "Changed from",
+      "citationId": "Citation ID"
+    },
+    "budget": {
+      "title": "Budget Overview",
+      "draft": "DRAFT",
+      "finalized": "FINALIZED",
+      "sources": "Data Sources",
+      "materials": "Materials",
+      "labor": "Labor",
+      "other": "Other",
+      "items": "items",
+      "grandTotal": "Grand Total",
+      "subtotal": "Subtotal",
+      "tax": "Tax",
+      "materialsList": "Materials",
+      "clickToEdit": "Click to edit",
+      "noMaterials": "No materials yet",
+      "finalizing": "Finalizing...",
+      "finalizeProject": "Finalize Project"
+    }
+  },
+  "common": {
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 }
