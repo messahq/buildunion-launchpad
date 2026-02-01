@@ -373,12 +373,13 @@ const BuildUnionProjects2 = () => {
   };
 
   // Handle atomic save from Power Modal - synchronized area & materials update
+  // IRON LAW #2: State Persistence - wastePercent saved to DB and loaded on project open
   const handlePowerSaveAndSync = async (area: number, materials: Array<{ item: string; quantity: number; unit: string }>, wastePercent: number = 10) => {
     if (!createdProjectId || !aiAnalysisForSelector) {
       throw new Error("No project available for save");
     }
     
-    console.log("[PowerSaveAndSync] Starting atomic save:", { area, materialsCount: materials.length, wastePercent });
+    console.log("[IRON LAW #2] PowerSaveAndSync - Persisting to DB:", { area, materialsCount: materials.length, wastePercent });
     
     try {
       // Prepare updated photo estimate with user edits

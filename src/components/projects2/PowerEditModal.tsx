@@ -1,3 +1,27 @@
+// ============================================
+// POWER EDIT MODAL
+// Atomic Area & Materials & Waste % Editor
+// ============================================
+//
+// ==================== 3 IRON LAWS ====================
+//
+// 1. DYNAMIC CALCULATION:
+//    When waste% changes → ALL essential materials recalculate
+//    Formula: QTY = baseArea × (1 + wastePercent/100)
+//    See: handleWastePercentChange() for live recalculation
+//
+// 2. STATE PERSISTENCE:
+//    wastePercent saved to BOTH:
+//    - photo_estimate.wastePercent
+//    - ai_workflow_config.userEdits.wastePercent
+//    This ensures it loads correctly on project reload.
+//
+// 3. DUAL LOGIC:
+//    Materials use GROSS (with waste), Labor uses NET (base only)
+//    This modal only edits materials - labor is handled separately.
+//
+// =====================================================
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";

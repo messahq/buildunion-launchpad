@@ -1,3 +1,26 @@
+// ============================================
+// MATERIAL CALCULATION TAB
+// ============================================
+//
+// ==================== 3 IRON LAWS ====================
+//
+// 1. DYNAMIC CALCULATION (No Hardcoding):
+//    Essential material QTY = baseArea × (1 + wastePercent/100)
+//    When baseArea or wastePercent props change, quantities MUST recalculate.
+//    See: useEffect at lines ~320-390 for dynamic sync implementation.
+//
+// 2. STATE PERSISTENCE:
+//    dataSource='saved' → use quantities as-is (already includes waste)
+//    dataSource='ai'/'tasks' → apply waste calculation dynamically
+//    wastePercent prop comes from centralMaterials.wastePercent (loaded from DB)
+//
+// 3. DUAL LOGIC:
+//    - MATERIALS: Always show GROSS = baseArea × (1 + waste/100)
+//    - LABOR: Always show NET = baseArea (no waste - workers install actual area)
+//    See: createInitialLaborItems() for NET area logic
+//
+// =====================================================
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -346,20 +369,18 @@ export function MaterialCalculationTab({
       return;
     }
     
-    console.log(`[MaterialsSync] baseArea: ${prevArea} -> ${newArea}, waste: ${prevWaste}% -> ${newWaste}% (initialized: ${areaInitialized})`);
+    console.log(`[IRON LAW #1] Dynamic recalc: baseArea=${prevArea}→${newArea}, waste=${prevWaste}%→${newWaste}%`);
     
-    console.log(`[MaterialsSync] baseArea: ${prevArea} -> ${newArea}, waste: ${prevWaste}% -> ${newWaste}%`);
-    
-    // Recalculate essential sq ft materials using the NEW baseArea
+    // IRON LAW #1: Recalculate essential sq ft materials using the NEW baseArea
     setMaterialItems(prev => prev.map(item => {
       const isSqFtUnit = item.unit?.toLowerCase().includes("sq") || item.unit?.toLowerCase().includes("ft");
       
       if (item.isEssential && isSqFtUnit && newArea && newArea > 0) {
-        // Use the NEW baseArea as the authoritative NET quantity
+        // IRON LAW #1: QTY = baseArea × (1 + wastePercent/100)
         const newBaseQty = newArea;
         const newGrossQty = Math.ceil(newBaseQty * (1 + (newWaste / 100)));
         
-        console.log(`[MaterialsSync] ${item.item}: base=${newBaseQty}, gross=${newGrossQty} (${newWaste}% waste)`);
+        console.log(`[IRON LAW #1] ${item.item}: NET=${newBaseQty} → GROSS=${newGrossQty} (+${newWaste}% waste)`);
         
         return {
           ...item,
@@ -371,11 +392,12 @@ export function MaterialCalculationTab({
       return item;
     }));
     
-    // Also update labor items to use NET area
+    // IRON LAW #3: Update labor items to use NET area (no waste buffer for labor)
     setLaborItems(prev => prev.map(item => {
       const isSqFtUnit = item.unit?.toLowerCase().includes("sq") || item.unit?.toLowerCase().includes("ft");
       
       if (isSqFtUnit && newArea && newArea > 0) {
+        console.log(`[IRON LAW #3] Labor ${item.item}: NET area = ${newArea} (no waste)`);
         return {
           ...item,
           quantity: newArea, // Labor uses NET area (no waste)
