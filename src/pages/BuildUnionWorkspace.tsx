@@ -312,7 +312,7 @@ const BuildUnionProjects2 = () => {
       const description = questionnaireData?.answers?.description || "";
       const workType = questionnaireData?.answers?.workType || null;
       
-      // Force refresh to bypass cache
+      // Use precision mode with force refresh for re-analysis
       const result = await analyzeProject({
         projectId: createdProjectId,
         images: reanalyzeImages,
@@ -320,13 +320,14 @@ const BuildUnionProjects2 = () => {
         description,
         workType,
         forceRefresh: true, // Force skip cache
+        precisionMode: true, // Use enhanced OCR and contextual validation
       });
       
       if (result) {
         const selectorData = transformToSelectorFormat(result);
         if (selectorData) {
           setAiAnalysisForSelector(selectorData);
-          toast.success("Re-analysis complete!", {
+          toast.success("Precision re-analysis complete!", {
             description: `Detected area: ${selectorData.area || "Not found"} ${selectorData.areaUnit}`
           });
         }

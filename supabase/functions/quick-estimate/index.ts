@@ -379,6 +379,102 @@ Even partial text like "...1302..." should be captured as a potential area.`;
   }
 }
 
+// ============================================
+// PRECISION MODE: CONTEXTUAL AREA VALIDATION
+// Validates detected areas against context clues
+// ============================================
+
+interface ContextualValidation {
+  isValid: boolean;
+  suggestedCorrection: number | null;
+  reason: string;
+  confidence: "high" | "medium" | "low";
+}
+
+async function validateAreaWithContext(
+  detectedArea: number | null,
+  ocrResult: OCRResult,
+  description: string,
+  image: string,
+  apiKey: string
+): Promise<ContextualValidation> {
+  // If no area detected, nothing to validate
+  if (!detectedArea || detectedArea <= 0) {
+    return {
+      isValid: false,
+      suggestedCorrection: null,
+      reason: "No area detected",
+      confidence: "low"
+    };
+  }
+
+  // Check if there are multiple area values from OCR - might indicate misread
+  const ocrAreas = ocrResult.areaValues || [];
+  const largerAreas = ocrAreas.filter(a => a.value > detectedArea && a.value < 50000);
+  
+  // If OCR found a significantly larger area value, the smaller one might be wrong
+  if (largerAreas.length > 0) {
+    const maxOcrArea = Math.max(...largerAreas.map(a => a.value));
+    // Check if detected area is suspiciously small (e.g., 350 vs 1350)
+    if (detectedArea < maxOcrArea * 0.5) {
+      console.log(`[PRECISION] Detected ${detectedArea} but OCR found larger value ${maxOcrArea}`);
+      return {
+        isValid: false,
+        suggestedCorrection: maxOcrArea,
+        reason: `Detected ${detectedArea} sq ft but OCR found ${maxOcrArea} sq ft which may be correct`,
+        confidence: "medium"
+      };
+    }
+  }
+
+  // Context validation: Check if area makes sense for described project
+  const desc = (description || "").toLowerCase();
+  
+  // Full floor/house should be at least 500 sq ft typically
+  const isFullFloorProject = desc.includes("full floor") || 
+                             desc.includes("entire floor") || 
+                             desc.includes("whole floor") ||
+                             desc.includes("teljes szint") ||
+                             desc.includes("egész emelet") ||
+                             desc.includes("full house") ||
+                             desc.includes("teljes ház");
+  
+  if (isFullFloorProject && detectedArea < 500) {
+    // Check OCR for larger values
+    const largerOcrValue = ocrAreas.find(a => a.value >= 500 && a.value < 10000);
+    return {
+      isValid: false,
+      suggestedCorrection: largerOcrValue?.value || null,
+      reason: `${detectedArea} sq ft seems too small for a full floor project. Typical minimum is 500+ sq ft.`,
+      confidence: "medium"
+    };
+  }
+
+  // Check for digit truncation (e.g., 1350 → 350)
+  // If area is under 1000 and OCR has a value that's (area + 1000)
+  if (detectedArea < 1000) {
+    const possibleMisread = ocrAreas.find(a => 
+      Math.abs(a.value - (detectedArea + 1000)) < 100 ||
+      Math.abs(a.value - (detectedArea + 10000)) < 1000
+    );
+    if (possibleMisread) {
+      return {
+        isValid: false,
+        suggestedCorrection: possibleMisread.value,
+        reason: `${detectedArea} might be truncated. Found ${possibleMisread.value} in OCR data.`,
+        confidence: "medium"
+      };
+    }
+  }
+
+  return {
+    isValid: true,
+    suggestedCorrection: null,
+    reason: "Area appears valid",
+    confidence: "high"
+  };
+}
+
 // STEP 1: Gemini Visual Analysis - Model selected by tier
 async function geminiVisualAnalysis(
   image: string, 
@@ -1551,7 +1647,7 @@ serve(async (req) => {
   }
 
   try {
-    const { image, description, type, isPremium, tier, filterAnswers, aiTriggers } = await req.json();
+    const { image, description, type, isPremium, tier, filterAnswers, aiTriggers, precisionMode } = await req.json();
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
@@ -1565,7 +1661,10 @@ serve(async (req) => {
       userTier = "premium";
     }
     
-    console.log(`Processing ${type} request... (Tier: ${userTier})`);
+    // Precision mode upgrade: use higher quality models for OCR
+    const effectiveTier = precisionMode ? "premium" : userTier;
+    
+    console.log(`Processing ${type} request... (Tier: ${userTier}, Precision: ${precisionMode || false})`);
     
     // Log filter data if provided
     if (filterAnswers) {
@@ -1576,12 +1675,14 @@ serve(async (req) => {
     }
 
     // Select models based on tier and filter answers
-    const modelConfig = selectModelsForTier(userTier, filterAnswers);
+    // Use effective tier for precision mode (premium models for OCR)
+    const modelConfig = selectModelsForTier(effectiveTier, filterAnswers);
     
     // === STRUCTURED LOGGING FOR MONITORING ===
     const logEntry = {
       event: modelConfig.runDualEngine ? "dual_engine_call" : "single_engine_call",
       tier: userTier,
+      precisionMode: precisionMode || false,
       timestamp: new Date().toISOString(),
       models: {
         visual: modelConfig.visualModel,
@@ -1643,6 +1744,37 @@ serve(async (req) => {
           permitRequired: obcData.permitRequired,
         };
       }
+    }
+
+    // === PRECISION MODE: CONTEXTUAL AREA VALIDATION ===
+    if (precisionMode && result.estimate) {
+      console.log("[PRECISION] Running contextual area validation...");
+      
+      // Run OCR for validation data
+      const ocrResult = await dedicatedOCRPass(image, apiKey, modelConfig);
+      const detectedArea = result.estimate.area;
+      
+      const validation = await validateAreaWithContext(
+        detectedArea,
+        ocrResult,
+        description,
+        image,
+        apiKey
+      );
+      
+      console.log("[PRECISION] Validation result:", validation);
+      
+      // If validation suggests a correction, apply it
+      if (!validation.isValid && validation.suggestedCorrection) {
+        console.log(`[PRECISION] Correcting area from ${detectedArea} to ${validation.suggestedCorrection}`);
+        result.estimate.area = validation.suggestedCorrection;
+        result.estimate.areaConfidence = "high";
+        result.estimate.precisionCorrected = true;
+        result.estimate.precisionNote = validation.reason;
+      }
+      
+      // Add precision validation info to result
+      result.estimate.precisionValidation = validation;
     }
 
     // Add tier info to response for transparency
