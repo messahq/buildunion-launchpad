@@ -90,6 +90,7 @@ import ReactMarkdown from "react-markdown";
 import { saveDocumentToProject, saveAIBriefToProject, saveReportToProject } from "@/lib/documentUtils";
 import CitationRegistry from "@/components/citations/CitationRegistry";
 import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
+import { DashboardBudgetSection } from "./DashboardBudgetSection";
 
 // ============================================
 // DATA SOURCE STATUS TYPES
@@ -1960,6 +1961,12 @@ export const ProjectCommandCenter = ({
               </Tooltip>
             </div>
           )}
+
+          {/* Dashboard Budget Section - Financial Overview from Page 2 */}
+          <DashboardBudgetSection 
+            currency="CAD"
+            onFinalizeProject={onCompleteProject}
+          />
 
           {/* Quick Action: AI Brief - with gradient background wrapper */}
           <div className="flex flex-col sm:flex-row gap-3 p-4 -mx-4 rounded-xl bg-gradient-to-r from-amber-100 via-orange-50 to-cyan-100 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-cyan-900/20 border border-amber-200/50 dark:border-amber-700/30">
