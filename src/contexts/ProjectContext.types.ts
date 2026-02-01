@@ -1,0 +1,430 @@
+// ============================================
+// PROJECT CONTEXT - TYPE DEFINITIONS
+// Single Source of Truth for 16 Operational Entities
+// ============================================
+
+// ============================================
+// MATERIAL & LINE ITEM TYPES
+// ============================================
+
+export interface MaterialItem {
+  id: string;
+  item: string;
+  quantity: number;
+  unit: string;
+  unitPrice?: number;
+  totalPrice?: number;
+  source: "ai" | "manual" | "template";
+  isEssential?: boolean;
+  wastePercentage?: number;
+}
+
+export interface LineItem {
+  id: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+  category: "material" | "labor" | "other";
+}
+
+export interface BudgetTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  icon?: string;
+  materials: MaterialItem[];
+  laborItems?: LineItem[];
+  estimatedArea?: number;
+  areaUnit?: string;
+}
+
+// ============================================
+// 8 PILLARS OF OPERATIONAL TRUTH
+// ============================================
+
+export interface AreaState {
+  value: number | null;
+  unit: string;
+  source: "ai-photo" | "ai-blueprint" | "manual" | "calculator" | "none";
+  confidence: "high" | "medium" | "low";
+  detectedAt?: string;
+}
+
+export interface MaterialsState {
+  count: number;
+  items: MaterialItem[];
+  source: "ai" | "manual" | "template" | "merged";
+  lastUpdatedAt?: string;
+}
+
+export interface BlueprintState {
+  status: "analyzed" | "none" | "pending";
+  extractedText?: string;
+  documentId?: string;
+  analyzedAt?: string;
+}
+
+export interface OBCComplianceState {
+  status: "clear" | "permit_required" | "pending";
+  acknowledged: boolean;
+  permitType?: string;
+  estimatedCost?: number;
+  references?: Array<{ code: string; title: string }>;
+  checkedAt?: string;
+}
+
+export interface ConflictState {
+  status: "aligned" | "conflict_detected" | "pending";
+  ignored: boolean;
+  details?: string[];
+  checkedAt?: string;
+}
+
+export interface OperationalTruthState {
+  confirmedArea: AreaState;
+  materials: MaterialsState;
+  blueprint: BlueprintState;
+  obcCompliance: OBCComplianceState;
+  conflict: ConflictState;
+  projectMode: "solo" | "team";
+  projectSize: "small" | "medium" | "large";
+  confidenceLevel: "high" | "medium" | "low";
+}
+
+// ============================================
+// 8 WORKFLOW DATA SOURCES
+// ============================================
+
+export interface TasksState {
+  total: number;
+  completed: number;
+  pending: number;
+  inProgress: number;
+}
+
+export interface DocumentsState {
+  count: number;
+  hasBlueprint: boolean;
+  hasContract: boolean;
+}
+
+export interface ContractsState {
+  count: number;
+  signed: number;
+  pending: number;
+  latestId?: string;
+}
+
+export interface TeamState {
+  size: number;
+  hasForeman: boolean;
+  memberIds: string[];
+}
+
+export interface SiteMapState {
+  address: string | null;
+  latitude?: number;
+  longitude?: number;
+  isValid: boolean;
+}
+
+export interface TimelineState {
+  startDate: string | null;
+  endDate: string | null;
+  durationDays: number | null;
+}
+
+export interface ClientInfoState {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  isComplete: boolean;
+}
+
+export interface WeatherState {
+  available: boolean;
+  currentCondition?: string;
+  alerts?: string[];
+}
+
+export interface WorkflowDataState {
+  tasks: TasksState;
+  documents: DocumentsState;
+  contracts: ContractsState;
+  team: TeamState;
+  siteMap: SiteMapState;
+  timeline: TimelineState;
+  clientInfo: ClientInfoState;
+  weather: WeatherState;
+}
+
+// ============================================
+// PAGE FLOW STATE (Page 1 → 2 → 3 → 4 → Dashboard)
+// ============================================
+
+export interface Page1State {
+  // Work Type Selection (CRITICAL for Page 2 template recommendations)
+  workType: string | null;
+  workTypeCategory: string | null; // painting, flooring, electrical, etc.
+  
+  // Project Basics
+  projectName: string;
+  description: string;
+  address: string;
+  
+  // Uploaded Files
+  images: File[];
+  documents: File[];
+  
+  // AI Analysis Trigger
+  analysisTriggered: boolean;
+  analysisComplete: boolean;
+}
+
+export interface Page2State {
+  // Template Selection (driven by Page 1 workType)
+  selectedTemplateId: string | null;
+  recommendedTemplates: BudgetTemplate[];
+  
+  // Calculator Configuration
+  calculatorType: string | null;
+  
+  // Materials (merged from AI + template + manual)
+  materials: MaterialItem[];
+  
+  // Manual Overrides
+  manualAreaOverride: number | null;
+  manualMaterialOverrides: Record<string, number>;
+  
+  // Budget Totals
+  estimatedMaterialCost: number;
+  estimatedLaborCost: number;
+}
+
+export interface Page3State {
+  // Line Items (final quote)
+  lineItems: LineItem[];
+  
+  // Cost Breakdown
+  materialCost: number;
+  laborCost: number;
+  otherCost: number;
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  totalCost: number;
+  
+  // Quote Status
+  quoteGenerated: boolean;
+  quotePdfPath?: string;
+}
+
+export interface Page4State {
+  // Contract
+  contractId: string | null;
+  contractNumber: string | null;
+  
+  // Signatures
+  contractorSigned: boolean;
+  clientSigned: boolean;
+  
+  // Delivery
+  sentToClient: boolean;
+  sentAt?: string;
+  clientViewedAt?: string;
+  clientSignedAt?: string;
+}
+
+// ============================================
+// HEALTH SCORE METRICS
+// ============================================
+
+export interface HealthMetrics {
+  // Overall Health (0-100)
+  healthScore: number;
+  
+  // Breakdown
+  pillarCompletion: number; // 8 pillars
+  workflowCompletion: number; // 8 workflows
+  
+  // Counts
+  completeCount: number;
+  partialCount: number;
+  pendingCount: number;
+  relevantSourceCount: number; // 13 for Solo, 16 for Team
+  
+  // Data Source Status Array (for UI)
+  dataSources: DataSourceStatus[];
+}
+
+export interface DataSourceStatus {
+  id: string;
+  name: string;
+  category: "pillar" | "workflow";
+  status: "complete" | "partial" | "pending";
+  value?: string | number | null;
+  icon?: string;
+  missingItems?: string[];
+  isExcludedInSolo?: boolean;
+}
+
+// ============================================
+// SYNC & PERSISTENCE STATE
+// ============================================
+
+export interface SyncState {
+  isDirty: boolean;
+  isSyncing: boolean;
+  lastSyncedAt: string | null;
+  syncError: string | null;
+  pendingChanges: string[]; // List of changed fields
+}
+
+// ============================================
+// UNIFIED PROJECT CONTEXT STATE
+// ============================================
+
+export interface ProjectContextState {
+  // Core Identifiers
+  projectId: string | null;
+  summaryId: string | null;
+  userId: string | null;
+  
+  // 16 Data Sources (8 Pillars + 8 Workflows)
+  operationalTruth: OperationalTruthState;
+  workflowData: WorkflowDataState;
+  
+  // Page Flow State (persists across navigation)
+  page1: Page1State;
+  page2: Page2State;
+  page3: Page3State;
+  page4: Page4State;
+  
+  // Computed Health Metrics
+  healthMetrics: HealthMetrics;
+  
+  // Sync State
+  sync: SyncState;
+  
+  // UI State
+  currentPage: 1 | 2 | 3 | 4 | "dashboard";
+  isInitialized: boolean;
+  isLoading: boolean;
+}
+
+// ============================================
+// CONTEXT ACTIONS
+// ============================================
+
+export interface ProjectContextActions {
+  // Initialization
+  initializeProject: (projectId: string) => Promise<void>;
+  initializeFromSummary: (summaryId: string) => Promise<void>;
+  createNewProject: () => void;
+  resetProject: () => void;
+  
+  // Page Navigation & State
+  setCurrentPage: (page: ProjectContextState["currentPage"]) => void;
+  
+  // Page 1 Actions
+  setPage1Data: (data: Partial<Page1State>) => void;
+  setWorkType: (workType: string, category: string) => void;
+  
+  // Page 1 → Page 2 Bridge
+  getRecommendedTemplates: () => BudgetTemplate[];
+  
+  // Page 2 Actions
+  setPage2Data: (data: Partial<Page2State>) => void;
+  applyBudgetTemplate: (template: BudgetTemplate) => void;
+  updateMaterial: (materialId: string, updates: Partial<MaterialItem>) => void;
+  setManualAreaOverride: (area: number) => void;
+  
+  // Page 3 Actions
+  setPage3Data: (data: Partial<Page3State>) => void;
+  addLineItem: (item: LineItem) => void;
+  updateLineItem: (itemId: string, updates: Partial<LineItem>) => void;
+  removeLineItem: (itemId: string) => void;
+  calculateTotals: () => void;
+  
+  // Page 4 Actions
+  setPage4Data: (data: Partial<Page4State>) => void;
+  
+  // Operational Truth Updates
+  updatePillar: <K extends keyof OperationalTruthState>(
+    pillar: K,
+    value: Partial<OperationalTruthState[K]>
+  ) => void;
+  
+  // Workflow Updates
+  updateWorkflow: <K extends keyof WorkflowDataState>(
+    workflow: K,
+    value: Partial<WorkflowDataState[K]>
+  ) => void;
+  
+  // Manual Overrides (for pillar verification)
+  acknowledgeOBC: () => void;
+  ignoreConflict: () => void;
+  verifyBlueprint: () => void;
+  setManualArea: (area: number, unit: string) => void;
+  
+  // Client Info
+  updateClientInfo: (info: Partial<ClientInfoState>) => void;
+  
+  // Sync with Database
+  syncToDatabase: () => Promise<boolean>;
+  loadFromDatabase: (projectId: string) => Promise<boolean>;
+  markDirty: (field: string) => void;
+  
+  // Health Score (computed, but exposed for components)
+  recalculateHealth: () => void;
+}
+
+// ============================================
+// WORK TYPE → TEMPLATE MAPPING
+// ============================================
+
+export const WORK_TYPE_CATEGORIES: Record<string, string[]> = {
+  painting: ["interior-paint", "exterior-paint", "cabinet-refinish", "deck-stain"],
+  flooring: ["hardwood-install", "laminate-install", "tile-floor", "carpet-install", "vinyl-plank"],
+  electrical: ["panel-upgrade", "outlet-install", "lighting-install", "wiring"],
+  plumbing: ["bathroom-rough", "kitchen-plumbing", "fixture-install", "pipe-repair"],
+  roofing: ["shingle-roof", "flat-roof", "roof-repair", "gutter-install"],
+  drywall: ["drywall-install", "drywall-repair", "texture-ceiling", "mudding-taping"],
+  hvac: ["furnace-install", "ac-install", "duct-work", "ventilation"],
+  carpentry: ["deck-build", "framing", "trim-work", "cabinet-install"],
+  masonry: ["concrete-pour", "brick-work", "foundation-repair", "patio-paver"],
+  general: ["bathroom-reno", "kitchen-reno", "basement-finish", "addition"],
+};
+
+export const WORK_TYPE_KEYWORDS: Record<string, string[]> = {
+  painting: ["paint", "festés", "festék", "wall color", "primer", "stain"],
+  flooring: ["floor", "padló", "tile", "csempe", "laminate", "hardwood", "carpet", "vinyl"],
+  electrical: ["electric", "villany", "outlet", "wiring", "panel", "light fixture"],
+  plumbing: ["plumb", "vízvezeték", "pipe", "drain", "faucet", "toilet", "sink"],
+  roofing: ["roof", "tető", "shingle", "gutter", "flashing"],
+  drywall: ["drywall", "gipszkarton", "gypsum", "plasterboard", "mudding"],
+  hvac: ["hvac", "furnace", "ac", "air condition", "heating", "cooling", "duct"],
+  carpentry: ["deck", "frame", "trim", "cabinet", "wood", "fa"],
+  masonry: ["concrete", "beton", "brick", "tégla", "foundation", "patio", "paver"],
+  general: ["renovation", "felújítás", "remodel", "addition", "basement", "bathroom", "kitchen"],
+};
+
+// Helper to detect work type category from description/workType
+export function detectWorkTypeCategory(input: string): string {
+  const lowerInput = input.toLowerCase();
+  
+  for (const [category, keywords] of Object.entries(WORK_TYPE_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (lowerInput.includes(keyword.toLowerCase())) {
+        return category;
+      }
+    }
+  }
+  
+  return "general";
+}
