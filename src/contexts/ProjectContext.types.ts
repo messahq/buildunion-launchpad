@@ -313,6 +313,34 @@ export interface SyncState {
 }
 
 // ============================================
+// CENTRAL FINANCIALS (Dashboard reads from here)
+// ============================================
+
+export interface CentralFinancials {
+  materialCost: number;
+  laborCost: number;
+  otherCost: number;
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  grandTotal: number;
+  markupPercent: number;
+  markupAmount: number;
+  grandTotalWithMarkup: number;
+  currency: string;
+  isDraft: boolean;
+  lastCalculatedAt: string | null;
+}
+
+export interface CentralMaterials {
+  items: MaterialItem[];
+  totalCount: number;
+  source: "ai_analysis" | "template" | "manual" | "merged";
+  lastUpdatedAt: string | null;
+  hasManualOverrides: boolean;
+}
+
+// ============================================
 // UNIFIED PROJECT CONTEXT STATE
 // ============================================
 
@@ -326,7 +354,11 @@ export interface ProjectContextState {
   operationalTruth: OperationalTruthState;
   workflowData: WorkflowDataState;
   
-  // Page Flow State (persists across navigation)
+  // ====== CENTRAL DATA (Dashboard reads from here) ======
+  centralMaterials: CentralMaterials;
+  centralFinancials: CentralFinancials;
+  
+  // Page Flow State (for UI navigation only)
   page1: Page1State;
   page2: Page2State;
   page3: Page3State;
@@ -358,6 +390,14 @@ export interface ProjectContextActions {
   // Page Navigation & State
   setCurrentPage: (page: ProjectContextState["currentPage"]) => void;
   
+  // ====== CENTRAL DATA ACTIONS (AI Analysis writes here) ======
+  setCentralMaterials: (materials: MaterialItem[], source: CentralMaterials["source"]) => void;
+  setCentralFinancials: (financials: Partial<CentralFinancials>) => void;
+  updateCentralMaterial: (materialId: string, updates: Partial<MaterialItem>) => void;
+  addCentralMaterial: (material: Omit<MaterialItem, "id">) => MaterialItem;
+  removeCentralMaterial: (materialId: string) => void;
+  recalculateCentralFinancials: () => void;
+  
   // Page 1 Actions
   setPage1Data: (data: Partial<Page1State>) => void;
   setWorkType: (workType: string, category: string) => void;
@@ -365,7 +405,7 @@ export interface ProjectContextActions {
   // Page 1 → Page 2 Bridge
   getRecommendedTemplates: () => BudgetTemplate[];
   
-  // Page 2 Actions
+  // Page 2 Actions (legacy, will bridge to central)
   setPage2Data: (data: Partial<Page2State>) => void;
   applyBudgetTemplate: (template: BudgetTemplate) => void;
   updateMaterial: (materialId: string, updates: Partial<MaterialItem>) => void;

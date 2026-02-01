@@ -24,6 +24,8 @@ import {
   SyncState,
   CitationEntry,
   CitationSource,
+  CentralMaterials,
+  CentralFinancials,
   WORK_TYPE_CATEGORIES,
   detectWorkTypeCategory,
 } from "./ProjectContext.types";
@@ -142,12 +144,45 @@ const initialHealthMetrics: HealthMetrics = {
   dataSources: [],
 };
 
+// ============================================
+// CENTRAL DATA INITIAL STATES
+// Dashboard reads directly from these fields
+// ============================================
+
+const initialCentralMaterials: CentralMaterials = {
+  items: [],
+  totalCount: 0,
+  source: "ai_analysis",
+  lastUpdatedAt: null,
+  hasManualOverrides: false,
+};
+
+const initialCentralFinancials: CentralFinancials = {
+  materialCost: 0,
+  laborCost: 0,
+  otherCost: 0,
+  subtotal: 0,
+  taxRate: 0.13, // Default HST
+  taxAmount: 0,
+  grandTotal: 0,
+  markupPercent: 0,
+  markupAmount: 0,
+  grandTotalWithMarkup: 0,
+  currency: "CAD",
+  isDraft: true,
+  lastCalculatedAt: null,
+};
+
 const initialState: ProjectContextState = {
   projectId: null,
   summaryId: null,
   userId: null,
   operationalTruth: initialOperationalTruth,
   workflowData: initialWorkflowData,
+  // Central data (Dashboard reads from here)
+  centralMaterials: initialCentralMaterials,
+  centralFinancials: initialCentralFinancials,
+  // Page flow state (UI navigation only)
   page1: initialPage1,
   page2: initialPage2,
   page3: initialPage3,
@@ -181,7 +216,13 @@ type ProjectAction =
   | { type: "SET_SYNC"; payload: Partial<SyncState> }
   | { type: "MARK_DIRTY"; payload: string }
   | { type: "RESET_PROJECT" }
-  | { type: "LOAD_FROM_DATABASE"; payload: Partial<ProjectContextState> };
+  | { type: "LOAD_FROM_DATABASE"; payload: Partial<ProjectContextState> }
+  // Central Data Actions (Dashboard reads from these)
+  | { type: "SET_CENTRAL_MATERIALS"; payload: { items: MaterialItem[]; source: CentralMaterials["source"] } }
+  | { type: "SET_CENTRAL_FINANCIALS"; payload: Partial<CentralFinancials> }
+  | { type: "UPDATE_CENTRAL_MATERIAL"; payload: { materialId: string; updates: Partial<MaterialItem> } }
+  | { type: "ADD_CENTRAL_MATERIAL"; payload: MaterialItem }
+  | { type: "REMOVE_CENTRAL_MATERIAL"; payload: string };
 
 // ============================================
 // REDUCER
@@ -265,6 +306,79 @@ function projectReducer(state: ProjectContextState, action: ProjectAction): Proj
     
     case "LOAD_FROM_DATABASE":
       return { ...state, ...action.payload, isInitialized: true, isLoading: false };
+    
+    // ====== CENTRAL DATA REDUCERS ======
+    case "SET_CENTRAL_MATERIALS": {
+      const { items, source } = action.payload;
+      const hasManualOverrides = items.some(m => m.citationSource === "manual_override");
+      return {
+        ...state,
+        centralMaterials: {
+          items,
+          totalCount: items.length,
+          source,
+          lastUpdatedAt: new Date().toISOString(),
+          hasManualOverrides,
+        },
+      };
+    }
+    
+    case "SET_CENTRAL_FINANCIALS":
+      return {
+        ...state,
+        centralFinancials: {
+          ...state.centralFinancials,
+          ...action.payload,
+          lastCalculatedAt: new Date().toISOString(),
+        },
+      };
+    
+    case "UPDATE_CENTRAL_MATERIAL": {
+      const { materialId, updates } = action.payload;
+      const updatedItems = state.centralMaterials.items.map(m =>
+        m.id === materialId
+          ? {
+              ...m,
+              ...updates,
+              citationSource: "manual_override" as CitationSource,
+              editedAt: new Date().toISOString(),
+              originalValue: m.originalValue ?? m.quantity,
+            }
+          : m
+      );
+      return {
+        ...state,
+        centralMaterials: {
+          ...state.centralMaterials,
+          items: updatedItems,
+          hasManualOverrides: true,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      };
+    }
+    
+    case "ADD_CENTRAL_MATERIAL":
+      return {
+        ...state,
+        centralMaterials: {
+          ...state.centralMaterials,
+          items: [...state.centralMaterials.items, action.payload],
+          totalCount: state.centralMaterials.items.length + 1,
+          hasManualOverrides: true,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      };
+    
+    case "REMOVE_CENTRAL_MATERIAL":
+      return {
+        ...state,
+        centralMaterials: {
+          ...state.centralMaterials,
+          items: state.centralMaterials.items.filter(m => m.id !== action.payload),
+          totalCount: state.centralMaterials.items.length - 1,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      };
     
     default:
       return state;
@@ -610,6 +724,44 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             available: !!project.address,
           },
         },
+        // ====== CENTRAL DATA (Dashboard reads from here) ======
+        centralMaterials: {
+          items: (photoEstimate.materials || []).map((m: any, i: number) => ({
+            id: `mat-${i}-${Date.now()}`,
+            item: m.item || m.name,
+            quantity: m.quantity,
+            unit: m.unit,
+            unitPrice: m.unitPrice || m.unit_price || 0,
+            totalPrice: m.totalPrice || m.total_price || (m.quantity * (m.unitPrice || m.unit_price || 0)),
+            source: m.source || "ai" as const,
+            citationSource: (m.citationSource || m.citation_source || "ai_photo") as CitationSource,
+            citationId: m.citationId || m.citation_id || `[P-${String(i + 1).padStart(3, "0")}]`,
+            isEssential: m.isEssential ?? m.is_essential ?? false,
+            wastePercentage: m.wastePercentage || m.waste_percentage || 0,
+          })),
+          totalCount: photoEstimate.materials?.length || 0,
+          source: "ai_analysis" as const,
+          lastUpdatedAt: summary?.updated_at || null,
+          hasManualOverrides: (photoEstimate.materials || []).some((m: any) => 
+            m.citationSource === "manual_override" || m.citation_source === "manual_override"
+          ),
+        },
+        centralFinancials: {
+          materialCost: summary?.material_cost || 0,
+          laborCost: summary?.labor_cost || photoEstimate.laborCost || photoEstimate.labor_cost || 0,
+          otherCost: 0,
+          subtotal: 0,
+          taxRate: 0.13,
+          taxAmount: 0,
+          grandTotal: summary?.total_cost || 0,
+          markupPercent: 0,
+          markupAmount: 0,
+          grandTotalWithMarkup: summary?.total_cost || 0,
+          currency: "CAD",
+          isDraft: !contracts.some(c => c.client_signed_at), // Draft until signed
+          lastCalculatedAt: summary?.updated_at || null,
+        },
+        // Page flow state (UI navigation only)
         page1: {
           ...initialPage1,
           projectName: project.name,
@@ -1043,6 +1195,90 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [state]);
 
   // ============================================
+  // CENTRAL DATA ACTIONS
+  // Dashboard reads from these, AI Analysis writes to these
+  // ============================================
+
+  const setCentralMaterials = useCallback((
+    materials: MaterialItem[],
+    source: CentralMaterials["source"]
+  ) => {
+    dispatch({ type: "SET_CENTRAL_MATERIALS", payload: { items: materials, source } });
+    dispatch({ type: "MARK_DIRTY", payload: "centralMaterials" });
+    
+    // Also update operationalTruth.materials for health score
+    dispatch({
+      type: "UPDATE_PILLAR",
+      payload: {
+        pillar: "materials",
+        value: {
+          count: materials.length,
+          items: materials,
+          source: source === "ai_analysis" ? "ai" : source === "template" ? "template" : "merged",
+        },
+      },
+    });
+  }, []);
+
+  const setCentralFinancials = useCallback((financials: Partial<CentralFinancials>) => {
+    dispatch({ type: "SET_CENTRAL_FINANCIALS", payload: financials });
+    dispatch({ type: "MARK_DIRTY", payload: "centralFinancials" });
+  }, []);
+
+  const updateCentralMaterial = useCallback((
+    materialId: string,
+    updates: Partial<MaterialItem>
+  ) => {
+    dispatch({ type: "UPDATE_CENTRAL_MATERIAL", payload: { materialId, updates } });
+    dispatch({ type: "MARK_DIRTY", payload: "centralMaterials" });
+  }, []);
+
+  const addCentralMaterial = useCallback((material: Omit<MaterialItem, "id">): MaterialItem => {
+    const newMaterial: MaterialItem = {
+      ...material,
+      id: `mat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      citationSource: "manual_override",
+      citationId: `[MO-${state.centralMaterials.totalCount + 1}]`,
+    };
+    dispatch({ type: "ADD_CENTRAL_MATERIAL", payload: newMaterial });
+    dispatch({ type: "MARK_DIRTY", payload: "centralMaterials" });
+    return newMaterial;
+  }, [state.centralMaterials.totalCount]);
+
+  const removeCentralMaterial = useCallback((materialId: string) => {
+    dispatch({ type: "REMOVE_CENTRAL_MATERIAL", payload: materialId });
+    dispatch({ type: "MARK_DIRTY", payload: "centralMaterials" });
+  }, []);
+
+  const recalculateCentralFinancials = useCallback(() => {
+    const { items } = state.centralMaterials;
+    const materialCost = items.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+    const laborCost = state.centralFinancials.laborCost || 0;
+    const otherCost = state.centralFinancials.otherCost || 0;
+    const subtotal = materialCost + laborCost + otherCost;
+    const taxRate = state.centralFinancials.taxRate || 0.13;
+    const taxAmount = subtotal * taxRate;
+    const grandTotal = subtotal + taxAmount;
+    const markupPercent = state.centralFinancials.markupPercent || 0;
+    const markupAmount = subtotal * (markupPercent / 100);
+    const grandTotalWithMarkup = grandTotal + markupAmount;
+
+    dispatch({
+      type: "SET_CENTRAL_FINANCIALS",
+      payload: {
+        materialCost,
+        laborCost,
+        otherCost,
+        subtotal,
+        taxAmount,
+        grandTotal,
+        markupAmount,
+        grandTotalWithMarkup,
+      },
+    });
+  }, [state.centralMaterials.items, state.centralFinancials]);
+
+  // ============================================
   // CONTEXT VALUE
   // ============================================
 
@@ -1052,6 +1288,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     createNewProject,
     resetProject,
     setCurrentPage,
+    // Central Data Actions
+    setCentralMaterials,
+    setCentralFinancials,
+    updateCentralMaterial,
+    addCentralMaterial,
+    removeCentralMaterial,
+    recalculateCentralFinancials,
+    // Page Actions
     setPage1Data,
     setWorkType,
     getRecommendedTemplates,
@@ -1082,6 +1326,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     createNewProject,
     resetProject,
     setCurrentPage,
+    setCentralMaterials,
+    setCentralFinancials,
+    updateCentralMaterial,
+    addCentralMaterial,
+    removeCentralMaterial,
+    recalculateCentralFinancials,
     setPage1Data,
     setWorkType,
     getRecommendedTemplates,
@@ -1157,5 +1407,29 @@ export function usePage2State() {
     setData: actions.setPage2Data,
     getRecommendedTemplates: actions.getRecommendedTemplates,
     applyTemplate: actions.applyBudgetTemplate,
+  };
+}
+
+// ============================================
+// CENTRAL DATA HOOKS (Dashboard uses these)
+// ============================================
+
+export function useCentralMaterials() {
+  const { state, actions } = useProjectContext();
+  return {
+    materials: state.centralMaterials,
+    setMaterials: actions.setCentralMaterials,
+    updateMaterial: actions.updateCentralMaterial,
+    addMaterial: actions.addCentralMaterial,
+    removeMaterial: actions.removeCentralMaterial,
+  };
+}
+
+export function useCentralFinancials() {
+  const { state, actions } = useProjectContext();
+  return {
+    financials: state.centralFinancials,
+    setFinancials: actions.setCentralFinancials,
+    recalculate: actions.recalculateCentralFinancials,
   };
 }
