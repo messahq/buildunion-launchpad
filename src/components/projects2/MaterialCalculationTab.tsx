@@ -210,20 +210,22 @@ export function MaterialCalculationTab({
     }
     
     // For AI/TASKS data: calculate waste buffer using DYNAMIC waste %
-    // Find laminate to sync underlayment
-    const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
-    const laminateBaseQty = laminateEntry?.quantity || 0;
+    // CRITICAL: Use baseArea prop as the authoritative base for sq ft materials
+    // This ensures Power Modal edits sync correctly to Materials tab
+    const authorityBaseArea = baseArea || 0;
     
     return initialMaterials.map((m, idx) => {
       const isEssential = isEssentialMaterial(m.item);
+      const isSqFtUnit = m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft");
       
-      // The incoming AI quantity is the BASE (e.g., 1350)
-      // We add DYNAMIC waste buffer for essential materials
+      // Determine the BASE quantity:
+      // 1. If baseArea prop exists AND this is sq ft essential material -> use baseArea
+      // 2. Otherwise use the material's original quantity
       let baseQty = m.quantity;
       
-      // Sync underlayment with laminate flooring base quantity
-      if (/^underlayment/i.test(m.item.trim()) && laminateBaseQty > 0) {
-        baseQty = laminateBaseQty;
+      if (isEssential && isSqFtUnit && authorityBaseArea > 0) {
+        // Use authoritative baseArea from Power Modal / centralMaterials
+        baseQty = authorityBaseArea;
       }
       
       // For essential items: FINAL = BASE * (1 + wastePercent/100)
@@ -243,20 +245,28 @@ export function MaterialCalculationTab({
         isEssential,
       };
     });
-  }, [initialMaterials, dataSource, DYNAMIC_WASTE]);
+  }, [initialMaterials, dataSource, DYNAMIC_WASTE, baseArea]);
 
   // Helper to create initial labor items
+  // CRITICAL: Labor uses NET area (baseArea) - no waste buffer on labor costs!
   // When saved, preserve the saved totalPrice to avoid recalculation
   const createInitialLaborItems = useCallback(() => 
-    initialLabor.map((l: TaskBasedEntry & { totalPrice?: number }, idx) => ({
-      id: `labor-${idx}`,
-      item: l.item,
-      quantity: l.quantity,
-      unit: l.unit,
-      unitPrice: l.unitPrice || 0,
-      totalPrice: l.totalPrice ?? (l.quantity * (l.unitPrice || 0)),
-    }))
-  , [initialLabor]);
+    initialLabor.map((l: TaskBasedEntry & { totalPrice?: number }, idx) => {
+      const isSqFtUnit = l.unit?.toLowerCase().includes("sq") || l.unit?.toLowerCase().includes("ft");
+      
+      // Labor uses NET area (baseArea) - workers install the actual area, not the waste
+      const laborQty = (isSqFtUnit && baseArea && baseArea > 0) ? baseArea : l.quantity;
+      
+      return {
+        id: `labor-${idx}`,
+        item: l.item,
+        quantity: laborQty,
+        unit: l.unit,
+        unitPrice: l.unitPrice || 0,
+        totalPrice: l.totalPrice ?? (laborQty * (l.unitPrice || 0)),
+      };
+    })
+  , [initialLabor, baseArea]);
   
   // Material items with waste calculation
   const [materialItems, setMaterialItems] = useState<CostItem[]>(createInitialMaterialItems);
@@ -306,57 +316,73 @@ export function MaterialCalculationTab({
   }, [laminateBaseQty]);
   
   // ====== DYNAMIC SYNC: Recalculate when baseArea or wastePercent changes ======
+  // CRITICAL: When Power Modal changes baseArea, recalculate essential materials from scratch
   useEffect(() => {
     const prevArea = prevBaseAreaRef.current;
     const prevWaste = prevWasteRef.current;
-    const newArea = baseArea ?? confirmedArea;
+    const newArea = baseArea ?? null;
     const newWaste = wastePercent;
     
-    // Skip if nothing changed or no valid area to work with
-    if ((!newArea || !prevArea) && prevWaste === newWaste) {
-      prevBaseAreaRef.current = newArea ?? null;
+    // Skip for saved data - user edits should not be overwritten
+    if (dataSource === 'saved') {
+      prevBaseAreaRef.current = newArea;
       prevWasteRef.current = newWaste;
       return;
     }
     
-    let needsRecalc = false;
-    let areaRatio = 1;
-    let wasteRatio = 1;
+    // Skip if no meaningful change
+    const areaChanged = newArea && prevArea && Math.abs(newArea - prevArea) > 1;
+    const wasteChanged = newWaste !== prevWaste;
     
-    // Check if area changed
-    if (newArea && prevArea && Math.abs(newArea - prevArea) > 1) {
-      areaRatio = newArea / prevArea;
-      needsRecalc = true;
+    if (!areaChanged && !wasteChanged) {
+      prevBaseAreaRef.current = newArea;
+      prevWasteRef.current = newWaste;
+      return;
     }
     
-    // Check if waste changed
-    if (newWaste !== prevWaste) {
-      wasteRatio = (100 + newWaste) / (100 + prevWaste);
-      needsRecalc = true;
-    }
+    console.log(`[MaterialsSync] baseArea: ${prevArea} -> ${newArea}, waste: ${prevWaste}% -> ${newWaste}%`);
     
-    if (needsRecalc) {
-      console.log(`[MaterialsSync] Recalculating: areaRatio=${areaRatio.toFixed(2)}, wasteRatio=${wasteRatio.toFixed(2)}`);
+    // Recalculate essential sq ft materials using the NEW baseArea
+    setMaterialItems(prev => prev.map(item => {
+      const isSqFtUnit = item.unit?.toLowerCase().includes("sq") || item.unit?.toLowerCase().includes("ft");
       
-      setMaterialItems(prev => prev.map(item => {
-        if (item.isEssential || item.unit === "sq ft" || item.unit === "m²") {
-          const newQuantity = Math.ceil(item.quantity * areaRatio * wasteRatio);
-          return {
-            ...item,
-            quantity: newQuantity,
-            totalPrice: newQuantity * item.unitPrice,
-          };
-        }
-        return item;
-      }));
+      if (item.isEssential && isSqFtUnit && newArea && newArea > 0) {
+        // Use the NEW baseArea as the authoritative NET quantity
+        const newBaseQty = newArea;
+        const newGrossQty = Math.ceil(newBaseQty * (1 + (newWaste / 100)));
+        
+        console.log(`[MaterialsSync] ${item.item}: base=${newBaseQty}, gross=${newGrossQty} (${newWaste}% waste)`);
+        
+        return {
+          ...item,
+          baseQuantity: newBaseQty,
+          quantity: newGrossQty,
+          totalPrice: newGrossQty * item.unitPrice,
+        };
+      }
+      return item;
+    }));
+    
+    // Also update labor items to use NET area
+    setLaborItems(prev => prev.map(item => {
+      const isSqFtUnit = item.unit?.toLowerCase().includes("sq") || item.unit?.toLowerCase().includes("ft");
       
-      setHasUnsavedChanges(true);
-    }
+      if (isSqFtUnit && newArea && newArea > 0) {
+        return {
+          ...item,
+          quantity: newArea, // Labor uses NET area (no waste)
+          totalPrice: newArea * item.unitPrice,
+        };
+      }
+      return item;
+    }));
+    
+    setHasUnsavedChanges(true);
     
     // Update refs
-    prevBaseAreaRef.current = newArea ?? null;
+    prevBaseAreaRef.current = newArea;
     prevWasteRef.current = newWaste;
-  }, [baseArea, confirmedArea, wastePercent]);
+  }, [baseArea, wastePercent, dataSource]);
   
   // New other item form
   const [otherDescription, setOtherDescription] = useState("");
