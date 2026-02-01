@@ -194,7 +194,7 @@ export function MaterialCalculationTab({
       return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
         const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
         // Use saved baseQuantity if available, otherwise calculate it from quantity
-        const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(m.quantity / (1 + WASTE_PERCENTAGE)) : m.quantity);
+        const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(m.quantity / (1 + DYNAMIC_WASTE)) : m.quantity);
         
         return {
           id: `material-${idx}`,
@@ -209,7 +209,7 @@ export function MaterialCalculationTab({
       });
     }
     
-    // For AI/TASKS data: calculate waste buffer
+    // For AI/TASKS data: calculate waste buffer using DYNAMIC waste %
     // Find laminate to sync underlayment
     const laminateEntry = initialMaterials.find(m => /laminate|flooring/i.test(m.item));
     const laminateBaseQty = laminateEntry?.quantity || 0;
@@ -217,8 +217,8 @@ export function MaterialCalculationTab({
     return initialMaterials.map((m, idx) => {
       const isEssential = isEssentialMaterial(m.item);
       
-      // The incoming AI quantity is the BASE (e.g., 3857)
-      // We add +10% waste buffer for essential materials
+      // The incoming AI quantity is the BASE (e.g., 1350)
+      // We add DYNAMIC waste buffer for essential materials
       let baseQty = m.quantity;
       
       // Sync underlayment with laminate flooring base quantity
@@ -226,10 +226,10 @@ export function MaterialCalculationTab({
         baseQty = laminateBaseQty;
       }
       
-      // For essential items: FINAL = BASE * 1.1 (adding waste on top of base)
+      // For essential items: FINAL = BASE * (1 + wastePercent/100)
       // For non-essential: FINAL = BASE (no additional waste)
       const finalQty = isEssential 
-        ? Math.ceil(baseQty * (1 + WASTE_PERCENTAGE)) 
+        ? Math.ceil(baseQty * (1 + DYNAMIC_WASTE)) 
         : baseQty;
       
       return {
@@ -243,7 +243,7 @@ export function MaterialCalculationTab({
         isEssential,
       };
     });
-  }, [initialMaterials, dataSource]);
+  }, [initialMaterials, dataSource, DYNAMIC_WASTE]);
 
   // Helper to create initial labor items
   // When saved, preserve the saved totalPrice to avoid recalculation
