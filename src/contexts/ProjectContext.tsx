@@ -155,6 +155,8 @@ const initialCentralMaterials: CentralMaterials = {
   source: "ai_analysis",
   lastUpdatedAt: null,
   hasManualOverrides: false,
+  wastePercent: 10, // Default 10% waste buffer
+  baseArea: null,
 };
 
 const initialCentralFinancials: CentralFinancials = {
@@ -222,7 +224,8 @@ type ProjectAction =
   | { type: "SET_CENTRAL_FINANCIALS"; payload: Partial<CentralFinancials> }
   | { type: "UPDATE_CENTRAL_MATERIAL"; payload: { materialId: string; updates: Partial<MaterialItem> } }
   | { type: "ADD_CENTRAL_MATERIAL"; payload: MaterialItem }
-  | { type: "REMOVE_CENTRAL_MATERIAL"; payload: string };
+  | { type: "REMOVE_CENTRAL_MATERIAL"; payload: string }
+  | { type: "SET_WASTE_AND_AREA"; payload: { wastePercent?: number; baseArea?: number } };
 
 // ============================================
 // REDUCER
@@ -314,6 +317,7 @@ function projectReducer(state: ProjectContextState, action: ProjectAction): Proj
       return {
         ...state,
         centralMaterials: {
+          ...state.centralMaterials, // Preserve wastePercent and baseArea
           items,
           totalCount: items.length,
           source,
@@ -379,6 +383,63 @@ function projectReducer(state: ProjectContextState, action: ProjectAction): Proj
           lastUpdatedAt: new Date().toISOString(),
         },
       };
+    
+    // ====== WASTE & AREA SYNC (auto-recalculates essential material quantities) ======
+    case "SET_WASTE_AND_AREA": {
+      const { wastePercent, baseArea } = action.payload;
+      const prevWaste = state.centralMaterials.wastePercent;
+      const prevArea = state.centralMaterials.baseArea;
+      const newWaste = wastePercent ?? prevWaste;
+      const newArea = baseArea ?? prevArea;
+      
+      // Calculate ratio for recalculation
+      let recalculatedItems = state.centralMaterials.items;
+      
+      // If area changed, recalculate all essential materials proportionally
+      if (newArea && prevArea && newArea !== prevArea) {
+        const areaRatio = newArea / prevArea;
+        recalculatedItems = recalculatedItems.map(m => {
+          // Only scale essential materials (area-based)
+          if (m.isEssential || m.unit === "sq ft" || m.unit === "m²") {
+            const newQuantity = Math.ceil(m.quantity * areaRatio);
+            return {
+              ...m,
+              quantity: newQuantity,
+              totalPrice: newQuantity * (m.unitPrice || 0),
+              originalValue: m.originalValue ?? m.quantity, // Track original
+            };
+          }
+          return m;
+        });
+      }
+      
+      // If waste percent changed, recalculate essential material quantities
+      if (newWaste !== prevWaste) {
+        const wasteRatio = (100 + newWaste) / (100 + prevWaste);
+        recalculatedItems = recalculatedItems.map(m => {
+          if (m.isEssential || m.unit === "sq ft" || m.unit === "m²") {
+            const newQuantity = Math.ceil(m.quantity * wasteRatio);
+            return {
+              ...m,
+              quantity: newQuantity,
+              totalPrice: newQuantity * (m.unitPrice || 0),
+            };
+          }
+          return m;
+        });
+      }
+      
+      return {
+        ...state,
+        centralMaterials: {
+          ...state.centralMaterials,
+          items: recalculatedItems,
+          wastePercent: newWaste,
+          baseArea: newArea,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+      };
+    }
     
     default:
       return state;
@@ -745,6 +806,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           hasManualOverrides: (photoEstimate.materials || []).some((m: any) => 
             m.citationSource === "manual_override" || m.citation_source === "manual_override"
           ),
+          wastePercent: aiConfig?.wastePercent || 10, // Load saved or default 10%
+          baseArea: photoEstimate.area || aiConfig?.aiAnalysis?.area || null,
         },
         centralFinancials: {
           materialCost: summary?.material_cost || 0,
@@ -1135,6 +1198,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "MARK_DIRTY", payload: "manualArea" });
   }, []);
 
+  // ====== WASTE & AREA SYNC (dynamic recalculation) ======
+  const setWasteAndArea = useCallback((wastePercent?: number, baseArea?: number) => {
+    dispatch({
+      type: "SET_WASTE_AND_AREA",
+      payload: { wastePercent, baseArea },
+    });
+    dispatch({ type: "MARK_DIRTY", payload: "wasteAndArea" });
+    
+    // Also update confirmed area if baseArea changed
+    if (baseArea !== undefined) {
+      dispatch({
+        type: "UPDATE_PILLAR",
+        payload: {
+          pillar: "confirmedArea",
+          value: { 
+            value: baseArea, 
+            source: "manual" as const, 
+            confidence: "high" as const,
+          },
+        },
+      });
+    }
+  }, []);
+
   const updateClientInfo = useCallback((info: Partial<ClientInfoState>) => {
     const newInfo = { ...state.workflowData.clientInfo, ...info };
     newInfo.isComplete = !!(newInfo.name && newInfo.email);
@@ -1339,6 +1426,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     addCentralMaterial,
     removeCentralMaterial,
     recalculateCentralFinancials,
+    // Waste & Area Sync
+    setWasteAndArea,
     // Page Actions
     setPage1Data,
     setWorkType,
@@ -1376,6 +1465,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     addCentralMaterial,
     removeCentralMaterial,
     recalculateCentralFinancials,
+    setWasteAndArea,
     setPage1Data,
     setWorkType,
     getRecommendedTemplates,
