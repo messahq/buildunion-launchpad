@@ -2,6 +2,25 @@
 // PROJECT CONTEXT - SINGLE SOURCE OF TRUTH
 // Central state management for all 16 Operational Entities
 // ============================================
+//
+// ==================== 3 IRON LAWS ====================
+//
+// 1. DYNAMIC CALCULATION (No Hardcoding):
+//    Materials QTY = baseArea × (1 + wastePercent/100)
+//    This formula MUST be applied dynamically - never store static numbers.
+//    When wastePercent changes, ALL essential material quantities recalculate.
+//
+// 2. STATE PERSISTENCE:
+//    wastePercent is stored in ai_workflow_config.userEdits.wastePercent
+//    On project load, this value MUST override the default 10%.
+//    Save path: PowerModal → photo_estimate + ai_workflow_config
+//
+// 3. DUAL LOGIC (Materials vs Labor):
+//    - MATERIALS: Always display GROSS quantity (base × 1.1 for 10% waste)
+//    - LABOR: Always use NET quantity (baseArea only - no waste buffer)
+//    Rationale: Workers install actual area; ordering needs waste buffer.
+//
+// =====================================================
 
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -385,12 +404,16 @@ function projectReducer(state: ProjectContextState, action: ProjectAction): Proj
       };
     
     // ====== WASTE & AREA SYNC (auto-recalculates essential material quantities) ======
+    // IRON LAW #1: Dynamic Calculation - QTY = baseArea × (1 + waste/100)
+    // This reducer enforces the formula whenever waste% or baseArea changes
     case "SET_WASTE_AND_AREA": {
       const { wastePercent, baseArea } = action.payload;
       const prevWaste = state.centralMaterials.wastePercent;
       const prevArea = state.centralMaterials.baseArea;
       const newWaste = wastePercent ?? prevWaste;
       const newArea = baseArea ?? prevArea;
+      
+      console.log(`[IRON LAW #1] SET_WASTE_AND_AREA: waste=${prevWaste}→${newWaste}%, area=${prevArea}→${newArea}`);
       
       // Calculate ratio for recalculation
       let recalculatedItems = state.centralMaterials.items;
