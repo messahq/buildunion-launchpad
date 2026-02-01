@@ -54,6 +54,7 @@ import { ProBadge } from "@/components/ui/pro-badge";
 import { useCitationRegistry, getAutoPillarLink } from "@/hooks/useCitationRegistry";
 import { CitationSource, generateCitationId } from "@/types/citation";
 import { useProjectPermissions, useUserProjectRole, ProjectPermissions } from "@/hooks/useProjectPermissions";
+import { useProjectContext } from "@/contexts/ProjectContext";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -528,6 +529,9 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const { subscription, isDevOverride } = useSubscription();
   const { members } = useProjectTeam(projectId);
   
+  // Central state for materials/financials - single source of truth for Dashboard
+  const { state: projectState, actions: projectActions } = useProjectContext();
+  
   // Citation Registry for tracking document references
   const { 
     citations, 
@@ -730,6 +734,87 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
 
     fetchUserProfile();
   }, [user?.id, user?.email, user?.user_metadata?.full_name]);
+
+  // ==========================================
+  // SYNC: Populate centralMaterials from DB on project load
+  // This ensures Materials tab and Dashboard read from the same source
+  // ==========================================
+  useEffect(() => {
+    if (!summary || loading) return;
+    
+    // Don't overwrite if centralMaterials already has data from AI Analysis
+    if (projectState.centralMaterials.items.length > 0) {
+      console.log("[ProjectDetailsView] centralMaterials already populated, skipping sync");
+      return;
+    }
+    
+    // Helper to check if material is essential
+    const essentialKeywords = ["flooring", "laminate", "tile", "drywall", "underlayment", "baseboard", "trim", "hardwood"];
+    const checkEssential = (item: string) => essentialKeywords.some(k => item.toLowerCase().includes(k));
+    
+    // Priority 1: Use saved line_items
+    const savedLineItems = summary.line_items as { 
+      materials?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number; baseQuantity?: number; isEssential?: boolean }>;
+      labor?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number }>;
+      other?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number }>;
+    } | null;
+    
+    if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
+      const centralItems = savedLineItems.materials.map((m, index) => ({
+        id: `saved-mat-${index}-${Date.now()}`,
+        item: m.item,
+        quantity: m.quantity,
+        unit: m.unit,
+        unitPrice: m.unitPrice || 0,
+        source: "manual" as const, // Saved data counts as manual
+        citationSource: "manual_override" as const,
+        citationId: `[SAVED-${index + 1}]`,
+        isEssential: m.isEssential ?? checkEssential(m.item),
+        wastePercentage: m.isEssential ?? checkEssential(m.item) ? 10 : 0,
+      }));
+      
+      console.log("[ProjectDetailsView] Syncing saved materials to centralMaterials:", centralItems.length);
+      projectActions.setCentralMaterials(centralItems, "manual");
+      return;
+    }
+    
+    // Priority 2: Use AI-detected materials from photo_estimate
+    const photoEstimate = summary.photo_estimate as PhotoEstimateData | undefined;
+    if (photoEstimate?.materials && photoEstimate.materials.length > 0) {
+      const centralItems = photoEstimate.materials.map((m, index) => ({
+        id: `ai-mat-${index}-${Date.now()}`,
+        item: m.item,
+        quantity: m.quantity,
+        unit: m.unit,
+        unitPrice: 0, // AI doesn't provide unit prices, will be enriched later
+        source: "ai" as const,
+        citationSource: "ai_photo" as const,
+        citationId: `[AI-${index + 1}]`,
+        isEssential: checkEssential(m.item),
+        wastePercentage: checkEssential(m.item) ? 10 : 0,
+      }));
+      
+      console.log("[ProjectDetailsView] Syncing AI materials to centralMaterials:", centralItems.length);
+      projectActions.setCentralMaterials(centralItems, "ai_analysis");
+      
+      // Also sync confirmed area if available
+      const detectedArea = photoEstimate.area;
+      if (detectedArea) {
+        const rawConfidence = photoEstimate.areaConfidence || "medium";
+        const confidence = (rawConfidence === "high" || rawConfidence === "medium" || rawConfidence === "low") 
+          ? rawConfidence 
+          : "medium" as const;
+        
+        projectActions.updatePillar("confirmedArea", {
+          value: detectedArea,
+          unit: photoEstimate.areaUnit || "sq ft",
+          source: "ai-photo",
+          confidence,
+          detectedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }, [summary, loading, projectState.centralMaterials.items.length, projectActions]);
 
   // Extract stable values from summary for dependency tracking
   // This prevents infinite re-fetching when summary object reference changes
@@ -2133,72 +2218,25 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         <TabsContent value="materials" className="mt-6">
           <MaterialCalculationTab 
             materials={(() => {
-              // Get the confirmed area from operational truth (the single source of truth)
-              const confirmedAreaValue = operationalTruth.confirmedArea;
+              // === READ FROM CENTRAL MATERIALS (Single Source of Truth) ===
+              // projectState.centralMaterials is populated by:
+              // 1. On project load: from saved line_items or AI photo_estimate
+              // 2. On AI Analysis: from useProjectAIAnalysis hook
               
-              // Helper to sync materials with confirmed area
-              const syncMaterialsWithArea = (materials: Array<{ 
-                item: string; 
-                quantity: number; 
-                unit: string; 
-                unitPrice?: number;
-                baseQuantity?: number;
-                isEssential?: boolean;
-                totalPrice?: number;
-              }>) => {
-                // Find the current flooring/laminate area to calculate ratio
-                const flooringMaterial = materials.find(m => 
-                  /laminate|flooring/i.test(m.item) && m.unit === 'sq ft'
-                );
-                const currentMaterialArea = flooringMaterial?.baseQuantity || flooringMaterial?.quantity || null;
-                
-                // If we have a confirmed area that differs from material quantities, sync them
-                if (confirmedAreaValue && currentMaterialArea && Math.abs(confirmedAreaValue - currentMaterialArea) > 1) {
-                  const ratio = confirmedAreaValue / currentMaterialArea;
-                  return materials.map(m => {
-                    if (m.unit === 'sq ft') {
-                      const newBaseQty = Math.round((m.baseQuantity || m.quantity) * ratio);
-                      const isEssential = m.isEssential ?? /laminate|flooring|underlayment|baseboard|trim|adhesive/i.test(m.item);
-                      const newFinalQty = isEssential ? Math.ceil(newBaseQty * 1.1) : newBaseQty;
-                      return {
-                        ...m,
-                        baseQuantity: newBaseQty,
-                        quantity: newFinalQty,
-                        totalPrice: newFinalQty * (m.unitPrice || 0),
-                      };
-                    }
-                    return m;
-                  });
-                }
-                return materials;
-              };
-              
-              // First check if we have saved line_items in the summary
-              // CRITICAL: Even saved data must be synced with the current confirmed area
-              const savedLineItems = summary?.line_items as { 
-                materials?: Array<{ 
-                  item: string; 
-                  quantity: number; 
-                  unit: string; 
-                  unitPrice: number;
-                  baseQuantity?: number;
-                  isEssential?: boolean;
-                  totalPrice?: number;
-                }> 
-              } | null;
-              if (savedLineItems && typeof savedLineItems === 'object' && !Array.isArray(savedLineItems) && 
-                  savedLineItems.materials && savedLineItems.materials.length > 0) {
-                // Sync saved materials with the current confirmed area
-                return syncMaterialsWithArea(savedLineItems.materials);
+              if (projectState.centralMaterials.items.length > 0) {
+                // Use central materials - already synced with confirmed area
+                return projectState.centralMaterials.items.map(m => ({
+                  item: m.item,
+                  quantity: m.quantity,
+                  unit: m.unit,
+                  unitPrice: m.unitPrice || 0,
+                  baseQuantity: m.originalValue,
+                  isEssential: m.isEssential,
+                  totalPrice: m.totalPrice,
+                }));
               }
               
-              // Priority 2: Use AI-detected materials from photo_estimate or ai_workflow_config
-              // IMPORTANT: Sync material quantities with the confirmed area from citation
-              if (aiAnalysis?.materials && aiAnalysis.materials.length > 0) {
-                return syncMaterialsWithArea(aiAnalysis.materials);
-              }
-              
-              // Priority 3: Aggregate materials from "Order" tasks
+              // Fallback: Aggregate materials from "Order" tasks (only if centralMaterials empty)
               type CostEntry = { item: string; quantity: number; unit: string; unitPrice: number };
               const materialMap: Record<string, CostEntry> = {};
               
@@ -2276,13 +2314,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               address: summary?.client_address || undefined,
             }}
             dataSource={(() => {
-              const savedLineItems = summary?.line_items as { materials?: unknown[] } | null;
-              if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
-                return 'saved' as const;
-              }
-              if (aiAnalysis?.materials && aiAnalysis.materials.length > 0) {
-                return 'ai' as const;
-              }
+              // Derive dataSource from centralMaterials.source
+              const centralSource = projectState.centralMaterials.source;
+              if (centralSource === "manual" || centralSource === "merged") return 'saved' as const;
+              if (centralSource === "ai_analysis") return 'ai' as const;
+              if (centralSource === "template") return 'ai' as const;
+              // Fallback check
+              if (projectState.centralMaterials.items.length > 0) return 'ai' as const;
               return 'tasks' as const;
             })()}
             isSoloMode={!isTeamMode}
@@ -2353,6 +2391,27 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 .eq('id', summary.id);
               
               if (error) throw error;
+              
+              // === SYNC TO CENTRAL MATERIALS (Dashboard reads from here) ===
+              const essentialKeywords = ["flooring", "laminate", "tile", "drywall", "underlayment", "baseboard", "trim", "hardwood"];
+              const checkEssential = (item: string) => essentialKeywords.some(k => item.toLowerCase().includes(k));
+              
+              const savedCentralItems = costs.materials.map((m, index) => ({
+                id: `saved-mat-${index}-${Date.now()}`,
+                item: m.item,
+                quantity: m.quantity,
+                unit: m.unit,
+                unitPrice: m.unitPrice || 0,
+                totalPrice: m.totalPrice || (m.quantity * (m.unitPrice || 0)),
+                source: "manual" as const,
+                citationSource: "manual_override" as const,
+                citationId: `[SAVED-${index + 1}]`,
+                isEssential: m.isEssential ?? checkEssential(m.item),
+                wastePercentage: m.isEssential ?? checkEssential(m.item) ? 10 : 0,
+              }));
+              
+              console.log('[Materials Save] Syncing to centralMaterials:', savedCentralItems.length);
+              projectActions.setCentralMaterials(savedCentralItems, "manual");
               
               setSummary(prev => prev ? {
                 ...prev,
