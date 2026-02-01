@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,52 +88,61 @@ export default function PowerEditModal({
   const wasteBuffer = Math.round(editArea * (wastePercent / 100));
   const totalWithWaste = editArea + wasteBuffer;
 
+  // Track previous values with refs to avoid stale closures
+  const previousAreaRef = useRef<number>(editArea);
+  const previousWasteRef = useRef<number>(wastePercent);
+
+  // Update refs when state changes
+  useEffect(() => {
+    previousAreaRef.current = editArea;
+  }, [editArea]);
+
+  useEffect(() => {
+    previousWasteRef.current = wastePercent;
+  }, [wastePercent]);
+
   // Handle waste percent change - recalculate all essential material quantities
   const handleWastePercentChange = useCallback((newPercent: number) => {
     const clampedPercent = Math.max(0, Math.min(50, newPercent)); // Clamp between 0-50%
-    const oldPercent = wastePercent;
-    setWastePercent(clampedPercent);
+    
+    setWastePercent(prevWaste => {
+      if (prevWaste !== clampedPercent) {
+        // Recalculate essential materials using functional update
+        const ratio = (100 + clampedPercent) / (100 + prevWaste);
+        setEditMaterials(prevMaterials => 
+          prevMaterials.map(mat => {
+            if (isEssentialMaterial(mat.item) || mat.unit === "sq ft" || mat.unit === "sq m") {
+              return { ...mat, quantity: Math.round(mat.quantity * ratio) };
+            }
+            return mat;
+          })
+        );
+      }
+      return clampedPercent;
+    });
     setHasChanges(true);
+  }, []);
 
-    // Recalculate essential materials: adjust from old waste to new waste
-    // Material qty = base * (1 + waste%). To adjust: new_qty = old_qty * (1 + new%) / (1 + old%)
-    if (oldPercent !== clampedPercent && editMaterials.length > 0) {
-      const ratio = (100 + clampedPercent) / (100 + oldPercent);
-      const updatedMaterials = editMaterials.map(mat => {
-        if (isEssentialMaterial(mat.item) || mat.unit === "sq ft" || mat.unit === "sq m") {
-          return {
-            ...mat,
-            quantity: Math.round(mat.quantity * ratio)
-          };
-        }
-        return mat;
-      });
-      setEditMaterials(updatedMaterials);
-    }
-  }, [wastePercent, editMaterials]);
-
-  // Recalculate materials when area changes
+  // Recalculate materials when area changes - using functional updates to avoid stale closures
   const handleAreaChange = useCallback((newArea: number) => {
-    const previousArea = editArea;
-    setEditArea(newArea);
+    setEditArea(prevArea => {
+      // Auto-recalculate essential materials based on area ratio
+      if (prevArea > 0 && newArea > 0 && newArea !== prevArea) {
+        const ratio = newArea / prevArea;
+        setEditMaterials(prevMaterials => 
+          prevMaterials.map(mat => {
+            // Only scale essential materials (those measured in sq ft or similar)
+            if (isEssentialMaterial(mat.item) || mat.unit === "sq ft" || mat.unit === "sq m") {
+              return { ...mat, quantity: Math.round(mat.quantity * ratio) };
+            }
+            return mat;
+          })
+        );
+      }
+      return newArea;
+    });
     setHasChanges(true);
-
-    // Auto-recalculate essential materials based on area ratio
-    if (previousArea > 0 && newArea !== previousArea) {
-      const ratio = newArea / previousArea;
-      const updatedMaterials = editMaterials.map(mat => {
-        // Only scale essential materials (those measured in sq ft or similar)
-        if (isEssentialMaterial(mat.item) || mat.unit === "sq ft" || mat.unit === "sq m") {
-          return {
-            ...mat,
-            quantity: Math.round(mat.quantity * ratio)
-          };
-        }
-        return mat;
-      });
-      setEditMaterials(updatedMaterials);
-    }
-  }, [editArea, editMaterials]);
+  }, []);
 
   // Handle material quantity change
   const handleMaterialQuantityChange = (index: number, newQuantity: number) => {
