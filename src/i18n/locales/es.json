@@ -798,5 +798,11 @@
     "noMaterials": "Agrega materiales manualmente para proyecto personalizado",
     "templateSource": "Plantilla",
     "manualSource": "Manual"
+  },
+  "materials": {
+    "wasteBuffer": "Desperdicio",
+    "materialsSection": "Materiales",
+    "laborSection": "Mano de Obra",
+    "otherSection": "Otros"
   }
 }

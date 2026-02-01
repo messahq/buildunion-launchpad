@@ -770,5 +770,11 @@
         "description": "オンタリオ建築基準法の組み込みコンプライアンスチェック。"
       }
     }
+  },
+  "materials": {
+    "wasteBuffer": "ロス",
+    "materialsSection": "材料",
+    "laborSection": "労働",
+    "otherSection": "その他"
   }
 }

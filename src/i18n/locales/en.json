@@ -901,6 +901,12 @@
     "templateSource": "Template",
     "manualSource": "Manual"
   },
+  "materials": {
+    "wasteBuffer": "Waste",
+    "materialsSection": "Materials",
+    "laborSection": "Labor",
+    "otherSection": "Other"
+  },
   "common": {
     "delete": "Delete",
     "cancel": "Cancel",

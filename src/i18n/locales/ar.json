@@ -786,5 +786,11 @@
     "materialsLoaded": "تم تحميل {{count}} مادة من القالب",
     "templateSource": "قالب",
     "manualSource": "يدوي"
+  },
+  "materials": {
+    "wasteBuffer": "هدر",
+    "materialsSection": "المواد",
+    "laborSection": "العمالة",
+    "otherSection": "أخرى"
   }
 }
