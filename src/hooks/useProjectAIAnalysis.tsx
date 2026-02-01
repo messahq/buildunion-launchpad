@@ -88,6 +88,8 @@ interface AnalyzeProjectParams {
   aiTriggers?: AITriggers;
   // Force skip cache
   forceRefresh?: boolean;
+  // Precision mode for re-analysis - uses enhanced OCR and contextual validation
+  precisionMode?: boolean;
 }
 
 // Tier-based analysis depth with model selection
@@ -146,6 +148,7 @@ export const useProjectAIAnalysis = () => {
     filterAnswers,
     aiTriggers,
     forceRefresh = false,
+    precisionMode = false,
   }: AnalyzeProjectParams): Promise<AIAnalysisResult | null> => {
     if (!session?.access_token) {
       toast.error("Please sign in to use AI analysis");
@@ -249,6 +252,11 @@ export const useProjectAIAnalysis = () => {
           ? `${workType} project: ${description || "No additional details"}`
           : description || "";
 
+        // Update step text for precision mode
+        if (precisionMode) {
+          setCurrentStep("Reviewing dimensions with precision OCR...");
+        }
+
         // Pass tier info to edge function for model selection
         const { data, error: fnError } = await supabase.functions.invoke("quick-estimate", {
           body: {
@@ -261,6 +269,8 @@ export const useProjectAIAnalysis = () => {
             // Pass filter data for targeted analysis
             filterAnswers: filterAnswers || null,
             aiTriggers: aiTriggers || null,
+            // Precision mode for enhanced OCR and contextual validation
+            precisionMode: precisionMode,
           },
           headers: {
             Authorization: `Bearer ${session.access_token}`,

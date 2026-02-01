@@ -567,12 +567,12 @@ export default function AIAnalysisCitation({
                         {isReanalyzing ? (
                           <>
                             <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Re-analyzing...
+                            Reviewing dimensions...
                           </>
                         ) : (
                           <>
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            Re-analyze
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Re-analyze with precision
                           </>
                         )}
                       </Button>
