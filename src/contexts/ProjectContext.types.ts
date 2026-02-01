@@ -338,6 +338,8 @@ export interface CentralMaterials {
   source: "ai_analysis" | "template" | "manual" | "merged";
   lastUpdatedAt: string | null;
   hasManualOverrides: boolean;
+  wastePercent: number; // Default 10%, user can adjust 0-50%
+  baseArea: number | null; // The confirmed area that materials quantities are based on
 }
 
 // ============================================
@@ -397,6 +399,9 @@ export interface ProjectContextActions {
   addCentralMaterial: (material: Omit<MaterialItem, "id">) => MaterialItem;
   removeCentralMaterial: (materialId: string) => void;
   recalculateCentralFinancials: () => void;
+  
+  // ====== WASTE & AREA SYNC (dynamic recalculation) ======
+  setWasteAndArea: (wastePercent?: number, baseArea?: number) => void;
   
   // Page 1 Actions
   setPage1Data: (data: Partial<Page1State>) => void;

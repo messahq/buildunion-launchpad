@@ -65,6 +65,8 @@ interface MaterialCalculationTabProps {
   projectAddress?: string;
   confirmedArea?: number | null; // The confirmed area from citation system
   confirmedAreaUnit?: string;
+  wastePercent?: number; // Waste buffer percentage (default 10%)
+  baseArea?: number | null; // The base area that materials quantities are based on
   companyName?: string;
   companyLogoUrl?: string | null;
   companyPhone?: string | null;
@@ -158,6 +160,8 @@ export function MaterialCalculationTab({
   projectAddress = "",
   confirmedArea,
   confirmedAreaUnit = "sq ft",
+  wastePercent = 10,
+  baseArea,
   companyName,
   companyLogoUrl,
   companyPhone,
@@ -173,6 +177,13 @@ export function MaterialCalculationTab({
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Track previous baseArea for dynamic recalculation
+  const prevBaseAreaRef = useRef<number | null>(baseArea ?? null);
+  const prevWasteRef = useRef<number>(wastePercent);
+  
+  // Dynamic waste percentage from props (allows live adjustment)
+  const DYNAMIC_WASTE = wastePercent / 100;
   
   // Helper to create initial material items
   // CRITICAL: When dataSource='saved', use the saved quantities as-is (no recalculation)
@@ -272,12 +283,12 @@ export function MaterialCalculationTab({
     const underlaymentItem = materialItems.find(m => /^underlayment$/i.test(m.item.trim()));
     
     if (laminateItem && underlaymentItem) {
-      const laminateBase = laminateItem.baseQuantity || laminateItem.quantity / (1 + WASTE_PERCENTAGE);
-      const underlaymentBase = underlaymentItem.baseQuantity || underlaymentItem.quantity / (1 + WASTE_PERCENTAGE);
+      const laminateBase = laminateItem.baseQuantity || laminateItem.quantity / (1 + DYNAMIC_WASTE);
+      const underlaymentBase = underlaymentItem.baseQuantity || underlaymentItem.quantity / (1 + DYNAMIC_WASTE);
       
       // Only sync if they're different
       if (Math.abs(laminateBase - underlaymentBase) > 1) {
-        const newQuantityWithWaste = Math.ceil(laminateBase * (1 + WASTE_PERCENTAGE));
+        const newQuantityWithWaste = Math.ceil(laminateBase * (1 + DYNAMIC_WASTE));
         setMaterialItems(prev => prev.map(item => {
           if (/^underlayment$/i.test(item.item.trim())) {
             return {
@@ -293,6 +304,59 @@ export function MaterialCalculationTab({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laminateBaseQty]);
+  
+  // ====== DYNAMIC SYNC: Recalculate when baseArea or wastePercent changes ======
+  useEffect(() => {
+    const prevArea = prevBaseAreaRef.current;
+    const prevWaste = prevWasteRef.current;
+    const newArea = baseArea ?? confirmedArea;
+    const newWaste = wastePercent;
+    
+    // Skip if nothing changed or no valid area to work with
+    if ((!newArea || !prevArea) && prevWaste === newWaste) {
+      prevBaseAreaRef.current = newArea ?? null;
+      prevWasteRef.current = newWaste;
+      return;
+    }
+    
+    let needsRecalc = false;
+    let areaRatio = 1;
+    let wasteRatio = 1;
+    
+    // Check if area changed
+    if (newArea && prevArea && Math.abs(newArea - prevArea) > 1) {
+      areaRatio = newArea / prevArea;
+      needsRecalc = true;
+    }
+    
+    // Check if waste changed
+    if (newWaste !== prevWaste) {
+      wasteRatio = (100 + newWaste) / (100 + prevWaste);
+      needsRecalc = true;
+    }
+    
+    if (needsRecalc) {
+      console.log(`[MaterialsSync] Recalculating: areaRatio=${areaRatio.toFixed(2)}, wasteRatio=${wasteRatio.toFixed(2)}`);
+      
+      setMaterialItems(prev => prev.map(item => {
+        if (item.isEssential || item.unit === "sq ft" || item.unit === "m²") {
+          const newQuantity = Math.ceil(item.quantity * areaRatio * wasteRatio);
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: newQuantity * item.unitPrice,
+          };
+        }
+        return item;
+      }));
+      
+      setHasUnsavedChanges(true);
+    }
+    
+    // Update refs
+    prevBaseAreaRef.current = newArea ?? null;
+    prevWasteRef.current = newWaste;
+  }, [baseArea, confirmedArea, wastePercent]);
   
   // New other item form
   const [otherDescription, setOtherDescription] = useState("");
