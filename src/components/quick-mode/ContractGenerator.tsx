@@ -239,6 +239,7 @@ interface ContractGeneratorProps {
   projectData?: ProjectData;
   initialTemplate?: ContractTemplateType;
   linkedProjectId?: string;
+  projectMode?: "solo" | "team";
 }
 
 const ContractGenerator = ({ 
@@ -251,7 +252,8 @@ const ContractGenerator = ({
   onSaveToProjects, 
   projectData,
   initialTemplate,
-  linkedProjectId
+  linkedProjectId,
+  projectMode = "solo"
 }: ContractGeneratorProps) => {
   const { user } = useAuth();
   const { profile } = useBuProfile();
