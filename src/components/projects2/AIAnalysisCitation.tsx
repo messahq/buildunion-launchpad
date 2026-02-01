@@ -495,16 +495,43 @@ export default function AIAnalysisCitation({
                 </span>
                 {areaSource && <SourceTag source={areaSource} />}
               </div>
-              {!isEditingArea && editableArea && (
-                <button 
-                  onClick={() => setIsEditingArea(true)}
-                  className="p-1 hover:bg-muted rounded transition-colors"
-                  title="Edit area"
-                >
-                  <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {!isEditingArea && editableArea && (
+                  <button 
+                    onClick={() => setIsEditingArea(true)}
+                    className="p-1 hover:bg-muted rounded transition-colors"
+                    title="Edit area"
+                  >
+                    <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                  </button>
+                )}
+                {/* Re-analyze button - always visible when callback exists */}
+                {onReanalyze && !isEditingArea && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onReanalyze}
+                    disabled={isReanalyzing}
+                    className="h-6 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-100/50"
+                    title="Re-analyze with higher precision"
+                  >
+                    {isReanalyzing ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" />
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
+            
+            {/* Re-analyzing status */}
+            {isReanalyzing && (
+              <div className="flex items-center gap-2 text-sm text-amber-600 animate-pulse">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Reviewing dimensions...</span>
+              </div>
+            )}
             
             {isEditingArea ? (
               <div className="flex items-center gap-2">
@@ -531,7 +558,7 @@ export default function AIAnalysisCitation({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-            ) : (
+            ) : !isReanalyzing && (
               <>
                 {editableArea ? (
                   <div className="space-y-1">
