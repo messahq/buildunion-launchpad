@@ -436,6 +436,27 @@ export function MaterialCalculationTab({
     };
   }, [hasUnsavedChanges, materialItems, laborItems, otherItems, grandTotal, onSave, t]);
 
+  // Handle GROSS quantity change for essential materials (user edits the order quantity)
+  // This recalculates the baseQuantity from the gross value
+  const handleGrossQuantityChange = (id: string, newGrossQty: number) => {
+    setHasUnsavedChanges(true);
+    setMaterialItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      
+      // Calculate base from gross: base = gross / (1 + waste%)
+      const newBaseQty = item.isEssential 
+        ? Math.round(newGrossQty / (1 + DYNAMIC_WASTE)) 
+        : newGrossQty;
+      
+      return {
+        ...item,
+        baseQuantity: newBaseQty,
+        quantity: newGrossQty,
+        totalPrice: newGrossQty * item.unitPrice,
+      };
+    }));
+  };
+  
   // Handle base quantity change for essential materials (auto-updates waste)
   const handleBaseQuantityChange = (id: string, newBaseQty: number) => {
     setHasUnsavedChanges(true);
@@ -443,7 +464,7 @@ export function MaterialCalculationTab({
       if (item.id !== id) return item;
       
       const quantityWithWaste = item.isEssential 
-        ? Math.ceil(newBaseQty * (1 + WASTE_PERCENTAGE)) 
+        ? Math.ceil(newBaseQty * (1 + DYNAMIC_WASTE)) 
         : newBaseQty;
       
       return {
@@ -1122,7 +1143,7 @@ export function MaterialCalculationTab({
                 <span className="font-medium text-sm break-words">{item.item}</span>
                 {item.isEssential && (
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 shrink-0">
-                    +10%
+                    +{wastePercent}%
                   </Badge>
                 )}
               </div>
@@ -1149,7 +1170,7 @@ export function MaterialCalculationTab({
           
           {/* Row 2: Qty/Unit + Price + Total */}
           <div className="grid grid-cols-3 gap-2 items-center">
-            {/* Quantity + Unit */}
+            {/* Quantity + Unit - GROSS (order quantity) in main field, Net + waste% below */}
             <div className="text-sm text-muted-foreground">
               {item.isEssential && item.baseQuantity !== undefined ? (
                 <div className="space-y-0.5">
@@ -1157,15 +1178,15 @@ export function MaterialCalculationTab({
                     <Input
                       type="text"
                       inputMode="decimal"
-                      defaultValue={item.baseQuantity || ''}
-                      onBlur={(e) => handleBaseQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                      className="h-7 w-16 text-xs text-center p-1 border-dashed"
-                      title={t("materials.editBaseQty", "Edit base quantity")}
+                      defaultValue={item.quantity || ''}
+                      onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                      className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium"
+                      title={t("materials.editGrossQty", "Edit order quantity (gross)")}
                     />
                     <span className="text-xs">{item.unit}</span>
                   </div>
-                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium block">
-                    → {item.quantity.toLocaleString()} (+10%)
+                  <span className="text-[10px] text-muted-foreground block">
+                    → {item.baseQuantity?.toLocaleString()} (net) +{wastePercent}%
                   </span>
                 </div>
               ) : (
