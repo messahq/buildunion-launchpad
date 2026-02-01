@@ -1,12 +1,12 @@
 // ============================================
 // DASHBOARD FINANCIAL SYNC HOOK
-// Bridges Page 2 materials to Dashboard Budget
-// Forces sync from Operational Truth + Templates
+// Reads from ProjectContext.centralMaterials & centralFinancials
+// Dashboard's single source of truth
 // ============================================
 
 import { useMemo, useCallback, useEffect } from "react";
 import { useProjectContext } from "@/contexts/ProjectContext";
-import { MaterialItem, CitationSource } from "@/contexts/ProjectContext.types";
+import { MaterialItem, CitationSource, CentralMaterials } from "@/contexts/ProjectContext.types";
 import { 
   WORK_TYPE_TEMPLATES, 
   WorkTypeId,
@@ -134,21 +134,22 @@ function enrichMaterialsWithPrices(
 
 export function useDashboardFinancialSync() {
   const { state, actions } = useProjectContext();
-  const { page2, page3, sync, operationalTruth, page1 } = state;
+  const { centralMaterials, centralFinancials, operationalTruth, page1, page4, sync } = state;
 
-  // Force sync: If page2.materials is empty but operationalTruth has materials, inject them
+  // ====== AUTO-SYNC from Operational Truth to Central ======
+  // If centralMaterials is empty but OT has data, populate central
   useEffect(() => {
     const otMaterials = operationalTruth.materials.items;
-    const page2Materials = page2.materials;
+    const centralItems = centralMaterials.items;
     
-    // Sync required if: page2 is empty but OT has data, OR page2 has data but no prices
+    // Sync required if: central is empty but OT has data, OR central has no prices
     const needsSync = (
-      (page2Materials.length === 0 && otMaterials.length > 0) ||
-      (page2Materials.length > 0 && page2Materials.every(m => !m.totalPrice || m.totalPrice === 0))
+      (centralItems.length === 0 && otMaterials.length > 0) ||
+      (centralItems.length > 0 && centralItems.every(m => !m.totalPrice || m.totalPrice === 0))
     );
     
     if (needsSync) {
-      const sourceMaterials = page2Materials.length > 0 ? page2Materials : otMaterials;
+      const sourceMaterials = centralItems.length > 0 ? centralItems : otMaterials;
       const enrichedMaterials = enrichMaterialsWithPrices(
         sourceMaterials,
         page1.workType,
@@ -160,36 +161,34 @@ export function useDashboardFinancialSync() {
       const template = workTypeId ? getTemplateByWorkType(workTypeId) : null;
       const laborCost = template ? calculateTemplateEstimate(template).laborCost : 0;
       
-      actions.setPage2Data({
-        materials: enrichedMaterials,
-        estimatedLaborCost: laborCost || page2.estimatedLaborCost,
-        lastModifiedSource: "template_preset",
-      });
+      // Write to CENTRAL (not page2)
+      actions.setCentralMaterials(enrichedMaterials, "ai_analysis");
+      actions.setCentralFinancials({ laborCost });
     }
   }, [
     operationalTruth.materials.items,
-    page2.materials,
+    centralMaterials.items,
     page1.workType,
     operationalTruth.confirmedArea.value,
     actions,
   ]);
 
-  // Effective materials with price enrichment (always apply for display)
+  // Enrich materials for display (always apply to ensure prices)
   const effectiveMaterials = useMemo(() => {
     return enrichMaterialsWithPrices(
-      page2.materials,
+      centralMaterials.items,
       page1.workType,
       operationalTruth.confirmedArea.value
     );
-  }, [page2.materials, page1.workType, operationalTruth.confirmedArea.value]);
+  }, [centralMaterials.items, page1.workType, operationalTruth.confirmedArea.value]);
 
-  // Calculate financial summary from enriched materials
+  // Calculate financial summary from CENTRAL data
   const financialSummary = useMemo((): FinancialSummary => {
     const materialCost = effectiveMaterials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
-    const laborCost = page2.estimatedLaborCost || page3.laborCost;
-    const otherCost = page3.otherCost;
+    const laborCost = centralFinancials.laborCost || 0;
+    const otherCost = centralFinancials.otherCost || 0;
     const subtotal = materialCost + laborCost + otherCost;
-    const taxRate = page3.taxRate || 0.13; // Default HST
+    const taxRate = centralFinancials.taxRate || 0.13;
     const taxAmount = subtotal * taxRate;
     const grandTotal = subtotal + taxAmount;
 
@@ -201,10 +200,10 @@ export function useDashboardFinancialSync() {
       taxRate,
       taxAmount,
       grandTotal,
-      isDraft: !state.page4.contractorSigned, // Draft until finalized
-      lastModified: sync.lastSyncedAt,
+      isDraft: centralFinancials.isDraft, // From central financials
+      lastModified: centralMaterials.lastUpdatedAt,
     };
-  }, [effectiveMaterials, page2.estimatedLaborCost, page3, state.page4.contractorSigned, sync.lastSyncedAt]);
+  }, [effectiveMaterials, centralFinancials, centralMaterials.lastUpdatedAt]);
 
   // Get materials with citation badges for Dashboard display
   const materialsWithCitations = useMemo((): MaterialWithCitation[] => {
@@ -214,58 +213,28 @@ export function useDashboardFinancialSync() {
     }));
   }, [effectiveMaterials]);
 
-  // Update a single material from Dashboard (bidirectional sync)
+  // Update a single material from Dashboard (writes to CENTRAL)
   const updateMaterialFromDashboard = useCallback((
     materialId: string,
     field: "quantity" | "unitPrice" | "item",
     newValue: string | number
   ) => {
-    const timestamp = new Date().toISOString();
-    const material = page2.materials.find(m => m.id === materialId);
-    
+    const material = centralMaterials.items.find(m => m.id === materialId);
     if (!material) return;
 
-    const updatedMaterials = page2.materials.map(m => {
-      if (m.id !== materialId) return m;
-      
-      const updates: Partial<MaterialItem> = {
-        [field]: newValue,
-        source: "manual" as const,
-        citationSource: "manual_override" as CitationSource,
-        editedAt: timestamp,
-        originalValue: m.originalValue ?? (field === "quantity" ? m.quantity : undefined),
-      };
-
-      // Recalculate total if quantity or price changed
-      if (field === "quantity" || field === "unitPrice") {
-        const qty = field === "quantity" ? (newValue as number) : m.quantity;
-        const price = field === "unitPrice" ? (newValue as number) : (m.unitPrice || 0);
-        updates.totalPrice = qty * price;
-      }
-
-      return { ...m, ...updates };
-    });
-
-    // Update citation registry with manual override entry
-    const citationEntry = {
-      id: `[MO-${Date.now()}]`,
-      materialId,
-      source: "manual_override" as CitationSource,
-      timestamp,
-      previousValue: typeof material[field] === "number" ? material[field] as number : undefined,
-      newValue: typeof newValue === "number" ? newValue : undefined,
-      field: field as "quantity" | "unitPrice" | "item",
+    const updates: Partial<MaterialItem> = {
+      [field]: newValue,
     };
 
-    actions.setPage2Data({
-      materials: updatedMaterials,
-      citationRegistry: [...page2.citationRegistry, citationEntry],
-      lastModifiedSource: "manual_override",
-    });
+    // Recalculate total if quantity or price changed
+    if (field === "quantity" || field === "unitPrice") {
+      const qty = field === "quantity" ? (newValue as number) : material.quantity;
+      const price = field === "unitPrice" ? (newValue as number) : (material.unitPrice || 0);
+      updates.totalPrice = qty * price;
+    }
 
-    // Mark as dirty for sync
-    actions.markDirty("materials");
-  }, [page2.materials, page2.citationRegistry, actions]);
+    actions.updateCentralMaterial(materialId, updates);
+  }, [centralMaterials.items, actions]);
 
   // Add new material from Dashboard
   const addMaterialFromDashboard = useCallback((
@@ -274,9 +243,7 @@ export function useDashboardFinancialSync() {
     unit: string,
     unitPrice: number = 0
   ) => {
-    const timestamp = new Date().toISOString();
-    const newMaterial: MaterialItem = {
-      id: `mat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    const newMaterial = actions.addCentralMaterial({
       item,
       quantity,
       unit,
@@ -284,64 +251,25 @@ export function useDashboardFinancialSync() {
       totalPrice: quantity * unitPrice,
       source: "manual" as const,
       citationSource: "manual_override" as CitationSource,
-      citationId: `[MO-${page2.materials.length + 1}]`,
       isEssential: false,
-    };
-
-    const citationEntry = {
-      id: newMaterial.citationId!,
-      materialId: newMaterial.id,
-      source: "manual_override" as CitationSource,
-      timestamp,
-      newValue: quantity,
-      field: "added" as const,
-    };
-
-    actions.setPage2Data({
-      materials: [...page2.materials, newMaterial],
-      citationRegistry: [...page2.citationRegistry, citationEntry],
-      lastModifiedSource: "manual_override",
     });
-
-    actions.markDirty("materials");
     return newMaterial;
-  }, [page2.materials, page2.citationRegistry, actions]);
+  }, [actions]);
 
   // Remove material from Dashboard
   const removeMaterialFromDashboard = useCallback((materialId: string) => {
-    const timestamp = new Date().toISOString();
-    const material = page2.materials.find(m => m.id === materialId);
-    
-    if (!material) return;
-
-    const citationEntry = {
-      id: `[MO-DEL-${Date.now()}]`,
-      materialId,
-      source: "manual_override" as CitationSource,
-      timestamp,
-      previousValue: material.quantity,
-      field: "removed" as const,
-    };
-
-    actions.setPage2Data({
-      materials: page2.materials.filter(m => m.id !== materialId),
-      citationRegistry: [...page2.citationRegistry, citationEntry],
-      lastModifiedSource: "manual_override",
-    });
-
-    actions.markDirty("materials");
-  }, [page2.materials, page2.citationRegistry, actions]);
+    actions.removeCentralMaterial(materialId);
+  }, [actions]);
 
   // Finalize project (lock all data)
   const finalizeProject = useCallback(async () => {
-    actions.setPage4Data({
-      contractorSigned: true,
-    });
+    actions.setCentralFinancials({ isDraft: false });
+    actions.setPage4Data({ contractorSigned: true });
     await actions.syncToDatabase();
     return true;
   }, [actions]);
 
-  // Get citation summary stats from enriched materials
+  // Get citation summary stats
   const citationStats = useMemo(() => {
     const stats: Record<CitationSource, number> = {
       ai_photo: 0,
@@ -368,14 +296,14 @@ export function useDashboardFinancialSync() {
   }, [effectiveMaterials]);
 
   return {
-    // Financial data
+    // Financial data (from CENTRAL)
     financialSummary,
     
-    // Materials with badges (use enriched effectiveMaterials)
+    // Materials with badges
     materialsWithCitations,
     materialCount: effectiveMaterials.length,
     
-    // Actions
+    // Actions (write to CENTRAL)
     updateMaterialFromDashboard,
     addMaterialFromDashboard,
     removeMaterialFromDashboard,
@@ -383,8 +311,8 @@ export function useDashboardFinancialSync() {
     
     // Stats
     citationStats,
-    isDraft: financialSummary.isDraft,
-    hasManualOverrides: citationStats.some(s => s.source === "manual_override"),
+    isDraft: centralFinancials.isDraft,
+    hasManualOverrides: centralMaterials.hasManualOverrides,
     
     // Badge helper
     getCitationBadge: (source: CitationSource) => CITATION_BADGES[source] || CITATION_BADGES.template_preset,
@@ -392,11 +320,11 @@ export function useDashboardFinancialSync() {
     // Force refresh for debugging
     forceRefresh: () => {
       const enriched = enrichMaterialsWithPrices(
-        page2.materials.length > 0 ? page2.materials : operationalTruth.materials.items,
+        centralMaterials.items.length > 0 ? centralMaterials.items : operationalTruth.materials.items,
         page1.workType,
         operationalTruth.confirmedArea.value
       );
-      actions.setPage2Data({ materials: enriched, lastModifiedSource: "template_preset" });
+      actions.setCentralMaterials(enriched, "merged");
     },
   };
 }
