@@ -32,8 +32,9 @@ interface PowerEditModalProps {
   currentArea: number | null;
   areaUnit: string;
   currentMaterials: Material[];
-  // Callbacks for atomic save
-  onSaveAndSync: (area: number, materials: Material[]) => Promise<void>;
+  currentWastePercent?: number;
+  // Callbacks for atomic save - now includes wastePercent
+  onSaveAndSync: (area: number, materials: Material[], wastePercent: number) => Promise<void>;
   // Optional: surface type for context
   surfaceType?: string;
 }
@@ -60,12 +61,14 @@ export default function PowerEditModal({
   currentArea,
   areaUnit,
   currentMaterials,
+  currentWastePercent = 10,
   onSaveAndSync,
   surfaceType = "unknown"
 }: PowerEditModalProps) {
   // Local state for editing
   const [editArea, setEditArea] = useState<number>(currentArea || 0);
   const [editMaterials, setEditMaterials] = useState<Material[]>([]);
+  const [wastePercent, setWastePercent] = useState<number>(currentWastePercent);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState("");
@@ -76,13 +79,38 @@ export default function PowerEditModal({
     if (open) {
       setEditArea(currentArea || 0);
       setEditMaterials([...currentMaterials]);
+      setWastePercent(currentWastePercent);
       setHasChanges(false);
     }
-  }, [open, currentArea, currentMaterials]);
+  }, [open, currentArea, currentMaterials, currentWastePercent]);
 
-  // Calculate waste buffer
-  const wasteBuffer = Math.round(editArea * 0.1);
+  // Calculate waste buffer based on wastePercent
+  const wasteBuffer = Math.round(editArea * (wastePercent / 100));
   const totalWithWaste = editArea + wasteBuffer;
+
+  // Handle waste percent change - recalculate all essential material quantities
+  const handleWastePercentChange = useCallback((newPercent: number) => {
+    const clampedPercent = Math.max(0, Math.min(50, newPercent)); // Clamp between 0-50%
+    const oldPercent = wastePercent;
+    setWastePercent(clampedPercent);
+    setHasChanges(true);
+
+    // Recalculate essential materials: adjust from old waste to new waste
+    // Material qty = base * (1 + waste%). To adjust: new_qty = old_qty * (1 + new%) / (1 + old%)
+    if (oldPercent !== clampedPercent && editMaterials.length > 0) {
+      const ratio = (100 + clampedPercent) / (100 + oldPercent);
+      const updatedMaterials = editMaterials.map(mat => {
+        if (isEssentialMaterial(mat.item) || mat.unit === "sq ft" || mat.unit === "sq m") {
+          return {
+            ...mat,
+            quantity: Math.round(mat.quantity * ratio)
+          };
+        }
+        return mat;
+      });
+      setEditMaterials(updatedMaterials);
+    }
+  }, [wastePercent, editMaterials]);
 
   // Recalculate materials when area changes
   const handleAreaChange = useCallback((newArea: number) => {
@@ -145,8 +173,8 @@ export default function PowerEditModal({
       // This callback should atomically update:
       // 1. centralMaterials in ProjectContext
       // 2. centralFinancials (recalculate costs)
-      // 3. Persist to database
-      await onSaveAndSync(editArea, editMaterials);
+      // 3. Persist to database with wastePercent
+      await onSaveAndSync(editArea, editMaterials, wastePercent);
       setHasChanges(false);
       onOpenChange(false);
     } catch (error) {
@@ -186,8 +214,8 @@ export default function PowerEditModal({
               </div>
               
               <div className="p-4 rounded-lg border-2 border-amber-500/30 bg-amber-50/50 dark:bg-amber-900/10">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex-1 min-w-[140px]">
                     <label className="text-sm text-muted-foreground mb-1 block">
                       Base Area (without waste)
                     </label>
@@ -201,27 +229,32 @@ export default function PowerEditModal({
                     </div>
                   </div>
                   
-                  <div className="text-center px-4">
+                  <div className="text-center px-2">
                     <span className="text-2xl text-muted-foreground">+</span>
                   </div>
                   
-                  <div>
+                  <div className="min-w-[120px]">
                     <label className="text-sm text-muted-foreground mb-1 block">
-                      Waste Buffer (+10%)
+                      Waste Buffer
                     </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-semibold text-amber-600">
-                        {wasteBuffer.toLocaleString()}
-                      </span>
-                      <span className="text-muted-foreground">{areaUnit}</span>
+                    <div className="flex items-center gap-1">
+                      <NumericInput
+                        value={wastePercent}
+                        onChange={(val) => handleWastePercentChange(val || 0)}
+                        className="h-10 w-16 text-center font-semibold text-amber-600"
+                      />
+                      <span className="text-amber-600 font-medium">%</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      = {wasteBuffer.toLocaleString()} {areaUnit}
                     </div>
                   </div>
                   
-                  <div className="text-center px-4">
+                  <div className="text-center px-2">
                     <span className="text-2xl text-muted-foreground">=</span>
                   </div>
                   
-                  <div>
+                  <div className="min-w-[120px]">
                     <label className="text-sm text-muted-foreground mb-1 block">
                       Total with Waste
                     </label>
@@ -236,7 +269,7 @@ export default function PowerEditModal({
                 
                 <p className="text-xs text-muted-foreground mt-3">
                   <AlertTriangle className="h-3 w-3 inline mr-1" />
-                  Changing the area will automatically recalculate essential material quantities.
+                  Changing area or waste % will automatically recalculate essential material quantities.
                 </p>
               </div>
             </div>

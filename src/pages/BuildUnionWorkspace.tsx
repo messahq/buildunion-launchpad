@@ -343,12 +343,12 @@ const BuildUnionProjects2 = () => {
   };
 
   // Handle atomic save from Power Modal - synchronized area & materials update
-  const handlePowerSaveAndSync = async (area: number, materials: Array<{ item: string; quantity: number; unit: string }>) => {
+  const handlePowerSaveAndSync = async (area: number, materials: Array<{ item: string; quantity: number; unit: string }>, wastePercent: number = 10) => {
     if (!createdProjectId || !aiAnalysisForSelector) {
       throw new Error("No project available for save");
     }
     
-    console.log("[PowerSaveAndSync] Starting atomic save:", { area, materialsCount: materials.length });
+    console.log("[PowerSaveAndSync] Starting atomic save:", { area, materialsCount: materials.length, wastePercent });
     
     try {
       // Prepare updated photo estimate with user edits
@@ -356,6 +356,7 @@ const BuildUnionProjects2 = () => {
         ...aiAnalysisForSelector,
         area,
         materials,
+        wastePercent, // Store the custom waste percentage
         userEdited: true,
         editedAt: new Date().toISOString(),
       };
@@ -369,6 +370,7 @@ const BuildUnionProjects2 = () => {
         userEdits: {
           editedArea: area,
           editedMaterials: materials,
+          wastePercent, // Store waste % in workflow config too
           editedAt: new Date().toISOString(),
           editSource: "power_modal",
         },
@@ -394,11 +396,12 @@ const BuildUnionProjects2 = () => {
         ...aiAnalysisForSelector,
         area,
         materials,
+        wastePercent,
       });
       
       console.log("[PowerSaveAndSync] Atomic save completed successfully");
       toast.success("Area & Materials synced!", {
-        description: `Updated to ${area.toLocaleString()} sq ft with ${materials.length} materials.`
+        description: `Updated to ${area.toLocaleString()} sq ft with ${wastePercent}% waste and ${materials.length} materials.`
       });
     } catch (err) {
       console.error("[PowerSaveAndSync] Failed:", err);
