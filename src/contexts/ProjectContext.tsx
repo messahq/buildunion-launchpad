@@ -1235,7 +1235,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const recalculateHealth = useCallback(() => {
     const metrics = calculateHealthMetrics(state);
     dispatch({ type: "SET_HEALTH_METRICS", payload: metrics });
-  }, [state]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.operationalTruth, state.workflowData]);
 
   // ============================================
   // CENTRAL DATA ACTIONS
