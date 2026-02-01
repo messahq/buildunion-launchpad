@@ -560,6 +560,11 @@ export const useProjectAIAnalysis = () => {
             confidence: analysisResult.estimate.areaConfidence || "medium",
             detectedAt: new Date().toISOString(),
           });
+          
+          // CRITICAL: Set baseArea in centralMaterials so MaterialCalculationTab can apply waste!
+          // Without this, the waste calculation falls back to raw quantities
+          actions.setWasteAndArea(10, detectedArea);
+          console.log("[AI Analysis] Set baseArea for waste calculation:", detectedArea);
         }
       }
 
