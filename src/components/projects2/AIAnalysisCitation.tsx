@@ -25,12 +25,14 @@ import {
   Trash2,
   Crown,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Settings2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FilterAnswers, AITriggers } from "./FilterQuestions";
 import { SourceTag, ReferencesSection } from "@/components/citations";
 import { CitationSource } from "@/types/citation";
+import PowerEditModal from "./PowerEditModal";
 
 // ============================================
 // TYPE DEFINITIONS
@@ -99,6 +101,8 @@ export interface AIAnalysisCitationProps {
   // Editable callbacks
   onAreaChange?: (newArea: number | null) => void;
   onMaterialsChange?: (materials: Array<{ item: string; quantity: number; unit: string }>) => void;
+  // Atomic save callback for Power Modal
+  onPowerSaveAndSync?: (area: number, materials: Array<{ item: string; quantity: number; unit: string }>) => Promise<void>;
   // Re-analyze callback
   onReanalyze?: () => void;
   isReanalyzing?: boolean;
@@ -309,10 +313,12 @@ export default function AIAnalysisCitation({
   hasBlueprint = false,
   onAreaChange,
   onMaterialsChange,
+  onPowerSaveAndSync,
   onReanalyze,
   isReanalyzing = false,
 }: AIAnalysisCitationProps) {
   const [showDecisionLog, setShowDecisionLog] = useState(false);
+  const [showPowerModal, setShowPowerModal] = useState(false);
   
   // Editable state
   const [editableArea, setEditableArea] = useState<number | null>(detectedArea ?? null);
@@ -496,7 +502,20 @@ export default function AIAnalysisCitation({
                 {areaSource && <SourceTag source={areaSource} />}
               </div>
               <div className="flex items-center gap-1">
-                {!isEditingArea && editableArea && (
+                {/* Power Edit button - opens modal for synchronized editing */}
+                {onPowerSaveAndSync && !isEditingArea && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPowerModal(true)}
+                    className="h-6 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-100/50"
+                    title="Power Edit - Edit area & materials together"
+                  >
+                    <Settings2 className="h-3 w-3" />
+                  </Button>
+                )}
+                {/* Fallback inline edit button if no Power Modal callback */}
+                {!onPowerSaveAndSync && !isEditingArea && editableArea && (
                   <button 
                     onClick={() => setIsEditingArea(true)}
                     className="p-1 hover:bg-muted rounded transition-colors"
@@ -961,6 +980,26 @@ export default function AIAnalysisCitation({
           </div>
         )}
       </CardContent>
+
+      {/* Power Edit Modal - Atomic Area & Materials Sync */}
+      {onPowerSaveAndSync && (
+        <PowerEditModal
+          open={showPowerModal}
+          onOpenChange={setShowPowerModal}
+          currentArea={editableArea}
+          areaUnit={areaUnit}
+          currentMaterials={editableMaterials}
+          surfaceType={surfaceType}
+          onSaveAndSync={async (area, mats) => {
+            await onPowerSaveAndSync(area, mats);
+            // Update local state after successful save
+            setEditableArea(area);
+            setEditableMaterials(mats);
+            setWasAreaManuallyEdited(true);
+            setAreaLastModified(new Date());
+          }}
+        />
+      )}
     </Card>
   );
 }

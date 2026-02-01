@@ -67,6 +67,8 @@ export interface WorkflowSelectorProps {
   // Re-analyze callback
   onReanalyze?: () => void;
   isReanalyzing?: boolean;
+  // Atomic save callback for Power Modal
+  onPowerSaveAndSync?: (area: number, materials: Array<{ item: string; quantity: number; unit: string }>) => Promise<void>;
 }
 
 // Tier-based feature mapping
@@ -129,6 +131,7 @@ export default function WorkflowSelector({
   onUpgradeClick,
   onReanalyze,
   isReanalyzing = false,
+  onPowerSaveAndSync,
 }: WorkflowSelectorProps) {
   const tierConfig = TIER_FEATURES[tier];
   const canAccessTeam = tierConfig.modes.includes("team");
@@ -310,10 +313,19 @@ export default function WorkflowSelector({
             setEditableMaterials(newMaterials);
             setHasUserEdits(true);
           }}
+          onPowerSaveAndSync={onPowerSaveAndSync ? async (area, materials) => {
+            // Update local state first
+            setEditableArea(area);
+            setEditableMaterials(materials);
+            setHasUserEdits(true);
+            // Then call parent handler for database sync
+            await onPowerSaveAndSync(area, materials);
+          } : undefined}
           onReanalyze={onReanalyze}
           isReanalyzing={isReanalyzing}
         />
       )}
+
 
       <div className="p-6 rounded-xl border bg-card">
         {/* Header */}
