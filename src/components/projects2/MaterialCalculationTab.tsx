@@ -272,13 +272,30 @@ export function MaterialCalculationTab({
   }, [initialMaterials, dataSource, DYNAMIC_WASTE, baseArea]);
 
   // Helper to create initial labor items
-  // CRITICAL: Labor uses NET area (baseArea) - no waste buffer on labor costs!
-  // When saved, preserve the saved totalPrice to avoid recalculation
+  // CRITICAL: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
+  // IRON LAW #3: Installation labor for area-based work MUST use sq ft and baseArea
   const createInitialLaborItems = useCallback(() => 
     initialLabor.map((l: TaskBasedEntry & { totalPrice?: number }, idx) => {
-      const isSqFtUnit = l.unit?.toLowerCase().includes("sq") || l.unit?.toLowerCase().includes("ft");
+      // Detect if this is an "Installation" labor item for area-based work
+      const isInstallationLabor = /installation|install/i.test(l.item);
+      const isAreaBasedWork = /paint|flooring|tile|hardwood|laminate|carpet|drywall|primer/i.test(l.item);
       
-      // Labor uses NET area (baseArea) - workers install the actual area, not the waste
+      // IRON LAW #3: Area-based installation labor ALWAYS uses sq ft and baseArea (NET)
+      // This prevents labor from copying material's converted units (e.g., gallons)
+      if (isInstallationLabor && isAreaBasedWork && baseArea && baseArea > 0) {
+        console.log(`[IRON LAW #3] Labor ${l.item}: FORCED to NET area = ${baseArea} sq ft (ignoring ${l.quantity} ${l.unit})`);
+        return {
+          id: `labor-${idx}`,
+          item: l.item,
+          quantity: baseArea, // NET area - no waste
+          unit: "sq ft", // ALWAYS sq ft for area-based installation
+          unitPrice: l.unitPrice || 0,
+          totalPrice: l.totalPrice ?? (baseArea * (l.unitPrice || 0)),
+        };
+      }
+      
+      // For other labor items: use existing logic
+      const isSqFtUnit = l.unit?.toLowerCase().includes("sq") || l.unit?.toLowerCase().includes("ft");
       const laborQty = (isSqFtUnit && baseArea && baseArea > 0) ? baseArea : l.quantity;
       
       return {
@@ -393,14 +410,29 @@ export function MaterialCalculationTab({
     }));
     
     // IRON LAW #3: Update labor items to use NET area (no waste buffer for labor)
+    // For installation labor, FORCE sq ft unit and baseArea quantity
     setLaborItems(prev => prev.map(item => {
-      const isSqFtUnit = item.unit?.toLowerCase().includes("sq") || item.unit?.toLowerCase().includes("ft");
+      const isInstallationLabor = /installation|install/i.test(item.item);
+      const isAreaBasedWork = /paint|flooring|tile|hardwood|laminate|carpet|drywall|primer/i.test(item.item);
       
+      // Area-based installation labor ALWAYS uses sq ft and NET area
+      if (isInstallationLabor && isAreaBasedWork && newArea && newArea > 0) {
+        console.log(`[IRON LAW #3] Labor ${item.item}: FORCED to NET area = ${newArea} sq ft`);
+        return {
+          ...item,
+          quantity: newArea, // NET area - no waste
+          unit: "sq ft", // Force sq ft for area-based installation
+          totalPrice: newArea * item.unitPrice,
+        };
+      }
+      
+      // For other sq ft labor, just update quantity
+      const isSqFtUnit = item.unit?.toLowerCase().includes("sq") || item.unit?.toLowerCase().includes("ft");
       if (isSqFtUnit && newArea && newArea > 0) {
         console.log(`[IRON LAW #3] Labor ${item.item}: NET area = ${newArea} (no waste)`);
         return {
           ...item,
-          quantity: newArea, // Labor uses NET area (no waste)
+          quantity: newArea,
           totalPrice: newArea * item.unitPrice,
         };
       }
