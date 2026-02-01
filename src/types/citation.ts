@@ -16,7 +16,7 @@ export interface CitationSource {
   filePath?: string; // Path to the original document
   timestamp?: string;
   // NEW: Link to Operational Truth pillar
-  linkedPillar?: 'area' | 'materials' | 'blueprint' | 'obc' | 'conflict' | 'mode' | 'size' | 'confidence';
+  linkedPillar?: 'area' | 'materials' | 'blueprint' | 'obc' | 'conflict' | 'mode' | 'size' | 'confidence' | 'tasks' | 'team';
   // NEW: Registration metadata
   registeredAt?: string;
   registeredBy?: string; // user_id

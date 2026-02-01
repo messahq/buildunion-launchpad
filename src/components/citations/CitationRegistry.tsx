@@ -49,6 +49,8 @@ const getPillarIcon = (pillar?: string) => {
     case 'blueprint': return <FileText className="h-3 w-3" />;
     case 'obc': return <Shield className="h-3 w-3" />;
     case 'conflict': return <AlertTriangle className="h-3 w-3" />;
+    case 'tasks': return <FileText className="h-3 w-3" />;
+    case 'team': return <Package className="h-3 w-3" />;
     default: return null;
   }
 };
@@ -63,6 +65,8 @@ const getPillarLabel = (pillar?: string) => {
     case 'mode': return 'Project Mode';
     case 'size': return 'Project Size';
     case 'confidence': return 'Confidence';
+    case 'tasks': return 'Tasks/Gantt';
+    case 'team': return 'Team Config';
     default: return 'Not Linked';
   }
 };
@@ -325,6 +329,18 @@ export default function CitationRegistry({
                             <div className="flex items-center gap-1">
                               <span className="text-xs">📊</span>
                               <span>Confidence: {citations.filter(c => c.linkedPillar === 'confidence').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'tasks').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs">📅</span>
+                              <span>Tasks: {citations.filter(c => c.linkedPillar === 'tasks').map(c => `[${c.sourceId}]`).join(', ')}</span>
+                            </div>
+                          )}
+                          {citations.filter(c => c.linkedPillar === 'team').length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs">👥</span>
+                              <span>Team: {citations.filter(c => c.linkedPillar === 'team').map(c => `[${c.sourceId}]`).join(', ')}</span>
                             </div>
                           )}
                         </div>

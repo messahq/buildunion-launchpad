@@ -219,7 +219,7 @@ export default function FilterQuestions({
       sourceType: 'USER',
     });
 
-    // [TL-001] Timeline citation (only if dates set)
+    // [TL-001] Timeline citation (only if dates set) - linked to Tasks pillar
     if (answers.technicalFilter.projectStartDate || answers.technicalFilter.projectEndDate) {
       const startStr = answers.technicalFilter.projectStartDate 
         ? format(answers.technicalFilter.projectStartDate, 'MMM d, yyyy') 
@@ -232,12 +232,13 @@ export default function FilterQuestions({
         documentName: 'Project Timeline',
         documentType: 'log',
         contextSnippet: `Start: ${startStr} | End: ${endStr}`,
+        linkedPillar: 'tasks', // Link to Tasks pillar for Gantt validation
         timestamp: now,
         sourceType: 'USER',
       });
     }
 
-    // [T-001] Trades citation (for Team Mode)
+    // [T-001] Trades citation (for Team Mode) - linked to Mode pillar
     if (answers.workflowFilter.subcontractorCount !== 'not_applicable') {
       const tradeLabels: Record<string, string> = {
         '1-2': '1-2 trades (simple coordination)',
@@ -249,6 +250,7 @@ export default function FilterQuestions({
         documentName: 'Trades Configuration',
         documentType: 'log',
         contextSnippet: tradeLabels[answers.workflowFilter.subcontractorCount] || answers.workflowFilter.subcontractorCount,
+        linkedPillar: 'mode', // Link to Mode pillar for project mode validation
         timestamp: now,
         sourceType: 'USER',
       });
