@@ -1,11 +1,18 @@
 // ============================================
 // DASHBOARD FINANCIAL SYNC HOOK
 // Bridges Page 2 materials to Dashboard Budget
+// Forces sync from Operational Truth + Templates
 // ============================================
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import { useProjectContext } from "@/contexts/ProjectContext";
 import { MaterialItem, CitationSource } from "@/contexts/ProjectContext.types";
+import { 
+  WORK_TYPE_TEMPLATES, 
+  WorkTypeId,
+  getTemplateByWorkType,
+  calculateTemplateEstimate,
+} from "@/lib/workTypeTemplates";
 
 export interface FinancialSummary {
   materialCost: number;
@@ -37,13 +44,148 @@ const CITATION_BADGES: Record<CitationSource, { label: string; className: string
   imported: { label: "Imported", className: "bg-gray-100 text-gray-700 border-gray-200", shortLabel: "IMP" },
 };
 
+// Default unit prices for common materials (Toronto 2024)
+const DEFAULT_UNIT_PRICES: Record<string, number> = {
+  // Flooring
+  "laminate flooring": 2.85,
+  "hardwood flooring": 6.50,
+  "underlayment": 0.35,
+  "baseboard trim": 1.25,
+  "transition strips": 12.00,
+  // Painting
+  "primer": 38.00,
+  "paint": 55.00,
+  "painter's tape": 7.50,
+  // Drywall
+  "drywall sheets": 18.00,
+  "joint compound": 22.00,
+  "drywall tape": 5.50,
+  // General fallback
+  "default": 10.00,
+};
+
+/**
+ * Enrich AI-detected materials with template-based unit prices
+ */
+function enrichMaterialsWithPrices(
+  materials: MaterialItem[],
+  workType: string | null,
+  confirmedArea: number | null
+): MaterialItem[] {
+  // Try to get template prices
+  const workTypeId = workType?.toLowerCase() as WorkTypeId | undefined;
+  const template = workTypeId ? getTemplateByWorkType(workTypeId) : null;
+  
+  return materials.map((material, index) => {
+    // Skip if already has valid unitPrice
+    if (material.unitPrice && material.unitPrice > 0 && material.totalPrice && material.totalPrice > 0) {
+      return material;
+    }
+    
+    // Try to find matching template material
+    const itemLower = material.item.toLowerCase();
+    let unitPrice = material.unitPrice || 0;
+    
+    // First try template match
+    if (template) {
+      const templateMatch = template.materials.find(tm => 
+        itemLower.includes(tm.item.toLowerCase().split(' ')[0]) ||
+        tm.item.toLowerCase().includes(itemLower.split(' ')[0])
+      );
+      if (templateMatch) {
+        unitPrice = templateMatch.unitPrice;
+      }
+    }
+    
+    // Fallback to default prices
+    if (unitPrice === 0) {
+      for (const [key, price] of Object.entries(DEFAULT_UNIT_PRICES)) {
+        if (itemLower.includes(key)) {
+          unitPrice = price;
+          break;
+        }
+      }
+    }
+    
+    // Final fallback based on unit type
+    if (unitPrice === 0) {
+      if (material.unit === "sq ft") {
+        unitPrice = 2.50; // Generic per sq ft
+      } else if (material.unit === "ft") {
+        unitPrice = 1.50; // Generic per linear ft
+      } else if (material.unit === "gal") {
+        unitPrice = 45.00; // Generic per gallon
+      } else {
+        unitPrice = DEFAULT_UNIT_PRICES.default;
+      }
+    }
+    
+    const totalPrice = material.quantity * unitPrice;
+    
+    return {
+      ...material,
+      unitPrice,
+      totalPrice,
+      citationSource: material.citationSource || "template_preset",
+      citationId: material.citationId || `[TMPL-${String(index + 1).padStart(3, '0')}]`,
+    };
+  });
+}
+
 export function useDashboardFinancialSync() {
   const { state, actions } = useProjectContext();
-  const { page2, page3, sync } = state;
+  const { page2, page3, sync, operationalTruth, page1 } = state;
 
-  // Calculate financial summary from Page 2 materials
+  // Force sync: If page2.materials is empty but operationalTruth has materials, inject them
+  useEffect(() => {
+    const otMaterials = operationalTruth.materials.items;
+    const page2Materials = page2.materials;
+    
+    // Sync required if: page2 is empty but OT has data, OR page2 has data but no prices
+    const needsSync = (
+      (page2Materials.length === 0 && otMaterials.length > 0) ||
+      (page2Materials.length > 0 && page2Materials.every(m => !m.totalPrice || m.totalPrice === 0))
+    );
+    
+    if (needsSync) {
+      const sourceMaterials = page2Materials.length > 0 ? page2Materials : otMaterials;
+      const enrichedMaterials = enrichMaterialsWithPrices(
+        sourceMaterials,
+        page1.workType,
+        operationalTruth.confirmedArea.value
+      );
+      
+      // Get estimated labor from template
+      const workTypeId = page1.workType?.toLowerCase() as WorkTypeId | undefined;
+      const template = workTypeId ? getTemplateByWorkType(workTypeId) : null;
+      const laborCost = template ? calculateTemplateEstimate(template).laborCost : 0;
+      
+      actions.setPage2Data({
+        materials: enrichedMaterials,
+        estimatedLaborCost: laborCost || page2.estimatedLaborCost,
+        lastModifiedSource: "template_preset",
+      });
+    }
+  }, [
+    operationalTruth.materials.items,
+    page2.materials,
+    page1.workType,
+    operationalTruth.confirmedArea.value,
+    actions,
+  ]);
+
+  // Effective materials with price enrichment (always apply for display)
+  const effectiveMaterials = useMemo(() => {
+    return enrichMaterialsWithPrices(
+      page2.materials,
+      page1.workType,
+      operationalTruth.confirmedArea.value
+    );
+  }, [page2.materials, page1.workType, operationalTruth.confirmedArea.value]);
+
+  // Calculate financial summary from enriched materials
   const financialSummary = useMemo((): FinancialSummary => {
-    const materialCost = page2.materials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+    const materialCost = effectiveMaterials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
     const laborCost = page2.estimatedLaborCost || page3.laborCost;
     const otherCost = page3.otherCost;
     const subtotal = materialCost + laborCost + otherCost;
@@ -62,15 +204,15 @@ export function useDashboardFinancialSync() {
       isDraft: !state.page4.contractorSigned, // Draft until finalized
       lastModified: sync.lastSyncedAt,
     };
-  }, [page2.materials, page2.estimatedLaborCost, page3, state.page4.contractorSigned, sync.lastSyncedAt]);
+  }, [effectiveMaterials, page2.estimatedLaborCost, page3, state.page4.contractorSigned, sync.lastSyncedAt]);
 
   // Get materials with citation badges for Dashboard display
   const materialsWithCitations = useMemo((): MaterialWithCitation[] => {
-    return page2.materials.map(material => ({
+    return effectiveMaterials.map(material => ({
       ...material,
-      citationBadge: CITATION_BADGES[material.citationSource] || CITATION_BADGES.calculator,
+      citationBadge: CITATION_BADGES[material.citationSource] || CITATION_BADGES.template_preset,
     }));
-  }, [page2.materials]);
+  }, [effectiveMaterials]);
 
   // Update a single material from Dashboard (bidirectional sync)
   const updateMaterialFromDashboard = useCallback((
@@ -199,7 +341,7 @@ export function useDashboardFinancialSync() {
     return true;
   }, [actions]);
 
-  // Get citation summary stats
+  // Get citation summary stats from enriched materials
   const citationStats = useMemo(() => {
     const stats: Record<CitationSource, number> = {
       ai_photo: 0,
@@ -210,7 +352,7 @@ export function useDashboardFinancialSync() {
       imported: 0,
     };
 
-    page2.materials.forEach(m => {
+    effectiveMaterials.forEach(m => {
       if (m.citationSource) {
         stats[m.citationSource]++;
       }
@@ -223,15 +365,15 @@ export function useDashboardFinancialSync() {
         count,
         ...CITATION_BADGES[source as CitationSource],
       }));
-  }, [page2.materials]);
+  }, [effectiveMaterials]);
 
   return {
     // Financial data
     financialSummary,
     
-    // Materials with badges
+    // Materials with badges (use enriched effectiveMaterials)
     materialsWithCitations,
-    materialCount: page2.materials.length,
+    materialCount: effectiveMaterials.length,
     
     // Actions
     updateMaterialFromDashboard,
@@ -245,7 +387,17 @@ export function useDashboardFinancialSync() {
     hasManualOverrides: citationStats.some(s => s.source === "manual_override"),
     
     // Badge helper
-    getCitationBadge: (source: CitationSource) => CITATION_BADGES[source] || CITATION_BADGES.calculator,
+    getCitationBadge: (source: CitationSource) => CITATION_BADGES[source] || CITATION_BADGES.template_preset,
+    
+    // Force refresh for debugging
+    forceRefresh: () => {
+      const enriched = enrichMaterialsWithPrices(
+        page2.materials.length > 0 ? page2.materials : operationalTruth.materials.items,
+        page1.workType,
+        operationalTruth.confirmedArea.value
+      );
+      actions.setPage2Data({ materials: enriched, lastModifiedSource: "template_preset" });
+    },
   };
 }
 
