@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calculator, Plus, Trash2, Copy, Check, ArrowRight, LayoutTemplate, Sparkles, Pencil, Save } from "lucide-react";
+import { Calculator, Plus, Trash2, Copy, Check, ArrowRight, LayoutTemplate, Sparkles, Pencil, Save, FileText, Wand2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { usePage2Materials } from "@/hooks/usePage2Materials";
+import { CitationSource } from "@/contexts/ProjectContext.types";
 
 interface MaterialItem {
   item: string;
@@ -411,6 +414,17 @@ const templateToCalculatorMap: Record<string, string> = {
 };
 
 const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, prefillArea, prefillAreaUnit }: QuickModeCalculatorProps) => {
+  // Connect to ProjectContext for bidirectional sync
+  const { 
+    materials: contextMaterials, 
+    loadFromCalculator, 
+    updateMaterial: updateContextMaterial,
+    addMaterial: addContextMaterial,
+    removeMaterial: removeContextMaterial,
+    citationSummary,
+    totals,
+  } = usePage2Materials();
+
   // Determine initial calculator based on template
   const initialCalc = useMemo(() => {
     if (templateData?.templateName) {
@@ -454,6 +468,19 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
     calcType: string;
     result: ReturnType<CalculatorType["calculate"]>;
   }>>([]);
+
+  // Helper: Get citation badge styling based on source
+  const getCitationBadge = (source: CitationSource | undefined) => {
+    const badges: Record<CitationSource, { label: string; className: string; icon: React.ReactNode }> = {
+      ai_photo: { label: "AI Photo", className: "bg-blue-100 text-blue-700 border-blue-200", icon: <Sparkles className="w-3 h-3" /> },
+      ai_blueprint: { label: "Blueprint", className: "bg-purple-100 text-purple-700 border-purple-200", icon: <FileText className="w-3 h-3" /> },
+      template_preset: { label: "Template", className: "bg-violet-100 text-violet-700 border-violet-200", icon: <LayoutTemplate className="w-3 h-3" /> },
+      manual_override: { label: "Edited", className: "bg-amber-100 text-amber-700 border-amber-200", icon: <Pencil className="w-3 h-3" /> },
+      calculator: { label: "Calculated", className: "bg-green-100 text-green-700 border-green-200", icon: <Calculator className="w-3 h-3" /> },
+      imported: { label: "Imported", className: "bg-gray-100 text-gray-700 border-gray-200", icon: <FileText className="w-3 h-3" /> },
+    };
+    return source ? badges[source] : badges.calculator;
+  };
 
   // Update calculator when template changes
   useEffect(() => {
@@ -510,6 +537,9 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
     setResults(result);
     setEditableMaterials([...result.materials]); // Copy materials for editing
     
+    // Sync to ProjectContext with citation tracking
+    loadFromCalculator(result.materials);
+    
     // Automatically save the result to summary
     const savedItem = {
       calcType: selectedCalc.name,
@@ -517,7 +547,7 @@ const QuickModeCalculator = ({ onCalculatorComplete, onContinue, templateData, p
     };
     setSavedResults(prev => [...prev, savedItem]);
     onCalculatorComplete?.(savedItem);
-    toast.success(`${selectedCalc.name} calculated and added to summary!`);
+    toast.success(`${selectedCalc.name} calculated and synced to project!`);
   };
 
   // Update material quantity
@@ -793,64 +823,102 @@ Estimated Labor: ${results.laborHours} hours
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {editableMaterials.map((material, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border group hover:border-amber-200 transition-colors"
-                      >
-                        {editingMaterial === index ? (
-                          <>
-                            <Input
-                              value={material.item}
-                              onChange={(e) => updateMaterialName(index, e.target.value)}
-                              className="flex-1 h-8"
-                            />
-                            <NumericInput
-                              value={material.quantity}
-                              onChange={(val) => updateMaterialQuantity(index, val)}
-                              className="w-20 h-8 text-center"
-                            />
-                            <span className="text-xs text-muted-foreground w-12">{material.unit}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingMaterial(null)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Check className="w-4 h-4 text-green-500" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <span className="flex-1 text-foreground">{material.item}</span>
-                            <Badge variant="secondary" className="font-mono">
-                              {material.quantity} {material.unit}
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingMaterial(index)}
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Pencil className="w-4 h-4 text-muted-foreground" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeMaterial(index)}
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    ))}
+                    {editableMaterials.map((material, index) => {
+                      const citationBadge = getCitationBadge((material as any).citationSource || "calculator");
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 p-3 bg-background rounded-lg border border-border group hover:border-amber-200 transition-colors"
+                        >
+                          {editingMaterial === index ? (
+                            <>
+                              <Input
+                                value={material.item}
+                                onChange={(e) => updateMaterialName(index, e.target.value)}
+                                className="flex-1 h-8"
+                              />
+                              <NumericInput
+                                value={material.quantity}
+                                onChange={(val) => updateMaterialQuantity(index, val)}
+                                className="w-20 h-8 text-center"
+                              />
+                              <span className="text-xs text-muted-foreground w-12">{material.unit}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingMaterial(null)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Check className="w-4 h-4 text-green-500" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="flex-1 text-foreground">{material.item}</span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className={`text-xs gap-1 ${citationBadge.className}`}>
+                                      {citationBadge.icon}
+                                      {citationBadge.label}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Source: {citationBadge.label}</p>
+                                    {(material as any).citationId && <p className="text-xs opacity-70">{(material as any).citationId}</p>}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <Badge variant="secondary" className="font-mono">
+                                {material.quantity} {material.unit}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingMaterial(index)}
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Pencil className="w-4 h-4 text-muted-foreground" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMaterial(index)}
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                     <Pencil className="w-3 h-3" />
-                    Click on any item to edit quantities or add custom materials
+                    Click on any item to edit • Source badges show data origin
                   </p>
+                  
+                  {/* Citation Summary */}
+                  {citationSummary.length > 0 && (
+                    <div className="mt-3 p-3 bg-muted/30 rounded-lg border border-dashed">
+                      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        Data Sources
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {citationSummary.map(({ source, count }) => {
+                          const badge = getCitationBadge(source);
+                          return (
+                            <Badge key={source} variant="outline" className={`text-xs gap-1 ${badge.className}`}>
+                              {badge.icon}
+                              {badge.label}: {count}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Labor Estimate */}

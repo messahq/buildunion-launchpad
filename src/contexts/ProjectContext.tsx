@@ -22,6 +22,8 @@ import {
   LineItem,
   BudgetTemplate,
   SyncState,
+  CitationEntry,
+  CitationSource,
   WORK_TYPE_CATEGORIES,
   detectWorkTypeCategory,
 } from "./ProjectContext.types";
@@ -90,6 +92,8 @@ const initialPage2: Page2State = {
   manualMaterialOverrides: {},
   estimatedMaterialCost: 0,
   estimatedLaborCost: 0,
+  citationRegistry: [],
+  lastModifiedSource: null,
 };
 
 const initialPage3: Page3State = {
@@ -533,6 +537,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
               quantity: m.quantity,
               unit: m.unit,
               source: "ai" as const,
+              citationSource: "ai_photo" as CitationSource,
+              citationId: `[P-${String(i + 1).padStart(3, "0")}]`,
             })),
             source: "ai",
           },
@@ -609,6 +615,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             quantity: m.quantity,
             unit: m.unit,
             source: "ai" as const,
+            citationSource: "ai_photo" as CitationSource,
+            citationId: `[P-${String(i + 1).padStart(3, "0")}]`,
           })),
         },
         page3: {
@@ -665,6 +673,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
                   quantity: m.quantity,
                   unit: m.unit,
                   source: "ai" as const,
+                  citationSource: "ai_photo" as CitationSource,
+                  citationId: `[P-${String(i + 1).padStart(3, "0")}]`,
                 })),
                 source: "ai",
               },
