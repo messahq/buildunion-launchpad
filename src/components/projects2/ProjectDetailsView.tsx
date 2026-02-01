@@ -845,20 +845,34 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
       const savedWastePercent = workflowConfig?.userEdits?.wastePercent ?? (photoEstimate as { wastePercent?: number }).wastePercent ?? 10;
       const detectedArea = photoEstimate.area || workflowConfig?.userEdits?.editedArea;
       
-      const centralItems = photoEstimate.materials.map((m, index) => ({
-        id: `ai-mat-${index}-${Date.now()}`,
-        item: m.item,
-        quantity: m.quantity,
-        unit: m.unit,
-        unitPrice: 0, // AI doesn't provide unit prices, will be enriched later
-        source: "ai" as const,
-        citationSource: "ai_photo" as const,
-        citationId: `[AI-${index + 1}]`,
-        isEssential: checkEssential(m.item),
-        wastePercentage: checkEssential(m.item) ? savedWastePercent : 0,
-      }));
+      // CRITICAL FIX: Apply waste% to essential sq ft materials during initial load
+      const centralItems = photoEstimate.materials.map((m, index) => {
+        const isEssentialItem = checkEssential(m.item);
+        const isSqFtUnit = m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft");
+        const baseQty = m.quantity;
+        
+        // For essential sq ft materials, calculate gross quantity with waste
+        // This ensures Materials list shows baseArea * (1 + waste/100) from first load
+        const grossQty = (isEssentialItem && isSqFtUnit) 
+          ? Math.ceil(baseQty * (1 + savedWastePercent / 100))
+          : baseQty;
+        
+        return {
+          id: `ai-mat-${index}-${Date.now()}`,
+          item: m.item,
+          quantity: grossQty, // Use GROSS quantity (with waste applied)
+          unit: m.unit,
+          unitPrice: 0, // AI doesn't provide unit prices, will be enriched later
+          source: "ai" as const,
+          citationSource: "ai_photo" as const,
+          citationId: `[AI-${index + 1}]`,
+          isEssential: isEssentialItem,
+          wastePercentage: isEssentialItem ? savedWastePercent : 0,
+          originalValue: isEssentialItem && isSqFtUnit ? baseQty : undefined, // Store base for reference
+        };
+      });
       
-      console.log("[ProjectDetailsView] Loading AI materials to centralMaterials:", centralItems.length, "wastePercent:", savedWastePercent);
+      console.log("[ProjectDetailsView] Loading AI materials with GROSS quantities:", centralItems.map(c => `${c.item}: ${c.quantity} (base: ${c.originalValue || c.quantity})`));
       projectActionsRef.current.setCentralMaterials(centralItems, "ai_analysis");
       
       // IMPORTANT: Set wastePercent and baseArea AFTER materials are loaded
