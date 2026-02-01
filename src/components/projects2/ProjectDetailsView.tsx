@@ -2374,11 +2374,27 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               const laborTotal = costs.labor.reduce((sum, l) => sum + (l.totalPrice || l.quantity * (l.unitPrice || 0)), 0);
               const otherTotal = costs.other.reduce((sum, o) => sum + (o.totalPrice || o.quantity * (o.unitPrice || 0)), 0);
               
-              // Update centralFinancials immediately for real-time Dashboard sync
-              projectActions.setCentralFinancials({
-                laborCost: laborTotal,
-                otherCost: otherTotal,
-              });
+              // Only update if there are actual items or non-zero values
+              // This prevents overwriting existing values with 0 on initial mount
+              const hasLaborItems = costs.labor.length > 0;
+              const hasOtherItems = costs.other.length > 0;
+              
+              const updates: Partial<{ laborCost: number; otherCost: number }> = {};
+              
+              // Only update labor if there are items OR the total is non-zero
+              if (hasLaborItems || laborTotal > 0) {
+                updates.laborCost = laborTotal;
+              }
+              
+              // Only update other if there are items OR the total is non-zero
+              if (hasOtherItems || otherTotal > 0) {
+                updates.otherCost = otherTotal;
+              }
+              
+              // Only call setCentralFinancials if we have updates
+              if (Object.keys(updates).length > 0) {
+                projectActions.setCentralFinancials(updates);
+              }
             }}
             onGrandTotalChange={(newTotal) => {
               // Update summary.total_cost so header stays in sync
