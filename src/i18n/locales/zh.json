@@ -770,5 +770,22 @@
         "description": "内置安大略省建筑规范合规检查。"
       }
     }
+  },
+  "workTypes": {
+    "title": "选择工作类型",
+    "subtitle": "选择工作类型以智能映射材料",
+    "framing": "框架",
+    "insulation": "隔热",
+    "taping": "批灰",
+    "painting": "油漆",
+    "flooring": "地板",
+    "plumbing": "管道",
+    "electrical": "电气",
+    "hvac": "暖通空调",
+    "demolition": "拆除",
+    "other": "其他",
+    "materialsLoaded": "已从模板加载{{count}}种材料",
+    "templateSource": "模板",
+    "manualSource": "手动"
   }
 }

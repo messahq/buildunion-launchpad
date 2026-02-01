@@ -770,5 +770,21 @@
         "description": "فحوصات امتثال مدمجة لقانون البناء في أونتاريو."
       }
     }
+  },
+  "workTypes": {
+    "title": "اختر نوع العمل",
+    "framing": "الهيكل",
+    "insulation": "العزل",
+    "taping": "المعجون",
+    "painting": "الطلاء",
+    "flooring": "الأرضيات",
+    "plumbing": "السباكة",
+    "electrical": "الكهرباء",
+    "hvac": "التكييف",
+    "demolition": "الهدم",
+    "other": "أخرى",
+    "materialsLoaded": "تم تحميل {{count}} مادة من القالب",
+    "templateSource": "قالب",
+    "manualSource": "يدوي"
   }
 }
