@@ -2413,6 +2413,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               console.log('[Materials Save] Syncing to centralMaterials:', savedCentralItems.length);
               projectActions.setCentralMaterials(savedCentralItems, "manual");
               
+              // === SYNC LABOR AND OTHER COSTS TO centralFinancials ===
+              const laborTotal = costs.labor.reduce((sum, l) => sum + (l.totalPrice || l.quantity * (l.unitPrice || 0)), 0);
+              const otherTotal = costs.other.reduce((sum, o) => sum + (o.totalPrice || o.quantity * (o.unitPrice || 0)), 0);
+              
+              console.log('[Materials Save] Syncing to centralFinancials:', { laborTotal, otherTotal });
+              projectActions.setCentralFinancials({
+                laborCost: laborTotal,
+                otherCost: otherTotal,
+              });
+              
               setSummary(prev => prev ? {
                 ...prev,
                 line_items: lineItemsData as unknown[],
