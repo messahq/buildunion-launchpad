@@ -342,6 +342,73 @@ const BuildUnionProjects2 = () => {
     }
   };
 
+  // Handle atomic save from Power Modal - synchronized area & materials update
+  const handlePowerSaveAndSync = async (area: number, materials: Array<{ item: string; quantity: number; unit: string }>) => {
+    if (!createdProjectId || !aiAnalysisForSelector) {
+      throw new Error("No project available for save");
+    }
+    
+    console.log("[PowerSaveAndSync] Starting atomic save:", { area, materialsCount: materials.length });
+    
+    try {
+      // Prepare updated photo estimate with user edits
+      const updatedPhotoEstimate = {
+        ...aiAnalysisForSelector,
+        area,
+        materials,
+        userEdited: true,
+        editedAt: new Date().toISOString(),
+      };
+
+      // Update ai_workflow_config with user edits marker
+      const updatedWorkflowConfig = {
+        filterAnswers,
+        aiTriggers,
+        projectSize: aiAnalysisForSelector.projectSize,
+        projectSizeReason: aiAnalysisForSelector.projectSizeReason,
+        userEdits: {
+          editedArea: area,
+          editedMaterials: materials,
+          editedAt: new Date().toISOString(),
+          editSource: "power_modal",
+        },
+      };
+
+      // ATOMIC UPDATE - single database call
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({
+          photo_estimate: JSON.parse(JSON.stringify(updatedPhotoEstimate)),
+          ai_workflow_config: JSON.parse(JSON.stringify(updatedWorkflowConfig)),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("project_id", createdProjectId);
+      
+      if (error) {
+        console.error("[PowerSaveAndSync] Database error:", error);
+        throw error;
+      }
+      
+      // Update local state to reflect changes immediately
+      setAiAnalysisForSelector({
+        ...aiAnalysisForSelector,
+        area,
+        materials,
+      });
+      
+      console.log("[PowerSaveAndSync] Atomic save completed successfully");
+      toast.success("Area & Materials synced!", {
+        description: `Updated to ${area.toLocaleString()} sq ft with ${materials.length} materials.`
+      });
+    } catch (err) {
+      console.error("[PowerSaveAndSync] Failed:", err);
+      toast.error("Failed to sync changes", {
+        description: "Please try again."
+      });
+      throw err;
+    }
+  };
+
   // Handle workflow selection from WorkflowSelector
   const handleWorkflowSelect = async (mode: "solo" | "team", editedData?: EditedAnalysisData, allCitations?: CollectedCitation[]) => {
     if (!createdProjectId || !aiAnalysisForSelector) return;
@@ -868,6 +935,7 @@ const BuildUnionProjects2 = () => {
                     onUpgradeClick={handleUpgradeClick}
                     onReanalyze={handleReanalyze}
                     isReanalyzing={isReanalyzing}
+                    onPowerSaveAndSync={handlePowerSaveAndSync}
                   />
                 </div>
               )}
