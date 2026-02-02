@@ -804,5 +804,21 @@
     "materialsSection": "Materialien",
     "laborSection": "Arbeit",
     "otherSection": "Sonstiges"
+  },
+  "units": {
+    "label": "Einheiten",
+    "imperial": "Imperial",
+    "metric": "Metrisch",
+    "imperial_short": "IMP",
+    "metric_short": "MET",
+    "toggle_tooltip": "Zwischen imperialen und metrischen Einheiten wechseln",
+    "sqft": "ft²",
+    "sqm": "m²",
+    "ft": "ft",
+    "m": "m",
+    "in": "in",
+    "mm": "mm",
+    "cuyd": "yd³",
+    "cum": "m³"
   }
 }

@@ -937,5 +937,21 @@
       "noMarkup": "0% (Net)",
       "profit": "profit"
     }
+  },
+  "units": {
+    "label": "Units",
+    "imperial": "Imperial",
+    "metric": "Metric",
+    "imperial_short": "IMP",
+    "metric_short": "MET",
+    "toggle_tooltip": "Toggle between Imperial and Metric units",
+    "sqft": "sq ft",
+    "sqm": "sq m",
+    "ft": "ft",
+    "m": "m",
+    "in": "in",
+    "mm": "mm",
+    "cuyd": "cu yd",
+    "cum": "cu m"
   }
 }

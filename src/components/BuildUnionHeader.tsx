@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info, HelpCircle } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info, HelpCircle, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { GlobalSearch, GlobalSearchTrigger } from "@/components/GlobalSearch";
 import AskMessaChat from "@/components/AskMessaChat";
+import { UnitToggle } from "@/components/UnitToggle";
 
 const languages = [
   { code: "en", name: "English" },
@@ -405,6 +406,15 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   )}
                 </div>
 
+                {/* Unit Toggle */}
+                <div className="px-4 py-2">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider flex items-center gap-2">
+                    <Ruler className="h-3 w-3" />
+                    {t("units.label", "Units")}
+                  </p>
+                  <UnitToggle showLabel={false} className="justify-center" />
+                </div>
+
                 {/* Theme Toggle */}
                 <div className="px-4 py-2">
                   <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Theme</p>
@@ -462,6 +472,11 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
               </nav>
             </SheetContent>
           </Sheet>
+
+          {/* Unit Toggle - hidden on mobile */}
+          <div className="hidden md:flex items-center">
+            <UnitToggle compact className="border rounded-full px-2 py-1 bg-muted/30" />
+          </div>
 
           {/* Dark Mode Toggle - hidden on mobile */}
           <Button

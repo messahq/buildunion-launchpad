@@ -937,5 +937,21 @@
       "noMarkup": "0% (Nettó)",
       "profit": "profit"
     }
+  },
+  "units": {
+    "label": "Egységek",
+    "imperial": "Angolszász",
+    "metric": "Metrikus",
+    "imperial_short": "ANG",
+    "metric_short": "MET",
+    "toggle_tooltip": "Váltás angolszász és metrikus egységek között",
+    "sqft": "négyzetláb",
+    "sqm": "m²",
+    "ft": "láb",
+    "m": "m",
+    "in": "hüvelyk",
+    "mm": "mm",
+    "cuyd": "köbyard",
+    "cum": "m³"
   }
 }
