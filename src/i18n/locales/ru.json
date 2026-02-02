@@ -775,7 +775,9 @@
     "wasteBuffer": "Отходы",
     "materialsSection": "Материалы",
     "laborSection": "Работа",
-    "otherSection": "Прочее"
+    "otherSection": "Прочее",
+    "pricePerArea": "Цена/Площадь",
+    "coverage": "Покрытие"
   },
   "units": {
     "label": "Единицы",
@@ -786,6 +788,8 @@
     "toggle_tooltip": "Переключение между имперскими и метрическими единицами",
     "sqft": "кв.фут",
     "sqm": "м²",
+    "sq_ft": "кв.фут",
+    "sq_m": "м²",
     "ft": "фут",
     "m": "м",
     "in": "дюйм",

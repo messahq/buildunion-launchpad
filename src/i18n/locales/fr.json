@@ -803,7 +803,9 @@
     "wasteBuffer": "Perte",
     "materialsSection": "Matériaux",
     "laborSection": "Main d'œuvre",
-    "otherSection": "Autres"
+    "otherSection": "Autres",
+    "pricePerArea": "Prix/Superficie",
+    "coverage": "Couverture"
   },
   "units": {
     "label": "Unités",
@@ -814,6 +816,8 @@
     "toggle_tooltip": "Basculer entre les unités impériales et métriques",
     "sqft": "pi²",
     "sqm": "m²",
+    "sq_ft": "pi²",
+    "sq_m": "m²",
     "ft": "pi",
     "m": "m",
     "in": "po",

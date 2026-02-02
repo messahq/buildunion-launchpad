@@ -1412,15 +1412,37 @@ export function MaterialCalculationTab({
           </div>
         </div>
       ) : (
-        // View mode - responsive layout with UNIT CONVERSION
+        // View mode - responsive layout with UNIT CONVERSION + COVERAGE
         (() => {
           // Get converted display values based on current unit system (IMP/MET toggle)
           const displayVals = getDisplayValues(item);
           const displayBaseQty = getDisplayBaseQuantity(item);
           
+          // Get coverage info for this material (sq ft per box, gallon, etc.)
+          const coverageInfo = getMaterialCoverage(item.item);
+          const hasCoverage = coverageInfo && coverageInfo.coveragePerUnit > 1;
+          
+          // Convert coverage to metric if needed
+          const displayCoverage = hasCoverage 
+            ? (isMetric 
+                ? (coverageInfo!.coveragePerUnit * 0.092903).toLocaleString(undefined, { maximumFractionDigits: 2 }) 
+                : coverageInfo!.coveragePerUnit.toLocaleString())
+            : null;
+          const coverageUnit = isMetric ? t("units.sq_m", "sq m") : t("units.sq_ft", "sq ft");
+          
+          // Calculate price per area (e.g., $/sq ft or $/sq m)
+          const pricePerArea = hasCoverage && item.unitPrice > 0
+            ? item.unitPrice / coverageInfo!.coveragePerUnit
+            : null;
+          const displayPricePerArea = pricePerArea 
+            ? (isMetric 
+                ? pricePerArea / 0.092903 // Convert $/sq ft to $/sq m
+                : pricePerArea)
+            : null;
+          
           return (
             <div className="space-y-2">
-              {/* Row 1: Description + Actions */}
+              {/* Row 1: Description + Coverage Badge + Actions */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -1428,6 +1450,12 @@ export function MaterialCalculationTab({
                     {item.isEssential && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 shrink-0">
                         +{wastePercent}%
+                      </Badge>
+                    )}
+                    {/* Coverage badge - shows sq ft/unit or sq m/unit */}
+                    {hasCoverage && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 shrink-0 font-mono">
+                        {displayCoverage} {coverageUnit}/{item.unit.replace(/s$/, '')}
                       </Badge>
                     )}
                   </div>
@@ -1452,9 +1480,9 @@ export function MaterialCalculationTab({
                 </div>
               </div>
               
-              {/* Row 2: Qty/Unit + Price + Total - using CONVERTED display values */}
-              <div className="grid grid-cols-3 gap-2 items-center">
-                {/* Quantity + Unit - GROSS (order quantity) in main field, Net + waste% below */}
+              {/* Row 2: Qty/Unit + Price columns - using CONVERTED display values */}
+              <div className="grid grid-cols-4 gap-2 items-center">
+                {/* Quantity + Unit */}
                 <div className="text-sm text-muted-foreground">
                   {item.isEssential && item.baseQuantity !== undefined ? (
                     <div className="space-y-0.5">
@@ -1464,33 +1492,51 @@ export function MaterialCalculationTab({
                           inputMode="decimal"
                           defaultValue={item.quantity || ''}
                           onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                          className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium"
+                          className="h-7 w-14 text-xs text-center p-1 border-dashed font-medium"
                           title={t("materials.editGrossQty", "Edit order quantity (gross)")}
                         />
-                        <span className="text-xs">{displayVals.unit}</span>
+                        <span className="text-xs">{item.unit}</span>
                       </div>
                       <span className="text-[10px] text-muted-foreground block">
-                        → {displayBaseQty?.toLocaleString(undefined, { maximumFractionDigits: 2 })} (net) +{wastePercent}%
+                        → {displayBaseQty?.toLocaleString(undefined, { maximumFractionDigits: 1 })} {coverageUnit}
                       </span>
                     </div>
                   ) : (
-                    <span>{displayVals.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} {displayVals.unit}</span>
+                    <span>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })} {item.unit}</span>
                   )}
                 </div>
                 
-                {/* Unit Price - show converted price for display */}
-                <div className="text-sm text-right">
-                  {displayVals.unitPrice > 0 
-                    ? `${formatCurrency(displayVals.unitPrice)}/${displayVals.unit.replace('linear ', '').replace('sq ', '').replace('cu ', '')}`
-                    : <Input
-                        type="text"
-                        inputMode="decimal"
-                        defaultValue={item.unitPrice || ''}
-                        onBlur={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value.replace(',', '.')) || 0)}
-                        className="h-8 text-sm text-right w-full"
-                        placeholder="$0"
-                      />
-                  }
+                {/* Unit Price (per box/gallon) */}
+                <div className="text-sm text-center">
+                  {item.unitPrice > 0 ? (
+                    <div className="space-y-0.5">
+                      <span className="font-medium">{formatCurrency(item.unitPrice)}</span>
+                      <span className="text-[10px] text-muted-foreground block">/{item.unit.replace(/s$/, '')}</span>
+                    </div>
+                  ) : (
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      defaultValue={item.unitPrice || ''}
+                      onBlur={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value.replace(',', '.')) || 0)}
+                      className="h-7 text-xs text-right w-full"
+                      placeholder="$0"
+                    />
+                  )}
+                </div>
+                
+                {/* Price per Area ($/sq ft or $/sq m) - Toronto standard */}
+                <div className="text-sm text-center">
+                  {displayPricePerArea ? (
+                    <div className="space-y-0.5">
+                      <span className="font-medium text-green-700 dark:text-green-400">
+                        {formatCurrency(displayPricePerArea)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block">/{coverageUnit}</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
                 </div>
                 
                 {/* Total - remains same regardless of unit system */}
@@ -1505,16 +1551,16 @@ export function MaterialCalculationTab({
     </div>
   );
 
-  // Table header - only shown on desktop
+  // Table header - only shown on desktop - now 4 columns with Price/Area
   const TableHeader = () => (
-    <div className="hidden md:grid grid-cols-3 gap-2 text-xs font-medium text-muted-foreground px-3 pb-2 border-b">
+    <div className="hidden md:grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground px-3 pb-2 border-b">
       <div>{t("materials.description", "Description")}</div>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="text-center">{t("materials.qtyUnit", "Qty/Unit")}</div>
-        <div className="text-right">{t("materials.unitPrice", "Unit Price")}</div>
+      <div className="text-center">{t("materials.qtyUnit", "Qty/Unit")}</div>
+      <div className="text-center">{t("materials.unitPrice", "Unit Price")}</div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="text-center">{t("materials.pricePerArea", "Price/Area")}</div>
         <div className="text-right">{t("materials.total", "Total")}</div>
       </div>
-      <div></div>
     </div>
   );
 

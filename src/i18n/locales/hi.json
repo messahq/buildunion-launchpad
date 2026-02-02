@@ -775,7 +775,9 @@
     "wasteBuffer": "अपव्यय",
     "materialsSection": "सामग्री",
     "laborSection": "श्रम",
-    "otherSection": "अन्य"
+    "otherSection": "अन्य",
+    "pricePerArea": "मूल्य/क्षेत्र",
+    "coverage": "कवरेज"
   },
   "units": {
     "label": "इकाइयाँ",
@@ -786,6 +788,8 @@
     "toggle_tooltip": "इम्पीरियल और मीट्रिक इकाइयों के बीच टॉगल करें",
     "sqft": "वर्ग फीट",
     "sqm": "वर्ग मीटर",
+    "sq_ft": "वर्ग फीट",
+    "sq_m": "वर्ग मीटर",
     "ft": "फीट",
     "m": "मीटर",
     "in": "इंच",

@@ -803,7 +803,9 @@
     "wasteBuffer": "Verschnitt",
     "materialsSection": "Materialien",
     "laborSection": "Arbeit",
-    "otherSection": "Sonstiges"
+    "otherSection": "Sonstiges",
+    "pricePerArea": "Preis/Fläche",
+    "coverage": "Abdeckung"
   },
   "units": {
     "label": "Einheiten",
@@ -814,6 +816,8 @@
     "toggle_tooltip": "Zwischen imperialen und metrischen Einheiten wechseln",
     "sqft": "ft²",
     "sqm": "m²",
+    "sq_ft": "ft²",
+    "sq_m": "m²",
     "ft": "ft",
     "m": "m",
     "in": "in",

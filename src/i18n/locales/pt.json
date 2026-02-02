@@ -791,7 +791,9 @@
     "wasteBuffer": "Desperdício",
     "materialsSection": "Materiais",
     "laborSection": "Mão de Obra",
-    "otherSection": "Outros"
+    "otherSection": "Outros",
+    "pricePerArea": "Preço/Área",
+    "coverage": "Cobertura"
   },
   "units": {
     "label": "Unidades",
@@ -802,6 +804,8 @@
     "toggle_tooltip": "Alternar entre unidades imperiais e métricas",
     "sqft": "pés²",
     "sqm": "m²",
+    "sq_ft": "pés²",
+    "sq_m": "m²",
     "ft": "pés",
     "m": "m",
     "in": "pol",
