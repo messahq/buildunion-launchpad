@@ -792,7 +792,9 @@
     "wasteBuffer": "损耗",
     "materialsSection": "材料",
     "laborSection": "人工",
-    "otherSection": "其他"
+    "otherSection": "其他",
+    "pricePerArea": "价格/面积",
+    "coverage": "覆盖率"
   },
   "units": {
     "label": "单位",
@@ -803,6 +805,8 @@
     "toggle_tooltip": "切换英制和公制单位",
     "sqft": "平方英尺",
     "sqm": "平方米",
+    "sq_ft": "平方英尺",
+    "sq_m": "平方米",
     "ft": "英尺",
     "m": "米",
     "in": "英寸",

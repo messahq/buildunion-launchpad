@@ -905,7 +905,9 @@
     "wasteBuffer": "Veszteség",
     "materialsSection": "Anyagok",
     "laborSection": "Munka",
-    "otherSection": "Egyéb"
+    "otherSection": "Egyéb",
+    "pricePerArea": "Ár/Terület",
+    "coverage": "Fedés"
   },
   "common": {
     "delete": "Törlés",
@@ -947,6 +949,8 @@
     "toggle_tooltip": "Váltás angolszász és metrikus egységek között",
     "sqft": "négyzetláb",
     "sqm": "m²",
+    "sq_ft": "négyzetláb",
+    "sq_m": "m²",
     "ft": "láb",
     "m": "m",
     "in": "hüvelyk",

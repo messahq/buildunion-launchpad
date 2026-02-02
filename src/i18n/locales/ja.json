@@ -775,7 +775,9 @@
     "wasteBuffer": "ロス",
     "materialsSection": "材料",
     "laborSection": "労働",
-    "otherSection": "その他"
+    "otherSection": "その他",
+    "pricePerArea": "価格/面積",
+    "coverage": "カバー率"
   },
   "units": {
     "label": "単位",
@@ -786,6 +788,8 @@
     "toggle_tooltip": "ヤード・ポンド法とメートル法を切り替え",
     "sqft": "平方フィート",
     "sqm": "平方メートル",
+    "sq_ft": "平方フィート",
+    "sq_m": "平方メートル",
     "ft": "フィート",
     "m": "メートル",
     "in": "インチ",

@@ -791,7 +791,9 @@
     "wasteBuffer": "هدر",
     "materialsSection": "المواد",
     "laborSection": "العمالة",
-    "otherSection": "أخرى"
+    "otherSection": "أخرى",
+    "pricePerArea": "السعر/المساحة",
+    "coverage": "التغطية"
   },
   "units": {
     "label": "الوحدات",
@@ -802,6 +804,8 @@
     "toggle_tooltip": "التبديل بين الوحدات الإمبريالية والمترية",
     "sqft": "قدم²",
     "sqm": "م²",
+    "sq_ft": "قدم²",
+    "sq_m": "م²",
     "ft": "قدم",
     "m": "م",
     "in": "بوصة",

@@ -905,7 +905,9 @@
     "wasteBuffer": "Waste",
     "materialsSection": "Materials",
     "laborSection": "Labor",
-    "otherSection": "Other"
+    "otherSection": "Other",
+    "pricePerArea": "Price/Area",
+    "coverage": "Coverage"
   },
   "common": {
     "delete": "Delete",
@@ -947,6 +949,8 @@
     "toggle_tooltip": "Toggle between Imperial and Metric units",
     "sqft": "sq ft",
     "sqm": "sq m",
+    "sq_ft": "sq ft",
+    "sq_m": "sq m",
     "ft": "ft",
     "m": "m",
     "in": "in",
