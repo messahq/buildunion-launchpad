@@ -812,5 +812,28 @@
     "mm": "mm",
     "cuyd": "jd³",
     "cum": "m³"
+  },
+  "common": {
+    "delete": "Excluir",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "back": "Voltar",
+    "signOut": "Sair"
+  },
+  "verifyEmail": {
+    "title": "Verificação de Email Necessária",
+    "description": "Por favor, verifique seu endereço de email para acessar a área de trabalho. Enviamos um link de confirmação para",
+    "securityNote": "Protocolo de Segurança:",
+    "securityMessage": "Somente usuários verificados podem acessar a área de trabalho e aparecer no Diretório de Membros. Isso garante a integridade da nossa comunidade profissional.",
+    "checkStatus": "Já Verifiquei - Verificar Status",
+    "checking": "Verificando...",
+    "resend": "Reenviar Email de Verificação",
+    "sending": "Enviando...",
+    "spamTip": "Não recebeu o email? Verifique sua pasta de spam ou tente reenviar.",
+    "emailNotFound": "Endereço de email não encontrado",
+    "emailSent": "Email de verificação enviado!",
+    "checkFailed": "Falha ao verificar o status",
+    "stillPending": "Email ainda não verificado. Por favor, verifique sua caixa de entrada.",
+    "verified": "Email verificado! Redirecionando para a área de trabalho..."
   }
 }

@@ -912,7 +912,25 @@
   "common": {
     "delete": "Delete",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "back": "Back",
+    "signOut": "Sign Out"
+  },
+  "verifyEmail": {
+    "title": "Email Verification Required",
+    "description": "Please verify your email address to access the workspace. We sent a confirmation link to",
+    "securityNote": "Security Protocol:",
+    "securityMessage": "Only verified users can access the workspace and appear in the Member Directory. This ensures the integrity of our professional community.",
+    "checkStatus": "I've Verified - Check Status",
+    "checking": "Checking...",
+    "resend": "Resend Verification Email",
+    "sending": "Sending...",
+    "spamTip": "Didn't receive the email? Check your spam folder or try resending.",
+    "emailNotFound": "Email address not found",
+    "emailSent": "Verification email sent!",
+    "checkFailed": "Failed to check verification status",
+    "stillPending": "Email not yet verified. Please check your inbox.",
+    "verified": "Email verified! Redirecting to workspace..."
   },
   "dashboard": {
     "budget": {

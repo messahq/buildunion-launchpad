@@ -11,6 +11,7 @@ import { ProjectProvider } from "@/contexts/ProjectContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { CitationProvider } from "@/components/citations";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import RequireEmailVerification from "@/components/RequireEmailVerification";
 import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
 import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
@@ -27,6 +28,7 @@ import BuildUnionMembers from "./pages/BuildUnionMembers";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ConfirmEmail from "./pages/ConfirmEmail";
+import VerifyEmailPending from "./pages/VerifyEmailPending";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import DockLogin from "./pages/DockLogin";
@@ -56,21 +58,25 @@ const App = () => (
                       <Route path="/" element={<BuildUnion />} />
                       <Route path="/buildunion" element={<BuildUnion />} />
                       <Route path="/dock" element={<Index />} />
-                      <Route path="/buildunion/workspace" element={<BuildUnionWorkspace />} />
-                      <Route path="/buildunion/workspace/new" element={<BuildUnionNewProject />} />
-                      {/* Project details route removed - using Projects2 workflow */}
-                      <Route path="/buildunion/facts" element={<BuildUnionProjectFacts />} />
+                      {/* Protected routes - require email verification */}
+                      <Route path="/buildunion/workspace" element={<RequireEmailVerification><BuildUnionWorkspace /></RequireEmailVerification>} />
+                      <Route path="/buildunion/workspace/new" element={<RequireEmailVerification><BuildUnionNewProject /></RequireEmailVerification>} />
+                      <Route path="/buildunion/facts" element={<RequireEmailVerification><BuildUnionProjectFacts /></RequireEmailVerification>} />
+                      <Route path="/buildunion/profile" element={<RequireEmailVerification><BuildUnionProfile /></RequireEmailVerification>} />
+                      <Route path="/buildunion/profile/view" element={<RequireEmailVerification><BuildUnionProfileView /></RequireEmailVerification>} />
+                      <Route path="/buildunion/messages" element={<RequireEmailVerification><BuildUnionMessages /></RequireEmailVerification>} />
+                      
+                      {/* Public/semi-public routes */}
                       <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
-                      <Route path="/buildunion/profile" element={<BuildUnionProfile />} />
-                      <Route path="/buildunion/profile/view" element={<BuildUnionProfileView />} />
-                      {/* Legacy Quick Mode and Summary routes removed - using Projects2 workflow */}
                       <Route path="/buildunion/community" element={<BuildUnionCommunity />} />
                       <Route path="/buildunion/forum" element={<BuildUnionForum />} />
                       <Route path="/buildunion/members" element={<BuildUnionMembers />} />
-                      <Route path="/buildunion/messages" element={<BuildUnionMessages />} />
+                      
+                      {/* Auth routes */}
                       <Route path="/buildunion/login" element={<Login />} />
                       <Route path="/buildunion/register" element={<Register />} />
                       <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />
+                      <Route path="/buildunion/verify-email" element={<VerifyEmailPending />} />
                       <Route path="/buildunion/forgot-password" element={<ForgotPassword />} />
                       <Route path="/buildunion/reset-password" element={<ResetPassword />} />
                       <Route path="/dock/login" element={<DockLogin />} />
