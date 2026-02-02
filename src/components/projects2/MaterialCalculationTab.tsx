@@ -73,6 +73,7 @@ import { downloadPDF, generatePDFBlob } from "@/lib/pdfGenerator";
 import { toast } from "sonner";
 import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import { supabase } from "@/integrations/supabase/client";
+import { useUnitSettings } from "@/hooks/useUnitSettings";
 
 interface CostItem {
   id: string;
@@ -449,6 +450,58 @@ export function MaterialCalculationTab({
   
   // Auto-save timer ref
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // ====== UNIT CONVERSION SYSTEM ======
+  // Global unit toggle (Imperial <-> Metric) integration
+  const { isMetric, convertArea, convertLength, convertVolume, convertUnitPrice, getDisplayUnit } = useUnitSettings();
+  
+  // Helper: Convert item's display values based on current unit system
+  // CRITICAL: Total price remains the same - only display units/prices change
+  const getDisplayValues = useCallback((item: CostItem) => {
+    const originalUnit = item.unit.toLowerCase();
+    
+    // Identify unit type and convert if needed
+    const isSqFt = originalUnit.includes('sq ft') || originalUnit === 'sq ft' || originalUnit.includes('ft²');
+    const isLinearFt = (originalUnit.includes('linear') && originalUnit.includes('ft')) || originalUnit === 'linear ft';
+    const isCuYard = originalUnit.includes('cu') && originalUnit.includes('yd');
+    
+    // Only convert length/area units - not boxes, gallons, sheets, etc.
+    if (isSqFt) {
+      const converted = convertArea(item.quantity, 'sq ft');
+      const priceConv = convertUnitPrice(item.unitPrice, 'sq ft');
+      return { quantity: converted.value, unitPrice: priceConv.price, unit: converted.unit };
+    }
+    
+    if (isLinearFt) {
+      const converted = convertLength(item.quantity, 'ft');
+      const priceConv = convertUnitPrice(item.unitPrice, 'ft');
+      return { quantity: converted.value, unitPrice: priceConv.price, unit: converted.unit };
+    }
+    
+    if (isCuYard) {
+      const converted = convertVolume(item.quantity, 'cu yd');
+      const priceConv = convertUnitPrice(item.unitPrice, 'cu yd');
+      return { quantity: converted.value, unitPrice: priceConv.price, unit: converted.unit };
+    }
+    
+    // For non-convertible units (boxes, gallons, sheets, etc.) - no conversion
+    return { quantity: item.quantity, unitPrice: item.unitPrice, unit: item.unit };
+  }, [isMetric, convertArea, convertLength, convertVolume, convertUnitPrice]);
+  
+  // Helper: Convert base quantity for display (net area before waste)
+  const getDisplayBaseQuantity = useCallback((item: CostItem) => {
+    if (!item.baseQuantity) return undefined;
+    
+    const originalUnit = item.unit.toLowerCase();
+    const isSqFt = originalUnit.includes('sq ft') || originalUnit === 'sq ft' || originalUnit.includes('ft²');
+    
+    if (isSqFt) {
+      const converted = convertArea(item.baseQuantity, 'sq ft');
+      return converted.value;
+    }
+    
+    return item.baseQuantity;
+  }, [convertArea]);
   
   // Get laminate base quantity for sync dependency
   const laminateBaseQty = materialItems.find(m => /laminate|flooring/i.test(m.item))?.baseQuantity;
@@ -1359,84 +1412,95 @@ export function MaterialCalculationTab({
           </div>
         </div>
       ) : (
-        // View mode - responsive layout
-        <div className="space-y-2">
-          {/* Row 1: Description + Actions */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-sm break-words">{item.item}</span>
-                {item.isEssential && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 shrink-0">
-                    +{wastePercent}%
-                  </Badge>
-                )}
+        // View mode - responsive layout with UNIT CONVERSION
+        (() => {
+          // Get converted display values based on current unit system (IMP/MET toggle)
+          const displayVals = getDisplayValues(item);
+          const displayBaseQty = getDisplayBaseQuantity(item);
+          
+          return (
+            <div className="space-y-2">
+              {/* Row 1: Description + Actions */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-sm break-words">{item.item}</span>
+                    {item.isEssential && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 shrink-0">
+                        +{wastePercent}%
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    onClick={() => startEditing(item)}
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => deleteItem(setItems, item.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Row 2: Qty/Unit + Price + Total - using CONVERTED display values */}
+              <div className="grid grid-cols-3 gap-2 items-center">
+                {/* Quantity + Unit - GROSS (order quantity) in main field, Net + waste% below */}
+                <div className="text-sm text-muted-foreground">
+                  {item.isEssential && item.baseQuantity !== undefined ? (
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          defaultValue={item.quantity || ''}
+                          onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                          className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium"
+                          title={t("materials.editGrossQty", "Edit order quantity (gross)")}
+                        />
+                        <span className="text-xs">{displayVals.unit}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground block">
+                        → {displayBaseQty?.toLocaleString(undefined, { maximumFractionDigits: 2 })} (net) +{wastePercent}%
+                      </span>
+                    </div>
+                  ) : (
+                    <span>{displayVals.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })} {displayVals.unit}</span>
+                  )}
+                </div>
+                
+                {/* Unit Price - show converted price for display */}
+                <div className="text-sm text-right">
+                  {displayVals.unitPrice > 0 
+                    ? `${formatCurrency(displayVals.unitPrice)}/${displayVals.unit.replace('linear ', '').replace('sq ', '').replace('cu ', '')}`
+                    : <Input
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={item.unitPrice || ''}
+                        onBlur={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value.replace(',', '.')) || 0)}
+                        className="h-8 text-sm text-right w-full"
+                        placeholder="$0"
+                      />
+                  }
+                </div>
+                
+                {/* Total - remains same regardless of unit system */}
+                <div className="text-right font-medium text-sm">
+                  {item.totalPrice > 0 ? formatCurrency(item.totalPrice) : "-"}
+                </div>
               </div>
             </div>
-            <div className="flex gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() => startEditing(item)}
-              >
-                <Edit2 className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={() => deleteItem(setItems, item.id)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Row 2: Qty/Unit + Price + Total */}
-          <div className="grid grid-cols-3 gap-2 items-center">
-            {/* Quantity + Unit - GROSS (order quantity) in main field, Net + waste% below */}
-            <div className="text-sm text-muted-foreground">
-              {item.isEssential && item.baseQuantity !== undefined ? (
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      defaultValue={item.quantity || ''}
-                      onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                      className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium"
-                      title={t("materials.editGrossQty", "Edit order quantity (gross)")}
-                    />
-                    <span className="text-xs">{item.unit}</span>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground block">
-                    → {item.baseQuantity?.toLocaleString()} (net) +{wastePercent}%
-                  </span>
-                </div>
-              ) : (
-                <span>{item.quantity.toLocaleString()} {item.unit}</span>
-              )}
-            </div>
-            
-            {/* Unit Price */}
-            <div>
-              <Input
-                type="text"
-                inputMode="decimal"
-                defaultValue={item.unitPrice || ''}
-                onBlur={(e) => handleItemChange(setItems, item.id, 'unitPrice', parseFloat(e.target.value.replace(',', '.')) || 0)}
-                className="h-8 text-sm text-right w-full"
-                placeholder="$0"
-              />
-            </div>
-            
-            {/* Total */}
-            <div className="text-right font-medium text-sm">
-              {item.totalPrice > 0 ? formatCurrency(item.totalPrice) : "-"}
-            </div>
-          </div>
-        </div>
+          );
+        })()
       )}
     </div>
   );
