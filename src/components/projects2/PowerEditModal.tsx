@@ -79,6 +79,73 @@ function isEssentialMaterial(itemName: string): boolean {
   return ESSENTIAL_MATERIAL_PATTERNS.some(pattern => lower.includes(pattern));
 }
 
+/**
+ * COVERAGE MAP: Realistic coverage per unit for different material types
+ * Mirrors the map from MaterialCalculationTab.tsx for display purposes
+ */
+interface CoverageInfo {
+  coveragePerUnit: number; // sq ft per unit
+  targetUnit: string; // The unit to convert to
+}
+
+const MATERIAL_COVERAGE_MAP: Record<string, CoverageInfo> = {
+  // Flooring - boxes typically cover 20-25 sq ft
+  'laminate': { coveragePerUnit: 22, targetUnit: 'boxes' },
+  'flooring': { coveragePerUnit: 22, targetUnit: 'boxes' },
+  'hardwood': { coveragePerUnit: 20, targetUnit: 'boxes' },
+  'vinyl': { coveragePerUnit: 20, targetUnit: 'boxes' },
+  'tile': { coveragePerUnit: 15, targetUnit: 'boxes' },
+  'ceramic': { coveragePerUnit: 15, targetUnit: 'boxes' },
+  // Underlayment - rolls cover ~100-200 sq ft
+  'underlayment': { coveragePerUnit: 100, targetUnit: 'rolls' },
+  // Paint - gallon covers ~350-400 sq ft
+  'paint': { coveragePerUnit: 350, targetUnit: 'gallons' },
+  'primer': { coveragePerUnit: 350, targetUnit: 'gallons' },
+  // Drywall - 4x8 sheet = 32 sq ft
+  'drywall': { coveragePerUnit: 32, targetUnit: 'sheets' },
+  'gypsum': { coveragePerUnit: 32, targetUnit: 'sheets' },
+  // Carpet - 12x12 = 144 sq ft
+  'carpet': { coveragePerUnit: 144, targetUnit: 'sq yards' },
+  // Adhesive/glue - gallon covers ~200 sq ft
+  'adhesive': { coveragePerUnit: 200, targetUnit: 'gallons' },
+  'glue': { coveragePerUnit: 200, targetUnit: 'gallons' },
+};
+
+/**
+ * Get coverage info for a material item
+ */
+function getMaterialCoverage(itemName: string): CoverageInfo | null {
+  const lowerName = itemName.toLowerCase();
+  for (const [keyword, coverage] of Object.entries(MATERIAL_COVERAGE_MAP)) {
+    if (lowerName.includes(keyword)) {
+      return coverage;
+    }
+  }
+  return null;
+}
+
+/**
+ * Calculate coverage-based quantity from gross area
+ */
+function calculateCoverageQuantity(grossArea: number, itemName: string): { 
+  qty: number; 
+  unit: string; 
+  formula: string | null;
+  coverage: CoverageInfo | null;
+} {
+  const coverage = getMaterialCoverage(itemName);
+  if (coverage && coverage.coveragePerUnit > 1) {
+    const qty = Math.ceil(grossArea / coverage.coveragePerUnit);
+    return {
+      qty,
+      unit: coverage.targetUnit,
+      formula: `${grossArea.toLocaleString()} sq ft ÷ ${coverage.coveragePerUnit} = ${qty} ${coverage.targetUnit}`,
+      coverage
+    };
+  }
+  return { qty: grossArea, unit: 'sq ft', formula: null, coverage: null };
+}
+
 export default function PowerEditModal({
   open,
   onOpenChange,
@@ -367,45 +434,64 @@ export default function PowerEditModal({
               <div className="space-y-2">
                 {editMaterials.map((material, index) => {
                   const isEssential = isEssentialMaterial(material.item);
+                  // Calculate coverage info for display
+                  const coverageCalc = isEssential 
+                    ? calculateCoverageQuantity(totalWithWaste, material.item)
+                    : { qty: material.quantity, unit: material.unit, formula: null, coverage: null };
+                  
                   return (
                     <div
                       key={index}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border",
+                        "flex flex-col gap-2 p-3 rounded-lg border",
                         isEssential 
                           ? "border-amber-500/30 bg-amber-50/30 dark:bg-amber-900/10" 
                           : "bg-muted/30"
                       )}
                     >
-                      <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium truncate">{material.item}</span>
+                            {isEssential && (
+                              <Badge className="text-[10px] bg-amber-500/20 text-amber-600 shrink-0">
+                                Auto-scaled
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
                         <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">{material.item}</span>
-                          {isEssential && (
-                            <Badge className="text-[10px] bg-amber-500/20 text-amber-600 shrink-0">
-                              Auto-scaled
-                            </Badge>
-                          )}
+                          <NumericInput
+                            value={material.quantity}
+                            onChange={(val) => handleMaterialQuantityChange(index, val || 0)}
+                            className="w-24 h-9"
+                          />
+                          <span className="text-sm text-muted-foreground w-16">
+                            {material.unit}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveMaterial(index)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <NumericInput
-                          value={material.quantity}
-                          onChange={(val) => handleMaterialQuantityChange(index, val || 0)}
-                          className="w-24 h-9"
-                        />
-                        <span className="text-sm text-muted-foreground w-16">
-                          {material.unit}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveMaterial(index)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {/* Coverage calculation details */}
+                      {isEssential && coverageCalc.coverage && (
+                        <div className="flex items-center gap-2 pl-2 text-xs text-muted-foreground">
+                          <span className="font-mono bg-muted/50 px-2 py-0.5 rounded">
+                            {coverageCalc.formula}
+                          </span>
+                          <span className="text-amber-600">
+                            ({coverageCalc.coverage.coveragePerUnit} sq ft/{coverageCalc.coverage.targetUnit.replace(/s$/, '')})
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
