@@ -912,7 +912,25 @@
   "common": {
     "delete": "Törlés",
     "cancel": "Mégse",
-    "save": "Mentés"
+    "save": "Mentés",
+    "back": "Vissza",
+    "signOut": "Kijelentkezés"
+  },
+  "verifyEmail": {
+    "title": "Email Megerősítés Szükséges",
+    "description": "Kérjük, erősítsd meg az email címed a munkaterület eléréséhez. Megerősítő linket küldtünk ide:",
+    "securityNote": "Biztonsági Protokoll:",
+    "securityMessage": "Csak a megerősített felhasználók férhetnek hozzá a munkaterülethez és jelenhetnek meg a Tag Könyvtárban. Ez biztosítja szakmai közösségünk integritását.",
+    "checkStatus": "Megerősítettem - Állapot Ellenőrzése",
+    "checking": "Ellenőrzés...",
+    "resend": "Megerősítő Email Újraküldése",
+    "sending": "Küldés...",
+    "spamTip": "Nem kaptad meg az emailt? Ellenőrizd a spam mappát vagy próbáld újraküldeni.",
+    "emailNotFound": "Email cím nem található",
+    "emailSent": "Megerősítő email elküldve!",
+    "checkFailed": "Megerősítési állapot ellenőrzése sikertelen",
+    "stillPending": "Email még nincs megerősítve. Ellenőrizd a bejövő üzeneteidet.",
+    "verified": "Email megerősítve! Átirányítás a munkaterületre..."
   },
   "dashboard": {
     "budget": {

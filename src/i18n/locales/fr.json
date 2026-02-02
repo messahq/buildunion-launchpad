@@ -824,5 +824,28 @@
     "mm": "mm",
     "cuyd": "vg³",
     "cum": "m³"
+  },
+  "common": {
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "back": "Retour",
+    "signOut": "Déconnexion"
+  },
+  "verifyEmail": {
+    "title": "Vérification de l'Email Requise",
+    "description": "Veuillez vérifier votre adresse email pour accéder à l'espace de travail. Nous avons envoyé un lien de confirmation à",
+    "securityNote": "Protocole de Sécurité:",
+    "securityMessage": "Seuls les utilisateurs vérifiés peuvent accéder à l'espace de travail et apparaître dans l'Annuaire des Membres. Cela garantit l'intégrité de notre communauté professionnelle.",
+    "checkStatus": "J'ai Vérifié - Vérifier le Statut",
+    "checking": "Vérification...",
+    "resend": "Renvoyer l'Email de Vérification",
+    "sending": "Envoi...",
+    "spamTip": "Vous n'avez pas reçu l'email? Vérifiez votre dossier spam ou réessayez.",
+    "emailNotFound": "Adresse email non trouvée",
+    "emailSent": "Email de vérification envoyé!",
+    "checkFailed": "Échec de la vérification du statut",
+    "stillPending": "Email pas encore vérifié. Veuillez vérifier votre boîte de réception.",
+    "verified": "Email vérifié! Redirection vers l'espace de travail..."
   }
 }

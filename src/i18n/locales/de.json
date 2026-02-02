@@ -824,5 +824,28 @@
     "mm": "mm",
     "cuyd": "yd³",
     "cum": "m³"
+  },
+  "common": {
+    "delete": "Löschen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "back": "Zurück",
+    "signOut": "Abmelden"
+  },
+  "verifyEmail": {
+    "title": "E-Mail-Verifizierung Erforderlich",
+    "description": "Bitte bestätigen Sie Ihre E-Mail-Adresse, um auf den Arbeitsbereich zuzugreifen. Wir haben einen Bestätigungslink gesendet an",
+    "securityNote": "Sicherheitsprotokoll:",
+    "securityMessage": "Nur verifizierte Benutzer können auf den Arbeitsbereich zugreifen und im Mitgliederverzeichnis erscheinen. Dies gewährleistet die Integrität unserer professionellen Gemeinschaft.",
+    "checkStatus": "Ich habe Bestätigt - Status Prüfen",
+    "checking": "Prüfe...",
+    "resend": "Bestätigungs-E-Mail Erneut Senden",
+    "sending": "Wird gesendet...",
+    "spamTip": "E-Mail nicht erhalten? Überprüfen Sie Ihren Spam-Ordner oder versuchen Sie es erneut.",
+    "emailNotFound": "E-Mail-Adresse nicht gefunden",
+    "emailSent": "Bestätigungs-E-Mail gesendet!",
+    "checkFailed": "Statusüberprüfung fehlgeschlagen",
+    "stillPending": "E-Mail noch nicht verifiziert. Bitte überprüfen Sie Ihren Posteingang.",
+    "verified": "E-Mail verifiziert! Weiterleitung zum Arbeitsbereich..."
   }
 }

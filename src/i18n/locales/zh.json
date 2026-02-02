@@ -813,5 +813,28 @@
     "mm": "毫米",
     "cuyd": "立方码",
     "cum": "立方米"
+  },
+  "common": {
+    "delete": "删除",
+    "cancel": "取消",
+    "save": "保存",
+    "back": "返回",
+    "signOut": "退出登录"
+  },
+  "verifyEmail": {
+    "title": "需要邮箱验证",
+    "description": "请验证您的邮箱地址以访问工作区。我们已发送确认链接至",
+    "securityNote": "安全协议：",
+    "securityMessage": "只有已验证的用户才能访问工作区并出现在会员目录中。这确保了我们专业社区的完整性。",
+    "checkStatus": "已验证 - 检查状态",
+    "checking": "正在检查...",
+    "resend": "重新发送验证邮件",
+    "sending": "正在发送...",
+    "spamTip": "没有收到邮件？请检查垃圾邮件文件夹或重新发送。",
+    "emailNotFound": "未找到邮箱地址",
+    "emailSent": "验证邮件已发送！",
+    "checkFailed": "检查验证状态失败",
+    "stillPending": "邮箱尚未验证。请检查您的收件箱。",
+    "verified": "邮箱已验证！正在跳转至工作区..."
   }
 }
