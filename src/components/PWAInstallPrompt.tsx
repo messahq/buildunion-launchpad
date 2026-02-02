@@ -90,7 +90,7 @@ const PWAInstallPrompt = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-50 animate-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:bottom-8 md:w-96 z-[100] animate-in slide-in-from-bottom-4 duration-300">
       <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 shadow-2xl border border-amber-400/20">
         <button
           onClick={handleDismiss}
