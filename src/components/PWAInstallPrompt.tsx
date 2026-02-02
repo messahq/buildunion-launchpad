@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { X, Download, Smartphone } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -8,23 +8,22 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const PWAInstallPrompt = () => {
+  const [isVisible, setIsVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsInstalled(true);
-      return;
+    // 1. Check if app is already installed (Standalone mode) - includes iOS check
+    const isStandalone = 
+      window.matchMedia("(display-mode: standalone)").matches || 
+      (window.navigator as any).standalone === true;
+
+    if (isStandalone) {
+      setIsVisible(false);
+      return; // Stop here, do not show anything
     }
 
-    // Check if iOS
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    setIsIOS(isIOSDevice);
-
-    // Check if dismissed recently
+    // 2. Check if dismissed recently (within 24 hours)
     const dismissedAt = localStorage.getItem("pwa-prompt-dismissed");
     if (dismissedAt) {
       const dismissedTime = parseInt(dismissedAt, 10);
@@ -34,20 +33,25 @@ const PWAInstallPrompt = () => {
       }
     }
 
-    // Listen for the beforeinstallprompt event
+    // 3. Detect iOS (case-insensitive)
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const ios = /iphone|ipad|ipod/.test(userAgent);
+    setIsIOS(ios);
+
+    // 4. Handle Android/Desktop Install Prompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowPrompt(true);
+      setIsVisible(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    // For iOS, show prompt after a delay
-    if (isIOSDevice) {
+    // 5. Force show for iOS web users (since they don't fire beforeinstallprompt)
+    if (ios) {
       const timer = setTimeout(() => {
-        setShowPrompt(true);
-      }, 3000);
+        setIsVisible(true);
+      }, 2000);
       return () => {
         clearTimeout(timer);
         window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -59,26 +63,31 @@ const PWAInstallPrompt = () => {
     };
   }, []);
 
-  const handleInstall = async () => {
-    if (deferredPrompt) {
+  const handleInstallClick = async () => {
+    if (isIOS) {
+      // iOS Logic: Show instructions via alert
+      alert(
+        "To install BuildUnion on iOS:\n\n" +
+        "1. Tap the Share button (square with arrow) below ⬇️\n" +
+        "2. Scroll down and select 'Add to Home Screen' ➕"
+      );
+    } else if (deferredPrompt) {
+      // Android/Chrome Logic: Trigger native prompt
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") {
-        setShowPrompt(false);
-        setIsInstalled(true);
+        setDeferredPrompt(null);
+        setIsVisible(false);
       }
-      setDeferredPrompt(null);
     }
   };
 
   const handleDismiss = () => {
-    setShowPrompt(false);
+    setIsVisible(false);
     localStorage.setItem("pwa-prompt-dismissed", Date.now().toString());
   };
 
-  if (isInstalled || !showPrompt) {
-    return null;
-  }
+  if (!isVisible) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-50 animate-in slide-in-from-bottom-4 duration-300">
@@ -91,32 +100,25 @@ const PWAInstallPrompt = () => {
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-start gap-3">
+        <div 
+          className="flex items-start gap-3 cursor-pointer" 
+          onClick={handleInstallClick}
+        >
           <div className="flex-shrink-0 bg-white/20 rounded-lg p-2">
             <Smartphone className="w-6 h-6 text-white" />
           </div>
-          
+
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold text-lg">
-              Add BuildUnion to Home Screen
+            <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+              <Download className="w-5 h-5" />
+              Add to Home Screen
             </h3>
             <p className="text-white/80 text-sm mt-1">
               {isIOS
-                ? "Tap Share and then 'Add to Home Screen' for the best experience"
-                : "Install BuildUnion for quick access and offline functionality"}
+                ? "Tap here for instructions to install the app."
+                : "Install BuildUnion for quick access and offline functionality."}
             </p>
-            
-            {!isIOS && deferredPrompt && (
-              <Button
-                onClick={handleInstall}
-                className="mt-3 bg-white text-amber-600 hover:bg-white/90 font-medium"
-                size="sm"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Install App
-              </Button>
-            )}
-            
+
             {isIOS && (
               <div className="mt-3 flex items-center gap-2 text-white/90 text-xs">
                 <span className="bg-white/20 px-2 py-1 rounded">
@@ -133,6 +135,20 @@ const PWAInstallPrompt = () => {
                   2. "Add to Home Screen"
                 </span>
               </div>
+            )}
+
+            {!isIOS && deferredPrompt && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleInstallClick();
+                }}
+                className="mt-3 bg-white text-amber-600 hover:bg-white/90 font-medium"
+                size="sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Install App
+              </Button>
             )}
           </div>
         </div>
