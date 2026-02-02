@@ -776,5 +776,21 @@
     "materialsSection": "材料",
     "laborSection": "労働",
     "otherSection": "その他"
+  },
+  "units": {
+    "label": "単位",
+    "imperial": "ヤード・ポンド",
+    "metric": "メートル",
+    "imperial_short": "YP",
+    "metric_short": "M",
+    "toggle_tooltip": "ヤード・ポンド法とメートル法を切り替え",
+    "sqft": "平方フィート",
+    "sqm": "平方メートル",
+    "ft": "フィート",
+    "m": "メートル",
+    "in": "インチ",
+    "mm": "ミリ",
+    "cuyd": "立方ヤード",
+    "cum": "立方メートル"
   }
 }

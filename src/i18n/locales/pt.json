@@ -792,5 +792,21 @@
     "materialsSection": "Materiais",
     "laborSection": "Mão de Obra",
     "otherSection": "Outros"
+  },
+  "units": {
+    "label": "Unidades",
+    "imperial": "Imperial",
+    "metric": "Métrico",
+    "imperial_short": "IMP",
+    "metric_short": "MET",
+    "toggle_tooltip": "Alternar entre unidades imperiais e métricas",
+    "sqft": "pés²",
+    "sqm": "m²",
+    "ft": "pés",
+    "m": "m",
+    "in": "pol",
+    "mm": "mm",
+    "cuyd": "jd³",
+    "cum": "m³"
   }
 }

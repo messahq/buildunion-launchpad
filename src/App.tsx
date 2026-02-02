@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RegionProvider } from "@/hooks/useRegionSettings";
+import { UnitProvider } from "@/hooks/useUnitSettings";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -45,7 +46,8 @@ const App = () => (
         <AuthProvider>
           <ProjectProvider>
             <RegionProvider>
-              <TooltipProvider>
+              <UnitProvider>
+                <TooltipProvider>
                 <CitationProvider>
                   <Toaster />
                   <Sonner />
@@ -83,7 +85,8 @@ const App = () => (
                     <MobileBottomNav />
                   </BrowserRouter>
                 </CitationProvider>
-              </TooltipProvider>
+                </TooltipProvider>
+              </UnitProvider>
             </RegionProvider>
           </ProjectProvider>
         </AuthProvider>

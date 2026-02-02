@@ -776,5 +776,21 @@
     "materialsSection": "Материалы",
     "laborSection": "Работа",
     "otherSection": "Прочее"
+  },
+  "units": {
+    "label": "Единицы",
+    "imperial": "Имперские",
+    "metric": "Метрические",
+    "imperial_short": "ИМП",
+    "metric_short": "МЕТ",
+    "toggle_tooltip": "Переключение между имперскими и метрическими единицами",
+    "sqft": "кв.фут",
+    "sqm": "м²",
+    "ft": "фут",
+    "m": "м",
+    "in": "дюйм",
+    "mm": "мм",
+    "cuyd": "куб.ярд",
+    "cum": "м³"
   }
 }

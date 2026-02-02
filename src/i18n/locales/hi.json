@@ -776,5 +776,21 @@
     "materialsSection": "सामग्री",
     "laborSection": "श्रम",
     "otherSection": "अन्य"
+  },
+  "units": {
+    "label": "इकाइयाँ",
+    "imperial": "इम्पीरियल",
+    "metric": "मीट्रिक",
+    "imperial_short": "इम्प",
+    "metric_short": "मीट",
+    "toggle_tooltip": "इम्पीरियल और मीट्रिक इकाइयों के बीच टॉगल करें",
+    "sqft": "वर्ग फीट",
+    "sqm": "वर्ग मीटर",
+    "ft": "फीट",
+    "m": "मीटर",
+    "in": "इंच",
+    "mm": "मिमी",
+    "cuyd": "घन यार्ड",
+    "cum": "घन मीटर"
   }
 }

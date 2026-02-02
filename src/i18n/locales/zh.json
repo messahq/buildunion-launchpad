@@ -793,5 +793,21 @@
     "materialsSection": "材料",
     "laborSection": "人工",
     "otherSection": "其他"
+  },
+  "units": {
+    "label": "单位",
+    "imperial": "英制",
+    "metric": "公制",
+    "imperial_short": "英",
+    "metric_short": "公",
+    "toggle_tooltip": "切换英制和公制单位",
+    "sqft": "平方英尺",
+    "sqm": "平方米",
+    "ft": "英尺",
+    "m": "米",
+    "in": "英寸",
+    "mm": "毫米",
+    "cuyd": "立方码",
+    "cum": "立方米"
   }
 }

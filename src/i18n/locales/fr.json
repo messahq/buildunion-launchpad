@@ -804,5 +804,21 @@
     "materialsSection": "Matériaux",
     "laborSection": "Main d'œuvre",
     "otherSection": "Autres"
+  },
+  "units": {
+    "label": "Unités",
+    "imperial": "Impérial",
+    "metric": "Métrique",
+    "imperial_short": "IMP",
+    "metric_short": "MÉT",
+    "toggle_tooltip": "Basculer entre les unités impériales et métriques",
+    "sqft": "pi²",
+    "sqm": "m²",
+    "ft": "pi",
+    "m": "m",
+    "in": "po",
+    "mm": "mm",
+    "cuyd": "vg³",
+    "cum": "m³"
   }
 }

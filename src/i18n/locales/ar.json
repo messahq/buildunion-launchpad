@@ -792,5 +792,21 @@
     "materialsSection": "المواد",
     "laborSection": "العمالة",
     "otherSection": "أخرى"
+  },
+  "units": {
+    "label": "الوحدات",
+    "imperial": "إمبريالي",
+    "metric": "متري",
+    "imperial_short": "إمب",
+    "metric_short": "متر",
+    "toggle_tooltip": "التبديل بين الوحدات الإمبريالية والمترية",
+    "sqft": "قدم²",
+    "sqm": "م²",
+    "ft": "قدم",
+    "m": "م",
+    "in": "بوصة",
+    "mm": "مم",
+    "cuyd": "ياردة³",
+    "cum": "م³"
   }
 }
