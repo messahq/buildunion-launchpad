@@ -130,6 +130,10 @@ const ESSENTIAL_PATTERNS = [
   /underlayment/i,
   /baseboard|trim/i,
   /adhesive|glue|supplies/i,
+  /paint|primer/i,
+  /drywall|gypsum/i,
+  /tile|ceramic/i,
+  /carpet/i,
 ];
 
 const isEssentialMaterial = (itemName: string): boolean => {
@@ -137,6 +141,99 @@ const isEssentialMaterial = (itemName: string): boolean => {
 };
 
 const WASTE_PERCENTAGE = 0.10;
+
+/**
+ * COVERAGE MAP: Realistic coverage per unit for different material types
+ * This converts gross area (sq ft) to realistic unit counts (boxes, gallons, etc.)
+ * 
+ * Example: 1302 sq ft of flooring with coverage 22 sq ft/box = ~60 boxes (not 1302!)
+ * 
+ * Coverage values are industry-standard averages.
+ * Power Edit still allows manual override for precision.
+ */
+interface CoverageInfo {
+  coveragePerUnit: number; // sq ft per unit
+  targetUnit: string; // The unit to convert to
+}
+
+const MATERIAL_COVERAGE_MAP: Record<string, CoverageInfo> = {
+  // Flooring - boxes typically cover 20-25 sq ft
+  'laminate': { coveragePerUnit: 22, targetUnit: 'boxes' },
+  'flooring': { coveragePerUnit: 22, targetUnit: 'boxes' },
+  'hardwood': { coveragePerUnit: 20, targetUnit: 'boxes' },
+  'vinyl': { coveragePerUnit: 20, targetUnit: 'boxes' },
+  'tile': { coveragePerUnit: 15, targetUnit: 'boxes' },
+  'ceramic': { coveragePerUnit: 15, targetUnit: 'boxes' },
+  
+  // Underlayment - rolls cover ~100-200 sq ft
+  'underlayment': { coveragePerUnit: 100, targetUnit: 'rolls' },
+  
+  // Paint - gallon covers ~350-400 sq ft
+  'paint': { coveragePerUnit: 350, targetUnit: 'gallons' },
+  'primer': { coveragePerUnit: 350, targetUnit: 'gallons' },
+  
+  // Drywall - 4x8 sheet = 32 sq ft
+  'drywall': { coveragePerUnit: 32, targetUnit: 'sheets' },
+  'gypsum': { coveragePerUnit: 32, targetUnit: 'sheets' },
+  
+  // Carpet - rolls vary, ~12 ft wide rolls
+  'carpet': { coveragePerUnit: 144, targetUnit: 'sq yards' }, // 12x12 section
+  
+  // Adhesive/glue - gallon covers ~200 sq ft
+  'adhesive': { coveragePerUnit: 200, targetUnit: 'gallons' },
+  'glue': { coveragePerUnit: 200, targetUnit: 'gallons' },
+  
+  // Baseboard/trim - linear feet, assume ~16 ft per piece
+  'baseboard': { coveragePerUnit: 1, targetUnit: 'linear ft' }, // Keep as linear ft
+  'trim': { coveragePerUnit: 1, targetUnit: 'linear ft' },
+};
+
+/**
+ * Get coverage info for a material item
+ * Returns null if no conversion needed (keeps original sq ft)
+ */
+const getMaterialCoverage = (itemName: string): CoverageInfo | null => {
+  const lowerName = itemName.toLowerCase();
+  
+  for (const [keyword, coverage] of Object.entries(MATERIAL_COVERAGE_MAP)) {
+    if (lowerName.includes(keyword)) {
+      return coverage;
+    }
+  }
+  
+  return null;
+};
+
+/**
+ * Calculate realistic quantity from gross area
+ * Converts sq ft to appropriate units (boxes, gallons, etc.)
+ */
+const calculateCoverageBasedQuantity = (
+  grossArea: number, 
+  itemName: string,
+  originalUnit: string
+): { quantity: number; unit: string } => {
+  // If unit is already specific (boxes, gallons, etc.), don't convert
+  const originalUnitLower = originalUnit.toLowerCase();
+  const isSqFtUnit = originalUnitLower.includes('sq') || originalUnitLower.includes('ft²');
+  
+  // Only apply coverage conversion for sq ft based materials
+  if (!isSqFtUnit) {
+    return { quantity: grossArea, unit: originalUnit };
+  }
+  
+  const coverage = getMaterialCoverage(itemName);
+  
+  if (coverage && coverage.coveragePerUnit > 1) {
+    // Convert: grossArea / coverage = number of units needed
+    const calculatedQty = Math.ceil(grossArea / coverage.coveragePerUnit);
+    console.log(`[COVERAGE] ${itemName}: ${grossArea} sq ft ÷ ${coverage.coveragePerUnit} = ${calculatedQty} ${coverage.targetUnit}`);
+    return { quantity: calculatedQty, unit: coverage.targetUnit };
+  }
+  
+  // No conversion needed - keep as sq ft
+  return { quantity: grossArea, unit: originalUnit };
+};
 
 // Canadian provincial tax rates
 const getCanadianTaxRates = (address: string): { gst: number; pst: number; hst: number; provinceName: string; provinceCode: string } => {
@@ -272,18 +369,26 @@ export function MaterialCalculationTab({
         baseQty = authorityBaseArea;
       }
       
-      // For essential items: FINAL = BASE * (1 + wastePercent/100)
+      // For essential items: 
+      // 1. Calculate GROSS area = BASE * (1 + wastePercent/100)
+      // 2. Convert to realistic units using COVERAGE (boxes, gallons, etc.)
       // For non-essential: FINAL = BASE (no additional waste)
-      const finalQty = isEssential 
+      const grossAreaSqFt = isEssential 
         ? Math.ceil(baseQty * (1 + DYNAMIC_WASTE)) 
         : baseQty;
+      
+      // COVERAGE-BASED CONVERSION: Convert gross sq ft to realistic unit counts
+      // e.g., 1432 sq ft of flooring -> 65 boxes (not 1432!)
+      const { quantity: finalQty, unit: finalUnit } = isEssential && isSqFtUnit
+        ? calculateCoverageBasedQuantity(grossAreaSqFt, m.item, m.unit)
+        : { quantity: grossAreaSqFt, unit: m.unit };
       
       return {
         id: `material-${idx}`,
         item: m.item,
-        baseQuantity: baseQty,
-        quantity: finalQty,
-        unit: m.unit,
+        baseQuantity: baseQty, // Store NET area for reference
+        quantity: finalQty,    // COVERAGE-converted quantity (e.g., 65 boxes)
+        unit: finalUnit,       // Converted unit (e.g., "boxes")
         unitPrice: m.unitPrice || 0,
         totalPrice: finalQty * (m.unitPrice || 0),
         isEssential,
@@ -408,22 +513,34 @@ export function MaterialCalculationTab({
     
     console.log(`[IRON LAW #1] Dynamic recalc: baseArea=${prevArea}→${newArea}, waste=${prevWaste}%→${newWaste}%`);
     
-    // IRON LAW #1: Recalculate essential sq ft materials using the NEW baseArea
+    // IRON LAW #1: Recalculate essential materials using the NEW baseArea
+    // Apply COVERAGE-BASED conversion to get realistic unit counts
     setMaterialItems(prev => prev.map(item => {
-      const isSqFtUnit = item.unit?.toLowerCase().includes("sq") || item.unit?.toLowerCase().includes("ft");
+      // Check if this is an area-based material (regardless of current unit)
+      // After conversion, unit might be "boxes" but we still need to recalculate
+      const coverage = getMaterialCoverage(item.item);
+      const isAreaBased = item.isEssential && coverage !== null;
       
-      if (item.isEssential && isSqFtUnit && newArea && newArea > 0) {
-        // IRON LAW #1: QTY = baseArea × (1 + wastePercent/100)
+      if (isAreaBased && newArea && newArea > 0) {
+        // IRON LAW #1: Calculate GROSS area first
         const newBaseQty = newArea;
-        const newGrossQty = Math.ceil(newBaseQty * (1 + (newWaste / 100)));
+        const grossAreaSqFt = Math.ceil(newBaseQty * (1 + (newWaste / 100)));
         
-        console.log(`[IRON LAW #1] ${item.item}: NET=${newBaseQty} → GROSS=${newGrossQty} (+${newWaste}% waste)`);
+        // Apply COVERAGE conversion: gross sq ft -> realistic units
+        const { quantity: newFinalQty, unit: newUnit } = calculateCoverageBasedQuantity(
+          grossAreaSqFt, 
+          item.item, 
+          'sq ft' // Always calculate from sq ft base
+        );
+        
+        console.log(`[IRON LAW #1 + COVERAGE] ${item.item}: NET=${newBaseQty} sq ft → GROSS=${grossAreaSqFt} sq ft → ${newFinalQty} ${newUnit}`);
         
         return {
           ...item,
           baseQuantity: newBaseQty,
-          quantity: newGrossQty,
-          totalPrice: newGrossQty * item.unitPrice,
+          quantity: newFinalQty,
+          unit: newUnit,
+          totalPrice: newFinalQty * item.unitPrice,
         };
       }
       return item;
