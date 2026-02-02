@@ -1954,7 +1954,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   const isTeamMode = summary?.mode === "team";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden px-4 sm:px-0">
       {/* Header with Back Button */}
       <div className="flex flex-col gap-4">
         {/* Top row: Back button + Title */}

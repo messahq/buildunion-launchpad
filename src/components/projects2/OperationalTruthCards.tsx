@@ -893,96 +893,99 @@ export default function OperationalTruthCards({
   const displayProgress = isRunningAll ? runAllProgress : verificationRate;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full overflow-hidden">
       {/* Verification Progress + Run All Button - Matching ProjectTimelineBar style */}
       <div className={cn(
-        "flex items-center gap-4 p-4 rounded-xl border-2 border-amber-400/40 bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20 transition-all duration-500",
+        "flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-xl border-2 border-amber-400/40 bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20 transition-all duration-500",
         syncAnimationActive && "ring-2 ring-emerald-400 ring-offset-2 animate-pulse shadow-lg shadow-emerald-400/30"
       )}>
-        <div className={cn(
-          "w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/20 text-amber-600 transition-all duration-500",
-          syncAnimationActive && "bg-emerald-500/30 text-emerald-500 scale-110"
-        )}>
-          <Brain className={cn("h-5 w-5", syncAnimationActive && "animate-spin")} />
-        </div>
-        
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-foreground">{t("operationalTruth.title")}</span>
-            <span className={cn(
-              "text-xs text-muted-foreground transition-all duration-300",
-              syncAnimationActive && "text-emerald-500 font-medium"
-            )}>
-              {Math.round((8 - pendingChecksCount) * (100/8))}% verified
-            </span>
-            {syncAnimationActive && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 font-medium animate-pulse flex items-center gap-1">
-                <RefreshCw className="h-3 w-3 animate-spin" />
-                SYNCING
-              </span>
-            )}
-            {verificationRate === 100 && !isRunningAll && !syncAnimationActive && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                VERIFIED
-              </span>
-            )}
-            {isRunningAll && !syncAnimationActive && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium animate-pulse flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                RUNNING
-              </span>
-            )}
+        {/* Header row with icon and content */}
+        <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/20 text-amber-600 transition-all duration-500 flex-shrink-0",
+            syncAnimationActive && "bg-emerald-500/30 text-emerald-500 scale-110"
+          )}>
+            <Brain className={cn("h-5 w-5", syncAnimationActive && "animate-spin")} />
           </div>
           
-          {/* Single progress bar for pillar verification */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden relative">
-              <div 
-                className={cn(
-                  "h-full rounded-full transition-all duration-500 ease-out",
-                  syncAnimationActive
-                    ? "bg-gradient-to-r from-emerald-400 to-emerald-500"
-                    : verificationRate === 100
-                      ? "bg-gradient-to-r from-green-500 to-emerald-500" 
-                      : "bg-gradient-to-r from-amber-500 to-orange-500"
-                )}
-                style={{ width: `${displayProgress}%` }}
-              />
-              {/* Shimmer effect on sync */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+              <span className="font-semibold text-foreground text-sm sm:text-base">{t("operationalTruth.title")}</span>
+              <span className={cn(
+                "text-xs text-muted-foreground transition-all duration-300",
+                syncAnimationActive && "text-emerald-500 font-medium"
+              )}>
+                {Math.round((8 - pendingChecksCount) * (100/8))}%
+              </span>
               {syncAnimationActive && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_1s_ease-in-out_infinite]" />
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 font-medium animate-pulse flex items-center gap-0.5">
+                  <RefreshCw className="h-2.5 w-2.5 animate-spin" />
+                  SYNC
+                </span>
               )}
-              {/* Tick marks */}
-              <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
-                {[25, 50, 75].map((tick) => (
-                  <div 
-                    key={tick} 
-                    className="w-px h-full bg-background/30" 
-                    style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
-                  />
-                ))}
-              </div>
+              {verificationRate === 100 && !isRunningAll && !syncAnimationActive && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium flex items-center gap-0.5">
+                  <CheckCircle2 className="h-2.5 w-2.5" />
+                  <span className="hidden xs:inline">VERIFIED</span>
+                  <span className="xs:hidden">✓</span>
+                </span>
+              )}
+              {isRunningAll && !syncAnimationActive && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium animate-pulse flex items-center gap-0.5">
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                  <span className="hidden xs:inline">RUNNING</span>
+                </span>
+              )}
             </div>
-            <span className={cn(
-              "text-sm font-medium text-foreground min-w-[40px] text-right transition-all duration-300",
-              syncAnimationActive && "text-emerald-500 scale-110"
-            )}>
-              {displayProgress}%
-            </span>
+            
+            {/* Single progress bar for pillar verification */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex-1 h-2.5 sm:h-3 bg-muted rounded-full overflow-hidden relative">
+                <div 
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500 ease-out",
+                    syncAnimationActive
+                      ? "bg-gradient-to-r from-emerald-400 to-emerald-500"
+                      : verificationRate === 100
+                        ? "bg-gradient-to-r from-green-500 to-emerald-500" 
+                        : "bg-gradient-to-r from-amber-500 to-orange-500"
+                  )}
+                  style={{ width: `${displayProgress}%` }}
+                />
+                {/* Shimmer effect on sync */}
+                {syncAnimationActive && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_1s_ease-in-out_infinite]" />
+                )}
+                {/* Tick marks */}
+                <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                  {[25, 50, 75].map((tick) => (
+                    <div 
+                      key={tick} 
+                      className="w-px h-full bg-background/30" 
+                      style={{ marginLeft: `${tick}%`, position: 'absolute', left: 0 }} 
+                    />
+                  ))}
+                </div>
+              </div>
+              <span className={cn(
+                "text-xs sm:text-sm font-medium text-foreground min-w-[32px] sm:min-w-[40px] text-right transition-all duration-300",
+                syncAnimationActive && "text-emerald-500 scale-110"
+              )}>
+                {displayProgress}%
+              </span>
+            </div>
           </div>
         </div>
         
-        {/* Buttons container */}
-        <div className="flex items-center gap-2">
-          {/* Run All Verifications Button - Amber themed */}
+        {/* Button - Full width on mobile, auto on desktop */}
+        <div className="flex items-center w-full sm:w-auto">
           <Button
             size="sm"
             variant="outline"
             onClick={runAllVerifications}
             disabled={isRunningAll || !projectId || pendingChecksCount === 0}
             className={cn(
-              "gap-2 min-w-[140px] font-medium transition-all",
+              "gap-2 w-full sm:w-auto sm:min-w-[130px] font-medium transition-all text-sm",
               pendingChecksCount > 0 
                 ? "border-amber-500 bg-amber-500 hover:bg-amber-600 text-white hover:text-white" 
                 : "border-green-500/50 text-green-600 hover:bg-green-500/10"
@@ -991,7 +994,8 @@ export default function OperationalTruthCards({
             {isRunningAll ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Verifying...
+                <span className="hidden xs:inline">Verifying...</span>
+                <span className="xs:hidden">...</span>
               </>
             ) : pendingChecksCount > 0 ? (
               <>
@@ -1001,7 +1005,8 @@ export default function OperationalTruthCards({
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4" />
-                All Complete
+                <span className="hidden xs:inline">All Complete</span>
+                <span className="xs:hidden">Done</span>
               </>
             )}
           </Button>

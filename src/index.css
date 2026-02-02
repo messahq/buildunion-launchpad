@@ -115,8 +115,20 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  /* Prevent horizontal overflow globally */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Main content area should also prevent horizontal overflow */
+  main, #root {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   /* Smooth theme transition */
