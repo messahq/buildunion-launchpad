@@ -49,6 +49,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
       },
     });
+    
+    // Send custom verification email via Resend (bypasses Supabase rate limits)
+    if (!error) {
+      try {
+        const response = await supabase.functions.invoke('send-verification-email', {
+          body: {
+            email,
+            fullName,
+            redirectUrl: `${window.location.origin}/buildunion/workspace`,
+          },
+        });
+        
+        if (response.error) {
+          console.error('Failed to send verification email via Resend:', response.error);
+          // Don't fail signup if custom email fails - Supabase's default will be backup
+        } else {
+          console.log('Verification email sent via Resend');
+        }
+      } catch (e) {
+        console.error('Error calling send-verification-email:', e);
+      }
+    }
+    
     return { error };
   };
 

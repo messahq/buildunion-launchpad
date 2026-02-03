@@ -46,19 +46,28 @@ const VerifyEmailPending = () => {
     }
 
     setResending(true);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: email,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
+    
+    // Use custom Resend-powered email function for reliable delivery
+    try {
+      const response = await supabase.functions.invoke('send-verification-email', {
+        body: {
+          email,
+          fullName: user?.user_metadata?.full_name,
+          redirectUrl: `${window.location.origin}/buildunion/workspace`,
+        },
+      });
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success(t("verifyEmail.emailSent"));
+      if (response.error) {
+        console.error('Resend email failed:', response.error);
+        toast.error(t("verifyEmail.sendFailed") || "Failed to send verification email");
+      } else {
+        toast.success(t("verifyEmail.emailSent"));
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      toast.error(t("verifyEmail.sendFailed") || "Failed to send verification email");
     }
+    
     setResending(false);
   };
 
