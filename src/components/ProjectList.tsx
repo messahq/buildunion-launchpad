@@ -233,6 +233,29 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
     }
   };
 
+  const handleDeleteSiteLog = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    
+    if (!project.isSiteLog) return;
+    
+    if (!confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) return;
+
+    try {
+      const { error } = await supabase
+        .from("site_logs")
+        .delete()
+        .eq("id", project.id);
+
+      if (error) throw error;
+
+      setProjects(prev => prev.filter(p => p.id !== project.id));
+      toast.success("Site log deleted successfully");
+    } catch (error) {
+      console.error("Delete site log error:", error);
+      toast.error("Failed to delete site log");
+    }
+  };
+
   // Show loading while auth is initializing
   if (authLoading) {
     return (
@@ -406,9 +429,20 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
                     </div>
                     <div className="flex items-center gap-2">
                       {isSiteLog && (
-                        <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[10px]">
-                          Site Log
-                        </Badge>
+                        <>
+                          <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[10px]">
+                            Site Log
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => handleDeleteSiteLog(e, project)}
+                            title="Delete site log"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                       {isSelected && !isSiteLog && (
                         <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">

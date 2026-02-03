@@ -172,14 +172,51 @@ export const MESSAReportModal = ({
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Compress image to smaller size for PDF compatibility
+  const compressImage = (file: File, maxWidth: number = 400, maxHeight: number = 300, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadingTaskId) return;
 
-    // Create a preview URL
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const photoUrl = event.target?.result as string;
+    try {
+      // Compress image to smaller size for better PDF pagination
+      const photoUrl = await compressImage(file, 400, 300, 0.7);
       const timestamp = new Date().toISOString();
       
       setTasks(prev => prev.map(task =>
@@ -191,8 +228,10 @@ export const MESSAReportModal = ({
       toast.success("Photo added", {
         description: `Photo attached at ${format(new Date(timestamp), "HH:mm:ss")}`
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Image compression error:", error);
+      toast.error("Failed to process image");
+    }
     
     // Reset
     setUploadingTaskId(null);
@@ -361,18 +400,18 @@ export const MESSAReportModal = ({
             .summary-label { font-size: 12px; color: #64748b; }
             .tasks { margin-top: 24px; }
             .tasks-title { font-size: 16px; margin-bottom: 16px; color: #475569; }
-            .task { padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px; background: #fff; }
-            .task-header { display: flex; align-items: flex-start; gap: 12px; }
-            .task-status { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 2px; }
+            .task { padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; background: #fff; page-break-inside: avoid !important; break-inside: avoid !important; }
+            .task-header { display: flex; align-items: flex-start; gap: 10px; }
+            .task-status { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; margin-top: 2px; }
             .task-status.completed { background: #dcfce7; color: #166534; }
             .task-status.pending { background: #fef3c7; color: #92400e; }
             .task-content { flex: 1; min-width: 0; }
-            .task-title { font-weight: 600; font-size: 13px; color: #1a1a1a; word-wrap: break-word; }
-            .custom-badge { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 10px; font-weight: 500; margin-left: 8px; vertical-align: middle; }
-            .task-description { color: #64748b; font-size: 12px; margin-top: 4px; word-wrap: break-word; }
-            .task-photo { margin-top: 12px; }
-            .task-photo img { max-width: 240px; max-height: 150px; border-radius: 8px; border: 1px solid #e2e8f0; display: block; }
-            .task-timestamp { color: #64748b; font-size: 11px; margin-top: 4px; }
+            .task-title { font-weight: 600; font-size: 12px; color: #1a1a1a; word-wrap: break-word; }
+            .custom-badge { display: inline-block; padding: 2px 6px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 9px; font-weight: 500; margin-left: 6px; vertical-align: middle; }
+            .task-description { color: #64748b; font-size: 11px; margin-top: 3px; word-wrap: break-word; }
+            .task-photo { margin-top: 8px; page-break-inside: avoid !important; break-inside: avoid !important; }
+            .task-photo img { max-width: 180px; max-height: 120px; border-radius: 6px; border: 1px solid #e2e8f0; display: block; }
+            .task-timestamp { color: #64748b; font-size: 10px; margin-top: 3px; }
             .notes { margin-top: 24px; padding: 16px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; }
             .notes h2 { font-size: 16px; margin-bottom: 12px; color: #92400e; }
             .notes p { color: #1a1a1a; font-size: 14px; white-space: pre-wrap; line-height: 1.6; }
