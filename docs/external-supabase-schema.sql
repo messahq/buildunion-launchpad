@@ -1,52 +1,24 @@
 -- ============================================
 -- BUILDUNION - EXTERNAL SUPABASE PRO SCHEMA
 -- ============================================
--- Run this in your Supabase Pro SQL Editor
--- This creates all tables needed for the hybrid architecture
--- lovable_user_id links records to Lovable Cloud auth users
--- IDEMPOTENT: Safe to run multiple times
+-- IMPORTANT: Run this in parts if you get errors
+-- Part 1: Enums (skip if already exist)
+-- Part 2: Tables
+-- Part 3: Triggers & Policies
 
 -- ============================================
--- ENUMS (Skip if already exists)
+-- PART 1: ENUMS - Skip these if they already exist!
 -- ============================================
+-- Uncomment only the ones you need:
 
-DO $$ 
-BEGIN
-  CREATE TYPE public.project_status AS ENUM ('draft', 'active', 'completed', 'archived');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ 
-BEGIN
-  CREATE TYPE public.contract_status AS ENUM ('draft', 'sent', 'viewed', 'signed', 'expired');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ 
-BEGIN
-  CREATE TYPE public.task_status AS ENUM ('pending', 'in_progress', 'completed', 'blocked');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ 
-BEGIN
-  CREATE TYPE public.task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ 
-BEGIN
-  CREATE TYPE public.project_role AS ENUM ('owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'member');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
+-- CREATE TYPE public.project_status AS ENUM ('draft', 'active', 'completed', 'archived');
+-- CREATE TYPE public.contract_status AS ENUM ('draft', 'sent', 'viewed', 'signed', 'expired');
+-- CREATE TYPE public.task_status AS ENUM ('pending', 'in_progress', 'completed', 'blocked');
+-- CREATE TYPE public.task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+-- CREATE TYPE public.project_role AS ENUM ('owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'member');
 
 -- ============================================
--- PROJECTS TABLE
+-- PART 2: TABLES - Run this section
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS public.projects (
@@ -55,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
   name TEXT NOT NULL,
   description TEXT,
   address TEXT,
-  status public.project_status DEFAULT 'draft',
+  status TEXT DEFAULT 'draft',
   trade TEXT,
   trades TEXT[] DEFAULT '{}',
   required_certifications TEXT[] DEFAULT '{}',
@@ -67,10 +39,6 @@ CREATE TABLE IF NOT EXISTS public.projects (
 
 CREATE INDEX IF NOT EXISTS idx_projects_lovable_user ON public.projects(lovable_user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON public.projects(status);
-
--- ============================================
--- PROJECT SUMMARIES TABLE
--- ============================================
 
 CREATE TABLE IF NOT EXISTS public.project_summaries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -109,15 +77,11 @@ CREATE TABLE IF NOT EXISTS public.project_summaries (
 CREATE INDEX IF NOT EXISTS idx_summaries_project ON public.project_summaries(project_id);
 CREATE INDEX IF NOT EXISTS idx_summaries_user ON public.project_summaries(lovable_user_id);
 
--- ============================================
--- PROJECT MEMBERS TABLE
--- ============================================
-
 CREATE TABLE IF NOT EXISTS public.project_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   user_id UUID NOT NULL,
-  role public.project_role DEFAULT 'member',
+  role TEXT DEFAULT 'member',
   joined_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(project_id, user_id)
 );
@@ -125,17 +89,13 @@ CREATE TABLE IF NOT EXISTS public.project_members (
 CREATE INDEX IF NOT EXISTS idx_members_project ON public.project_members(project_id);
 CREATE INDEX IF NOT EXISTS idx_members_user ON public.project_members(user_id);
 
--- ============================================
--- PROJECT TASKS TABLE
--- ============================================
-
 CREATE TABLE IF NOT EXISTS public.project_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   description TEXT,
-  status public.task_status DEFAULT 'pending',
-  priority public.task_priority DEFAULT 'medium',
+  status TEXT DEFAULT 'pending',
+  priority TEXT DEFAULT 'medium',
   assigned_to UUID NOT NULL,
   assigned_by UUID NOT NULL,
   due_date TIMESTAMPTZ,
@@ -150,10 +110,6 @@ CREATE INDEX IF NOT EXISTS idx_tasks_project ON public.project_tasks(project_id)
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON public.project_tasks(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON public.project_tasks(status);
 
--- ============================================
--- PROJECT DOCUMENTS TABLE
--- ============================================
-
 CREATE TABLE IF NOT EXISTS public.project_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
@@ -167,16 +123,12 @@ CREATE TABLE IF NOT EXISTS public.project_documents (
 
 CREATE INDEX IF NOT EXISTS idx_documents_project ON public.project_documents(project_id);
 
--- ============================================
--- CONTRACTS TABLE
--- ============================================
-
 CREATE TABLE IF NOT EXISTS public.contracts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lovable_user_id UUID NOT NULL,
   project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
   contract_number TEXT NOT NULL UNIQUE,
-  status public.contract_status DEFAULT 'draft',
+  status TEXT DEFAULT 'draft',
   template_type TEXT DEFAULT 'custom',
   contractor_name TEXT,
   contractor_address TEXT,
@@ -211,7 +163,7 @@ CREATE TABLE IF NOT EXISTS public.contracts (
   client_signed_at TIMESTAMPTZ,
   client_viewed_at TIMESTAMPTZ,
   share_token UUID DEFAULT gen_random_uuid(),
-  share_token_expires_at TIMESTAMPTZ DEFAULT (now() + interval '30 days'),
+  share_token_expires_at TIMESTAMPTZ,
   sent_to_client_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -221,10 +173,6 @@ CREATE INDEX IF NOT EXISTS idx_contracts_user ON public.contracts(lovable_user_i
 CREATE INDEX IF NOT EXISTS idx_contracts_project ON public.contracts(project_id);
 CREATE INDEX IF NOT EXISTS idx_contracts_status ON public.contracts(status);
 CREATE INDEX IF NOT EXISTS idx_contracts_share_token ON public.contracts(share_token);
-
--- ============================================
--- CONTRACT EVENTS TABLE (Audit Log)
--- ============================================
 
 CREATE TABLE IF NOT EXISTS public.contract_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -238,10 +186,6 @@ CREATE TABLE IF NOT EXISTS public.contract_events (
 
 CREATE INDEX IF NOT EXISTS idx_contract_events_contract ON public.contract_events(contract_id);
 CREATE INDEX IF NOT EXISTS idx_contract_events_type ON public.contract_events(event_type);
-
--- ============================================
--- BASELINE VERSIONS TABLE
--- ============================================
 
 CREATE TABLE IF NOT EXISTS public.baseline_versions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -258,15 +202,11 @@ CREATE TABLE IF NOT EXISTS public.baseline_versions (
 
 CREATE INDEX IF NOT EXISTS idx_baseline_project ON public.baseline_versions(project_id);
 
--- ============================================
--- TEAM INVITATIONS TABLE
--- ============================================
-
 CREATE TABLE IF NOT EXISTS public.team_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   email TEXT NOT NULL,
-  role public.project_role DEFAULT 'member',
+  role TEXT DEFAULT 'member',
   invited_by UUID NOT NULL,
   invitation_token UUID DEFAULT gen_random_uuid(),
   status TEXT DEFAULT 'pending',
@@ -279,7 +219,7 @@ CREATE INDEX IF NOT EXISTS idx_invitations_email ON public.team_invitations(emai
 CREATE INDEX IF NOT EXISTS idx_invitations_token ON public.team_invitations(invitation_token);
 
 -- ============================================
--- UPDATED_AT TRIGGER FUNCTION
+-- PART 3: TRIGGERS & RLS - Run this section
 -- ============================================
 
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
@@ -306,10 +246,6 @@ DROP TRIGGER IF EXISTS update_contracts_updated_at ON public.contracts;
 CREATE TRIGGER update_contracts_updated_at BEFORE UPDATE ON public.contracts
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- ============================================
--- ROW LEVEL SECURITY
--- ============================================
-
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_summaries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
@@ -321,28 +257,19 @@ ALTER TABLE public.baseline_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_invitations ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can manage own projects" ON public.projects;
+CREATE POLICY "Users can manage own projects" ON public.projects FOR ALL USING (lovable_user_id = auth.uid());
+
 DROP POLICY IF EXISTS "Users can manage own summaries" ON public.project_summaries;
+CREATE POLICY "Users can manage own summaries" ON public.project_summaries FOR ALL USING (lovable_user_id = auth.uid());
+
 DROP POLICY IF EXISTS "Users can manage own contracts" ON public.contracts;
+CREATE POLICY "Users can manage own contracts" ON public.contracts FOR ALL USING (lovable_user_id = auth.uid());
+
 DROP POLICY IF EXISTS "Users can view own contract events" ON public.contract_events;
-
-CREATE POLICY "Users can manage own projects" ON public.projects
-  FOR ALL USING (lovable_user_id = auth.uid());
-
-CREATE POLICY "Users can manage own summaries" ON public.project_summaries
-  FOR ALL USING (lovable_user_id = auth.uid());
-
-CREATE POLICY "Users can manage own contracts" ON public.contracts
-  FOR ALL USING (lovable_user_id = auth.uid());
-
-CREATE POLICY "Users can view own contract events" ON public.contract_events
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.contracts 
-      WHERE contracts.id = contract_events.contract_id 
-      AND contracts.lovable_user_id = auth.uid()
-    )
-  );
+CREATE POLICY "Users can view own contract events" ON public.contract_events FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.contracts WHERE contracts.id = contract_events.contract_id AND contracts.lovable_user_id = auth.uid())
+);
 
 -- ============================================
--- DONE!
+-- DONE! Your external Supabase Pro is ready.
 -- ============================================
