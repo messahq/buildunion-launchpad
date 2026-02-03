@@ -672,17 +672,15 @@ export const MESSAReportModal = ({
                           </div>
                           
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            {/* Delete Button for custom tasks */}
-                            {task.isCustom && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDeleteTask(task.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
+                            {/* Delete Button - all tasks can be deleted */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteTask(task.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                             {/* Camera Button */}
                             <Button
                               variant="ghost"
