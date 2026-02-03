@@ -26,6 +26,7 @@ import {
   FolderKanban,
   FileText,
   ListTodo,
+  Archive,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -38,6 +39,7 @@ interface SyncRecord {
   status?: string;
   created_at?: string;
   ownerName?: string;
+  archived_at?: string;
   inLovableCloud: boolean;
   inExternalDb: boolean;
   lovableData?: Record<string, unknown>;
@@ -127,6 +129,7 @@ export default function DatabaseSyncDashboard() {
         status: (lovable?.status || external?.status) as string,
         created_at: (lovable?.created_at || external?.created_at) as string,
         ownerName: profiles?.full_name || "Unknown User",
+        archived_at: (lovable?.archived_at || external?.archived_at) as string | undefined,
         inLovableCloud: !!lovable,
         inExternalDb: !!external,
         lovableData: lovable || undefined,
@@ -170,6 +173,7 @@ export default function DatabaseSyncDashboard() {
         status: (lovable?.status || external?.status) as string,
         created_at: (lovable?.created_at || external?.created_at) as string,
         ownerName: profiles?.full_name || "Unknown User",
+        archived_at: (lovable?.archived_at || external?.archived_at) as string | undefined,
         inLovableCloud: !!lovable,
         inExternalDb: !!external,
         lovableData: lovable || undefined,
@@ -213,6 +217,7 @@ export default function DatabaseSyncDashboard() {
         status: (lovable?.status || external?.status) as string,
         created_at: (lovable?.created_at || external?.created_at) as string,
         ownerName: profiles?.full_name || "Unknown User",
+        archived_at: (lovable?.archived_at || external?.archived_at) as string | undefined,
         inLovableCloud: !!lovable,
         inExternalDb: !!external,
         lovableData: lovable || undefined,
@@ -374,6 +379,10 @@ export default function DatabaseSyncDashboard() {
               Owner
             </TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>
+              <Archive className="h-4 w-4 inline mr-1" />
+              Archived
+            </TableHead>
             <TableHead>Created</TableHead>
             <TableHead className="text-center">
               <Cloud className="h-4 w-4 inline mr-1" />
@@ -390,21 +399,36 @@ export default function DatabaseSyncDashboard() {
         <TableBody>
           {records.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                 No records found
               </TableCell>
             </TableRow>
           ) : (
             records.map(record => (
-              <TableRow key={record.id}>
+              <TableRow key={record.id} className={record.archived_at ? "bg-amber-50/50 dark:bg-amber-950/20" : ""}>
                 <TableCell className="font-medium">
                   {record.name || record.title || record.id.slice(0, 8)}
+                  {record.archived_at && (
+                    <Badge className="ml-2 bg-amber-100 text-amber-700 text-[10px]">
+                      <Archive className="h-3 w-3 mr-1" />
+                      Soft Deleted
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {record.ownerName || "—"}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{record.status || "N/A"}</Badge>
+                </TableCell>
+                <TableCell>
+                  {record.archived_at ? (
+                    <span className="text-amber-600 text-xs">
+                      {format(new Date(record.archived_at), "MMM d, yyyy")}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {record.created_at ? format(new Date(record.created_at), "MMM d, yyyy") : "N/A"}

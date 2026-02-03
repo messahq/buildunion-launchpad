@@ -300,6 +300,7 @@ export type Database = {
       contracts: {
         Row: {
           additional_terms: string | null
+          archived_at: string | null
           cancellation_policy: string | null
           change_order_policy: string | null
           client_address: string | null
@@ -345,6 +346,7 @@ export type Database = {
         }
         Insert: {
           additional_terms?: string | null
+          archived_at?: string | null
           cancellation_policy?: string | null
           change_order_policy?: string | null
           client_address?: string | null
@@ -390,6 +392,7 @@ export type Database = {
         }
         Update: {
           additional_terms?: string | null
+          archived_at?: string | null
           cancellation_policy?: string | null
           change_order_policy?: string | null
           client_address?: string | null
@@ -804,6 +807,7 @@ export type Database = {
       }
       project_tasks: {
         Row: {
+          archived_at: string | null
           assigned_by: string
           assigned_to: string
           created_at: string
@@ -820,6 +824,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           assigned_by: string
           assigned_to: string
           created_at?: string
@@ -836,6 +841,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           assigned_by?: string
           assigned_to?: string
           created_at?: string
@@ -864,6 +870,7 @@ export type Database = {
       projects: {
         Row: {
           address: string | null
+          archived_at: string | null
           created_at: string
           description: string | null
           id: string
@@ -879,6 +886,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          archived_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -894,6 +902,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          archived_at?: string | null
           created_at?: string
           description?: string | null
           id?: string

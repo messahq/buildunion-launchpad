@@ -153,43 +153,42 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
     });
   };
 
-  const handleDeleteProject = async (e: React.MouseEvent, project: Project) => {
+  const handleArchiveProject = async (e: React.MouseEvent, project: Project) => {
     e.stopPropagation();
     
-    // Can't delete shared projects
+    // Can't archive shared projects
     if (project.isShared || project.user_id !== user?.id) {
-      toast.error("You can only delete your own projects");
+      toast.error("You can only archive your own projects");
       return;
     }
     
-    if (!confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) return;
+    if (!confirm(`Are you sure you want to archive "${project.name}"? You can restore it later from the archive.`)) return;
 
     try {
-      // Delete associated documents from storage and DB
-      const { data: docs } = await supabase
-        .from("project_documents")
-        .select("file_path")
-        .eq("project_id", project.id);
-
-      if (docs && docs.length > 0) {
-        const paths = docs.map(d => d.file_path);
-        await supabase.storage.from("project-documents").remove(paths);
-        await supabase.from("project_documents").delete().eq("project_id", project.id);
-      }
-
-      // Delete team invitations
-      await supabase.from("team_invitations").delete().eq("project_id", project.id);
-
-      // Delete project
-      const { error } = await supabase.from("projects").delete().eq("id", project.id);
+      // Soft delete - set archived_at timestamp instead of actually deleting
+      const { error } = await supabase
+        .from("projects")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("id", project.id);
 
       if (error) throw error;
 
+      // Also archive related contracts and tasks
+      await supabase
+        .from("contracts")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("project_id", project.id);
+
+      await supabase
+        .from("project_tasks")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("project_id", project.id);
+
       setProjects(prev => prev.filter(p => p.id !== project.id));
-      toast.success("Project deleted");
+      toast.success("Project archived successfully. Admins can still access this data.");
     } catch (error) {
-      console.error("Delete project error:", error);
-      toast.error("Failed to delete project");
+      console.error("Archive project error:", error);
+      toast.error("Failed to archive project");
     }
   };
 
@@ -358,8 +357,9 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handleDeleteProject(e, project)}
+                        className="h-7 w-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => handleArchiveProject(e, project)}
+                        title="Archive project"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
