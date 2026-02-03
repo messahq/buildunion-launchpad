@@ -86,7 +86,7 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
         // Fetch site logs (MESSA reports)
         const { data: siteLogs, error: siteLogsError } = await supabase
           .from("site_logs")
-          .select("id, report_name, template_type, created_at, updated_at, completed_count, total_count, notes, pdf_url")
+          .select("id, report_name, template_type, created_at, updated_at, completed_count, total_count, notes, pdf_url, tasks_data")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
 
@@ -94,21 +94,32 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
           console.error("Error fetching site logs:", siteLogsError);
         }
 
-        // Transform site logs to project-like format
-        const siteLogProjects: Project[] = (siteLogs || []).map(log => ({
-          id: log.id,
-          name: log.report_name,
-          description: log.notes || `${log.completed_count || 0}/${log.total_count || 0} tasks completed`,
-          status: "site_log",
-          created_at: log.created_at,
-          updated_at: log.updated_at,
-          user_id: user.id,
-          isSiteLog: true,
-          template_type: log.template_type,
-          completed_count: log.completed_count,
-          total_count: log.total_count,
-          pdf_url: log.pdf_url,
-        }));
+        // Transform site logs to project-like format with client name extraction
+        const siteLogProjects: Project[] = (siteLogs || []).map(log => {
+          // Parse tasks_data to extract client name
+          let clientName = '';
+          try {
+            const tasksData = log.tasks_data as { clientName?: string } | null;
+            clientName = tasksData?.clientName || '';
+          } catch (e) {
+            console.error('Error parsing tasks_data:', e);
+          }
+          
+          return {
+            id: log.id,
+            name: clientName || log.report_name,
+            description: log.template_type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Site Log',
+            status: "site_log",
+            created_at: log.created_at,
+            updated_at: log.updated_at,
+            user_id: user.id,
+            isSiteLog: true,
+            template_type: log.template_type,
+            completed_count: log.completed_count,
+            total_count: log.total_count,
+            pdf_url: log.pdf_url,
+          };
+        });
         
         console.log("Site logs fetched:", siteLogs?.length || 0, "items");
 
