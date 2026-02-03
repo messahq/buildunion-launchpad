@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.send-verification-email]
 verify_jwt = false
+
+[functions.external-db]
+verify_jwt = false
