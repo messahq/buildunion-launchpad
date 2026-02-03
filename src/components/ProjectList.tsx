@@ -68,11 +68,12 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
 
     const fetchProjects = async () => {
       try {
-        // Fetch own projects
+        // Fetch own projects - explicitly filter out archived
         const { data: ownProjects, error: ownError } = await supabase
           .from("projects")
           .select("*")
           .eq("user_id", user.id)
+          .is("archived_at", null)
           .order("created_at", { ascending: false });
 
         if (ownError) throw ownError;
@@ -90,6 +91,7 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
             .from("projects")
             .select("*")
             .in("id", projectIds)
+            .is("archived_at", null)
             .order("created_at", { ascending: false });
 
           if (!sharedError && shared) {
