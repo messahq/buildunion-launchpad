@@ -19,6 +19,10 @@ interface Project {
   updated_at: string;
   user_id: string;
   isShared?: boolean;
+  isSiteLog?: boolean;
+  template_type?: string;
+  completed_count?: number;
+  total_count?: number;
 }
 
 interface DraftData {
@@ -78,6 +82,28 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
 
         if (ownError) throw ownError;
 
+        // Fetch site logs (MESSA reports)
+        const { data: siteLogs, error: siteLogsError } = await supabase
+          .from("site_logs")
+          .select("id, report_name, template_type, created_at, updated_at, completed_count, total_count, notes")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        // Transform site logs to project-like format
+        const siteLogProjects: Project[] = (siteLogs || []).map(log => ({
+          id: log.id,
+          name: log.report_name,
+          description: log.notes || `${log.completed_count || 0}/${log.total_count || 0} tasks completed`,
+          status: "site_log",
+          created_at: log.created_at,
+          updated_at: log.updated_at,
+          user_id: user.id,
+          isSiteLog: true,
+          template_type: log.template_type,
+          completed_count: log.completed_count,
+          total_count: log.total_count,
+        }));
+
         // Fetch shared projects (where user is a member)
         const { data: memberships, error: memberError } = await supabase
           .from("project_members")
@@ -99,8 +125,8 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
           }
         }
 
-        // Combine and sort by created_at
-        const allProjects = [...(ownProjects || []), ...sharedProjects].sort(
+        // Combine all and sort by created_at
+        const allProjects = [...(ownProjects || []), ...siteLogProjects, ...sharedProjects].sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
 
@@ -127,6 +153,11 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
         { event: "*", schema: "public", table: "project_members" },
         () => fetchProjects()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "site_logs" },
+        () => fetchProjects()
+      )
       .subscribe();
 
     return () => {
@@ -142,6 +173,8 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
         return "bg-blue-100 text-blue-700 border-blue-200";
       case "draft":
         return "bg-slate-100 text-slate-700 border-slate-200";
+      case "site_log":
+        return "bg-purple-100 text-purple-700 border-purple-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
     }
@@ -320,13 +353,25 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {ownProjects.map((project) => {
             const isSelected = selectedProjectId === project.id;
+            const isSiteLog = project.isSiteLog;
             return (
               <Card 
                 key={project.id} 
                 className={`border-border bg-card hover:shadow-md transition-all duration-200 cursor-pointer group ${
-                  isSelected ? 'border-amber-500 ring-2 ring-amber-200 shadow-md' : 'hover:border-amber-400'
+                  isSelected ? 'border-amber-500 ring-2 ring-amber-200 shadow-md' : isSiteLog ? 'hover:border-purple-400' : 'hover:border-amber-400'
                 }`}
                 onClick={(e) => {
+                  // Site logs don't have a detail page, just toggle selection
+                  if (isSiteLog) {
+                    if (isSelected) {
+                      setSelectedProjectId(null);
+                      onProjectSelect?.('', '');
+                    } else {
+                      setSelectedProjectId(project.id);
+                      onProjectSelect?.(project.id, project.name);
+                    }
+                    return;
+                  }
                   // Toggle selection
                   if (isSelected) {
                     setSelectedProjectId(null);
@@ -336,39 +381,56 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
                     onProjectSelect?.(project.id, project.name);
                   }
                 }}
-                onDoubleClick={() => navigate(`/buildunion/project/${project.id}`)}
+                onDoubleClick={() => !isSiteLog && navigate(`/buildunion/project/${project.id}`)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                      isSelected 
-                        ? 'bg-amber-500/30 dark:bg-amber-500/40' 
-                        : 'bg-amber-500/10 dark:bg-amber-500/20 group-hover:bg-amber-500/20 dark:group-hover:bg-amber-500/30'
+                      isSiteLog
+                        ? 'bg-purple-500/10 dark:bg-purple-500/20 group-hover:bg-purple-500/20'
+                        : isSelected 
+                          ? 'bg-amber-500/30 dark:bg-amber-500/40' 
+                          : 'bg-amber-500/10 dark:bg-amber-500/20 group-hover:bg-amber-500/20 dark:group-hover:bg-amber-500/30'
                     }`}>
-                      <Folder className="h-5 w-5 text-amber-600" />
+                      {isSiteLog ? (
+                        <FileText className="h-5 w-5 text-purple-600" />
+                      ) : (
+                        <Folder className="h-5 w-5 text-amber-600" />
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
-                      {isSelected && (
+                      {isSiteLog && (
+                        <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[10px]">
+                          Site Log
+                        </Badge>
+                      )}
+                      {isSelected && !isSiteLog && (
                         <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
                           Selected
                         </Badge>
                       )}
-                      <Badge className={`text-xs ${getStatusColor(project.status)}`}>
-                        {project.status}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handleArchiveProject(e, project)}
-                        title="Archive project"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!isSiteLog && (
+                        <>
+                          <Badge className={`text-xs ${getStatusColor(project.status)}`}>
+                            {project.status}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => handleArchiveProject(e, project)}
+                            title="Archive project"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <CardTitle className={`text-lg font-semibold mt-3 transition-colors ${
-                    isSelected ? 'text-amber-700' : 'text-foreground group-hover:text-amber-600'
+                    isSiteLog 
+                      ? 'text-foreground group-hover:text-purple-600'
+                      : isSelected ? 'text-amber-700' : 'text-foreground group-hover:text-amber-600'
                   }`}>
                     {project.name}
                   </CardTitle>
@@ -385,22 +447,32 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
                         <Calendar className="h-3 w-3" />
                         {formatDate(project.created_at)}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <FileText className="h-3 w-3" />
-                        Documents
-                      </div>
+                      {isSiteLog && project.completed_count !== undefined && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-purple-600">{project.completed_count}/{project.total_count || 0}</span>
+                          tasks
+                        </div>
+                      )}
+                      {!isSiteLog && (
+                        <div className="flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          Documents
+                        </div>
+                      )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[10px] text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/buildunion/project/${project.id}`);
-                      }}
-                    >
-                      Open →
-                    </Button>
+                    {!isSiteLog && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/buildunion/project/${project.id}`);
+                        }}
+                      >
+                        Open →
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
