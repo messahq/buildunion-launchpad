@@ -24,7 +24,8 @@ import {
   Save,
   Plus,
   Trash2,
-  Pencil
+  Pencil,
+  Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -32,6 +33,7 @@ import { format } from "date-fns";
 import { downloadPDF, generatePDFBlob } from "@/lib/pdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useDbTrialUsage } from "@/hooks/useDbTrialUsage";
 
 // Template definitions
 export type MESSATemplateType = "standard_clean" | "deep_clean" | "maintenance_check";
@@ -123,6 +125,15 @@ export const MESSAReportModal = ({
 }: MESSAReportModalProps) => {
   const { t } = useTranslation();
   const { session } = useAuth();
+  const { 
+    remainingTrials, 
+    hasTrialsRemaining, 
+    maxTrials, 
+    useOneTrial, 
+    isPremiumUser,
+    loading: trialLoading 
+  } = useDbTrialUsage("messa_quick_log");
+  
   const [open, setOpen] = useState(false);
   // SIMPLIFIED FLOW: template → checklist (no project selection)
   const [step, setStep] = useState<"template" | "checklist">("template");
@@ -353,6 +364,14 @@ export const MESSAReportModal = ({
   const generatePDFReport = async () => {
     if (!selectedTemplate) return;
     
+    // Check trial availability for free users
+    if (!isPremiumUser && !hasTrialsRemaining) {
+      toast.error("Monthly limit reached", {
+        description: "Upgrade to Pro for unlimited reports or wait until next month."
+      });
+      return;
+    }
+    
     // Validate client name
     if (!clientName.trim()) {
       toast.error("Client name is required", {
@@ -570,6 +589,11 @@ export const MESSAReportModal = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(downloadUrl);
       
+      // Consume one trial for free users
+      if (!isPremiumUser) {
+        await useOneTrial();
+      }
+      
       toast.success("Report generated & uploaded!", {
         description: pdfUrl ? "PDF saved to cloud and downloaded" : "PDF downloaded"
       });
@@ -716,19 +740,32 @@ export const MESSAReportModal = ({
                   <span className="text-sm font-medium">{photosCount} photos</span>
                 </div>
               </div>
-              <Button 
-                onClick={generatePDFReport}
-                disabled={generating || !clientName.trim()}
-                size="sm"
-                className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-              >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                {/* Trial counter for free users */}
+                {!isPremiumUser && !trialLoading && (
+                  <Badge 
+                    variant={hasTrialsRemaining ? "secondary" : "destructive"} 
+                    className="text-xs"
+                  >
+                    {remainingTrials}/{maxTrials} left
+                  </Badge>
                 )}
-                Generate PDF
-              </Button>
+                <Button 
+                  onClick={generatePDFReport}
+                  disabled={generating || !clientName.trim() || (!isPremiumUser && !hasTrialsRemaining)}
+                  size="sm"
+                  className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                >
+                  {generating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : !isPremiumUser && !hasTrialsRemaining ? (
+                    <Lock className="h-4 w-4" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Generate PDF
+                </Button>
+              </div>
             </div>
 
             {/* Task List - Native scroll with snap for mobile */}
