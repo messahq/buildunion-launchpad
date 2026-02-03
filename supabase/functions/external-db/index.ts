@@ -134,8 +134,21 @@ serve(async (req) => {
       status: 200,
     });
 
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+  } catch (error: unknown) {
+    // Handle Supabase PostgrestError and standard errors
+    let errorMessage = "Unknown error";
+    if (error && typeof error === "object") {
+      if ("message" in error && typeof error.message === "string") {
+        errorMessage = error.message;
+      } else if ("code" in error && "details" in error) {
+        // PostgrestError format
+        errorMessage = `${(error as { code: string }).code}: ${(error as { details: string }).details || (error as { message?: string }).message || "Database error"}`;
+      } else {
+        errorMessage = JSON.stringify(error);
+      }
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
     logStep("ERROR", { message: errorMessage });
     return new Response(JSON.stringify({ data: null, error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

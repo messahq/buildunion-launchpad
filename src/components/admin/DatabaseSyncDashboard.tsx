@@ -184,8 +184,8 @@ export default function DatabaseSyncDashboard() {
 
     if (lovableError) throw lovableError;
 
-    // Fetch from External DB
-    const externalResult = await select("tasks");
+    // Fetch from External DB (table name is project_tasks in external DB)
+    const externalResult = await select("project_tasks");
     const externalTasks = externalResult.data || [];
 
     // Create comparison map
@@ -260,7 +260,9 @@ export default function DatabaseSyncDashboard() {
         };
       }
 
-      const result = await insert(tableName, payload);
+      // Use correct external table name (project_tasks for tasks)
+      const externalTableName = tableName === "tasks" ? "project_tasks" : tableName;
+      const result = await insert(externalTableName, payload);
       
       if (result.error) {
         throw new Error(result.error);
