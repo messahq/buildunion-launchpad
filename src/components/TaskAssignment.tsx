@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { format, differenceInDays, isPast, isToday, isTomorrow, startOfDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useExternalDbSync } from "@/hooks/useExternalDbSync";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,7 @@ const STATUSES = [
 const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated, isSoloMode = false, initialEditTaskId, onEditTaskHandled }: TaskAssignmentProps) => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { syncTask } = useExternalDbSync();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -328,11 +330,24 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
         
         if (!handledOffline) {
           // Online - insert directly
-          const { error } = await supabase
+          const { data: insertedTask, error } = await supabase
             .from("project_tasks")
-            .insert(taskData);
+            .insert(taskData)
+            .select("id")
+            .single();
 
           if (error) throw error;
+          
+          // Sync to External Supabase Pro Database
+          if (insertedTask?.id) {
+            syncTask({
+              id: insertedTask.id,
+              project_id: projectId,
+              title,
+              status: "pending",
+            });
+          }
+          
           toast.success(t("tasks.created", "Task created"));
         } else {
           // Optimistically add to local state

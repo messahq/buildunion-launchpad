@@ -42,7 +42,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { useExternalDb } from "@/hooks/useExternalDb";
+import { useExternalDbSync } from "@/hooks/useExternalDbSync";
 import { toast } from "sonner";
 import { TrialLimitUpgradeModal } from "@/components/TrialLimitUpgradeModal";
 
@@ -110,8 +110,8 @@ const BuildUnionNewProject = () => {
   const { remainingTrials, hasTrialsRemaining, useOneTrial, maxTrials } = useDbTrialUsage("project_creation");
   const isPremium = subscription?.subscribed === true;
   
-  // External database integration
-  const { insert: insertExternal } = useExternalDb();
+  // External database sync service
+  const { syncProject } = useExternalDbSync();
   
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -611,22 +611,15 @@ const BuildUnionNewProject = () => {
 
       if (projectError) throw projectError;
 
-      // 2b. Sync to External Supabase Pro Database
-      const externalResult = await insertExternal("projects", {
-        id: project.id, // Use same ID for consistency
+      // 2b. Sync to External Supabase Pro Database (Operational Truth)
+      syncProject({
+        id: project.id,
         lovable_user_id: user.id,
         name: projectName.trim(),
         description: projectDescription.trim() || null,
         address: address.trim(),
         status: "active",
       });
-      
-      if (externalResult.error) {
-        console.error("[External DB] Failed to sync project:", externalResult.error);
-        // Don't block - external sync is secondary
-      } else {
-        console.log("[External DB] Project synced successfully:", project.id);
-      }
 
       // 2. Upload files
       setIsIndexing(true);

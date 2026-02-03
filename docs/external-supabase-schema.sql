@@ -4,9 +4,14 @@
 -- JELENLEG TELEPÍTVE: 2025-02-03
 -- Ez a séma a BuildUnion külső Supabase Pro adatbázisához tartozik.
 -- A Lovable Cloud kezeli az autentikációt, ez az adatbázis
--- az üzleti adatokat (projektek, szerződések) tárolja.
+-- az üzleti adatokat (projektek, szerződések, feladatok) tárolja.
 --
 -- FONTOS: lovable_user_id = a Lovable Cloud auth.uid() értéke
+--
+-- SYNC RENDSZER:
+-- - useExternalDbSync hook automatikusan szinkronizálja az adatokat
+-- - Projektek, szerződések és feladatok mind szinkronizálva vannak
+-- - Ha a külső mentés sikertelen, a felhasználó toast figyelmeztetést kap
 -- ============================================
 
 -- 1. TÍPUSOK (léteznek)
@@ -44,8 +49,12 @@ CREATE TABLE public.contracts (
 );
 
 -- ============================================
+-- JELENLEGI ADATOK (2026-02-03):
+-- projects: MESSA TORONTO OFFICE (4485d635-460d-426f-a823-f87d0980aaab)
+-- contracts: MESSA TORONTO OFFICE Contract (16fcda71-0e8a-4212-a818-523877edd6ca)
+--
 -- NOTES:
--- - Ez egy minimális séma, bővíthető később
--- - RLS nincs még konfigurálva (edge function + service key használata)
+-- - RLS nincs konfigurálva (edge function + service key használata)
 -- - A lovable_user_id-t az edge function szűri
+-- - Hibajelzés: toast.warning() ha sync sikertelen
 -- ============================================

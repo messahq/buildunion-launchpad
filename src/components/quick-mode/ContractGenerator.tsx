@@ -32,6 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBuProfile } from "@/hooks/useBuProfile";
 import { useRegionSettings } from "@/hooks/useRegionSettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useExternalDbSync } from "@/hooks/useExternalDbSync";
 import { toast } from "sonner";
 import {
   FileText,
@@ -258,6 +259,7 @@ const ContractGenerator = ({
   const { user } = useAuth();
   const { profile } = useBuProfile();
   const { formatCurrency, config } = useRegionSettings();
+  const { syncContract } = useExternalDbSync();
   
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplateType>(initialTemplate || "custom");
   
@@ -679,6 +681,17 @@ const ContractGenerator = ({
         } else if (clientSignature || contractorSignature) {
           toast.success("✅ Signature saved!");
         }
+      }
+      
+      // Sync to External Supabase Pro Database (for Operational Truth)
+      if (resultId && user?.id) {
+        syncContract({
+          id: resultId,
+          lovable_user_id: user.id,
+          project_id: linkedProjectId || null,
+          title: contract.projectName || `Contract ${contract.contractNumber}`,
+          status: contractorSignature && clientSignature ? 'signed' : contractorSignature ? 'pending_client' : 'draft',
+        });
       }
       
       // Notify parent to refresh contracts list (syncs Operational Truth)
