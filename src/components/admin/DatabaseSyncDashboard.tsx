@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { User } from "lucide-react";
 
 interface SyncRecord {
   id: string;
@@ -36,6 +37,7 @@ interface SyncRecord {
   title?: string;
   status?: string;
   created_at?: string;
+  ownerName?: string;
   inLovableCloud: boolean;
   inExternalDb: boolean;
   lovableData?: Record<string, unknown>;
@@ -80,37 +82,51 @@ export default function DatabaseSyncDashboard() {
     }
   };
 
-  const fetchProjects = async () => {
-    // Fetch from Lovable Cloud
-    const { data: lovableProjects, error: lovableError } = await supabase
-      .from("projects")
-      .select("id, name, status, address, created_at, user_id")
-      .order("created_at", { ascending: false })
-      .limit(100);
+  // Admin function to fetch ALL platform data (bypasses RLS)
+  const fetchAdminData = async (table: string) => {
+    const { data, error } = await supabase.functions.invoke("admin-sync-data", {
+      body: { table },
+    });
+    
+    if (error) {
+      console.error(`[Admin Sync] Error fetching ${table}:`, error);
+      throw error;
+    }
+    
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+    
+    return data?.data || [];
+  };
 
-    if (lovableError) throw lovableError;
+  const fetchProjects = async () => {
+    // Fetch ALL projects from Lovable Cloud (admin access)
+    const lovableProjects = await fetchAdminData("projects");
 
     // Fetch from External DB
     const externalResult = await select("projects");
     const externalProjects = externalResult.data || [];
 
     // Create comparison map
-    const lovableMap = new Map(lovableProjects?.map(p => [p.id, p]) || []);
+    const lovableMap = new Map(lovableProjects?.map((p: Record<string, unknown>) => [p.id, p]) || []);
     const externalMap = new Map(externalProjects.map((p: Record<string, unknown>) => [p.id, p]));
 
     const allIds = new Set([
-      ...(lovableProjects?.map(p => p.id) || []),
+      ...(lovableProjects?.map((p: Record<string, unknown>) => p.id as string) || []),
       ...externalProjects.map((p: Record<string, unknown>) => p.id as string),
     ]);
 
     const records: SyncRecord[] = Array.from(allIds).map(id => {
-      const lovable = lovableMap.get(id);
+      const lovable = lovableMap.get(id) as Record<string, unknown> | undefined;
       const external = externalMap.get(id) as Record<string, unknown> | undefined;
+      const profiles = lovable?.profiles as { full_name?: string } | null;
       return {
         id,
         name: (lovable?.name || external?.name) as string,
         status: (lovable?.status || external?.status) as string,
         created_at: (lovable?.created_at || external?.created_at) as string,
+        ownerName: profiles?.full_name || "Unknown User",
         inLovableCloud: !!lovable,
         inExternalDb: !!external,
         lovableData: lovable || undefined,
@@ -128,36 +144,32 @@ export default function DatabaseSyncDashboard() {
   };
 
   const fetchContracts = async () => {
-    // Fetch from Lovable Cloud
-    const { data: lovableContracts, error: lovableError } = await supabase
-      .from("contracts")
-      .select("id, contract_number, project_name, client_name, status, total_amount, created_at, user_id")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (lovableError) throw lovableError;
+    // Fetch ALL contracts from Lovable Cloud (admin access)
+    const lovableContracts = await fetchAdminData("contracts");
 
     // Fetch from External DB
     const externalResult = await select("contracts");
     const externalContracts = externalResult.data || [];
 
     // Create comparison map
-    const lovableMap = new Map(lovableContracts?.map(c => [c.id, c]) || []);
+    const lovableMap = new Map(lovableContracts?.map((c: Record<string, unknown>) => [c.id, c]) || []);
     const externalMap = new Map(externalContracts.map((c: Record<string, unknown>) => [c.id, c]));
 
     const allIds = new Set([
-      ...(lovableContracts?.map(c => c.id) || []),
+      ...(lovableContracts?.map((c: Record<string, unknown>) => c.id as string) || []),
       ...externalContracts.map((c: Record<string, unknown>) => c.id as string),
     ]);
 
     const records: SyncRecord[] = Array.from(allIds).map(id => {
-      const lovable = lovableMap.get(id);
+      const lovable = lovableMap.get(id) as Record<string, unknown> | undefined;
       const external = externalMap.get(id) as Record<string, unknown> | undefined;
+      const profiles = lovable?.profiles as { full_name?: string } | null;
       return {
         id,
         name: (lovable?.project_name || external?.project_name || lovable?.contract_number || external?.contract_number) as string,
         status: (lovable?.status || external?.status) as string,
         created_at: (lovable?.created_at || external?.created_at) as string,
+        ownerName: profiles?.full_name || "Unknown User",
         inLovableCloud: !!lovable,
         inExternalDb: !!external,
         lovableData: lovable || undefined,
@@ -175,36 +187,32 @@ export default function DatabaseSyncDashboard() {
   };
 
   const fetchTasks = async () => {
-    // Fetch from Lovable Cloud
-    const { data: lovableTasks, error: lovableError } = await supabase
-      .from("project_tasks")
-      .select("id, title, status, priority, project_id, created_at, assigned_to")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (lovableError) throw lovableError;
+    // Fetch ALL tasks from Lovable Cloud (admin access)
+    const lovableTasks = await fetchAdminData("project_tasks");
 
     // Fetch from External DB (table name is project_tasks in external DB)
     const externalResult = await select("project_tasks");
     const externalTasks = externalResult.data || [];
 
     // Create comparison map
-    const lovableMap = new Map(lovableTasks?.map(t => [t.id, t]) || []);
+    const lovableMap = new Map(lovableTasks?.map((t: Record<string, unknown>) => [t.id, t]) || []);
     const externalMap = new Map(externalTasks.map((t: Record<string, unknown>) => [t.id, t]));
 
     const allIds = new Set([
-      ...(lovableTasks?.map(t => t.id) || []),
+      ...(lovableTasks?.map((t: Record<string, unknown>) => t.id as string) || []),
       ...externalTasks.map((t: Record<string, unknown>) => t.id as string),
     ]);
 
     const records: SyncRecord[] = Array.from(allIds).map(id => {
-      const lovable = lovableMap.get(id);
+      const lovable = lovableMap.get(id) as Record<string, unknown> | undefined;
       const external = externalMap.get(id) as Record<string, unknown> | undefined;
+      const profiles = lovable?.profiles as { full_name?: string } | null;
       return {
         id,
         title: (lovable?.title || external?.title) as string,
         status: (lovable?.status || external?.status) as string,
         created_at: (lovable?.created_at || external?.created_at) as string,
+        ownerName: profiles?.full_name || "Unknown User",
         inLovableCloud: !!lovable,
         inExternalDb: !!external,
         lovableData: lovable || undefined,
@@ -361,6 +369,10 @@ export default function DatabaseSyncDashboard() {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>
+              <User className="h-4 w-4 inline mr-1" />
+              Owner
+            </TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
             <TableHead className="text-center">
@@ -378,7 +390,7 @@ export default function DatabaseSyncDashboard() {
         <TableBody>
           {records.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 No records found
               </TableCell>
             </TableRow>
@@ -387,6 +399,9 @@ export default function DatabaseSyncDashboard() {
               <TableRow key={record.id}>
                 <TableCell className="font-medium">
                   {record.name || record.title || record.id.slice(0, 8)}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {record.ownerName || "—"}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{record.status || "N/A"}</Badge>
@@ -441,9 +456,9 @@ export default function DatabaseSyncDashboard() {
         <div className="flex items-center gap-3">
           <Database className="h-6 w-6 text-primary" />
           <div>
-            <h2 className="text-xl font-bold">Database Sync Dashboard</h2>
+            <h2 className="text-xl font-bold">Platform Sync Dashboard</h2>
             <p className="text-sm text-muted-foreground">
-              Compare Lovable Cloud ↔ External Supabase Pro
+              All users' data · Lovable Cloud ↔ External Supabase Pro
             </p>
           </div>
         </div>
