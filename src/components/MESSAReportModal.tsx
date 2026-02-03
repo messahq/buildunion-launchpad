@@ -131,6 +131,7 @@ export const MESSAReportModal = ({
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState("");
+  const [clientName, setClientName] = useState("");
   const [savedLogId, setSavedLogId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
@@ -152,6 +153,7 @@ export const MESSAReportModal = ({
       performedBy: undefined,
     })));
     setNotes("");
+    setClientName("");
     setSavedLogId(null);
     setStep("checklist");
   };
@@ -237,22 +239,28 @@ export const MESSAReportModal = ({
   const completedCount = tasks.filter(t => t.completed).length;
   const photosCount = tasks.filter(t => t.photoUrl).length;
 
-  // Save notes to Supabase
-  const handleSaveNotes = async () => {
+  // Save log to Supabase (notes and all data)
+  const handleSaveLog = async (showToast = true): Promise<string | null> => {
     if (!session?.user?.id || !selectedTemplate) {
-      toast.error("Please log in to save notes");
-      return;
+      if (showToast) toast.error("Please log in to save");
+      return null;
     }
 
     setSaving(true);
     try {
-      const reportName = getReportName();
+      const reportName = clientName.trim() 
+        ? `${selectedTemplate.name} - ${clientName.trim()} - ${format(new Date(), "MMM d, yyyy")}`
+        : getReportName();
+      
       const logData = {
         user_id: session.user.id,
         report_name: reportName,
         template_type: selectedTemplate.id,
         notes: notes.trim() || null,
-        tasks_data: JSON.parse(JSON.stringify(tasks)),
+        tasks_data: JSON.parse(JSON.stringify({ 
+          tasks,
+          clientName: clientName.trim() || null,
+        })),
         completed_count: completedCount,
         total_count: tasks.length,
         photos_count: photosCount,
@@ -263,15 +271,20 @@ export const MESSAReportModal = ({
         const { error } = await supabase
           .from("site_logs")
           .update({
+            report_name: reportName,
             notes: notes.trim() || null,
-            tasks_data: JSON.parse(JSON.stringify(tasks)),
+            tasks_data: JSON.parse(JSON.stringify({ 
+              tasks,
+              clientName: clientName.trim() || null,
+            })),
             completed_count: completedCount,
             photos_count: photosCount,
           })
           .eq("id", savedLogId);
 
         if (error) throw error;
-        toast.success("Notes updated!");
+        if (showToast) toast.success("Log updated!");
+        return savedLogId;
       } else {
         // Create new log
         const { data, error } = await supabase
@@ -282,11 +295,13 @@ export const MESSAReportModal = ({
 
         if (error) throw error;
         setSavedLogId(data.id);
-        toast.success("Notes saved!");
+        if (showToast) toast.success("Log saved!");
+        return data.id;
       }
     } catch (error) {
       console.error("Save error:", error);
-      toast.error("Failed to save notes");
+      if (showToast) toast.error("Failed to save log");
+      return null;
     } finally {
       setSaving(false);
     }
@@ -295,9 +310,21 @@ export const MESSAReportModal = ({
   const generatePDFReport = async () => {
     if (!selectedTemplate) return;
     
+    // Validate client name
+    if (!clientName.trim()) {
+      toast.error("Client name is required", {
+        description: "Please enter a client name before generating the PDF."
+      });
+      return;
+    }
+    
     setGenerating(true);
     try {
+      // Auto-save to database before generating PDF
+      await handleSaveLog(false);
+      
       const reportDate = format(new Date(), "MMMM d, yyyy 'at' HH:mm");
+      const displayClientName = clientName.trim();
       
       const htmlContent = `
         <!DOCTYPE html>
@@ -308,20 +335,23 @@ export const MESSAReportModal = ({
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; padding: 32px; }
-            .header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #f59e0b; }
+            .header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #f59e0b; page-break-inside: avoid; break-inside: avoid; }
             .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
             .logo-icon { font-size: 32px; }
             .logo-text { font-size: 24px; font-weight: 700; color: #f59e0b; }
             h1 { font-size: 20px; color: #1a1a1a; margin-bottom: 8px; }
+            .client-info { background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; }
+            .client-name { font-size: 18px; font-weight: 700; color: #92400e; }
+            .client-date { font-size: 14px; color: #a16207; margin-top: 4px; }
             .meta { color: #64748b; font-size: 14px; }
             .meta-row { display: flex; gap: 24px; margin-top: 8px; }
             .template-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 12px; }
-            .summary { background: #f8fafc; padding: 16px; border-radius: 8px; margin: 24px 0; display: flex; gap: 24px; flex-wrap: wrap; }
+            .summary { background: #f8fafc; padding: 16px; border-radius: 8px; margin: 24px 0; display: flex; gap: 24px; flex-wrap: wrap; page-break-inside: avoid; break-inside: avoid; }
             .summary-item { text-align: center; min-width: 80px; }
             .summary-value { font-size: 28px; font-weight: 700; color: #f59e0b; }
             .summary-label { font-size: 12px; color: #64748b; }
             .tasks { margin-top: 24px; }
-            .task { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
+            .task { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; break-after: auto; }
             .task-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
             .task-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
             .task-status.completed { background: #dcfce7; color: #166534; }
@@ -330,14 +360,15 @@ export const MESSAReportModal = ({
             .custom-badge { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 10px; font-weight: 500; margin-left: 8px; }
             .task-description { color: #64748b; font-size: 12px; margin-top: 4px; margin-left: 36px; }
             .task-photo { margin-top: 12px; margin-left: 36px; page-break-inside: avoid; break-inside: avoid; }
-            .task-photo img { max-width: 280px; max-height: 180px; border-radius: 8px; border: 1px solid #e2e8f0; }
+            .task-photo img { max-width: 280px; max-height: 180px; border-radius: 8px; border: 1px solid #e2e8f0; display: block; }
             .task-timestamp { color: #64748b; font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
             .notes { margin-top: 24px; padding: 16px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; page-break-inside: avoid; break-inside: avoid; }
-            .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 11px; }
+            .notes h2 { font-size: 16px; margin-bottom: 12px; color: #92400e; display: flex; align-items: center; gap: 8px; }
+            .notes p { color: #1a1a1a; font-size: 14px; white-space: pre-wrap; line-height: 1.6; }
+            .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 11px; page-break-inside: avoid; }
             @media print {
-              .task { page-break-inside: avoid; break-inside: avoid; }
-              .task-photo { page-break-inside: avoid; break-inside: avoid; }
-              .notes { page-break-inside: avoid; break-inside: avoid; }
+              .task, .notes, .summary, .header, .task-photo { page-break-inside: avoid !important; break-inside: avoid !important; }
+              .task { orphans: 3; widows: 3; }
             }
           </style>
         </head>
@@ -347,9 +378,11 @@ export const MESSAReportModal = ({
               <span class="logo-icon">📋</span>
               <span class="logo-text">MESSA Quick-Log</span>
             </div>
-            <h1>${getReportName()}</h1>
+            <div class="client-info">
+              <div class="client-name">${displayClientName}</div>
+              <div class="client-date">${reportDate}</div>
+            </div>
             <div class="meta">
-              <div>Report generated: ${reportDate}</div>
               <div class="template-badge">${selectedTemplate.icon} ${selectedTemplate.name}</div>
             </div>
           </div>
@@ -395,10 +428,8 @@ export const MESSAReportModal = ({
           
           ${notes.trim() ? `
           <div class="notes">
-            <h2 style="font-size: 16px; margin-bottom: 12px; color: #92400e; display: flex; align-items: center; gap: 8px;">
-              📝 Notes & Observations
-            </h2>
-            <p style="color: #1a1a1a; font-size: 14px; white-space: pre-wrap; line-height: 1.6;">${notes.trim()}</p>
+            <h2>📝 Notes & Observations</h2>
+            <p>${notes.trim()}</p>
           </div>
           ` : ''}
           
@@ -410,11 +441,11 @@ export const MESSAReportModal = ({
       `;
       
       await downloadPDF(htmlContent, {
-        filename: `MESSA-${selectedTemplate.name.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`
+        filename: `MESSA-${selectedTemplate.name.replace(/\s+/g, '-')}-${displayClientName.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`
       });
       
-      toast.success("Report generated!", {
-        description: "PDF downloaded successfully"
+      toast.success("Report generated & saved!", {
+        description: "PDF downloaded and saved to database"
       });
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -430,6 +461,7 @@ export const MESSAReportModal = ({
       setSelectedTemplate(null);
       setTasks([]);
       setNotes("");
+      setClientName("");
       setSavedLogId(null);
     }
   };
@@ -442,6 +474,7 @@ export const MESSAReportModal = ({
       setSelectedTemplate(null);
       setTasks([]);
       setNotes("");
+      setClientName("");
       setSavedLogId(null);
     }, 200);
   };
@@ -519,6 +552,19 @@ export const MESSAReportModal = ({
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
+            {/* Client Name Input - Required */}
+            <div className="mb-4 p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+              <label className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2 block">
+                👤 Client Name <span className="text-destructive">*</span>
+              </label>
+              <Input
+                placeholder="Enter client name (required for PDF)"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                className={`bg-background ${!clientName.trim() && 'border-destructive/50'}`}
+              />
+            </div>
+
             {/* Summary Bar */}
             <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg mb-4">
               <div className="flex items-center gap-4">
@@ -533,7 +579,7 @@ export const MESSAReportModal = ({
               </div>
               <Button 
                 onClick={generatePDFReport}
-                disabled={generating}
+                disabled={generating || !clientName.trim()}
                 size="sm"
                 className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
               >
@@ -684,7 +730,7 @@ export const MESSAReportModal = ({
                   className="min-h-[80px] bg-background resize-none"
                 />
                 <Button
-                  onClick={handleSaveNotes}
+                  onClick={() => handleSaveLog()}
                   disabled={saving || !session?.user}
                   size="sm"
                   variant="outline"
@@ -695,7 +741,7 @@ export const MESSAReportModal = ({
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  {savedLogId ? "Update Notes" : "Save Notes"}
+                  {savedLogId ? "Update Log" : "Save Log"}
                 </Button>
                 {!session?.user && (
                   <p className="text-xs text-muted-foreground mt-1">Log in to save notes</p>
