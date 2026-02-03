@@ -10,31 +10,36 @@
 -- ENUMS (Skip if already exists)
 -- ============================================
 
-DO $$ BEGIN
+DO $$ 
+BEGIN
   CREATE TYPE public.project_status AS ENUM ('draft', 'active', 'completed', 'archived');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
+DO $$ 
+BEGIN
   CREATE TYPE public.contract_status AS ENUM ('draft', 'sent', 'viewed', 'signed', 'expired');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
+DO $$ 
+BEGIN
   CREATE TYPE public.task_status AS ENUM ('pending', 'in_progress', 'completed', 'blocked');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
+DO $$ 
+BEGIN
   CREATE TYPE public.task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
+DO $$ 
+BEGIN
   CREATE TYPE public.project_role AS ENUM ('owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'member');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
@@ -46,11 +51,11 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS public.projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lovable_user_id UUID NOT NULL, -- Links to Lovable Cloud auth.users
+  lovable_user_id UUID NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
   address TEXT,
-  status project_status DEFAULT 'draft',
+  status public.project_status DEFAULT 'draft',
   trade TEXT,
   trades TEXT[] DEFAULT '{}',
   required_certifications TEXT[] DEFAULT '{}',
@@ -60,7 +65,6 @@ CREATE TABLE IF NOT EXISTS public.projects (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Index for fast user lookups
 CREATE INDEX IF NOT EXISTS idx_projects_lovable_user ON public.projects(lovable_user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON public.projects(status);
 
@@ -72,21 +76,15 @@ CREATE TABLE IF NOT EXISTS public.project_summaries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
   lovable_user_id UUID NOT NULL,
-  mode TEXT DEFAULT 'solo' CHECK (mode IN ('solo', 'team')),
+  mode TEXT DEFAULT 'solo',
   status TEXT DEFAULT 'draft',
-  
-  -- Client info
   client_name TEXT,
   client_email TEXT,
   client_phone TEXT,
   client_address TEXT,
-  
-  -- Financial data
   total_cost NUMERIC DEFAULT 0,
   material_cost NUMERIC DEFAULT 0,
   labor_cost NUMERIC DEFAULT 0,
-  
-  -- JSON data
   line_items JSONB DEFAULT '[]',
   template_items JSONB DEFAULT '[]',
   calculator_results JSONB DEFAULT '[]',
@@ -94,22 +92,15 @@ CREATE TABLE IF NOT EXISTS public.project_summaries (
   blueprint_analysis JSONB DEFAULT '{}',
   photo_estimate JSONB DEFAULT '{}',
   ai_workflow_config JSONB DEFAULT '{}',
-  
-  -- Baseline versioning
   baseline_snapshot JSONB,
   baseline_locked_at TIMESTAMPTZ,
   baseline_locked_by UUID,
   current_baseline_version_id UUID,
-  
-  -- Dates
   project_start_date DATE,
   project_end_date DATE,
-  
-  -- Invoice tracking
   invoice_id TEXT,
   invoice_status TEXT DEFAULT 'none',
   invoice_sent_at TIMESTAMPTZ,
-  
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -125,8 +116,8 @@ CREATE INDEX IF NOT EXISTS idx_summaries_user ON public.project_summaries(lovabl
 CREATE TABLE IF NOT EXISTS public.project_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID NOT NULL, -- Can be Lovable user_id or external
-  role project_role DEFAULT 'member',
+  user_id UUID NOT NULL,
+  role public.project_role DEFAULT 'member',
   joined_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(project_id, user_id)
 );
@@ -143,8 +134,8 @@ CREATE TABLE IF NOT EXISTS public.project_tasks (
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   description TEXT,
-  status task_status DEFAULT 'pending',
-  priority task_priority DEFAULT 'medium',
+  status public.task_status DEFAULT 'pending',
+  priority public.task_priority DEFAULT 'medium',
   assigned_to UUID NOT NULL,
   assigned_by UUID NOT NULL,
   due_date TIMESTAMPTZ,
@@ -185,10 +176,8 @@ CREATE TABLE IF NOT EXISTS public.contracts (
   lovable_user_id UUID NOT NULL,
   project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
   contract_number TEXT NOT NULL UNIQUE,
-  status contract_status DEFAULT 'draft',
+  status public.contract_status DEFAULT 'draft',
   template_type TEXT DEFAULT 'custom',
-  
-  -- Contractor info
   contractor_name TEXT,
   contractor_address TEXT,
   contractor_phone TEXT,
@@ -196,25 +185,17 @@ CREATE TABLE IF NOT EXISTS public.contracts (
   contractor_license TEXT,
   has_liability_insurance BOOLEAN DEFAULT true,
   has_wsib BOOLEAN DEFAULT true,
-  
-  -- Client info
   client_name TEXT,
   client_address TEXT,
   client_phone TEXT,
   client_email TEXT,
-  
-  -- Project details
   project_name TEXT,
   project_address TEXT,
   scope_of_work TEXT,
-  
-  -- Financial
   total_amount NUMERIC DEFAULT 0,
   deposit_amount NUMERIC DEFAULT 0,
   deposit_percentage NUMERIC DEFAULT 50,
   materials_included BOOLEAN DEFAULT true,
-  
-  -- Terms
   payment_schedule TEXT,
   working_days TEXT,
   warranty_period TEXT,
@@ -222,23 +203,16 @@ CREATE TABLE IF NOT EXISTS public.contracts (
   cancellation_policy TEXT,
   dispute_resolution TEXT,
   additional_terms TEXT,
-  
-  -- Dates
   contract_date DATE DEFAULT CURRENT_DATE,
   start_date DATE,
   estimated_end_date DATE,
-  
-  -- Signatures
   contractor_signature JSONB,
   client_signature JSONB,
   client_signed_at TIMESTAMPTZ,
   client_viewed_at TIMESTAMPTZ,
-  
-  -- Sharing
   share_token UUID DEFAULT gen_random_uuid(),
   share_token_expires_at TIMESTAMPTZ DEFAULT (now() + interval '30 days'),
   sent_to_client_at TIMESTAMPTZ,
-  
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -255,7 +229,7 @@ CREATE INDEX IF NOT EXISTS idx_contracts_share_token ON public.contracts(share_t
 CREATE TABLE IF NOT EXISTS public.contract_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE NOT NULL,
-  event_type TEXT NOT NULL, -- 'viewed', 'signed', 'sent', 'expired'
+  event_type TEXT NOT NULL,
   event_data JSONB DEFAULT '{}',
   ip_address TEXT,
   user_agent TEXT,
@@ -292,10 +266,10 @@ CREATE TABLE IF NOT EXISTS public.team_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   email TEXT NOT NULL,
-  role project_role DEFAULT 'member',
+  role public.project_role DEFAULT 'member',
   invited_by UUID NOT NULL,
   invitation_token UUID DEFAULT gen_random_uuid(),
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+  status TEXT DEFAULT 'pending',
   responded_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -316,7 +290,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply triggers (DROP IF EXISTS first to avoid errors)
 DROP TRIGGER IF EXISTS update_projects_updated_at ON public.projects;
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -337,7 +310,6 @@ CREATE TRIGGER update_contracts_updated_at BEFORE UPDATE ON public.contracts
 -- ROW LEVEL SECURITY
 -- ============================================
 
--- Enable RLS on all tables
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_summaries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
@@ -348,29 +320,20 @@ ALTER TABLE public.contract_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.baseline_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_invitations ENABLE ROW LEVEL SECURITY;
 
--- IMPORTANT: Since we're using Service Role Key from Lovable Edge Function,
--- RLS is bypassed. The Edge Function handles authorization.
--- These policies are for direct Supabase client access if needed later.
-
--- Drop existing policies first to avoid conflicts
 DROP POLICY IF EXISTS "Users can manage own projects" ON public.projects;
 DROP POLICY IF EXISTS "Users can manage own summaries" ON public.project_summaries;
 DROP POLICY IF EXISTS "Users can manage own contracts" ON public.contracts;
 DROP POLICY IF EXISTS "Users can view own contract events" ON public.contract_events;
 
--- Projects: Owner access
 CREATE POLICY "Users can manage own projects" ON public.projects
   FOR ALL USING (lovable_user_id = auth.uid());
 
--- Summaries: Owner access
 CREATE POLICY "Users can manage own summaries" ON public.project_summaries
   FOR ALL USING (lovable_user_id = auth.uid());
 
--- Contracts: Owner access
 CREATE POLICY "Users can manage own contracts" ON public.contracts
   FOR ALL USING (lovable_user_id = auth.uid());
 
--- Contract events: Read only for contract owners
 CREATE POLICY "Users can view own contract events" ON public.contract_events
   FOR SELECT USING (
     EXISTS (
@@ -380,29 +343,6 @@ CREATE POLICY "Users can view own contract events" ON public.contract_events
     )
   );
 
--- Service role full access (for Edge Function proxy)
--- Note: Service Role Key automatically bypasses RLS
-
--- ============================================
--- REALTIME (Optional - skip if already added)
--- ============================================
-
--- Note: These may fail if already added, which is fine
-DO $$ BEGIN
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.contracts;
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
-DO $$ BEGIN
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.project_tasks;
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-
 -- ============================================
 -- DONE!
 -- ============================================
--- Your external Supabase Pro is now ready.
--- The Lovable Edge Function will use Service Role Key
--- to manage data through the external-db proxy.
