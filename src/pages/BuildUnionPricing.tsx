@@ -83,6 +83,7 @@ const BuildUnionPricing = () => {
       icon: <Zap className="w-6 h-6" />,
       features: [
         "1 active project",
+        "Quick Log (3 reports/month)",
         "Basic document upload",
         "Community support",
         "BuildUnion news",
@@ -101,6 +102,7 @@ const BuildUnionPricing = () => {
       icon: <Zap className="w-6 h-6 text-blue-500" />,
       features: [
         "10 active projects",
+        "Unlimited Quick Log reports",
         "Team Mode (Documents, Tasks, Map)",
         "AI Assistant (Messa)",
         "Document analysis & AI Synthesis",
