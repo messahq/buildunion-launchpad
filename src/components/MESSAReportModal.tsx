@@ -20,7 +20,8 @@ import {
   Clock,
   Loader2,
   Download,
-  ArrowLeft
+  ArrowLeft,
+  FolderOpen
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -106,20 +107,29 @@ const MESSA_TEMPLATES: MESSATemplate[] = [
   },
 ];
 
+interface ProjectOption {
+  id: string;
+  name: string;
+}
+
 interface MESSAReportModalProps {
-  projectId: string;
-  projectName: string;
+  projectId?: string;
+  projectName?: string;
+  projects?: ProjectOption[];
   trigger?: React.ReactNode;
 }
 
 export const MESSAReportModal = ({
-  projectId,
-  projectName,
+  projectId: initialProjectId,
+  projectName: initialProjectName,
+  projects = [],
   trigger,
 }: MESSAReportModalProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"select" | "checklist">("select");
+  const [step, setStep] = useState<"project" | "select" | "checklist">(initialProjectId ? "select" : "project");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(initialProjectId);
+  const [selectedProjectName, setSelectedProjectName] = useState<string | undefined>(initialProjectName);
   const [selectedTemplate, setSelectedTemplate] = useState<MESSATemplate | null>(null);
   const [tasks, setTasks] = useState<MESSATask[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -234,7 +244,7 @@ export const MESSAReportModal = ({
               <span class="logo-icon">📋</span>
               <span class="logo-text">MESSA Quick-Log</span>
             </div>
-            <h1>${projectName}</h1>
+            <h1>${selectedProjectName || 'Project'}</h1>
             <div class="meta">
               <div>Report generated: ${reportDate}</div>
               <div class="template-badge">${selectedTemplate.icon} ${selectedTemplate.name}</div>
@@ -287,7 +297,7 @@ export const MESSAReportModal = ({
       `;
       
       await downloadPDF(htmlContent, {
-        filename: `MESSA-Report-${projectName.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`
+        filename: `MESSA-Report-${(selectedProjectName || 'Project').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`
       });
       
       toast.success("Report generated!", {
@@ -302,16 +312,30 @@ export const MESSAReportModal = ({
   };
 
   const handleBack = () => {
+    if (step === "checklist") {
+      setStep("select");
+      setSelectedTemplate(null);
+      setTasks([]);
+    } else if (step === "select" && !initialProjectId) {
+      setStep("project");
+      setSelectedProjectId(undefined);
+      setSelectedProjectName(undefined);
+    }
+  };
+
+  const handleSelectProject = (project: ProjectOption) => {
+    setSelectedProjectId(project.id);
+    setSelectedProjectName(project.name);
     setStep("select");
-    setSelectedTemplate(null);
-    setTasks([]);
   };
 
   const handleClose = () => {
     setOpen(false);
     // Reset after animation
     setTimeout(() => {
-      setStep("select");
+      setStep(initialProjectId ? "select" : "project");
+      setSelectedProjectId(initialProjectId);
+      setSelectedProjectName(initialProjectName);
       setSelectedTemplate(null);
       setTasks([]);
     }, 200);
@@ -330,7 +354,7 @@ export const MESSAReportModal = ({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {step === "checklist" && (
+            {(step === "checklist" || (step === "select" && !initialProjectId)) && (
               <Button variant="ghost" size="icon" className="h-8 w-8 mr-1" onClick={handleBack}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -339,9 +363,11 @@ export const MESSAReportModal = ({
             MESSA Quick-Log
           </DialogTitle>
           <DialogDescription>
-            {step === "select" 
-              ? "Select a template to create your inspection report"
-              : `${selectedTemplate?.icon} ${selectedTemplate?.name} - ${projectName}`
+            {step === "project" 
+              ? "Select a project to create your inspection report"
+              : step === "select" 
+              ? `Select a template for "${selectedProjectName}"`
+              : `${selectedTemplate?.icon} ${selectedTemplate?.name} - ${selectedProjectName}`
             }
           </DialogDescription>
         </DialogHeader>
@@ -356,7 +382,37 @@ export const MESSAReportModal = ({
           onChange={handleFileChange}
         />
 
-        {step === "select" ? (
+        {step === "project" ? (
+          /* Project Selection */
+          <ScrollArea className="max-h-[400px]">
+            <div className="grid gap-3 py-4">
+              {projects.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No projects available</p>
+                  <p className="text-sm mt-1">Create a project first to generate a MESSA report</p>
+                </div>
+              ) : (
+                projects.map((project) => (
+                  <button
+                    key={project.id}
+                    onClick={() => handleSelectProject(project)}
+                    className="flex items-center gap-3 p-4 rounded-xl border bg-card hover:border-amber-400 hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                      <FolderOpen className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground group-hover:text-amber-600 transition-colors truncate">
+                        {project.name}
+                      </h3>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        ) : step === "select" ? (
           /* Template Selection */
           <div className="grid gap-4 py-4">
             {MESSA_TEMPLATES.map((template) => (
@@ -383,7 +439,6 @@ export const MESSAReportModal = ({
             ))}
           </div>
         ) : (
-          /* Checklist View */
           <div className="flex flex-col flex-1 min-h-0">
             {/* Summary Bar */}
             <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg mb-4">
