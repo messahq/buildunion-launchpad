@@ -428,17 +428,25 @@ export const MESSAReportModal = ({
               </Button>
             </div>
 
-            {/* Task List */}
-            <ScrollArea className="flex-1 -mx-6 px-6">
+            {/* Task List - Native scroll with snap for mobile */}
+            <div 
+              className="flex-1 -mx-6 px-6 overflow-y-auto overscroll-contain scroll-smooth"
+              style={{ 
+                maxHeight: 'calc(85vh - 220px)',
+                scrollSnapType: 'y proximity',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
               <div className="space-y-3 pb-4">
                 {tasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`p-4 rounded-xl border transition-all ${
+                    className={`p-4 rounded-xl border transition-all scroll-snap-align-start ${
                       task.completed 
                         ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50' 
                         : 'bg-card border-border hover:border-amber-300'
                     }`}
+                    style={{ scrollSnapAlign: 'start' }}
                   >
                     <div className="flex items-start gap-3">
                       {/* Checkbox */}
@@ -515,7 +523,7 @@ export const MESSAReportModal = ({
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         )}
       </DialogContent>
