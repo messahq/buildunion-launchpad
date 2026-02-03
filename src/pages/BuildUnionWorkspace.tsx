@@ -893,19 +893,14 @@ const BuildUnionProjects2 = () => {
                   )}
                   
                   {/* MESSA Report Button */}
-                  {projects.length > 0 && (
-                    <MESSAReportModal
-                      projectId={sidebarProjectId || undefined}
-                      projectName={sidebarProjectId ? projects.find(p => p.id === sidebarProjectId)?.name : undefined}
-                      projects={projects.map(p => ({ id: p.id, name: p.name }))}
-                      trigger={
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Sparkles className="h-4 w-4 text-amber-500" />
-                          <span className="hidden sm:inline">MESSA Report</span>
-                        </Button>
-                      }
-                    />
-                  )}
+                  <MESSAReportModal
+                    trigger={
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <span className="hidden sm:inline">MESSA Report</span>
+                      </Button>
+                    }
+                  />
                   
                   <Button 
                     onClick={() => setShowQuestionnaire(true)}
