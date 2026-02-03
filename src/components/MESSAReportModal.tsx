@@ -21,7 +21,10 @@ import {
   Loader2,
   Download,
   ArrowLeft,
-  Save
+  Save,
+  Plus,
+  Trash2,
+  Pencil
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -41,6 +44,7 @@ interface MESSATask {
   photoUrl?: string;
   photoTimestamp?: string;
   performedBy?: string;
+  isCustom?: boolean;
 }
 
 interface MESSATemplate {
@@ -199,6 +203,37 @@ export const MESSAReportModal = ({
     ));
   };
 
+  // Edit task title
+  const handleTaskTitleChange = (taskId: string, title: string) => {
+    setTasks(prev => prev.map(task =>
+      task.id === taskId ? { ...task, title } : task
+    ));
+  };
+
+  // Edit task description
+  const handleTaskDescriptionChange = (taskId: string, description: string) => {
+    setTasks(prev => prev.map(task =>
+      task.id === taskId ? { ...task, description: description || undefined } : task
+    ));
+  };
+
+  // Add new custom task
+  const handleAddTask = () => {
+    const newTask: MESSATask = {
+      id: `custom-${Date.now()}`,
+      title: "New Task",
+      description: "",
+      completed: false,
+      isCustom: true,
+    };
+    setTasks(prev => [...prev, newTask]);
+  };
+
+  // Delete custom task
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+  };
+
   const completedCount = tasks.filter(t => t.completed).length;
   const photosCount = tasks.filter(t => t.photoUrl).length;
 
@@ -281,22 +316,29 @@ export const MESSAReportModal = ({
             .meta { color: #64748b; font-size: 14px; }
             .meta-row { display: flex; gap: 24px; margin-top: 8px; }
             .template-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 12px; }
-            .summary { background: #f8fafc; padding: 16px; border-radius: 8px; margin: 24px 0; display: flex; gap: 24px; }
-            .summary-item { text-align: center; }
+            .summary { background: #f8fafc; padding: 16px; border-radius: 8px; margin: 24px 0; display: flex; gap: 24px; flex-wrap: wrap; }
+            .summary-item { text-align: center; min-width: 80px; }
             .summary-value { font-size: 28px; font-weight: 700; color: #f59e0b; }
             .summary-label { font-size: 12px; color: #64748b; }
             .tasks { margin-top: 24px; }
-            .task { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; page-break-inside: avoid; }
-            .task-header { display: flex; align-items: center; gap: 12px; }
-            .task-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+            .task { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
+            .task-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+            .task-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
             .task-status.completed { background: #dcfce7; color: #166534; }
             .task-status.pending { background: #fef3c7; color: #92400e; }
-            .task-title { font-weight: 600; font-size: 14px; }
+            .task-title { font-weight: 600; font-size: 14px; flex: 1; }
+            .custom-badge { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 10px; font-weight: 500; margin-left: 8px; }
             .task-description { color: #64748b; font-size: 12px; margin-top: 4px; margin-left: 36px; }
-            .task-photo { margin-top: 12px; margin-left: 36px; }
-            .task-photo img { max-width: 300px; max-height: 200px; border-radius: 8px; border: 1px solid #e2e8f0; }
+            .task-photo { margin-top: 12px; margin-left: 36px; page-break-inside: avoid; break-inside: avoid; }
+            .task-photo img { max-width: 280px; max-height: 180px; border-radius: 8px; border: 1px solid #e2e8f0; }
             .task-timestamp { color: #64748b; font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+            .notes { margin-top: 24px; padding: 16px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; page-break-inside: avoid; break-inside: avoid; }
             .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 11px; }
+            @media print {
+              .task { page-break-inside: avoid; break-inside: avoid; }
+              .task-photo { page-break-inside: avoid; break-inside: avoid; }
+              .notes { page-break-inside: avoid; break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
@@ -335,7 +377,7 @@ export const MESSAReportModal = ({
                   <div class="task-status ${task.completed ? 'completed' : 'pending'}">
                     ${task.completed ? '✓' : '○'}
                   </div>
-                  <span class="task-title">${task.title}</span>
+                  <span class="task-title">${task.title}${task.isCustom ? '<span class="custom-badge">Custom</span>' : ''}</span>
                 </div>
                 ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
                 ${task.performedBy ? `<div class="task-description" style="margin-top: 4px;"><strong>Performed by:</strong> ${task.performedBy}</div>` : ''}
@@ -352,7 +394,7 @@ export const MESSAReportModal = ({
           </div>
           
           ${notes.trim() ? `
-          <div class="notes" style="margin-top: 24px; padding: 16px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px;">
+          <div class="notes">
             <h2 style="font-size: 16px; margin-bottom: 12px; color: #92400e; display: flex; align-items: center; gap: 8px;">
               📝 Notes & Observations
             </h2>
@@ -535,30 +577,51 @@ export const MESSAReportModal = ({
                       {/* Task Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                              {task.title}
-                            </p>
-                            {task.description && (
-                              <p className="text-sm text-muted-foreground mt-0.5">
-                                {task.description}
-                              </p>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            {/* Editable Title */}
+                            <Input
+                              value={task.title}
+                              onChange={(e) => handleTaskTitleChange(task.id, e.target.value)}
+                              className={`font-medium h-auto py-1 px-2 border-transparent hover:border-border focus:border-amber-400 bg-transparent ${
+                                task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                              }`}
+                              placeholder="Task title..."
+                            />
+                            {/* Editable Description */}
+                            <Input
+                              value={task.description || ""}
+                              onChange={(e) => handleTaskDescriptionChange(task.id, e.target.value)}
+                              className="text-sm h-auto py-1 px-2 mt-0.5 border-transparent hover:border-border focus:border-amber-400 bg-transparent text-muted-foreground"
+                              placeholder="Add description..."
+                            />
                           </div>
                           
-                          {/* Camera Button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-8 w-8 flex-shrink-0 ${
-                              task.photoUrl 
-                                ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' 
-                                : 'text-muted-foreground hover:text-amber-600'
-                            }`}
-                            onClick={() => handlePhotoUpload(task.id)}
-                          >
-                            <Camera className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {/* Delete Button for custom tasks */}
+                            {task.isCustom && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteTask(task.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {/* Camera Button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-8 w-8 ${
+                                task.photoUrl 
+                                  ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' 
+                                  : 'text-muted-foreground hover:text-amber-600'
+                              }`}
+                              onClick={() => handlePhotoUpload(task.id)}
+                            >
+                              <Camera className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
 
                         {/* Photo Preview */}
@@ -598,6 +661,15 @@ export const MESSAReportModal = ({
                     </div>
                   </div>
                 ))}
+                
+                {/* Add Task Button */}
+                <button
+                  onClick={handleAddTask}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-amber-300 hover:border-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-950/10 transition-all flex items-center justify-center gap-2 text-amber-600 hover:text-amber-700"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="font-medium">Add Custom Task</span>
+                </button>
               </div>
               
               {/* Notes Section */}
