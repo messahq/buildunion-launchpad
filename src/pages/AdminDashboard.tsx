@@ -65,9 +65,11 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import DatabaseSyncDashboard from "@/components/admin/DatabaseSyncDashboard";
 
 interface UserWithProfile {
   id: string;
@@ -396,7 +398,7 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
             <TabsTrigger value="overview" className="gap-2">
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -412,6 +414,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="moderation" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Moderation</span>
+            </TabsTrigger>
+            <TabsTrigger value="sync" className="gap-2">
+              <Database className="h-4 w-4" />
+              <span className="hidden sm:inline">DB Sync</span>
             </TabsTrigger>
           </TabsList>
 
@@ -794,6 +800,11 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Database Sync Tab */}
+          <TabsContent value="sync" className="space-y-6">
+            <DatabaseSyncDashboard />
           </TabsContent>
         </Tabs>
       </main>
