@@ -66,25 +66,25 @@ serve(async (req) => {
 
     logStep("Fetching all data", { table });
 
-    // Fetch ALL data using service role (bypasses RLS)
+    // Fetch ALL data using service role (bypasses RLS) - including archived records
     let query;
     
     if (table === "projects") {
       query = supabaseAdmin
         .from("projects")
-        .select("id, name, status, address, created_at, user_id")
+        .select("id, name, status, address, created_at, user_id, archived_at")
         .order("created_at", { ascending: false })
         .limit(500);
     } else if (table === "contracts") {
       query = supabaseAdmin
         .from("contracts")
-        .select("id, contract_number, project_name, client_name, status, total_amount, created_at, user_id")
+        .select("id, contract_number, project_name, client_name, status, total_amount, created_at, user_id, archived_at")
         .order("created_at", { ascending: false })
         .limit(500);
     } else {
       query = supabaseAdmin
         .from("project_tasks")
-        .select("id, title, status, priority, project_id, created_at, assigned_to, assigned_by")
+        .select("id, title, status, priority, project_id, created_at, assigned_to, assigned_by, archived_at")
         .order("created_at", { ascending: false })
         .limit(500);
     }
