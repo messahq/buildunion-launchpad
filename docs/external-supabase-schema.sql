@@ -4,22 +4,47 @@
 -- Run this in your Supabase Pro SQL Editor
 -- This creates all tables needed for the hybrid architecture
 -- lovable_user_id links records to Lovable Cloud auth users
+-- IDEMPOTENT: Safe to run multiple times
 
 -- ============================================
--- ENUMS
+-- ENUMS (Skip if already exists)
 -- ============================================
 
-CREATE TYPE public.project_status AS ENUM ('draft', 'active', 'completed', 'archived');
-CREATE TYPE public.contract_status AS ENUM ('draft', 'sent', 'viewed', 'signed', 'expired');
-CREATE TYPE public.task_status AS ENUM ('pending', 'in_progress', 'completed', 'blocked');
-CREATE TYPE public.task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
-CREATE TYPE public.project_role AS ENUM ('owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'member');
+DO $$ BEGIN
+  CREATE TYPE public.project_status AS ENUM ('draft', 'active', 'completed', 'archived');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.contract_status AS ENUM ('draft', 'sent', 'viewed', 'signed', 'expired');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.task_status AS ENUM ('pending', 'in_progress', 'completed', 'blocked');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.project_role AS ENUM ('owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'member');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================
 -- PROJECTS TABLE
 -- ============================================
 
-CREATE TABLE public.projects (
+CREATE TABLE IF NOT EXISTS public.projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lovable_user_id UUID NOT NULL, -- Links to Lovable Cloud auth.users
   name TEXT NOT NULL,
@@ -36,14 +61,14 @@ CREATE TABLE public.projects (
 );
 
 -- Index for fast user lookups
-CREATE INDEX idx_projects_lovable_user ON public.projects(lovable_user_id);
-CREATE INDEX idx_projects_status ON public.projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_lovable_user ON public.projects(lovable_user_id);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON public.projects(status);
 
 -- ============================================
 -- PROJECT SUMMARIES TABLE
 -- ============================================
 
-CREATE TABLE public.project_summaries (
+CREATE TABLE IF NOT EXISTS public.project_summaries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
   lovable_user_id UUID NOT NULL,
@@ -90,14 +115,14 @@ CREATE TABLE public.project_summaries (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_summaries_project ON public.project_summaries(project_id);
-CREATE INDEX idx_summaries_user ON public.project_summaries(lovable_user_id);
+CREATE INDEX IF NOT EXISTS idx_summaries_project ON public.project_summaries(project_id);
+CREATE INDEX IF NOT EXISTS idx_summaries_user ON public.project_summaries(lovable_user_id);
 
 -- ============================================
 -- PROJECT MEMBERS TABLE
 -- ============================================
 
-CREATE TABLE public.project_members (
+CREATE TABLE IF NOT EXISTS public.project_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   user_id UUID NOT NULL, -- Can be Lovable user_id or external
@@ -106,14 +131,14 @@ CREATE TABLE public.project_members (
   UNIQUE(project_id, user_id)
 );
 
-CREATE INDEX idx_members_project ON public.project_members(project_id);
-CREATE INDEX idx_members_user ON public.project_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_members_project ON public.project_members(project_id);
+CREATE INDEX IF NOT EXISTS idx_members_user ON public.project_members(user_id);
 
 -- ============================================
 -- PROJECT TASKS TABLE
 -- ============================================
 
-CREATE TABLE public.project_tasks (
+CREATE TABLE IF NOT EXISTS public.project_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
@@ -130,15 +155,15 @@ CREATE TABLE public.project_tasks (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_tasks_project ON public.project_tasks(project_id);
-CREATE INDEX idx_tasks_assigned ON public.project_tasks(assigned_to);
-CREATE INDEX idx_tasks_status ON public.project_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_project ON public.project_tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON public.project_tasks(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON public.project_tasks(status);
 
 -- ============================================
 -- PROJECT DOCUMENTS TABLE
 -- ============================================
 
-CREATE TABLE public.project_documents (
+CREATE TABLE IF NOT EXISTS public.project_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   file_name TEXT NOT NULL,
@@ -149,13 +174,13 @@ CREATE TABLE public.project_documents (
   uploaded_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_documents_project ON public.project_documents(project_id);
+CREATE INDEX IF NOT EXISTS idx_documents_project ON public.project_documents(project_id);
 
 -- ============================================
 -- CONTRACTS TABLE
 -- ============================================
 
-CREATE TABLE public.contracts (
+CREATE TABLE IF NOT EXISTS public.contracts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lovable_user_id UUID NOT NULL,
   project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
@@ -218,16 +243,16 @@ CREATE TABLE public.contracts (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_contracts_user ON public.contracts(lovable_user_id);
-CREATE INDEX idx_contracts_project ON public.contracts(project_id);
-CREATE INDEX idx_contracts_status ON public.contracts(status);
-CREATE INDEX idx_contracts_share_token ON public.contracts(share_token);
+CREATE INDEX IF NOT EXISTS idx_contracts_user ON public.contracts(lovable_user_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_project ON public.contracts(project_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_status ON public.contracts(status);
+CREATE INDEX IF NOT EXISTS idx_contracts_share_token ON public.contracts(share_token);
 
 -- ============================================
 -- CONTRACT EVENTS TABLE (Audit Log)
 -- ============================================
 
-CREATE TABLE public.contract_events (
+CREATE TABLE IF NOT EXISTS public.contract_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE NOT NULL,
   event_type TEXT NOT NULL, -- 'viewed', 'signed', 'sent', 'expired'
@@ -237,14 +262,14 @@ CREATE TABLE public.contract_events (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_contract_events_contract ON public.contract_events(contract_id);
-CREATE INDEX idx_contract_events_type ON public.contract_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_contract_events_contract ON public.contract_events(contract_id);
+CREATE INDEX IF NOT EXISTS idx_contract_events_type ON public.contract_events(event_type);
 
 -- ============================================
 -- BASELINE VERSIONS TABLE
 -- ============================================
 
-CREATE TABLE public.baseline_versions (
+CREATE TABLE IF NOT EXISTS public.baseline_versions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   summary_id UUID REFERENCES public.project_summaries(id) ON DELETE CASCADE NOT NULL,
@@ -257,13 +282,13 @@ CREATE TABLE public.baseline_versions (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_baseline_project ON public.baseline_versions(project_id);
+CREATE INDEX IF NOT EXISTS idx_baseline_project ON public.baseline_versions(project_id);
 
 -- ============================================
 -- TEAM INVITATIONS TABLE
 -- ============================================
 
-CREATE TABLE public.team_invitations (
+CREATE TABLE IF NOT EXISTS public.team_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   email TEXT NOT NULL,
@@ -275,9 +300,9 @@ CREATE TABLE public.team_invitations (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_invitations_project ON public.team_invitations(project_id);
-CREATE INDEX idx_invitations_email ON public.team_invitations(email);
-CREATE INDEX idx_invitations_token ON public.team_invitations(invitation_token);
+CREATE INDEX IF NOT EXISTS idx_invitations_project ON public.team_invitations(project_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_email ON public.team_invitations(email);
+CREATE INDEX IF NOT EXISTS idx_invitations_token ON public.team_invitations(invitation_token);
 
 -- ============================================
 -- UPDATED_AT TRIGGER FUNCTION
@@ -291,16 +316,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply trigger to all tables with updated_at
+-- Apply triggers (DROP IF EXISTS first to avoid errors)
+DROP TRIGGER IF EXISTS update_projects_updated_at ON public.projects;
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_summaries_updated_at ON public.project_summaries;
 CREATE TRIGGER update_summaries_updated_at BEFORE UPDATE ON public.project_summaries
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_tasks_updated_at ON public.project_tasks;
 CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON public.project_tasks
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_contracts_updated_at ON public.contracts;
 CREATE TRIGGER update_contracts_updated_at BEFORE UPDATE ON public.contracts
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
@@ -322,6 +351,12 @@ ALTER TABLE public.team_invitations ENABLE ROW LEVEL SECURITY;
 -- IMPORTANT: Since we're using Service Role Key from Lovable Edge Function,
 -- RLS is bypassed. The Edge Function handles authorization.
 -- These policies are for direct Supabase client access if needed later.
+
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Users can manage own projects" ON public.projects;
+DROP POLICY IF EXISTS "Users can manage own summaries" ON public.project_summaries;
+DROP POLICY IF EXISTS "Users can manage own contracts" ON public.contracts;
+DROP POLICY IF EXISTS "Users can view own contract events" ON public.contract_events;
 
 -- Projects: Owner access
 CREATE POLICY "Users can manage own projects" ON public.projects
@@ -349,12 +384,21 @@ CREATE POLICY "Users can view own contract events" ON public.contract_events
 -- Note: Service Role Key automatically bypasses RLS
 
 -- ============================================
--- REALTIME (Optional)
+-- REALTIME (Optional - skip if already added)
 -- ============================================
 
--- Enable realtime for contracts
-ALTER PUBLICATION supabase_realtime ADD TABLE public.contracts;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.project_tasks;
+-- Note: These may fail if already added, which is fine
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.contracts;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.project_tasks;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================
 -- DONE!
