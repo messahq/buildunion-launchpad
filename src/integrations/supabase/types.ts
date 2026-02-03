@@ -948,6 +948,48 @@ export type Database = {
         }
         Relationships: []
       }
+      site_logs: {
+        Row: {
+          completed_count: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          photos_count: number | null
+          report_name: string
+          tasks_data: Json | null
+          template_type: string
+          total_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_count?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photos_count?: number | null
+          report_name: string
+          tasks_data?: Json | null
+          template_type: string
+          total_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_count?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photos_count?: number | null
+          report_name?: string
+          tasks_data?: Json | null
+          template_type?: string
+          total_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       task_templates: {
         Row: {
           category: string
