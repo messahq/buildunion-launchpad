@@ -893,31 +893,36 @@ const BuildUnionProjects2 = () => {
                   )}
                   
                   {/* MESSA Report Button */}
-                  {projects.length > 0 && sidebarProjectId && (
-                    <MESSAReportModal
-                      projectId={sidebarProjectId}
-                      projectName={projects.find(p => p.id === sidebarProjectId)?.name || "Project"}
-                      trigger={
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Sparkles className="h-4 w-4 text-amber-500" />
-                          <span className="hidden sm:inline">MESSA Report</span>
-                        </Button>
-                      }
-                    />
-                  )}
-                  
-                  {/* Export Button (when no project selected) */}
-                  {projects.length > 0 && !sidebarProjectId && (
-                    <ExportDialog
-                      dataType="projects"
-                      onExport={handleProjectExport}
-                      trigger={
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Download className="h-4 w-4" />
-                          <span className="hidden sm:inline">{t("workspace.export")}</span>
-                        </Button>
-                      }
-                    />
+                  {projects.length > 0 && (
+                    sidebarProjectId ? (
+                      <MESSAReportModal
+                        projectId={sidebarProjectId}
+                        projectName={projects.find(p => p.id === sidebarProjectId)?.name || "Project"}
+                        trigger={
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <Sparkles className="h-4 w-4 text-amber-500" />
+                            <span className="hidden sm:inline">MESSA Report</span>
+                          </Button>
+                        }
+                      />
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="gap-2"
+                            onClick={() => toast.info("Válassz ki egy projektet a MESSA Report generálásához")}
+                          >
+                            <Sparkles className="h-4 w-4 text-amber-500" />
+                            <span className="hidden sm:inline">MESSA Report</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Válassz ki egy projektet</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )
                   )}
                   
                   <Button 
