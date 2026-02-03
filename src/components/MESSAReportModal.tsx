@@ -29,7 +29,7 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
-import { downloadPDF } from "@/lib/pdfGenerator";
+import { downloadPDF, generatePDFBlob } from "@/lib/pdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -497,12 +497,53 @@ export const MESSAReportModal = ({
         </html>
       `;
       
-      await downloadPDF(htmlContent, {
-        filename: `MESSA-${selectedTemplate.name.replace(/\s+/g, '-')}-${displayClientName.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`
-      });
+      const pdfFilename = `MESSA-${selectedTemplate.name.replace(/\s+/g, '-')}-${displayClientName.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
       
-      toast.success("Report generated & saved!", {
-        description: "PDF downloaded and saved to database"
+      // Generate PDF blob
+      const pdfBlob = await generatePDFBlob(htmlContent, { filename: pdfFilename });
+      
+      // Upload to Supabase storage
+      let pdfUrl: string | null = null;
+      if (session?.user?.id) {
+        const storagePath = `${session.user.id}/${pdfFilename}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('site-log-pdfs')
+          .upload(storagePath, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+        
+        if (uploadError) {
+          console.error('PDF upload error:', uploadError);
+        } else {
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('site-log-pdfs')
+            .getPublicUrl(storagePath);
+          pdfUrl = urlData.publicUrl;
+          
+          // Update site_logs with PDF URL
+          if (savedLogId) {
+            await supabase
+              .from('site_logs')
+              .update({ pdf_url: pdfUrl })
+              .eq('id', savedLogId);
+          }
+        }
+      }
+      
+      // Download the PDF locally as well
+      const downloadUrl = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = pdfFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+      
+      toast.success("Report generated & uploaded!", {
+        description: pdfUrl ? "PDF saved to cloud and downloaded" : "PDF downloaded"
       });
     } catch (error) {
       console.error("PDF generation error:", error);

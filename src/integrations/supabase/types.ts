@@ -954,6 +954,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          pdf_url: string | null
           photos_count: number | null
           report_name: string
           tasks_data: Json | null
@@ -967,6 +968,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          pdf_url?: string | null
           photos_count?: number | null
           report_name: string
           tasks_data?: Json | null
@@ -980,6 +982,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          pdf_url?: string | null
           photos_count?: number | null
           report_name?: string
           tasks_data?: Json | null
