@@ -9,6 +9,22 @@ const TRIAL_LIMITS: Record<string, number> = {
   quick_estimate: 3,
   project_creation: 1,
   messa_brief: 3, // Free tier: 3 trial briefs
+  messa_quick_log: 3, // Free tier: 3 reports/month (monthly reset)
+};
+
+// Features that reset monthly
+const MONTHLY_RESET_FEATURES = ['messa_quick_log'];
+
+// Check if last_used is from a previous month
+const shouldResetMonthly = (lastUsed: string | null, feature: string): boolean => {
+  if (!MONTHLY_RESET_FEATURES.includes(feature)) return false;
+  if (!lastUsed) return false;
+  
+  const lastUsedDate = new Date(lastUsed);
+  const now = new Date();
+  
+  return lastUsedDate.getMonth() !== now.getMonth() || 
+         lastUsedDate.getFullYear() !== now.getFullYear();
 };
 
 const getDefaultMaxTrials = (feature: string): number => {
@@ -66,11 +82,27 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
       if (error) throw error;
 
       if (data) {
-        setTrialData({
-          usedCount: data.used_count,
-          maxAllowed: data.max_allowed,
-          lastUsed: data.last_used,
-        });
+        // Check if monthly reset is needed
+        if (shouldResetMonthly(data.last_used, feature)) {
+          // Reset the counter in database
+          await supabase
+            .from("user_trials")
+            .update({ used_count: 0, last_used: null })
+            .eq("user_id", user.id)
+            .eq("feature", feature);
+          
+          setTrialData({
+            usedCount: 0,
+            maxAllowed: data.max_allowed,
+            lastUsed: null,
+          });
+        } else {
+          setTrialData({
+            usedCount: data.used_count,
+            maxAllowed: data.max_allowed,
+            lastUsed: data.last_used,
+          });
+        }
       } else {
         // No record yet - user has full trials available
         setTrialData({
