@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Folder, Plus, Calendar, FileText, Loader2, Trash2, Users, Zap, ArrowRight } from "lucide-react";
+import { Folder, Plus, Calendar, FileText, Loader2, Trash2, Users, Zap, ArrowRight, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ interface Project {
   template_type?: string;
   completed_count?: number;
   total_count?: number;
+  pdf_url?: string;
 }
 
 interface DraftData {
@@ -85,7 +86,7 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
         // Fetch site logs (MESSA reports)
         const { data: siteLogs, error: siteLogsError } = await supabase
           .from("site_logs")
-          .select("id, report_name, template_type, created_at, updated_at, completed_count, total_count, notes")
+          .select("id, report_name, template_type, created_at, updated_at, completed_count, total_count, notes, pdf_url")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
 
@@ -106,6 +107,7 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
           template_type: log.template_type,
           completed_count: log.completed_count,
           total_count: log.total_count,
+          pdf_url: log.pdf_url,
         }));
         
         console.log("Site logs fetched:", siteLogs?.length || 0, "items");
@@ -433,6 +435,20 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
                           <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-[10px]">
                             Site Log
                           </Badge>
+                          {project.pdf_url && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-purple-600 hover:bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(project.pdf_url, '_blank');
+                              }}
+                              title="Download PDF"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
