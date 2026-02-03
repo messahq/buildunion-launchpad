@@ -150,7 +150,7 @@ export const MESSAReportModal = ({
 
   // Auto-generate report name based on template and date
   const getReportName = () => {
-    if (!selectedTemplate) return "MESSA Report";
+    if (!selectedTemplate) return "Quick Log";
     const dateStr = format(new Date(), "MMM d, yyyy");
     return `${selectedTemplate.name} - ${dateStr}`;
   };
@@ -641,7 +641,7 @@ export const MESSAReportModal = ({
         {trigger || (
           <Button variant="outline" size="sm" className="gap-2">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <span className="hidden sm:inline">MESSA Report</span>
+            <span className="hidden sm:inline">Quick Log</span>
           </Button>
         )}
       </DialogTrigger>

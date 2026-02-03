@@ -892,12 +892,12 @@ const BuildUnionProjects2 = () => {
                     </span>
                   )}
                   
-                  {/* MESSA Report Button */}
+                  {/* Quick Log Button */}
                   <MESSAReportModal
                     trigger={
                       <Button variant="outline" size="sm" className="gap-2">
                         <Sparkles className="h-4 w-4 text-amber-500" />
-                        <span className="hidden sm:inline">MESSA Report</span>
+                        <span className="hidden sm:inline">Quick Log</span>
                       </Button>
                     }
                   />
