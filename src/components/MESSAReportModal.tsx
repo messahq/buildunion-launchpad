@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { 
   FileText, 
   Sparkles, 
@@ -38,6 +39,7 @@ interface MESSATask {
   completed: boolean;
   photoUrl?: string;
   photoTimestamp?: string;
+  performedBy?: string;
 }
 
 interface MESSATemplate {
@@ -127,7 +129,8 @@ export const MESSAReportModal = ({
 }: MESSAReportModalProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"project" | "select" | "checklist">(initialProjectId ? "select" : "project");
+  // NEW FLOW: template → project → checklist
+  const [step, setStep] = useState<"template" | "project" | "checklist">("template");
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(initialProjectId);
   const [selectedProjectName, setSelectedProjectName] = useState<string | undefined>(initialProjectName);
   const [selectedTemplate, setSelectedTemplate] = useState<MESSATemplate | null>(null);
@@ -136,14 +139,37 @@ export const MESSAReportModal = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
 
+  // Step 1: Select template first, then go to project selection
   const handleSelectTemplate = (template: MESSATemplate) => {
     setSelectedTemplate(template);
-    setTasks(template.tasks.map(t => ({
-      ...t,
-      completed: false,
-      photoUrl: undefined,
-      photoTimestamp: undefined,
-    })));
+    // If project already selected (from sidebar), skip to checklist
+    if (initialProjectId) {
+      setTasks(template.tasks.map(t => ({
+        ...t,
+        completed: false,
+        photoUrl: undefined,
+        photoTimestamp: undefined,
+        performedBy: undefined,
+      })));
+      setStep("checklist");
+    } else {
+      setStep("project");
+    }
+  };
+
+  // Step 2: Select project, then load tasks and go to checklist
+  const handleSelectProject = (project: ProjectOption) => {
+    setSelectedProjectId(project.id);
+    setSelectedProjectName(project.name);
+    if (selectedTemplate) {
+      setTasks(selectedTemplate.tasks.map(t => ({
+        ...t,
+        completed: false,
+        photoUrl: undefined,
+        photoTimestamp: undefined,
+        performedBy: undefined,
+      })));
+    }
     setStep("checklist");
   };
 
@@ -277,6 +303,7 @@ export const MESSAReportModal = ({
                   <span class="task-title">${task.title}</span>
                 </div>
                 ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                ${task.performedBy ? `<div class="task-description" style="margin-top: 4px;"><strong>Performed by:</strong> ${task.performedBy}</div>` : ''}
                 ${task.photoUrl ? `
                   <div class="task-photo">
                     <img src="${task.photoUrl}" alt="Task photo" />
@@ -313,32 +340,32 @@ export const MESSAReportModal = ({
 
   const handleBack = () => {
     if (step === "checklist") {
-      setStep("select");
-      setSelectedTemplate(null);
-      setTasks([]);
-    } else if (step === "select" && !initialProjectId) {
       setStep("project");
+      setTasks([]);
+    } else if (step === "project") {
+      setStep("template");
+      setSelectedTemplate(null);
       setSelectedProjectId(undefined);
       setSelectedProjectName(undefined);
     }
-  };
-
-  const handleSelectProject = (project: ProjectOption) => {
-    setSelectedProjectId(project.id);
-    setSelectedProjectName(project.name);
-    setStep("select");
   };
 
   const handleClose = () => {
     setOpen(false);
     // Reset after animation
     setTimeout(() => {
-      setStep(initialProjectId ? "select" : "project");
+      setStep("template");
       setSelectedProjectId(initialProjectId);
       setSelectedProjectName(initialProjectName);
       setSelectedTemplate(null);
       setTasks([]);
     }, 200);
+  };
+
+  const handlePerformedByChange = (taskId: string, value: string) => {
+    setTasks(prev => prev.map(task =>
+      task.id === taskId ? { ...task, performedBy: value } : task
+    ));
   };
 
   return (
@@ -354,7 +381,7 @@ export const MESSAReportModal = ({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {(step === "checklist" || (step === "select" && !initialProjectId)) && (
+            {(step === "checklist" || step === "project") && (
               <Button variant="ghost" size="icon" className="h-8 w-8 mr-1" onClick={handleBack}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -363,10 +390,10 @@ export const MESSAReportModal = ({
             MESSA Quick-Log
           </DialogTitle>
           <DialogDescription>
-            {step === "project" 
-              ? "Select a project to create your inspection report"
-              : step === "select" 
-              ? `Select a template for "${selectedProjectName}"`
+            {step === "template" 
+              ? "Step 1: Select a template for your inspection"
+              : step === "project" 
+              ? `Step 2: Select a project for "${selectedTemplate?.name}"`
               : `${selectedTemplate?.icon} ${selectedTemplate?.name} - ${selectedProjectName}`
             }
           </DialogDescription>
@@ -382,8 +409,34 @@ export const MESSAReportModal = ({
           onChange={handleFileChange}
         />
 
-        {step === "project" ? (
-          /* Project Selection */
+        {step === "template" ? (
+          /* Step 1: Template Selection */
+          <div className="grid gap-4 py-4">
+            {MESSA_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                onClick={() => handleSelectTemplate(template)}
+                className="flex items-start gap-4 p-4 rounded-xl border bg-card hover:border-amber-400 hover:shadow-md transition-all text-left group"
+              >
+                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${template.color} flex items-center justify-center text-2xl shadow-sm`}>
+                  {template.icon}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground group-hover:text-amber-600 transition-colors">
+                    {template.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {template.description}
+                  </p>
+                  <Badge variant="secondary" className="mt-2 text-xs">
+                    {template.tasks.length} tasks
+                  </Badge>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : step === "project" ? (
+          /* Step 2: Project Selection */
           <ScrollArea className="max-h-[400px]">
             <div className="grid gap-3 py-4">
               {projects.length === 0 ? (
@@ -412,32 +465,6 @@ export const MESSAReportModal = ({
               )}
             </div>
           </ScrollArea>
-        ) : step === "select" ? (
-          /* Template Selection */
-          <div className="grid gap-4 py-4">
-            {MESSA_TEMPLATES.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => handleSelectTemplate(template)}
-                className="flex items-start gap-4 p-4 rounded-xl border bg-card hover:border-amber-400 hover:shadow-md transition-all text-left group"
-              >
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${template.color} flex items-center justify-center text-2xl shadow-sm`}>
-                  {template.icon}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground group-hover:text-amber-600 transition-colors">
-                    {template.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {template.description}
-                  </p>
-                  <Badge variant="secondary" className="mt-2 text-xs">
-                    {template.tasks.length} tasks
-                  </Badge>
-                </div>
-              </button>
-            ))}
-          </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
             {/* Summary Bar */}
@@ -538,6 +565,17 @@ export const MESSAReportModal = ({
                             )}
                           </div>
                         )}
+
+                        {/* Performed By Field */}
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">Performed by:</span>
+                          <Input
+                            placeholder="Enter name..."
+                            value={task.performedBy || ""}
+                            onChange={(e) => handlePerformedByChange(task.id, e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
