@@ -111,12 +111,12 @@ const BuildUnionProjects2 = () => {
     }
 
     const loadProjects = async () => {
-      // Load my active projects (not archived)
+      // Load my active projects (not archived) - use archived_at for soft delete
       const { data: myProjectsData, error: myError } = await supabase
         .from("projects")
         .select("id, name, address, trade, status, description, created_at")
         .eq("user_id", user.id)
-        .neq("status", "archived")
+        .is("archived_at", null)
         .order("created_at", { ascending: false });
 
       if (myError) {
@@ -126,12 +126,12 @@ const BuildUnionProjects2 = () => {
         setProjects(myProjectsData || []);
       }
 
-      // Load archived projects
+      // Load archived projects - use archived_at for soft delete
       const { data: archivedData, error: archivedError } = await supabase
         .from("projects")
-        .select("id, name, address, trade, status, description, created_at")
+        .select("id, name, address, trade, status, description, created_at, archived_at")
         .eq("user_id", user.id)
-        .eq("status", "archived")
+        .not("archived_at", "is", null)
         .order("created_at", { ascending: false });
 
       if (!archivedError && archivedData) {
@@ -1063,33 +1063,57 @@ const BuildUnionProjects2 = () => {
                           <div className="lg:col-span-2 space-y-4">
                             {projects.map((project) => {
                               const handleArchive = async () => {
+                                const archivedAt = new Date().toISOString();
+                                // Soft delete - set archived_at timestamp
                                 const { error } = await supabase
                                   .from("projects")
-                                  .update({ status: "archived" })
+                                  .update({ archived_at: archivedAt })
                                   .eq("id", project.id);
                                 
                                 if (error) {
                                   toast.error(t("archive.archiveFailed", "Failed to archive project"));
                                 } else {
+                                  // Also cascade to related contracts and tasks
+                                  await supabase
+                                    .from("contracts")
+                                    .update({ archived_at: archivedAt })
+                                    .eq("project_id", project.id);
+                                  await supabase
+                                    .from("project_tasks")
+                                    .update({ archived_at: archivedAt })
+                                    .eq("project_id", project.id);
+                                  
                                   setProjects(prev => prev.filter(p => p.id !== project.id));
-                                  setArchivedProjects(prev => [{ ...project, status: "archived" }, ...prev]);
+                                  setArchivedProjects(prev => [{ ...project, archived_at: archivedAt } as any, ...prev]);
                                   if (sidebarProjectId === project.id) setSidebarProjectId(null);
                                   toast.success(t("archive.projectArchived", "Project moved to archive"));
                                 }
                               };
 
                               const handleDelete = async () => {
+                                // Soft delete via archive
+                                const archivedAt = new Date().toISOString();
                                 const { error } = await supabase
                                   .from("projects")
-                                  .delete()
+                                  .update({ archived_at: archivedAt })
                                   .eq("id", project.id);
                                 
                                 if (error) {
                                   toast.error(t("workspace.deleteFailed", "Failed to delete project"));
                                 } else {
+                                  // Cascade to related entities
+                                  await supabase
+                                    .from("contracts")
+                                    .update({ archived_at: archivedAt })
+                                    .eq("project_id", project.id);
+                                  await supabase
+                                    .from("project_tasks")
+                                    .update({ archived_at: archivedAt })
+                                    .eq("project_id", project.id);
+                                  
                                   setProjects(prev => prev.filter(p => p.id !== project.id));
                                   if (sidebarProjectId === project.id) setSidebarProjectId(null);
-                                  toast.success(t("workspace.projectDeleted", "Project deleted"));
+                                  toast.success(t("workspace.projectDeleted", "Project archived"));
                                 }
                               };
 
@@ -1479,34 +1503,35 @@ const BuildUnionProjects2 = () => {
                         <div className="space-y-4">
                           {archivedProjects.map((project) => {
                             const handleRestore = async () => {
+                              // Restore by clearing archived_at
                               const { error } = await supabase
                                 .from("projects")
-                                .update({ status: "active" })
+                                .update({ archived_at: null })
                                 .eq("id", project.id);
                               
                               if (error) {
                                 toast.error(t("archive.restoreFailed", "Failed to restore project"));
                               } else {
+                                // Also restore related contracts and tasks
+                                await supabase
+                                  .from("contracts")
+                                  .update({ archived_at: null })
+                                  .eq("project_id", project.id);
+                                await supabase
+                                  .from("project_tasks")
+                                  .update({ archived_at: null })
+                                  .eq("project_id", project.id);
+                                
                                 setArchivedProjects(prev => prev.filter(p => p.id !== project.id));
-                                setProjects(prev => [{ ...project, status: "active" }, ...prev]);
+                                setProjects(prev => [{ ...project, archived_at: null } as any, ...prev]);
                                 toast.success(t("archive.projectRestored", "Project restored"));
                               }
                             };
 
                             const handlePermanentDelete = async () => {
-                              if (!confirm(`${t("archive.deletePermanently", "Delete permanently")} "${project.name}"? ${t("workspace.cannotUndo", "This cannot be undone.")}`)) return;
-                              
-                              const { error } = await supabase
-                                .from("projects")
-                                .delete()
-                                .eq("id", project.id);
-                              
-                              if (error) {
-                                toast.error(t("workspace.deleteFailed", "Failed to delete project"));
-                              } else {
-                                setArchivedProjects(prev => prev.filter(p => p.id !== project.id));
-                                toast.success(t("workspace.projectDeleted", "Project deleted permanently"));
-                              }
+                              // Note: RLS prevents actual deletion - this will fail for non-admins
+                              // which is by design to preserve Operational Truth
+                              toast.info(t("archive.cannotDelete", "Projects cannot be permanently deleted to preserve data integrity"));
                             };
 
                             return (
