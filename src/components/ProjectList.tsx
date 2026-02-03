@@ -89,6 +89,10 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
 
+        if (siteLogsError) {
+          console.error("Error fetching site logs:", siteLogsError);
+        }
+
         // Transform site logs to project-like format
         const siteLogProjects: Project[] = (siteLogs || []).map(log => ({
           id: log.id,
@@ -103,6 +107,8 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
           completed_count: log.completed_count,
           total_count: log.total_count,
         }));
+        
+        console.log("Site logs fetched:", siteLogs?.length || 0, "items");
 
         // Fetch shared projects (where user is a member)
         const { data: memberships, error: memberError } = await supabase

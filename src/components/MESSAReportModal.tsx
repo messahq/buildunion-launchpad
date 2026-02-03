@@ -132,6 +132,7 @@ export const MESSAReportModal = ({
   const [saving, setSaving] = useState(false);
   const [notes, setNotes] = useState("");
   const [clientName, setClientName] = useState("");
+  const [unitArea, setUnitArea] = useState("");
   const [savedLogId, setSavedLogId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
@@ -154,6 +155,7 @@ export const MESSAReportModal = ({
     })));
     setNotes("");
     setClientName("");
+    setUnitArea("");
     setSavedLogId(null);
     setStep("checklist");
   };
@@ -260,6 +262,7 @@ export const MESSAReportModal = ({
         tasks_data: JSON.parse(JSON.stringify({ 
           tasks,
           clientName: clientName.trim() || null,
+          unitArea: unitArea.trim() || null,
         })),
         completed_count: completedCount,
         total_count: tasks.length,
@@ -276,6 +279,7 @@ export const MESSAReportModal = ({
             tasks_data: JSON.parse(JSON.stringify({ 
               tasks,
               clientName: clientName.trim() || null,
+              unitArea: unitArea.trim() || null,
             })),
             completed_count: completedCount,
             photos_count: photosCount,
@@ -325,6 +329,7 @@ export const MESSAReportModal = ({
       
       const reportDate = format(new Date(), "MMMM d, yyyy 'at' HH:mm");
       const displayClientName = clientName.trim();
+      const displayUnitArea = unitArea.trim();
       
       const htmlContent = `
         <!DOCTYPE html>
@@ -334,42 +339,42 @@ export const MESSAReportModal = ({
           <title>MESSA Quick-Log Report</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; padding: 32px; }
-            .header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #f59e0b; page-break-inside: avoid; break-inside: avoid; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; padding: 32px; line-height: 1.4; }
+            .header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #f59e0b; }
             .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
             .logo-icon { font-size: 32px; }
             .logo-text { font-size: 24px; font-weight: 700; color: #f59e0b; }
             h1 { font-size: 20px; color: #1a1a1a; margin-bottom: 8px; }
             .client-info { background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; }
-            .client-name { font-size: 18px; font-weight: 700; color: #92400e; }
-            .client-date { font-size: 14px; color: #a16207; margin-top: 4px; }
+            .client-row { display: flex; gap: 32px; flex-wrap: wrap; }
+            .client-item { }
+            .client-label { font-size: 11px; color: #a16207; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+            .client-value { font-size: 16px; font-weight: 700; color: #92400e; }
+            .client-date { font-size: 13px; color: #a16207; margin-top: 8px; padding-top: 8px; border-top: 1px solid #fbbf24; }
             .meta { color: #64748b; font-size: 14px; }
-            .meta-row { display: flex; gap: 24px; margin-top: 8px; }
             .template-badge { display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; border-radius: 6px; font-size: 12px; font-weight: 600; margin-top: 12px; }
-            .summary { background: #f8fafc; padding: 16px; border-radius: 8px; margin: 24px 0; display: flex; gap: 24px; flex-wrap: wrap; page-break-inside: avoid; break-inside: avoid; }
+            .summary { background: #f8fafc; padding: 16px; border-radius: 8px; margin: 24px 0; display: flex; gap: 24px; flex-wrap: wrap; }
             .summary-item { text-align: center; min-width: 80px; }
             .summary-value { font-size: 28px; font-weight: 700; color: #f59e0b; }
             .summary-label { font-size: 12px; color: #64748b; }
             .tasks { margin-top: 24px; }
-            .task { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; break-after: auto; }
-            .task-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-            .task-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+            .tasks-title { font-size: 16px; margin-bottom: 16px; color: #475569; }
+            .task { padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px; page-break-inside: avoid; break-inside: avoid; }
+            .task-header { display: flex; align-items: flex-start; gap: 12px; }
+            .task-status { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 2px; }
             .task-status.completed { background: #dcfce7; color: #166534; }
             .task-status.pending { background: #fef3c7; color: #92400e; }
-            .task-title { font-weight: 600; font-size: 14px; flex: 1; }
-            .custom-badge { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 10px; font-weight: 500; margin-left: 8px; }
-            .task-description { color: #64748b; font-size: 12px; margin-top: 4px; margin-left: 36px; }
-            .task-photo { margin-top: 12px; margin-left: 36px; page-break-inside: avoid; break-inside: avoid; }
-            .task-photo img { max-width: 280px; max-height: 180px; border-radius: 8px; border: 1px solid #e2e8f0; display: block; }
-            .task-timestamp { color: #64748b; font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+            .task-content { flex: 1; min-width: 0; }
+            .task-title { font-weight: 600; font-size: 13px; color: #1a1a1a; word-wrap: break-word; }
+            .custom-badge { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 10px; font-weight: 500; margin-left: 8px; vertical-align: middle; }
+            .task-description { color: #64748b; font-size: 12px; margin-top: 4px; word-wrap: break-word; }
+            .task-photo { margin-top: 12px; page-break-inside: avoid; break-inside: avoid; }
+            .task-photo img { max-width: 260px; max-height: 160px; border-radius: 8px; border: 1px solid #e2e8f0; display: block; }
+            .task-timestamp { color: #64748b; font-size: 11px; margin-top: 4px; }
             .notes { margin-top: 24px; padding: 16px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; page-break-inside: avoid; break-inside: avoid; }
-            .notes h2 { font-size: 16px; margin-bottom: 12px; color: #92400e; display: flex; align-items: center; gap: 8px; }
+            .notes h2 { font-size: 16px; margin-bottom: 12px; color: #92400e; }
             .notes p { color: #1a1a1a; font-size: 14px; white-space: pre-wrap; line-height: 1.6; }
-            .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 11px; page-break-inside: avoid; }
-            @media print {
-              .task, .notes, .summary, .header, .task-photo { page-break-inside: avoid !important; break-inside: avoid !important; }
-              .task { orphans: 3; widows: 3; }
-            }
+            .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 11px; }
           </style>
         </head>
         <body>
@@ -379,8 +384,19 @@ export const MESSAReportModal = ({
               <span class="logo-text">MESSA Quick-Log</span>
             </div>
             <div class="client-info">
-              <div class="client-name">${displayClientName}</div>
-              <div class="client-date">${reportDate}</div>
+              <div class="client-row">
+                <div class="client-item">
+                  <div class="client-label">Client</div>
+                  <div class="client-value">${displayClientName}</div>
+                </div>
+                ${displayUnitArea ? `
+                <div class="client-item">
+                  <div class="client-label">Unit / Area</div>
+                  <div class="client-value">${displayUnitArea}</div>
+                </div>
+                ` : ''}
+              </div>
+              <div class="client-date">📅 ${reportDate}</div>
             </div>
             <div class="meta">
               <div class="template-badge">${selectedTemplate.icon} ${selectedTemplate.name}</div>
@@ -403,25 +419,25 @@ export const MESSAReportModal = ({
           </div>
           
           <div class="tasks">
-            <h2 style="font-size: 16px; margin-bottom: 16px; color: #475569;">Task Checklist</h2>
+            <h2 class="tasks-title">Task Checklist</h2>
             ${tasks.map(task => `
               <div class="task">
                 <div class="task-header">
                   <div class="task-status ${task.completed ? 'completed' : 'pending'}">
                     ${task.completed ? '✓' : '○'}
                   </div>
-                  <span class="task-title">${task.title}${task.isCustom ? '<span class="custom-badge">Custom</span>' : ''}</span>
-                </div>
-                ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
-                ${task.performedBy ? `<div class="task-description" style="margin-top: 4px;"><strong>Performed by:</strong> ${task.performedBy}</div>` : ''}
-                ${task.photoUrl ? `
-                  <div class="task-photo">
-                    <img src="${task.photoUrl}" alt="Task photo" />
-                    <div class="task-timestamp">
-                      📷 Photo taken: ${task.photoTimestamp ? format(new Date(task.photoTimestamp), "MMM d, yyyy 'at' HH:mm:ss") : 'Unknown'}
-                    </div>
+                  <div class="task-content">
+                    <span class="task-title">${task.title}${task.isCustom ? '<span class="custom-badge">Custom</span>' : ''}</span>
+                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                    ${task.performedBy ? `<div class="task-description"><strong>Performed by:</strong> ${task.performedBy}</div>` : ''}
+                    ${task.photoUrl ? `
+                      <div class="task-photo">
+                        <img src="${task.photoUrl}" alt="Task photo" />
+                        <div class="task-timestamp">📷 ${task.photoTimestamp ? format(new Date(task.photoTimestamp), "MMM d, yyyy 'at' HH:mm:ss") : 'Unknown'}</div>
+                      </div>
+                    ` : ''}
                   </div>
-                ` : ''}
+                </div>
               </div>
             `).join('')}
           </div>
@@ -552,17 +568,30 @@ export const MESSAReportModal = ({
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
-            {/* Client Name Input - Required */}
-            <div className="mb-4 p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
-              <label className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2 block">
-                👤 Client Name <span className="text-destructive">*</span>
-              </label>
-              <Input
-                placeholder="Enter client name (required for PDF)"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                className={`bg-background ${!clientName.trim() && 'border-destructive/50'}`}
-              />
+            {/* Client Name & Unit/Area Inputs */}
+            <div className="mb-4 p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg space-y-3">
+              <div>
+                <label className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1.5 block">
+                  👤 Client Name <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  placeholder="Enter client name (required)"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className={`bg-background ${!clientName.trim() && 'border-destructive/50'}`}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1.5 block">
+                  📍 Unit / Area
+                </label>
+                <Input
+                  placeholder="e.g., Unit 305, Building A, Floor 2"
+                  value={unitArea}
+                  onChange={(e) => setUnitArea(e.target.value)}
+                  className="bg-background"
+                />
+              </div>
             </div>
 
             {/* Summary Bar */}
