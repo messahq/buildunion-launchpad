@@ -29,6 +29,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExportDialog, ExportOptions, ExportFormat } from "@/components/ExportDialog";
 import { exportToCSV, exportToJSON, projectExportColumns, generateExportFilename } from "@/lib/exportUtils";
 import { downloadPDF, buildProjectSummaryHTML } from "@/lib/pdfGenerator";
+import MESSAReportModal from "@/components/MESSAReportModal";
 import { useTranslation } from "react-i18next";
 import { RoleBadge } from "@/components/PermissionGate";
 import { ProjectRole } from "@/hooks/useProjectPermissions";
@@ -891,8 +892,22 @@ const BuildUnionProjects2 = () => {
                     </span>
                   )}
                   
-                  {/* Export Button */}
-                  {projects.length > 0 && (
+                  {/* MESSA Report Button */}
+                  {projects.length > 0 && sidebarProjectId && (
+                    <MESSAReportModal
+                      projectId={sidebarProjectId}
+                      projectName={projects.find(p => p.id === sidebarProjectId)?.name || "Project"}
+                      trigger={
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Sparkles className="h-4 w-4 text-amber-500" />
+                          <span className="hidden sm:inline">MESSA Report</span>
+                        </Button>
+                      }
+                    />
+                  )}
+                  
+                  {/* Export Button (when no project selected) */}
+                  {projects.length > 0 && !sidebarProjectId && (
                     <ExportDialog
                       dataType="projects"
                       onExport={handleProjectExport}
