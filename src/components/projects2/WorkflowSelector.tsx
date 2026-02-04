@@ -4,6 +4,16 @@ import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Sparkles, 
   Pencil, 
@@ -21,7 +31,8 @@ import {
   Camera,
   FileImage,
   Clock,
-  Settings
+  Settings,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SubscriptionTier, TEAM_LIMITS } from "@/hooks/useSubscription";
@@ -146,6 +157,10 @@ export default function WorkflowSelector({
   const [hasUserEdits, setHasUserEdits] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState("");
   const [showAddMaterial, setShowAddMaterial] = useState(false);
+  
+  // Confirmation dialog state for when user deviates from AI recommendation
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingMode, setPendingMode] = useState<"solo" | "team" | null>(null);
 
   // Collect final citations including Mode and AI Analysis
   const collectFinalCitations = useCallback((selectedMode: "solo" | "team"): CollectedCitation[] => {
@@ -255,12 +270,8 @@ export default function WorkflowSelector({
     setHasUserEdits(true);
   };
 
-  const handleSelectWorkflow = (mode: "solo" | "team") => {
-    if (mode === "team" && !canAccessTeam) {
-      onUpgradeClick();
-      return;
-    }
-
+  // Proceed with the workflow selection (after confirmation if needed)
+  const proceedWithWorkflow = (mode: "solo" | "team") => {
     const editedData: EditedAnalysisData | undefined = hasUserEdits 
       ? {
           editedArea: editableArea,
@@ -273,6 +284,36 @@ export default function WorkflowSelector({
     const allCitations = collectFinalCitations(mode);
 
     onSelectWorkflow(mode, editedData, allCitations);
+  };
+
+  const handleSelectWorkflow = (mode: "solo" | "team") => {
+    if (mode === "team" && !canAccessTeam) {
+      onUpgradeClick();
+      return;
+    }
+
+    // If user selects a different mode than AI recommended, ask for confirmation
+    if (mode !== recommendedMode) {
+      setPendingMode(mode);
+      setConfirmDialogOpen(true);
+      return;
+    }
+
+    // Otherwise proceed directly
+    proceedWithWorkflow(mode);
+  };
+
+  const handleConfirmModeChange = () => {
+    if (pendingMode) {
+      proceedWithWorkflow(pendingMode);
+    }
+    setConfirmDialogOpen(false);
+    setPendingMode(null);
+  };
+
+  const handleCancelModeChange = () => {
+    setConfirmDialogOpen(false);
+    setPendingMode(null);
   };
 
   // Extract dates from filter answers
@@ -555,6 +596,49 @@ export default function WorkflowSelector({
           </CardContent>
         </Card>
       )}
+
+      {/* Confirmation dialog when user deviates from AI recommendation */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Different from AI Recommendation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                The AI analysis recommended <strong>{recommendedMode === "team" ? "Team Mode" : "Solo Mode"}</strong> for this project based on:
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                {recommendedMode === "team" ? (
+                  <>
+                    {analysisResult.projectSize !== "small" && <li>Project size: {analysisResult.projectSize}</li>}
+                    {analysisResult.hasBlueprint && <li>Blueprint detected</li>}
+                    {filterAnswers?.technicalFilter.affectsStructure && <li>Structural work involved</li>}
+                    {filterAnswers?.technicalFilter.affectsMechanical && <li>Mechanical systems affected</li>}
+                    {(filterAnswers?.workflowFilter.subcontractorCount === "3-5" || filterAnswers?.workflowFilter.subcontractorCount === "6+") && (
+                      <li>Multiple subcontractors ({filterAnswers?.workflowFilter.subcontractorCount})</li>
+                    )}
+                  </>
+                ) : (
+                  <li>Simpler project scope detected</li>
+                )}
+              </ul>
+              <p className="pt-2">
+                Are you sure you want to continue with <strong>{pendingMode === "team" ? "Team Mode" : "Solo Mode"}</strong> instead?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelModeChange}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmModeChange}>
+              Yes, use {pendingMode === "team" ? "Team Mode" : "Solo Mode"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
