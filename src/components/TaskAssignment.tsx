@@ -57,7 +57,8 @@ import {
   ChevronDown,
   ChevronRight,
   WifiOff,
-  RefreshCw
+  RefreshCw,
+  GanttChart
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,7 @@ interface TaskAssignmentProps {
   isSoloMode?: boolean;
   initialEditTaskId?: string;
   onEditTaskHandled?: () => void;
+  onNavigateToGantt?: () => void;
 }
 
 interface TeamMember {
@@ -115,7 +117,7 @@ const STATUSES = [
   { value: "completed", label: "Completed", icon: CheckCircle2, color: "text-green-600" },
 ];
 
-const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated, isSoloMode = false, initialEditTaskId, onEditTaskHandled }: TaskAssignmentProps) => {
+const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, onClearFilter, forceCalendarView, onCalendarViewActivated, isSoloMode = false, initialEditTaskId, onEditTaskHandled, onNavigateToGantt }: TaskAssignmentProps) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const { syncTask } = useExternalDbSync();
@@ -739,6 +741,17 @@ const TaskAssignment = ({ projectId, isOwner, projectAddress, filterByMemberId, 
                     <CalendarDays className="h-3.5 w-3.5" />
                     <span className="hidden xs:inline">Timeline</span>
                   </Button>
+                  {onNavigateToGantt && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 sm:px-2.5 text-xs gap-1 sm:gap-1.5 rounded-md transition-colors text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={onNavigateToGantt}
+                    >
+                      <GanttChart className="h-3.5 w-3.5" />
+                      <span className="hidden xs:inline">Gantt</span>
+                    </Button>
+                  )}
                 </div>
               )}
               {isOwner && (members.length > 0 || isSoloMode) && (

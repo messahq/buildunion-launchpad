@@ -480,6 +480,7 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
             onCalendarViewActivated={onCalendarViewActivated}
             initialEditTaskId={editTaskFromGantt?.id}
             onEditTaskHandled={() => setEditTaskFromGantt(null)}
+            onNavigateToGantt={() => setActiveSubTab("gantt")}
           />
         </TabsContent>
 
