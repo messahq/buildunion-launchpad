@@ -1,16 +1,20 @@
 import { usePendingInvitations } from "@/hooks/useProjectTeam";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, CheckCircle, XCircle, Mail, FolderOpen } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Mail, FolderOpen, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const PendingInvitations = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { invitations, loading, acceptInvitation, declineInvitation } = usePendingInvitations();
 
   const handleAccept = async (invitationId: string, projectId: string, projectName: string) => {
+    console.log("Accept clicked:", { invitationId, projectId, projectName, userEmail: user?.email });
     const result = await acceptInvitation(invitationId, projectId);
+    console.log("Accept result:", result);
     if (result.success) {
       toast.success(`You've joined "${projectName}"!`);
       // Navigate to the project
@@ -55,7 +59,7 @@ const PendingInvitations = () => {
           <div>
             <h3 className="font-semibold text-slate-900">Project Invitations</h3>
             <p className="text-xs text-slate-500">
-              {invitations.length} pending invitation{invitations.length !== 1 ? "s" : ""}
+              {invitations.length} pending invitation{invitations.length !== 1 ? "s" : ""} for {user?.email}
             </p>
           </div>
         </div>
