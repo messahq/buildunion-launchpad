@@ -37,6 +37,7 @@ import OrbPage from "./pages/OrbPage";
 import ContractView from "./pages/ContractView";
 import AdminDashboard from "./pages/AdminDashboard";
 import BuildUnionAbout from "./pages/BuildUnionAbout";
+import BuildUnionProject from "./pages/BuildUnionProject";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
                       <Route path="/buildunion/profile" element={<RequireEmailVerification><BuildUnionProfile /></RequireEmailVerification>} />
                       <Route path="/buildunion/profile/view" element={<RequireEmailVerification><BuildUnionProfileView /></RequireEmailVerification>} />
                       <Route path="/buildunion/messages" element={<RequireEmailVerification><BuildUnionMessages /></RequireEmailVerification>} />
+                      <Route path="/buildunion/project/:projectId" element={<RequireEmailVerification><BuildUnionProject /></RequireEmailVerification>} />
                       
                       {/* Public/semi-public routes */}
                       <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
