@@ -324,8 +324,10 @@ export function usePendingInvitations() {
     }
 
     try {
-      // RLS now handles email filtering with LOWER() - we just filter by status
-      // The RLS policy uses: LOWER(email) = LOWER(auth.jwt() ->> 'email')
+      // Fetch pending invitations - RLS returns both:
+      // 1. Invitations TO this user (email matches)
+      // 2. Invitations FROM this user (project owner)
+      // We only want #1 - invitations TO this user
       const { data, error } = await supabase
         .from("team_invitations")
         .select(`
@@ -337,13 +339,19 @@ export function usePendingInvitations() {
           projects:project_id (name)
         `)
         .eq("status", "pending");
-      
-      // Log for debugging
-      console.log("Fetched invitations for", user.email, ":", data?.length || 0, "found");
 
       if (error) throw error;
 
-      const formattedInvitations = (data || []).map((inv: any) => ({
+      // CRITICAL: Filter to only show invitations TO this user, not FROM this user
+      // This filters out invitations the user sent to others
+      const userEmail = user.email?.toLowerCase();
+      const incomingInvitations = (data || []).filter((inv: any) => 
+        inv.email?.toLowerCase() === userEmail
+      );
+      
+      console.log("Fetched invitations for", user.email, ":", data?.length || 0, "total,", incomingInvitations.length, "incoming");
+
+      const formattedInvitations = incomingInvitations.map((inv: any) => ({
         id: inv.id,
         project_id: inv.project_id,
         project_name: inv.projects?.name || "Unknown Project",
