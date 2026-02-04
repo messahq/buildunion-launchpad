@@ -147,6 +147,11 @@ const PhaseGanttChart = ({ tasks, onTaskClick, projectStartDate, projectEndDate,
     verification: true,
   });
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+  
+  // Drag and drop state (desktop only)
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [dragOverDate, setDragOverDate] = useState<Date | null>(null);
+  const [isUpdatingTask, setIsUpdatingTask] = useState(false);
 
   // Count tasks without due dates
   const tasksWithoutDates = useMemo(() => 
@@ -154,7 +159,24 @@ const PhaseGanttChart = ({ tasks, onTaskClick, projectStartDate, projectEndDate,
     [tasks]
   );
 
-  // Auto-schedule tasks based on project dates and phases
+  // Priority order for sorting (higher priority = earlier scheduling)
+  const PRIORITY_ORDER: Record<string, number> = {
+    urgent: 0,
+    high: 1,
+    medium: 2,
+    low: 3,
+  };
+
+  // Sort tasks by priority (urgent first, then high, medium, low)
+  const sortByPriority = (taskList: Task[]) => {
+    return [...taskList].sort((a, b) => {
+      const priorityA = PRIORITY_ORDER[a.priority] ?? 3;
+      const priorityB = PRIORITY_ORDER[b.priority] ?? 3;
+      return priorityA - priorityB;
+    });
+  };
+
+  // Auto-schedule tasks based on project dates, phases, AND priority
   const handleAutoSchedule = async () => {
     if (!projectStartDate || !projectEndDate) {
       toast.error(t("gantt.needProjectDates", "Set project start and end dates first"));
@@ -177,23 +199,23 @@ const PhaseGanttChart = ({ tasks, onTaskClick, projectStartDate, projectEndDate,
         verification: { start: Math.floor(totalDuration * 0.8), end: totalDuration },
       };
 
-      // Group unscheduled tasks by phase
+      // Group unscheduled tasks by phase, then sort by priority
       const unscheduledByPhase = {
-        preparation: tasksWithoutDates.filter(t => getPhaseForTask(t) === "preparation"),
-        execution: tasksWithoutDates.filter(t => getPhaseForTask(t) === "execution"),
-        verification: tasksWithoutDates.filter(t => getPhaseForTask(t) === "verification"),
+        preparation: sortByPriority(tasksWithoutDates.filter(t => getPhaseForTask(t) === "preparation")),
+        execution: sortByPriority(tasksWithoutDates.filter(t => getPhaseForTask(t) === "execution")),
+        verification: sortByPriority(tasksWithoutDates.filter(t => getPhaseForTask(t) === "verification")),
       };
 
       const updates: { id: string; due_date: string }[] = [];
 
-      // Distribute tasks within each phase
+      // Distribute tasks within each phase (higher priority = earlier date)
       (["preparation", "execution", "verification"] as const).forEach(phase => {
-        const phaseTasks = unscheduledByPhase[phase];
+        const phaseTasks = unscheduledByPhase[phase]; // Already sorted by priority
         const { start, end } = phaseRanges[phase];
         const phaseDuration = end - start;
 
         phaseTasks.forEach((task, index) => {
-          // Distribute evenly within the phase
+          // Distribute evenly within the phase (index 0 = earliest, index N = latest)
           const offset = phaseDuration > 0 
             ? Math.floor(start + (phaseDuration * (index + 1)) / (phaseTasks.length + 1))
             : start;
@@ -216,13 +238,58 @@ const PhaseGanttChart = ({ tasks, onTaskClick, projectStartDate, projectEndDate,
         if (error) throw error;
       }
 
-      toast.success(t("gantt.autoScheduleSuccess", `Scheduled ${updates.length} tasks`));
+      toast.success(t("gantt.autoScheduleSuccess", `Scheduled ${updates.length} tasks by priority`));
       onTasksUpdated?.();
     } catch (error: any) {
       console.error("Auto-schedule error:", error);
       toast.error(t("gantt.autoScheduleError", "Failed to schedule tasks"));
     } finally {
       setIsAutoScheduling(false);
+    }
+  };
+
+  // Drag and drop handlers (desktop only)
+  const handleDragStart = (e: React.DragEvent, task: Task) => {
+    if (isMobile) return;
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", task.id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverDate(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, date: Date) => {
+    if (isMobile || !draggedTask) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverDate(date);
+  };
+
+  const handleDrop = async (e: React.DragEvent, date: Date) => {
+    e.preventDefault();
+    if (!draggedTask || isMobile) return;
+
+    setIsUpdatingTask(true);
+    try {
+      const { error } = await supabase
+        .from("project_tasks")
+        .update({ due_date: startOfDay(date).toISOString() })
+        .eq("id", draggedTask.id);
+
+      if (error) throw error;
+
+      toast.success(t("gantt.taskRescheduled", `${draggedTask.title} moved to ${format(date, "MMM d")}`));
+      onTasksUpdated?.();
+    } catch (error: any) {
+      console.error("Drop error:", error);
+      toast.error(t("gantt.dropError", "Failed to reschedule task"));
+    } finally {
+      setIsUpdatingTask(false);
+      setDraggedTask(null);
+      setDragOverDate(null);
     }
   };
 
@@ -476,36 +543,46 @@ const PhaseGanttChart = ({ tasks, onTaskClick, projectStartDate, projectEndDate,
 
                           {/* Timeline Bar */}
                           <div className="flex-1 relative h-7">
-                            {/* Background grid */}
+                            {/* Background grid - drop targets for drag-and-drop */}
                             <div className="absolute inset-0 flex">
                               {dayHeaders.map((date, i) => {
                                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                                 const isTodayDate = isToday(date);
+                                const isDragOver = dragOverDate && 
+                                  format(dragOverDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
                                 return (
                                   <div
                                     key={i}
                                     className={cn(
-                                      "h-full border-r border-border/20",
+                                      "h-full border-r border-border/20 transition-colors",
                                       isWeekend && "bg-muted/20",
-                                      isTodayDate && "bg-amber-100/30 dark:bg-amber-950/20"
+                                      isTodayDate && "bg-amber-100/30 dark:bg-amber-950/20",
+                                      isDragOver && "bg-primary/20 ring-1 ring-inset ring-primary/50"
                                     )}
                                     style={{ width: dayWidth }}
+                                    onDragOver={(e) => handleDragOver(e, date)}
+                                    onDrop={(e) => handleDrop(e, date)}
                                   />
                                 );
                               })}
                             </div>
 
-                            {/* Task Bar */}
+                            {/* Task Bar - draggable on desktop */}
                             {task.due_date && (
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <div
+                                      draggable={!isMobile && task.status !== "completed"}
+                                      onDragStart={(e) => handleDragStart(e, task)}
+                                      onDragEnd={handleDragEnd}
                                       className={cn(
                                         "absolute top-1/2 -translate-y-1/2 h-4 rounded-full flex items-center justify-center text-white text-[9px] font-medium px-1.5 shadow-sm cursor-pointer hover:scale-105 transition-transform",
                                         PRIORITY_COLORS[task.priority] || "bg-slate-500",
                                         STATUS_OPACITY[task.status],
-                                        isOverdue && "ring-2 ring-red-500"
+                                        isOverdue && "ring-2 ring-red-500",
+                                        draggedTask?.id === task.id && "opacity-50 scale-95",
+                                        !isMobile && task.status !== "completed" && "cursor-grab active:cursor-grabbing"
                                       )}
                                       style={{
                                         left: Math.max(0, barPosition),
@@ -529,7 +606,9 @@ const PhaseGanttChart = ({ tasks, onTaskClick, projectStartDate, projectEndDate,
                                       <div className="text-muted-foreground">→ {task.assignee_name}</div>
                                     )}
                                     <div className="mt-1 text-[10px] text-primary">
-                                      {t("timeline.clickToEdit", "Click to edit")}
+                                      {!isMobile && task.status !== "completed" 
+                                        ? t("timeline.dragToReschedule", "Drag to reschedule • Click to edit")
+                                        : t("timeline.clickToEdit", "Click to edit")}
                                     </div>
                                   </TooltipContent>
                                 </Tooltip>
