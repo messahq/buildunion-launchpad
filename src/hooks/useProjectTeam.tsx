@@ -324,6 +324,8 @@ export function usePendingInvitations() {
     }
 
     try {
+      // RLS now handles email filtering with LOWER() - we just filter by status
+      // The RLS policy uses: LOWER(email) = LOWER(auth.jwt() ->> 'email')
       const { data, error } = await supabase
         .from("team_invitations")
         .select(`
@@ -331,10 +333,13 @@ export function usePendingInvitations() {
           project_id,
           invited_by,
           created_at,
+          email,
           projects:project_id (name)
         `)
-        .eq("email", user.email.toLowerCase())
         .eq("status", "pending");
+      
+      // Log for debugging
+      console.log("Fetched invitations for", user.email, ":", data?.length || 0, "found");
 
       if (error) throw error;
 
