@@ -390,12 +390,24 @@ export function usePendingInvitations() {
     if (!user) return { success: false, error: "Not authenticated" };
 
     try {
+      console.log("Accepting invitation:", { invitationId, projectId, userEmail: user.email });
+      
       // Get the invitation to find email and role from database (server-side)
-      const { data: invitation } = await supabase
+      const { data: invitation, error: fetchError } = await supabase
         .from("team_invitations")
-        .select("email, role")
+        .select("email, role, status")
         .eq("id", invitationId)
         .maybeSingle();
+
+      console.log("Fetched invitation:", invitation, "Error:", fetchError);
+
+      if (!invitation) {
+        return { success: false, error: "Invitation not found" };
+      }
+
+      if (invitation.status !== "pending") {
+        return { success: false, error: `Invitation already ${invitation.status}` };
+      }
 
       // Use role from database - never from client storage
       const role = (invitation?.role as TeamRole) || "member";
@@ -409,17 +421,29 @@ export function usePendingInvitations() {
           role: role,
         });
 
+      console.log("Insert member result:", memberError ? `Error: ${memberError.message}` : "Success");
+
       if (memberError && memberError.code !== "23505") {
         throw memberError;
       }
 
       // Update invitation status AFTER successful insert
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from("team_invitations")
         .update({ status: "accepted", responded_at: new Date().toISOString() })
-        .eq("id", invitationId);
+        .eq("id", invitationId)
+        .select();
 
-      if (updateError) throw updateError;
+      console.log("Update invitation result:", updateData, "Error:", updateError);
+
+      if (updateError) {
+        console.error("Failed to update invitation status:", updateError);
+        // Don't throw - member was added successfully, just log the issue
+      }
+
+      if (!updateData || updateData.length === 0) {
+        console.warn("Invitation update returned no rows - RLS may have blocked update");
+      }
 
       await fetchInvitations();
       return { success: true };
