@@ -2201,6 +2201,10 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 setFlashingTab(null);
               }, 300);
             }}
+            onNavigateToTimeline={() => {
+              setForceCalendarView(true);
+              setActiveTab("team");
+            }}
             onCompleteProject={handleCompleteProject}
             dataSourcesInfo={{
               taskCount: tasks.length,
