@@ -192,6 +192,20 @@ export function useProjectTeam(projectId?: string) {
     if (!projectId || !user) return { success: false, error: "Not authenticated" };
 
     try {
+      // Get project name for email
+      const { data: project } = await supabase
+        .from("projects")
+        .select("name")
+        .eq("id", projectId)
+        .single();
+
+      // Get inviter name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
       // Store role in team_invitations table (server-side storage)
       const { error } = await supabase.from("team_invitations").insert({
         project_id: projectId,
@@ -206,6 +220,36 @@ export function useProjectTeam(projectId?: string) {
           return { success: false, error: "This email has already been invited" };
         }
         throw error;
+      }
+
+      // Send invitation email via edge function
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invitation-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${sessionData.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              recipientEmail: email.toLowerCase().trim(),
+              projectName: project?.name || "Untitled Project",
+              projectId: projectId,
+              inviterName: profile?.full_name || "A project owner",
+              role: role,
+            }),
+          }
+        );
+
+        const result = await response.json();
+        if (!result.success) {
+          console.warn("Email sending failed but invitation was created:", result.error);
+        }
+      } catch (emailError) {
+        // Log but don't fail - invitation is still valid in database
+        console.warn("Failed to send invitation email:", emailError);
       }
 
       await fetchTeamData();
