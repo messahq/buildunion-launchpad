@@ -395,15 +395,7 @@ export function usePendingInvitations() {
       // Use role from database - never from client storage
       const role = (invitation?.role as TeamRole) || "member";
 
-      // Update invitation status
-      const { error: updateError } = await supabase
-        .from("team_invitations")
-        .update({ status: "accepted", responded_at: new Date().toISOString() })
-        .eq("id", invitationId);
-
-      if (updateError) throw updateError;
-
-      // Add as project member with role from database
+      // IMPORTANT: Insert member FIRST (while status is still 'pending' for RLS check)
       const { error: memberError } = await supabase
         .from("project_members")
         .insert({
@@ -415,6 +407,14 @@ export function usePendingInvitations() {
       if (memberError && memberError.code !== "23505") {
         throw memberError;
       }
+
+      // Update invitation status AFTER successful insert
+      const { error: updateError } = await supabase
+        .from("team_invitations")
+        .update({ status: "accepted", responded_at: new Date().toISOString() })
+        .eq("id", invitationId);
+
+      if (updateError) throw updateError;
 
       await fetchInvitations();
       return { success: true };
