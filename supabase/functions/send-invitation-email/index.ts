@@ -206,7 +206,7 @@ const handler = async (req: Request): Promise<Response> => {
               </ul>
               
               <p style="text-align: center;">
-                <a href="${appUrl}/workspace" class="button">Accept Invitation</a>
+                <a href="${appUrl}/buildunion/workspace" class="button">Accept Invitation</a>
               </p>
               
               <p style="color: #6b7280; font-size: 14px;">
