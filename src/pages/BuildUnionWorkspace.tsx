@@ -33,6 +33,7 @@ import MESSAReportModal from "@/components/MESSAReportModal";
 import { useTranslation } from "react-i18next";
 import { RoleBadge } from "@/components/PermissionGate";
 import { ProjectRole } from "@/hooks/useProjectPermissions";
+import PendingInvitations from "@/components/PendingInvitations";
 
 interface SavedProject {
   id: string;
@@ -998,6 +999,11 @@ const BuildUnionProjects2 = () => {
               {/* Projects List or Empty State */}
               {!authLoading && !loading && user && (
                 <>
+                  {/* Pending Invitations */}
+                  <div className="mb-6">
+                    <PendingInvitations />
+                  </div>
+
                   {/* Tab Switcher */}
                   <Tabs value={projectsTab} onValueChange={(v) => setProjectsTab(v as "my" | "shared" | "archived")} className="mb-6">
                     <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
