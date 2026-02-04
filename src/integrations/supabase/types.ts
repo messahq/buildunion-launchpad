@@ -1646,6 +1646,19 @@ export type Database = {
         Returns: boolean
       }
       is_share_token_valid: { Args: { _contract_id: string }; Returns: boolean }
+      search_bu_users_for_team: {
+        Args: { _limit?: number; _project_id: string; _search_query: string }
+        Returns: {
+          avatar_url: string
+          company_name: string
+          full_name: string
+          id: string
+          is_verified: boolean
+          primary_trade: Database["public"]["Enums"]["construction_trade"]
+          profile_completed: boolean
+          user_id: string
+        }[]
+      }
       users_share_project: {
         Args: { _profile_owner_id: string; _viewer_id: string }
         Returns: boolean
