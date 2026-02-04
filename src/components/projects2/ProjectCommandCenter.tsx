@@ -164,8 +164,6 @@ interface ProjectCommandCenterProps {
   isPremium?: boolean;
   subscriptionTier?: "free" | "pro" | "premium" | "enterprise";
   onNavigateToTab?: (tabId: string) => void;
-  // Navigate to Timeline view within Tasks
-  onNavigateToTimeline?: () => void;
   // Project completion callback
   onCompleteProject?: () => Promise<void>;
   // Extended data sources info
@@ -196,7 +194,6 @@ export const ProjectCommandCenter = ({
   isPremium = false,
   subscriptionTier = "free",
   onNavigateToTab,
-  onNavigateToTimeline,
   onCompleteProject,
   dataSourcesInfo,
   clientInfo,
@@ -1207,13 +1204,7 @@ export const ProjectCommandCenter = ({
       contracts: () => onNavigateToTab?.("contracts"),
       team: () => onNavigateToTab?.("team"),
       sitemap: () => onNavigateToTab?.("map"),
-      timeline: () => {
-        if (onNavigateToTimeline) {
-          onNavigateToTimeline();
-        } else {
-          onNavigateToTab?.("team");
-        }
-      },
+      timeline: () => onNavigateToTab?.("team"),
       client: openClientInfoDialog,
       weather: () => onNavigateToTab?.("weather"),
       // Pillars navigate to overview
@@ -1231,7 +1222,7 @@ export const ProjectCommandCenter = ({
     if (action) {
       action();
     }
-  }, [onNavigateToTab, onNavigateToTimeline, openClientInfoDialog]);
+  }, [onNavigateToTab, openClientInfoDialog]);
 
   const cancelEditingTeamReport = useCallback(() => {
     setIsEditingTeamReport(false);
