@@ -16,9 +16,11 @@
    Sparkles,
    Activity
  } from "lucide-react";
+import { Users, Sun, MapPin, Zap } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { format } from "date-fns";
  import { motion, AnimatePresence } from "framer-motion";
+import buildUnionLogo from "@/assets/buildunion-logo.png";
  
  // ============================================
  // TYPES
@@ -41,6 +43,8 @@
    onApprove?: () => void;
    onExportPdf?: () => void;
    onViewDetails?: () => void;
+  teamOnline?: number;
+  totalTeam?: number;
  }
  
  interface Milestone {
@@ -177,6 +181,138 @@
  );
  }
  
+// ============================================
+// LIVE CLOCK WIDGET
+// ============================================
+
+function LiveClock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10"
+    >
+      <Clock className="w-4 h-4 text-cyan-400" />
+      <div className="flex flex-col">
+        <span className="text-lg font-mono font-medium text-foreground tabular-nums">
+          {format(time, "HH:mm")}
+          <motion.span
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+            className="text-cyan-400"
+          >
+            :
+          </motion.span>
+          {format(time, "ss")}
+        </span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          {format(time, "EEEE, MMM d")}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// TEAM ONLINE WIDGET
+// ============================================
+
+function TeamOnlineWidget({ online = 0, total = 0 }: { online?: number; total?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.3 }}
+      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10"
+    >
+      <div className="relative">
+        <Users className="w-4 h-4 text-emerald-400" />
+        {online > 0 && (
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full"
+          />
+        )}
+      </div>
+      <div className="flex flex-col">
+        <span className="text-sm font-medium text-foreground">
+          <span className="text-emerald-400">{online}</span>
+          <span className="text-muted-foreground">/{total}</span>
+        </span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          Team Online
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// WEATHER WIDGET
+// ============================================
+
+function WeatherWidget() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.2 }}
+      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10"
+    >
+      <Sun className="w-5 h-5 text-amber-400" />
+      <div className="flex flex-col">
+        <span className="text-sm font-medium text-foreground">18°C</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+          <MapPin className="w-2 h-2" /> Site
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// QUICK STATS WIDGET
+// ============================================
+
+function QuickStatsWidget({ verificationRate, docsCount }: { verificationRate: number; docsCount: number }) {
+  const tasksCompleted = Math.round(verificationRate / 100 * 20);
+  const daysActive = 30;
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-xs uppercase tracking-widest text-muted-foreground/80 flex items-center gap-2">
+        <Zap className="w-3 h-3" /> Quick Stats
+      </h4>
+      <div className="grid grid-cols-2 gap-3">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
+          <span className="text-xl font-bold text-cyan-400 tabular-nums">{daysActive}</span>
+          <p className="text-[10px] text-muted-foreground uppercase">Days</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
+          <span className="text-xl font-bold text-emerald-400 tabular-nums">{Math.round(verificationRate)}%</span>
+          <p className="text-[10px] text-muted-foreground uppercase">Done</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
+          <span className="text-xl font-bold text-amber-400 tabular-nums">{tasksCompleted}</span>
+          <p className="text-[10px] text-muted-foreground uppercase">Tasks</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
+          <span className="text-xl font-bold text-purple-400 tabular-nums">{docsCount}</span>
+          <p className="text-[10px] text-muted-foreground uppercase">Docs</p>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
  // ============================================
  // TIMELINE ORBIT COMPONENT
  // ============================================
@@ -290,70 +426,67 @@
  // LIVE LENS COMPONENT (Blueprint vs Photo Slider)
  // ============================================
  
- function LiveLens({ 
-   blueprintUrl, 
-   photoUrl 
- }: { 
+function ProjectVisual({
+  blueprintUrl,
+  photoUrl
+}: {
    blueprintUrl?: string | null;
    photoUrl?: string | null;
  }) {
    const [sliderValue, setSliderValue] = useState([50]);
  
-   // Placeholder images if none provided
-   const blueprint = blueprintUrl || "/placeholder.svg";
-   const photo = photoUrl || "/placeholder.svg";
+  const hasBlueprint = !!blueprintUrl;
+  const hasPhoto = !!photoUrl;
+  const showLiveLens = hasBlueprint && hasPhoto;
  
+  // Show Live Lens comparison if both blueprint AND photo exist
+  if (showLiveLens) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-xs uppercase tracking-widest text-muted-foreground/80">LIVE LENS</h3>
+        <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-white/10 bg-black/40">
+          <div className="absolute inset-0 bg-cover bg-center grayscale opacity-80" style={{ backgroundImage: `url(${blueprintUrl})`, clipPath: `inset(0 ${100 - sliderValue[0]}% 0 0)` }} />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${photoUrl})`, clipPath: `inset(0 0 0 ${sliderValue[0]}%)` }} />
+          <div className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-cyan-400 via-emerald-400 to-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]" style={{ left: `${sliderValue[0]}%` }} />
+          <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-[10px] uppercase tracking-wider text-muted-foreground">Blueprint</div>
+          <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 rounded text-[10px] uppercase tracking-wider text-muted-foreground">Current</div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-center text-xs text-muted-foreground/80">Compare</p>
+          <Slider value={sliderValue} onValueChange={setSliderValue} max={100} step={1} className="[&_[role=slider]]:bg-cyan-400 [&_[role=slider]]:border-cyan-400 [&_[role=slider]]:shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show only photo if no blueprint
+  if (hasPhoto) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-xs uppercase tracking-widest text-muted-foreground/80">SITE VIEW</h3>
+        <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-white/10 bg-black/40">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${photoUrl})` }} />
+          <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 rounded text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <Eye className="w-3 h-3" /> Latest
+          </div>
+        </div>
+        <p className="text-center text-xs text-muted-foreground/60 italic">Upload blueprint for Live Lens</p>
+      </div>
+    );
+  }
+
+  // No images - show BuildUnion logo
    return (
      <div className="space-y-3">
-       <h3 className="text-xs uppercase tracking-widest text-muted-foreground/80">
-         LIVE LENS
-       </h3>
-       
-       {/* Comparison Container */}
-       <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-white/10 bg-black/40">
-         {/* Blueprint Layer (Left) */}
-         <div 
-           className="absolute inset-0 bg-cover bg-center grayscale opacity-80"
-           style={{ 
-             backgroundImage: `url(${blueprint})`,
-             clipPath: `inset(0 ${100 - sliderValue[0]}% 0 0)` 
-           }}
-         />
-         
-         {/* Photo Layer (Right) */}
-         <div 
-           className="absolute inset-0 bg-cover bg-center"
-           style={{ 
-             backgroundImage: `url(${photo})`,
-             clipPath: `inset(0 0 0 ${sliderValue[0]}%)` 
-           }}
-         />
-         
-         {/* Divider Line */}
-         <div 
-           className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-cyan-400 via-emerald-400 to-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
-           style={{ left: `${sliderValue[0]}%` }}
-         />
-         
-         {/* Labels */}
-         <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-[10px] uppercase tracking-wider text-muted-foreground">
-           Blueprint
+      <h3 className="text-xs uppercase tracking-widest text-muted-foreground/80">PROJECT VIEW</h3>
+      <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="relative">
+          <img src={buildUnionLogo} alt="BuildUnion" className="w-24 h-24 object-contain opacity-60" />
+          <motion.div className="absolute inset-0 rounded-full" animate={{ boxShadow: ["0 0 20px rgba(34,211,238,0)", "0 0 40px rgba(34,211,238,0.3)", "0 0 20px rgba(34,211,238,0)"] }} transition={{ duration: 3, repeat: Infinity }} />
+        </motion.div>
+        <div className="absolute bottom-3 left-0 right-0 text-center">
+          <p className="text-xs text-muted-foreground/60">Upload photos to see your project</p>
          </div>
-         <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 rounded text-[10px] uppercase tracking-wider text-muted-foreground">
-           Current
-         </div>
-       </div>
-       
-       {/* Slider */}
-       <div className="space-y-2">
-         <p className="text-center text-xs text-muted-foreground/80">Compare</p>
-         <Slider
-           value={sliderValue}
-           onValueChange={setSliderValue}
-           max={100}
-           step={1}
-           className="[&_[role=slider]]:bg-cyan-400 [&_[role=slider]]:border-cyan-400 [&_[role=slider]]:shadow-[0_0_8px_rgba(34,211,238,0.5)]"
-         />
        </div>
      </div>
    );
@@ -499,9 +632,12 @@
    onGenerateReport,
    onApprove,
    onExportPdf,
-   onViewDetails
+  onViewDetails,
+  teamOnline = 2,
+  totalTeam = 5
  }: OwnerDashboardProps) {
    const [isExpanded, setIsExpanded] = useState(false);
+  const docsCount = blueprintUrl ? 3 : 1;
  
    return (
      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
@@ -510,12 +646,23 @@
          <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-cyan-500/5 rounded-full blur-[120px]" />
          <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-emerald-500/5 rounded-full blur-[120px]" />
        </div>
-       
-       {/* Header */}
+
+      {/* Top Bar with Clock, Weather, Team Status */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative flex flex-wrap items-center justify-center gap-3 mb-4"
+      >
+        <WeatherWidget />
+        <LiveClock />
+        <TeamOnlineWidget online={teamOnline} total={totalTeam} />
+      </motion.div>
+
+      {/* Header */}
        <motion.div
          initial={{ opacity: 0, y: -20 }}
          animate={{ opacity: 1, y: 0 }}
-         className="relative text-center mb-8"
+        className="relative text-center mb-6"
        >
          <h1 className="text-3xl md:text-4xl font-light tracking-wide text-foreground">
            Confidence Dashboard
@@ -560,13 +707,13 @@
                expectedCompletion={expectedCompletion}
                completionCertainty={completionCertainty}
              />
-             
-             {/* Live Lens */}
-             <LiveLens
-               blueprintUrl={blueprintUrl}
-               photoUrl={latestPhotoUrl}
-             />
-             
+
+            {/* Project Visual / Live Lens */}
+            <div className="space-y-6">
+              <ProjectVisual blueprintUrl={blueprintUrl} photoUrl={latestPhotoUrl} />
+              <QuickStatsWidget verificationRate={verificationRate} docsCount={docsCount} />
+            </div>
+
              {/* Financial Safe */}
              <FinancialSafe financials={financials} />
            </div>
