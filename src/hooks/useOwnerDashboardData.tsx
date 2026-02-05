@@ -16,6 +16,7 @@ import { differenceInDays } from "date-fns";
   materialCost: number;
   laborCost: number;
   tasksCost: number;
+  plannedTasksCost: number;
    isWithinRange: boolean;
    hasUnexpectedCosts: boolean;
    costStability: "stable" | "warning" | "critical";
@@ -130,20 +131,26 @@ import { differenceInDays } from "date-fns";
      const totalCost = summary?.total_cost || 0;
      const materialCost = summary?.material_cost || 0;
      const laborCost = summary?.labor_cost || 0;
-    
-    // Calculate task-based costs as additional data source
-    const tasksCost = tasks?.reduce((sum, task) => {
+
+    // Current Spend = only COMPLETED tasks (realized expenditures)
+    const completedTasksCost = tasks?.filter(t => t.status === 'completed')
+      .reduce((sum, task) => sum + (Number(task.total_cost) || 0), 0) || 0;
+
+    // Total planned task costs (for reference/budget planning)
+    const allTasksCost = tasks?.reduce((sum, task) => {
       return sum + (Number(task.total_cost) || 0);
     }, 0) || 0;
-    
-    // Current spend = materials + labor + task costs (if any)
-    const currentSpend = Math.max(materialCost + laborCost, tasksCost);
-    
+
+    // Current Spend = completed tasks only (realized spending)
+    const currentSpend = completedTasksCost;
+
     // Approved budget from total_cost, or calculate from spend + buffer
-    const approvedBudget = totalCost > 0 
-      ? totalCost 
-      : currentSpend > 0 
-        ? Math.ceil(currentSpend * 1.15 / 1000) * 1000 // 15% buffer, rounded
+    // Use material + labor as budget base if no total_cost set
+    const plannedBudget = materialCost + laborCost + allTasksCost;
+    const approvedBudget = totalCost > 0
+      ? totalCost
+      : plannedBudget > 0
+        ? Math.ceil(plannedBudget * 1.15 / 1000) * 1000 // 15% buffer, rounded
         : 25000; // Minimum default
  
      // Calculate health score (simplified)
@@ -198,7 +205,8 @@ import { differenceInDays } from "date-fns";
          currentSpend,
         materialCost,
         laborCost,
-        tasksCost,
+       tasksCost: completedTasksCost,
+       plannedTasksCost: allTasksCost,
          isWithinRange: currentSpend <= approvedBudget,
          hasUnexpectedCosts: currentSpend > approvedBudget * 0.9,
          costStability: currentSpend <= approvedBudget * 0.7 ? "stable" : 
