@@ -1,4 +1,4 @@
- import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
  import { Button } from "@/components/ui/button";
  import { Badge } from "@/components/ui/badge";
  import { Slider } from "@/components/ui/slider";
@@ -18,7 +18,12 @@
   Cloud,
   CloudRain,
   Wind,
-  Droplets
+  Droplets,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Loader2
  } from "lucide-react";
 import { Users, Sun, MapPin, Zap, Thermometer } from "lucide-react";
  import { cn } from "@/lib/utils";
@@ -68,6 +73,7 @@ import { useWeather, formatTemp } from "@/hooks/useWeather";
   materialCost?: number;
   laborCost?: number;
   tasksCost?: number;
+  plannedTasksCost?: number;
    isWithinRange: boolean;
    hasUnexpectedCosts: boolean;
    costStability: "stable" | "warning" | "critical";
@@ -618,6 +624,135 @@ function ProjectVisual({
    return <span>{formattedValue}</span>;
  }
  
+// ============================================
+// INLINE AUDIO PLAYER (TTS)
+// ============================================
+
+function InlineAudioPlayer({ 
+  text, 
+  isVisible 
+}: { 
+  text: string | null; 
+  isVisible: boolean;
+}) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  const handlePlayPause = () => {
+    if (!text) return;
+
+    if (isPlaying && !isPaused) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    } else if (isPaused) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    } else {
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      utterance.volume = isMuted ? 0 : 1;
+      
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => 
+        v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium')
+      ) || voices.find(v => v.lang.startsWith('en'));
+      
+      if (preferredVoice) utterance.voice = preferredVoice;
+
+      utterance.onend = () => { setIsPlaying(false); setIsPaused(false); };
+      utterance.onerror = () => { setIsPlaying(false); setIsPaused(false); };
+
+      utteranceRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+      setIsPaused(false);
+    }
+  };
+
+  const handleStop = () => {
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+    setIsPaused(false);
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (utteranceRef.current) utteranceRef.current.volume = isMuted ? 1 : 0;
+  };
+
+  if (!isVisible || !text) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, height: 0 }}
+      animate={{ opacity: 1, y: 0, height: "auto" }}
+      exit={{ opacity: 0, y: -10, height: 0 }}
+      className="mt-4 p-4 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-cyan-500/20"
+    >
+      <div className="flex items-center gap-3">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handlePlayPause}
+          className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center",
+            "bg-gradient-to-br from-cyan-500 to-emerald-500",
+            "shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-shadow"
+          )}
+        >
+          {isPlaying && !isPaused ? <Pause className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-white ml-0.5" />}
+        </motion.button>
+
+        <div className="flex-1 flex items-center gap-1 h-8">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="flex-1 bg-gradient-to-t from-cyan-500 to-emerald-400 rounded-full"
+              animate={isPlaying && !isPaused ? { height: [8, Math.random() * 24 + 8, 8] } : { height: 4 }}
+              transition={{ duration: 0.4, repeat: isPlaying && !isPaused ? Infinity : 0, delay: i * 0.05 }}
+              style={{ minHeight: 4 }}
+            />
+          ))}
+        </div>
+
+        <button onClick={toggleMute} className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+          {isMuted ? <VolumeX className="w-5 h-5 text-slate-400" /> : <Volume2 className="w-5 h-5 text-cyan-400" />}
+        </button>
+
+        {isPlaying && (
+          <button onClick={handleStop} className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors text-xs text-slate-400 uppercase tracking-wider">
+            Stop
+          </button>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <motion.div
+          animate={isPlaying ? { scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] } : {}}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className={cn("w-2 h-2 rounded-full", isPlaying ? "bg-emerald-400" : "bg-slate-500")}
+        />
+        <span className="text-xs text-slate-400">
+          {isPlaying && !isPaused && "Playing summary..."}
+          {isPaused && "Paused"}
+          {!isPlaying && "Ready to play"}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
  function FinancialSafe({ financials }: { financials: FinancialSummary }) {
    const spendPercentage = (financials.currentSpend / financials.approvedBudget) * 100;
   const materialCost = financials.materialCost || 0;
@@ -728,7 +863,7 @@ function ProjectVisual({
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                Task Costs
+                Completed Tasks
               </span>
               <span className="text-xs font-medium text-cyan-400 tabular-nums">
                 <AnimatedCounter value={tasksCost} duration={2600} />
@@ -798,6 +933,36 @@ function ProjectVisual({
   daysActive = 1
  }: OwnerDashboardProps) {
    const [isExpanded, setIsExpanded] = useState(false);
+  const [summaryText, setSummaryText] = useState<string | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [showAudioPlayer, setShowAudioPlayer] = useState(false);
+
+  const handleMagicSummary = async () => {
+    setIsGeneratingSummary(true);
+    setShowAudioPlayer(false);
+    
+    try {
+      onGenerateReport?.();
+      
+      const summaryParts = [
+        `Project ${projectName} summary.`,
+        `Current phase: ${currentPhase || 'In Progress'}.`,
+        `Project health is ${healthScore >= 80 ? 'excellent' : healthScore >= 60 ? 'good' : healthScore >= 40 ? 'needs attention' : 'critical'}.`,
+        `Completion progress: ${Math.round(verificationRate)} percent.`,
+        `Budget status: ${financials.currentSpend.toLocaleString()} dollars spent of ${financials.approvedBudget.toLocaleString()} approved.`,
+        financials.isWithinRange ? 'Spending is within the approved range.' : 'Warning: Budget may be exceeded.',
+        expectedCompletion ? `Expected completion: ${expectedCompletion}.` : '',
+        `${teamOnline} of ${totalTeam} team members currently online.`,
+        `${tasksCount} total tasks, ${docsCount} documents uploaded.`,
+        financials.hasUnexpectedCosts ? 'Note: Some unexpected costs have been detected.' : 'No unexpected costs detected.',
+      ].filter(Boolean).join(' ');
+      
+      setSummaryText(summaryParts);
+      setShowAudioPlayer(true);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
  
    return (
      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
@@ -886,18 +1051,24 @@ function ProjectVisual({
            {/* Action Buttons */}
            <div className="flex flex-wrap justify-center gap-4 pt-4">
              <Button
-               onClick={onGenerateReport}
+               onClick={handleMagicSummary}
+               disabled={isGeneratingSummary}
                className={cn(
                  "relative overflow-hidden",
                  "bg-gradient-to-r from-emerald-600 to-emerald-500",
                  "hover:from-emerald-500 hover:to-emerald-400",
                  "text-white font-medium px-6 py-5",
                  "shadow-lg shadow-emerald-500/20",
-                 "border-0"
+                 "border-0",
+                 "disabled:opacity-50"
                )}
              >
-               <Mic className="w-4 h-4 mr-2" />
-               Magic Summary
+               {isGeneratingSummary ? (
+                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+               ) : (
+                 <Mic className="w-4 h-4 mr-2" />
+               )}
+               {isGeneratingSummary ? "Generating..." : "Magic Summary"}
              </Button>
              
              <Button
@@ -929,6 +1100,11 @@ function ProjectVisual({
               <span className="text-white">Export Executive PDF</span>
              </Button>
            </div>
+
+          {/* Inline Audio Player for Magic Summary */}
+          <AnimatePresence>
+            <InlineAudioPlayer text={summaryText} isVisible={showAudioPlayer} />
+          </AnimatePresence>
          </div>
          
          {/* Bottom Glow Line */}
