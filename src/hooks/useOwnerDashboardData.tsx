@@ -30,6 +30,8 @@ import { differenceInDays } from "date-fns";
    isWithinRange: boolean;
    hasUnexpectedCosts: boolean;
    costStability: "stable" | "warning" | "critical";
+   budgetVersion?: 'initial' | 'change_order';
+   budgetUpdatedAt?: string;
  }
  
  interface OwnerDashboardData {
@@ -49,6 +51,8 @@ import { differenceInDays } from "date-fns";
   tasksCount: number;
   docsCount: number;
   daysActive: number;
+  budgetStatus: 'initial' | 'change_order' | 'none';
+  budgetLastUpdated: string | null;
  }
  
  export function useOwnerDashboardData(projectId: string | null) {
@@ -158,6 +162,20 @@ import { differenceInDays } from "date-fns";
        (sum, item) => sum + (Number(item.totalPrice) || 0), 0
      ) || 0;
      
+     // ===== AI WORKFLOW CONFIG - Budget Version Tracking =====
+     const aiConfig = summary?.ai_workflow_config as {
+       budgetVersion?: 'initial' | 'change_order';
+       budgetUpdatedAt?: string;
+       grandTotal?: number;
+       latestBudgetDocId?: string;
+     } | null;
+     
+     const budgetVersion = aiConfig?.budgetVersion || 'initial';
+     const budgetUpdatedAt = aiConfig?.budgetUpdatedAt || null;
+     
+     // If ai_workflow_config has a grandTotal, prefer it (most recent budget)
+     const aiConfigGrandTotal = aiConfig?.grandTotal || 0;
+     
      // Use calculated values if available, otherwise fall back to summary fields
      const materialCost = calculatedMaterialCost > 0 ? calculatedMaterialCost : (summary?.material_cost || 0);
      const laborCost = calculatedLaborCost > 0 ? calculatedLaborCost : (summary?.labor_cost || 0);
@@ -226,8 +244,10 @@ import { differenceInDays } from "date-fns";
     const grandTotal = subtotal + taxAmount;
     
     // Approved Budget = Grand Total (bruttó) to match PDF
-    // If total_cost from DB is set and >= grandTotal, use it; otherwise use grandTotal
-    const approvedBudget = totalCost > 0 && totalCost >= grandTotal
+     // Priority: 1) AI Config grandTotal (latest budget), 2) total_cost from DB, 3) calculated grandTotal
+     const approvedBudget = aiConfigGrandTotal > 0
+       ? aiConfigGrandTotal
+       : totalCost > 0 && totalCost >= grandTotal
       ? totalCost
       : grandTotal > 0
         ? grandTotal
@@ -314,6 +334,8 @@ import { differenceInDays } from "date-fns";
           hasUnexpectedCosts: currentSpend > approvedBudget * 0.9,
           costStability: currentSpend <= approvedBudget * 0.7 ? "stable" : 
                          currentSpend <= approvedBudget * 0.9 ? "warning" : "critical"
+          ,budgetVersion,
+          budgetUpdatedAt,
        },
        blueprintUrl: blueprintDoc?.file_path || null,
        latestPhotoUrl,
@@ -326,7 +348,9 @@ import { differenceInDays } from "date-fns";
       totalTeam,
       tasksCount: totalTasks,
       docsCount: documents?.length || 0,
-      daysActive
+      daysActive,
+      budgetStatus: aiConfig?.budgetVersion || 'none',
+      budgetLastUpdated: budgetUpdatedAt,
      };
   }, [project, summary, tasks, documents, teamMembers]);
  
