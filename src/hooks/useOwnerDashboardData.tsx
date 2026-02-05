@@ -163,21 +163,44 @@ import { differenceInDays } from "date-fns";
     }, 0) || 0;
 
     // ===== FINANCIAL LOGIC FIX =====
-    // Current Spend = Materials (purchased) + Labor (committed) + Completed Tasks costs
-    // This represents ACTUAL expenditures so far
-    const currentSpend = materialCost + completedTasksCost;
+    // ===== DYNAMIC FINANCIAL LOGIC =====
+    // Calculate progress percentage based on completed tasks value OR count
+    const progressPercent = allTasksCost > 0 
+      ? Math.min(100, (completedTasksCost / allTasksCost) * 100)
+      : (tasks && tasks.length > 0 
+          ? Math.min(100, ((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100))
+          : 0);
+    
+    // Progress ratio for proportional calculations (0-1)
+    const progressRatio = progressPercent / 100;
+    
+    // Labor and Others costs move from Remaining to Current Spend proportionally with progress
+    // At 0% progress: 0% of Labor/Others in Current Spend
+    // At 50% progress: 50% of Labor/Others in Current Spend  
+    // At 100% progress: 100% of Labor/Others in Current Spend
+    const realizedLaborCost = laborCost * progressRatio;
+    const realizedOtherCost = otherCost * progressRatio;
+    
+    // Current Spend = Materials (purchased) + Completed Tasks + Proportional Labor/Others
+    const calculatedCurrentSpend = materialCost + completedTasksCost + realizedLaborCost + realizedOtherCost;
 
-    // Approved Budget = Materials + Labor + ALL Tasks (total planned project cost)
-    // This represents the FULL project budget including pending work
+    // Full project budget = all costs combined
     const fullProjectBudget = materialCost + laborCost + otherCost + allTasksCost;
     
-    // Use total_cost if manually set, otherwise use calculated full budget
+    // Approved Budget calculation
     const approvedBudget = totalCost > 0 && totalCost >= fullProjectBudget
       ? totalCost
       : fullProjectBudget > 0
         ? fullProjectBudget
         : 25000; // Minimum default
- 
+    
+    // ===== 100% COMPLETION SYNC =====
+    // When progress reaches 100%, force Remaining to $0
+    // This ensures Current Spend === Approved Budget at completion
+    const isProjectComplete = progressPercent >= 100;
+    const currentSpend = isProjectComplete ? approvedBudget : calculatedCurrentSpend;
+    const remainingBudget = isProjectComplete ? 0 : Math.max(0, approvedBudget - calculatedCurrentSpend);
+
      // Calculate health score (simplified)
      let healthScore = 50;
      if (taskProgress >= 50) healthScore += 20;
@@ -228,14 +251,17 @@ import { differenceInDays } from "date-fns";
        financials: {
          approvedBudget,
          currentSpend,
-        materialCost,
-        laborCost,
-       tasksCost: completedTasksCost,
-       plannedTasksCost: allTasksCost,
-         isWithinRange: currentSpend <= approvedBudget,
-         hasUnexpectedCosts: currentSpend > approvedBudget * 0.9,
-         costStability: currentSpend <= approvedBudget * 0.7 ? "stable" : 
-                        currentSpend <= approvedBudget * 0.9 ? "warning" : "critical"
+          remainingBudget,
+          materialCost,
+          laborCost,
+          tasksCost: completedTasksCost,
+          plannedTasksCost: allTasksCost,
+          progressPercent: Math.round(progressPercent),
+          isProjectComplete,
+          isWithinRange: currentSpend <= approvedBudget,
+          hasUnexpectedCosts: currentSpend > approvedBudget * 0.9,
+          costStability: currentSpend <= approvedBudget * 0.7 ? "stable" : 
+                         currentSpend <= approvedBudget * 0.9 ? "warning" : "critical"
        },
        blueprintUrl: blueprintDoc?.file_path || null,
        latestPhotoUrl,
