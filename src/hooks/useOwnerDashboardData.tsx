@@ -141,8 +141,9 @@ import { differenceInDays } from "date-fns";
       return sum + (Number(task.total_cost) || 0);
     }, 0) || 0;
 
-    // Current Spend = completed tasks only (realized spending)
-    const currentSpend = completedTasksCost;
+    // Current Spend = Materials + Completed Tasks (realized spending)
+    // Materials tab costs are considered "committed" spending
+    const currentSpend = materialCost + completedTasksCost;
 
     // Approved budget from total_cost, or calculate from spend + buffer
     // Use material + labor as budget base if no total_cost set
