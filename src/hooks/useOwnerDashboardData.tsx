@@ -24,6 +24,7 @@ import { differenceInDays } from "date-fns";
   remainingOtherCost: number;
   tasksCost: number;
   plannedTasksCost: number;
+  completedWorkValue: number;
   progressPercent: number;
   isProjectComplete: boolean;
    isWithinRange: boolean;
@@ -206,6 +207,10 @@ import { differenceInDays } from "date-fns";
     const remainingLaborCost = laborCost * (1 - progressRatio);
     const remainingOtherCost = otherCost * (1 - progressRatio);
     
+    // Completed Work Value = ALL realized work (labor + others + explicit tasks)
+    // This is what shows in "Completed Tasks" - the actual value of work done
+    const completedWorkValue = realizedLaborCost + realizedOtherCost + completedTasksCostCalculated;
+    
     // Current Spend = Materials (purchased) + Completed Tasks + Proportional Labor/Others
     const calculatedCurrentSpend = materialCost + completedTasksCostCalculated + realizedLaborCost + realizedOtherCost;
 
@@ -302,6 +307,7 @@ import { differenceInDays } from "date-fns";
          remainingOtherCost,
           tasksCost: completedTasksCostCalculated,
           plannedTasksCost: allTasksCost,
+         completedWorkValue,
           progressPercent: Math.round(progressPercent),
           isProjectComplete,
           isWithinRange: currentSpend <= approvedBudget,
