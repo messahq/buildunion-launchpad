@@ -449,6 +449,14 @@ interface ProjectSummaryData {
     };
     dualEngineOutput?: DualEngineOutput;
     synthesisResult?: SynthesisResult;
+    pendingBudgetChange?: {
+      submittedBy: string;
+      submittedByName?: string;
+      submittedAt: string;
+      proposedGrandTotal: number;
+      previousGrandTotal: number;
+      status: 'pending' | 'approved' | 'declined';
+    };
   } | null;
   client_name: string | null;
   client_email: string | null;
@@ -2436,6 +2444,24 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
             })()}
             isSoloMode={!isTeamMode}
             projectOwnerId={project?.user_id}
+            pendingApprovalStatus={(() => {
+              const aiConfig = summary?.ai_workflow_config as {
+                pendingBudgetChange?: {
+                  status: string;
+                  submittedAt?: string;
+                  proposedGrandTotal?: number;
+                };
+              } | null;
+              const pending = aiConfig?.pendingBudgetChange;
+              if (pending && pending.status === 'pending') {
+                return {
+                  isPending: true,
+                  submittedAt: pending.submittedAt,
+                  proposedTotal: pending.proposedGrandTotal,
+                };
+              }
+              return null;
+            })()}
             onCostsChange={(costs) => {
               // === IMMEDIATE SYNC to centralFinancials (Dashboard reads from here) ===
               const laborTotal = costs.labor.reduce((sum, l) => sum + (l.totalPrice || l.quantity * (l.unitPrice || 0)), 0);

@@ -1137,12 +1137,29 @@ function InlineAudioPlayer({
            
            {/* Budget Approval Panel - shown when pending approval exists */}
            {pendingBudgetChange && pendingBudgetChange.status === 'pending' && (
-             <BudgetApprovalPanel
-               projectId={projectId}
-               pendingChange={pendingBudgetChange}
-               onApprove={onBudgetApproved}
-               onDecline={onBudgetDeclined}
-             />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ 
+                  opacity: 1, 
+                  scale: 1,
+                  boxShadow: [
+                    "0 0 0 0 rgba(245, 158, 11, 0)",
+                    "0 0 20px 10px rgba(245, 158, 11, 0.3)",
+                    "0 0 0 0 rgba(245, 158, 11, 0)"
+                  ]
+                }}
+                transition={{ 
+                  boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                }}
+                className="rounded-xl"
+              >
+                <BudgetApprovalPanel
+                  projectId={projectId}
+                  pendingChange={pendingBudgetChange}
+                  onApprove={onBudgetApproved}
+                  onDecline={onBudgetDeclined}
+                />
+              </motion.div>
            )}
            
            {/* Three Column Layout */}

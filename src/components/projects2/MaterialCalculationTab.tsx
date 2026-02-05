@@ -64,7 +64,8 @@ import {
   MapPin,
   PenLine,
   RotateCcw,
-  Save
+  Save,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -75,6 +76,12 @@ import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnitSettings } from "@/hooks/useUnitSettings";
 import { useAuth } from "@/hooks/useAuth";
+
+interface PendingApprovalStatus {
+  isPending: boolean;
+  submittedAt?: string;
+  proposedTotal?: number;
+}
 
 interface CostItem {
   id: string;
@@ -126,6 +133,7 @@ interface MaterialCalculationTabProps {
   isSoloMode?: boolean;
   projectOwnerId?: string; // Owner's user ID for approval gate
   onPendingApprovalCreated?: () => void; // Callback when pending approval is submitted
+  pendingApprovalStatus?: PendingApprovalStatus | null; // Show pending state for non-owners
 }
 
 // Essential material patterns that get 10% waste calculation
@@ -319,7 +327,8 @@ export function MaterialCalculationTab({
   dataSource = "ai",
   isSoloMode = false,
   projectOwnerId,
-  onPendingApprovalCreated
+  onPendingApprovalCreated,
+  pendingApprovalStatus
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -1681,6 +1690,33 @@ export function MaterialCalculationTab({
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Pending Approval Banner for non-owners */}
+      {!isOwner && pendingApprovalStatus?.isPending && (
+        <div className="relative overflow-hidden rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-950/40 via-slate-900/80 to-amber-950/40 p-4">
+          {/* Animated border glow */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-500 animate-pulse" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/20 border border-amber-500/30">
+              <Clock className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-amber-300">Budget Change Pending Approval</h4>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Your proposed budget of {formatCurrency(pendingApprovalStatus.proposedTotal || 0)} is waiting for owner approval.
+                {pendingApprovalStatus.submittedAt && (
+                  <span className="ml-1 text-amber-400/70">
+                    Submitted {new Date(pendingApprovalStatus.submittedAt).toLocaleDateString()}
+                  </span>
+                )}
+              </p>
+            </div>
+            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/50 animate-pulse">
+              Pending
+            </Badge>
+          </div>
+        </div>
+      )}
+
       {/* Header - stacked on mobile */}
       <div className="space-y-3">
         {/* Title row */}
