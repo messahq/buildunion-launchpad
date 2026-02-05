@@ -1310,6 +1310,44 @@ export function MaterialCalculationTab({
             toast.error(`Failed to register document: ${insertError.message}`);
           } else {
             console.log("[Cost Breakdown] Document saved successfully:", insertData);
+            
+            // ===== AI REFERENCE UPDATE =====
+            // Update ai_workflow_config to point to this new document as the budget reference
+            // This ensures AI Project Health uses the latest budget version
+            const changeOrderTimestamp = new Date().toISOString();
+            const isChangeOrder = dataSource === 'saved' || hasUnsavedChanges;
+            
+            const { error: summaryUpdateError } = await supabase
+              .from("project_summaries")
+              .update({
+                ai_workflow_config: {
+                  latestBudgetDocId: insertData.id,
+                  latestBudgetPath: filePath,
+                  budgetUpdatedAt: changeOrderTimestamp,
+                  budgetVersion: isChangeOrder ? 'change_order' : 'initial',
+                  grandTotal: grandTotalWithTax,
+                  subtotal: grandTotal,
+                  taxAmount: totalTax,
+                  changeOrderHistory: [{
+                    timestamp: changeOrderTimestamp,
+                    documentId: insertData.id,
+                    grandTotal: grandTotalWithTax,
+                    reason: isChangeOrder ? 'Manual budget adjustment' : 'Initial budget creation'
+                  }]
+                },
+                total_cost: grandTotalWithTax, // Sync gross total to summary
+                updated_at: changeOrderTimestamp
+              })
+              .eq("project_id", projectId);
+            
+            if (summaryUpdateError) {
+              console.error("[Cost Breakdown] Failed to update AI reference:", summaryUpdateError);
+            } else {
+              console.log("[Cost Breakdown] AI reference updated - Budget version:", isChangeOrder ? 'Change Order' : 'Initial');
+              if (isChangeOrder) {
+                toast.success("Budget updated - Change Order registered ✓", { duration: 3000 });
+              }
+            }
           }
         }
       } else {
