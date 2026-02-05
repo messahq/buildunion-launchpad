@@ -38,6 +38,7 @@ import ContractView from "./pages/ContractView";
 import AdminDashboard from "./pages/AdminDashboard";
 import BuildUnionAbout from "./pages/BuildUnionAbout";
 import BuildUnionProject from "./pages/BuildUnionProject";
+ import OwnerDashboard from "./pages/OwnerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const App = () => (
                       <Route path="/buildunion/profile/view" element={<RequireEmailVerification><BuildUnionProfileView /></RequireEmailVerification>} />
                       <Route path="/buildunion/messages" element={<RequireEmailVerification><BuildUnionMessages /></RequireEmailVerification>} />
                       <Route path="/buildunion/project/:projectId" element={<RequireEmailVerification><BuildUnionProject /></RequireEmailVerification>} />
+                       <Route path="/buildunion/project/:projectId/owner" element={<RequireEmailVerification><OwnerDashboard /></RequireEmailVerification>} />
                       
                       {/* Public/semi-public routes */}
                       <Route path="/buildunion/pricing" element={<BuildUnionPricing />} />
