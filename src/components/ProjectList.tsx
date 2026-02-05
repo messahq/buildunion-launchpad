@@ -415,9 +415,9 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
                     return;
                   }
                   // Navigate directly to Owner View for owned projects
-                  navigate(`/buildunion/project/${project.id}/owner`);
+                   navigate(`/buildunion/project/${project.id}`);
                 }}
-                onDoubleClick={() => !isSiteLog && navigate(`/buildunion/project/${project.id}/owner`)}
+                 onDoubleClick={() => !isSiteLog && navigate(`/buildunion/project/${project.id}`)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
