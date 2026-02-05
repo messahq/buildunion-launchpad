@@ -70,8 +70,12 @@ import { useWeather, formatTemp } from "@/hooks/useWeather";
  interface FinancialSummary {
    approvedBudget: number;
    currentSpend: number;
+  subtotal?: number;
+  taxAmount?: number;
+  taxRate?: number;
   materialCost?: number;
   laborCost?: number;
+  otherCost?: number;
   tasksCost?: number;
   plannedTasksCost?: number;
    isWithinRange: boolean;
@@ -757,7 +761,11 @@ function InlineAudioPlayer({
    const spendPercentage = (financials.currentSpend / financials.approvedBudget) * 100;
   const materialCost = financials.materialCost || 0;
   const laborCost = financials.laborCost || 0;
+  const otherCost = financials.otherCost || 0;
   const tasksCost = financials.tasksCost || 0;
+  const subtotal = financials.subtotal || 0;
+  const taxRate = financials.taxRate || 0.13;
+  const taxAmount = financials.taxAmount || 0;
   const remaining = Math.max(0, financials.approvedBudget - financials.currentSpend);
  
    return (
@@ -818,62 +826,125 @@ function InlineAudioPlayer({
 
         {/* Cost Breakdown */}
         <div className="pt-3 border-t border-slate-700/50 space-y-2">
-          <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">Cost Breakdown</p>
+          <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">Cost Breakdown (Net)</p>
           
-          {materialCost > 0 && (
+          {/* Materials - always show if > 0 */}
             <motion.div 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex justify-between items-center"
+              className={cn(
+                "flex justify-between items-center",
+                materialCost === 0 && "opacity-50"
+              )}
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-purple-400" />
                 Materials
               </span>
               <span className="text-xs font-medium text-purple-400 tabular-nums">
-                <AnimatedCounter value={materialCost} duration={2200} />
+                {materialCost > 0 ? <AnimatedCounter value={materialCost} duration={2200} /> : "$0.00"}
               </span>
             </motion.div>
-          )}
           
-          {laborCost > 0 && (
+          {/* Labor - always show if > 0 */}
             <motion.div 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              className="flex justify-between items-center"
+              className={cn(
+                "flex justify-between items-center",
+                laborCost === 0 && "opacity-50"
+              )}
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-amber-400" />
                 Labor
               </span>
               <span className="text-xs font-medium text-amber-400 tabular-nums">
-                <AnimatedCounter value={laborCost} duration={2400} />
+                {laborCost > 0 ? <AnimatedCounter value={laborCost} duration={2400} /> : "$0.00"}
               </span>
             </motion.div>
-          )}
           
-          {tasksCost > 0 && (
+          {/* Others - ALWAYS show (even if $0) so AI "sees" it */}
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.45 }}
+              className={cn(
+                "flex justify-between items-center",
+                otherCost === 0 && "opacity-50"
+              )}
+            >
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-400" />
+                Others
+              </span>
+              <span className="text-xs font-medium text-rose-400 tabular-nums">
+                {otherCost > 0 ? <AnimatedCounter value={otherCost} duration={2500} /> : "$0.00"}
+              </span>
+            </motion.div>
+
+          {/* Completed Tasks */}
             <motion.div 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex justify-between items-center"
+              className={cn(
+                "flex justify-between items-center",
+                tasksCost === 0 && "opacity-50"
+              )}
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-cyan-400" />
                 Completed Tasks
               </span>
               <span className="text-xs font-medium text-cyan-400 tabular-nums">
-                <AnimatedCounter value={tasksCost} duration={2600} />
+                {tasksCost > 0 ? <AnimatedCounter value={tasksCost} duration={2600} /> : "$0.00"}
               </span>
             </motion.div>
-          )}
 
-          {materialCost === 0 && laborCost === 0 && tasksCost === 0 && (
-            <p className="text-xs text-slate-400 italic">No cost data yet</p>
-          )}
+          {/* Subtotal (Net) */}
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.55 }}
+            className="flex justify-between items-center pt-2 border-t border-slate-700/30"
+          >
+            <span className="text-xs text-slate-300 font-medium">Subtotal (Net)</span>
+            <span className="text-xs font-medium text-slate-300 tabular-nums">
+              <AnimatedCounter value={subtotal} duration={2700} />
+            </span>
+          </motion.div>
+
+          {/* Tax (HST 13%) - ALWAYS show */}
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+            className="flex justify-between items-center"
+          >
+            <span className="text-xs text-slate-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-400" />
+              HST ({Math.round(taxRate * 100)}%)
+            </span>
+            <span className="text-xs font-medium text-blue-400 tabular-nums">
+              <AnimatedCounter value={taxAmount} duration={2800} />
+            </span>
+          </motion.div>
+
+          {/* Grand Total (Gross) indicator */}
+          <motion.div 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.65 }}
+            className="flex justify-between items-center pt-2 border-t border-slate-600/50"
+          >
+            <span className="text-xs text-white font-semibold uppercase tracking-wide">Grand Total (Gross)</span>
+            <span className="text-sm font-bold text-white tabular-nums">
+              <AnimatedCounter value={subtotal + taxAmount} duration={3000} />
+            </span>
+          </motion.div>
         </div>
 
          {/* Status Indicators */}
