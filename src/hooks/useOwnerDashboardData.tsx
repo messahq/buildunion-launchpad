@@ -13,10 +13,14 @@ import { differenceInDays } from "date-fns";
  interface FinancialSummary {
    approvedBudget: number;
    currentSpend: number;
+  remainingBudget: number;
   materialCost: number;
   laborCost: number;
+  otherCost: number;
   tasksCost: number;
   plannedTasksCost: number;
+  progressPercent: number;
+  isProjectComplete: boolean;
    isWithinRange: boolean;
    hasUnexpectedCosts: boolean;
    costStability: "stable" | "warning" | "critical";
@@ -158,15 +162,26 @@ import { differenceInDays } from "date-fns";
       .reduce((sum, task) => sum + (Number(task.total_cost) || 0), 0) || 0;
 
     // Total planned task costs (for reference/budget planning)
+    // Calculate task cost: prefer total_cost, fallback to unit_price * quantity
     const allTasksCost = tasks?.reduce((sum, task) => {
-      return sum + (Number(task.total_cost) || 0);
+      const taskCost = Number(task.total_cost) || 
+        (Number(task.unit_price) || 0) * (Number(task.quantity) || 1);
+      return sum + taskCost;
     }, 0) || 0;
+
+    // Same calculation for completed tasks
+    const completedTasksCostCalculated = tasks?.filter(t => t.status === 'completed')
+      .reduce((sum, task) => {
+        const taskCost = Number(task.total_cost) || 
+          (Number(task.unit_price) || 0) * (Number(task.quantity) || 1);
+        return sum + taskCost;
+      }, 0) || 0;
 
     // ===== FINANCIAL LOGIC FIX =====
     // ===== DYNAMIC FINANCIAL LOGIC =====
     // Calculate progress percentage based on completed tasks value OR count
     const progressPercent = allTasksCost > 0 
-      ? Math.min(100, (completedTasksCost / allTasksCost) * 100)
+      ? Math.min(100, (completedTasksCostCalculated / allTasksCost) * 100)
       : (tasks && tasks.length > 0 
           ? Math.min(100, ((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100))
           : 0);
@@ -182,7 +197,7 @@ import { differenceInDays } from "date-fns";
     const realizedOtherCost = otherCost * progressRatio;
     
     // Current Spend = Materials (purchased) + Completed Tasks + Proportional Labor/Others
-    const calculatedCurrentSpend = materialCost + completedTasksCost + realizedLaborCost + realizedOtherCost;
+    const calculatedCurrentSpend = materialCost + completedTasksCostCalculated + realizedLaborCost + realizedOtherCost;
 
     // Full project budget = all costs combined
     const fullProjectBudget = materialCost + laborCost + otherCost + allTasksCost;
@@ -254,7 +269,8 @@ import { differenceInDays } from "date-fns";
           remainingBudget,
           materialCost,
           laborCost,
-          tasksCost: completedTasksCost,
+          otherCost,
+          tasksCost: completedTasksCostCalculated,
           plannedTasksCost: allTasksCost,
           progressPercent: Math.round(progressPercent),
           isProjectComplete,
