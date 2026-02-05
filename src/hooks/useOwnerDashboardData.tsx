@@ -19,7 +19,9 @@ import { differenceInDays } from "date-fns";
   taxRate: number;
   materialCost: number;
   laborCost: number;
+  remainingLaborCost: number;
   otherCost: number;
+  remainingOtherCost: number;
   tasksCost: number;
   plannedTasksCost: number;
   progressPercent: number;
@@ -199,6 +201,11 @@ import { differenceInDays } from "date-fns";
     const realizedLaborCost = laborCost * progressRatio;
     const realizedOtherCost = otherCost * progressRatio;
     
+    // Remaining Labor/Others = what's left in the "budget" (Plan vs Execution)
+    // These decrease as work is completed
+    const remainingLaborCost = laborCost * (1 - progressRatio);
+    const remainingOtherCost = otherCost * (1 - progressRatio);
+    
     // Current Spend = Materials (purchased) + Completed Tasks + Proportional Labor/Others
     const calculatedCurrentSpend = materialCost + completedTasksCostCalculated + realizedLaborCost + realizedOtherCost;
 
@@ -290,7 +297,9 @@ import { differenceInDays } from "date-fns";
          taxRate,
           materialCost,
           laborCost,
+         remainingLaborCost,
           otherCost,
+         remainingOtherCost,
           tasksCost: completedTasksCostCalculated,
           plannedTasksCost: allTasksCost,
           progressPercent: Math.round(progressPercent),

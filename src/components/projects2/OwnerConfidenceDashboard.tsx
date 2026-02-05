@@ -75,7 +75,9 @@ import { useWeather, formatTemp } from "@/hooks/useWeather";
   taxRate?: number;
   materialCost?: number;
   laborCost?: number;
+  remainingLaborCost?: number;
   otherCost?: number;
+  remainingOtherCost?: number;
   tasksCost?: number;
   plannedTasksCost?: number;
    isWithinRange: boolean;
@@ -760,8 +762,11 @@ function InlineAudioPlayer({
  function FinancialSafe({ financials }: { financials: FinancialSummary }) {
    const spendPercentage = (financials.currentSpend / financials.approvedBudget) * 100;
   const materialCost = financials.materialCost || 0;
-  const laborCost = financials.laborCost || 0;
+  // Show REMAINING labor (budget left) not total - decreases as tasks complete
+  const remainingLaborCost = financials.remainingLaborCost ?? (financials.laborCost || 0);
+  const totalLaborBudget = financials.laborCost || 0;
   const otherCost = financials.otherCost || 0;
+  const remainingOtherCost = financials.remainingOtherCost ?? otherCost;
   const tasksCost = financials.tasksCost || 0;
   const subtotal = financials.subtotal || 0;
   const taxRate = financials.taxRate || 0.13;
@@ -847,60 +852,73 @@ function InlineAudioPlayer({
               </span>
             </motion.div>
           
-          {/* Labor - always show if > 0 */}
+          {/* Labor Budget (Remaining) - shows what's LEFT in the labor budget */}
             <motion.div 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
               className={cn(
                 "flex justify-between items-center",
-                laborCost === 0 && "opacity-50"
+                remainingLaborCost === 0 && totalLaborBudget > 0 && "opacity-50"
               )}
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-amber-400" />
-                Labor
+                Labor (Budget)
               </span>
-              <span className="text-xs font-medium text-amber-400 tabular-nums">
-                {laborCost > 0 ? <AnimatedCounter value={laborCost} duration={2400} /> : "$0.00"}
+              <span className={cn(
+                "text-xs font-medium tabular-nums",
+                remainingLaborCost > 0 ? "text-amber-400" : "text-emerald-400"
+              )}>
+                {totalLaborBudget > 0 ? <AnimatedCounter value={remainingLaborCost} duration={2400} /> : "$0.00"}
               </span>
             </motion.div>
           
-          {/* Others - ALWAYS show (even if $0) so AI "sees" it */}
+          {/* Others (Remaining Budget) - ALWAYS show */}
             <motion.div 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.45 }}
               className={cn(
                 "flex justify-between items-center",
-                otherCost === 0 && "opacity-50"
+                remainingOtherCost === 0 && otherCost > 0 && "opacity-50"
               )}
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-400" />
-                Others
+                Others (Budget)
               </span>
-              <span className="text-xs font-medium text-rose-400 tabular-nums">
-                {otherCost > 0 ? <AnimatedCounter value={otherCost} duration={2500} /> : "$0.00"}
+              <span className={cn(
+                "text-xs font-medium tabular-nums",
+                remainingOtherCost > 0 ? "text-rose-400" : "text-emerald-400"
+              )}>
+                {otherCost > 0 ? <AnimatedCounter value={remainingOtherCost} duration={2500} /> : "$0.00"}
               </span>
             </motion.div>
 
-          {/* Completed Tasks */}
+          {/* Completed Tasks (Realized Work) - shows actual completed work value */}
             <motion.div 
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
               className={cn(
                 "flex justify-between items-center",
-                tasksCost === 0 && "opacity-50"
+                tasksCost === 0 && "opacity-50",
+                tasksCost > 0 && "bg-emerald-500/10 -mx-2 px-2 py-1 rounded"
               )}
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                Completed Tasks
+                <span className={cn(
+                  "w-2 h-2 rounded-full",
+                  tasksCost > 0 ? "bg-emerald-400" : "bg-cyan-400"
+                )} />
+                ✓ Completed Tasks
               </span>
-              <span className="text-xs font-medium text-cyan-400 tabular-nums">
-                {tasksCost > 0 ? <AnimatedCounter value={tasksCost} duration={2600} /> : "$0.00"}
+              <span className={cn(
+                "text-xs font-medium tabular-nums",
+                tasksCost > 0 ? "text-emerald-400" : "text-slate-500"
+              )}>
+                {tasksCost > 0 ? <AnimatedCounter value={tasksCost} duration={2600} /> : "$0.00 (no tasks done)"}
               </span>
             </motion.div>
 
