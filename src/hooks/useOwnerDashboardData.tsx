@@ -13,6 +13,9 @@ import { differenceInDays } from "date-fns";
  interface FinancialSummary {
    approvedBudget: number;
    currentSpend: number;
+  materialCost: number;
+  laborCost: number;
+  tasksCost: number;
    isWithinRange: boolean;
    hasUnexpectedCosts: boolean;
    costStability: "stable" | "warning" | "critical";
@@ -127,8 +130,21 @@ import { differenceInDays } from "date-fns";
      const totalCost = summary?.total_cost || 0;
      const materialCost = summary?.material_cost || 0;
      const laborCost = summary?.labor_cost || 0;
-     const currentSpend = materialCost + laborCost;
-     const approvedBudget = totalCost > 0 ? totalCost : 50000; // Default budget
+    
+    // Calculate task-based costs as additional data source
+    const tasksCost = tasks?.reduce((sum, task) => {
+      return sum + (Number(task.total_cost) || 0);
+    }, 0) || 0;
+    
+    // Current spend = materials + labor + task costs (if any)
+    const currentSpend = Math.max(materialCost + laborCost, tasksCost);
+    
+    // Approved budget from total_cost, or calculate from spend + buffer
+    const approvedBudget = totalCost > 0 
+      ? totalCost 
+      : currentSpend > 0 
+        ? Math.ceil(currentSpend * 1.15 / 1000) * 1000 // 15% buffer, rounded
+        : 25000; // Minimum default
  
      // Calculate health score (simplified)
      let healthScore = 50;
@@ -180,6 +196,9 @@ import { differenceInDays } from "date-fns";
        financials: {
          approvedBudget,
          currentSpend,
+        materialCost,
+        laborCost,
+        tasksCost,
          isWithinRange: currentSpend <= approvedBudget,
          hasUnexpectedCosts: currentSpend > approvedBudget * 0.9,
          costStability: currentSpend <= approvedBudget * 0.7 ? "stable" : 

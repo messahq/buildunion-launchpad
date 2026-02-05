@@ -65,6 +65,9 @@ import { useWeather, formatTemp } from "@/hooks/useWeather";
  interface FinancialSummary {
    approvedBudget: number;
    currentSpend: number;
+  materialCost?: number;
+  laborCost?: number;
+  tasksCost?: number;
    isWithinRange: boolean;
    hasUnexpectedCosts: boolean;
    costStability: "stable" | "warning" | "critical";
@@ -617,14 +620,19 @@ function ProjectVisual({
  
  function FinancialSafe({ financials }: { financials: FinancialSummary }) {
    const spendPercentage = (financials.currentSpend / financials.approvedBudget) * 100;
+  const materialCost = financials.materialCost || 0;
+  const laborCost = financials.laborCost || 0;
+  const tasksCost = financials.tasksCost || 0;
+  const remaining = Math.max(0, financials.approvedBudget - financials.currentSpend);
  
    return (
-     <div className="space-y-4">
+    <div className="space-y-5">
        <h3 className="text-xs uppercase tracking-widest text-muted-foreground/80">
          FINANCIAL SAFE
        </h3>
        
-       <div className="space-y-4">
+      <div className="space-y-3">
+        {/* Main Budget Numbers */}
          <div className="flex justify-between items-baseline">
            <span className="text-xs text-muted-foreground">APPROVED BUDGET:</span>
            <span className="text-xl font-bold text-foreground tabular-nums">
@@ -634,11 +642,24 @@ function ProjectVisual({
          
          <div className="flex justify-between items-baseline">
            <span className="text-xs text-muted-foreground">CURRENT SPEND:</span>
-           <span className="text-lg font-medium text-muted-foreground tabular-nums">
+          <span className={cn(
+            "text-lg font-medium tabular-nums",
+            financials.isWithinRange ? "text-emerald-400" : "text-red-400"
+          )}>
              <AnimatedCounter value={financials.currentSpend} duration={2500} />
            </span>
          </div>
-         
+
+        <div className="flex justify-between items-baseline">
+          <span className="text-xs text-muted-foreground">REMAINING:</span>
+          <span className={cn(
+            "text-sm font-medium tabular-nums",
+            remaining > 0 ? "text-cyan-400" : "text-red-400"
+          )}>
+            <AnimatedCounter value={remaining} duration={2800} />
+          </span>
+        </div>
+
          {/* Progress Bar */}
          <div className="relative h-3 bg-muted/20 rounded-full overflow-hidden">
            {/* Background shimmer */}
@@ -659,7 +680,67 @@ function ProjectVisual({
              )}
            />
          </div>
-         
+
+        {/* Cost Breakdown */}
+        <div className="pt-3 border-t border-slate-700/50 space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-2">Cost Breakdown</p>
+          
+          {materialCost > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex justify-between items-center"
+            >
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-purple-400" />
+                Materials
+              </span>
+              <span className="text-xs font-medium text-purple-400 tabular-nums">
+                <AnimatedCounter value={materialCost} duration={2200} />
+              </span>
+            </motion.div>
+          )}
+          
+          {laborCost > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex justify-between items-center"
+            >
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                Labor
+              </span>
+              <span className="text-xs font-medium text-amber-400 tabular-nums">
+                <AnimatedCounter value={laborCost} duration={2400} />
+              </span>
+            </motion.div>
+          )}
+          
+          {tasksCost > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex justify-between items-center"
+            >
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                Task Costs
+              </span>
+              <span className="text-xs font-medium text-cyan-400 tabular-nums">
+                <AnimatedCounter value={tasksCost} duration={2600} />
+              </span>
+            </motion.div>
+          )}
+
+          {materialCost === 0 && laborCost === 0 && tasksCost === 0 && (
+            <p className="text-xs text-slate-500 italic">No cost data yet</p>
+          )}
+        </div>
+
          {/* Status Indicators */}
          <div className="space-y-2 pt-2">
            <div className="flex items-center gap-2">
