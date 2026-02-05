@@ -16,8 +16,10 @@ import {
   Map,
   Download,
   Users,
-  DollarSign
+   DollarSign,
+   Eye
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -2009,6 +2011,18 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               </span>
             </div>
           </div>
+           {/* Owner Confidence Dashboard Button */}
+           {isOwner && (
+             <Button
+               variant="outline"
+               size="sm"
+               onClick={() => window.open(`/buildunion/project/${projectId}/owner`, '_blank')}
+               className="shrink-0 gap-2 border-cyan-500/50 text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-400"
+             >
+               <Eye className="h-4 w-4" />
+               <span className="hidden sm:inline">Owner View</span>
+             </Button>
+           )}
         </div>
 
       </div>
