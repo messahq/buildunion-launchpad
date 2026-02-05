@@ -1,6 +1,7 @@
  import { useMemo } from "react";
  import { useQuery } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
+import { differenceInDays } from "date-fns";
  
  interface Milestone {
    id: string;
@@ -29,6 +30,11 @@
    currentPhase: string;
    projectName: string;
    projectAddress: string | null;
+  teamOnline: number;
+  totalTeam: number;
+  tasksCount: number;
+  docsCount: number;
+  daysActive: number;
  }
  
  export function useOwnerDashboardData(projectId: string | null) {
@@ -95,6 +101,21 @@
      enabled: !!projectId,
    });
  
+  // Fetch team members
+  const { data: teamMembers } = useQuery({
+    queryKey: ["project-team-owner", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("project_members")
+        .select("*")
+        .eq("project_id", projectId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!projectId,
+  });
+
    // Calculate dashboard data
    const dashboardData = useMemo<OwnerDashboardData>(() => {
      // Calculate task completion
@@ -144,6 +165,14 @@
      // Determine current phase name
      const currentPhase = phases[currentPhaseIndex] || "Planning";
  
+    // Calculate days active since project creation
+    const projectCreatedAt = project?.created_at ? new Date(project.created_at) : new Date();
+    const daysActive = Math.max(1, differenceInDays(new Date(), projectCreatedAt));
+
+    // Team stats - owner + members
+    const totalTeam = (teamMembers?.length || 0) + 1; // +1 for owner
+    const teamOnline = Math.min(totalTeam, Math.ceil(totalTeam * 0.6)); // Simulate ~60% online
+
      return {
        healthScore,
        verificationRate: taskProgress,
@@ -162,9 +191,14 @@
        completionCertainty,
        currentPhase,
        projectName: project?.name || "Project",
-       projectAddress: project?.address || null
+      projectAddress: project?.address || null,
+      teamOnline,
+      totalTeam,
+      tasksCount: totalTasks,
+      docsCount: documents?.length || 0,
+      daysActive
      };
-   }, [project, summary, tasks, documents]);
+  }, [project, summary, tasks, documents, teamMembers]);
  
    return {
      data: dashboardData,
