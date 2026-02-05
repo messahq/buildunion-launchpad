@@ -14,13 +14,18 @@
    DollarSign,
    Eye,
    Sparkles,
-   Activity
+  Activity,
+  Cloud,
+  CloudRain,
+  Wind,
+  Droplets
  } from "lucide-react";
-import { Users, Sun, MapPin, Zap } from "lucide-react";
+import { Users, Sun, MapPin, Zap, Thermometer } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { format } from "date-fns";
  import { motion, AnimatePresence } from "framer-motion";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
+import { useWeather, formatTemp } from "@/hooks/useWeather";
  
  // ============================================
  // TYPES
@@ -45,6 +50,9 @@ import buildUnionLogo from "@/assets/buildunion-logo.png";
    onViewDetails?: () => void;
   teamOnline?: number;
   totalTeam?: number;
+  tasksCount?: number;
+  docsCount?: number;
+  daysActive?: number;
  }
  
  interface Milestone {
@@ -197,11 +205,11 @@ function LiveClock() {
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10"
+      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-800/70 border border-slate-600/50"
     >
-      <Clock className="w-4 h-4 text-cyan-400" />
+      <Clock className="w-5 h-5 text-cyan-400" />
       <div className="flex flex-col">
-        <span className="text-lg font-mono font-medium text-foreground tabular-nums">
+        <span className="text-lg font-mono font-bold text-white tabular-nums">
           {format(time, "HH:mm")}
           <motion.span
             animate={{ opacity: [1, 0.3, 1] }}
@@ -212,7 +220,7 @@ function LiveClock() {
           </motion.span>
           {format(time, "ss")}
         </span>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+        <span className="text-[10px] text-slate-300 uppercase tracking-wider font-medium">
           {format(time, "EEEE, MMM d")}
         </span>
       </div>
@@ -230,7 +238,7 @@ function TeamOnlineWidget({ online = 0, total = 0 }: { online?: number; total?: 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.3 }}
-      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10"
+      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-800/70 border border-slate-600/50"
     >
       <div className="relative">
         <Users className="w-4 h-4 text-emerald-400" />
@@ -243,11 +251,11 @@ function TeamOnlineWidget({ online = 0, total = 0 }: { online?: number; total?: 
         )}
       </div>
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-foreground">
+        <span className="text-sm font-bold text-white">
           <span className="text-emerald-400">{online}</span>
-          <span className="text-muted-foreground">/{total}</span>
+          <span className="text-slate-400">/{total}</span>
         </span>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+        <span className="text-[10px] text-slate-300 uppercase tracking-wider font-medium">
           Team Online
         </span>
       </div>
@@ -259,21 +267,83 @@ function TeamOnlineWidget({ online = 0, total = 0 }: { online?: number; total?: 
 // WEATHER WIDGET
 // ============================================
 
-function WeatherWidget() {
+function WeatherWidget({ location }: { location?: string }) {
+  const { current, loading, error } = useWeather({
+    location: location || undefined,
+    enabled: !!location && location.length > 3
+  });
+
+  const getWeatherIcon = () => {
+    if (!current?.icon) return <Sun className="w-5 h-5 text-amber-400" />;
+    const iconCode = current.icon;
+    if (iconCode.includes('01') || iconCode.includes('02')) return <Sun className="w-5 h-5 text-amber-400" />;
+    if (iconCode.includes('09') || iconCode.includes('10')) return <CloudRain className="w-5 h-5 text-blue-400" />;
+    if (iconCode.includes('13')) return <Cloud className="w-5 h-5 text-slate-300" />;
+    return <Cloud className="w-5 h-5 text-slate-400" />;
+  };
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-800/70 border border-slate-600/50"
+      >
+        <Cloud className="w-5 h-5 text-slate-400 animate-pulse" />
+        <span className="text-sm text-slate-300">Loading...</span>
+      </motion.div>
+    );
+  }
+
+  if (!location || error || !current) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-800/70 border border-slate-600/50"
+      >
+        <Cloud className="w-5 h-5 text-slate-500" />
+        <div className="flex flex-col">
+          <span className="text-sm font-bold text-slate-400">--°C</span>
+          <span className="text-[10px] text-slate-500 uppercase tracking-wider">No location</span>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.2 }}
-      className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10"
+      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/70 border border-slate-600/50"
     >
-      <Sun className="w-5 h-5 text-amber-400" />
-      <div className="flex flex-col">
-        <span className="text-sm font-medium text-foreground">18°C</span>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-          <MapPin className="w-2 h-2" /> Site
+      {getWeatherIcon()}
+      <div className="flex flex-col min-w-[50px]">
+        <span className="text-sm font-bold text-white">{formatTemp(current.temp)}</span>
+        <span className="text-[10px] text-slate-300 capitalize truncate max-w-[70px] font-medium">
+          {current.description}
         </span>
       </div>
+      <div className="hidden sm:flex flex-col gap-0.5 ml-2 border-l border-slate-600/50 pl-2">
+        <div className="flex items-center gap-1">
+          <Wind className="w-3 h-3 text-cyan-400" />
+          <span className="text-[10px] text-slate-300 font-medium">{Math.round(current.wind_speed)} km/h</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Droplets className="w-3 h-3 text-blue-400" />
+          <span className="text-[10px] text-slate-300 font-medium">{current.humidity}%</span>
+        </div>
+      </div>
+      {current.alerts && current.alerts.length > 0 && (
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="ml-1"
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-400" />
+        </motion.div>
+      )}
     </motion.div>
   );
 }
@@ -282,31 +352,38 @@ function WeatherWidget() {
 // QUICK STATS WIDGET
 // ============================================
 
-function QuickStatsWidget({ verificationRate, docsCount }: { verificationRate: number; docsCount: number }) {
-  const tasksCompleted = Math.round(verificationRate / 100 * 20);
-  const daysActive = 30;
-
+function QuickStatsWidget({ 
+  verificationRate, 
+  docsCount,
+  tasksCount,
+  daysActive
+}: { 
+  verificationRate: number; 
+  docsCount: number;
+  tasksCount: number;
+  daysActive: number;
+}) {
   return (
     <div className="space-y-3">
       <h4 className="text-xs uppercase tracking-widest text-muted-foreground/80 flex items-center gap-2">
         <Zap className="w-3 h-3" /> Quick Stats
       </h4>
       <div className="grid grid-cols-2 gap-3">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="text-center p-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
           <span className="text-xl font-bold text-cyan-400 tabular-nums">{daysActive}</span>
-          <p className="text-[10px] text-muted-foreground uppercase">Days</p>
+          <p className="text-[10px] text-slate-400 uppercase font-medium">Days</p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} className="text-center p-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
           <span className="text-xl font-bold text-emerald-400 tabular-nums">{Math.round(verificationRate)}%</span>
-          <p className="text-[10px] text-muted-foreground uppercase">Done</p>
+          <p className="text-[10px] text-slate-400 uppercase font-medium">Done</p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
-          <span className="text-xl font-bold text-amber-400 tabular-nums">{tasksCompleted}</span>
-          <p className="text-[10px] text-muted-foreground uppercase">Tasks</p>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} className="text-center p-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
+          <span className="text-xl font-bold text-amber-400 tabular-nums">{tasksCount}</span>
+          <p className="text-[10px] text-slate-400 uppercase font-medium">Tasks</p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 }} className="text-center p-2 rounded-lg bg-white/[0.02] border border-white/5">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 }} className="text-center p-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
           <span className="text-xl font-bold text-purple-400 tabular-nums">{docsCount}</span>
-          <p className="text-[10px] text-muted-foreground uppercase">Docs</p>
+          <p className="text-[10px] text-slate-400 uppercase font-medium">Docs</p>
         </motion.div>
       </div>
     </div>
@@ -634,10 +711,12 @@ function ProjectVisual({
    onExportPdf,
   onViewDetails,
   teamOnline = 2,
-  totalTeam = 5
+  totalTeam = 5,
+  tasksCount = 0,
+  docsCount = 0,
+  daysActive = 1
  }: OwnerDashboardProps) {
    const [isExpanded, setIsExpanded] = useState(false);
-  const docsCount = blueprintUrl ? 3 : 1;
  
    return (
      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
@@ -653,7 +732,7 @@ function ProjectVisual({
         animate={{ opacity: 1, y: 0 }}
         className="relative flex flex-wrap items-center justify-center gap-3 mb-4"
       >
-        <WeatherWidget />
+        <WeatherWidget location={projectAddress} />
         <LiveClock />
         <TeamOnlineWidget online={teamOnline} total={totalTeam} />
       </motion.div>
@@ -711,7 +790,12 @@ function ProjectVisual({
             {/* Project Visual / Live Lens */}
             <div className="space-y-6">
               <ProjectVisual blueprintUrl={blueprintUrl} photoUrl={latestPhotoUrl} />
-              <QuickStatsWidget verificationRate={verificationRate} docsCount={docsCount} />
+              <QuickStatsWidget 
+                verificationRate={verificationRate} 
+                docsCount={docsCount}
+                tasksCount={tasksCount}
+                daysActive={daysActive}
+              />
             </div>
 
              {/* Financial Safe */}
@@ -755,13 +839,13 @@ function ProjectVisual({
                variant="outline"
                className={cn(
                  "relative overflow-hidden",
-                 "bg-slate-800/50 border-slate-600/50",
-                 "hover:bg-slate-700/50 hover:border-slate-500/50",
-                 "text-foreground font-medium px-6 py-5"
+                "bg-slate-700/70 border-slate-500/50",
+                "hover:bg-slate-600/70 hover:border-slate-400/50",
+                "text-white font-medium px-6 py-5"
                )}
              >
-               <FileText className="w-4 h-4 mr-2" />
-               Export Executive PDF
+              <FileText className="w-4 h-4 mr-2 text-white" />
+              <span className="text-white">Export Executive PDF</span>
              </Button>
            </div>
          </div>
@@ -781,7 +865,7 @@ function ProjectVisual({
            <Button
              onClick={onViewDetails}
              variant="ghost"
-             className="text-muted-foreground hover:text-foreground group"
+            className="text-slate-300 hover:text-white group"
            >
              <Eye className="w-4 h-4 mr-2" />
              Deep Dive: View Full Details
