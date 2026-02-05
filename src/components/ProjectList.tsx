@@ -414,16 +414,10 @@ const ProjectList = ({ onProjectSelect }: ProjectListProps) => {
                     }
                     return;
                   }
-                  // Toggle selection
-                  if (isSelected) {
-                    setSelectedProjectId(null);
-                    onProjectSelect?.('', '');
-                  } else {
-                    setSelectedProjectId(project.id);
-                    onProjectSelect?.(project.id, project.name);
-                  }
+                  // Navigate directly to Owner View for owned projects
+                  navigate(`/buildunion/project/${project.id}/owner`);
                 }}
-                onDoubleClick={() => !isSiteLog && navigate(`/buildunion/project/${project.id}`)}
+                onDoubleClick={() => !isSiteLog && navigate(`/buildunion/project/${project.id}/owner`)}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
