@@ -80,6 +80,7 @@ import { useWeather, formatTemp } from "@/hooks/useWeather";
   remainingOtherCost?: number;
   tasksCost?: number;
   plannedTasksCost?: number;
+  completedWorkValue?: number;
    isWithinRange: boolean;
    hasUnexpectedCosts: boolean;
    costStability: "stable" | "warning" | "critical";
@@ -768,6 +769,8 @@ function InlineAudioPlayer({
   const otherCost = financials.otherCost || 0;
   const remainingOtherCost = financials.remainingOtherCost ?? otherCost;
   const tasksCost = financials.tasksCost || 0;
+  // Completed Work Value = realized labor + others + explicit tasks
+  const completedWorkValue = financials.completedWorkValue ?? tasksCost;
   const subtotal = financials.subtotal || 0;
   const taxRate = financials.taxRate || 0.13;
   const taxAmount = financials.taxAmount || 0;
@@ -903,22 +906,22 @@ function InlineAudioPlayer({
               transition={{ delay: 0.5 }}
               className={cn(
                 "flex justify-between items-center",
-                tasksCost === 0 && "opacity-50",
-                tasksCost > 0 && "bg-emerald-500/10 -mx-2 px-2 py-1 rounded"
+                completedWorkValue === 0 && "opacity-50",
+                completedWorkValue > 0 && "bg-emerald-500/10 -mx-2 px-2 py-1 rounded"
               )}
             >
               <span className="text-xs text-slate-400 flex items-center gap-1.5">
                 <span className={cn(
                   "w-2 h-2 rounded-full",
-                  tasksCost > 0 ? "bg-emerald-400" : "bg-cyan-400"
+                  completedWorkValue > 0 ? "bg-emerald-400" : "bg-cyan-400"
                 )} />
                 ✓ Completed Tasks
               </span>
               <span className={cn(
                 "text-xs font-medium tabular-nums",
-                tasksCost > 0 ? "text-emerald-400" : "text-slate-500"
+                completedWorkValue > 0 ? "text-emerald-400" : "text-slate-500"
               )}>
-                {tasksCost > 0 ? <AnimatedCounter value={tasksCost} duration={2600} /> : "$0.00 (no tasks done)"}
+                {completedWorkValue > 0 ? <AnimatedCounter value={completedWorkValue} duration={2600} /> : "$0.00"}
               </span>
             </motion.div>
 
