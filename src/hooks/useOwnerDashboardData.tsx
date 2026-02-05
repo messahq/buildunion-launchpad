@@ -127,10 +127,31 @@ import { differenceInDays } from "date-fns";
      const completedTasks = tasks?.filter(t => t.status === "completed").length || 0;
      const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
  
-     // Extract financials from summary
+     // Extract financials from summary - prefer line_items over direct fields
      const totalCost = summary?.total_cost || 0;
-     const materialCost = summary?.material_cost || 0;
-     const laborCost = summary?.labor_cost || 0;
+     
+     // Parse line_items JSON to get actual material/labor costs
+     const lineItems = summary?.line_items as {
+       materials?: Array<{ totalPrice?: number }>;
+       labor?: Array<{ totalPrice?: number }>;
+       other?: Array<{ totalPrice?: number }>;
+     } | null;
+     
+     // Calculate actual costs from line_items (Materials tab data)
+     const calculatedMaterialCost = lineItems?.materials?.reduce(
+       (sum, item) => sum + (Number(item.totalPrice) || 0), 0
+     ) || 0;
+     const calculatedLaborCost = lineItems?.labor?.reduce(
+       (sum, item) => sum + (Number(item.totalPrice) || 0), 0
+     ) || 0;
+     const calculatedOtherCost = lineItems?.other?.reduce(
+       (sum, item) => sum + (Number(item.totalPrice) || 0), 0
+     ) || 0;
+     
+     // Use calculated values if available, otherwise fall back to summary fields
+     const materialCost = calculatedMaterialCost > 0 ? calculatedMaterialCost : (summary?.material_cost || 0);
+     const laborCost = calculatedLaborCost > 0 ? calculatedLaborCost : (summary?.labor_cost || 0);
+     const otherCost = calculatedOtherCost;
 
     // Current Spend = only COMPLETED tasks (realized expenditures)
     const completedTasksCost = tasks?.filter(t => t.status === 'completed')
@@ -143,7 +164,8 @@ import { differenceInDays } from "date-fns";
 
     // Current Spend = Materials + Completed Tasks (realized spending)
     // Materials tab costs are considered "committed" spending
-    const currentSpend = materialCost + completedTasksCost;
+    // Include materials, labor, other costs from line_items + completed tasks
+    const currentSpend = materialCost + laborCost + otherCost + completedTasksCost;
 
     // Approved budget from total_cost, or calculate from spend + buffer
     // Use material + labor as budget base if no total_cost set
