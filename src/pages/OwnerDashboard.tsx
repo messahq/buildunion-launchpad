@@ -6,12 +6,14 @@
  import { format } from "date-fns";
  import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
  
  export default function OwnerDashboard() {
    const { projectId } = useParams<{ projectId: string }>();
    const navigate = useNavigate();
    const { user } = useAuth();
    const { data, isLoading, project, summary } = useOwnerDashboardData(projectId || null);
+   const queryClient = useQueryClient();
  
    if (!user) {
      return (
@@ -63,6 +65,16 @@ import { supabase } from "@/integrations/supabase/client";
      navigate(`/buildunion/project/${projectId}`);
    };
  
+   const handleBudgetApproved = () => {
+     // Invalidate queries to refresh data
+     queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] });
+   };
+ 
+   const handleBudgetDeclined = () => {
+     // Invalidate queries to refresh data
+     queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] });
+   };
+ 
    return (
      <OwnerConfidenceDashboard
        projectId={projectId || ""}
@@ -86,6 +98,9 @@ import { supabase } from "@/integrations/supabase/client";
       tasksCount={data.tasksCount}
       docsCount={data.docsCount}
       daysActive={data.daysActive}
+      pendingBudgetChange={data.pendingBudgetChange}
+      onBudgetApproved={handleBudgetApproved}
+      onBudgetDeclined={handleBudgetDeclined}
      />
    );
  }

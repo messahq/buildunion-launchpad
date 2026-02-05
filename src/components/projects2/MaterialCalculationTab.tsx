@@ -74,6 +74,7 @@ import { toast } from "sonner";
 import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnitSettings } from "@/hooks/useUnitSettings";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CostItem {
   id: string;
@@ -123,6 +124,8 @@ interface MaterialCalculationTabProps {
   currency?: string;
   dataSource?: 'saved' | 'ai' | 'tasks';
   isSoloMode?: boolean;
+  projectOwnerId?: string; // Owner's user ID for approval gate
+  onPendingApprovalCreated?: () => void; // Callback when pending approval is submitted
 }
 
 // Essential material patterns that get 10% waste calculation
@@ -314,15 +317,21 @@ export function MaterialCalculationTab({
   onSave,
   currency = "CAD",
   dataSource = "ai",
-  isSoloMode = false
+  isSoloMode = false,
+  projectOwnerId,
+  onPendingApprovalCreated
 }: MaterialCalculationTabProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
   
   // Track previous baseArea for dynamic recalculation
   // CRITICAL: Initialize with null to force first useEffect to detect area initialization
   const prevBaseAreaRef = useRef<number | null>(null);
   const prevWasteRef = useRef<number>(10); // Default waste, will be updated by useEffect
+  
+  // Determine if current user is the project owner
+  const isOwner = !projectOwnerId || user?.id === projectOwnerId;
   
   // Dynamic waste percentage from props (allows live adjustment)
   const DYNAMIC_WASTE = wastePercent / 100;
@@ -1317,35 +1326,103 @@ export function MaterialCalculationTab({
             const changeOrderTimestamp = new Date().toISOString();
             const isChangeOrder = dataSource === 'saved' || hasUnsavedChanges;
             
-            const { error: summaryUpdateError } = await supabase
-              .from("project_summaries")
-              .update({
-                ai_workflow_config: {
-                  latestBudgetDocId: insertData.id,
-                  latestBudgetPath: filePath,
-                  budgetUpdatedAt: changeOrderTimestamp,
-                  budgetVersion: isChangeOrder ? 'change_order' : 'initial',
-                  grandTotal: grandTotalWithTax,
-                  subtotal: grandTotal,
-                  taxAmount: totalTax,
-                  changeOrderHistory: [{
-                    timestamp: changeOrderTimestamp,
-                    documentId: insertData.id,
-                    grandTotal: grandTotalWithTax,
-                    reason: isChangeOrder ? 'Manual budget adjustment' : 'Initial budget creation'
-                  }]
+            // ===== APPROVAL GATE LOGIC =====
+            // If user is NOT the owner, create pending approval instead of immediate update
+            if (!isOwner && projectOwnerId && isChangeOrder) {
+              // Get current summary to read previous budget
+              const { data: currentSummary } = await supabase
+                .from("project_summaries")
+                .select("ai_workflow_config, total_cost")
+                .eq("project_id", projectId)
+                .single();
+              
+              const currentConfig = currentSummary?.ai_workflow_config as Record<string, unknown> || {};
+              const previousGrandTotal = (currentConfig.grandTotal as number) || currentSummary?.total_cost || 0;
+              
+              // Create pending approval request
+              const pendingChange = {
+                submittedBy: user?.id || '',
+                submittedByName: user?.email?.split('@')[0] || 'Team Member',
+                submittedAt: changeOrderTimestamp,
+                proposedGrandTotal: grandTotalWithTax,
+                previousGrandTotal,
+                proposedLineItems: {
+                  materials: materialItems.map(m => ({ item: m.item, totalPrice: m.totalPrice })),
+                  labor: laborItems.map(l => ({ item: l.item, totalPrice: l.totalPrice })),
+                  other: otherItems.map(o => ({ item: o.item, totalPrice: o.totalPrice }))
                 },
-                total_cost: grandTotalWithTax, // Sync gross total to summary
-                updated_at: changeOrderTimestamp
-              })
-              .eq("project_id", projectId);
-            
-            if (summaryUpdateError) {
-              console.error("[Cost Breakdown] Failed to update AI reference:", summaryUpdateError);
+                reason: 'Budget modification by team member',
+                status: 'pending' as const
+              };
+              
+              const { error: pendingError } = await supabase
+                .from("project_summaries")
+                .update({
+                  ai_workflow_config: {
+                    ...currentConfig,
+                    pendingBudgetChange: pendingChange,
+                    latestPendingDocId: insertData.id,
+                    latestPendingDocPath: filePath
+                  },
+                  updated_at: changeOrderTimestamp
+                })
+                .eq("project_id", projectId);
+              
+              if (pendingError) {
+                console.error("[Cost Breakdown] Failed to create pending approval:", pendingError);
+                toast.error("Failed to submit budget change for approval");
+              } else {
+                console.log("[Cost Breakdown] Pending approval created");
+                
+                // Send message to owner about pending approval
+                await supabase
+                  .from("team_messages")
+                  .insert({
+                    sender_id: user?.id,
+                    recipient_id: projectOwnerId,
+                    message: `📋 Budget Change Request for "${projectName}"\n\nProposed: $${grandTotalWithTax.toFixed(2)} (was: $${previousGrandTotal.toFixed(2)})\n\nPlease review and approve in your Owner Dashboard.`,
+                    is_read: false
+                  });
+                
+                toast.success("Budget change submitted for owner approval 📋", { 
+                  description: "The owner will be notified and can approve in their dashboard.",
+                  duration: 5000 
+                });
+                
+                onPendingApprovalCreated?.();
+              }
             } else {
-              console.log("[Cost Breakdown] AI reference updated - Budget version:", isChangeOrder ? 'Change Order' : 'Initial');
-              if (isChangeOrder) {
-                toast.success("Budget updated - Change Order registered ✓", { duration: 3000 });
+              // Owner or initial save - direct update
+              const { error: summaryUpdateError } = await supabase
+                .from("project_summaries")
+                .update({
+                  ai_workflow_config: {
+                    latestBudgetDocId: insertData.id,
+                    latestBudgetPath: filePath,
+                    budgetUpdatedAt: changeOrderTimestamp,
+                    budgetVersion: isChangeOrder ? 'change_order' : 'initial',
+                    grandTotal: grandTotalWithTax,
+                    subtotal: grandTotal,
+                    taxAmount: totalTax,
+                    changeOrderHistory: [{
+                      timestamp: changeOrderTimestamp,
+                      documentId: insertData.id,
+                      grandTotal: grandTotalWithTax,
+                      reason: isChangeOrder ? 'Manual budget adjustment' : 'Initial budget creation'
+                    }]
+                  },
+                  total_cost: grandTotalWithTax, // Sync gross total to summary
+                  updated_at: changeOrderTimestamp
+                })
+                .eq("project_id", projectId);
+              
+              if (summaryUpdateError) {
+                console.error("[Cost Breakdown] Failed to update AI reference:", summaryUpdateError);
+              } else {
+                console.log("[Cost Breakdown] AI reference updated - Budget version:", isChangeOrder ? 'Change Order' : 'Initial');
+                if (isChangeOrder) {
+                  toast.success("Budget updated - Change Order registered ✓", { duration: 3000 });
+                }
               }
             }
           }

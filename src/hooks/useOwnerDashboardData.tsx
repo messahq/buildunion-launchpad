@@ -53,6 +53,20 @@ import { differenceInDays } from "date-fns";
   daysActive: number;
   budgetStatus: 'initial' | 'change_order' | 'none';
   budgetLastUpdated: string | null;
+  pendingBudgetChange: {
+    submittedBy: string;
+    submittedByName?: string;
+    submittedAt: string;
+    proposedGrandTotal: number;
+    previousGrandTotal: number;
+    proposedLineItems?: {
+      materials?: Array<{ item: string; totalPrice: number }>;
+      labor?: Array<{ item: string; totalPrice: number }>;
+      other?: Array<{ item: string; totalPrice: number }>;
+    };
+    reason?: string;
+    status: 'pending' | 'approved' | 'declined';
+  } | null;
  }
  
  export function useOwnerDashboardData(projectId: string | null) {
@@ -168,10 +182,25 @@ import { differenceInDays } from "date-fns";
        budgetUpdatedAt?: string;
        grandTotal?: number;
        latestBudgetDocId?: string;
+       pendingBudgetChange?: {
+         submittedBy: string;
+         submittedByName?: string;
+         submittedAt: string;
+         proposedGrandTotal: number;
+         previousGrandTotal: number;
+         proposedLineItems?: {
+           materials?: Array<{ item: string; totalPrice: number }>;
+           labor?: Array<{ item: string; totalPrice: number }>;
+           other?: Array<{ item: string; totalPrice: number }>;
+         };
+         reason?: string;
+         status: 'pending' | 'approved' | 'declined';
+       };
      } | null;
      
      const budgetVersion = aiConfig?.budgetVersion || 'initial';
      const budgetUpdatedAt = aiConfig?.budgetUpdatedAt || null;
+     const pendingBudgetChange = aiConfig?.pendingBudgetChange || null;
      
      // If ai_workflow_config has a grandTotal, prefer it (most recent budget)
      const aiConfigGrandTotal = aiConfig?.grandTotal || 0;
@@ -351,6 +380,7 @@ import { differenceInDays } from "date-fns";
       daysActive,
       budgetStatus: aiConfig?.budgetVersion || 'none',
       budgetLastUpdated: budgetUpdatedAt,
+      pendingBudgetChange,
      };
   }, [project, summary, tasks, documents, teamMembers]);
  
