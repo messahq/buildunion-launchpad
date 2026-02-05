@@ -14,6 +14,9 @@ import { differenceInDays } from "date-fns";
    approvedBudget: number;
    currentSpend: number;
   remainingBudget: number;
+  subtotal: number;
+  taxAmount: number;
+  taxRate: number;
   materialCost: number;
   laborCost: number;
   otherCost: number;
@@ -200,21 +203,36 @@ import { differenceInDays } from "date-fns";
     const calculatedCurrentSpend = materialCost + completedTasksCostCalculated + realizedLaborCost + realizedOtherCost;
 
     // Full project budget = all costs combined
-    const fullProjectBudget = materialCost + laborCost + otherCost + allTasksCost;
+    // Net subtotal (before tax)
+    const subtotal = materialCost + laborCost + otherCost + allTasksCost;
     
-    // Approved Budget calculation
-    const approvedBudget = totalCost > 0 && totalCost >= fullProjectBudget
+    // ===== TAX INTEGRATION (HST 13%) =====
+    const taxRate = 0.13; // Ontario HST
+    const taxAmount = subtotal * taxRate;
+    
+    // Grand Total (Gross = Net + Tax) - matches PDF
+    const grandTotal = subtotal + taxAmount;
+    
+    // Approved Budget = Grand Total (bruttó) to match PDF
+    // If total_cost from DB is set and >= grandTotal, use it; otherwise use grandTotal
+    const approvedBudget = totalCost > 0 && totalCost >= grandTotal
       ? totalCost
-      : fullProjectBudget > 0
-        ? fullProjectBudget
+      : grandTotal > 0
+        ? grandTotal
         : 25000; // Minimum default
+    
+    // Current Spend also needs to include proportional tax
+    // As costs are realized, their tax portion is also realized
+    const realizedSubtotal = materialCost + completedTasksCostCalculated + realizedLaborCost + realizedOtherCost;
+    const realizedTax = realizedSubtotal * taxRate;
+    const calculatedCurrentSpendGross = realizedSubtotal + realizedTax;
     
     // ===== 100% COMPLETION SYNC =====
     // When progress reaches 100%, force Remaining to $0
     // This ensures Current Spend === Approved Budget at completion
     const isProjectComplete = progressPercent >= 100;
-    const currentSpend = isProjectComplete ? approvedBudget : calculatedCurrentSpend;
-    const remainingBudget = isProjectComplete ? 0 : Math.max(0, approvedBudget - calculatedCurrentSpend);
+    const currentSpend = isProjectComplete ? approvedBudget : calculatedCurrentSpendGross;
+    const remainingBudget = isProjectComplete ? 0 : Math.max(0, approvedBudget - calculatedCurrentSpendGross);
 
      // Calculate health score (simplified)
      let healthScore = 50;
@@ -267,6 +285,9 @@ import { differenceInDays } from "date-fns";
          approvedBudget,
          currentSpend,
           remainingBudget,
+         subtotal,
+         taxAmount,
+         taxRate,
           materialCost,
           laborCost,
           otherCost,
