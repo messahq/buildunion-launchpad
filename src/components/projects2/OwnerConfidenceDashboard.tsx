@@ -627,21 +627,21 @@ function ProjectVisual({
  
    return (
     <div className="space-y-5">
-       <h3 className="text-xs uppercase tracking-widest text-muted-foreground/80">
+      <h3 className="text-xs uppercase tracking-widest text-slate-300">
          FINANCIAL SAFE
        </h3>
        
       <div className="space-y-3">
         {/* Main Budget Numbers */}
          <div className="flex justify-between items-baseline">
-           <span className="text-xs text-muted-foreground">APPROVED BUDGET:</span>
-           <span className="text-xl font-bold text-foreground tabular-nums">
+          <span className="text-xs text-slate-400">APPROVED BUDGET:</span>
+          <span className="text-xl font-bold text-white tabular-nums">
              <AnimatedCounter value={financials.approvedBudget} duration={2000} />
            </span>
          </div>
          
          <div className="flex justify-between items-baseline">
-           <span className="text-xs text-muted-foreground">CURRENT SPEND:</span>
+          <span className="text-xs text-slate-400">CURRENT SPEND:</span>
           <span className={cn(
             "text-lg font-medium tabular-nums",
             financials.isWithinRange ? "text-emerald-400" : "text-red-400"
@@ -651,7 +651,7 @@ function ProjectVisual({
          </div>
 
         <div className="flex justify-between items-baseline">
-          <span className="text-xs text-muted-foreground">REMAINING:</span>
+          <span className="text-xs text-slate-400">REMAINING:</span>
           <span className={cn(
             "text-sm font-medium tabular-nums",
             remaining > 0 ? "text-cyan-400" : "text-red-400"
@@ -683,7 +683,7 @@ function ProjectVisual({
 
         {/* Cost Breakdown */}
         <div className="pt-3 border-t border-slate-700/50 space-y-2">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-2">Cost Breakdown</p>
+          <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">Cost Breakdown</p>
           
           {materialCost > 0 && (
             <motion.div 
@@ -737,7 +737,7 @@ function ProjectVisual({
           )}
 
           {materialCost === 0 && laborCost === 0 && tasksCost === 0 && (
-            <p className="text-xs text-slate-500 italic">No cost data yet</p>
+            <p className="text-xs text-slate-400 italic">No cost data yet</p>
           )}
         </div>
 
