@@ -201,6 +201,14 @@ const BuildUnionProject = () => {
          onApprove={handleApprove}
          onExportPdf={handleExportPdf}
          onViewDetails={handleViewDetails}
+         pendingBudgetChange={ownerData.pendingBudgetChange}
+         onBudgetApproved={() => queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] })}
+         onBudgetDeclined={() => queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] })}
+         teamOnline={ownerData.teamOnline}
+         totalTeam={ownerData.totalTeam}
+         tasksCount={ownerData.tasksCount}
+         docsCount={ownerData.docsCount}
+         daysActive={ownerData.daysActive}
        />
      );
    }

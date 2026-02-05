@@ -2435,6 +2435,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               return 'tasks' as const;
             })()}
             isSoloMode={!isTeamMode}
+            projectOwnerId={project?.user_id}
             onCostsChange={(costs) => {
               // === IMMEDIATE SYNC to centralFinancials (Dashboard reads from here) ===
               const laborTotal = costs.labor.reduce((sum, l) => sum + (l.totalPrice || l.quantity * (l.unitPrice || 0)), 0);

@@ -31,6 +31,7 @@ import { Users, Sun, MapPin, Zap, Thermometer } from "lucide-react";
  import { motion, AnimatePresence } from "framer-motion";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
 import { useWeather, formatTemp } from "@/hooks/useWeather";
+import { BudgetApprovalPanel } from "./BudgetApprovalPanel";
  
  // ============================================
  // TYPES
@@ -58,6 +59,22 @@ import { useWeather, formatTemp } from "@/hooks/useWeather";
   tasksCount?: number;
   docsCount?: number;
   daysActive?: number;
+  pendingBudgetChange?: {
+    submittedBy: string;
+    submittedByName?: string;
+    submittedAt: string;
+    proposedGrandTotal: number;
+    previousGrandTotal: number;
+    proposedLineItems?: {
+      materials?: Array<{ item: string; totalPrice: number }>;
+      labor?: Array<{ item: string; totalPrice: number }>;
+      other?: Array<{ item: string; totalPrice: number }>;
+    };
+    reason?: string;
+    status: 'pending' | 'approved' | 'declined';
+  } | null;
+  onBudgetApproved?: () => void;
+  onBudgetDeclined?: () => void;
  }
  
  interface Milestone {
@@ -1022,7 +1039,10 @@ function InlineAudioPlayer({
   totalTeam = 5,
   tasksCount = 0,
   docsCount = 0,
-  daysActive = 1
+  daysActive = 1,
+  pendingBudgetChange,
+  onBudgetApproved,
+  onBudgetDeclined
  }: OwnerDashboardProps) {
    const [isExpanded, setIsExpanded] = useState(false);
   const [summaryText, setSummaryText] = useState<string | null>(null);
@@ -1114,6 +1134,16 @@ function InlineAudioPlayer({
                <span className="text-xs uppercase tracking-widest text-cyan-400/80">BUILDUNION</span>
              </div>
            </div>
+           
+           {/* Budget Approval Panel - shown when pending approval exists */}
+           {pendingBudgetChange && pendingBudgetChange.status === 'pending' && (
+             <BudgetApprovalPanel
+               projectId={projectId}
+               pendingChange={pendingBudgetChange}
+               onApprove={onBudgetApproved}
+               onDecline={onBudgetDeclined}
+             />
+           )}
            
            {/* Three Column Layout */}
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
