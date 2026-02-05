@@ -162,18 +162,20 @@ import { differenceInDays } from "date-fns";
       return sum + (Number(task.total_cost) || 0);
     }, 0) || 0;
 
-    // Current Spend = Materials + Completed Tasks (realized spending)
-    // Materials tab costs are considered "committed" spending
-    // Include materials, labor, other costs from line_items + completed tasks
-    const currentSpend = materialCost + laborCost + otherCost + completedTasksCost;
+    // ===== FINANCIAL LOGIC FIX =====
+    // Current Spend = Materials (purchased) + Labor (committed) + Completed Tasks costs
+    // This represents ACTUAL expenditures so far
+    const currentSpend = materialCost + completedTasksCost;
 
-    // Approved budget from total_cost, or calculate from spend + buffer
-    // Use material + labor as budget base if no total_cost set
-    const plannedBudget = materialCost + laborCost + allTasksCost;
-    const approvedBudget = totalCost > 0
+    // Approved Budget = Materials + Labor + ALL Tasks (total planned project cost)
+    // This represents the FULL project budget including pending work
+    const fullProjectBudget = materialCost + laborCost + otherCost + allTasksCost;
+    
+    // Use total_cost if manually set, otherwise use calculated full budget
+    const approvedBudget = totalCost > 0 && totalCost >= fullProjectBudget
       ? totalCost
-      : plannedBudget > 0
-        ? Math.ceil(plannedBudget * 1.15 / 1000) * 1000 // 15% buffer, rounded
+      : fullProjectBudget > 0
+        ? fullProjectBudget
         : 25000; // Minimum default
  
      // Calculate health score (simplified)
