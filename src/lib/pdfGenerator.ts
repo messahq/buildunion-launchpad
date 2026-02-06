@@ -236,19 +236,53 @@ export const generatePDFBlob = async (
   }
 };
 
+// Detect if running on mobile/iOS where programmatic downloads often fail
+const isMobileDevice = (): boolean => {
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+  // Check for mobile user agents
+  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+  // Also check for touch capability + small screen as backup
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.innerWidth <= 768;
+  return mobileRegex.test(userAgent) || (isTouchDevice && isSmallScreen);
+};
+
 export const downloadPDF = async (
   htmlContent: string,
   options: PDFOptions
 ): Promise<void> => {
   const blob = await generatePDFBlob(htmlContent, options);
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = options.filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  
+  if (isMobileDevice()) {
+    // On mobile, open PDF in new tab for viewing/saving
+    // This works more reliably than programmatic downloads on iOS/Android
+    const newWindow = window.open(url, '_blank');
+    
+    if (!newWindow) {
+      // Popup was blocked - fallback to navigation
+      window.location.href = url;
+    }
+    
+    // Don't revoke URL immediately on mobile - user needs time to view/save
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 60000); // Clean up after 1 minute
+  } else {
+    // Desktop: use standard download approach
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = options.filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    
+    // Small delay before cleanup to ensure download starts
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
 };
 
 // Build the professional HTML template for project summary/invoice

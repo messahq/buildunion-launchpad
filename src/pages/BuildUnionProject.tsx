@@ -129,19 +129,31 @@ const BuildUnionProject = () => {
           expectedCompletion: ownerData.expectedCompletion
         });
         
-        // Download PDF to user's downloads folder
+        // Check if mobile for appropriate toast message
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+          || (('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 768);
+        
+        // Download PDF to user's downloads folder (or open in new tab on mobile)
         await downloadPDF(htmlContent, {
           filename,
           margin: 15,
           pageFormat: 'letter'
         });
         
-        toast.success("Executive PDF downloaded!", {
-          description: `Saved as ${filename}`
-        });
+        if (isMobile) {
+          toast.success("PDF opened in new tab!", {
+            description: "Use your browser's share/save button to download"
+          });
+        } else {
+          toast.success("Executive PDF downloaded!", {
+            description: `Saved as ${filename}`
+          });
+        }
       } catch (err) {
         console.error("PDF export error:", err);
-        toast.error("Failed to generate PDF");
+        toast.error("Failed to generate PDF", {
+          description: "Please try again or contact support"
+        });
       } finally {
         setIsExportingPdf(false);
       }
