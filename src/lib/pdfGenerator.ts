@@ -236,15 +236,11 @@ export const generatePDFBlob = async (
   }
 };
 
-// Detect if running on mobile/iOS where programmatic downloads often fail
-const isMobileDevice = (): boolean => {
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
-  // Check for mobile user agents
-  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-  // Also check for touch capability + small screen as backup
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  const isSmallScreen = window.innerWidth <= 768;
-  return mobileRegex.test(userAgent) || (isTouchDevice && isSmallScreen);
+// Detect if running on iOS/Android mobile browser (strict check - only user agent)
+const isStrictMobile = (): boolean => {
+  const userAgent = navigator.userAgent || '';
+  // Only match actual mobile device user agents - NOT touch-enabled laptops
+  return /iPhone|iPad|iPod|Android/i.test(userAgent) && !/Windows|Macintosh|Linux(?!.*Android)/i.test(userAgent);
 };
 
 export const downloadPDF = async (
@@ -254,34 +250,30 @@ export const downloadPDF = async (
   const blob = await generatePDFBlob(htmlContent, options);
   const url = URL.createObjectURL(blob);
   
-  if (isMobileDevice()) {
-    // On mobile, open PDF in new tab for viewing/saving
-    // This works more reliably than programmatic downloads on iOS/Android
-    const newWindow = window.open(url, '_blank');
-    
-    if (!newWindow) {
-      // Popup was blocked - fallback to navigation
-      window.location.href = url;
-    }
-    
-    // Don't revoke URL immediately on mobile - user needs time to view/save
+  // Always try standard download first
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = options.filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  // On strict mobile (iOS/Android), also open in new tab as fallback
+  // because programmatic downloads often fail on mobile browsers
+  if (isStrictMobile()) {
+    setTimeout(() => {
+      window.open(url, '_blank');
+    }, 500);
+    // Keep URL alive longer for mobile
     setTimeout(() => {
       URL.revokeObjectURL(url);
-    }, 60000); // Clean up after 1 minute
+    }, 60000);
   } else {
-    // Desktop: use standard download approach
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = options.filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    
-    // Small delay before cleanup to ensure download starts
+    // Desktop: clean up after short delay
     setTimeout(() => {
-      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    }, 100);
+    }, 1000);
   }
 };
 
