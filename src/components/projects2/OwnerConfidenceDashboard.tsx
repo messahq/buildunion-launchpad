@@ -1,19 +1,25 @@
 import { useState, useMemo, useEffect, useRef } from "react";
- import { Button } from "@/components/ui/button";
- import { Badge } from "@/components/ui/badge";
- import { Slider } from "@/components/ui/slider";
- import {
-   Mic,
-   CheckCircle,
-   FileText,
-   ChevronRight,
-   Shield,
-   TrendingUp,
-   AlertTriangle,
-   Clock,
-   DollarSign,
-   Eye,
-   Sparkles,
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Mic,
+  CheckCircle,
+  FileText,
+  ChevronRight,
+  Shield,
+  TrendingUp,
+  AlertTriangle,
+  Clock,
+  DollarSign,
+  Eye,
+  Sparkles,
   Activity,
   Cloud,
   CloudRain,
@@ -24,11 +30,11 @@ import { useState, useMemo, useEffect, useRef } from "react";
   Volume2,
   VolumeX,
   Loader2
- } from "lucide-react";
+} from "lucide-react";
 import { Users, Sun, MapPin, Zap, Thermometer } from "lucide-react";
- import { cn } from "@/lib/utils";
- import { format } from "date-fns";
- import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
 import { useWeather, formatTemp } from "@/hooks/useWeather";
 import { BudgetApprovalPanel } from "./BudgetApprovalPanel";
@@ -435,114 +441,263 @@ function QuickStatsWidget({
   );
 }
 
- // ============================================
- // TIMELINE ORBIT COMPONENT
- // ============================================
- 
- function TimelineOrbit({ 
-   milestones, 
-   currentPhase, 
-   expectedCompletion,
-   completionCertainty 
- }: { 
-   milestones: Milestone[];
-   currentPhase?: string;
-   expectedCompletion?: string | null;
-   completionCertainty?: number;
- }) {
-   const currentIndex = milestones.findIndex(m => m.status === "current");
- 
- return (
-   <div className="space-y-4">
-     <h3 className="text-xs uppercase tracking-widest text-muted-foreground/80">
-       TIMELINE ORBIT
-     </h3>
-     
-     {/* Milestone Track */}
-     <div className="relative py-6">
-       {/* Track Line */}
-       <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-muted/20 -translate-y-1/2" />
-       <motion.div 
-         className="absolute top-1/2 left-0 h-[2px] bg-gradient-to-r from-emerald-500 to-cyan-500 -translate-y-1/2"
-         initial={{ width: 0 }}
-         animate={{ width: `${((currentIndex + 1) / milestones.length) * 100}%` }}
-         transition={{ duration: 1.5, ease: "easeOut" }}
-       />
-       
-       {/* Milestone Dots with breathing glow */}
-       <div className="relative flex justify-between">
-         {milestones.map((milestone, index) => (
-           <div key={milestone.id} className="flex flex-col items-center gap-2">
-             <motion.div
-               initial={{ scale: 0 }}
-               animate={{ scale: 1 }}
-               transition={{ delay: index * 0.15 }}
-               className={cn(
-                 "w-4 h-4 rounded-full border-2 relative",
-                 milestone.status === "completed" && "bg-emerald-500 border-emerald-500",
-                 milestone.status === "current" && "bg-cyan-400 border-cyan-400 scale-125",
-                 milestone.status === "upcoming" && "bg-transparent border-muted-foreground/40"
-               )}
-             >
-               {/* Breathing glow for current */}
-               {milestone.status === "current" && (
-                 <motion.div
-                   className="absolute inset-0 rounded-full bg-cyan-400"
-                   animate={{
-                     scale: [1, 2, 1],
-                     opacity: [0.6, 0, 0.6]
-                   }}
-                   transition={{
-                     duration: 2,
-                     repeat: Infinity,
-                     ease: "easeInOut"
-                   }}
-                 />
-               )}
-               {/* Subtle glow for completed */}
-               {milestone.status === "completed" && (
-                 <motion.div
-                   className="absolute inset-0 rounded-full bg-emerald-400"
-                   animate={{
-                     scale: [1, 1.5, 1],
-                     opacity: [0.3, 0, 0.3]
-                   }}
-                   transition={{
-                     duration: 3,
-                     repeat: Infinity,
-                     ease: "easeInOut",
-                     delay: index * 0.2
-                   }}
-                 />
-               )}
-             </motion.div>
-           </div>
-         ))}
-       </div>
-     </div>
-     
-     {/* Current Phase Label */}
-     <div className="space-y-1">
-       <p className={cn(
-         "text-sm font-medium tracking-wide",
-         "text-cyan-400"
-       )}>
-         {currentPhase || "IN PROGRESS"}
-       </p>
-       {expectedCompletion && (
-         <p className="text-xs text-muted-foreground">
-           EXPECTED COMPLETION: <span className="text-foreground font-medium">{expectedCompletion}</span>
-         </p>
-       )}
-       {completionCertainty && (
-         <p className="text-xs text-muted-foreground/70">
-           {completionCertainty}% certainty based on real-time progress.
-         </p>
-       )}
-     </div>
-   </div>
- );
- }
+// ============================================
+// TIMELINE ORBIT COMPONENT - Enhanced with Tasks & Op Truth
+// ============================================
+
+interface TimelineTask {
+  id: string;
+  title: string;
+  status: string;
+  assignee_name?: string;
+  updated_at?: string;
+}
+
+function TimelineOrbit({ 
+  milestones, 
+  currentPhase, 
+  expectedCompletion,
+  completionCertainty,
+  tasks = [],
+  verificationRate = 0
+}: { 
+  milestones: Milestone[];
+  currentPhase?: string;
+  expectedCompletion?: string | null;
+  completionCertainty?: number;
+  tasks?: TimelineTask[];
+  verificationRate?: number;
+}) {
+  // Calculate actual progress based on Op Truth (verification rate)
+  // Timeline should reflect Op Truth status, not just task completion
+  const opTruthProgress = verificationRate;
+  
+  // Get completed and in-progress tasks for display
+  const completedTasks = tasks.filter(t => t.status === 'completed');
+  const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
+  const pendingTasks = tasks.filter(t => t.status === 'pending');
+  
+  // Latest completed task for display
+  const latestCompletedTask = completedTasks[completedTasks.length - 1];
+  const currentTask = inProgressTasks[0] || pendingTasks[0];
+  
+  // Build timeline points from tasks (max 5 visible)
+  const maxVisiblePoints = 5;
+  const timelinePoints = useMemo(() => {
+    if (tasks.length === 0) {
+      // Fallback to milestones if no tasks
+      return milestones.map(m => ({
+        id: m.id,
+        name: m.name,
+        status: m.status,
+        assignee: undefined,
+        time: m.date
+      }));
+    }
+    
+    // Show tasks as timeline points
+    const sortedTasks = [...tasks].slice(0, maxVisiblePoints);
+    return sortedTasks.map((task, idx) => ({
+      id: task.id,
+      name: task.title,
+      status: task.status === 'completed' ? 'completed' as const : 
+              task.status === 'in_progress' ? 'current' as const : 'upcoming' as const,
+      assignee: task.assignee_name,
+      time: task.updated_at ? format(new Date(task.updated_at), 'MMM d, HH:mm') : undefined
+    }));
+  }, [tasks, milestones]);
+  
+  // Calculate progress bar width based on Op Truth, not just task completion
+  // If Op Truth is 75%, the timeline should show 75% progress
+  const progressWidth = Math.min(100, opTruthProgress);
+  
+  const currentPointIndex = timelinePoints.findIndex(p => p.status === 'current');
+
+  return (
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs uppercase tracking-widest text-slate-400">
+            TIMELINE ORBIT
+          </h3>
+          {/* Op Truth Status Badge */}
+          <Badge 
+            variant="outline" 
+            className={cn(
+              "text-[10px] uppercase tracking-wider border",
+              opTruthProgress >= 100 ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10" :
+              opTruthProgress >= 75 ? "border-cyan-500/50 text-cyan-400 bg-cyan-500/10" :
+              opTruthProgress >= 50 ? "border-amber-500/50 text-amber-400 bg-amber-500/10" :
+              "border-red-500/50 text-red-400 bg-red-500/10"
+            )}
+          >
+            Op Truth: {Math.round(opTruthProgress)}%
+          </Badge>
+        </div>
+        
+        {/* Timeline Track */}
+        <div className="relative py-6">
+          {/* Background Track Line */}
+          <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-slate-700/50 -translate-y-1/2" />
+          
+          {/* Progress Line - Based on Op Truth % */}
+          <motion.div 
+            className="absolute top-1/2 left-0 h-[2px] bg-gradient-to-r from-emerald-500 to-cyan-500 -translate-y-1/2"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressWidth}%` }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          />
+          
+          {/* Incomplete indicator when Op Truth < 100% */}
+          {opTruthProgress < 100 && (
+            <motion.div 
+              className="absolute top-1/2 h-[2px] bg-gradient-to-r from-cyan-500/50 to-slate-600/30 -translate-y-1/2"
+              style={{ left: `${progressWidth}%`, right: 0 }}
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+          )}
+          
+          {/* Timeline Points with Tooltips */}
+          <div className="relative flex justify-between">
+            {timelinePoints.map((point, index) => {
+              const isCompleted = point.status === 'completed';
+              const isCurrent = point.status === 'current';
+              const isUpcoming = point.status === 'upcoming';
+              
+              return (
+                <Tooltip key={point.id}>
+                  <TooltipTrigger asChild>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex flex-col items-center gap-2 cursor-pointer"
+                    >
+                      <div
+                        className={cn(
+                          "w-4 h-4 rounded-full border-2 relative transition-all",
+                          isCompleted && "bg-emerald-500 border-emerald-500",
+                          isCurrent && "bg-cyan-400 border-cyan-400 scale-125",
+                          isUpcoming && "bg-transparent border-slate-500"
+                        )}
+                      >
+                        {/* Breathing glow for current */}
+                        {isCurrent && (
+                          <motion.div
+                            className="absolute inset-0 rounded-full bg-cyan-400"
+                            animate={{
+                              scale: [1, 2, 1],
+                              opacity: [0.6, 0, 0.6]
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                          />
+                        )}
+                        {/* Subtle glow for completed */}
+                        {isCompleted && (
+                          <motion.div
+                            className="absolute inset-0 rounded-full bg-emerald-400"
+                            animate={{
+                              scale: [1, 1.5, 1],
+                              opacity: [0.3, 0, 0.3]
+                            }}
+                            transition={{
+                              duration: 3,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                              delay: index * 0.2
+                            }}
+                          />
+                        )}
+                      </div>
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="top" 
+                    className="bg-slate-800 border-slate-700 text-white max-w-[200px]"
+                  >
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm text-white">{point.name}</p>
+                      {point.assignee && (
+                        <p className="text-xs text-slate-300">
+                          <Users className="w-3 h-3 inline mr-1" />
+                          {point.assignee}
+                        </p>
+                      )}
+                      {point.time && (
+                        <p className="text-xs text-slate-400">
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          {point.time}
+                        </p>
+                      )}
+                      <p className={cn(
+                        "text-[10px] uppercase tracking-wider",
+                        isCompleted && "text-emerald-400",
+                        isCurrent && "text-cyan-400",
+                        isUpcoming && "text-slate-500"
+                      )}>
+                        {isCompleted ? "✓ Completed" : isCurrent ? "● In Progress" : "○ Pending"}
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Latest Activity / Current Phase Label */}
+        <div className="space-y-2">
+          {/* Show latest completed task name */}
+          {latestCompletedTask && (
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+              <p className="text-sm text-emerald-400 font-medium truncate">
+                {latestCompletedTask.title}
+              </p>
+            </div>
+          )}
+          
+          {/* Show current task if different */}
+          {currentTask && (
+            <div className="flex items-center gap-2">
+              <Activity className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+              <p className="text-sm text-cyan-400 font-medium truncate">
+                {currentTask.title}
+              </p>
+            </div>
+          )}
+          
+          {/* Fallback to phase if no tasks */}
+          {!latestCompletedTask && !currentTask && currentPhase && (
+            <p className="text-sm font-medium tracking-wide text-cyan-400">
+              {currentPhase}
+            </p>
+          )}
+          
+          {/* Expected Completion */}
+          {expectedCompletion && (
+            <p className="text-xs text-slate-400">
+              EXPECTED: <span className="text-slate-300 font-medium">{expectedCompletion}</span>
+            </p>
+          )}
+          
+          {/* Op Truth Warning if incomplete */}
+          {opTruthProgress < 100 && (
+            <p className="text-xs text-amber-400/80 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              {100 - Math.round(opTruthProgress)}% verification pending
+            </p>
+          )}
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
  
  // ============================================
  // LIVE LENS COMPONENT (Blueprint vs Photo Slider)
@@ -1214,13 +1369,20 @@ export default function OwnerConfidenceDashboard({
            
            {/* Three Column Layout */}
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-             {/* Timeline Orbit */}
-             <TimelineOrbit
-               milestones={milestones}
-               currentPhase={currentPhase}
-               expectedCompletion={expectedCompletion}
-               completionCertainty={completionCertainty}
-             />
+            {/* Timeline Orbit - Enhanced with Tasks & Op Truth */}
+            <TimelineOrbit
+              milestones={milestones}
+              currentPhase={currentPhase}
+              expectedCompletion={expectedCompletion}
+              completionCertainty={completionCertainty}
+              tasks={tasks.map(t => ({
+                id: t.id,
+                title: t.title,
+                status: t.status,
+                assignee_name: t.assignee_name
+              }))}
+              verificationRate={verificationRate}
+            />
 
             {/* Project Visual / Live Lens */}
             <div className="space-y-6">
