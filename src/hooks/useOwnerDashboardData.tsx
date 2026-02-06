@@ -439,9 +439,16 @@ interface OwnerDashboardData {
           progressPercent: Math.round(progressPercent),
           isProjectComplete,
           isWithinRange: currentSpend <= approvedBudget,
-          hasUnexpectedCosts: currentSpend > approvedBudget * 0.9,
-          costStability: currentSpend <= approvedBudget * 0.7 ? "stable" : 
-                         currentSpend <= approvedBudget * 0.9 ? "warning" : "critical"
+          // When project is complete, only show warning if OVER budget (not just near 90%)
+          // During project, warn if approaching budget threshold
+          hasUnexpectedCosts: isProjectComplete 
+            ? currentSpend > approvedBudget  // Only if overspent at completion
+            : currentSpend > approvedBudget * 0.9,  // Warning threshold during project
+          // Cost stability: if complete and within budget = stable
+          costStability: isProjectComplete && currentSpend <= approvedBudget 
+            ? "stable" 
+            : currentSpend <= approvedBudget * 0.7 ? "stable" : 
+              currentSpend <= approvedBudget * 0.9 ? "warning" : "critical"
           ,budgetVersion,
           budgetUpdatedAt,
        },
