@@ -236,44 +236,58 @@ export const generatePDFBlob = async (
   }
 };
 
-// Detect if running on iOS/Android mobile browser (strict check - only user agent)
-const isStrictMobile = (): boolean => {
-  const userAgent = navigator.userAgent || '';
-  // Only match actual mobile device user agents - NOT touch-enabled laptops
-  return /iPhone|iPad|iPod|Android/i.test(userAgent) && !/Windows|Macintosh|Linux(?!.*Android)/i.test(userAgent);
-};
-
 export const downloadPDF = async (
   htmlContent: string,
   options: PDFOptions
 ): Promise<void> => {
-  const blob = await generatePDFBlob(htmlContent, options);
-  const url = URL.createObjectURL(blob);
+  console.log('[PDF] Starting download for:', options.filename);
   
-  // Always try standard download first
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = options.filename;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  
-  // On strict mobile (iOS/Android), also open in new tab as fallback
-  // because programmatic downloads often fail on mobile browsers
-  if (isStrictMobile()) {
+  try {
+    const blob = await generatePDFBlob(htmlContent, options);
+    console.log('[PDF] Blob created, size:', blob.size);
+    
+    const url = URL.createObjectURL(blob);
+    console.log('[PDF] URL created');
+    
+    // Try multiple methods to trigger download
+    
+    // Method 1: Create a new Blob with proper type and use FileSaver-style download
+    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    
+    // Method 2: Use anchor with target="_blank" as fallback
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = options.filename;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    
+    // Try clicking
+    document.body.appendChild(link);
+    link.click();
+    
+    // Also try opening in new window immediately as backup
+    // This works better in iframe/preview environments
+    const newWindow = window.open(pdfUrl, '_blank');
+    
+    if (newWindow) {
+      console.log('[PDF] Opened in new window');
+    } else {
+      // If popup was blocked, try direct navigation
+      console.log('[PDF] Popup blocked, trying alternative');
+    }
+    
+    // Cleanup
     setTimeout(() => {
-      window.open(url, '_blank');
-    }, 500);
-    // Keep URL alive longer for mobile
-    setTimeout(() => {
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }, 60000);
-  } else {
-    // Desktop: clean up after short delay
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
+      URL.revokeObjectURL(pdfUrl);
+      console.log('[PDF] Cleanup done');
+    }, 5000);
+    
+  } catch (err) {
+    console.error('[PDF] Download error:', err);
+    throw err;
   }
 };
 
