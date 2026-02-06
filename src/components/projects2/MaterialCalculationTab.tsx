@@ -206,6 +206,7 @@ const MATERIAL_COVERAGE_MAP: Record<string, CoverageInfo> = {
  * Returns null if no conversion needed (keeps original sq ft)
  */
 const getMaterialCoverage = (itemName: string): CoverageInfo | null => {
+  if (!itemName) return null;
   const lowerName = itemName.toLowerCase();
   
   for (const [keyword, coverage] of Object.entries(MATERIAL_COVERAGE_MAP)) {
@@ -227,6 +228,7 @@ const calculateCoverageBasedQuantity = (
   originalUnit: string
 ): { quantity: number; unit: string } => {
   // If unit is already specific (boxes, gallons, etc.), don't convert
+  if (!originalUnit) return { quantity: grossArea, unit: originalUnit || 'sq ft' };
   const originalUnitLower = originalUnit.toLowerCase();
   const isSqFtUnit = originalUnitLower.includes('sq') || originalUnitLower.includes('ft²');
   
@@ -250,6 +252,7 @@ const calculateCoverageBasedQuantity = (
 
 // Canadian provincial tax rates
 const getCanadianTaxRates = (address: string): { gst: number; pst: number; hst: number; provinceName: string; provinceCode: string } => {
+  if (!address) return { gst: 0.05, pst: 0, hst: 0, provinceName: 'Canada', provinceCode: 'CA' };
   const addressLower = address.toLowerCase();
   
   // Ontario - HST 13%
@@ -515,7 +518,7 @@ export function MaterialCalculationTab({
   // Helper: Convert item's display values based on current unit system
   // CRITICAL: Total price remains the same - only display units/prices change
   const getDisplayValues = useCallback((item: CostItem) => {
-    const originalUnit = item.unit.toLowerCase();
+    const originalUnit = (item.unit || '').toLowerCase();
     
     // Identify unit type and convert if needed
     const isSqFt = originalUnit.includes('sq ft') || originalUnit === 'sq ft' || originalUnit.includes('ft²');
@@ -549,7 +552,7 @@ export function MaterialCalculationTab({
   const getDisplayBaseQuantity = useCallback((item: CostItem) => {
     if (!item.baseQuantity) return undefined;
     
-    const originalUnit = item.unit.toLowerCase();
+    const originalUnit = (item.unit || '').toLowerCase();
     const isSqFt = originalUnit.includes('sq ft') || originalUnit === 'sq ft' || originalUnit.includes('ft²');
     
     if (isSqFt) {
