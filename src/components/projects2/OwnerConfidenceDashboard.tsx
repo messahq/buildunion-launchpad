@@ -37,7 +37,7 @@ import { BudgetApprovalPanel } from "./BudgetApprovalPanel";
  // TYPES
  // ============================================
  
- interface OwnerDashboardProps {
+interface OwnerDashboardProps {
    projectId: string;
    projectName: string;
    projectAddress?: string;
@@ -51,7 +51,6 @@ import { BudgetApprovalPanel } from "./BudgetApprovalPanel";
    completionCertainty?: number;
    currentPhase?: string;
    onGenerateReport?: () => void;
-   onApprove?: () => void;
    onExportPdf?: () => void;
    onViewDetails?: () => void;
   teamOnline?: number;
@@ -971,7 +970,7 @@ function InlineAudioPlayer({
             </span>
           </motion.div>
 
-          {/* Grand Total (Gross) indicator */}
+          {/* Grand Total (Gross) indicator - Use approvedBudget for consistency after approval */}
           <motion.div 
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -980,7 +979,7 @@ function InlineAudioPlayer({
           >
             <span className="text-xs text-white font-semibold uppercase tracking-wide">Grand Total (Gross)</span>
             <span className="text-sm font-bold text-white tabular-nums">
-              <AnimatedCounter value={subtotal + taxAmount} duration={3000} />
+              <AnimatedCounter value={financials.approvedBudget} duration={3000} />
             </span>
           </motion.div>
         </div>
@@ -1018,7 +1017,7 @@ function InlineAudioPlayer({
  // MAIN OWNER CONFIDENCE DASHBOARD
  // ============================================
  
- export default function OwnerConfidenceDashboard({
+export default function OwnerConfidenceDashboard({
    projectId,
    projectName,
    projectAddress,
@@ -1032,7 +1031,6 @@ function InlineAudioPlayer({
    completionCertainty,
    currentPhase,
    onGenerateReport,
-   onApprove,
    onExportPdf,
   onViewDetails,
   teamOnline = 2,
@@ -1044,6 +1042,8 @@ function InlineAudioPlayer({
   onBudgetApproved,
   onBudgetDeclined
  }: OwnerDashboardProps) {
+  // Debug: Log pendingBudgetChange for troubleshooting pulsing glow
+  console.log('[OwnerConfidenceDashboard] pendingBudgetChange:', pendingBudgetChange);
    const [isExpanded, setIsExpanded] = useState(false);
   const [summaryText, setSummaryText] = useState<string | null>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -1205,41 +1205,26 @@ function InlineAudioPlayer({
            
            {/* Action Buttons */}
            <div className="flex flex-wrap justify-center gap-4 pt-4">
-             <Button
-               onClick={handleMagicSummary}
-               disabled={isGeneratingSummary}
-               className={cn(
-                 "relative overflow-hidden",
-                 "bg-gradient-to-r from-emerald-600 to-emerald-500",
-                 "hover:from-emerald-500 hover:to-emerald-400",
-                 "text-white font-medium px-6 py-5",
-                 "shadow-lg shadow-emerald-500/20",
-                 "border-0",
-                 "disabled:opacity-50"
-               )}
-             >
-               {isGeneratingSummary ? (
-                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-               ) : (
-                 <Mic className="w-4 h-4 mr-2" />
-               )}
-               {isGeneratingSummary ? "Generating..." : "Magic Summary"}
-             </Button>
-             
-             <Button
-               onClick={onApprove}
-               className={cn(
-                 "relative overflow-hidden",
-                 "bg-gradient-to-r from-cyan-600 to-cyan-500",
-                 "hover:from-cyan-500 hover:to-cyan-400",
-                 "text-white font-medium px-6 py-5",
-                 "shadow-lg shadow-cyan-500/20",
-                 "border-0"
-               )}
-             >
-               <CheckCircle className="w-4 h-4 mr-2" />
-               One-Tap Approval
-             </Button>
+              <Button
+                onClick={handleMagicSummary}
+                disabled={isGeneratingSummary}
+                className={cn(
+                  "relative overflow-hidden",
+                  "bg-gradient-to-r from-emerald-600 to-emerald-500",
+                  "hover:from-emerald-500 hover:to-emerald-400",
+                  "text-white font-medium px-6 py-5",
+                  "shadow-lg shadow-emerald-500/20",
+                  "border-0",
+                  "disabled:opacity-50"
+                )}
+              >
+                {isGeneratingSummary ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Mic className="w-4 h-4 mr-2" />
+                )}
+                {isGeneratingSummary ? "Generating..." : "Magic Summary"}
+              </Button>
              
              <Button
                onClick={onExportPdf}
