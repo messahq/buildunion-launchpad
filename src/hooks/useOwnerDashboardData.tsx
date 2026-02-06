@@ -34,7 +34,7 @@ import { differenceInDays } from "date-fns";
    budgetUpdatedAt?: string;
  }
  
- interface OwnerDashboardData {
+interface OwnerDashboardData {
    healthScore: number;
    verificationRate: number;
    milestones: Milestone[];
@@ -67,6 +67,10 @@ import { differenceInDays } from "date-fns";
     reason?: string;
     status: 'pending' | 'approved' | 'declined';
   } | null;
+  // Project mode from AI analysis
+  mode: 'solo' | 'team';
+  isSoloMode: boolean;
+  isTeamMode: boolean;
  }
  
  export function useOwnerDashboardData(projectId: string | null) {
@@ -334,9 +338,14 @@ import { differenceInDays } from "date-fns";
     const projectCreatedAt = project?.created_at ? new Date(project.created_at) : new Date();
     const daysActive = Math.max(1, differenceInDays(new Date(), projectCreatedAt));
 
-    // Team stats - owner + members
-    const totalTeam = (teamMembers?.length || 0) + 1; // +1 for owner
-    const teamOnline = Math.min(totalTeam, Math.ceil(totalTeam * 0.6)); // Simulate ~60% online
+    // Project mode from summary
+    const projectMode = (summary?.mode === 'team' ? 'team' : 'solo') as 'solo' | 'team';
+    const isSoloMode = projectMode === 'solo';
+    const isTeamMode = projectMode === 'team';
+
+    // Team stats - owner + members (only relevant for Team Mode)
+    const totalTeam = isTeamMode ? (teamMembers?.length || 0) + 1 : 1; // Solo = just owner
+    const teamOnline = isTeamMode ? Math.min(totalTeam, Math.ceil(totalTeam * 0.6)) : 1; // Solo = 1 (you)
 
      return {
        healthScore,
@@ -377,10 +386,13 @@ import { differenceInDays } from "date-fns";
       totalTeam,
       tasksCount: totalTasks,
       docsCount: documents?.length || 0,
-      daysActive,
+       daysActive,
       budgetStatus: aiConfig?.budgetVersion || 'none',
       budgetLastUpdated: budgetUpdatedAt,
       pendingBudgetChange,
+      mode: projectMode,
+      isSoloMode,
+      isTeamMode,
      };
   }, [project, summary, tasks, documents, teamMembers]);
  

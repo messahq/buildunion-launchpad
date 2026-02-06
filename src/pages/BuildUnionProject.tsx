@@ -175,6 +175,8 @@ const BuildUnionProject = () => {
          tasksCount={ownerData.tasksCount}
          docsCount={ownerData.docsCount}
          daysActive={ownerData.daysActive}
+         isSoloMode={ownerData.isSoloMode}
+         isTeamMode={ownerData.isTeamMode}
        />
      );
    }

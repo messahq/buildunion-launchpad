@@ -84,6 +84,9 @@ interface OwnerDashboardProps {
   onBudgetApproved?: () => void;
   onBudgetDeclined?: () => void;
   onTasksUpdated?: () => void;
+  // Project mode from AI analysis
+  isSoloMode?: boolean;
+  isTeamMode?: boolean;
  }
  
  interface Milestone {
@@ -1052,7 +1055,9 @@ export default function OwnerConfidenceDashboard({
   pendingBudgetChange,
   onBudgetApproved,
   onBudgetDeclined,
-  onTasksUpdated
+  onTasksUpdated,
+  isSoloMode = false,
+  isTeamMode = true
  }: OwnerDashboardProps) {
   // Debug: Log pendingBudgetChange for troubleshooting pulsing glow
   console.log('[OwnerConfidenceDashboard] pendingBudgetChange:', pendingBudgetChange);
@@ -1068,6 +1073,7 @@ export default function OwnerConfidenceDashboard({
     try {
       onGenerateReport?.();
       
+      // Build summary based on mode
       const summaryParts = [
         `Project ${projectName} summary.`,
         `Current phase: ${currentPhase || 'In Progress'}.`,
@@ -1076,7 +1082,8 @@ export default function OwnerConfidenceDashboard({
         `Budget status: ${financials.currentSpend.toLocaleString()} dollars spent of ${financials.approvedBudget.toLocaleString()} approved.`,
         financials.isWithinRange ? 'Spending is within the approved range.' : 'Warning: Budget may be exceeded.',
         expectedCompletion ? `Expected completion: ${expectedCompletion}.` : '',
-        `${teamOnline} of ${totalTeam} team members currently online.`,
+        // Only include team info in Team Mode
+        isTeamMode ? `${teamOnline} of ${totalTeam} team members currently online.` : 'This is a Solo Mode project.',
         `${tasksCount} total tasks, ${docsCount} documents uploaded.`,
         financials.hasUnexpectedCosts ? 'Note: Some unexpected costs have been detected.' : 'No unexpected costs detected.',
       ].filter(Boolean).join(' ');
@@ -1104,7 +1111,20 @@ export default function OwnerConfidenceDashboard({
       >
         <WeatherWidget location={projectAddress} />
         <LiveClock />
-        <TeamOnlineWidget online={teamOnline} total={totalTeam} />
+        {/* Only show Team Online widget in Team Mode */}
+        {isTeamMode && <TeamOnlineWidget online={teamOnline} total={totalTeam} />}
+        {/* Show Solo Mode indicator */}
+        {isSoloMode && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30"
+          >
+            <Zap className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-medium text-amber-400">Solo Mode</span>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Header */}
