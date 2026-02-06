@@ -92,7 +92,11 @@ export function DashboardBudgetSection({
 
   // Calculate markup amount (Team mode only)
   const markupAmount = isTeamMode ? financialSummary.subtotal * (localMarkup / 100) : 0;
-  const grandTotalWithMarkup = financialSummary.grandTotal + markupAmount;
+  
+  // PRIORITY: Use approvedGrandTotal from ai_workflow_config if available (after owner approval)
+  // Otherwise use calculated grandTotal
+  const effectiveGrandTotal = financialSummary.approvedGrandTotal || financialSummary.grandTotal;
+  const grandTotalWithMarkup = effectiveGrandTotal + markupAmount;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-CA", {
@@ -235,10 +239,15 @@ export function DashboardBudgetSection({
                   {isTeamMode && localMarkup > 0 && (
                     <> + {t("dashboard.budget.markup", "Markup")}: {formatCurrency(markupAmount)}</>
                   )}
+                  {financialSummary.approvedGrandTotal && (
+                    <span className="ml-2 text-emerald-600 font-medium">
+                      [Approved]
+                    </span>
+                  )}
                 </p>
               </div>
               <p className="text-2xl font-bold text-amber-700">
-                {formatCurrency(isTeamMode ? grandTotalWithMarkup : financialSummary.grandTotal)}
+                {formatCurrency(isTeamMode ? grandTotalWithMarkup : effectiveGrandTotal)}
               </p>
             </div>
           </div>
