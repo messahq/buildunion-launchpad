@@ -58,6 +58,15 @@ interface OwnerDashboardProps {
   tasksCount?: number;
   docsCount?: number;
   daysActive?: number;
+  tasks?: Array<{
+    id: string;
+    title: string;
+    status: string;
+    unit_price?: number;
+    quantity?: number;
+    total_cost?: number;
+    assignee_name?: string;
+  }>;
   pendingBudgetChange?: {
     submittedBy: string;
     submittedByName?: string;
@@ -74,6 +83,7 @@ interface OwnerDashboardProps {
   } | null;
   onBudgetApproved?: () => void;
   onBudgetDeclined?: () => void;
+  onTasksUpdated?: () => void;
  }
  
  interface Milestone {
@@ -1038,9 +1048,11 @@ export default function OwnerConfidenceDashboard({
   tasksCount = 0,
   docsCount = 0,
   daysActive = 1,
+  tasks = [],
   pendingBudgetChange,
   onBudgetApproved,
-  onBudgetDeclined
+  onBudgetDeclined,
+  onTasksUpdated
  }: OwnerDashboardProps) {
   // Debug: Log pendingBudgetChange for troubleshooting pulsing glow
   console.log('[OwnerConfidenceDashboard] pendingBudgetChange:', pendingBudgetChange);
@@ -1164,8 +1176,10 @@ export default function OwnerConfidenceDashboard({
                    <BudgetApprovalPanel
                      projectId={projectId}
                      pendingChange={pendingBudgetChange}
+                     tasks={tasks}
                      onApprove={onBudgetApproved}
                      onDecline={onBudgetDeclined}
+                     onTasksUpdated={onTasksUpdated}
                    />
                  </div>
                </motion.div>
