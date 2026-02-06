@@ -10,9 +10,9 @@ import { useQueryClient } from "@tanstack/react-query";
  
  export default function OwnerDashboard() {
    const { projectId } = useParams<{ projectId: string }>();
-   const navigate = useNavigate();
-   const { user } = useAuth();
-   const { data, isLoading, project, summary } = useOwnerDashboardData(projectId || null);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data, isLoading, project, summary, tasks } = useOwnerDashboardData(projectId || null);
    const queryClient = useQueryClient();
  
    if (!user) {
@@ -69,31 +69,44 @@ import { useQueryClient } from "@tanstack/react-query";
      queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] });
    };
  
-   return (
-     <OwnerConfidenceDashboard
-       projectId={projectId || ""}
-       projectName={data.projectName}
-       projectAddress={data.projectAddress || undefined}
-       healthScore={data.healthScore}
-       verificationRate={data.verificationRate}
-       milestones={data.milestones}
-       financials={data.financials}
-       blueprintUrl={data.blueprintUrl}
-       latestPhotoUrl={data.latestPhotoUrl}
-        expectedCompletion={data.expectedCompletion ? format(new Date(data.expectedCompletion), "MMM d") : null}
-        completionCertainty={data.completionCertainty}
-        currentPhase={data.currentPhase}
-        onGenerateReport={handleGenerateReport}
-        onExportPdf={handleExportPdf}
-        onViewDetails={handleViewDetails}
+  // Transform tasks for the BudgetApprovalPanel component
+  const transformedTasks = tasks.map(task => ({
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    unit_price: task.unit_price ?? undefined,
+    quantity: task.quantity ?? undefined,
+    total_cost: task.total_cost ?? undefined,
+    assignee_name: undefined // Can be fetched if needed
+  }));
+
+  return (
+    <OwnerConfidenceDashboard
+      projectId={projectId || ""}
+      projectName={data.projectName}
+      projectAddress={data.projectAddress || undefined}
+      healthScore={data.healthScore}
+      verificationRate={data.verificationRate}
+      milestones={data.milestones}
+      financials={data.financials}
+      blueprintUrl={data.blueprintUrl}
+      latestPhotoUrl={data.latestPhotoUrl}
+      expectedCompletion={data.expectedCompletion ? format(new Date(data.expectedCompletion), "MMM d") : null}
+      completionCertainty={data.completionCertainty}
+      currentPhase={data.currentPhase}
+      onGenerateReport={handleGenerateReport}
+      onExportPdf={handleExportPdf}
+      onViewDetails={handleViewDetails}
       teamOnline={data.teamOnline}
       totalTeam={data.totalTeam}
       tasksCount={data.tasksCount}
       docsCount={data.docsCount}
       daysActive={data.daysActive}
+      tasks={transformedTasks}
       pendingBudgetChange={data.pendingBudgetChange}
       onBudgetApproved={handleBudgetApproved}
       onBudgetDeclined={handleBudgetDeclined}
-     />
-   );
+      onTasksUpdated={() => queryClient.invalidateQueries({ queryKey: ["project-tasks-owner", projectId] })}
+    />
+  );
  }
