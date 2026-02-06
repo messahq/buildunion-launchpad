@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useIsTeamMember } from "@/hooks/useIsTeamMember";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -102,6 +103,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { subscription } = useSubscription();
+  const { isTeamMember } = useIsTeamMember();
   const [showChat, setShowChat] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -109,7 +111,9 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Premium users OR team members can access messaging
   const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
+  const canAccessMessaging = hasPremiumAccess || isTeamMember;
   const isOwnProfile = user?.id === member?.user_id;
 
   const displayName = profileName || member?.company_name || "BuildUnion Member";
@@ -279,7 +283,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
       toast.error(t("memberDirectory.pleaseLogin"));
       return;
     }
-    if (!hasPremiumAccess) {
+    if (!canAccessMessaging) {
       toast.info(t("memberDirectory.premiumRequired"), {
         action: {
           label: t("memberDirectory.upgrade"),
@@ -415,7 +419,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
                     {t("memberDirectory.sendMessage")}
-                    {!hasPremiumAccess && user && (
+                    {!canAccessMessaging && user && (
                       <Badge variant="secondary" className="ml-2 text-[10px]">{t("memberDirectory.premiumFeature")}</Badge>
                     )}
                   </Button>
