@@ -334,6 +334,18 @@ export function MaterialCalculationTab({
   const { user } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
   
+  // Local pending approval state - allows immediate UI update after submission
+  const [localPendingApproval, setLocalPendingApproval] = useState<PendingApprovalStatus | null>(
+    pendingApprovalStatus || null
+  );
+  
+  // Sync local state with prop when it changes externally
+  useEffect(() => {
+    if (pendingApprovalStatus) {
+      setLocalPendingApproval(pendingApprovalStatus);
+    }
+  }, [pendingApprovalStatus]);
+  
   // Track previous baseArea for dynamic recalculation
   // CRITICAL: Initialize with null to force first useEffect to detect area initialization
   const prevBaseAreaRef = useRef<number | null>(null);
@@ -1398,6 +1410,13 @@ export function MaterialCalculationTab({
                   duration: 5000 
                 });
                 
+                // Update local state immediately so banner shows
+                setLocalPendingApproval({
+                  isPending: true,
+                  submittedAt: new Date().toISOString(),
+                  proposedTotal: grandTotalWithTax,
+                });
+                
                 onPendingApprovalCreated?.();
               }
             } else {
@@ -1690,28 +1709,28 @@ export function MaterialCalculationTab({
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Pending Approval Banner for non-owners */}
-      {!isOwner && pendingApprovalStatus?.isPending && (
-        <div className="relative overflow-hidden rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-950/40 via-slate-900/80 to-amber-950/40 p-4">
+      {/* Pending Approval Banner for non-owners (Team members: Foreman, Subcontractor, Inspector) */}
+      {!isOwner && localPendingApproval?.isPending && (
+        <div className="relative overflow-hidden rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-950/40 via-slate-900/80 to-amber-950/40 p-4 dark:bg-gradient-to-r dark:from-amber-950/40 dark:via-slate-900/80 dark:to-amber-950/40 light:bg-gradient-to-r light:from-amber-100 light:via-amber-50 light:to-amber-100">
           {/* Animated border glow */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-500 animate-pulse" />
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/20 border border-amber-500/30">
-              <Clock className="h-5 w-5 text-amber-400" />
+            <div className="p-2 rounded-lg bg-amber-500/20 border border-amber-500/30 dark:bg-amber-500/20 light:bg-amber-100">
+              <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-amber-300">Budget Change Pending Approval</h4>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Your proposed budget of {formatCurrency(pendingApprovalStatus.proposedTotal || 0)} is waiting for owner approval.
-                {pendingApprovalStatus.submittedAt && (
-                  <span className="ml-1 text-amber-400/70">
-                    Submitted {new Date(pendingApprovalStatus.submittedAt).toLocaleDateString()}
+              <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Budget Change Pending Approval</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your proposed budget of <span className="font-medium text-amber-700 dark:text-amber-400">{formatCurrency(localPendingApproval.proposedTotal || 0)}</span> is waiting for owner approval.
+                {localPendingApproval.submittedAt && (
+                  <span className="ml-1 text-amber-600/70 dark:text-amber-400/70">
+                    • Submitted {new Date(localPendingApproval.submittedAt).toLocaleDateString()}
                   </span>
                 )}
               </p>
             </div>
-            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/50 animate-pulse">
-              Pending
+            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/50 animate-pulse">
+              ⏳ Pending
             </Badge>
           </div>
         </div>

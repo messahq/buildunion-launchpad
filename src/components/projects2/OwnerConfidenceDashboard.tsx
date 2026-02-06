@@ -1134,33 +1134,49 @@ function InlineAudioPlayer({
                <span className="text-xs uppercase tracking-widest text-cyan-400/80">BUILDUNION</span>
              </div>
            </div>
-           
-           {/* Budget Approval Panel - shown when pending approval exists */}
-           {pendingBudgetChange && pendingBudgetChange.status === 'pending' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ 
-                  opacity: 1, 
-                  scale: 1,
-                  boxShadow: [
-                    "0 0 0 0 rgba(245, 158, 11, 0)",
-                    "0 0 20px 10px rgba(245, 158, 11, 0.3)",
-                    "0 0 0 0 rgba(245, 158, 11, 0)"
-                  ]
-                }}
-                transition={{ 
-                  boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                }}
-                className="rounded-xl"
-              >
-                <BudgetApprovalPanel
-                  projectId={projectId}
-                  pendingChange={pendingBudgetChange}
-                  onApprove={onBudgetApproved}
-                  onDecline={onBudgetDeclined}
-                />
-              </motion.div>
-           )}
+            
+            {/* Budget Approval Panel - shown when pending approval exists */}
+            {pendingBudgetChange && pendingBudgetChange.status === 'pending' && (
+               <motion.div
+                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                 animate={{ 
+                   opacity: 1, 
+                   scale: 1,
+                   y: 0,
+                 }}
+                 transition={{ duration: 0.5, ease: "easeOut" }}
+                 className="relative"
+               >
+                 {/* Pulsing glow effect container */}
+                 <motion.div
+                   className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-500/40 via-orange-500/40 to-amber-500/40"
+                   animate={{
+                     opacity: [0.3, 0.7, 0.3],
+                     scale: [1, 1.02, 1],
+                   }}
+                   transition={{
+                     duration: 2,
+                     repeat: Infinity,
+                     ease: "easeInOut"
+                   }}
+                 />
+                 <div className="relative">
+                   <BudgetApprovalPanel
+                     projectId={projectId}
+                     pendingChange={pendingBudgetChange}
+                     onApprove={onBudgetApproved}
+                     onDecline={onBudgetDeclined}
+                   />
+                 </div>
+               </motion.div>
+            )}
+            
+            {/* No pending changes indicator - helpful for owners */}
+            {(!pendingBudgetChange || pendingBudgetChange.status !== 'pending') && (
+              <div className="hidden">
+                {/* Debug: pendingBudgetChange status = {pendingBudgetChange?.status || 'none'} */}
+              </div>
+            )}
            
            {/* Three Column Layout */}
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
