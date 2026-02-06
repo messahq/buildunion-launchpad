@@ -1693,7 +1693,7 @@ export function MaterialCalculationTab({
                     {/* Coverage badge - shows sq ft/unit or sq m/unit */}
                     {hasCoverage && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 shrink-0 font-mono">
-                        {displayCoverage} {coverageUnit}/{item.unit.replace(/s$/, '')}
+                        {displayCoverage} {coverageUnit}/{(item.unit || 'unit').replace(/s$/, '')}
                       </Badge>
                     )}
                   </div>
@@ -1749,7 +1749,7 @@ export function MaterialCalculationTab({
                   {item.unitPrice > 0 ? (
                     <div className="space-y-0.5">
                       <span className="font-medium">{formatCurrency(item.unitPrice)}</span>
-                      <span className="text-[10px] text-muted-foreground block">/{item.unit.replace(/s$/, '')}</span>
+                      <span className="text-[10px] text-muted-foreground block">/{(item.unit || 'unit').replace(/s$/, '')}</span>
                     </div>
                   ) : (
                     <Input
