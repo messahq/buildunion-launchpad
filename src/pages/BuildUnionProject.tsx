@@ -18,7 +18,6 @@ const BuildUnionProject = () => {
   const { user, loading: authLoading } = useAuth();
    const [isOwner, setIsOwner] = useState<boolean | null>(null);
    const [checkingOwnership, setCheckingOwnership] = useState(true);
-  const [isApproving, setIsApproving] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const queryClient = useQueryClient();
   
@@ -85,54 +84,13 @@ const BuildUnionProject = () => {
        );
      }
  
-     const handleGenerateReport = async () => {
+    const handleGenerateReport = async () => {
        toast.info("Generating AI Magic Summary...", { duration: 2000 });
        setTimeout(() => {
          toast.success("Magic Summary generated!");
        }, 2000);
      };
- 
-    const handleApprove = async () => {
-      if (!projectId || !user || isApproving) return;
-      
-      setIsApproving(true);
-      try {
-        // Update project_summaries status to 'approved'
-        const { error: summaryError } = await supabase
-          .from("project_summaries")
-          .update({ 
-            status: 'approved',
-            baseline_locked_at: new Date().toISOString(),
-            baseline_locked_by: user.id
-          })
-          .eq("project_id", projectId);
-        
-        if (summaryError) throw summaryError;
-        
-        // Update project status to 'active' if it was 'draft'
-        const { error: projectError } = await supabase
-          .from("projects")
-          .update({ status: 'active' })
-          .eq("id", projectId)
-          .eq("status", "draft");
-        
-        if (projectError) throw projectError;
-        
-        // Invalidate queries to refresh data
-        queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] });
-        queryClient.invalidateQueries({ queryKey: ["project-owner-view", projectId] });
-        
-        toast.success("Project Approved! ✓", {
-          description: "Budget and timeline have been locked as baseline."
-        });
-      } catch (err) {
-        console.error("Approval error:", err);
-        toast.error("Failed to approve project");
-      } finally {
-        setIsApproving(false);
-      }
-     };
- 
+
     const handleExportPdf = async () => {
       if (!ownerData || isExportingPdf) return;
       
@@ -197,10 +155,9 @@ const BuildUnionProject = () => {
          expectedCompletion={ownerData.expectedCompletion ? format(new Date(ownerData.expectedCompletion), "MMM d") : null}
          completionCertainty={ownerData.completionCertainty}
          currentPhase={ownerData.currentPhase}
-         onGenerateReport={handleGenerateReport}
-         onApprove={handleApprove}
-         onExportPdf={handleExportPdf}
-         onViewDetails={handleViewDetails}
+          onGenerateReport={handleGenerateReport}
+          onExportPdf={handleExportPdf}
+          onViewDetails={handleViewDetails}
          pendingBudgetChange={ownerData.pendingBudgetChange}
          onBudgetApproved={() => queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] })}
          onBudgetDeclined={() => queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] })}

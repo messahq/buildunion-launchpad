@@ -31,29 +31,23 @@ import { useQueryClient } from "@tanstack/react-query";
      );
    }
  
-   const handleGenerateReport = async () => {
-     toast.info("Generating AI Magic Summary...", { duration: 2000 });
-    try {
-      const { data: briefData, error } = await supabase.functions.invoke("generate-project-brief", {
-        body: { projectId }
-      });
-      if (error) throw error;
-      toast.success("Magic Summary generated!", {
-        description: "Your AI report is ready"
-      });
-    } catch (err) {
-      console.error("Report generation error:", err);
-      toast.error("Failed to generate report");
-    }
-   };
- 
-   const handleApprove = () => {
-     toast.success("Project phase approved! ✓", {
-       description: "Your approval has been recorded."
-     });
-   };
- 
-   const handleExportPdf = () => {
+    const handleGenerateReport = async () => {
+      toast.info("Generating AI Magic Summary...", { duration: 2000 });
+     try {
+       const { data: briefData, error } = await supabase.functions.invoke("generate-project-brief", {
+         body: { projectId }
+       });
+       if (error) throw error;
+       toast.success("Magic Summary generated!", {
+         description: "Your AI report is ready"
+       });
+     } catch (err) {
+       console.error("Report generation error:", err);
+       toast.error("Failed to generate report");
+     }
+    };
+
+    const handleExportPdf = () => {
     toast.info("Generating Executive PDF...", { duration: 1500 });
     // Trigger download or generate PDF
     setTimeout(() => {
@@ -86,13 +80,12 @@ import { useQueryClient } from "@tanstack/react-query";
        financials={data.financials}
        blueprintUrl={data.blueprintUrl}
        latestPhotoUrl={data.latestPhotoUrl}
-       expectedCompletion={data.expectedCompletion ? format(new Date(data.expectedCompletion), "MMM d") : null}
-       completionCertainty={data.completionCertainty}
-       currentPhase={data.currentPhase}
-       onGenerateReport={handleGenerateReport}
-       onApprove={handleApprove}
-       onExportPdf={handleExportPdf}
-       onViewDetails={handleViewDetails}
+        expectedCompletion={data.expectedCompletion ? format(new Date(data.expectedCompletion), "MMM d") : null}
+        completionCertainty={data.completionCertainty}
+        currentPhase={data.currentPhase}
+        onGenerateReport={handleGenerateReport}
+        onExportPdf={handleExportPdf}
+        onViewDetails={handleViewDetails}
       teamOnline={data.teamOnline}
       totalTeam={data.totalTeam}
       tasksCount={data.tasksCount}
