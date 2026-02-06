@@ -238,7 +238,7 @@ const AskMessaChat = ({ isOpen, onClose }: AskMessaChatProps) => {
   const isLoggedIn = !authLoading && user;
 
   return (
-    <div className="fixed inset-4 sm:inset-auto sm:bottom-6 sm:right-6 w-auto sm:w-[420px] h-auto sm:h-[650px] max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 overflow-hidden">
+    <div className="fixed inset-4 sm:inset-auto sm:bottom-6 sm:right-6 bottom-20 w-auto sm:w-[420px] h-auto sm:h-[650px] max-h-[calc(100vh-6rem)] sm:max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
