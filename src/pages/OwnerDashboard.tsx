@@ -48,7 +48,7 @@ export default function OwnerDashboard() {
     unit_price: task.unit_price ?? undefined,
     quantity: task.quantity ?? undefined,
     total_cost: task.total_cost ?? undefined,
-    assignee_name: undefined
+    assignee_name: (task as { assignee_name?: string }).assignee_name ?? undefined
   }));
 
   return (
