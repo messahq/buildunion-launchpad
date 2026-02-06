@@ -1,118 +1,153 @@
- import { useState } from "react";
- import { motion, AnimatePresence } from "framer-motion";
- import { Button } from "@/components/ui/button";
- import { Badge } from "@/components/ui/badge";
- import { 
-   AlertTriangle, 
-   Check, 
-   X, 
-   DollarSign, 
-   Clock, 
-   User,
-   ArrowRight,
-   FileText,
-   Loader2
- } from "lucide-react";
- import { cn } from "@/lib/utils";
- import { format } from "date-fns";
- import { supabase } from "@/integrations/supabase/client";
- import { toast } from "sonner";
- 
- interface PendingBudgetChange {
-   submittedBy: string;
-   submittedByName?: string;
-   submittedAt: string;
-   proposedGrandTotal: number;
-   previousGrandTotal: number;
-   proposedLineItems?: {
-     materials?: Array<{ item: string; totalPrice: number }>;
-     labor?: Array<{ item: string; totalPrice: number }>;
-     other?: Array<{ item: string; totalPrice: number }>;
-   };
-   reason?: string;
-   status: 'pending' | 'approved' | 'declined';
- }
- 
- interface BudgetApprovalPanelProps {
-   projectId: string;
-   pendingChange: PendingBudgetChange | null;
-   onApprove?: () => void;
-   onDecline?: () => void;
- }
- 
- export function BudgetApprovalPanel({ 
-   projectId, 
-   pendingChange,
-   onApprove,
-   onDecline 
- }: BudgetApprovalPanelProps) {
-   const [isProcessing, setIsProcessing] = useState(false);
-   
-   if (!pendingChange || pendingChange.status !== 'pending') {
-     return null;
-   }
-   
-   const formatCurrency = (amount: number) => {
-     return new Intl.NumberFormat('en-CA', {
-       style: 'currency',
-       currency: 'CAD',
-       minimumFractionDigits: 2
-     }).format(amount);
-   };
-   
-   const difference = pendingChange.proposedGrandTotal - pendingChange.previousGrandTotal;
-   const percentChange = pendingChange.previousGrandTotal > 0 
-     ? ((difference / pendingChange.previousGrandTotal) * 100).toFixed(1)
-     : '0';
-   const isIncrease = difference > 0;
-   
-    const handleApprove = async () => {
-      setIsProcessing(true);
-      try {
-        // First fetch current config to preserve existing values
-        const { data: currentData } = await supabase
-          .from("project_summaries")
-          .select("ai_workflow_config")
-          .eq("project_id", projectId)
-          .single();
-        
-        const currentConfig = (currentData?.ai_workflow_config as Record<string, unknown>) || {};
-        
-        // Update ai_workflow_config - MERGE with existing config
-        const { error } = await supabase
-          .from("project_summaries")
-          .update({
-            ai_workflow_config: {
-              ...currentConfig,
-              grandTotal: pendingChange.proposedGrandTotal,
-              budgetVersion: 'change_order',
-              budgetUpdatedAt: new Date().toISOString(),
-              pendingBudgetChange: {
-                ...pendingChange,
-                status: 'approved',
-                approvedAt: new Date().toISOString()
-              }
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  AlertTriangle, 
+  Check, 
+  X, 
+  DollarSign, 
+  Clock, 
+  User,
+  ArrowRight,
+  FileText,
+  Loader2,
+  Scale
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import TaskBudgetAllocationDialog from "./TaskBudgetAllocationDialog";
+
+interface PendingBudgetChange {
+  submittedBy: string;
+  submittedByName?: string;
+  submittedAt: string;
+  proposedGrandTotal: number;
+  previousGrandTotal: number;
+  proposedLineItems?: {
+    materials?: Array<{ item: string; totalPrice: number }>;
+    labor?: Array<{ item: string; totalPrice: number }>;
+    other?: Array<{ item: string; totalPrice: number }>;
+  };
+  reason?: string;
+  status: 'pending' | 'approved' | 'declined';
+}
+
+interface Task {
+  id: string;
+  title: string;
+  status: string;
+  unit_price?: number;
+  quantity?: number;
+  total_cost?: number;
+  assignee_name?: string;
+}
+
+interface BudgetApprovalPanelProps {
+  projectId: string;
+  pendingChange: PendingBudgetChange | null;
+  tasks?: Task[];
+  onApprove?: () => void;
+  onDecline?: () => void;
+  onTasksUpdated?: () => void;
+}
+
+export function BudgetApprovalPanel({ 
+  projectId, 
+  pendingChange,
+  tasks = [],
+  onApprove,
+  onDecline,
+  onTasksUpdated
+}: BudgetApprovalPanelProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showAllocationDialog, setShowAllocationDialog] = useState(false);
+  const [approvedAmount, setApprovedAmount] = useState(0);
+  
+  if (!pendingChange || pendingChange.status !== 'pending') {
+    return null;
+  }
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+  
+  const difference = pendingChange.proposedGrandTotal - pendingChange.previousGrandTotal;
+  const percentChange = pendingChange.previousGrandTotal > 0 
+    ? ((difference / pendingChange.previousGrandTotal) * 100).toFixed(1)
+    : '0';
+  const isIncrease = difference > 0;
+  
+  const handleApprove = async () => {
+    setIsProcessing(true);
+    try {
+      // First fetch current config to preserve existing values
+      const { data: currentData } = await supabase
+        .from("project_summaries")
+        .select("ai_workflow_config")
+        .eq("project_id", projectId)
+        .single();
+      
+      const currentConfig = (currentData?.ai_workflow_config as Record<string, unknown>) || {};
+      
+      // Update ai_workflow_config - MERGE with existing config
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({
+          ai_workflow_config: {
+            ...currentConfig,
+            grandTotal: pendingChange.proposedGrandTotal,
+            budgetVersion: 'change_order',
+            budgetUpdatedAt: new Date().toISOString(),
+            pendingBudgetChange: {
+              ...pendingChange,
+              status: 'approved',
+              approvedAt: new Date().toISOString()
             },
-            total_cost: pendingChange.proposedGrandTotal,
-            line_items: pendingChange.proposedLineItems,
-            updated_at: new Date().toISOString()
-          })
-          .eq("project_id", projectId);
-        
-        if (error) throw error;
-        
-        toast.success("Budget change approved! ✓ Dashboard updated.", { 
-          description: "The new budget is now active.",
-          duration: 4000 
-        });
-        onApprove?.();
-      } catch (error) {
-        console.error("Failed to approve budget change:", error);
-        toast.error("Failed to approve budget change");
-      } finally {
-        setIsProcessing(false);
+            // Mark that task budget allocation is pending
+            taskBudgetSynced: false,
+          },
+          total_cost: pendingChange.proposedGrandTotal,
+          line_items: pendingChange.proposedLineItems,
+          updated_at: new Date().toISOString()
+        })
+        .eq("project_id", projectId);
+      
+      if (error) throw error;
+      
+      // Store approved amount for allocation dialog
+      setApprovedAmount(pendingChange.proposedGrandTotal);
+      
+      toast.success("Budget change approved! ✓", { 
+        description: "Would you like to allocate the budget to specific tasks?",
+        duration: 4000 
+      });
+      
+      // Show allocation dialog if there are tasks
+      if (tasks.length > 0) {
+        setShowAllocationDialog(true);
       }
-    };
+      
+      onApprove?.();
+    } catch (error) {
+      console.error("Failed to approve budget change:", error);
+      toast.error("Failed to approve budget change");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  const handleAllocationComplete = () => {
+    setShowAllocationDialog(false);
+    onTasksUpdated?.();
+    toast.success("Budget allocated to tasks successfully!");
+  };
    
    const handleDecline = async () => {
      setIsProcessing(true);
@@ -237,36 +272,56 @@
              </div>
            )}
            
-           {/* Action Buttons */}
-           <div className="flex gap-2 pt-2">
-             <Button
-               onClick={handleApprove}
-               disabled={isProcessing}
-               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-             >
-               {isProcessing ? (
-                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-               ) : (
-                 <Check className="h-4 w-4 mr-2" />
-               )}
-               Approve
-             </Button>
-             <Button
-               onClick={handleDecline}
-               disabled={isProcessing}
-               variant="outline"
-               className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
-             >
-               {isProcessing ? (
-                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-               ) : (
-                 <X className="h-4 w-4 mr-2" />
-               )}
-               Decline
-             </Button>
-           </div>
-         </div>
-       </motion.div>
-     </AnimatePresence>
-   );
- }
+            {/* Task Allocation Hint */}
+            {tasks.length > 0 && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                <Scale className="h-4 w-4 text-cyan-400" />
+                <span className="text-xs text-slate-400">
+                  Approving will allow you to allocate budget to {tasks.length} task{tasks.length > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={handleApprove}
+                disabled={isProcessing}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Approve
+              </Button>
+              <Button
+                onClick={handleDecline}
+                disabled={isProcessing}
+                variant="outline"
+                className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <X className="h-4 w-4 mr-2" />
+                )}
+                Decline
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+        
+        {/* Task Budget Allocation Dialog */}
+        <TaskBudgetAllocationDialog
+          open={showAllocationDialog}
+          onOpenChange={setShowAllocationDialog}
+          projectId={projectId}
+          approvedBudget={approvedAmount}
+          tasks={tasks}
+          onAllocationComplete={handleAllocationComplete}
+        />
+      </AnimatePresence>
+    );
+  }

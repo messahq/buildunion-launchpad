@@ -43,6 +43,14 @@ import { useTranslation } from "react-i18next";
 import { useDashboardFinancialSync, MaterialWithCitation } from "@/hooks/useDashboardFinancialSync";
 import { MaterialQuickEditDialog } from "./MaterialQuickEditDialog";
 import { CitationSource } from "@/contexts/ProjectContext.types";
+import BudgetSyncIndicator from "./BudgetSyncIndicator";
+
+interface Task {
+  id: string;
+  total_cost?: number;
+  unit_price?: number;
+  quantity?: number;
+}
 
 interface DashboardBudgetSectionProps {
   currency?: string;
@@ -50,6 +58,8 @@ interface DashboardBudgetSectionProps {
   projectMode?: "solo" | "team";
   markupPercent?: number;
   onMarkupChange?: (percent: number) => void;
+  tasks?: Task[];
+  onAllocateBudget?: () => void;
 }
 
 // Icon map for citation sources
@@ -68,6 +78,8 @@ export function DashboardBudgetSection({
   projectMode = "solo",
   markupPercent = 0,
   onMarkupChange,
+  tasks = [],
+  onAllocateBudget,
 }: DashboardBudgetSectionProps) {
   const { t } = useTranslation();
   const {
@@ -251,6 +263,16 @@ export function DashboardBudgetSection({
               </p>
             </div>
           </div>
+
+          {/* Budget Sync Indicator - Show in Team Mode when there are tasks */}
+          {isTeamMode && tasks.length > 0 && effectiveGrandTotal > 0 && (
+            <BudgetSyncIndicator
+              approvedBudget={effectiveGrandTotal}
+              tasks={tasks}
+              onAllocateClick={onAllocateBudget}
+              compact={false}
+            />
+          )}
 
           {/* Team Markup Engine - Only visible in Team Mode */}
           {isTeamMode && (
