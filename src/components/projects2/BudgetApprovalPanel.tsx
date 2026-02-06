@@ -66,40 +66,53 @@
      : '0';
    const isIncrease = difference > 0;
    
-   const handleApprove = async () => {
-     setIsProcessing(true);
-     try {
-       // Update ai_workflow_config to mark as approved and set the new budget
-       const { error } = await supabase
-         .from("project_summaries")
-         .update({
-           ai_workflow_config: {
-             grandTotal: pendingChange.proposedGrandTotal,
-             budgetVersion: 'change_order',
-             budgetUpdatedAt: new Date().toISOString(),
-             pendingBudgetChange: {
-               ...pendingChange,
-               status: 'approved',
-               approvedAt: new Date().toISOString()
-             }
-           },
-           total_cost: pendingChange.proposedGrandTotal,
-           line_items: pendingChange.proposedLineItems,
-           updated_at: new Date().toISOString()
-         })
-         .eq("project_id", projectId);
-       
-       if (error) throw error;
-       
-       toast.success("Budget change approved! Dashboard updated.", { duration: 3000 });
-       onApprove?.();
-     } catch (error) {
-       console.error("Failed to approve budget change:", error);
-       toast.error("Failed to approve budget change");
-     } finally {
-       setIsProcessing(false);
-     }
-   };
+    const handleApprove = async () => {
+      setIsProcessing(true);
+      try {
+        // First fetch current config to preserve existing values
+        const { data: currentData } = await supabase
+          .from("project_summaries")
+          .select("ai_workflow_config")
+          .eq("project_id", projectId)
+          .single();
+        
+        const currentConfig = (currentData?.ai_workflow_config as Record<string, unknown>) || {};
+        
+        // Update ai_workflow_config - MERGE with existing config
+        const { error } = await supabase
+          .from("project_summaries")
+          .update({
+            ai_workflow_config: {
+              ...currentConfig,
+              grandTotal: pendingChange.proposedGrandTotal,
+              budgetVersion: 'change_order',
+              budgetUpdatedAt: new Date().toISOString(),
+              pendingBudgetChange: {
+                ...pendingChange,
+                status: 'approved',
+                approvedAt: new Date().toISOString()
+              }
+            },
+            total_cost: pendingChange.proposedGrandTotal,
+            line_items: pendingChange.proposedLineItems,
+            updated_at: new Date().toISOString()
+          })
+          .eq("project_id", projectId);
+        
+        if (error) throw error;
+        
+        toast.success("Budget change approved! ✓ Dashboard updated.", { 
+          description: "The new budget is now active.",
+          duration: 4000 
+        });
+        onApprove?.();
+      } catch (error) {
+        console.error("Failed to approve budget change:", error);
+        toast.error("Failed to approve budget change");
+      } finally {
+        setIsProcessing(false);
+      }
+    };
    
    const handleDecline = async () => {
      setIsProcessing(true);
