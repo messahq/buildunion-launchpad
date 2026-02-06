@@ -126,21 +126,40 @@ interface OwnerDashboardData {
      enabled: !!projectId,
    });
  
-   // Fetch tasks for progress
-   const { data: tasks } = useQuery({
-     queryKey: ["project-tasks-owner", projectId],
-     queryFn: async () => {
-       if (!projectId) return [];
-       const { data, error } = await supabase
-         .from("project_tasks")
-         .select("*")
-         .eq("project_id", projectId)
-         .is("archived_at", null);
-       if (error) throw error;
-       return data || [];
-     },
-     enabled: !!projectId,
-   });
+    // Fetch tasks for progress with assignee names
+    const { data: tasks } = useQuery({
+      queryKey: ["project-tasks-owner", projectId],
+      queryFn: async () => {
+        if (!projectId) return [];
+        const { data, error } = await supabase
+          .from("project_tasks")
+          .select("*")
+          .eq("project_id", projectId)
+          .is("archived_at", null);
+        if (error) throw error;
+        
+        // Fetch assignee names from profiles
+        if (data && data.length > 0) {
+          const assigneeIds = [...new Set(data.map(t => t.assigned_to).filter(Boolean))];
+          if (assigneeIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("user_id, full_name")
+              .in("user_id", assigneeIds);
+            
+            const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+            
+            return data.map(task => ({
+              ...task,
+              assignee_name: profileMap.get(task.assigned_to) || null
+            }));
+          }
+        }
+        
+        return data || [];
+      },
+      enabled: !!projectId,
+    });
  
    // Fetch documents for blueprint
    const { data: documents } = useQuery({
