@@ -2,9 +2,12 @@
 // DASHBOARD FINANCIAL SYNC HOOK
 // Reads from ProjectContext.centralMaterials & centralFinancials
 // Dashboard's single source of truth
+// Synced with ai_workflow_config for approved budget
 // ============================================
 
 import { useMemo, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useProjectContext } from "@/contexts/ProjectContext";
 import { MaterialItem, CitationSource, CentralMaterials } from "@/contexts/ProjectContext.types";
 import { 
@@ -22,6 +25,7 @@ export interface FinancialSummary {
   taxRate: number;
   taxAmount: number;
   grandTotal: number;
+  approvedGrandTotal: number | null; // From ai_workflow_config after approval
   isDraft: boolean;
   lastModified: string | null;
 }
@@ -134,7 +138,36 @@ function enrichMaterialsWithPrices(
 
 export function useDashboardFinancialSync() {
   const { state, actions } = useProjectContext();
-  const { centralMaterials, centralFinancials, operationalTruth, page1, page4, sync } = state;
+  const { centralMaterials, centralFinancials, operationalTruth, page1, page4, sync, projectId } = state;
+
+  // ====== FETCH APPROVED BUDGET FROM DATABASE ======
+  // Read ai_workflow_config.grandTotal to show approved amounts
+  const { data: summaryData } = useQuery({
+    queryKey: ["dashboard-budget-sync", projectId],
+    queryFn: async () => {
+      if (!projectId) return null;
+      const { data, error } = await supabase
+        .from("project_summaries")
+        .select("ai_workflow_config, total_cost")
+        .eq("project_id", projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+    staleTime: 5000, // Refresh every 5 seconds
+  });
+
+  // Extract approved grand total from ai_workflow_config
+  const approvedGrandTotal = useMemo(() => {
+    const aiConfig = summaryData?.ai_workflow_config as {
+      grandTotal?: number;
+      budgetVersion?: string;
+    } | null;
+    
+    // Return the approved grand total from ai_workflow_config if it exists
+    return aiConfig?.grandTotal || null;
+  }, [summaryData]);
 
   // ====== AUTO-SYNC from Operational Truth to Central ======
   // If centralMaterials is empty but OT has data, populate central
@@ -188,7 +221,7 @@ export function useDashboardFinancialSync() {
     );
   }, [centralMaterials.items, page1.workType, operationalTruth.confirmedArea.value]);
 
-  // Calculate financial summary from CENTRAL data
+  // Calculate financial summary from CENTRAL data + approved budget from DB
   const financialSummary = useMemo((): FinancialSummary => {
     const materialCost = effectiveMaterials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
     const laborCost = centralFinancials.laborCost || 0;
@@ -206,10 +239,11 @@ export function useDashboardFinancialSync() {
       taxRate,
       taxAmount,
       grandTotal,
+      approvedGrandTotal, // From ai_workflow_config after owner approval
       isDraft: centralFinancials.isDraft, // From central financials
       lastModified: centralMaterials.lastUpdatedAt,
     };
-  }, [effectiveMaterials, centralFinancials, centralMaterials.lastUpdatedAt]);
+  }, [effectiveMaterials, centralFinancials, centralMaterials.lastUpdatedAt, approvedGrandTotal]);
 
   // Get materials with citation badges for Dashboard display
   const materialsWithCitations = useMemo((): MaterialWithCitation[] => {
