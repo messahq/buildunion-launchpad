@@ -838,6 +838,45 @@ export default function BuildUnionMessages() {
     }
   };
 
+  // Delete conversation - removes all messages between current user and partner
+  const handleDeleteConversation = async () => {
+    if (!user || !selectedConversation) return;
+    
+    if (!confirm(`Are you sure you want to delete this conversation with ${selectedConversation.partnerName}? This cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      // Delete messages where user is sender
+      const { error: deleteError1 } = await supabase
+        .from("team_messages")
+        .delete()
+        .eq("sender_id", user.id)
+        .eq("recipient_id", selectedConversation.partnerId);
+      
+      if (deleteError1) throw deleteError1;
+      
+      // Delete messages where user is recipient
+      const { error: deleteError2 } = await supabase
+        .from("team_messages")
+        .delete()
+        .eq("recipient_id", user.id)
+        .eq("sender_id", selectedConversation.partnerId);
+      
+      if (deleteError2) throw deleteError2;
+      
+      // Remove from local state
+      setConversations(prev => prev.filter(c => c.partnerId !== selectedConversation.partnerId));
+      setSelectedConversation(null);
+      setMessages([]);
+      
+      toast.success("Conversation deleted");
+    } catch (err) {
+      console.error("Error deleting conversation:", err);
+      toast.error("Failed to delete conversation");
+    }
+  };
+
   // Fetch email logs
   const fetchEmailLogs = async () => {
     if (!user) return;
@@ -1806,6 +1845,15 @@ export default function BuildUnionMessages() {
                       </p>
                     )}
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={handleDeleteConversation}
+                    title="Delete conversation"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 {/* Messages */}
