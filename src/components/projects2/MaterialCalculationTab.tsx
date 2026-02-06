@@ -111,6 +111,7 @@ interface ClientInfo {
 interface MaterialCalculationTabProps {
   materials: TaskBasedEntry[];
   labor: TaskBasedEntry[];
+  other?: TaskBasedEntry[]; // Saved "Other" items from database
   projectTotal: number;
   projectId?: string;
   projectName?: string;
@@ -306,6 +307,7 @@ const getCanadianTaxRates = (address: string): { gst: number; pst: number; hst: 
 export function MaterialCalculationTab({
   materials: initialMaterials,
   labor: initialLabor,
+  other: initialOther = [], // Load saved other items from props
   projectTotal,
   projectId,
   projectName = "Project",
@@ -471,8 +473,33 @@ export function MaterialCalculationTab({
   // Labor items
   const [laborItems, setLaborItems] = useState<CostItem[]>(createInitialLaborItems);
   
-  // Other/custom items - note: other items are not passed as props yet, initialized empty
-  const [otherItems, setOtherItems] = useState<CostItem[]>([]);
+  // Other/custom items - PERSISTENCE FIX: Load saved items from props
+  // Converts TaskBasedEntry[] to CostItem[] with proper IDs
+  const createInitialOtherItems = useCallback((): CostItem[] => {
+    if (!initialOther || initialOther.length === 0) return [];
+    return initialOther.map((o, idx) => ({
+      id: `other-saved-${idx}-${Date.now()}`,
+      item: o.item,
+      quantity: o.quantity,
+      unit: o.unit,
+      unitPrice: o.unitPrice || 0,
+      totalPrice: o.quantity * (o.unitPrice || 0),
+    }));
+  }, [initialOther]);
+  
+  const [otherItems, setOtherItems] = useState<CostItem[]>(createInitialOtherItems);
+  
+  // PERSISTENCE FIX: Sync otherItems when initialOther prop changes (e.g., navigating between projects)
+  // Use ref to track previous value and prevent unnecessary re-renders
+  const initialOtherJsonRef = useRef<string>(JSON.stringify(initialOther));
+  useEffect(() => {
+    const newJson = JSON.stringify(initialOther);
+    if (newJson !== initialOtherJsonRef.current && initialOther && initialOther.length > 0) {
+      console.log('[MaterialCalculationTab] Syncing otherItems from saved data:', initialOther.length, 'items');
+      setOtherItems(createInitialOtherItems());
+      initialOtherJsonRef.current = newJson;
+    }
+  }, [initialOther, createInitialOtherItems]);
   
   // Track unsaved changes and current data source
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);

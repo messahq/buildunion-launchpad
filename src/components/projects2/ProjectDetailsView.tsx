@@ -2412,6 +2412,22 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               
               return Object.values(laborMap);
             })()}
+            other={(() => {
+              // PERSISTENCE FIX: Load saved "Other" items from database
+              const savedLineItems = summary?.line_items as { 
+                other?: Array<{ 
+                  item: string; 
+                  quantity: number; 
+                  unit: string; 
+                  unitPrice?: number;
+                  totalPrice?: number;
+                }> 
+              } | null;
+              if (savedLineItems?.other && savedLineItems.other.length > 0) {
+                return savedLineItems.other;
+              }
+              return [];
+            })()}
             projectTotal={summary?.total_cost || 0}
             projectId={project.id}
             projectName={project.name}
