@@ -388,6 +388,7 @@ import { differenceInDays } from "date-fns";
      data: dashboardData,
      isLoading: !project && !!projectId,
      project,
-     summary
+     summary,
+     tasks: tasks || []
    };
  }
