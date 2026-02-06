@@ -69,6 +69,128 @@ const generateCitationId = (type: 'D' | 'P', index: number): string => {
   return `${type}-${String(index + 1).padStart(3, '0')}`;
 };
 
+// ============================================
+// Document Thumbnail Card Component
+// ============================================
+interface DocumentThumbnailCardProps {
+  doc: ProjectDocument;
+  citationId: string;
+  onCopyCitation: (id: string) => void;
+  onDelete: (doc: ProjectDocument) => void;
+  onImageClick: (url: string) => void;
+  copiedCitationId: string | null;
+}
+
+function DocumentThumbnailCard({ 
+  doc, 
+  citationId, 
+  onCopyCitation, 
+  onDelete, 
+  onImageClick,
+  copiedCitationId 
+}: DocumentThumbnailCardProps) {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadThumbnail = async () => {
+      const { data } = await supabase.storage
+        .from("project-documents")
+        .createSignedUrl(doc.file_path, 3600);
+      if (data?.signedUrl) {
+        setThumbnailUrl(data.signedUrl);
+      }
+    };
+    loadThumbnail();
+  }, [doc.file_path]);
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return 'Unknown';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="relative group rounded-lg bg-muted/50 border overflow-hidden">
+      {/* Citation Badge */}
+      <div className="absolute top-2 left-2 z-10">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge 
+                className="bg-amber-500/90 hover:bg-amber-600 text-white text-[10px] px-1.5 py-0.5 cursor-pointer font-mono"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopyCitation(citationId);
+                }}
+              >
+                {copiedCitationId === citationId ? <Check className="h-3 w-3" /> : `[${citationId}]`}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Click to copy citation</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      {/* Actions on hover */}
+      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-6 w-6 p-0 bg-background/80 backdrop-blur-sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (thumbnailUrl) window.open(thumbnailUrl, "_blank");
+          }}
+        >
+          <ExternalLink className="h-3 w-3" />
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-6 w-6 p-0 bg-destructive/80 hover:bg-destructive text-white backdrop-blur-sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(doc);
+          }}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+
+      {/* Thumbnail */}
+      <div 
+        className="aspect-square cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+        onClick={() => thumbnailUrl && onImageClick(thumbnailUrl)}
+      >
+        {thumbnailUrl ? (
+          <img 
+            src={thumbnailUrl}
+            alt={doc.file_name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
+
+      {/* File name */}
+      <div className="p-2 border-t bg-background/80">
+        <p className="text-xs font-medium truncate" title={doc.file_name}>
+          {doc.file_name}
+        </p>
+        <p className="text-[10px] text-muted-foreground">
+          {formatFileSize(doc.file_size)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function DocumentsPane({ 
   projectId, 
   siteImages, 
@@ -808,7 +930,7 @@ export default function DocumentsPane({
           </div>
         )}
 
-        {/* Other Documents with Citations */}
+        {/* Other Documents (Images & Files) with Thumbnails */}
         {otherDocuments.length > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
@@ -818,90 +940,122 @@ export default function DocumentsPane({
                 Citable
               </Badge>
             </h4>
-            <div className="space-y-2">
-              {otherDocuments.map((doc, index) => {
-                // Continue numbering from PDFs
-                const citationId = generateCitationId('D', pdfDocuments.length + index);
-                return (
-                  <div 
-                    key={doc.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border hover:bg-muted/50 transition-colors group"
-                  >
-                    {/* Citation Badge */}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge 
-                            className="bg-amber-500/90 hover:bg-amber-600 text-white text-[10px] px-1.5 py-0.5 cursor-pointer font-mono shrink-0"
-                            onClick={() => handleCopyCitation(citationId)}
-                          >
-                            {copiedCitationId === citationId ? <Check className="h-3 w-3" /> : `[${citationId}]`}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Click to copy citation</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+            {/* Grid layout for image documents */}
+            {(() => {
+              const imageDocuments = otherDocuments.filter(d => 
+                ['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => d.file_name.toLowerCase().endsWith(ext))
+              );
+              const nonImageDocuments = otherDocuments.filter(d => 
+                !['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => d.file_name.toLowerCase().endsWith(ext))
+              );
+              
+              return (
+                <>
+                  {/* Image Documents with Thumbnails */}
+                  {imageDocuments.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+                      {imageDocuments.map((doc, index) => (
+                        <DocumentThumbnailCard
+                          key={doc.id}
+                          doc={doc}
+                          citationId={generateCitationId('D', pdfDocuments.length + index)}
+                          onCopyCitation={handleCopyCitation}
+                          onDelete={handleDeleteDocument}
+                          onImageClick={setSelectedImage}
+                          copiedCitationId={copiedCitationId}
+                        />
+                      ))}
+                    </div>
+                  )}
 
-                    {getFileIcon(doc.file_name)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{doc.file_name}</p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(doc.file_size)}</p>
+                  {/* Non-image documents in list format */}
+                  {nonImageDocuments.length > 0 && (
+                    <div className="space-y-2">
+                      {nonImageDocuments.map((doc, index) => {
+                        const citationId = generateCitationId('D', pdfDocuments.length + imageDocuments.length + index);
+                        return (
+                          <div 
+                            key={doc.id}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border hover:bg-muted/50 transition-colors group"
+                          >
+                            {/* Citation Badge */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge 
+                                    className="bg-amber-500/90 hover:bg-amber-600 text-white text-[10px] px-1.5 py-0.5 cursor-pointer font-mono shrink-0"
+                                    onClick={() => handleCopyCitation(citationId)}
+                                  >
+                                    {copiedCitationId === citationId ? <Check className="h-3 w-3" /> : `[${citationId}]`}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Click to copy citation</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            {getFileIcon(doc.file_name)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                              <p className="text-xs text-muted-foreground">{formatFileSize(doc.file_size)}</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={async () => {
+                                        const { data } = await supabase.storage
+                                          .from("project-documents")
+                                          .createSignedUrl(doc.file_path, 3600);
+                                        handleCiteDocument(doc, citationId, data?.signedUrl);
+                                      }}
+                                      className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                    >
+                                      <Quote className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Cite this document</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  const { data, error } = await supabase.storage
+                                    .from("project-documents")
+                                    .createSignedUrl(doc.file_path, 3600);
+                                  if (!error && data?.signedUrl) {
+                                    window.open(data.signedUrl, "_blank");
+                                  } else {
+                                    toast.error("Failed to open document");
+                                  }
+                                }}
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteDocument(doc)}
+                                className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="flex items-center gap-1">
-                      {/* Cite Button */}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={async () => {
-                                const { data } = await supabase.storage
-                                  .from("project-documents")
-                                  .createSignedUrl(doc.file_path, 3600);
-                                handleCiteDocument(doc, citationId, data?.signedUrl);
-                              }}
-                              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                            >
-                              <Quote className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Cite this document</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          const { data, error } = await supabase.storage
-                            .from("project-documents")
-                            .createSignedUrl(doc.file_path, 3600);
-                          if (!error && data?.signedUrl) {
-                            window.open(data.signedUrl, "_blank");
-                          } else {
-                            toast.error("Failed to open document");
-                          }
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteDocument(doc)}
-                        className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 
