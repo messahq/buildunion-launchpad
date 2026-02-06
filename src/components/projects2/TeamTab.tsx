@@ -203,7 +203,13 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   const isPro = isDevOverride || currentTier === "pro" || currentTier === "premium" || currentTier === "enterprise";
   const isPremium = isDevOverride || currentTier === "premium" || currentTier === "enterprise";
   
-  // Team limits
+  // CRITICAL: Invited members (non-owners) should ALWAYS have access to tasks
+  // regardless of their personal subscription tier. Tier restrictions only apply
+  // to project OWNERS for creating new projects, not for working on invited projects.
+  const isInvitedMember = !isOwner && user?.id;
+  const hasTierAccess = isPro || isInvitedMember;
+  
+  // Team limits - only apply to owners
   const teamLimit = getTeamLimit(currentTier);
   const spotsUsed = members.length;
   const spotsRemaining = teamLimit === Infinity ? Infinity : Math.max(0, teamLimit - spotsUsed);
@@ -324,7 +330,8 @@ const TeamTab = ({ projectId, isOwner, projectAddress, aiMaterials = [], project
   };
 
   // Show locked state for non-Pro users (only for Team features, not Tasks in Solo mode)
-  if (!isPro && !isSoloMode) {
+  // CRITICAL: Invited members always have access - tier check only applies to owners
+  if (!hasTierAccess && !isSoloMode) {
     return (
       <Card className="border-dashed border-amber-300 dark:border-amber-700">
         <CardContent className="py-12 text-center">
