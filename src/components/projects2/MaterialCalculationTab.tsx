@@ -367,20 +367,28 @@ export function MaterialCalculationTab({
   // When dataSource='ai', apply +10% waste buffer on top of AI-detected base quantities
   const createInitialMaterialItems = useCallback(() => {
     // For SAVED data: use exactly what was saved (quantities already include waste)
+    // CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
     if (dataSource === 'saved') {
       return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
         const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
+        const savedTotalPrice = m.totalPrice;
+        const quantity = m.quantity || 1;
+        const unitPrice = m.unitPrice || 0;
+        
         // Use saved baseQuantity if available, otherwise calculate it from quantity
-        const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(m.quantity / (1 + DYNAMIC_WASTE)) : m.quantity);
+        const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(quantity / (1 + DYNAMIC_WASTE)) : quantity);
+        
+        // CRITICAL: If we only have totalPrice (no unitPrice), use totalPrice as the unit price
+        const finalUnitPrice = savedTotalPrice && !m.unitPrice ? savedTotalPrice : unitPrice;
         
         return {
           id: `material-${idx}`,
           item: m.item,
           baseQuantity: savedBaseQty,
-          quantity: m.quantity, // Use saved quantity directly - no recalculation!
-          unit: m.unit,
-          unitPrice: m.unitPrice || 0,
-          totalPrice: m.totalPrice ?? (m.quantity * (m.unitPrice || 0)),
+          quantity: quantity,
+          unit: m.unit || 'unit',
+          unitPrice: finalUnitPrice,
+          totalPrice: savedTotalPrice ?? (quantity * unitPrice),
           isEssential,
         };
       });
@@ -435,37 +443,47 @@ export function MaterialCalculationTab({
   // Helper to create initial labor items
   // CRITICAL: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
   // IRON LAW #3: Installation labor for area-based work MUST use sq ft and baseArea
+  // Helper to create initial labor items
+  // CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
+  // IRON LAW #3: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
   const createInitialLaborItems = useCallback(() => 
     initialLabor.map((l: TaskBasedEntry & { totalPrice?: number }, idx) => {
+      // CRITICAL: Get saved totalPrice first - some DB items only have totalPrice, no quantity/unitPrice
+      const savedTotalPrice = l.totalPrice;
+      const quantity = l.quantity || 1;
+      const unitPrice = l.unitPrice || 0;
+      
       // Detect if this is an "Installation" labor item for area-based work
       const isInstallationLabor = /installation|install/i.test(l.item);
       const isAreaBasedWork = /paint|flooring|tile|hardwood|laminate|carpet|drywall|primer/i.test(l.item);
       
       // IRON LAW #3: Area-based installation labor ALWAYS uses sq ft and baseArea (NET)
-      // This prevents labor from copying material's converted units (e.g., gallons)
-      if (isInstallationLabor && isAreaBasedWork && baseArea && baseArea > 0) {
-        console.log(`[IRON LAW #3] Labor ${l.item}: FORCED to NET area = ${baseArea} sq ft (ignoring ${l.quantity} ${l.unit})`);
+      // BUT: If we have a saved totalPrice, use it directly (don't recalculate)
+      if (isInstallationLabor && isAreaBasedWork && baseArea && baseArea > 0 && !savedTotalPrice) {
+        console.log(`[IRON LAW #3] Labor ${l.item}: FORCED to NET area = ${baseArea} sq ft (ignoring ${quantity} ${l.unit})`);
         return {
           id: `labor-${idx}`,
           item: l.item,
-          quantity: baseArea, // NET area - no waste
-          unit: "sq ft", // ALWAYS sq ft for area-based installation
-          unitPrice: l.unitPrice || 0,
-          totalPrice: l.totalPrice ?? (baseArea * (l.unitPrice || 0)),
+          quantity: baseArea,
+          unit: "sq ft",
+          unitPrice: unitPrice,
+          totalPrice: baseArea * unitPrice,
         };
       }
       
-      // For other labor items: use existing logic
+      // For saved items with totalPrice: use it directly
+      // This ensures saved labor costs are restored correctly even without quantity/unitPrice
       const isSqFtUnit = l.unit?.toLowerCase().includes("sq") || l.unit?.toLowerCase().includes("ft");
-      const laborQty = (isSqFtUnit && baseArea && baseArea > 0) ? baseArea : l.quantity;
+      const laborQty = (isSqFtUnit && baseArea && baseArea > 0 && !savedTotalPrice) ? baseArea : quantity;
+      const finalUnitPrice = savedTotalPrice && !l.unitPrice ? savedTotalPrice : unitPrice;
       
       return {
         id: `labor-${idx}`,
         item: l.item,
         quantity: laborQty,
-        unit: l.unit,
-        unitPrice: l.unitPrice || 0,
-        totalPrice: l.totalPrice ?? (laborQty * (l.unitPrice || 0)),
+        unit: l.unit || 'unit',
+        unitPrice: finalUnitPrice,
+        totalPrice: savedTotalPrice ?? (laborQty * unitPrice),
       };
     })
   , [initialLabor, baseArea]);
@@ -478,16 +496,25 @@ export function MaterialCalculationTab({
   
   // Other/custom items - PERSISTENCE FIX: Load saved items from props
   // Converts TaskBasedEntry[] to CostItem[] with proper IDs
+  // Other/custom items - CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
   const createInitialOtherItems = useCallback((): CostItem[] => {
     if (!initialOther || initialOther.length === 0) return [];
-    return initialOther.map((o, idx) => ({
-      id: `other-saved-${idx}-${Date.now()}`,
-      item: o.item,
-      quantity: o.quantity,
-      unit: o.unit,
-      unitPrice: o.unitPrice || 0,
-      totalPrice: o.quantity * (o.unitPrice || 0),
-    }));
+    return initialOther.map((o, idx) => {
+      const savedTotalPrice = (o as { totalPrice?: number }).totalPrice;
+      const quantity = o.quantity || 1; // Default to 1 if not present
+      const unitPrice = o.unitPrice || 0;
+      // CRITICAL: Use saved totalPrice first, then calculate from quantity × unitPrice
+      const totalPrice = savedTotalPrice ?? (quantity * unitPrice);
+      
+      return {
+        id: `other-saved-${idx}-${Date.now()}`,
+        item: o.item,
+        quantity,
+        unit: o.unit || 'unit',
+        unitPrice: savedTotalPrice && !o.unitPrice ? savedTotalPrice : unitPrice, // If only totalPrice exists, use it as unitPrice
+        totalPrice,
+      };
+    });
   }, [initialOther]);
   
   const [otherItems, setOtherItems] = useState<CostItem[]>(createInitialOtherItems);
