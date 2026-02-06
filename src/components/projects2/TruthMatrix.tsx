@@ -258,25 +258,34 @@ function buildTruthMatrixPillars(
   const conflictStatus = operationalTruth?.conflictStatus;
   const manuallyIgnoredConflicts = verifiedFacts?.manuallyIgnoredConflicts === true;
   
+  // Determine the actual status for display
+  const conflictGeminiStatus = manuallyIgnoredConflicts ? "verified" :
+    conflictStatus === "aligned" ? "verified" : 
+    conflictStatus === "conflict_detected" ? "conflict" : "pending";
+  
+  const conflictOpenAIStatus = manuallyIgnoredConflicts ? "verified" :
+    conflictStatus === "aligned" ? "verified" : 
+    conflictStatus === "conflict_detected" ? "conflict" : "pending";
+  
   pillars.push({
     id: "conflict_check",
     name: "Conflict Check",
     icon: Zap,
     gemini: {
       verified: conflictStatus === "aligned" || manuallyIgnoredConflicts,
-      status: manuallyIgnoredConflicts ? "verified" :
-              conflictStatus === "aligned" ? "verified" : 
-              conflictStatus === "conflict_detected" ? "conflict" : "pending",
-      value: conflictStatus || "pending",
-      source: "Site Photo vs Blueprint",
+      status: conflictGeminiStatus,
+      // Value should be null for pending status - let the status label show instead
+      value: conflictGeminiStatus === "pending" ? null : 
+             (manuallyIgnoredConflicts ? "Ignored" : conflictStatus),
+      source: manuallyIgnoredConflicts ? "Manual Override" : "Site Photo vs Blueprint",
     },
     openai: {
       verified: conflictStatus === "aligned" || manuallyIgnoredConflicts,
-      status: manuallyIgnoredConflicts ? "verified" :
-              conflictStatus === "aligned" ? "verified" : 
-              conflictStatus === "conflict_detected" ? "conflict" : "pending",
-      value: null,
-      source: "Cross-Reference Validation",
+      status: conflictOpenAIStatus,
+      // Value should be null for pending status - let the status label show instead
+      value: conflictOpenAIStatus === "pending" ? null :
+             (manuallyIgnoredConflicts ? "Ignored" : null),
+      source: manuallyIgnoredConflicts ? "Manual Override" : "Cross-Reference Validation",
     },
     hasConflict: conflictStatus === "conflict_detected" && !manuallyIgnoredConflicts,
     priority: "high",
