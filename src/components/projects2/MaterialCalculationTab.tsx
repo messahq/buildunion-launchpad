@@ -1421,10 +1421,20 @@ export function MaterialCalculationTab({
               }
             } else {
               // Owner or initial save - direct update
+              // IMPORTANT: Fetch current config to preserve existing fields (like pendingBudgetChange)
+              const { data: existingSummary } = await supabase
+                .from("project_summaries")
+                .select("ai_workflow_config")
+                .eq("project_id", projectId)
+                .single();
+              
+              const existingConfig = (existingSummary?.ai_workflow_config as Record<string, unknown>) || {};
+              
               const { error: summaryUpdateError } = await supabase
                 .from("project_summaries")
                 .update({
                   ai_workflow_config: {
+                    ...existingConfig, // Preserve existing fields (pendingBudgetChange, etc.)
                     latestBudgetDocId: insertData.id,
                     latestBudgetPath: filePath,
                     budgetUpdatedAt: changeOrderTimestamp,
