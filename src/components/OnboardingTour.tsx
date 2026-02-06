@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Zap,
   Brain,
@@ -84,11 +85,24 @@ export const OnboardingTour = () => {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    const completed = localStorage.getItem(TOUR_STORAGE_KEY);
-    if (!completed) {
-      const timer = setTimeout(() => setIsOpen(true), 1500);
-      return () => clearTimeout(timer);
-    }
+    // Check if user is authenticated - don't show tour to registered users
+    const checkAuthAndShowTour = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If user is logged in, skip the tour entirely
+      if (session?.user) {
+        return;
+      }
+      
+      // Only show tour to guests who haven't completed it
+      const completed = localStorage.getItem(TOUR_STORAGE_KEY);
+      if (!completed) {
+        const timer = setTimeout(() => setIsOpen(true), 1500);
+        return () => clearTimeout(timer);
+      }
+    };
+    
+    checkAuthAndShowTour();
   }, []);
 
   const handleNext = () => {
