@@ -872,14 +872,66 @@ const ContractGenerator = ({
           });
 
         if (!uploadError) {
-          await supabase
+          const { data: docData } = await supabase
             .from("project_documents")
             .insert({
               project_id: linkedProjectId,
               file_name: `Contract #${contract.contractNumber}.pdf`,
               file_path: filePath,
               file_size: pdfBlob.size,
-            });
+            })
+            .select()
+            .single();
+          
+          // Update document registry for contract citation tracking
+          if (docData) {
+            const { data: summaryData } = await supabase
+              .from("project_summaries")
+              .select("ai_workflow_config")
+              .eq("project_id", linkedProjectId)
+              .single();
+            
+            const existingConfig = (summaryData?.ai_workflow_config as Record<string, unknown>) || {};
+            const existingRegistry = (existingConfig.documentRegistry as Array<Record<string, unknown>>) || [];
+            
+            const sourceId = `CT-${String(existingRegistry.filter(d => d.documentType === 'contract').length + 1).padStart(3, '0')}`;
+            
+            const contractDocEntry = {
+              id: docData.id,
+              documentType: 'contract',
+              fileName: `Contract #${contract.contractNumber}.pdf`,
+              filePath,
+              savedAt: new Date().toISOString(),
+              fileSize: pdfBlob.size,
+              linkedPillar: 'contract',
+              sourceId,
+              contractNumber: contract.contractNumber,
+            };
+            
+            const updatedRegistry = [...existingRegistry, contractDocEntry];
+            const latestDocuments = { ...(existingConfig.latestDocuments as Record<string, unknown>) || {} };
+            latestDocuments['contract'] = contractDocEntry;
+            
+            // Create JSON-safe config
+            const newConfig = JSON.parse(JSON.stringify({
+              ...existingConfig,
+              documentRegistry: updatedRegistry,
+              latestDocuments,
+              lastDocumentUpdate: new Date().toISOString(),
+              latestContractDocId: docData.id,
+              latestContractPath: filePath,
+            }));
+            
+            await supabase
+              .from("project_summaries")
+              .update({
+                ai_workflow_config: newConfig,
+                updated_at: new Date().toISOString()
+              })
+              .eq("project_id", linkedProjectId);
+            
+            console.log(`[Contract] Document registered: ${sourceId} -> contract`);
+          }
         }
       }
 

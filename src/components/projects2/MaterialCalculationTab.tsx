@@ -1403,15 +1403,38 @@ export function MaterialCalculationTab({
                 status: 'pending' as const
               };
               
+              // Get existing document registry for pending doc registration
+              const existingRegistry = (currentConfig.documentRegistry as Array<Record<string, unknown>>) || [];
+              const sourceId = `BC-${String(existingRegistry.filter(d => d.documentType === 'budget-change').length + 1).padStart(3, '0')}`;
+              
+              const pendingDocEntry = {
+                id: insertData.id,
+                documentType: 'budget-change-pending',
+                fileName: `Cost Breakdown - ${projectName}.pdf`,
+                filePath,
+                savedAt: changeOrderTimestamp,
+                fileSize: pdfBlob.size,
+                linkedPillar: 'materials',
+                sourceId,
+                isPending: true,
+              };
+              
+              const updatedRegistry = [...existingRegistry, pendingDocEntry];
+              
+              // Create JSON-safe config
+              const pendingConfig = JSON.parse(JSON.stringify({
+                ...currentConfig,
+                pendingBudgetChange: pendingChange,
+                latestPendingDocId: insertData.id,
+                latestPendingDocPath: filePath,
+                documentRegistry: updatedRegistry,
+                lastDocumentUpdate: changeOrderTimestamp,
+              }));
+              
               const { error: pendingError } = await supabase
                 .from("project_summaries")
                 .update({
-                  ai_workflow_config: {
-                    ...currentConfig,
-                    pendingBudgetChange: pendingChange,
-                    latestPendingDocId: insertData.id,
-                    latestPendingDocPath: filePath
-                  },
+                  ai_workflow_config: pendingConfig,
                   updated_at: changeOrderTimestamp
                 })
                 .eq("project_id", projectId);
@@ -1457,25 +1480,57 @@ export function MaterialCalculationTab({
               
               const existingConfig = (existingSummary?.ai_workflow_config as Record<string, unknown>) || {};
               
+              // Get existing document registry or create new one
+              const existingRegistry = (existingConfig.documentRegistry as Array<Record<string, unknown>>) || [];
+              
+              // Create new document registry entry for citation tracking
+              const documentType = isChangeOrder ? 'budget-change' : 'cost-breakdown';
+              const sourceId = `CB-${String(existingRegistry.filter(d => d.documentType === 'cost-breakdown' || d.documentType === 'budget-change').length + 1).padStart(3, '0')}`;
+              
+              const newRegistryEntry = {
+                id: insertData.id,
+                documentType,
+                fileName: `Cost Breakdown - ${projectName}.pdf`,
+                filePath,
+                savedAt: changeOrderTimestamp,
+                fileSize: pdfBlob.size,
+                linkedPillar: 'materials',
+                sourceId,
+              };
+              
+              // Update registry with new entry
+              const updatedRegistry = [...existingRegistry, newRegistryEntry];
+              
+              // Build latest documents map
+              const latestDocuments = { ...(existingConfig.latestDocuments as Record<string, unknown>) || {} };
+              latestDocuments[documentType] = newRegistryEntry;
+              
+              // Create JSON-safe config by using JSON parse/stringify
+              const newConfig = JSON.parse(JSON.stringify({
+                ...existingConfig, // Preserve existing fields (pendingBudgetChange, etc.)
+                latestBudgetDocId: insertData.id,
+                latestBudgetPath: filePath,
+                budgetUpdatedAt: changeOrderTimestamp,
+                budgetVersion: isChangeOrder ? 'change_order' : 'initial',
+                grandTotal: grandTotalWithTax,
+                subtotal: grandTotal,
+                taxAmount: totalTax,
+                // Document registry for citations
+                documentRegistry: updatedRegistry,
+                latestDocuments,
+                lastDocumentUpdate: changeOrderTimestamp,
+                changeOrderHistory: [{
+                  timestamp: changeOrderTimestamp,
+                  documentId: insertData.id,
+                  grandTotal: grandTotalWithTax,
+                  reason: isChangeOrder ? 'Manual budget adjustment' : 'Initial budget creation'
+                }]
+              }));
+              
               const { error: summaryUpdateError } = await supabase
                 .from("project_summaries")
                 .update({
-                  ai_workflow_config: {
-                    ...existingConfig, // Preserve existing fields (pendingBudgetChange, etc.)
-                    latestBudgetDocId: insertData.id,
-                    latestBudgetPath: filePath,
-                    budgetUpdatedAt: changeOrderTimestamp,
-                    budgetVersion: isChangeOrder ? 'change_order' : 'initial',
-                    grandTotal: grandTotalWithTax,
-                    subtotal: grandTotal,
-                    taxAmount: totalTax,
-                    changeOrderHistory: [{
-                      timestamp: changeOrderTimestamp,
-                      documentId: insertData.id,
-                      grandTotal: grandTotalWithTax,
-                      reason: isChangeOrder ? 'Manual budget adjustment' : 'Initial budget creation'
-                    }]
-                  },
+                  ai_workflow_config: newConfig,
                   total_cost: grandTotalWithTax, // Sync gross total to summary
                   updated_at: changeOrderTimestamp
                 })
@@ -1484,7 +1539,7 @@ export function MaterialCalculationTab({
               if (summaryUpdateError) {
                 console.error("[Cost Breakdown] Failed to update AI reference:", summaryUpdateError);
               } else {
-                console.log("[Cost Breakdown] AI reference updated - Budget version:", isChangeOrder ? 'Change Order' : 'Initial');
+                console.log(`[Cost Breakdown] Document registered: ${sourceId} -> ${documentType}`);
                 if (isChangeOrder) {
                   toast.success("Budget updated - Change Order registered ✓", { duration: 3000 });
                 }
