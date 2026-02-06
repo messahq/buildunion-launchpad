@@ -824,29 +824,47 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     
     // Priority 1: Use saved line_items (manual overrides from previous session)
     if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
-      const centralItems = savedLineItems.materials.map((m, index) => ({
-        id: `saved-mat-${index}-${Date.now()}`,
-        item: m.item,
-        quantity: m.quantity,
-        unit: m.unit,
-        unitPrice: m.unitPrice || 0,
-        source: "manual" as const,
-        citationSource: "manual_override" as const,
-        citationId: `[SAVED-${index + 1}]`,
-        isEssential: m.isEssential ?? checkEssential(m.item),
-        wastePercentage: m.isEssential ?? checkEssential(m.item) ? 10 : 0,
-      }));
+      const centralItems = savedLineItems.materials.map((m, index) => {
+        const unitPrice = m.unitPrice || 0;
+        const quantity = m.quantity || 0;
+        // CRITICAL FIX: Calculate totalPrice from saved data or derive from quantity × unitPrice
+        const totalPrice = (m as { totalPrice?: number }).totalPrice ?? (quantity * unitPrice);
+        
+        return {
+          id: `saved-mat-${index}-${Date.now()}`,
+          item: m.item,
+          quantity,
+          unit: m.unit,
+          unitPrice,
+          totalPrice, // ✅ Now includes totalPrice for Budget Overview display
+          source: "manual" as const,
+          citationSource: "manual_override" as const,
+          citationId: `[SAVED-${index + 1}]`,
+          isEssential: m.isEssential ?? checkEssential(m.item),
+          wastePercentage: m.isEssential ?? checkEssential(m.item) ? 10 : 0,
+        };
+      });
       
-      console.log("[ProjectDetailsView] Loading saved materials to centralMaterials:", centralItems.length);
+      console.log("[ProjectDetailsView] Loading saved materials to centralMaterials:", centralItems.length, centralItems.map(c => `${c.item}: $${c.totalPrice}`));
       projectActionsRef.current.setCentralMaterials(centralItems, "manual");
       
-      // Also load saved labor/other costs to centralFinancials
+      // Calculate and sync materialCost from loaded items
+      const materialTotal = centralItems.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+      projectActionsRef.current.setCentralFinancials({ materialCost: materialTotal });
+      
+      // Also load saved labor/other costs to centralFinancials (use totalPrice if saved)
       if (savedLineItems.labor && savedLineItems.labor.length > 0) {
-        const laborTotal = savedLineItems.labor.reduce((sum, l) => sum + (l.quantity * (l.unitPrice || 0)), 0);
+        const laborTotal = savedLineItems.labor.reduce((sum, l) => {
+          const itemTotal = (l as { totalPrice?: number }).totalPrice ?? (l.quantity * (l.unitPrice || 0));
+          return sum + itemTotal;
+        }, 0);
         projectActionsRef.current.setCentralFinancials({ laborCost: laborTotal });
       }
       if (savedLineItems.other && savedLineItems.other.length > 0) {
-        const otherTotal = savedLineItems.other.reduce((sum, o) => sum + (o.quantity * (o.unitPrice || 0)), 0);
+        const otherTotal = savedLineItems.other.reduce((sum, o) => {
+          const itemTotal = (o as { totalPrice?: number }).totalPrice ?? (o.quantity * (o.unitPrice || 0));
+          return sum + itemTotal;
+        }, 0);
         projectActionsRef.current.setCentralFinancials({ otherCost: otherTotal });
       }
       return;
@@ -2341,15 +2359,20 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               
               if (projectState.centralMaterials.items.length > 0) {
                 // Use central materials - already synced with confirmed area
-                return projectState.centralMaterials.items.map(m => ({
-                  item: m.item,
-                  quantity: m.quantity,
-                  unit: m.unit,
-                  unitPrice: m.unitPrice || 0,
-                  baseQuantity: m.originalValue,
-                  isEssential: m.isEssential,
-                  totalPrice: m.totalPrice,
-                }));
+                return projectState.centralMaterials.items.map(m => {
+                  const unitPrice = m.unitPrice || 0;
+                  // Ensure totalPrice is always calculated (fallback to quantity × unitPrice)
+                  const totalPrice = m.totalPrice ?? (m.quantity * unitPrice);
+                  return {
+                    item: m.item,
+                    quantity: m.quantity,
+                    unit: m.unit,
+                    unitPrice,
+                    baseQuantity: m.originalValue,
+                    isEssential: m.isEssential,
+                    totalPrice,
+                  };
+                });
               }
               
               // Fallback: Aggregate materials from "Order" tasks (only if centralMaterials empty)
