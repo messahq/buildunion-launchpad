@@ -948,11 +948,11 @@ export function MaterialCalculationTab({
         if (items.length === 0) return '';
         return items.map(item => `
           <tr>
-            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 9px;">${item.item}</td>
-            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 9px;">${item.quantity.toLocaleString()}</td>
-            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 9px;">${item.unit}</td>
-            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 9px;">${formatCurrency(item.unitPrice)}</td>
-            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; font-size: 9px; color: ${colorClass};">${formatCurrency(item.totalPrice)}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 9px;">${item.item || ''}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 9px;">${(item.quantity || 0).toLocaleString()}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; font-size: 9px;">${item.unit || ''}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-size: 9px;">${formatCurrency(item.unitPrice || 0)}</td>
+            <td style="padding: 5px 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 600; font-size: 9px; color: ${colorClass};">${formatCurrency(item.totalPrice || 0)}</td>
           </tr>
         `).join('');
       };
@@ -1575,7 +1575,11 @@ export function MaterialCalculationTab({
     item: CostItem, 
     setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,
     isEditing: boolean
-  ) => (
+  ) => {
+    // Safety guard for invalid items
+    if (!item || !item.id) return null;
+    
+    return (
     <div 
       key={item.id}
       className={cn(
@@ -1740,7 +1744,7 @@ export function MaterialCalculationTab({
                       </span>
                     </div>
                   ) : (
-                    <span>{item.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })} {item.unit}</span>
+                    <span>{(item.quantity || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} {item.unit || ''}</span>
                   )}
                 </div>
                 
@@ -1788,6 +1792,7 @@ export function MaterialCalculationTab({
       )}
     </div>
   );
+  };
 
   // Table header - only shown on desktop - now 4 columns with Price/Area
   const TableHeader = () => (
@@ -1946,7 +1951,7 @@ export function MaterialCalculationTab({
           <CollapsibleContent>
             <CardContent className="space-y-3 pt-0">
               <TableHeader />
-              {materialItems.map((item) => 
+              {materialItems.filter(item => item && item.id).map((item) => 
                 renderItemRow(item, setMaterialItems, editingId === item.id)
               )}
               {materialItems.length === 0 && (
@@ -1989,7 +1994,7 @@ export function MaterialCalculationTab({
           <CollapsibleContent>
             <CardContent className="space-y-3 pt-0">
               <TableHeader />
-              {laborItems.map((item) => 
+              {laborItems.filter(item => item && item.id).map((item) => 
                 renderItemRow(item, setLaborItems, editingId === item.id)
               )}
               {laborItems.length === 0 && (
@@ -2034,7 +2039,7 @@ export function MaterialCalculationTab({
               {otherItems.length > 0 && (
                 <>
                   <TableHeader />
-                  {otherItems.map((item) => 
+                  {otherItems.filter(item => item && item.id).map((item) => 
                     renderItemRow(item, setOtherItems, editingId === item.id)
                   )}
                 </>
