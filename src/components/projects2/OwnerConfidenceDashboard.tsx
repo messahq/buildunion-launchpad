@@ -1217,43 +1217,49 @@ export default function OwnerConfidenceDashboard({
              <FinancialSafe financials={financials} />
            </div>
            
-           {/* Action Buttons */}
-           <div className="flex flex-wrap justify-center gap-4 pt-4">
-              <Button
-                onClick={handleMagicSummary}
-                disabled={isGeneratingSummary}
-                className={cn(
-                  "relative overflow-hidden",
-                  "bg-gradient-to-r from-emerald-600 to-emerald-500",
-                  "hover:from-emerald-500 hover:to-emerald-400",
-                  "text-white font-medium px-6 py-5",
-                  "shadow-lg shadow-emerald-500/20",
-                  "border-0",
-                  "disabled:opacity-50"
-                )}
-              >
-                {isGeneratingSummary ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Mic className="w-4 h-4 mr-2" />
-                )}
-                {isGeneratingSummary ? "Generating..." : "Magic Summary"}
-              </Button>
-             
-             <Button
-               onClick={onExportPdf}
-               variant="outline"
-               className={cn(
-                 "relative overflow-hidden",
-                "bg-slate-700/70 border-slate-500/50",
-                "hover:bg-slate-600/70 hover:border-slate-400/50",
-                "text-white font-medium px-6 py-5"
+           {/* Action Buttons - Only show if handlers provided */}
+           {(onGenerateReport || onExportPdf) && (
+             <div className="flex flex-wrap justify-center gap-4 pt-4">
+               {onGenerateReport && (
+                 <Button
+                   onClick={handleMagicSummary}
+                   disabled={isGeneratingSummary}
+                   className={cn(
+                     "relative overflow-hidden",
+                     "bg-gradient-to-r from-emerald-600 to-emerald-500",
+                     "hover:from-emerald-500 hover:to-emerald-400",
+                     "text-white font-medium px-6 py-5",
+                     "shadow-lg shadow-emerald-500/20",
+                     "border-0",
+                     "disabled:opacity-50"
+                   )}
+                 >
+                   {isGeneratingSummary ? (
+                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                   ) : (
+                     <Mic className="w-4 h-4 mr-2" />
+                   )}
+                   {isGeneratingSummary ? "Generating..." : "Magic Summary"}
+                 </Button>
                )}
-             >
-              <FileText className="w-4 h-4 mr-2 text-white" />
-              <span className="text-white">Export Executive PDF</span>
-             </Button>
-           </div>
+              
+               {onExportPdf && (
+                 <Button
+                   onClick={onExportPdf}
+                   variant="outline"
+                   className={cn(
+                     "relative overflow-hidden",
+                     "bg-slate-700/70 border-slate-500/50",
+                     "hover:bg-slate-600/70 hover:border-slate-400/50",
+                     "text-white font-medium px-6 py-5"
+                   )}
+                 >
+                   <FileText className="w-4 h-4 mr-2 text-white" />
+                   <span className="text-white">Export Executive PDF</span>
+                 </Button>
+               )}
+             </div>
+           )}
 
           {/* Inline Audio Player for Magic Summary */}
           <AnimatePresence>
