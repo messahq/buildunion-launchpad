@@ -240,55 +240,15 @@ export const downloadPDF = async (
   htmlContent: string,
   options: PDFOptions
 ): Promise<void> => {
-  console.log('[PDF] Starting download for:', options.filename);
-  
-  try {
-    const blob = await generatePDFBlob(htmlContent, options);
-    console.log('[PDF] Blob created, size:', blob.size);
-    
-    const url = URL.createObjectURL(blob);
-    console.log('[PDF] URL created');
-    
-    // Try multiple methods to trigger download
-    
-    // Method 1: Create a new Blob with proper type and use FileSaver-style download
-    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    // Method 2: Use anchor with target="_blank" as fallback
-    const link = document.createElement('a');
-    link.href = pdfUrl;
-    link.download = options.filename;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    
-    // Try clicking
-    document.body.appendChild(link);
-    link.click();
-    
-    // Also try opening in new window immediately as backup
-    // This works better in iframe/preview environments
-    const newWindow = window.open(pdfUrl, '_blank');
-    
-    if (newWindow) {
-      console.log('[PDF] Opened in new window');
-    } else {
-      // If popup was blocked, try direct navigation
-      console.log('[PDF] Popup blocked, trying alternative');
-    }
-    
-    // Cleanup
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      URL.revokeObjectURL(pdfUrl);
-      console.log('[PDF] Cleanup done');
-    }, 5000);
-    
-  } catch (err) {
-    console.error('[PDF] Download error:', err);
-    throw err;
-  }
+  const blob = await generatePDFBlob(htmlContent, options);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = options.filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 // Build the professional HTML template for project summary/invoice

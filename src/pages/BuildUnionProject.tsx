@@ -112,7 +112,6 @@ const BuildUnionProject = () => {
         const currentDate = format(new Date(), "MMMM d, yyyy");
         const filename = `${ownerData.projectName.replace(/[^a-zA-Z0-9]/g, '_')}_Executive_Summary_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
         
-        // Build executive summary HTML
         const htmlContent = buildExecutiveSummaryHTML({
           projectName: ownerData.projectName,
           projectAddress: ownerData.projectAddress,
@@ -129,21 +128,16 @@ const BuildUnionProject = () => {
           expectedCompletion: ownerData.expectedCompletion
         });
         
-        // Download PDF
         await downloadPDF(htmlContent, {
           filename,
           margin: 15,
           pageFormat: 'letter'
         });
         
-        toast.success("Executive PDF downloaded!", {
-          description: `Check your Downloads folder for ${filename}`
-        });
+        toast.success("PDF saved to Downloads!");
       } catch (err) {
         console.error("PDF export error:", err);
-        toast.error("Failed to generate PDF", {
-          description: "Please try again"
-        });
+        toast.error("Failed to generate PDF");
       } finally {
         setIsExportingPdf(false);
       }
