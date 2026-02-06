@@ -37,6 +37,8 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
 import { useWeather, formatTemp } from "@/hooks/useWeather";
+import TruthMatrix from "./TruthMatrix";
+import type { OperationalTruth } from "@/types/operationalTruth";
 import { BudgetApprovalPanel } from "./BudgetApprovalPanel";
  
  // ============================================
@@ -93,6 +95,19 @@ interface OwnerDashboardProps {
   // Project mode from AI analysis
   isSoloMode?: boolean;
   isTeamMode?: boolean;
+  // Operational Truth data for Truth Matrix
+  operationalTruth?: OperationalTruth | null;
+  verifiedFacts?: Record<string, unknown> | null;
+  photoEstimate?: {
+    area?: number;
+    areaUnit?: string;
+    materials?: Array<{ item: string; quantity: number; unit: string }>;
+    confidence?: string;
+  } | null;
+  blueprintAnalysisData?: {
+    analyzed?: boolean;
+    totalArea?: number;
+  } | null;
  }
  
  interface Milestone {
@@ -1278,7 +1293,11 @@ export default function OwnerConfidenceDashboard({
   onBudgetDeclined,
   onTasksUpdated,
   isSoloMode = false,
-  isTeamMode = true
+  isTeamMode = true,
+  operationalTruth,
+  verifiedFacts,
+  photoEstimate,
+  blueprintAnalysisData
  }: OwnerDashboardProps) {
   // Debug: Log pendingBudgetChange for troubleshooting pulsing glow
   console.log('[OwnerConfidenceDashboard] pendingBudgetChange:', pendingBudgetChange);
@@ -1450,9 +1469,16 @@ export default function OwnerConfidenceDashboard({
               verificationRate={verificationRate}
             />
 
-            {/* Project Visual / Live Lens */}
+            {/* Truth Matrix - Dual-Engine Verification */}
             <div className="space-y-6">
-              <ProjectVisual blueprintUrl={blueprintUrl} photoUrl={latestPhotoUrl} />
+              <TruthMatrix 
+                operationalTruth={operationalTruth}
+                verifiedFacts={verifiedFacts}
+                photoEstimate={photoEstimate}
+                blueprintAnalysis={blueprintAnalysisData}
+                tasks={tasks}
+                verificationRate={verificationRate}
+              />
               <QuickStatsWidget 
                 verificationRate={verificationRate} 
                 docsCount={docsCount}
