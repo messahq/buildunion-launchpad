@@ -442,7 +442,7 @@ function QuickStatsWidget({
 }
 
 // ============================================
-// TIMELINE ORBIT COMPONENT - Enhanced with Tasks & Op Truth
+// TIMELINE ORBIT COMPONENT - Dynamic with Scrolling & Op Truth
 // ============================================
 
 interface TimelineTask {
@@ -468,8 +468,9 @@ function TimelineOrbit({
   tasks?: TimelineTask[];
   verificationRate?: number;
 }) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   // Calculate actual progress based on Op Truth (verification rate)
-  // Timeline should reflect Op Truth status, not just task completion
   const opTruthProgress = verificationRate;
   
   // Get completed and in-progress tasks for display
@@ -481,8 +482,7 @@ function TimelineOrbit({
   const latestCompletedTask = completedTasks[completedTasks.length - 1];
   const currentTask = inProgressTasks[0] || pendingTasks[0];
   
-  // Build timeline points from tasks (max 5 visible)
-  const maxVisiblePoints = 5;
+  // Build ALL timeline points from tasks - NO LIMIT
   const timelinePoints = useMemo(() => {
     if (tasks.length === 0) {
       // Fallback to milestones if no tasks
@@ -495,9 +495,8 @@ function TimelineOrbit({
       }));
     }
     
-    // Show tasks as timeline points
-    const sortedTasks = [...tasks].slice(0, maxVisiblePoints);
-    return sortedTasks.map((task, idx) => ({
+    // Show ALL tasks as timeline points - dynamic count
+    return tasks.map((task) => ({
       id: task.id,
       name: task.title,
       status: task.status === 'completed' ? 'completed' as const : 
@@ -507,18 +506,36 @@ function TimelineOrbit({
     }));
   }, [tasks, milestones]);
   
-  // Calculate progress bar width based on Op Truth, not just task completion
-  // If Op Truth is 75%, the timeline should show 75% progress
+  // Calculate progress bar width based on Op Truth
   const progressWidth = Math.min(100, opTruthProgress);
   
-  const currentPointIndex = timelinePoints.findIndex(p => p.status === 'current');
+  // Determine if scrolling is needed (more than 6 points)
+  const needsScrolling = timelinePoints.length > 6;
+  
+  // Calculate point width for proper spacing
+  const pointWidth = needsScrolling ? 80 : undefined; // Fixed width when scrollable
+  
+  // Auto-scroll to current task on mount
+  useEffect(() => {
+    if (needsScrolling && scrollContainerRef.current) {
+      const currentIndex = timelinePoints.findIndex(p => p.status === 'current');
+      if (currentIndex > 0) {
+        const scrollPosition = Math.max(0, (currentIndex - 1) * (pointWidth || 80));
+        scrollContainerRef.current.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+      }
+    }
+  }, [timelinePoints, needsScrolling, pointWidth]);
 
   return (
     <TooltipProvider>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs uppercase tracking-widest text-slate-400">
+          <h3 className="text-xs uppercase tracking-widest text-slate-400 flex items-center gap-2">
             TIMELINE ORBIT
+            {/* Task count indicator */}
+            <span className="text-[10px] text-slate-500">
+              ({timelinePoints.length} {timelinePoints.length === 1 ? 'task' : 'tasks'})
+            </span>
           </h3>
           {/* Op Truth Status Badge */}
           <Badge 
@@ -535,120 +552,169 @@ function TimelineOrbit({
           </Badge>
         </div>
         
-        {/* Timeline Track */}
-        <div className="relative py-6">
-          {/* Background Track Line */}
-          <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-slate-700/50 -translate-y-1/2" />
-          
-          {/* Progress Line - Based on Op Truth % */}
-          <motion.div 
-            className="absolute top-1/2 left-0 h-[2px] bg-gradient-to-r from-emerald-500 to-cyan-500 -translate-y-1/2"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressWidth}%` }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-          />
-          
-          {/* Incomplete indicator when Op Truth < 100% */}
-          {opTruthProgress < 100 && (
-            <motion.div 
-              className="absolute top-1/2 h-[2px] bg-gradient-to-r from-cyan-500/50 to-slate-600/30 -translate-y-1/2"
-              style={{ left: `${progressWidth}%`, right: 0 }}
-              animate={{ opacity: [0.3, 0.6, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
+        {/* Scrollable Timeline Container */}
+        <div 
+          ref={scrollContainerRef}
+          className={cn(
+            "relative py-6",
+            needsScrolling && "overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 pb-8"
           )}
-          
-          {/* Timeline Points with Tooltips */}
-          <div className="relative flex justify-between">
-            {timelinePoints.map((point, index) => {
-              const isCompleted = point.status === 'completed';
-              const isCurrent = point.status === 'current';
-              const isUpcoming = point.status === 'upcoming';
-              
-              return (
-                <Tooltip key={point.id}>
-                  <TooltipTrigger asChild>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex flex-col items-center gap-2 cursor-pointer"
-                    >
-                      <div
-                        className={cn(
-                          "w-4 h-4 rounded-full border-2 relative transition-all",
-                          isCompleted && "bg-emerald-500 border-emerald-500",
-                          isCurrent && "bg-cyan-400 border-cyan-400 scale-125",
-                          isUpcoming && "bg-transparent border-slate-500"
-                        )}
+          style={needsScrolling ? { scrollbarWidth: 'thin' } : undefined}
+        >
+          {/* Timeline Track - spans full width */}
+          <div 
+            className="relative"
+            style={needsScrolling ? { 
+              minWidth: `${timelinePoints.length * (pointWidth || 80)}px`,
+              paddingRight: '20px'
+            } : undefined}
+          >
+            {/* Background Track Line */}
+            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-slate-700/50 -translate-y-1/2" />
+            
+            {/* Progress Line - Based on Op Truth % */}
+            <motion.div 
+              className="absolute top-1/2 left-0 h-[2px] bg-gradient-to-r from-emerald-500 to-cyan-500 -translate-y-1/2"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressWidth}%` }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+            />
+            
+            {/* Incomplete indicator when Op Truth < 100% */}
+            {opTruthProgress < 100 && (
+              <motion.div 
+                className="absolute top-1/2 h-[2px] bg-gradient-to-r from-cyan-500/50 to-slate-600/30 -translate-y-1/2"
+                style={{ left: `${progressWidth}%`, right: 0 }}
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            )}
+            
+            {/* Timeline Points with Tooltips */}
+            <div 
+              className={cn(
+                "relative flex",
+                needsScrolling ? "gap-0" : "justify-between"
+              )}
+            >
+              {timelinePoints.map((point, index) => {
+                const isCompleted = point.status === 'completed';
+                const isCurrent = point.status === 'current';
+                const isUpcoming = point.status === 'upcoming';
+                
+                return (
+                  <Tooltip key={point.id}>
+                    <TooltipTrigger asChild>
+                      <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: Math.min(index * 0.05, 0.5) }}
+                        className="flex flex-col items-center gap-2 cursor-pointer"
+                        style={needsScrolling ? { 
+                          minWidth: `${pointWidth}px`,
+                          flex: '0 0 auto'
+                        } : { flex: 1 }}
                       >
-                        {/* Breathing glow for current */}
-                        {isCurrent && (
-                          <motion.div
-                            className="absolute inset-0 rounded-full bg-cyan-400"
-                            animate={{
-                              scale: [1, 2, 1],
-                              opacity: [0.6, 0, 0.6]
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                          />
+                        {/* Point circle */}
+                        <div
+                          className={cn(
+                            "w-4 h-4 rounded-full border-2 relative transition-all",
+                            isCompleted && "bg-emerald-500 border-emerald-500",
+                            isCurrent && "bg-cyan-400 border-cyan-400 scale-125",
+                            isUpcoming && "bg-transparent border-slate-500"
+                          )}
+                        >
+                          {/* Breathing glow for current */}
+                          {isCurrent && (
+                            <motion.div
+                              className="absolute inset-0 rounded-full bg-cyan-400"
+                              animate={{
+                                scale: [1, 2, 1],
+                                opacity: [0.6, 0, 0.6]
+                              }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                            />
+                          )}
+                          {/* Subtle glow for completed */}
+                          {isCompleted && (
+                            <motion.div
+                              className="absolute inset-0 rounded-full bg-emerald-400"
+                              animate={{
+                                scale: [1, 1.5, 1],
+                                opacity: [0.3, 0, 0.3]
+                              }}
+                              transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                                delay: (index % 5) * 0.2
+                              }}
+                            />
+                          )}
+                        </div>
+                        
+                        {/* Task name label - visible for all points in scrollable mode */}
+                        {needsScrolling && (
+                          <span 
+                            className={cn(
+                              "text-[9px] text-center max-w-[70px] truncate leading-tight",
+                              isCompleted && "text-emerald-400/80",
+                              isCurrent && "text-cyan-400 font-medium",
+                              isUpcoming && "text-slate-500"
+                            )}
+                            title={point.name}
+                          >
+                            {point.name}
+                          </span>
                         )}
-                        {/* Subtle glow for completed */}
-                        {isCompleted && (
-                          <motion.div
-                            className="absolute inset-0 rounded-full bg-emerald-400"
-                            animate={{
-                              scale: [1, 1.5, 1],
-                              opacity: [0.3, 0, 0.3]
-                            }}
-                            transition={{
-                              duration: 3,
-                              repeat: Infinity,
-                              ease: "easeInOut",
-                              delay: index * 0.2
-                            }}
-                          />
+                      </motion.div>
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      side="top" 
+                      className="bg-slate-800 border-slate-700 text-white max-w-[220px] z-50"
+                    >
+                      <div className="space-y-1.5">
+                        <p className="font-medium text-sm text-white">{point.name}</p>
+                        {point.assignee && (
+                          <p className="text-xs text-slate-300 flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {point.assignee}
+                          </p>
                         )}
+                        {point.time && (
+                          <p className="text-xs text-slate-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {point.time}
+                          </p>
+                        )}
+                        <p className={cn(
+                          "text-[10px] uppercase tracking-wider font-medium",
+                          isCompleted && "text-emerald-400",
+                          isCurrent && "text-cyan-400",
+                          isUpcoming && "text-slate-500"
+                        )}>
+                          {isCompleted ? "✓ Completed" : isCurrent ? "● In Progress" : "○ Pending"}
+                        </p>
                       </div>
-                    </motion.div>
-                  </TooltipTrigger>
-                  <TooltipContent 
-                    side="top" 
-                    className="bg-slate-800 border-slate-700 text-white max-w-[200px]"
-                  >
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm text-white">{point.name}</p>
-                      {point.assignee && (
-                        <p className="text-xs text-slate-300">
-                          <Users className="w-3 h-3 inline mr-1" />
-                          {point.assignee}
-                        </p>
-                      )}
-                      {point.time && (
-                        <p className="text-xs text-slate-400">
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          {point.time}
-                        </p>
-                      )}
-                      <p className={cn(
-                        "text-[10px] uppercase tracking-wider",
-                        isCompleted && "text-emerald-400",
-                        isCurrent && "text-cyan-400",
-                        isUpcoming && "text-slate-500"
-                      )}>
-                        {isCompleted ? "✓ Completed" : isCurrent ? "● In Progress" : "○ Pending"}
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
           </div>
         </div>
+        
+        {/* Scroll hint for many tasks */}
+        {needsScrolling && (
+          <p className="text-[10px] text-slate-500 text-center flex items-center justify-center gap-1">
+            <ChevronRight className="w-3 h-3 animate-pulse" />
+            Scroll to see all {timelinePoints.length} tasks
+          </p>
+        )}
         
         {/* Latest Activity / Current Phase Label */}
         <div className="space-y-2">
