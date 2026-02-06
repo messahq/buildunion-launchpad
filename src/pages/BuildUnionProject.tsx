@@ -148,7 +148,7 @@ const BuildUnionProject = () => {
        navigate(`/buildunion/project/${projectId}/details`);
      };
  
-     return (
+    return (
        <OwnerConfidenceDashboard
          projectId={projectId || ""}
          projectName={ownerData.projectName}
@@ -177,6 +177,10 @@ const BuildUnionProject = () => {
          daysActive={ownerData.daysActive}
          isSoloMode={ownerData.isSoloMode}
          isTeamMode={ownerData.isTeamMode}
+         operationalTruth={ownerData.operationalTruth}
+         verifiedFacts={ownerData.verifiedFacts}
+         photoEstimate={ownerData.photoEstimate}
+         blueprintAnalysisData={ownerData.blueprintAnalysisData}
        />
      );
    }

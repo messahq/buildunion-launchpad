@@ -76,6 +76,12 @@ export default function OwnerDashboard() {
       onBudgetApproved={handleBudgetApproved}
       onBudgetDeclined={handleBudgetDeclined}
       onTasksUpdated={() => queryClient.invalidateQueries({ queryKey: ["project-tasks-owner", projectId] })}
+      isSoloMode={data.isSoloMode}
+      isTeamMode={data.isTeamMode}
+      operationalTruth={data.operationalTruth}
+      verifiedFacts={data.verifiedFacts}
+      photoEstimate={data.photoEstimate}
+      blueprintAnalysisData={data.blueprintAnalysisData}
     />
   );
 }

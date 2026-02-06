@@ -1,18 +1,19 @@
- import { useMemo } from "react";
- import { useQuery } from "@tanstack/react-query";
- import { supabase } from "@/integrations/supabase/client";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
- 
- interface Milestone {
-   id: string;
-   name: string;
-   status: "completed" | "current" | "upcoming";
-   date?: string;
- }
- 
- interface FinancialSummary {
-   approvedBudget: number;
-   currentSpend: number;
+import { buildOperationalTruth, type OperationalTruth } from "@/types/operationalTruth";
+
+interface Milestone {
+  id: string;
+  name: string;
+  status: "completed" | "current" | "upcoming";
+  date?: string;
+}
+
+interface FinancialSummary {
+  approvedBudget: number;
+  currentSpend: number;
   remainingBudget: number;
   subtotal: number;
   taxAmount: number;
@@ -27,25 +28,39 @@ import { differenceInDays } from "date-fns";
   completedWorkValue: number;
   progressPercent: number;
   isProjectComplete: boolean;
-   isWithinRange: boolean;
-   hasUnexpectedCosts: boolean;
-   costStability: "stable" | "warning" | "critical";
-   budgetVersion?: 'initial' | 'change_order';
-   budgetUpdatedAt?: string;
- }
- 
+  isWithinRange: boolean;
+  hasUnexpectedCosts: boolean;
+  costStability: "stable" | "warning" | "critical";
+  budgetVersion?: 'initial' | 'change_order';
+  budgetUpdatedAt?: string;
+}
+
+// Photo Estimate structure from AI analysis
+interface PhotoEstimate {
+  area?: number;
+  areaUnit?: string;
+  materials?: Array<{ item: string; quantity: number; unit: string }>;
+  confidence?: string;
+}
+
+// Blueprint Analysis structure
+interface BlueprintAnalysis {
+  analyzed?: boolean;
+  totalArea?: number;
+}
+
 interface OwnerDashboardData {
-   healthScore: number;
-   verificationRate: number;
-   milestones: Milestone[];
-   financials: FinancialSummary;
-   blueprintUrl: string | null;
-   latestPhotoUrl: string | null;
-   expectedCompletion: string | null;
-   completionCertainty: number;
-   currentPhase: string;
-   projectName: string;
-   projectAddress: string | null;
+  healthScore: number;
+  verificationRate: number;
+  milestones: Milestone[];
+  financials: FinancialSummary;
+  blueprintUrl: string | null;
+  latestPhotoUrl: string | null;
+  expectedCompletion: string | null;
+  completionCertainty: number;
+  currentPhase: string;
+  projectName: string;
+  projectAddress: string | null;
   teamOnline: number;
   totalTeam: number;
   tasksCount: number;
@@ -71,7 +86,12 @@ interface OwnerDashboardData {
   mode: 'solo' | 'team';
   isSoloMode: boolean;
   isTeamMode: boolean;
- }
+  // Truth Matrix data
+  operationalTruth: OperationalTruth | null;
+  verifiedFacts: Record<string, unknown> | null;
+  photoEstimate: PhotoEstimate | null;
+  blueprintAnalysisData: BlueprintAnalysis | null;
+}
  
  export function useOwnerDashboardData(projectId: string | null) {
    // Fetch project data
@@ -347,6 +367,37 @@ interface OwnerDashboardData {
     const totalTeam = isTeamMode ? (teamMembers?.length || 0) + 1 : 1; // Solo = just owner
     const teamOnline = isTeamMode ? Math.min(totalTeam, Math.ceil(totalTeam * 0.6)) : 1; // Solo = 1 (you)
 
+    // ===== TRUTH MATRIX DATA =====
+    // Extract photo_estimate from summary
+    const photoEstimate = summary?.photo_estimate as PhotoEstimate | null;
+    
+    // Extract blueprint_analysis from summary
+    const blueprintAnalysisData = summary?.blueprint_analysis as BlueprintAnalysis | null;
+    
+    // Extract verified_facts from summary
+    const verifiedFacts = (summary?.verified_facts || {}) as Record<string, unknown>;
+    
+    // Build Operational Truth using the centralized function
+    const operationalTruth = buildOperationalTruth({
+      aiAnalysis: photoEstimate ? {
+        area: photoEstimate.area || null,
+        areaUnit: photoEstimate.areaUnit || 'sq ft',
+        materials: photoEstimate.materials || [],
+        hasBlueprint: blueprintAnalysisData?.analyzed || false,
+        confidence: photoEstimate.confidence || 'low',
+      } : undefined,
+      blueprintAnalysis: blueprintAnalysisData ? {
+        analyzed: blueprintAnalysisData.analyzed || false,
+      } : undefined,
+      filterAnswers: {
+        workflowFilter: {
+          subcontractorCount: isTeamMode ? '3+' : '1-2',
+        },
+      },
+      projectSize: totalCost > 50000 ? 'large' : totalCost > 10000 ? 'medium' : 'small',
+      obcAcknowledged: verifiedFacts.obcAcknowledged === true,
+    });
+
      return {
        healthScore,
        verificationRate: taskProgress,
@@ -393,6 +444,11 @@ interface OwnerDashboardData {
       mode: projectMode,
       isSoloMode,
       isTeamMode,
+      // Truth Matrix data
+      operationalTruth,
+      verifiedFacts,
+      photoEstimate,
+      blueprintAnalysisData,
      };
   }, [project, summary, tasks, documents, teamMembers]);
  
