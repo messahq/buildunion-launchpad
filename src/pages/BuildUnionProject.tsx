@@ -51,10 +51,21 @@ const BuildUnionProject = () => {
      checkOwnership();
    }, [user, projectId]);
  
-   // Owner Dashboard data
-   const { data: ownerData, isLoading: ownerDataLoading } = useOwnerDashboardData(
+   // Owner Dashboard data - also get tasks for budget approval
+   const { data: ownerData, isLoading: ownerDataLoading, tasks: ownerTasks } = useOwnerDashboardData(
      isOwner ? projectId || null : null
    );
+   
+   // Transform tasks for budget allocation component
+   const transformedTasks = (ownerTasks || []).map(task => ({
+     id: task.id,
+     title: task.title,
+     status: task.status,
+     unit_price: task.unit_price ?? undefined,
+     quantity: task.quantity ?? undefined,
+     total_cost: task.total_cost ?? undefined,
+     assignee_name: undefined
+   }));
 
    if (authLoading || checkingOwnership) {
     return (
@@ -155,12 +166,14 @@ const BuildUnionProject = () => {
          expectedCompletion={ownerData.expectedCompletion ? format(new Date(ownerData.expectedCompletion), "MMM d") : null}
          completionCertainty={ownerData.completionCertainty}
          currentPhase={ownerData.currentPhase}
-          onGenerateReport={handleGenerateReport}
-          onExportPdf={handleExportPdf}
-          onViewDetails={handleViewDetails}
+         onGenerateReport={handleGenerateReport}
+         onExportPdf={handleExportPdf}
+         onViewDetails={handleViewDetails}
          pendingBudgetChange={ownerData.pendingBudgetChange}
          onBudgetApproved={() => queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] })}
          onBudgetDeclined={() => queryClient.invalidateQueries({ queryKey: ["project-summary-owner", projectId] })}
+         onTasksUpdated={() => queryClient.invalidateQueries({ queryKey: ["project-tasks-owner", projectId] })}
+         tasks={transformedTasks}
          teamOnline={ownerData.teamOnline}
          totalTeam={ownerData.totalTeam}
          tasksCount={ownerData.tasksCount}
