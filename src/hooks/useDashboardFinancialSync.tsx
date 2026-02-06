@@ -52,58 +52,24 @@ const CITATION_BADGES: Record<CitationSource, { label: string; className: string
 const DEFAULT_UNIT_PRICES: Record<string, number> = {
   // Flooring
   "laminate flooring": 2.85,
-  "laminate": 2.85,
   "hardwood flooring": 6.50,
-  "hardwood": 6.50,
-  "vinyl flooring": 3.50,
-  "vinyl": 3.50,
-  "tile": 4.00,
-  "ceramic tile": 4.00,
   "underlayment": 0.35,
-  "vapor barrier": 0.25,
   "baseboard trim": 1.25,
-  "baseboard": 1.25,
   "transition strips": 12.00,
-  "transition": 12.00,
-  "threshold": 15.00,
-  // Adhesives & Fasteners
-  "adhesive": 8.00,
-  "fastener": 12.00,
-  "screw": 8.00,
-  "nail": 6.00,
   // Painting
   "primer": 38.00,
   "paint": 55.00,
   "painter's tape": 7.50,
-  "drop cloth": 15.00,
-  "sandpaper": 8.00,
-  "caulk": 6.00,
-  "filler": 12.00,
   // Drywall
   "drywall sheets": 18.00,
-  "drywall": 18.00,
   "joint compound": 22.00,
   "drywall tape": 5.50,
-  // Roofing
-  "shingle": 45.00,
-  "roofing": 2.50,
-  "flashing": 8.00,
-  // Plumbing
-  "pipe": 3.50,
-  "fitting": 5.00,
-  "valve": 25.00,
-  // Electrical
-  "wire": 0.75,
-  "outlet": 8.00,
-  "switch": 6.00,
-  "breaker": 35.00,
   // General fallback
   "default": 10.00,
 };
 
 /**
- * Enrich ALL materials with template-based unit prices
- * ALWAYS calculates totalPrice to ensure budget displays correctly
+ * Enrich AI-detected materials with template-based unit prices
  */
 function enrichMaterialsWithPrices(
   materials: MaterialItem[],
@@ -115,69 +81,50 @@ function enrichMaterialsWithPrices(
   const template = workTypeId ? getTemplateByWorkType(workTypeId) : null;
   
   return materials.map((material, index) => {
+    // Skip if already has valid unitPrice
+    if (material.unitPrice && material.unitPrice > 0 && material.totalPrice && material.totalPrice > 0) {
+      return material;
+    }
+    
+    // Try to find matching template material
     const itemLower = material.item.toLowerCase();
     let unitPrice = material.unitPrice || 0;
     
-    // ALWAYS try to enrich if unitPrice is 0 or totalPrice is missing/0
-    const needsEnrichment = unitPrice === 0 || !material.totalPrice || material.totalPrice === 0;
+    // First try template match
+    if (template) {
+      const templateMatch = template.materials.find(tm => 
+        itemLower.includes(tm.item.toLowerCase().split(' ')[0]) ||
+        tm.item.toLowerCase().includes(itemLower.split(' ')[0])
+      );
+      if (templateMatch) {
+        unitPrice = templateMatch.unitPrice;
+      }
+    }
     
-    if (needsEnrichment) {
-      // First try template match
-      if (template && unitPrice === 0) {
-        const templateMatch = template.materials.find(tm => 
-          itemLower.includes(tm.item.toLowerCase().split(' ')[0]) ||
-          tm.item.toLowerCase().includes(itemLower.split(' ')[0])
-        );
-        if (templateMatch) {
-          unitPrice = templateMatch.unitPrice;
-        }
-      }
-      
-      // Fallback to default prices
-      if (unitPrice === 0) {
-        for (const [key, price] of Object.entries(DEFAULT_UNIT_PRICES)) {
-          if (itemLower.includes(key)) {
-            unitPrice = price;
-            break;
-          }
-        }
-      }
-      
-      // Extended fallback - check partial matches
-      if (unitPrice === 0) {
-        const firstWord = itemLower.split(/[\s/,]+/)[0];
-        for (const [key, price] of Object.entries(DEFAULT_UNIT_PRICES)) {
-          if (key.includes(firstWord) || firstWord.includes(key.split(' ')[0])) {
-            unitPrice = price;
-            break;
-          }
-        }
-      }
-      
-      // Final fallback based on unit type
-      if (unitPrice === 0) {
-        const unitLower = (material.unit || "").toLowerCase();
-        if (unitLower.includes("sq") || unitLower.includes("ft²") || unitLower.includes("m²")) {
-          unitPrice = 2.50; // Generic per sq ft/m²
-        } else if (unitLower.includes("ft") || unitLower.includes("linear") || unitLower.includes("m")) {
-          unitPrice = 1.50; // Generic per linear ft/m
-        } else if (unitLower.includes("gal") || unitLower.includes("l")) {
-          unitPrice = 45.00; // Generic per gallon/liter
-        } else if (unitLower.includes("roll") || unitLower.includes("pack")) {
-          unitPrice = 15.00; // Generic per roll/pack
-        } else if (unitLower.includes("tube") || unitLower.includes("box")) {
-          unitPrice = 8.00; // Generic per tube/box
-        } else if (unitLower.includes("pc") || unitLower.includes("unit") || unitLower === "") {
-          unitPrice = 12.00; // Generic per piece
-        } else {
-          unitPrice = DEFAULT_UNIT_PRICES.default;
+    // Fallback to default prices
+    if (unitPrice === 0) {
+      for (const [key, price] of Object.entries(DEFAULT_UNIT_PRICES)) {
+        if (itemLower.includes(key)) {
+          unitPrice = price;
+          break;
         }
       }
     }
     
-    // ALWAYS calculate totalPrice
-    const quantity = material.quantity || 0;
-    const totalPrice = quantity * unitPrice;
+    // Final fallback based on unit type
+    if (unitPrice === 0) {
+      if (material.unit === "sq ft") {
+        unitPrice = 2.50; // Generic per sq ft
+      } else if (material.unit === "ft") {
+        unitPrice = 1.50; // Generic per linear ft
+      } else if (material.unit === "gal") {
+        unitPrice = 45.00; // Generic per gallon
+      } else {
+        unitPrice = DEFAULT_UNIT_PRICES.default;
+      }
+    }
+    
+    const totalPrice = material.quantity * unitPrice;
     
     return {
       ...material,
