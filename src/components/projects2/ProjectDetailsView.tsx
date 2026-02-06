@@ -578,13 +578,16 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
   // Document list for citation auto-registration
   const [projectDocuments, setProjectDocuments] = useState<{ id: string; file_name: string; file_path: string; uploaded_at: string }[]>([]);
   
-  // Derive tier status - check for Pro or higher
+  // ====== TIER ACCESS LOGIC ======
+  // CRITICAL: Tier restrictions apply ONLY to project OWNERS for creating new projects
+  // Invited members (subcontractors, workers, foremen) can ALWAYS access tasks and team features
+  // regardless of their personal subscription tier. This is essential for the collaboration model.
   const isPro = isDevOverride || 
     subscription?.tier === "pro" || 
     subscription?.tier === "premium" || 
     subscription?.tier === "enterprise";
   
-  // Check for Premium (for conflict visualization and reports)
+  // Check for Premium (for conflict visualization and reports) - same invited member bypass applies
   const isPremium = isDevOverride || 
     subscription?.tier === "premium" || 
     subscription?.tier === "enterprise";
