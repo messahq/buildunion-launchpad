@@ -431,35 +431,46 @@ export function MaterialCalculationTab({
   // Helper to create initial material items
   // CRITICAL: When dataSource='saved', use the saved quantities as-is (no recalculation)
   // When dataSource='ai', apply +10% waste buffer on top of AI-detected base quantities
+  // 
+  // OPERATIONAL TRUTH FIX: totalPrice is ALWAYS calculated as quantity * unitPrice
+  // This ensures display consistency regardless of what was saved in DB
   const createInitialMaterialItems = useCallback(() => {
-    // For SAVED data: use exactly what was saved (quantities already include waste)
-    // CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
+    // For SAVED data: use saved quantities/unitPrice, but ALWAYS calculate totalPrice dynamically
     if (dataSource === 'saved') {
       return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
         const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
         const savedTotalPrice = m.totalPrice;
-        const quantity = m.quantity || 1;
-        const unitPrice = m.unitPrice || 0;
+        
+        // CRITICAL: Use nullish coalescing to preserve 0 as valid values
+        const quantity = m.quantity ?? 1;
+        const unitPrice = m.unitPrice ?? 0;
         
         // Use saved baseQuantity if available, otherwise calculate it from quantity
         const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(quantity / (1 + DYNAMIC_WASTE)) : quantity);
         
-        // CRITICAL: If we only have totalPrice (no unitPrice), use totalPrice as the unit price
-        const finalUnitPrice = savedTotalPrice && !m.unitPrice ? savedTotalPrice : unitPrice;
+        // CRITICAL FIX: Only use savedTotalPrice as unitPrice if unitPrice is truly missing
+        // AND quantity is 1 (flattened item scenario)
+        const finalUnitPrice = (!m.unitPrice && savedTotalPrice && quantity === 1) 
+          ? savedTotalPrice 
+          : unitPrice;
         
         // DATA LOCK: Preserve saved unit OR infer from material name - never use generic 'unit'
         const savedUnit = m.unit && m.unit !== 'unit' ? m.unit : inferUnitFromMaterialName(m.item);
         
-        console.log(`[SAVED LOAD] ${m.item}: unit=${savedUnit} (original: ${m.unit})`);
+        // OPERATIONAL TRUTH: totalPrice is ALWAYS quantity * unitPrice
+        // This ensures the math displayed is always correct (e.g., 1350 × 0.33 = 445.5)
+        const calculatedTotal = quantity * finalUnitPrice;
+        
+        console.log(`[SAVED LOAD] ${m.item}: ${quantity} × $${finalUnitPrice} = $${calculatedTotal} (savedTotal: $${savedTotalPrice})`);
         
         return {
           id: `material-${idx}`,
           item: m.item,
           baseQuantity: savedBaseQty,
           quantity: quantity,
-          unit: savedUnit, // DATA LOCK: Use preserved/inferred unit
+          unit: savedUnit,
           unitPrice: finalUnitPrice,
-          totalPrice: savedTotalPrice ?? (quantity * unitPrice),
+          totalPrice: calculatedTotal, // ALWAYS calculated, never use savedTotalPrice directly
           isEssential,
         };
       });
@@ -498,63 +509,63 @@ export function MaterialCalculationTab({
         ? calculateCoverageBasedQuantity(grossAreaSqFt, m.item, m.unit)
         : { quantity: grossAreaSqFt, unit: m.unit };
       
+      const unitPrice = m.unitPrice || 0;
+      
       return {
         id: `material-${idx}`,
         item: m.item,
         baseQuantity: baseQty, // Store NET area for reference
         quantity: finalQty,    // COVERAGE-converted quantity (e.g., 65 boxes)
         unit: finalUnit,       // Converted unit (e.g., "boxes")
-        unitPrice: m.unitPrice || 0,
-        totalPrice: finalQty * (m.unitPrice || 0),
+        unitPrice: unitPrice,
+        totalPrice: finalQty * unitPrice, // ALWAYS calculated
         isEssential,
       };
     });
-  }, [initialMaterials, dataSource, DYNAMIC_WASTE, baseArea]);
+  }, [initialMaterials, dataSource, DYNAMIC_WASTE, baseArea, inferUnitFromMaterialName]);
 
   // Helper to create initial labor items
   // CRITICAL: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
   // IRON LAW #3: Installation labor for area-based work MUST use sq ft and baseArea
-  // Helper to create initial labor items
-  // CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
-  // IRON LAW #3: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
+  // OPERATIONAL TRUTH: totalPrice is ALWAYS calculated, never use savedTotalPrice directly
   const createInitialLaborItems = useCallback(() => 
     initialLabor.map((l: TaskBasedEntry & { totalPrice?: number }, idx) => {
-      // CRITICAL: Get saved totalPrice first - some DB items only have totalPrice, no quantity/unitPrice
       const savedTotalPrice = l.totalPrice;
-      const quantity = l.quantity || 1;
-      const unitPrice = l.unitPrice || 0;
+      
+      // CRITICAL: Use nullish coalescing to preserve 0 as valid values
+      const quantity = l.quantity ?? 1;
+      const unitPrice = l.unitPrice ?? 0;
       
       // Detect if this is an "Installation" labor item for area-based work
       const isInstallationLabor = /installation|install/i.test(l.item);
       const isAreaBasedWork = /paint|flooring|tile|hardwood|laminate|carpet|drywall|primer/i.test(l.item);
       
       // IRON LAW #3: Area-based installation labor ALWAYS uses sq ft and baseArea (NET)
-      // BUT: If we have a saved totalPrice, use it directly (don't recalculate)
-      if (isInstallationLabor && isAreaBasedWork && baseArea && baseArea > 0 && !savedTotalPrice) {
-        console.log(`[IRON LAW #3] Labor ${l.item}: FORCED to NET area = ${baseArea} sq ft (ignoring ${quantity} ${l.unit})`);
-        return {
-          id: `labor-${idx}`,
-          item: l.item,
-          quantity: baseArea,
-          unit: "sq ft",
-          unitPrice: unitPrice,
-          totalPrice: baseArea * unitPrice,
-        };
-      }
-      
-      // For saved items with totalPrice: use it directly
-      // This ensures saved labor costs are restored correctly even without quantity/unitPrice
+      // For saved data, still use baseArea for display but preserve saved values
       const isSqFtUnit = l.unit?.toLowerCase().includes("sq") || l.unit?.toLowerCase().includes("ft");
-      const laborQty = (isSqFtUnit && baseArea && baseArea > 0 && !savedTotalPrice) ? baseArea : quantity;
-      const finalUnitPrice = savedTotalPrice && !l.unitPrice ? savedTotalPrice : unitPrice;
+      const shouldUseBaseArea = isInstallationLabor && isAreaBasedWork && baseArea && baseArea > 0;
+      const laborQty = (isSqFtUnit && baseArea && baseArea > 0) ? baseArea : quantity;
+      
+      // CRITICAL FIX: Only use savedTotalPrice as unitPrice if unitPrice is truly missing
+      // AND quantity is 1 (flattened item scenario)
+      const finalUnitPrice = (!l.unitPrice && savedTotalPrice && quantity === 1) 
+        ? savedTotalPrice 
+        : unitPrice;
+      
+      const finalUnit = shouldUseBaseArea ? "sq ft" : (l.unit || 'unit');
+      
+      // OPERATIONAL TRUTH: totalPrice is ALWAYS quantity * unitPrice
+      const calculatedTotal = laborQty * finalUnitPrice;
+      
+      console.log(`[LABOR LOAD] ${l.item}: ${laborQty} × $${finalUnitPrice} = $${calculatedTotal}`);
       
       return {
         id: `labor-${idx}`,
         item: l.item,
         quantity: laborQty,
-        unit: l.unit || 'unit',
+        unit: finalUnit,
         unitPrice: finalUnitPrice,
-        totalPrice: savedTotalPrice ?? (laborQty * unitPrice),
+        totalPrice: calculatedTotal, // ALWAYS calculated
       };
     })
   , [initialLabor, baseArea]);
@@ -566,24 +577,32 @@ export function MaterialCalculationTab({
   const [laborItems, setLaborItems] = useState<CostItem[]>(createInitialLaborItems);
   
   // Other/custom items - PERSISTENCE FIX: Load saved items from props
-  // Converts TaskBasedEntry[] to CostItem[] with proper IDs
-  // Other/custom items - CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
+  // OPERATIONAL TRUTH: totalPrice is ALWAYS calculated, never use savedTotalPrice directly
   const createInitialOtherItems = useCallback((): CostItem[] => {
     if (!initialOther || initialOther.length === 0) return [];
     return initialOther.map((o, idx) => {
       const savedTotalPrice = (o as { totalPrice?: number }).totalPrice;
-      const quantity = o.quantity || 1; // Default to 1 if not present
-      const unitPrice = o.unitPrice || 0;
-      // CRITICAL: Use saved totalPrice first, then calculate from quantity × unitPrice
-      const totalPrice = savedTotalPrice ?? (quantity * unitPrice);
+      
+      // CRITICAL: Use nullish coalescing to preserve 0 as valid values
+      const quantity = o.quantity ?? 1;
+      const unitPrice = o.unitPrice ?? 0;
+      
+      // CRITICAL FIX: Only use savedTotalPrice as unitPrice if unitPrice is truly missing
+      // AND quantity is 1 (flattened item scenario)
+      const finalUnitPrice = (!o.unitPrice && savedTotalPrice && quantity === 1) 
+        ? savedTotalPrice 
+        : unitPrice;
+      
+      // OPERATIONAL TRUTH: totalPrice is ALWAYS quantity * unitPrice
+      const calculatedTotal = quantity * finalUnitPrice;
       
       return {
         id: `other-saved-${idx}-${Date.now()}`,
         item: o.item,
         quantity,
         unit: o.unit || 'unit',
-        unitPrice: savedTotalPrice && !o.unitPrice ? savedTotalPrice : unitPrice, // If only totalPrice exists, use it as unitPrice
-        totalPrice,
+        unitPrice: finalUnitPrice,
+        totalPrice: calculatedTotal, // ALWAYS calculated
       };
     });
   }, [initialOther]);
