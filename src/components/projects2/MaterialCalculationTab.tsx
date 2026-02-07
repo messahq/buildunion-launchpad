@@ -429,48 +429,58 @@ export function MaterialCalculationTab({
   }, []);
   
   // Helper to create initial material items
-  // CRITICAL: When dataSource='saved', use the saved quantities as-is (no recalculation)
+  // CRITICAL: When dataSource='saved', use the saved baseQuantity and DYNAMICALLY apply waste%
   // When dataSource='ai', apply +10% waste buffer on top of AI-detected base quantities
   // 
-  // OPERATIONAL TRUTH FIX: totalPrice is ALWAYS calculated as quantity * unitPrice
-  // This ensures display consistency regardless of what was saved in DB
+  // IRON LAW #1 FIX: totalPrice is ALWAYS grossQuantity × unitPrice
+  // where grossQuantity = baseQuantity × (1 + wastePercent/100)
+  // This ensures waste% is ALWAYS included in the displayed calculation
   const createInitialMaterialItems = useCallback(() => {
-    // For SAVED data: use saved quantities/unitPrice, but ALWAYS calculate totalPrice dynamically
+    // For SAVED data: use saved baseQuantity, but DYNAMICALLY calculate grossQuantity with waste%
     if (dataSource === 'saved') {
       return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
         const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
         const savedTotalPrice = m.totalPrice;
         
         // CRITICAL: Use nullish coalescing to preserve 0 as valid values
-        const quantity = m.quantity ?? 1;
+        const savedQuantity = m.quantity ?? 1;
         const unitPrice = m.unitPrice ?? 0;
         
-        // Use saved baseQuantity if available, otherwise calculate it from quantity
-        const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(quantity / (1 + DYNAMIC_WASTE)) : quantity);
+        // IRON LAW #1: Determine BASE (NET) quantity
+        // Priority: saved baseQuantity > reverse-calculate from savedQuantity > use savedQuantity
+        const baseQty = m.baseQuantity ?? savedQuantity;
         
         // CRITICAL FIX: Only use savedTotalPrice as unitPrice if unitPrice is truly missing
         // AND quantity is 1 (flattened item scenario)
-        const finalUnitPrice = (!m.unitPrice && savedTotalPrice && quantity === 1) 
+        const finalUnitPrice = (!m.unitPrice && savedTotalPrice && savedQuantity === 1) 
           ? savedTotalPrice 
           : unitPrice;
         
         // DATA LOCK: Preserve saved unit OR infer from material name - never use generic 'unit'
         const savedUnit = m.unit && m.unit !== 'unit' ? m.unit : inferUnitFromMaterialName(m.item);
         
-        // OPERATIONAL TRUTH: totalPrice is ALWAYS quantity * unitPrice
-        // This ensures the math displayed is always correct (e.g., 1350 × 0.33 = 445.5)
-        const calculatedTotal = quantity * finalUnitPrice;
+        // IRON LAW #1: DYNAMIC GROSS CALCULATION
+        // Materials ALWAYS use: grossQuantity = baseQuantity × (1 + waste%)
+        // For essential materials: apply waste buffer
+        // For non-essential: gross = base (no buffer)
+        const grossQuantity = isEssential 
+          ? Math.ceil(baseQty * (1 + DYNAMIC_WASTE))
+          : baseQty;
         
-        console.log(`[SAVED LOAD] ${m.item}: ${quantity} × $${finalUnitPrice} = $${calculatedTotal} (savedTotal: $${savedTotalPrice})`);
+        // OPERATIONAL TRUTH: totalPrice = grossQuantity × unitPrice
+        // This is the DISPLAY calculation - always includes waste!
+        const calculatedTotal = grossQuantity * finalUnitPrice;
+        
+        console.log(`[IRON LAW #1 SAVED] ${m.item}: NET=${baseQty} → GROSS=${grossQuantity} (${wastePercent}% waste) × $${finalUnitPrice} = $${calculatedTotal.toFixed(2)}`);
         
         return {
           id: `material-${idx}`,
           item: m.item,
-          baseQuantity: savedBaseQty,
-          quantity: quantity,
+          baseQuantity: baseQty,      // NET quantity (without waste)
+          quantity: grossQuantity,     // GROSS quantity (with waste) - DISPLAYED
           unit: savedUnit,
           unitPrice: finalUnitPrice,
-          totalPrice: calculatedTotal, // ALWAYS calculated, never use savedTotalPrice directly
+          totalPrice: calculatedTotal, // GROSS × unitPrice
           isEssential,
         };
       });
