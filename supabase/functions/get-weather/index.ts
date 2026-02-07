@@ -154,32 +154,85 @@ serve(async (req) => {
         );
       }
       
-      try {
-        const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
-        const geoRes = await fetch(geoUrl);
+      // Helper function to try geocoding a location string
+      const tryGeocode = async (query: string): Promise<{lat: number, lon: number} | null> => {
+        try {
+          const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=1&appid=${apiKey}`;
+          const geoRes = await fetch(geoUrl);
+          
+          if (!geoRes.ok) return null;
+          
+          const geoData = await geoRes.json();
+          
+          if (geoData && Array.isArray(geoData) && geoData.length > 0 && geoData[0]?.lat && geoData[0]?.lon) {
+            return { lat: geoData[0].lat, lon: geoData[0].lon };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      };
+      
+      // Extract city/region from address for fallback
+      const extractCityFromAddress = (addr: string): string[] => {
+        const candidates: string[] = [];
         
-        if (!geoRes.ok) {
-          console.error("Geocoding API returned:", geoRes.status);
-          return new Response(
-            JSON.stringify({ 
-              error: "Geocoding failed", 
-              message: `Could not find location: ${location}. Try adding city/state/country.`,
-              code: "GEOCODING_FAILED"
-            }),
-            { 
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400 
-            }
-          );
+        // Common Canadian/US patterns: "123 Street Name, City, Province/State"
+        const parts = addr.split(',').map(p => p.trim());
+        
+        // If we have comma-separated parts, try the city/region parts
+        if (parts.length >= 2) {
+          // Try "City, Province/State/Country" combinations
+          candidates.push(parts.slice(1).join(', ')); // Everything after street
+          candidates.push(parts[1]); // Just the city part
+          if (parts.length >= 3) {
+            candidates.push(`${parts[1]}, ${parts[2]}`); // City, Province
+          }
         }
         
-        const geoData = await geoRes.json();
+        // Try to find city names in the address (common cities)
+        const cityPatterns = [
+          /\b(Toronto|Vancouver|Montreal|Calgary|Edmonton|Ottawa|Winnipeg|Quebec|Hamilton|Kitchener|London|Victoria|Halifax|Saskatoon|Regina|St\. John's|Windsor|Kelowna|Barrie|Oshawa|Markham|Mississauga|Brampton)\b/i,
+          /\b(New York|Los Angeles|Chicago|Houston|Phoenix|Philadelphia|San Antonio|San Diego|Dallas|San Jose|Austin|Jacksonville|Columbus|Indianapolis|Charlotte|Seattle|Denver|Boston|Detroit|Nashville|Portland|Memphis|Louisville|Baltimore|Milwaukee|Miami)\b/i,
+          /\b(Ontario|Quebec|British Columbia|Alberta|Manitoba|Saskatchewan|Nova Scotia|New Brunswick|Newfoundland|Prince Edward Island|BC|ON|QC|AB|MB|SK|NS|NB|NL|PEI)\b/i
+        ];
         
-        if (!geoData || !Array.isArray(geoData) || geoData.length === 0) {
+        for (const pattern of cityPatterns) {
+          const match = addr.match(pattern);
+          if (match) {
+            candidates.push(match[1]);
+            // Try city with "Canada" or "USA" suffix
+            candidates.push(`${match[1]}, Canada`);
+            candidates.push(`${match[1]}, USA`);
+          }
+        }
+        
+        return [...new Set(candidates)]; // Remove duplicates
+      };
+      
+      try {
+        // First try the full location string
+        let result = await tryGeocode(location);
+        
+        // If full address fails, try extracted city/region parts
+        if (!result) {
+          const fallbackQueries = extractCityFromAddress(location);
+          console.log(`Full address geocoding failed, trying fallbacks:`, fallbackQueries);
+          
+          for (const query of fallbackQueries) {
+            result = await tryGeocode(query);
+            if (result) {
+              console.log(`Geocoding succeeded with fallback: ${query}`);
+              break;
+            }
+          }
+        }
+        
+        if (!result) {
           return new Response(
             JSON.stringify({ 
               error: "Location not found", 
-              message: `No results for: ${location}. Try a more specific address.`,
+              message: `Could not find weather location for: ${location}. Try using just the city name (e.g., "Toronto, ON, Canada").`,
               code: "LOCATION_NOT_FOUND"
             }),
             { 
@@ -189,22 +242,8 @@ serve(async (req) => {
           );
         }
         
-        if (!geoData[0]?.lat || !geoData[0]?.lon) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Invalid geocoding response", 
-              message: `Could not determine coordinates for: ${location}`,
-              code: "INVALID_GEOCODE"
-            }),
-            { 
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400 
-            }
-          );
-        }
-        
-        latitude = geoData[0].lat;
-        longitude = geoData[0].lon;
+        latitude = result.lat;
+        longitude = result.lon;
       } catch (geoError: any) {
         console.error("Geocoding error:", geoError);
         return new Response(
