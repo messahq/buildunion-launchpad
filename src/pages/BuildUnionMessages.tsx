@@ -455,6 +455,14 @@ export default function BuildUnionMessages() {
   const hasPremiumAccess = subscription.tier === "premium" || subscription.tier === "enterprise";
   const canAccessMessaging = hasPremiumAccess || isAdmin || isTeamMember;
   const canSendAttachments = hasPremiumAccess || isAdmin;
+  
+  // Check if the selected conversation partner is a team member (for non-premium users)
+  const isConversationWithTeamMember = selectedConversation && teamMembers.some(
+    member => member.userId === selectedConversation.partnerId
+  );
+  
+  // Team members can message other team members even without premium
+  const canSendMessages = hasPremiumAccess || isAdmin || (isTeamMember && isConversationWithTeamMember);
 
   useEffect(() => {
     if (!user) {
@@ -2146,7 +2154,7 @@ export default function BuildUnionMessages() {
 
                 {/* Message Input */}
                 <div className="p-4 border-t">
-                  {(hasPremiumAccess || isAdmin) ? (
+                  {canSendMessages ? (
                     <div className="space-y-2">
                       {/* Attachment preview */}
                       {attachmentFile && (
