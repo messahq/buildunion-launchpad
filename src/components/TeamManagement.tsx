@@ -466,7 +466,8 @@ const TeamManagement = ({ projectId, isOwner, onMemberClick }: TeamManagementPro
               title: 'Added to Project',
               body: `You've been added to a project team`,
               userIds: [targetUser.user_id],
-              data: { type: 'project_member_added', projectId }
+              projectId,
+              data: { type: 'project_member_added' }
             }
           });
         } catch (notifErr) {
