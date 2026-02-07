@@ -16,40 +16,51 @@ const BuildUnionProject = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-   const [isOwner, setIsOwner] = useState<boolean | null>(null);
-   const [checkingOwnership, setCheckingOwnership] = useState(true);
+  const [isOwner, setIsOwner] = useState<boolean | null>(null);
+  const [projectExists, setProjectExists] = useState<boolean | null>(null);
+  const [checkingOwnership, setCheckingOwnership] = useState(true);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const queryClient = useQueryClient();
   
   const initialTab = searchParams.get("tab") || undefined;
- 
-   // Check if user is the project owner
-   useEffect(() => {
-     async function checkOwnership() {
-       if (!user || !projectId) {
-         setCheckingOwnership(false);
-         return;
-       }
- 
-       try {
-         const { data: project, error } = await supabase
-           .from("projects")
-           .select("user_id")
-           .eq("id", projectId)
-           .single();
- 
-         if (error) throw error;
-         setIsOwner(project?.user_id === user.id);
-       } catch (err) {
-         console.error("Error checking ownership:", err);
-         setIsOwner(false);
-       } finally {
-         setCheckingOwnership(false);
-       }
-     }
- 
-     checkOwnership();
-   }, [user, projectId]);
+
+  // Check if project exists and if user is the owner
+  useEffect(() => {
+    async function checkProjectAndOwnership() {
+      if (!user || !projectId) {
+        setCheckingOwnership(false);
+        return;
+      }
+
+      try {
+        const { data: project, error } = await supabase
+          .from("projects")
+          .select("user_id")
+          .eq("id", projectId)
+          .maybeSingle();
+
+        // Project not found - redirect to workspace
+        if (!project) {
+          console.log("[BuildUnionProject] Project not found:", projectId);
+          setProjectExists(false);
+          setCheckingOwnership(false);
+          return;
+        }
+
+        if (error) throw error;
+        
+        setProjectExists(true);
+        setIsOwner(project.user_id === user.id);
+      } catch (err) {
+        console.error("Error checking project:", err);
+        setProjectExists(false);
+      } finally {
+        setCheckingOwnership(false);
+      }
+    }
+
+    checkProjectAndOwnership();
+  }, [user, projectId]);
  
    // Owner Dashboard data - also get tasks for budget approval
    const { data: ownerData, isLoading: ownerDataLoading, tasks: ownerTasks } = useOwnerDashboardData(
@@ -67,7 +78,7 @@ const BuildUnionProject = () => {
      assignee_name: undefined
    }));
 
-   if (authLoading || checkingOwnership) {
+  if (authLoading || checkingOwnership) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
@@ -81,6 +92,12 @@ const BuildUnionProject = () => {
   }
 
   if (!projectId) {
+    navigate("/buildunion/workspace", { replace: true });
+    return null;
+  }
+
+  // Project doesn't exist or was deleted - redirect to workspace
+  if (projectExists === false) {
     navigate("/buildunion/workspace", { replace: true });
     return null;
   }
