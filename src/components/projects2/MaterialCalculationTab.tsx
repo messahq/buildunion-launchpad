@@ -367,35 +367,28 @@ export function MaterialCalculationTab({
   // When dataSource='ai', apply +10% waste buffer on top of AI-detected base quantities
   const createInitialMaterialItems = useCallback(() => {
     // For SAVED data: use exactly what was saved (quantities already include waste)
-    // CRITICAL FIX: Preserve saved quantity/unitPrice - only use defaults for truly missing values
+    // CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
     if (dataSource === 'saved') {
       return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
         const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
         const savedTotalPrice = m.totalPrice;
-        
-        // BUGFIX: Use ?? instead of || to only default when undefined/null, not when 0
-        // This preserves intentional 0 values and the actual saved quantity
-        const quantity = m.quantity ?? 1;
-        const unitPrice = m.unitPrice ?? 0;
+        const quantity = m.quantity || 1;
+        const unitPrice = m.unitPrice || 0;
         
         // Use saved baseQuantity if available, otherwise calculate it from quantity
         const savedBaseQty = m.baseQuantity ?? (isEssential ? Math.round(quantity / (1 + DYNAMIC_WASTE)) : quantity);
         
-        // BUGFIX: Only fall back to totalPrice as unitPrice when unitPrice is UNDEFINED/NULL
-        // Not when unitPrice is 0 (which is a valid value for free items)
-        // Also require quantity > 1 to detect the "flattened" scenario (qty=1, price=total)
-        const isLikelyFlattened = savedTotalPrice && (m.unitPrice === undefined || m.unitPrice === null) && quantity <= 1;
-        const finalUnitPrice = isLikelyFlattened ? savedTotalPrice : unitPrice;
-        const finalQuantity = isLikelyFlattened ? 1 : quantity;
+        // CRITICAL: If we only have totalPrice (no unitPrice), use totalPrice as the unit price
+        const finalUnitPrice = savedTotalPrice && !m.unitPrice ? savedTotalPrice : unitPrice;
         
         return {
           id: `material-${idx}`,
           item: m.item,
           baseQuantity: savedBaseQty,
-          quantity: finalQuantity,
+          quantity: quantity,
           unit: m.unit || 'unit',
           unitPrice: finalUnitPrice,
-          totalPrice: savedTotalPrice ?? (finalQuantity * unitPrice),
+          totalPrice: savedTotalPrice ?? (quantity * unitPrice),
           isEssential,
         };
       });
@@ -448,16 +441,17 @@ export function MaterialCalculationTab({
   }, [initialMaterials, dataSource, DYNAMIC_WASTE, baseArea]);
 
   // Helper to create initial labor items
-  // CRITICAL FIX: Preserve saved quantity/unitPrice with proper null checks
+  // CRITICAL: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
+  // IRON LAW #3: Installation labor for area-based work MUST use sq ft and baseArea
+  // Helper to create initial labor items
+  // CRITICAL FIX: Handle saved items that only have totalPrice (no quantity/unitPrice)
   // IRON LAW #3: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
   const createInitialLaborItems = useCallback(() => 
     initialLabor.map((l: TaskBasedEntry & { totalPrice?: number }, idx) => {
       // CRITICAL: Get saved totalPrice first - some DB items only have totalPrice, no quantity/unitPrice
       const savedTotalPrice = l.totalPrice;
-      
-      // BUGFIX: Use ?? instead of || to only default when undefined/null
-      const quantity = l.quantity ?? 1;
-      const unitPrice = l.unitPrice ?? 0;
+      const quantity = l.quantity || 1;
+      const unitPrice = l.unitPrice || 0;
       
       // Detect if this is an "Installation" labor item for area-based work
       const isInstallationLabor = /installation|install/i.test(l.item);
@@ -481,10 +475,7 @@ export function MaterialCalculationTab({
       // This ensures saved labor costs are restored correctly even without quantity/unitPrice
       const isSqFtUnit = l.unit?.toLowerCase().includes("sq") || l.unit?.toLowerCase().includes("ft");
       const laborQty = (isSqFtUnit && baseArea && baseArea > 0 && !savedTotalPrice) ? baseArea : quantity;
-      
-      // BUGFIX: Only use totalPrice as unitPrice when unitPrice is truly undefined/null
-      const isLikelyFlattened = savedTotalPrice && (l.unitPrice === undefined || l.unitPrice === null) && quantity <= 1;
-      const finalUnitPrice = isLikelyFlattened ? savedTotalPrice : unitPrice;
+      const finalUnitPrice = savedTotalPrice && !l.unitPrice ? savedTotalPrice : unitPrice;
       
       return {
         id: `labor-${idx}`,
