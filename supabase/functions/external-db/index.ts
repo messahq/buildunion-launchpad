@@ -79,8 +79,12 @@ serve(async (req) => {
       }
 
       case "insert": {
-        // Add lovable_user_id to track which Lovable user owns this data
-        const insertData = { ...data, lovable_user_id: userId };
+        // Only add lovable_user_id for tables that have this column (projects, contracts)
+        // Tables like project_tasks use project_id as their ownership reference
+        const tablesWithLovableUserId = ['projects', 'contracts'];
+        const insertData = tablesWithLovableUserId.includes(table) 
+          ? { ...data, lovable_user_id: userId }
+          : data;
         const { data: insertResult, error: insertError } = await externalSupabase
           .from(table)
           .insert(insertData)
