@@ -1721,14 +1721,19 @@ export function MaterialCalculationTab({
         </div>
       ) : (
         // View mode - responsive layout with UNIT CONVERSION + COVERAGE
+        // DATA LOCK: When dataSource='saved', show EXACTLY what user saved - no coverage inference
         (() => {
           // Get converted display values based on current unit system (IMP/MET toggle)
           const displayVals = getDisplayValues(item);
           const displayBaseQty = getDisplayBaseQuantity(item);
           
+          // DATA LOCK: DISABLE coverage badge/logic for saved data - user's values are authoritative
+          const isSavedData = currentDataSource === 'saved';
+          
           // Get coverage info for this material (sq ft per box, gallon, etc.)
-          const coverageInfo = getMaterialCoverage(item.item);
-          const hasCoverage = coverageInfo && coverageInfo.coveragePerUnit > 1;
+          // ONLY apply for AI/tasks data - saved data shows raw user values
+          const coverageInfo = !isSavedData ? getMaterialCoverage(item.item) : null;
+          const hasCoverage = !isSavedData && coverageInfo && coverageInfo.coveragePerUnit > 1;
           
           // Convert coverage to metric if needed
           const displayCoverage = hasCoverage 
@@ -1739,6 +1744,7 @@ export function MaterialCalculationTab({
           const coverageUnit = isMetric ? t("units.sq_m", "sq m") : t("units.sq_ft", "sq ft");
           
           // Calculate price per area (e.g., $/sq ft or $/sq m)
+          // For saved data: allow direct display of user's values
           const pricePerArea = hasCoverage && item.unitPrice > 0
             ? item.unitPrice / coverageInfo!.coveragePerUnit
             : null;
@@ -1789,10 +1795,24 @@ export function MaterialCalculationTab({
               </div>
               
               {/* Row 2: Qty/Unit + Price columns - using CONVERTED display values */}
+              {/* DATA LOCK: For saved data, show simple editable fields - no coverage calculations */}
               <div className="grid grid-cols-4 gap-2 items-center">
-                {/* Quantity + Unit */}
+                {/* Quantity + Unit - MANUAL OVERRIDE ENABLED */}
                 <div className="text-sm text-muted-foreground">
-                  {item.isEssential && item.baseQuantity !== undefined ? (
+                  {/* SAVED DATA: Always show simple editable fields - user's values are authoritative */}
+                  {isSavedData ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={item.quantity || ''}
+                        onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                        className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium"
+                        title={t("materials.editQty", "Edit quantity")}
+                      />
+                      <span className="text-xs">{item.unit}</span>
+                    </div>
+                  ) : item.isEssential && item.baseQuantity !== undefined && hasCoverage ? (
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1">
                         <Input
@@ -1810,7 +1830,17 @@ export function MaterialCalculationTab({
                       </span>
                     </div>
                   ) : (
-                    <span>{(item.quantity || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} {item.unit || ''}</span>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={item.quantity || ''}
+                        onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                        className="h-7 w-14 text-xs text-center p-1 border-dashed font-medium"
+                        title={t("materials.editQty", "Edit quantity")}
+                      />
+                      <span className="text-xs">{item.unit || ''}</span>
+                    </div>
                   )}
                 </div>
                 
