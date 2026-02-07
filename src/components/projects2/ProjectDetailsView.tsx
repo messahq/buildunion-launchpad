@@ -802,10 +802,14 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     
     // CRITICAL: Prevent re-loading if we've already loaded for this summary
     // This breaks the infinite loop caused by setCentralMaterials triggering re-renders
-    const loadKey = `${summaryIdForMaterials}-${savedLineItemsJson?.slice(0, 50) || 'empty'}-${photoEstimateJson?.slice(0, 50) || 'empty'}`;
+    // FIX: Use a more comprehensive hash that includes material count to detect data changes
+    const materialsCount = savedLineItemsJson ? (JSON.parse(savedLineItemsJson).materials?.length || 0) : 0;
+    const loadKey = `${summaryIdForMaterials}-matCount:${materialsCount}-${photoEstimateJson?.slice(0, 100) || 'empty'}`;
     if (materialsLoadedForSummaryRef.current === loadKey) {
+      console.log("[ProjectDetailsView] Skipping materials reload - already loaded for:", loadKey);
       return; // Already loaded for this exact data state
     }
+    console.log("[ProjectDetailsView] Loading materials, loadKey:", loadKey);
     materialsLoadedForSummaryRef.current = loadKey;
     
     // Helper to check if material is essential
@@ -820,7 +824,7 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     // Normalize item data to handle both old and new formats
     const normalizeItem = (m: OldFormatItem) => {
       const itemName = m.item || m.name || 'Unknown Item';
-      const quantity = m.quantity || 1;
+      const quantity = m.quantity ?? 1; // Use nullish to preserve 0 if intentional
       const unit = m.unit || 'unit';
       
       // Handle both unit_price and unitPrice (old format stored in cents)
@@ -835,10 +839,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
         unitPrice = unitPrice / 100;
       }
       
+      // CRITICAL FIX: If we have totalPrice but no unitPrice, infer unitPrice from totalPrice
+      // This handles the common case where items only store totalPrice (flattened format)
+      if (totalPrice > 0 && !unitPrice && quantity === 1) {
+        unitPrice = totalPrice;
+        console.log(`[Normalize] Inferred unitPrice from totalPrice: ${itemName} - $${unitPrice}`);
+      }
+      
       // If totalPrice is 0, calculate from quantity × unitPrice
       if (!totalPrice && unitPrice > 0) {
         totalPrice = quantity * unitPrice;
       }
+      
+      console.log(`[Normalize] ${itemName}: qty=${quantity}, unit=${unit}, unitPrice=$${unitPrice}, totalPrice=$${totalPrice}`);
       
       return { itemName, quantity, unit, unitPrice, totalPrice, baseQuantity: m.baseQuantity, isEssential: m.isEssential };
     };
@@ -2402,7 +2415,44 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 });
               }
               
-              // Fallback: Aggregate materials from "Order" tasks (only if centralMaterials empty)
+              // FALLBACK PRIORITY 2: Load directly from saved line_items.materials
+              // This handles the case where centralMaterials wasn't populated during load
+              const savedLineItems = summary?.line_items as { 
+                materials?: Array<{ 
+                  item?: string; 
+                  name?: string;
+                  quantity?: number; 
+                  unit?: string; 
+                  unitPrice?: number;
+                  unit_price?: number;
+                  totalPrice?: number;
+                  total?: number;
+                }> 
+              } | null;
+              
+              if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
+                console.log("[Materials Fallback] Loading from saved line_items.materials:", savedLineItems.materials.length, "items");
+                return savedLineItems.materials.map(m => {
+                  const itemName = m.item || m.name || 'Unknown';
+                  const quantity = m.quantity ?? 1;
+                  const unitPrice = m.unitPrice ?? m.unit_price ?? 0;
+                  let totalPrice = m.totalPrice ?? m.total ?? 0;
+                  
+                  // If totalPrice exists but unitPrice doesn't, use totalPrice as unitPrice for qty=1
+                  const finalUnitPrice = totalPrice > 0 && !unitPrice && quantity === 1 ? totalPrice : unitPrice;
+                  const finalTotalPrice = totalPrice || (quantity * finalUnitPrice);
+                  
+                  return {
+                    item: itemName,
+                    quantity,
+                    unit: m.unit || 'unit',
+                    unitPrice: finalUnitPrice,
+                    totalPrice: finalTotalPrice,
+                  };
+                });
+              }
+              
+              // FALLBACK PRIORITY 3: Aggregate materials from "Order" tasks
               type CostEntry = { item: string; quantity: number; unit: string; unitPrice: number };
               const materialMap: Record<string, CostEntry> = {};
               
@@ -2509,6 +2559,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                 // AI analysis or template data - apply waste calculation
                 return 'ai' as const;
               }
+              
+              // Fallback: Check if we have saved line_items (centralMaterials empty but DB has data)
+              const savedLineItems = summary?.line_items as { materials?: unknown[] } | null;
+              if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
+                return 'saved' as const; // Use saved mode for DB-backed fallback
+              }
+              
               return 'tasks' as const;
             })()}
             isSoloMode={!isTeamMode}
