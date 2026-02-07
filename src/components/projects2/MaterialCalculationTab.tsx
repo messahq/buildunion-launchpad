@@ -1838,8 +1838,8 @@ export function MaterialCalculationTab({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm break-words">{item.item}</span>
-                    {/* DATA LOCK: Hide waste badge for saved data - user's values are authoritative */}
-                    {!isSavedData && item.isEssential && (
+                    {/* IRON LAW #1: ALWAYS show waste badge for essential materials */}
+                    {item.isEssential && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 shrink-0">
                         +{wastePercent}%
                       </Badge>
@@ -1873,12 +1873,34 @@ export function MaterialCalculationTab({
               </div>
               
               {/* Row 2: Qty/Unit + Price columns - using CONVERTED display values */}
-              {/* DATA LOCK: For saved data, show simple editable fields - no coverage calculations */}
+              {/* IRON LAW #1: For essential materials, show BOTH NET and GROSS quantities */}
               <div className="grid grid-cols-4 gap-2 items-center">
                 {/* Quantity + Unit - MANUAL OVERRIDE ENABLED */}
                 <div className="text-sm text-muted-foreground">
-                  {/* SAVED DATA: Always show simple editable fields - user's values are authoritative */}
-                  {isSavedData ? (
+                  {/* IRON LAW #1 FIX: For saved essential materials, show BOTH NET and GROSS */}
+                  {isSavedData && item.isEssential && item.baseQuantity !== undefined ? (
+                    <div className="space-y-0.5">
+                      {/* GROSS quantity (with waste) - this is what to ORDER */}
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          defaultValue={item.quantity || ''}
+                          onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                          className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium text-green-700"
+                          title={t("materials.editGrossQty", "Edit order quantity (with waste)")}
+                        />
+                        <span className="text-xs">{item.unit}</span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-green-50 text-green-700 border-green-200">
+                          ORDER
+                        </Badge>
+                      </div>
+                      {/* NET quantity (base area) - this is the actual install area */}
+                      <span className="text-[10px] text-muted-foreground block">
+                        ← {item.baseQuantity?.toLocaleString()} {item.unit} NET
+                      </span>
+                    </div>
+                  ) : isSavedData ? (
                     <div className="flex items-center gap-1">
                       <Input
                         type="text"
