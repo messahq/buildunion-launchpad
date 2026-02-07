@@ -65,7 +65,8 @@ import {
   PenLine,
   RotateCcw,
   Save,
-  Clock
+  Clock,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -76,6 +77,8 @@ import SignatureCapture, { SignatureData } from "@/components/SignatureCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { useUnitSettings } from "@/hooks/useUnitSettings";
 import { useAuth } from "@/hooks/useAuth";
+import { useDataLock } from "@/hooks/useDataLock";
+import { ImpactWarningDialog, ImpactType } from "./ImpactWarningDialog";
 
 interface PendingApprovalStatus {
   isPending: boolean;
@@ -339,6 +342,38 @@ export function MaterialCalculationTab({
   const { user } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
   
+  // ====== DATA LOCK SYSTEM ======
+  // Protects saved financial data from background modifications
+  const isOwner = !projectOwnerId || user?.id === projectOwnerId;
+  
+  const dataLock = useDataLock({
+    dataSource,
+    isOwner,
+  });
+  
+  // Impact warning dialog state
+  const [impactWarning, setImpactWarning] = useState<{
+    open: boolean;
+    type: ImpactType;
+    onConfirm: () => void;
+    affectedCount?: number;
+    estimatedChange?: number;
+  }>({ open: false, type: 'bulk_update', onConfirm: () => {} });
+  
+  // Helper to show impact warning before system changes
+  const showImpactWarning = useCallback((
+    type: ImpactType, 
+    onConfirm: () => void,
+    affectedCount?: number,
+    estimatedChange?: number
+  ) => {
+    if (dataLock.needsImpactWarning(type)) {
+      setImpactWarning({ open: true, type, onConfirm, affectedCount, estimatedChange });
+      return true; // Warning shown, operation deferred
+    }
+    return false; // No warning needed, proceed immediately
+  }, [dataLock]);
+  
   // Local pending approval state - allows immediate UI update after submission
   const [localPendingApproval, setLocalPendingApproval] = useState<PendingApprovalStatus | null>(
     pendingApprovalStatus || null
@@ -355,9 +390,6 @@ export function MaterialCalculationTab({
   // CRITICAL: Initialize with null to force first useEffect to detect area initialization
   const prevBaseAreaRef = useRef<number | null>(null);
   const prevWasteRef = useRef<number>(10); // Default waste, will be updated by useEffect
-  
-  // Determine if current user is the project owner
-  const isOwner = !projectOwnerId || user?.id === projectOwnerId;
   
   // Dynamic waste percentage from props (allows live adjustment)
   const DYNAMIC_WASTE = wastePercent / 100;
@@ -633,7 +665,14 @@ export function MaterialCalculationTab({
   const laminateBaseQty = materialItems.find(m => /laminate|flooring/i.test(m.item))?.baseQuantity;
   
   // Sync underlayment when laminate changes
+  // DATA LOCK: Block this for saved data - user's values are authoritative
   useEffect(() => {
+    // DATA LOCK: Block background sync for saved data
+    if (dataLock.shouldBlockOperation('background_sync')) {
+      dataLock.logBlockedOperation('underlayment_sync', 'Data is in SAVED state - user values protected');
+      return;
+    }
+    
     const laminateItem = materialItems.find(m => /laminate|flooring/i.test(m.item));
     const underlaymentItem = materialItems.find(m => /^underlayment$/i.test(m.item.trim()));
     
@@ -658,17 +697,26 @@ export function MaterialCalculationTab({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [laminateBaseQty]);
+  }, [laminateBaseQty, dataLock]);
   
   // ====== DYNAMIC SYNC: Recalculate when baseArea or wastePercent changes ======
   // CRITICAL: When Power Modal changes baseArea, recalculate essential materials from scratch
+  // DATA LOCK: This is BLOCKED for saved data
   useEffect(() => {
     const prevArea = prevBaseAreaRef.current;
     const prevWaste = prevWasteRef.current;
     const newArea = baseArea ?? null;
     const newWaste = wastePercent;
     
-    // Skip for saved data - user edits should not be overwritten
+    // DATA LOCK: Block all background recalculation for saved data
+    if (dataLock.shouldBlockOperation('background_sync')) {
+      dataLock.logBlockedOperation('area_waste_recalc', `Data is LOCKED - baseArea=${newArea}, waste=${newWaste}% preserved as-is`);
+      prevBaseAreaRef.current = newArea;
+      prevWasteRef.current = newWaste;
+      return;
+    }
+    
+    // Skip for saved data - user edits should not be overwritten (redundant but explicit)
     if (dataSource === 'saved') {
       prevBaseAreaRef.current = newArea;
       prevWasteRef.current = newWaste;
@@ -1943,24 +1991,37 @@ export function MaterialCalculationTab({
               {t("materials.calculation", "Cost Breakdown")}
             </h3>
           </div>
-          {/* Data source indicator */}
-          <Badge 
-            variant="outline" 
-            className={cn(
-              "text-xs shrink-0",
-              currentDataSource === 'saved' 
-                ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
-                : currentDataSource === 'ai'
-                ? "border-purple-500 text-purple-700 bg-purple-50 dark:bg-purple-950/30 dark:text-purple-400"
-                : "border-blue-500 text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400"
+          {/* Data source indicator + Data Lock badge */}
+          <div className="flex items-center gap-1">
+            <Badge 
+              variant="outline" 
+              className={cn(
+                "text-xs shrink-0",
+                currentDataSource === 'saved' 
+                  ? "border-green-500 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
+                  : currentDataSource === 'ai'
+                  ? "border-purple-500 text-purple-700 bg-purple-50 dark:bg-purple-950/30 dark:text-purple-400"
+                  : "border-blue-500 text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400"
+              )}
+            >
+              {currentDataSource === 'saved' 
+                ? "💾 Saved" 
+                : currentDataSource === 'ai' 
+                ? "🤖 AI" 
+                : "📋 Tasks"}
+            </Badge>
+            {/* DATA LOCK INDICATOR - shows when data is protected */}
+            {dataLock.isLocked && (
+              <Badge 
+                variant="outline" 
+                className="text-xs shrink-0 border-emerald-500 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
+                title={t("dataLock.protected", "Adatok védve a háttérfolyamatoktól")}
+              >
+                <Lock className="h-3 w-3 mr-1" />
+                {t("dataLock.locked", "Locked")}
+              </Badge>
             )}
-          >
-            {currentDataSource === 'saved' 
-              ? "💾 Saved" 
-              : currentDataSource === 'ai' 
-              ? "🤖 AI" 
-              : "📋 Tasks"}
-          </Badge>
+          </div>
         </div>
         
         {/* Badges + Actions row - wrap on mobile */}
@@ -2405,6 +2466,20 @@ export function MaterialCalculationTab({
           })()}
         </CardContent>
       </Card>
+      
+      {/* Impact Warning Dialog - shown when system changes would affect locked data */}
+      <ImpactWarningDialog
+        open={impactWarning.open}
+        onOpenChange={(open) => setImpactWarning(prev => ({ ...prev, open }))}
+        impactType={impactWarning.type}
+        onConfirm={() => {
+          impactWarning.onConfirm();
+          setImpactWarning(prev => ({ ...prev, open: false }));
+        }}
+        onCancel={() => setImpactWarning(prev => ({ ...prev, open: false }))}
+        affectedItemsCount={impactWarning.affectedCount}
+        estimatedChange={impactWarning.estimatedChange}
+      />
     </div>
   );
 }
