@@ -10,7 +10,7 @@ export default function OwnerDashboard() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data, isLoading, tasks } = useOwnerDashboardData(projectId || null);
+  const { data, isLoading, project, tasks } = useOwnerDashboardData(projectId || null);
   const queryClient = useQueryClient();
 
   if (!user) {
@@ -27,6 +27,12 @@ export default function OwnerDashboard() {
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Project doesn't exist - redirect to workspace
+  if (!project && !isLoading) {
+    navigate("/buildunion/workspace", { replace: true });
+    return null;
   }
 
   const handleViewDetails = () => {
