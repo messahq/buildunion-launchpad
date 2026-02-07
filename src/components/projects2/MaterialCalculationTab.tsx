@@ -1873,32 +1873,44 @@ export function MaterialCalculationTab({
               </div>
               
               {/* Row 2: Qty/Unit + Price columns - using CONVERTED display values */}
-              {/* IRON LAW #1: For essential materials, show BOTH NET and GROSS quantities */}
+              {/* IRON LAW #1: For essential materials, show NET → GROSS → waste% in vertical stack */}
               <div className="grid grid-cols-4 gap-2 items-center">
-                {/* Quantity + Unit - MANUAL OVERRIDE ENABLED */}
+                {/* Quantity + Unit - IRON LAW #1 DISPLAY FORMAT */}
                 <div className="text-sm text-muted-foreground">
-                  {/* IRON LAW #1 FIX: For saved essential materials, show BOTH NET and GROSS */}
-                  {isSavedData && item.isEssential && item.baseQuantity !== undefined ? (
+                  {/* IRON LAW #1 FORMAT: 
+                      Row 1: NET (baseQuantity) 
+                      Row 2: GROSS (quantity with waste) - EDITABLE
+                      Row 3: (+X% waste) badge
+                  */}
+                  {item.isEssential && item.baseQuantity !== undefined ? (
                     <div className="space-y-0.5">
-                      {/* GROSS quantity (with waste) - this is what to ORDER */}
+                      {/* Row 1: NET quantity (base install area) */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium">{item.baseQuantity?.toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground">{item.unit}</span>
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400">
+                          NET
+                        </Badge>
+                      </div>
+                      {/* Row 2: GROSS quantity (with waste) - EDITABLE, this is ORDER amount */}
                       <div className="flex items-center gap-1">
                         <Input
                           type="text"
                           inputMode="decimal"
                           defaultValue={item.quantity || ''}
                           onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
-                          className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium text-green-700"
+                          className="h-6 w-14 text-xs text-center p-0.5 border-dashed font-semibold text-green-700 dark:text-green-400"
                           title={t("materials.editGrossQty", "Edit order quantity (with waste)")}
                         />
-                        <span className="text-xs">{item.unit}</span>
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-green-50 text-green-700 border-green-200">
-                          ORDER
+                        <span className="text-[10px] text-muted-foreground">{item.unit}</span>
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400">
+                          GROSS
                         </Badge>
                       </div>
-                      {/* NET quantity (base area) - this is the actual install area */}
-                      <span className="text-[10px] text-muted-foreground block">
-                        ← {item.baseQuantity?.toLocaleString()} {item.unit} NET
-                      </span>
+                      {/* Row 3: Waste % indicator */}
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800">
+                        +{wastePercent}% waste
+                      </Badge>
                     </div>
                   ) : isSavedData ? (
                     <div className="flex items-center gap-1">
@@ -1912,7 +1924,7 @@ export function MaterialCalculationTab({
                       />
                       <span className="text-xs">{item.unit}</span>
                     </div>
-                  ) : item.isEssential && item.baseQuantity !== undefined && hasCoverage ? (
+                  ) : hasCoverage ? (
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1">
                         <Input
