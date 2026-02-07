@@ -28,6 +28,12 @@ export interface FinancialSummary {
   approvedGrandTotal: number | null; // From ai_workflow_config after approval
   isDraft: boolean;
   lastModified: string | null;
+  taskBudget?: number; // Sum of all task budgets from Supabase
+  pendingChange?: {
+    status: string;
+    proposedGrandTotal: number;
+    submittedByName?: string;
+  } | null; // Pending budget change awaiting approval
 }
 
 export interface MaterialWithCitation extends MaterialItem {
@@ -140,22 +146,49 @@ export function useDashboardFinancialSync() {
   const { state, actions } = useProjectContext();
   const { centralMaterials, centralFinancials, operationalTruth, page1, page4, sync, projectId } = state;
 
-  // ====== FETCH APPROVED BUDGET FROM DATABASE ======
-  // Read ai_workflow_config.grandTotal to show approved amounts
-  const { data: summaryData } = useQuery({
+  // ====== FETCH BUDGET DATA FROM DATABASE ======
+  // Read ai_workflow_config.grandTotal + line_items for approved amounts
+  // Also fetch task totals using aggregation
+  const { data: summaryData, refetch: refetchSummary } = useQuery({
     queryKey: ["dashboard-budget-sync", projectId],
     queryFn: async () => {
       if (!projectId) return null;
       const { data, error } = await supabase
         .from("project_summaries")
-        .select("ai_workflow_config, total_cost")
+        .select("ai_workflow_config, total_cost, labor_cost, material_cost, line_items")
         .eq("project_id", projectId)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!projectId,
-    staleTime: 5000, // Refresh every 5 seconds
+    staleTime: 3000, // Refresh every 3 seconds for real-time sync
+  });
+
+  // Fetch task budget totals from Supabase
+  const { data: taskTotals } = useQuery({
+    queryKey: ["task-budget-totals", projectId],
+    queryFn: async () => {
+      if (!projectId) return { totalBudget: 0, taskCount: 0 };
+      
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .select("total_cost, unit_price, quantity")
+        .eq("project_id", projectId)
+        .is("archived_at", null);
+      
+      if (error) throw error;
+      
+      // Calculate sum manually (Supabase JS doesn't support aggregate functions)
+      const totalBudget = (data || []).reduce((sum, task) => {
+        const taskCost = task.total_cost || (task.unit_price || 0) * (task.quantity || 1);
+        return sum + taskCost;
+      }, 0);
+      
+      return { totalBudget, taskCount: data?.length || 0 };
+    },
+    enabled: !!projectId,
+    staleTime: 3000,
   });
 
   // Extract approved grand total from ai_workflow_config
@@ -167,6 +200,54 @@ export function useDashboardFinancialSync() {
     
     // Return the approved grand total from ai_workflow_config if it exists
     return aiConfig?.grandTotal || null;
+  }, [summaryData]);
+
+  // Extract pending change for display
+  const pendingChange = useMemo(() => {
+    const aiConfig = summaryData?.ai_workflow_config as {
+      pendingBudgetChange?: {
+        status: string;
+        proposedGrandTotal: number;
+        submittedByName?: string;
+      };
+    } | null;
+    
+    const pending = aiConfig?.pendingBudgetChange;
+    if (!pending || pending.status !== "pending") return null;
+    return pending;
+  }, [summaryData]);
+
+  // Calculate actuals from line_items stored in Supabase
+  const supabaseTotals = useMemo(() => {
+    const lineItems = summaryData?.line_items as {
+      materials?: Array<{ totalPrice?: number; total?: number; item?: string; name?: string }>;
+      labor?: Array<{ totalPrice?: number; total?: number }>;
+      other?: Array<{ totalPrice?: number; total?: number }>;
+    } | null;
+
+    // Normalize and sum materials
+    const materialCost = (lineItems?.materials || []).reduce((sum, item) => {
+      let price = item.totalPrice ?? item.total ?? 0;
+      // Heuristic: convert cents to dollars if needed
+      if (price > 100 && price % 100 === 0) price /= 100;
+      return sum + price;
+    }, 0);
+
+    // Sum labor
+    const laborCost = (lineItems?.labor || []).reduce((sum, item) => {
+      let price = item.totalPrice ?? item.total ?? 0;
+      if (price > 100 && price % 100 === 0) price /= 100;
+      return sum + price;
+    }, 0);
+
+    // Sum other
+    const otherCost = (lineItems?.other || []).reduce((sum, item) => {
+      let price = item.totalPrice ?? item.total ?? 0;
+      if (price > 100 && price % 100 === 0) price /= 100;
+      return sum + price;
+    }, 0);
+
+    return { materialCost, laborCost, otherCost };
   }, [summaryData]);
 
   // ====== AUTO-SYNC from Operational Truth to Central ======
@@ -221,15 +302,31 @@ export function useDashboardFinancialSync() {
     );
   }, [centralMaterials.items, page1.workType, operationalTruth.confirmedArea.value]);
 
-  // Calculate financial summary from CENTRAL data + approved budget from DB
+  // Calculate financial summary from SUPABASE data (priority) or CENTRAL as fallback
   const financialSummary = useMemo((): FinancialSummary => {
-    const materialCost = effectiveMaterials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
-    const laborCost = centralFinancials.laborCost || 0;
-    const otherCost = centralFinancials.otherCost || 0;
+    // PRIORITY: Use Supabase line_items totals if available
+    // This ensures team members see the same data as the owner
+    const hasSuapabaseData = supabaseTotals.materialCost > 0 || supabaseTotals.laborCost > 0 || supabaseTotals.otherCost > 0;
+    
+    const materialCost = hasSuapabaseData 
+      ? supabaseTotals.materialCost 
+      : effectiveMaterials.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+    
+    const laborCost = hasSuapabaseData 
+      ? supabaseTotals.laborCost 
+      : (centralFinancials.laborCost || 0);
+    
+    const otherCost = hasSuapabaseData 
+      ? supabaseTotals.otherCost 
+      : (centralFinancials.otherCost || 0);
+    
     const subtotal = materialCost + laborCost + otherCost;
     const taxRate = centralFinancials.taxRate || 0.13;
     const taxAmount = subtotal * taxRate;
     const grandTotal = subtotal + taxAmount;
+
+    // Include task budget from Supabase for team projects
+    const taskBudget = taskTotals?.totalBudget || 0;
 
     return {
       materialCost,
@@ -242,8 +339,10 @@ export function useDashboardFinancialSync() {
       approvedGrandTotal, // From ai_workflow_config after owner approval
       isDraft: centralFinancials.isDraft, // From central financials
       lastModified: centralMaterials.lastUpdatedAt,
+      taskBudget, // Task budget from Supabase
+      pendingChange, // Pending change info for display
     };
-  }, [effectiveMaterials, centralFinancials, centralMaterials.lastUpdatedAt, approvedGrandTotal]);
+  }, [effectiveMaterials, centralFinancials, centralMaterials.lastUpdatedAt, approvedGrandTotal, supabaseTotals, taskTotals, pendingChange]);
 
   // Get materials with citation badges for Dashboard display
   const materialsWithCitations = useMemo((): MaterialWithCitation[] => {
