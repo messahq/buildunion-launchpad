@@ -32,7 +32,7 @@ export interface DataLockResult {
   canEdit: boolean;
   
   /** Check if a specific operation should be blocked */
-  shouldBlockOperation: (operationType: 'background_sync' | 'ai_inference' | 'default_override' | 'user_edit') => boolean;
+  shouldBlockOperation: (operationType: 'background_sync' | 'ai_inference' | 'default_override' | 'user_edit' | 'display_calculation') => boolean;
   
   /** Request unlock for user edit - returns true if allowed */
   requestUnlock: () => boolean;
@@ -54,17 +54,24 @@ export function useDataLock(config: DataLockConfig): DataLockResult {
   // Permission check - only Owner and Foreman can edit
   const canEdit = isOwner || userRole === 'owner' || userRole === 'foreman';
   
-  const shouldBlockOperation = useCallback((operationType: 'background_sync' | 'ai_inference' | 'default_override' | 'user_edit'): boolean => {
+  const shouldBlockOperation = useCallback((operationType: 'background_sync' | 'ai_inference' | 'default_override' | 'user_edit' | 'display_calculation'): boolean => {
     // If data is not locked, allow all operations
     if (!isLocked) return false;
+    
+    // CRITICAL: Display calculations are NEVER blocked
+    // The totalPrice must always be computed as quantity * unitPrice for UI consistency
+    // This preserves "Operational Truth" - the math MUST be correct on screen
+    if (operationType === 'display_calculation') {
+      return false; // Always allow display calculations
+    }
     
     // User edits are only blocked if user doesn't have permission
     if (operationType === 'user_edit') {
       return !canEdit;
     }
     
-    // ALL background operations are BLOCKED for locked data
-    // This is the core of the Data Lock system
+    // Background operations that MODIFY saved quantities are BLOCKED
+    // This protects against AI/sync overwriting user's saved values
     console.log(`[DATA LOCK] 🔒 BLOCKED: ${operationType} - Data is in SAVED state`);
     return true;
   }, [isLocked, canEdit]);
