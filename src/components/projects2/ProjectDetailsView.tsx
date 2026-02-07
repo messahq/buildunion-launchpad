@@ -818,9 +818,11 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     const rawLineItems = savedLineItemsJson ? JSON.parse(savedLineItemsJson) : null;
     
     // Normalize item data to handle both old and new formats
+    // BUGFIX: Use ?? instead of || to preserve intentional 0 values
     const normalizeItem = (m: OldFormatItem) => {
       const itemName = m.item || m.name || 'Unknown Item';
-      const quantity = m.quantity || 1;
+      // CRITICAL: Use ?? to only default when undefined/null, not when 0
+      const quantity = m.quantity ?? 1;
       const unit = m.unit || 'unit';
       
       // Handle both unit_price and unitPrice (old format stored in cents)
