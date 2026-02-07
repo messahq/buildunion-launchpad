@@ -813,10 +813,40 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     const checkEssential = (item: string) => essentialKeywords.some(k => item.toLowerCase().includes(k));
     
     // Parse the JSON strings back to objects
-    const savedLineItems = savedLineItemsJson ? JSON.parse(savedLineItemsJson) as { 
-      materials?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number; baseQuantity?: number; isEssential?: boolean }>;
-      labor?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number }>;
-      other?: Array<{ item: string; quantity: number; unit: string; unitPrice?: number }>;
+    // CRITICAL: Handle both old format (name, unit_price, total) and new format (item, unitPrice, totalPrice)
+    type OldFormatItem = { name?: string; item?: string; quantity?: number; unit?: string; unit_price?: number; unitPrice?: number; total?: number; totalPrice?: number; baseQuantity?: number; isEssential?: boolean };
+    const rawLineItems = savedLineItemsJson ? JSON.parse(savedLineItemsJson) : null;
+    
+    // Normalize item data to handle both old and new formats
+    const normalizeItem = (m: OldFormatItem) => {
+      const itemName = m.item || m.name || 'Unknown Item';
+      const quantity = m.quantity || 1;
+      const unit = m.unit || 'unit';
+      
+      // Handle both unit_price and unitPrice (old format stored in cents)
+      let unitPrice = m.unitPrice ?? m.unit_price ?? 0;
+      let totalPrice = m.totalPrice ?? m.total ?? 0;
+      
+      // HEURISTIC: If total looks like cents (> 100 and divisible by 100), convert to dollars
+      // This handles old data where 290000 = $2900.00
+      if (totalPrice > 100 && totalPrice % 100 === 0 && unitPrice > 10 && unitPrice % 10 === 0) {
+        console.log(`[Format Conversion] Converting cents to dollars: ${itemName} - $${totalPrice} -> $${totalPrice / 100}`);
+        totalPrice = totalPrice / 100;
+        unitPrice = unitPrice / 100;
+      }
+      
+      // If totalPrice is 0, calculate from quantity × unitPrice
+      if (!totalPrice && unitPrice > 0) {
+        totalPrice = quantity * unitPrice;
+      }
+      
+      return { itemName, quantity, unit, unitPrice, totalPrice, baseQuantity: m.baseQuantity, isEssential: m.isEssential };
+    };
+    
+    const savedLineItems = rawLineItems ? {
+      materials: Array.isArray(rawLineItems.materials) ? rawLineItems.materials : (Array.isArray(rawLineItems) ? rawLineItems : []),
+      labor: rawLineItems.labor || [],
+      other: rawLineItems.other || [],
     } : null;
     
     const photoEstimate = photoEstimateJson ? JSON.parse(photoEstimateJson) as PhotoEstimateData : undefined;
@@ -824,46 +854,43 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     
     // Priority 1: Use saved line_items (manual overrides from previous session)
     if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
-      const centralItems = savedLineItems.materials.map((m, index) => {
-        const unitPrice = m.unitPrice || 0;
-        const quantity = m.quantity || 0;
-        // CRITICAL FIX: Calculate totalPrice from saved data or derive from quantity × unitPrice
-        const totalPrice = (m as { totalPrice?: number }).totalPrice ?? (quantity * unitPrice);
+      const centralItems = savedLineItems.materials.map((m: OldFormatItem, index: number) => {
+        const normalized = normalizeItem(m);
         
         return {
           id: `saved-mat-${index}-${Date.now()}`,
-          item: m.item,
-          quantity,
-          unit: m.unit,
-          unitPrice,
-          totalPrice, // ✅ Now includes totalPrice for Budget Overview display
+          item: normalized.itemName,
+          quantity: normalized.quantity,
+          unit: normalized.unit,
+          unitPrice: normalized.unitPrice,
+          totalPrice: normalized.totalPrice, // ✅ Now handles both formats correctly
           source: "manual" as const,
           citationSource: "manual_override" as const,
           citationId: `[SAVED-${index + 1}]`,
-          isEssential: m.isEssential ?? checkEssential(m.item),
-          wastePercentage: m.isEssential ?? checkEssential(m.item) ? 10 : 0,
+          isEssential: normalized.isEssential ?? checkEssential(normalized.itemName),
+          wastePercentage: normalized.isEssential ?? checkEssential(normalized.itemName) ? 10 : 0,
         };
       });
       
-      console.log("[ProjectDetailsView] Loading saved materials to centralMaterials:", centralItems.length, centralItems.map(c => `${c.item}: $${c.totalPrice}`));
+      console.log("[ProjectDetailsView] Loading saved materials to centralMaterials:", centralItems.length, centralItems.map((c: { item: string; totalPrice: number }) => `${c.item}: $${c.totalPrice}`));
       projectActionsRef.current.setCentralMaterials(centralItems, "manual");
       
       // Calculate and sync materialCost from loaded items
-      const materialTotal = centralItems.reduce((sum, m) => sum + (m.totalPrice || 0), 0);
+      const materialTotal = centralItems.reduce((sum: number, m: { totalPrice: number }) => sum + (m.totalPrice || 0), 0);
       projectActionsRef.current.setCentralFinancials({ materialCost: materialTotal });
       
-      // Also load saved labor/other costs to centralFinancials (use totalPrice if saved)
+      // Also load saved labor/other costs to centralFinancials
       if (savedLineItems.labor && savedLineItems.labor.length > 0) {
-        const laborTotal = savedLineItems.labor.reduce((sum, l) => {
-          const itemTotal = (l as { totalPrice?: number }).totalPrice ?? (l.quantity * (l.unitPrice || 0));
-          return sum + itemTotal;
+        const laborTotal = savedLineItems.labor.reduce((sum: number, l: OldFormatItem) => {
+          const normalized = normalizeItem(l);
+          return sum + normalized.totalPrice;
         }, 0);
         projectActionsRef.current.setCentralFinancials({ laborCost: laborTotal });
       }
       if (savedLineItems.other && savedLineItems.other.length > 0) {
-        const otherTotal = savedLineItems.other.reduce((sum, o) => {
-          const itemTotal = (o as { totalPrice?: number }).totalPrice ?? (o.quantity * (o.unitPrice || 0));
-          return sum + itemTotal;
+        const otherTotal = savedLineItems.other.reduce((sum: number, o: OldFormatItem) => {
+          const normalized = normalizeItem(o);
+          return sum + normalized.totalPrice;
         }, 0);
         projectActionsRef.current.setCentralFinancials({ otherCost: otherTotal });
       }
