@@ -821,11 +821,51 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
     type OldFormatItem = { name?: string; item?: string; quantity?: number; unit?: string; unit_price?: number; unitPrice?: number; total?: number; totalPrice?: number; baseQuantity?: number; isEssential?: boolean };
     const rawLineItems = savedLineItemsJson ? JSON.parse(savedLineItemsJson) : null;
     
+    // DATA LOCK: Intelligent unit inference from material name when unit is missing
+    // This preserves backward compatibility with old data that didn't save units
+    const inferUnitFromName = (itemName: string): string => {
+      const lowerName = itemName.toLowerCase();
+      
+      // Flooring materials -> sq ft
+      if (lowerName.includes('flooring') || lowerName.includes('hardwood') || 
+          lowerName.includes('laminate') || lowerName.includes('vinyl') ||
+          lowerName.includes('carpet') || lowerName.includes('tile') ||
+          lowerName.includes('underlayment') || lowerName.includes('vapor barrier')) {
+        return 'sq ft';
+      }
+      
+      // Trim/linear materials -> linear ft
+      if (lowerName.includes('baseboard') || lowerName.includes('trim') ||
+          lowerName.includes('transition') || lowerName.includes('molding') ||
+          lowerName.includes('threshold')) {
+        return 'linear ft';
+      }
+      
+      // Paint/adhesive -> gallon or pcs
+      if (lowerName.includes('paint') || lowerName.includes('primer') ||
+          lowerName.includes('adhesive') || lowerName.includes('glue')) {
+        return 'gallons';
+      }
+      
+      // Fasteners/small items -> pcs
+      if (lowerName.includes('screw') || lowerName.includes('nail') ||
+          lowerName.includes('fastener') || lowerName.includes('bracket')) {
+        return 'pcs';
+      }
+      
+      // Default fallback - keep as "unit" only if truly unknown
+      return 'unit';
+    };
+    
     // Normalize item data to handle both old and new formats
+    // DATA LOCK: Preserves all fields (unit, quantity, unitPrice, totalPrice) exactly as saved
     const normalizeItem = (m: OldFormatItem) => {
       const itemName = m.item || m.name || 'Unknown Item';
       const quantity = m.quantity ?? 1; // Use nullish to preserve 0 if intentional
-      const unit = m.unit || 'unit';
+      
+      // DATA LOCK: Preserve saved unit OR infer from name if missing
+      // This ensures manual edits to unit are never overwritten
+      const unit = m.unit || inferUnitFromName(itemName);
       
       // Handle both unit_price and unitPrice (old format stored in cents)
       let unitPrice = m.unitPrice ?? m.unit_price ?? 0;
@@ -2432,6 +2472,19 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
               
               if (savedLineItems?.materials && savedLineItems.materials.length > 0) {
                 console.log("[Materials Fallback] Loading from saved line_items.materials:", savedLineItems.materials.length, "items");
+                
+                // DATA LOCK: Use the same inferUnitFromName helper
+                const inferUnitFromName = (itemName: string): string => {
+                  const lowerName = itemName.toLowerCase();
+                  if (lowerName.includes('flooring') || lowerName.includes('hardwood') || 
+                      lowerName.includes('laminate') || lowerName.includes('underlayment') ||
+                      lowerName.includes('vapor barrier')) return 'sq ft';
+                  if (lowerName.includes('baseboard') || lowerName.includes('trim') ||
+                      lowerName.includes('transition') || lowerName.includes('threshold')) return 'linear ft';
+                  if (lowerName.includes('adhesive') || lowerName.includes('fastener')) return 'pcs';
+                  return 'unit';
+                };
+                
                 return savedLineItems.materials.map(m => {
                   const itemName = m.item || m.name || 'Unknown';
                   const quantity = m.quantity ?? 1;
@@ -2442,10 +2495,13 @@ const ProjectDetailsView = ({ projectId, onBack, initialTab }: ProjectDetailsVie
                   const finalUnitPrice = totalPrice > 0 && !unitPrice && quantity === 1 ? totalPrice : unitPrice;
                   const finalTotalPrice = totalPrice || (quantity * finalUnitPrice);
                   
+                  // DATA LOCK: Preserve saved unit or infer from name
+                  const unit = m.unit || inferUnitFromName(itemName);
+                  
                   return {
                     item: itemName,
                     quantity,
-                    unit: m.unit || 'unit',
+                    unit, // Use preserved/inferred unit instead of 'unit' fallback
                     unitPrice: finalUnitPrice,
                     totalPrice: finalTotalPrice,
                   };
