@@ -362,6 +362,40 @@ export function MaterialCalculationTab({
   // Dynamic waste percentage from props (allows live adjustment)
   const DYNAMIC_WASTE = wastePercent / 100;
   
+  // DATA LOCK: Intelligent unit inference from material name
+  // This prevents generic 'unit' from being displayed for known material types
+  const inferUnitFromMaterialName = useCallback((itemName: string): string => {
+    const lowerName = itemName.toLowerCase();
+    
+    // Flooring materials -> sq ft
+    if (lowerName.includes('flooring') || lowerName.includes('hardwood') || 
+        lowerName.includes('laminate') || lowerName.includes('vinyl') ||
+        lowerName.includes('carpet') || lowerName.includes('tile') ||
+        lowerName.includes('underlayment') || lowerName.includes('vapor barrier')) {
+      return 'sq ft';
+    }
+    
+    // Trim/linear materials -> linear ft
+    if (lowerName.includes('baseboard') || lowerName.includes('trim') ||
+        lowerName.includes('transition') || lowerName.includes('molding') ||
+        lowerName.includes('threshold')) {
+      return 'linear ft';
+    }
+    
+    // Paint/adhesive -> gallon or pcs
+    if (lowerName.includes('paint') || lowerName.includes('primer')) {
+      return 'gallons';
+    }
+    
+    if (lowerName.includes('adhesive') || lowerName.includes('fastener') ||
+        lowerName.includes('glue') || lowerName.includes('screw') ||
+        lowerName.includes('nail')) {
+      return 'pcs';
+    }
+    
+    return 'unit';
+  }, []);
+  
   // Helper to create initial material items
   // CRITICAL: When dataSource='saved', use the saved quantities as-is (no recalculation)
   // When dataSource='ai', apply +10% waste buffer on top of AI-detected base quantities
@@ -381,12 +415,17 @@ export function MaterialCalculationTab({
         // CRITICAL: If we only have totalPrice (no unitPrice), use totalPrice as the unit price
         const finalUnitPrice = savedTotalPrice && !m.unitPrice ? savedTotalPrice : unitPrice;
         
+        // DATA LOCK: Preserve saved unit OR infer from material name - never use generic 'unit'
+        const savedUnit = m.unit && m.unit !== 'unit' ? m.unit : inferUnitFromMaterialName(m.item);
+        
+        console.log(`[SAVED LOAD] ${m.item}: unit=${savedUnit} (original: ${m.unit})`);
+        
         return {
           id: `material-${idx}`,
           item: m.item,
           baseQuantity: savedBaseQty,
           quantity: quantity,
-          unit: m.unit || 'unit',
+          unit: savedUnit, // DATA LOCK: Use preserved/inferred unit
           unitPrice: finalUnitPrice,
           totalPrice: savedTotalPrice ?? (quantity * unitPrice),
           isEssential,
