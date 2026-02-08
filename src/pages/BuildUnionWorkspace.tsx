@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Loader2 } from "lucide-react";
+import { Plus, FolderOpen, Loader2, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -143,23 +144,50 @@ const BuildUnionWorkspace = () => {
               </CardContent>
             </Card>
           ) : (
-            /* Project List - placeholder for future implementation */
+            /* Project List with Amber theme */
             <div className="grid gap-4">
               {projects.map((project) => (
-                <Card key={project.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{project.name}</CardTitle>
-                    {project.address && (
-                      <CardDescription>{project.address}</CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      {project.trade && <span>{project.trade}</span>}
-                      <span>Status: {project.status}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <Card 
+                    className="cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group"
+                    onClick={() => navigate(`/buildunion/project/${project.id}`)}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                          {project.name}
+                        </CardTitle>
+                        <motion.div
+                          className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
+                          animate={{ scale: [1, 1.3, 1] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                        />
+                      </div>
+                      {project.address && (
+                        <CardDescription className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {project.address}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        {project.trade && (
+                          <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
+                        )}
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
+                          {project.status}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           )}
