@@ -109,6 +109,8 @@ interface TeamMember {
   name: string;
   role: string;
   avatarUrl?: string;
+  isPending?: boolean; // Email invite not yet accepted
+  email?: string; // For pending invites
 }
 
 interface PhaseTask {
@@ -197,7 +199,7 @@ export default function Stage7GanttSetup({
           setHasDemolition(siteConditionCite?.value === 'demolition');
         }
         
-        // 2. Load team members from project_members
+        // 2. Load team members from project_members (accepted invites)
         const { data: membersData } = await supabase
           .from('project_members')
           .select(`
@@ -207,7 +209,16 @@ export default function Stage7GanttSetup({
           `)
           .eq('project_id', projectId);
         
-        // 3. Load profiles for those members
+        // 3. Load pending invitations from team_invitations
+        const { data: pendingInvitations } = await supabase
+          .from('team_invitations')
+          .select('id, email, role, status')
+          .eq('project_id', projectId)
+          .eq('status', 'pending');
+        
+        const allMembers: TeamMember[] = [];
+        
+        // 4. Load profiles for accepted members
         if (membersData && membersData.length > 0) {
           const userIds = membersData.map(m => m.user_id);
           
@@ -216,21 +227,40 @@ export default function Stage7GanttSetup({
             .select('user_id, full_name, avatar_url')
             .in('user_id', userIds);
           
-          const members: TeamMember[] = membersData.map(member => {
+          membersData.forEach(member => {
             const profile = profilesData?.find(p => p.user_id === member.user_id);
-            return {
+            allMembers.push({
               id: member.id,
               userId: member.user_id,
               name: profile?.full_name || 'Team Member',
               role: member.role,
               avatarUrl: profile?.avatar_url || undefined,
-            };
+              isPending: false,
+            });
           });
-          
-          setTeamMembers(members);
         }
         
-        // Add owner as "Owner" option
+        // 5. Add pending email invitations
+        if (pendingInvitations && pendingInvitations.length > 0) {
+          pendingInvitations.forEach(invite => {
+            // Extract name from email (before @) or show email
+            const emailName = invite.email.split('@')[0];
+            const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+            
+            allMembers.push({
+              id: `pending_${invite.id}`,
+              userId: `pending_${invite.id}`, // Placeholder for pending invites
+              name: displayName,
+              role: invite.role || 'member',
+              isPending: true,
+              email: invite.email,
+            });
+          });
+        }
+        
+        setTeamMembers(allMembers);
+        
+        // 6. Add owner as "Owner" option
         const { data: ownerProfile } = await supabase
           .from('profiles')
           .select('full_name, avatar_url')
@@ -243,6 +273,7 @@ export default function Stage7GanttSetup({
           name: ownerProfile?.full_name || 'Owner',
           role: 'owner',
           avatarUrl: ownerProfile?.avatar_url || undefined,
+          isPending: false,
         };
         
         setTeamMembers(prev => [ownerMember, ...prev]);
@@ -553,6 +584,11 @@ export default function Stage7GanttSetup({
                             <SelectItem key={member.id} value={member.userId}>
                               <div className="flex items-center gap-2">
                                 <span>{member.name}</span>
+                                {member.isPending && (
+                                  <Badge variant="outline" className="text-[10px] py-0 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
+                                    Pending
+                                  </Badge>
+                                )}
                                 <Badge variant="outline" className="text-[10px] py-0">
                                   {member.role}
                                 </Badge>
