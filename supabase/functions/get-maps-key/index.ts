@@ -6,9 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Rate limits
-const RATE_LIMIT_AUTHENTICATED = 50; // More requests for logged-in users
-const RATE_LIMIT_GUEST = 10; // Fewer requests for guests
+// Rate limits - increased for development/heavy usage
+const RATE_LIMIT_AUTHENTICATED = 200; // More requests for logged-in users
+const RATE_LIMIT_GUEST = 20; // Fewer requests for guests
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 serve(async (req) => {
