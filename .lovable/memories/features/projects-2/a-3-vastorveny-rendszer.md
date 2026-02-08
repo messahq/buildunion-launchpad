@@ -35,20 +35,45 @@ A terület-alapú szakmáknál (pl. festés, padlózás) a Labor egysége kötel
 - `src/contexts/ProjectContext.tsx` - SSOT és centralMaterials kezelés
 - `src/pages/BuildUnionWorkspace.tsx` - Mentési és betöltési logika
 
-## 📊 Coverage Rates (Iparági Sztenderdek)
+## 📊 Anyag-specifikus Fizika (Physics-Based Resolution)
+
+### Festék & Folyadékok (Coverage Rate Conversion)
 | Anyag | Rate | Egység |
 |-------|------|--------|
 | Paint | 350 sq ft/gal | gallon |
 | Primer | 400 sq ft/gal | gallon |
+| Stain | 300 sq ft/gal | gallon |
+
+### Padlózat & Burkolat
+| Anyag | Rate | Egység |
+|-------|------|--------|
 | Laminate | 22 sq ft/box | box |
 | Hardwood | 20 sq ft/box | box |
 | Tile | 10 sq ft/box | box |
+| Vinyl Plank | 24 sq ft/box | box |
+
+### Falak & Lapok
+| Anyag | Rate | Egység |
+|-------|------|--------|
 | Drywall 4x8 | 32 sq ft/sheet | sheet |
 | Underlayment | 100 sq ft/roll | roll |
 
+### 🆕 Beton Projektek (Special Physics)
+**Area-Direct Materials** (Vapor Barrier, Rebar, Wire Mesh):
+- **Képlet:** `base_area × waste_multiplier = gross_quantity`
+- **Egység:** sq ft marad!
+- **Példa:** 1350 sq ft × 1.10 = **1485 sq ft**
+
+**Concrete Volume Materials** (Concrete Mix, Ready Mix):
+- **Képlet:** `(Area sq ft × Thickness inches) ÷ 324 = Cubic Yards`
+- **324 konstans:** 27 cu ft/cu yd × 12 inch/ft = 324
+- **Alapértelmezett vastagság:** 4 inch
+- **Példa:** (1350 sq ft × 4") ÷ 324 = **16.67 → 17 cubic yard**
+
 ## 🔍 Debug Logok
-Az `[IRON LAW #1]`, `[IRON LAW #2]`, `[IRON LAW #3]` és `[QUANTITY RESOLVER]` konzol logok aktívak maradnak a debug módban.
+Az `[IRON LAW #1]`, `[IRON LAW #2]`, `[IRON LAW #3]`, `[QUANTITY RESOLVER]`, `[AREA_DIRECT]`, `[CONCRETE_VOLUME]` konzol logok aktívak maradnak a debug módban.
 
 ---
 *PRODUCTION LOCKED: 2026-02-08 - Pre-Launch Freeze*
 *User confirmed: Numbers are correct, users can manually adjust if needed.*
+*Updated: Concrete project physics added (area_direct, concrete_volume)*
