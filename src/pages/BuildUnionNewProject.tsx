@@ -208,17 +208,26 @@ const BuildUnionNewProject = () => {
   // Handle Stage 2 (GFA Lock) completion
   const handleGFALockComplete = useCallback((citation: Citation) => {
     console.log('[NewProject] GFA Lock complete:', citation.value);
+    
+    // ✓ CRITICAL FIX: Add GFA citation to the citations array
+    const updatedCitations = [...citations, citation];
+    setCitations(updatedCitations);
+    
     let newGfaValue = gfaValue;
     if (typeof citation.value === 'number') {
       newGfaValue = citation.value;
       setGfaValue(newGfaValue);
+    } else if (typeof citation.metadata?.gfa_value === 'number') {
+      newGfaValue = citation.metadata.gfa_value;
+      setGfaValue(newGfaValue);
     }
+    
     const newStage = STAGES.STAGE_3;
     setCurrentStage(newStage);
     
-    // ✓ SYNC: Update localStorage with GFA value and new stage
+    // ✓ SYNC: Update localStorage with updated citations and new stage
     if (projectId) {
-      syncCitationsToLocalStorage(projectId, citations, newStage, newGfaValue);
+      syncCitationsToLocalStorage(projectId, updatedCitations, newStage, newGfaValue);
     }
   }, [projectId, citations, gfaValue]);
 
@@ -405,12 +414,12 @@ const BuildUnionNewProject = () => {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute inset-0 flex"
             >
-              {/* Left Panel - Stage 2 Chat Summary */}
+              {/* Left Panel - Stage 2 Summary (hidden on mobile to show GFA input) */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col h-full bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10"
+                className="hidden md:flex w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex-col h-full bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10"
               >
                 {/* Summary Header */}
                 <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50">
@@ -420,12 +429,12 @@ const BuildUnionNewProject = () => {
                 </div>
               </motion.div>
 
-              {/* Right Panel - GFA Lock Stage */}
+              {/* Right Panel - GFA Lock Stage (visible on all screens) */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="hidden md:flex flex-1"
+                className="flex flex-1"
               >
                 <GFALockStage
                   projectId={projectId}
