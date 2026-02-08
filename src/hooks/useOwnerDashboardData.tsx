@@ -241,23 +241,17 @@ interface OwnerDashboardData {
         other?: Array<{ totalPrice?: number }>;
       } | null;
       
-      // ===== IRON LAW #1: Materials Total MUST use GROSS (with waste) =====
-      // For essential materials, calculate GROSS = baseQty × (1 + waste%) × unitPrice
+      // ===== ZERO TOLERANCE: USE SAVED GROSS VALUES DIRECTLY =====
+      // The Materials tab saves totalPrice as GROSS (with waste already applied)
+      // DO NOT recalculate - just SUM the stored values from database!
       const calculatedMaterialCost = lineItems?.materials?.reduce((sum, item) => {
-        const baseQty = item.baseQuantity ?? item.quantity ?? 0;
-        const unitPrice = item.unitPrice ?? 0;
-        const isEssential = item.isEssential !== false;
+        // Direct read from database - this IS the GROSS value ($4,888.52)
+        let price = Number(item.totalPrice) || 0;
         
-        // Calculate GROSS quantity with waste for essential materials
-        const grossQty = isEssential 
-          ? Math.ceil(baseQty * (1 + wastePercent / 100))
-          : baseQty;
+        // Heuristic: convert cents to dollars if needed (legacy data)
+        if (price > 10000 && price % 100 === 0) price /= 100;
         
-        // Use dynamically calculated GROSS price if we have unitPrice
-        // Otherwise fall back to stored totalPrice (which should already be GROSS)
-        const grossTotalPrice = unitPrice > 0 ? grossQty * unitPrice : (Number(item.totalPrice) || 0);
-        
-        return sum + grossTotalPrice;
+        return sum + price;
       }, 0) || 0;
       
       const calculatedLaborCost = lineItems?.labor?.reduce(
