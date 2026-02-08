@@ -7,7 +7,7 @@
 // RIGHT PANEL: Template cards and visualizations (OUTPUT)
 // ============================================
 
-import { useState, useCallback, useEffect, forwardRef } from "react";
+import { useState, useCallback, useEffect, forwardRef, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Hammer,
@@ -29,6 +29,10 @@ import {
   Loader2,
   ChevronRight,
   FileText,
+  Upload,
+  Image,
+  FileImage,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,6 +149,17 @@ function applyWasteToItems(items: TemplateItem[], wastePercent: number): Templat
 // ============================================
 // LEFT PANEL - Chat Interface (INPUT)
 // ============================================
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: 'blueprint' | 'site_photo';
+  file: File;
+  previewUrl?: string;
+  uploadProgress?: number;
+  uploaded?: boolean;
+  storageUrl?: string;
+}
+
 interface ChatPanelProps {
   currentSubStep: number;
   gfaValue: number;
@@ -158,6 +173,10 @@ interface ChatPanelProps {
   scheduledEndDate: Date | undefined;
   demolitionCost: number;
   demolitionUnitPrice: number;
+  // Stage 5: Visual Intelligence
+  stage5Active: boolean;
+  uploadedFiles: UploadedFile[];
+  isUploading: boolean;
   onTradeSelect: (trade: string) => void;
   onLockTemplate: () => void;
   onTeamSizeSelect: (size: string) => void;
@@ -166,6 +185,10 @@ interface ChatPanelProps {
   onTimelineChange: (timeline: 'asap' | 'scheduled') => void;
   onScheduledDateChange: (date: Date | undefined) => void;
   onScheduledEndDateChange: (date: Date | undefined) => void;
+  onFilesDrop: (files: File[]) => void;
+  onRemoveFile: (fileId: string) => void;
+  onSkipUpload: () => void;
+  onConfirmUploads: () => void;
   isSaving: boolean;
 }
 
@@ -182,6 +205,9 @@ const ChatPanel = ({
   scheduledEndDate,
   demolitionCost,
   demolitionUnitPrice,
+  stage5Active,
+  uploadedFiles,
+  isUploading,
   onTradeSelect,
   onLockTemplate,
   onTeamSizeSelect,
@@ -190,41 +216,92 @@ const ChatPanel = ({
   onTimelineChange,
   onScheduledDateChange,
   onScheduledEndDateChange,
+  onFilesDrop,
+  onRemoveFile,
+  onSkipUpload,
+  onConfirmUploads,
   isSaving,
 }: ChatPanelProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  
   // Determine stage and step labels
-  const isStage4 = templateLocked;
+  const isStage4 = templateLocked && !stage5Active;
+  const isStage5 = stage5Active;
   const stage4Step = currentSubStep - 1; // 0 = Team, 1 = Site, 2 = Date
-  const totalSteps = isStage4 ? 4 : 1;
-  const displayStep = isStage4 ? stage4Step + 2 : 1;
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    const validFiles = files.filter(f => 
+      f.type === 'application/pdf' || 
+      f.type === 'image/jpeg' || 
+      f.type === 'image/png' ||
+      f.type === 'image/jpg'
+    );
+    if (validFiles.length > 0) {
+      onFilesDrop(validFiles);
+    } else {
+      toast.error("Only PDF, JPG, and PNG files are supported");
+    }
+  };
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      onFilesDrop(files);
+    }
+  };
   
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50/50 via-background to-slate-100/30 dark:from-slate-950/30 dark:via-background dark:to-slate-900/20">
       {/* Chat Header */}
-      <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30 shrink-0">
+      <div className={cn(
+        "p-4 border-b shrink-0",
+        isStage5 
+          ? "border-purple-200/50 dark:border-purple-800/30 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 dark:from-purple-950/30 dark:to-indigo-950/30"
+          : isStage4 
+            ? "border-green-200/50 dark:border-green-800/30 bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-950/30 dark:to-emerald-950/30"
+            : "border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30"
+      )}>
         <div className="flex items-center gap-3">
           <div className={cn(
             "h-10 w-10 rounded-full flex items-center justify-center shadow-lg",
-            isStage4 
-              ? "bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25"
-              : "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25"
+            isStage5
+              ? "bg-gradient-to-br from-purple-500 to-indigo-500 shadow-purple-500/25"
+              : isStage4 
+                ? "bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25"
+                : "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25"
           )}>
-            <Hammer className="h-5 w-5 text-white" />
+            {isStage5 ? <Image className="h-5 w-5 text-white" /> : <Hammer className="h-5 w-5 text-white" />}
           </div>
           <div>
             <h2 className={cn(
               "font-semibold",
-              isStage4 ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-300"
+              isStage5 ? "text-purple-700 dark:text-purple-300" : isStage4 ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-300"
             )}>
-              {isStage4 ? "Execution Flow" : "Definition Flow"}
+              {isStage5 ? "Visual Intelligence" : isStage4 ? "Execution Flow" : "Definition Flow"}
             </h2>
             <p className={cn(
               "text-xs",
-              isStage4 ? "text-green-600/70 dark:text-green-400/70" : "text-amber-600/70 dark:text-amber-400/70"
+              isStage5 ? "text-purple-600/70 dark:text-purple-400/70" : isStage4 ? "text-green-600/70 dark:text-green-400/70" : "text-amber-600/70 dark:text-amber-400/70"
             )}>
-              {isStage4 
-                ? `Step ${stage4Step + 1} of 3 • Stage 4`
-                : `Template Setup • ${gfaValue.toLocaleString()} sq ft`
+              {isStage5 
+                ? "Documentation • Stage 5"
+                : isStage4 
+                  ? `Step ${stage4Step + 1} of 3 • Stage 4`
+                  : `Template Setup • ${gfaValue.toLocaleString()} sq ft`
               }
             </p>
           </div>
@@ -232,7 +309,13 @@ const ChatPanel = ({
         
         {/* Progress dots */}
         <div className="flex gap-2 mt-3">
-          {isStage4 ? (
+          {isStage5 ? (
+            <motion.div
+              className="h-2 w-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            />
+          ) : isStage4 ? (
             // Stage 4: 3 steps (Team, Site, Date)
             [0, 1, 2].map(step => (
               <motion.div
@@ -704,7 +787,7 @@ const ChatPanel = ({
                 )}
                 
                 {/* Show completion status - Stage 4 complete message (no finalize button yet) */}
-                {scheduledEndDate && (
+                {scheduledEndDate && !stage5Active && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -719,6 +802,169 @@ const ChatPanel = ({
                     </p>
                   </motion.div>
                 )}
+              </div>
+            </motion.div>
+          </>
+        )}
+        
+        {/* STAGE 5: Visual Intelligence - Documentation Upload */}
+        {stage5Active && (
+          <>
+            {/* Stage 4 Confirmed Message */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-end"
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <p className="font-medium">Dates Confirmed</p>
+                </div>
+                <p className="text-xs text-white/80 mt-1">
+                  {timeline === 'asap' ? 'Starting ASAP' : scheduledDate ? format(scheduledDate, 'PPP') : ''} 
+                  {scheduledEndDate && ` → ${format(scheduledEndDate, 'PPP')}`}
+                </p>
+              </div>
+            </motion.div>
+            
+            {/* AI Question - Documentation */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex justify-start"
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 shadow-sm">
+                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-xs font-semibold">MESSA AI • Stage 5</span>
+                </div>
+                <p className="text-sm text-foreground mb-3">
+                  <strong>Documentation:</strong> Do you have blueprints or site photos to verify the area?
+                </p>
+                
+                {/* Drag & Drop Upload Zone */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={cn(
+                    "border-2 border-dashed rounded-xl p-4 transition-all text-center",
+                    isDragOver 
+                      ? "border-purple-500 bg-purple-50 dark:bg-purple-950/30" 
+                      : "border-purple-300 dark:border-purple-700 hover:border-purple-400"
+                  )}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  <Upload className={cn(
+                    "h-8 w-8 mx-auto mb-2 transition-colors",
+                    isDragOver ? "text-purple-500" : "text-purple-400"
+                  )} />
+                  
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    Drag & drop files here
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    or click to browse
+                  </p>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                  >
+                    <FileImage className="h-4 w-4 mr-2" />
+                    Select Files
+                  </Button>
+                  
+                  <div className="flex justify-center gap-2 mt-3">
+                    <Badge variant="outline" className="text-xs border-purple-200 text-purple-600">
+                      PDF
+                    </Badge>
+                    <Badge variant="outline" className="text-xs border-purple-200 text-purple-600">
+                      JPG
+                    </Badge>
+                    <Badge variant="outline" className="text-xs border-purple-200 text-purple-600">
+                      PNG
+                    </Badge>
+                  </div>
+                </div>
+                
+                {/* Uploaded Files List */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {uploadedFiles.map(file => (
+                      <motion.div
+                        key={file.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-2 p-2 bg-purple-50 dark:bg-purple-950/30 rounded-lg"
+                      >
+                        {file.type === 'blueprint' ? (
+                          <FileText className="h-4 w-4 text-purple-500 shrink-0" />
+                        ) : (
+                          <FileImage className="h-4 w-4 text-purple-500 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {file.type === 'blueprint' ? 'Blueprint/PDF' : 'Site Photo'}
+                            {file.uploaded && ' • Uploaded ✓'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => onRemoveFile(file.id)}
+                          className="p-1 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded"
+                        >
+                          <X className="h-3.5 w-3.5 text-purple-500" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onSkipUpload}
+                    className="flex-1 text-muted-foreground"
+                    disabled={isUploading}
+                  >
+                    Skip for now
+                  </Button>
+                  {uploadedFiles.length > 0 && (
+                    <Button
+                      size="sm"
+                      onClick={onConfirmUploads}
+                      disabled={isUploading}
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Confirm ({uploadedFiles.length})
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             </motion.div>
           </>
@@ -1154,6 +1400,11 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
     const [scheduledEndDate, setScheduledEndDate] = useState<Date | undefined>(undefined);
     
+    // Stage 5: Visual Intelligence
+    const [stage5Active, setStage5Active] = useState(false);
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+    
     // Collected citations
     const [flowCitations, setFlowCitations] = useState<Citation[]>([]);
     
@@ -1308,6 +1559,139 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         setCurrentSubStep(3); // Move to Stage 4 Step 3 (Timeline)
       }
     };
+    
+    // Auto-transition to Stage 5 when Stage 4 is complete (end date selected)
+    useEffect(() => {
+      if (scheduledEndDate && templateLocked && !stage5Active && currentSubStep >= 3) {
+        // Small delay before transitioning to Stage 5
+        const timer = setTimeout(() => {
+          setStage5Active(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }, [scheduledEndDate, templateLocked, stage5Active, currentSubStep]);
+    
+    // Stage 5: File upload handlers
+    const handleFilesDrop = useCallback((files: File[]) => {
+      const newFiles: UploadedFile[] = files.map(file => ({
+        id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        name: file.name,
+        type: file.type === 'application/pdf' ? 'blueprint' : 'site_photo',
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        uploaded: false,
+      }));
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+    }, []);
+    
+    const handleRemoveFile = useCallback((fileId: string) => {
+      setUploadedFiles(prev => {
+        const file = prev.find(f => f.id === fileId);
+        if (file?.previewUrl) {
+          URL.revokeObjectURL(file.previewUrl);
+        }
+        return prev.filter(f => f.id !== fileId);
+      });
+    }, []);
+    
+    const handleSkipUpload = useCallback(async () => {
+      // Create a citation indicating skip
+      const skipCitation = createCitation({
+        cite_type: CITATION_TYPES.VISUAL_VERIFICATION,
+        question_key: 'visual_verification',
+        answer: 'Skipped - No documentation uploaded',
+        value: 'skipped',
+        metadata: {
+          skipped: true,
+          skipped_at: new Date().toISOString(),
+        },
+      });
+      
+      setFlowCitations(prev => [...prev, skipCitation]);
+      
+      // Proceed to finalize
+      await handleFinalLock();
+    }, []);
+    
+    const handleConfirmUploads = useCallback(async () => {
+      if (uploadedFiles.length === 0) return;
+      
+      setIsUploading(true);
+      
+      try {
+        const uploadedCitations: Citation[] = [];
+        
+        for (const file of uploadedFiles) {
+          // Upload to Supabase storage
+          const filePath = `${projectId}/${file.id}_${file.name}`;
+          const { data, error } = await supabase.storage
+            .from('project-documents')
+            .upload(filePath, file.file);
+          
+          if (error) throw error;
+          
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('project-documents')
+            .getPublicUrl(filePath);
+          
+          // Create citation for each file
+          const citationType = file.type === 'blueprint' 
+            ? CITATION_TYPES.BLUEPRINT_UPLOAD 
+            : CITATION_TYPES.SITE_PHOTO;
+          
+          const citation = createCitation({
+            cite_type: citationType,
+            question_key: file.type === 'blueprint' ? 'blueprint_upload' : 'site_photo_upload',
+            answer: file.name,
+            value: urlData.publicUrl,
+            metadata: {
+              file_name: file.name,
+              file_type: file.type,
+              file_path: filePath,
+              storage_url: urlData.publicUrl,
+              uploaded_at: new Date().toISOString(),
+            },
+          });
+          
+          uploadedCitations.push(citation);
+          
+          // Update file as uploaded
+          setUploadedFiles(prev => prev.map(f => 
+            f.id === file.id ? { ...f, uploaded: true, storageUrl: urlData.publicUrl } : f
+          ));
+        }
+        
+        // Add verification citation
+        const verificationCitation = createCitation({
+          cite_type: CITATION_TYPES.VISUAL_VERIFICATION,
+          question_key: 'visual_verification',
+          answer: `${uploadedFiles.length} document(s) uploaded`,
+          value: {
+            total_files: uploadedFiles.length,
+            blueprints: uploadedFiles.filter(f => f.type === 'blueprint').length,
+            photos: uploadedFiles.filter(f => f.type === 'site_photo').length,
+          },
+          metadata: {
+            verified: true,
+            verified_at: new Date().toISOString(),
+          },
+        });
+        
+        setFlowCitations(prev => [...prev, ...uploadedCitations, verificationCitation]);
+        
+        toast.success(`${uploadedFiles.length} file(s) uploaded successfully!`);
+        
+        // Proceed to finalize
+        await handleFinalLock();
+        
+      } catch (err) {
+        console.error('[Stage5] Upload failed:', err);
+        toast.error("Upload failed - please try again");
+      } finally {
+        setIsUploading(false);
+      }
+    }, [uploadedFiles, projectId]);
     
     // Stage 4 Final: Lock the entire project
     const handleFinalLock = useCallback(async () => {
@@ -1477,6 +1861,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             scheduledEndDate={scheduledEndDate}
             demolitionCost={demolitionCost}
             demolitionUnitPrice={demolitionUnitPrice}
+            stage5Active={stage5Active}
+            uploadedFiles={uploadedFiles}
+            isUploading={isUploading}
             onTradeSelect={handleTradeSelect}
             onLockTemplate={handleLockTemplate}
             onTeamSizeSelect={handleTeamSizeSelect}
@@ -1485,6 +1872,10 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             onTimelineChange={setTimeline}
             onScheduledDateChange={setScheduledDate}
             onScheduledEndDateChange={setScheduledEndDate}
+            onFilesDrop={handleFilesDrop}
+            onRemoveFile={handleRemoveFile}
+            onSkipUpload={handleSkipUpload}
+            onConfirmUploads={handleConfirmUploads}
             isSaving={isSaving}
           />
         </div>
