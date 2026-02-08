@@ -41,7 +41,7 @@
  * ╚═══════════════════════════════════════════════════════════════════════════╝
  */
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,7 @@ import { useUnitSettings } from "@/hooks/useUnitSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useDataLock } from "@/hooks/useDataLock";
 import { ImpactWarningDialog, ImpactType } from "./ImpactWarningDialog";
+import { resolveQuantity, type QuantityResolverInput } from "@/lib/quantityResolver";
 
 interface PendingApprovalStatus {
   isPending: boolean;
@@ -428,111 +429,69 @@ export function MaterialCalculationTab({
     return 'unit';
   }, []);
   
-  // Helper to create initial material items
-  // CRITICAL: When dataSource='saved', use the saved baseQuantity and DYNAMICALLY apply waste%
-  // When dataSource='ai', apply +10% waste buffer on top of AI-detected base quantities
-  // 
-  // IRON LAW #1 FIX: totalPrice is ALWAYS grossQuantity × unitPrice
-  // where grossQuantity = baseQuantity × (1 + wastePercent/100)
-  // This ensures waste% is ALWAYS included in the displayed calculation
+  // Helper to create initial material items with INTEGRATED Quantity Resolver
+  // CRITICAL: The Quantity Resolver ALWAYS runs on initialization - no 'saved' exception
+  // This guarantees Operational Truth: DB always receives physics-based, calculated values
   const createInitialMaterialItems = useCallback(() => {
-    // For SAVED data: use saved baseQuantity, but DYNAMICALLY calculate grossQuantity with waste%
-    if (dataSource === 'saved') {
-      return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
-        const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
-        const savedTotalPrice = m.totalPrice;
-        
-        // CRITICAL: Use nullish coalescing to preserve 0 as valid values
-        const savedQuantity = m.quantity ?? 1;
-        const unitPrice = m.unitPrice ?? 0;
-        
-        // IRON LAW #1: Determine BASE (NET) quantity
-        // Priority: saved baseQuantity > reverse-calculate from savedQuantity > use savedQuantity
-        const baseQty = m.baseQuantity ?? savedQuantity;
-        
-        // CRITICAL FIX: Only use savedTotalPrice as unitPrice if unitPrice is truly missing
-        // AND quantity is 1 (flattened item scenario)
-        const finalUnitPrice = (!m.unitPrice && savedTotalPrice && savedQuantity === 1) 
-          ? savedTotalPrice 
-          : unitPrice;
-        
-        // DATA LOCK: Preserve saved unit OR infer from material name - never use generic 'unit'
-        const savedUnit = m.unit && m.unit !== 'unit' ? m.unit : inferUnitFromMaterialName(m.item);
-        
-        // IRON LAW #1: DYNAMIC GROSS CALCULATION
-        // Materials ALWAYS use: grossQuantity = baseQuantity × (1 + waste%)
-        // For essential materials: apply waste buffer
-        // For non-essential: gross = base (no buffer)
-        const grossQuantity = isEssential 
-          ? Math.ceil(baseQty * (1 + DYNAMIC_WASTE))
-          : baseQty;
-        
-        // OPERATIONAL TRUTH: totalPrice = grossQuantity × unitPrice
-        // This is the DISPLAY calculation - always includes waste!
-        const calculatedTotal = grossQuantity * finalUnitPrice;
-        
-        console.log(`[IRON LAW #1 SAVED] ${m.item}: NET=${baseQty} → GROSS=${grossQuantity} (${wastePercent}% waste) × $${finalUnitPrice} = $${calculatedTotal.toFixed(2)}`);
-        
-        return {
-          id: `material-${idx}`,
-          item: m.item,
-          baseQuantity: baseQty,      // NET quantity (without waste)
-          quantity: grossQuantity,     // GROSS quantity (with waste) - DISPLAYED
-          unit: savedUnit,
-          unitPrice: finalUnitPrice,
-          totalPrice: calculatedTotal, // GROSS × unitPrice
-          isEssential,
+    return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
+      const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
+      const unitPrice = m.unitPrice ?? 0;
+      const savedQuantity = m.quantity ?? 1;
+      const savedUnit = m.unit || 'unit';
+      
+      // ============ INTEGRATED QUANTITY RESOLVER ============
+      // For sq ft based materials: run resolver to get physics-based quantity
+      const isSqFtInput = (savedUnit.toLowerCase().includes("sq") || savedUnit.toLowerCase().includes("ft"));
+      const authorityBaseArea = baseArea || savedQuantity; // Use baseArea prop or fallback to input
+      
+      let finalQuantity = savedQuantity;
+      let finalUnit = savedUnit;
+      
+      if (isEssential && isSqFtInput && authorityBaseArea > 0) {
+        // Run Quantity Resolver for deterministic calculation
+        const resolverInput: QuantityResolverInput = {
+          material_name: m.item,
+          input_unit: 'sq ft',
+          input_value: authorityBaseArea,
+          waste_percent: wastePercent,
         };
-      });
-    }
-    
-    // For AI/TASKS data: calculate waste buffer using DYNAMIC waste %
-    // CRITICAL: Use baseArea prop as the authoritative base for sq ft materials
-    // This ensures Power Modal edits sync correctly to Materials tab
-    const authorityBaseArea = baseArea || 0;
-    
-    return initialMaterials.map((m, idx) => {
-      const isEssential = isEssentialMaterial(m.item);
-      const isSqFtUnit = m.unit?.toLowerCase().includes("sq") || m.unit?.toLowerCase().includes("ft");
-      
-      // Determine the BASE quantity:
-      // 1. If baseArea prop exists AND this is sq ft essential material -> use baseArea
-      // 2. Otherwise use the material's original quantity
-      let baseQty = m.quantity;
-      
-      if (isEssential && isSqFtUnit && authorityBaseArea > 0) {
-        // Use authoritative baseArea from Power Modal / centralMaterials
-        baseQty = authorityBaseArea;
+        
+        const resolved = resolveQuantity(resolverInput);
+        
+        if (resolved.success && resolved.gross_quantity && resolved.resolved_unit) {
+          // ✅ RESOLVER SUCCEEDED: Use calculated values
+          finalQuantity = resolved.gross_quantity;
+          finalUnit = resolved.resolved_unit;
+          console.log(`[INIT RESOLVER] ${m.item}: ${resolved.calculation_trace}`);
+        } else {
+          // ⚠️ RESOLVER FAILED: Fallback to coverage conversion
+          console.warn(`[INIT RESOLVER FALLBACK] ${m.item}: ${resolved.error_message}`);
+          const { quantity: covQty, unit: covUnit } = calculateCoverageBasedQuantity(
+            Math.ceil(authorityBaseArea * (1 + wastePercent / 100)),
+            m.item,
+            savedUnit
+          );
+          finalQuantity = covQty;
+          finalUnit = covUnit;
+        }
       }
       
-      // For essential items: 
-      // 1. Calculate GROSS area = BASE * (1 + wastePercent/100)
-      // 2. Convert to realistic units using COVERAGE (boxes, gallons, etc.)
-      // For non-essential: FINAL = BASE (no additional waste)
-      const grossAreaSqFt = isEssential 
-        ? Math.ceil(baseQty * (1 + DYNAMIC_WASTE)) 
-        : baseQty;
+      const finalBaseQty = dataSource === 'saved' ? (m.baseQuantity || savedQuantity) : authorityBaseArea;
       
-      // COVERAGE-BASED CONVERSION: Convert gross sq ft to realistic unit counts
-      // e.g., 1432 sq ft of flooring -> 65 boxes (not 1432!)
-      const { quantity: finalQty, unit: finalUnit } = isEssential && isSqFtUnit
-        ? calculateCoverageBasedQuantity(grossAreaSqFt, m.item, m.unit)
-        : { quantity: grossAreaSqFt, unit: m.unit };
-      
-      const unitPrice = m.unitPrice || 0;
+      console.log(`[MATERIAL INIT] ${m.item}: base=${finalBaseQty} qty=${finalQuantity} unit=${finalUnit}`);
       
       return {
         id: `material-${idx}`,
         item: m.item,
-        baseQuantity: baseQty, // Store NET area for reference
-        quantity: finalQty,    // COVERAGE-converted quantity (e.g., 65 boxes)
-        unit: finalUnit,       // Converted unit (e.g., "boxes")
-        unitPrice: unitPrice,
-        totalPrice: finalQty * unitPrice, // ALWAYS calculated
+        baseQuantity: finalBaseQty,
+        quantity: finalQuantity,
+        unit: finalUnit,
+        unitPrice,
+        totalPrice: finalQuantity * unitPrice,
         isEssential,
       };
     });
-  }, [initialMaterials, dataSource, DYNAMIC_WASTE, baseArea, inferUnitFromMaterialName]);
+  }, [initialMaterials, baseArea, wastePercent, dataSource]);
 
   // Helper to create initial labor items
   // CRITICAL: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
@@ -729,28 +688,13 @@ export function MaterialCalculationTab({
   }, [laminateBaseQty, dataLock]);
   
   // ====== DYNAMIC SYNC: Recalculate when baseArea or wastePercent changes ======
-  // CRITICAL: When Power Modal changes baseArea, recalculate essential materials from scratch
-  // DATA LOCK: This is BLOCKED for saved data
+  // CRITICAL: NO 'saved' exception - mathematics ALWAYS guarantees Operational Truth
+  // Even saved data must recalculate when waste% or baseArea changes
   useEffect(() => {
     const prevArea = prevBaseAreaRef.current;
     const prevWaste = prevWasteRef.current;
     const newArea = baseArea ?? null;
     const newWaste = wastePercent;
-    
-    // DATA LOCK: Block all background recalculation for saved data
-    if (dataLock.shouldBlockOperation('background_sync')) {
-      dataLock.logBlockedOperation('area_waste_recalc', `Data is LOCKED - baseArea=${newArea}, waste=${newWaste}% preserved as-is`);
-      prevBaseAreaRef.current = newArea;
-      prevWasteRef.current = newWaste;
-      return;
-    }
-    
-    // Skip for saved data - user edits should not be overwritten (redundant but explicit)
-    if (dataSource === 'saved') {
-      prevBaseAreaRef.current = newArea;
-      prevWasteRef.current = newWaste;
-      return;
-    }
     
     // Detect meaningful changes:
     // 1. Area changed from null to value (initial AI analysis)
@@ -885,6 +829,7 @@ export function MaterialCalculationTab({
   }, [grandTotal, projectAddress, onGrandTotalChange]);
 
   // Auto-save when items change (debounced)
+  // CRITICAL: Always recalculate with Quantity Resolver before saving to guarantee Operational Truth
   useEffect(() => {
     if (!hasUnsavedChanges || !onSave) return;
     
@@ -896,8 +841,38 @@ export function MaterialCalculationTab({
     // Set new timer for auto-save after 1 second of inactivity
     autoSaveTimerRef.current = setTimeout(async () => {
       try {
+        // RESOLVER INTEGRATION: Ensure saved values are physics-based (not "1 unit")
+        // For each material, verify it has realistic units and quantities
+        const validatedMaterials = materialItems.map(item => {
+          // If unit is generic 'unit', attempt to infer realistic unit
+          let finalUnit = item.unit;
+          let finalQty = item.quantity;
+          
+          if (finalUnit === 'unit' || !finalUnit) {
+            // Attempt resolver as fallback
+            const resolved = resolveQuantity({
+              material_name: item.item,
+              input_unit: 'sq ft',
+              input_value: item.baseQuantity || item.quantity,
+              waste_percent: wastePercent,
+            });
+            
+            if (resolved.success && resolved.gross_quantity && resolved.resolved_unit) {
+              finalQty = resolved.gross_quantity;
+              finalUnit = resolved.resolved_unit;
+              console.log(`[SAVE RESOLVER] ${item.item}: corrected to ${finalQty} ${finalUnit}`);
+            }
+          }
+          
+          return {
+            ...item,
+            quantity: finalQty,
+            unit: finalUnit,
+          };
+        });
+        
         await onSave({
-          materials: materialItems,
+          materials: validatedMaterials,
           labor: laborItems,
           other: otherItems,
           grandTotal,
@@ -907,6 +882,7 @@ export function MaterialCalculationTab({
         toast.success(t("materials.autoSaved", "Saved"));
       } catch (error) {
         console.error("Auto-save error:", error);
+        toast.error(t("materials.saveFailed", "Save failed"));
       }
     }, 1000);
     
@@ -915,7 +891,7 @@ export function MaterialCalculationTab({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, materialItems, laborItems, otherItems, grandTotal, onSave, t]);
+  }, [hasUnsavedChanges, materialItems, laborItems, otherItems, grandTotal, onSave, t, wastePercent]);
 
   // Handle GROSS quantity change for essential materials (user edits the order quantity)
   // This recalculates the baseQuantity from the gross value
