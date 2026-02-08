@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, MapPin, Building, Calendar, FileText, Sparkles, ChevronRight } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Building, Calendar, FileText, Sparkles, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,16 @@ import { Citation, CITATION_TYPES } from "@/types/citation";
 import WireframeVisualizer from "@/components/project-wizard/WireframeVisualizer";
 import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ProjectData {
   id: string;
@@ -48,6 +58,8 @@ const BuildUnionProjectDetails = () => {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [highlightedCitation, setHighlightedCitation] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Geocode address
   const geocodeAddress = useCallback(async (address: string) => {
@@ -148,6 +160,30 @@ const BuildUnionProjectDetails = () => {
     loadProject();
   }, [user, authLoading, projectId, navigate, geocodeAddress]);
 
+  // Handle project deletion (soft delete)
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("id", project.id);
+
+      if (error) throw error;
+
+      toast.success(t("workspace.projectDeleted", "Project deleted successfully"));
+      navigate("/buildunion/workspace");
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast.error(t("workspace.deleteError", "Failed to delete project"));
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
@@ -192,15 +228,26 @@ const BuildUnionProjectDetails = () => {
               className="gap-2 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
             >
               <ArrowLeft className="h-4 w-4" />
-              {t("common.back", "Back to Workspace")}
+              <span className="hidden sm:inline">{t("common.back", "Back to Workspace")}</span>
             </Button>
             
-            <Badge 
-              variant="outline" 
-              className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300"
-            >
-              {project.status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("common.delete", "Delete")}</span>
+              </Button>
+              <Badge 
+                variant="outline" 
+                className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300"
+              >
+                {project.status}
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
@@ -421,6 +468,38 @@ const BuildUnionProjectDetails = () => {
 
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("workspace.deleteProject", "Delete Project")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("workspace.deleteConfirmation", "Are you sure you want to delete")} <strong>{project?.name}</strong>? 
+              {t("workspace.deleteWarning", " This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              {t("common.cancel", "Cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {t("common.deleting", "Deleting...")}
+                </>
+              ) : (
+                t("common.delete", "Delete")
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
