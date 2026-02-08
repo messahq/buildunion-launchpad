@@ -992,11 +992,50 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     return (
       <div
         ref={ref}
-        className={cn("h-full flex flex-col overflow-hidden", className)}
+        className={cn(
+          "h-full overflow-hidden",
+          // Mobile: vertical stack (template top, chat bottom)
+          // Desktop: horizontal split (chat left, template right)
+          "flex flex-col md:flex-row",
+          className
+        )}
       >
-        {/* TOP - Canvas/Template (OUTPUT) - Always visible, takes priority */}
+        {/* LEFT PANEL (Desktop) / BOTTOM (Mobile) - Chat (INPUT) */}
+        <div className={cn(
+          // Mobile: at bottom, compact height when template visible
+          "order-2 md:order-1",
+          "md:w-[380px] lg:w-[420px] md:flex-shrink-0",
+          "border-t md:border-t-0 md:border-r border-amber-200/50 dark:border-amber-800/30",
+          // Mobile height control
+          selectedTrade ? "h-[260px] md:h-full" : "flex-1 md:h-full"
+        )}>
+          <ChatPanel
+            currentSubStep={currentSubStep}
+            gfaValue={gfaValue}
+            selectedTrade={selectedTrade}
+            teamSize={teamSize}
+            siteCondition={siteCondition}
+            timeline={timeline}
+            scheduledDate={scheduledDate}
+            demolitionCost={demolitionCost}
+            onTradeSelect={handleTradeSelect}
+            onTeamSizeSelect={handleTeamSizeSelect}
+            onSiteConditionChange={setSiteCondition}
+            onTimelineChange={setTimeline}
+            onScheduledDateChange={setScheduledDate}
+            onProceedFromTemplate={handleProceedFromTemplate}
+            onFinalizeDNA={handleFinalizeDNA}
+            isSaving={isSaving}
+          />
+        </div>
+        
+        {/* RIGHT PANEL (Desktop) / TOP (Mobile) - Canvas/Template (OUTPUT) */}
         {selectedTrade && (
-          <div className="flex-1 min-h-0 border-b border-amber-200/50 dark:border-amber-800/30">
+          <div className={cn(
+            "order-1 md:order-2",
+            "flex-1 min-h-0",
+            "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
+          )}>
             <CanvasPanel
               currentSubStep={currentSubStep}
               selectedTrade={selectedTrade}
@@ -1018,31 +1057,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             />
           </div>
         )}
-        
-        {/* BOTTOM - Chat (INPUT) - Compact when template is visible */}
-        <div className={cn(
-          "flex-shrink-0 border-t border-amber-200/50 dark:border-amber-800/30",
-          selectedTrade ? "h-[280px] md:h-[320px]" : "flex-1"
-        )}>
-          <ChatPanel
-            currentSubStep={currentSubStep}
-            gfaValue={gfaValue}
-            selectedTrade={selectedTrade}
-            teamSize={teamSize}
-            siteCondition={siteCondition}
-            timeline={timeline}
-            scheduledDate={scheduledDate}
-            demolitionCost={demolitionCost}
-            onTradeSelect={handleTradeSelect}
-            onTeamSizeSelect={handleTeamSizeSelect}
-            onSiteConditionChange={setSiteCondition}
-            onTimelineChange={setTimeline}
-            onScheduledDateChange={setScheduledDate}
-            onProceedFromTemplate={handleProceedFromTemplate}
-            onFinalizeDNA={handleFinalizeDNA}
-            isSaving={isSaving}
-          />
-        </div>
       </div>
     );
   }
