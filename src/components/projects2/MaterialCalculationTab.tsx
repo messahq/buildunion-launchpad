@@ -440,19 +440,29 @@ export function MaterialCalculationTab({
       const savedUnit = m.unit || 'unit';
       
       // ============ INTEGRATED QUANTITY RESOLVER ============
-      // For sq ft based materials: run resolver to get physics-based quantity
-      const isSqFtInput = (savedUnit.toLowerCase().includes("sq") || savedUnit.toLowerCase().includes("ft"));
-      const authorityBaseArea = baseArea || savedQuantity; // Use baseArea prop or fallback to input
+      // CRITICAL FIX (2026-02-08): The resolver MUST run for ALL essential materials
+      // when baseArea is available - REGARDLESS of savedUnit format.
+      // 
+      // BUG ROOT CAUSE: If savedUnit was "boxes" or "rolls", isSqFtInput was false
+      // and the resolver never ran, causing 1350 boxes instead of 62 boxes.
+      // 
+      // SOLUTION: Always use baseArea as the AUTHORITATIVE input for essential materials.
+      // The savedUnit format is irrelevant - we always convert area → physical units.
+      
+      const authorityBaseArea = baseArea || 0; // Use baseArea prop as THE authority
       
       let finalQuantity = savedQuantity;
       let finalUnit = savedUnit;
+      let finalBaseQty = savedQuantity;
       
-      if (isEssential && isSqFtInput && authorityBaseArea > 0) {
-        // Run Quantity Resolver for deterministic calculation
+      // RESOLVER RUNS IF: essential material AND we have a valid baseArea
+      // savedUnit format is IGNORED - we always recalculate from area
+      if (isEssential && authorityBaseArea > 0) {
+        // Run Quantity Resolver for deterministic physics-based calculation
         const resolverInput: QuantityResolverInput = {
           material_name: m.item,
           input_unit: 'sq ft',
-          input_value: authorityBaseArea,
+          input_value: authorityBaseArea, // ALWAYS use the authoritative baseArea
           waste_percent: wastePercent,
         };
         
@@ -462,23 +472,24 @@ export function MaterialCalculationTab({
           // ✅ RESOLVER SUCCEEDED: Use calculated values
           finalQuantity = resolved.gross_quantity;
           finalUnit = resolved.resolved_unit;
+          finalBaseQty = resolved.resolved_quantity ?? authorityBaseArea;
           console.log(`[INIT RESOLVER] ${m.item}: ${resolved.calculation_trace}`);
         } else {
-          // ⚠️ RESOLVER FAILED: Fallback to coverage conversion
+          // ⚠️ RESOLVER FAILED: Fallback to local coverage conversion
           console.warn(`[INIT RESOLVER FALLBACK] ${m.item}: ${resolved.error_message}`);
+          const grossArea = Math.ceil(authorityBaseArea * (1 + wastePercent / 100));
           const { quantity: covQty, unit: covUnit } = calculateCoverageBasedQuantity(
-            Math.ceil(authorityBaseArea * (1 + wastePercent / 100)),
+            grossArea,
             m.item,
-            savedUnit
+            'sq ft' // Force sq ft for coverage calculation
           );
           finalQuantity = covQty;
           finalUnit = covUnit;
+          finalBaseQty = authorityBaseArea;
         }
       }
       
-      const finalBaseQty = dataSource === 'saved' ? (m.baseQuantity || savedQuantity) : authorityBaseArea;
-      
-      console.log(`[MATERIAL INIT] ${m.item}: base=${finalBaseQty} qty=${finalQuantity} unit=${finalUnit}`);
+      console.log(`[MATERIAL INIT] ${m.item}: baseArea=${authorityBaseArea} → ${finalQuantity} ${finalUnit}`);
       
       return {
         id: `material-${idx}`,
@@ -491,7 +502,7 @@ export function MaterialCalculationTab({
         isEssential,
       };
     });
-  }, [initialMaterials, baseArea, wastePercent, dataSource]);
+  }, [initialMaterials, baseArea, wastePercent]);
 
   // Helper to create initial labor items
   // CRITICAL: Labor uses NET area (baseArea) in sq ft - no waste buffer on labor costs!
