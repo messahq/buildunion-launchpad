@@ -105,9 +105,9 @@ const BuildUnionWorkspace = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-bold">{t("workspace.title", "My Workspace")}</h1>
+              <h1 className="text-2xl font-bold">Projects 3.0</h1>
               <p className="text-muted-foreground">
-                {t("workspace.subtitle", "Manage your construction projects")}
+                Smart workflow based on AI analysis
               </p>
             </div>
             <Button onClick={handleNewProject} className="gap-2">
