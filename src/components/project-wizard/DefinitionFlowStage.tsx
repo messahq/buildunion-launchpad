@@ -507,14 +507,21 @@ interface CanvasPanelProps {
   materialTotal: number;
   laborTotal: number;
   demolitionCost: number;
+  subtotal: number;
+  markupPercent: number;
+  markupAmount: number;
+  taxAmount: number;
   grandTotal: number;
   editingItem: string | null;
   wastePercent: number;
   onWastePercentChange: (value: number) => void;
+  onMarkupPercentChange: (value: number) => void;
   onUpdateItem: (itemId: string, field: keyof TemplateItem, value: number | string) => void;
   onDeleteItem: (itemId: string) => void;
   onAddItem: () => void;
   onSetEditingItem: (id: string | null) => void;
+  onFinalizeDNA: () => void;
+  isSaving: boolean;
 }
 
 const CanvasPanel = ({
@@ -527,14 +534,21 @@ const CanvasPanel = ({
   materialTotal,
   laborTotal,
   demolitionCost,
+  subtotal,
+  markupPercent,
+  markupAmount,
+  taxAmount,
   grandTotal,
   editingItem,
   wastePercent,
   onWastePercentChange,
+  onMarkupPercentChange,
   onUpdateItem,
   onDeleteItem,
   onAddItem,
   onSetEditingItem,
+  onFinalizeDNA,
+  isSaving,
 }: CanvasPanelProps) => {
   return (
     <div className="h-full w-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-hidden">
@@ -711,7 +725,7 @@ const CanvasPanel = ({
             </div>
             
             {/* Totals */}
-            <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-1">
+            <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-1.5">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Materials (incl. {wastePercent}% waste)</span>
                 <span>${materialTotal.toLocaleString()}</span>
@@ -726,10 +740,65 @@ const CanvasPanel = ({
                   <span>+${demolitionCost.toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between font-bold text-base pt-2 border-t border-amber-200 dark:border-amber-700">
-                <span>Total</span>
-                <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString()}</span>
+              <div className="flex justify-between text-sm pt-1.5 border-t border-amber-200/50 dark:border-amber-700/50">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>${subtotal.toLocaleString()}</span>
               </div>
+              
+              {/* Markup/Profit Field */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Markup/Profit</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={markupPercent}
+                    onChange={(e) => onMarkupPercentChange(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                    className="w-14 h-7 text-center text-sm"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                  <span className="text-sm ml-2 min-w-[70px] text-right">
+                    {markupAmount > 0 ? `+$${markupAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '$0'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Tax (13% HST) */}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tax (13% HST)</span>
+                <span>${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              
+              {/* Grand Total */}
+              <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-amber-300 dark:border-amber-600">
+                <span>Grand Total</span>
+                <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+            
+            {/* Finalize DNA Button */}
+            <div className="px-4 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-t border-amber-200 dark:border-amber-800">
+              <Button
+                onClick={onFinalizeDNA}
+                disabled={isSaving}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-base shadow-lg"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Finalizing...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-5 w-5 mr-2" />
+                    Finalize Project DNA
+                  </>
+                )}
+              </Button>
             </div>
           </div>
           
@@ -771,6 +840,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Waste percentage (editable)
     const [wastePercent, setWastePercent] = useState(10);
     
+    // Markup percentage (editable)
+    const [markupPercent, setMarkupPercent] = useState(0);
+    
     // Step 2: Team size
     const [teamSize, setTeamSize] = useState<string | null>(null);
     
@@ -797,11 +869,21 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setTemplateItems(prev => applyWasteToItems(prev, newWastePercent));
     }, []);
     
+    // Handle markup percent changes
+    const handleMarkupPercentChange = useCallback((newMarkupPercent: number) => {
+      setMarkupPercent(newMarkupPercent);
+    }, []);
+    
     // Calculate totals
     const materialTotal = templateItems.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
     const laborTotal = templateItems.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
     const demolitionCost = siteCondition === 'demolition' ? gfaValue * 2.5 : 0;
-    const grandTotal = materialTotal + laborTotal + demolitionCost;
+    const subtotal = materialTotal + laborTotal + demolitionCost;
+    const markupAmount = subtotal * (markupPercent / 100);
+    const subtotalWithMarkup = subtotal + markupAmount;
+    const taxRate = 0.13; // 13% HST for Ontario
+    const taxAmount = subtotalWithMarkup * taxRate;
+    const grandTotal = subtotalWithMarkup + taxAmount;
     
     // Handle trade selection
     const handleTradeSelect = (trade: string) => {
@@ -1046,14 +1128,21 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               materialTotal={materialTotal}
               laborTotal={laborTotal}
               demolitionCost={demolitionCost}
+              subtotal={subtotal}
+              markupPercent={markupPercent}
+              markupAmount={markupAmount}
+              taxAmount={taxAmount}
               grandTotal={grandTotal}
               editingItem={editingItem}
               wastePercent={wastePercent}
               onWastePercentChange={handleWastePercentChange}
+              onMarkupPercentChange={handleMarkupPercentChange}
               onUpdateItem={handleUpdateItem}
               onDeleteItem={handleDeleteItem}
               onAddItem={handleAddItem}
               onSetEditingItem={setEditingItem}
+              onFinalizeDNA={handleFinalizeDNA}
+              isSaving={isSaving}
             />
           </div>
         )}
