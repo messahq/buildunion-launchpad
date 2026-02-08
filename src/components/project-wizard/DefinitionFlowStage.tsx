@@ -1210,35 +1210,56 @@ const VisualUploadCanvasPanel = ({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex gap-3"
+          className="flex flex-col gap-3"
         >
-          <Button
-            variant="outline"
-            onClick={onSkipUpload}
-            disabled={isUploading}
-            className="flex-1 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400"
-          >
-            Skip for now
-          </Button>
-          {uploadedFiles.length > 0 && (
+          <div className="flex gap-3">
             <Button
-              onClick={onConfirmUploads}
+              variant="outline"
+              onClick={onSkipUpload}
               disabled={isUploading}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/25"
+              className="flex-1 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400"
             >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Analyze & Continue
-                </>
-              )}
+              Skip for now
             </Button>
-          )}
+            {uploadedFiles.length > 0 && (
+              <Button
+                onClick={onConfirmUploads}
+                disabled={isUploading}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/25"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Analyze & Continue
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+          
+          {/* Ready for Execution Button - Always visible as primary CTA */}
+          <Button
+            onClick={onConfirmUploads}
+            disabled={isUploading}
+            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold shadow-lg shadow-green-500/25 py-6 text-base"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-5 w-5 mr-2" />
+                Ready for Execution
+              </>
+            )}
+          </Button>
         </motion.div>
         
         {/* AI Analysis Note */}
