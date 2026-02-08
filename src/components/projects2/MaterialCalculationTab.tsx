@@ -433,6 +433,31 @@ export function MaterialCalculationTab({
   // CRITICAL: The Quantity Resolver ALWAYS runs on initialization - no 'saved' exception
   // This guarantees Operational Truth: DB always receives physics-based, calculated values
   const createInitialMaterialItems = useCallback(() => {
+    // ============ CRITICAL FIX (2026-02-08): INFER baseArea FROM MATERIALS ============
+    // Problem: New projects without AI analysis have baseArea=null, so the Quantity Resolver
+    // never runs, causing 1486 linear ft instead of 18 linear ft for Transition Strips.
+    //
+    // Solution: If baseArea is not provided, INFER it from the largest sq ft material.
+    // This ensures the Quantity Resolver runs for ALL projects, not just AI-analyzed ones.
+    
+    let inferredBaseArea = baseArea ?? 0;
+    
+    if (!inferredBaseArea || inferredBaseArea <= 0) {
+      // Find the largest sq ft quantity from incoming materials - this is our base area
+      let maxSqFtQty = 0;
+      for (const m of initialMaterials) {
+        const unit = (m.unit || '').toLowerCase();
+        const isSqFtUnit = unit.includes('sq') || unit.includes('ft²');
+        if (isSqFtUnit && m.quantity > maxSqFtQty) {
+          maxSqFtQty = m.quantity;
+        }
+      }
+      if (maxSqFtQty > 0) {
+        inferredBaseArea = maxSqFtQty;
+        console.log(`[INFERRED BASE AREA] No baseArea prop provided, inferred from materials: ${inferredBaseArea} sq ft`);
+      }
+    }
+    
     return initialMaterials.map((m: TaskBasedEntry & { baseQuantity?: number; isEssential?: boolean; totalPrice?: number }, idx) => {
       const isEssential = m.isEssential ?? isEssentialMaterial(m.item);
       const unitPrice = m.unitPrice ?? 0;
@@ -441,22 +466,19 @@ export function MaterialCalculationTab({
       
       // ============ INTEGRATED QUANTITY RESOLVER ============
       // CRITICAL FIX (2026-02-08): The resolver MUST run for ALL essential materials
-      // when baseArea is available - REGARDLESS of savedUnit format.
+      // when we have a valid baseArea (either from props or inferred).
       // 
-      // BUG ROOT CAUSE: If savedUnit was "boxes" or "rolls", isSqFtInput was false
-      // and the resolver never ran, causing 1350 boxes instead of 62 boxes.
+      // BUG ROOT CAUSE: New projects had baseArea=null, so resolver never ran.
       // 
-      // SOLUTION: Always use baseArea as the AUTHORITATIVE input for essential materials.
-      // The savedUnit format is irrelevant - we always convert area → physical units.
+      // SOLUTION: Infer baseArea from the largest sq ft material if not provided.
       
-      const authorityBaseArea = baseArea || 0; // Use baseArea prop as THE authority
+      const authorityBaseArea = inferredBaseArea; // Use inferred baseArea as THE authority
       
       let finalQuantity = savedQuantity;
       let finalUnit = savedUnit;
       let finalBaseQty = savedQuantity;
       
-      // RESOLVER RUNS IF: essential material AND we have a valid baseArea
-      // savedUnit format is IGNORED - we always recalculate from area
+      // RESOLVER RUNS IF: essential material AND we have a valid baseArea (from prop OR inferred)
       if (isEssential && authorityBaseArea > 0) {
         // Run Quantity Resolver for deterministic physics-based calculation
         const resolverInput: QuantityResolverInput = {

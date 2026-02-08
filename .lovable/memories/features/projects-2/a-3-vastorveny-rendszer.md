@@ -37,5 +37,8 @@ A UI rendereléskor:
 - `displayNet = item.baseQuantity` (eredeti terület)
 - A waste badge (`+10%`) csak VIZUÁLIS jelzés, nem trigger újraszámolásra
 
+## 🆕 INFERRED BASE AREA (2026-02-08)
+Ha a `baseArea` prop nincs megadva (új projektek AI analízis nélkül), a rendszer automatikusan kikövetkezteti a legnagyobb sq ft mennyiségből. Ez garantálja, hogy a Quantity Resolver MINDEN projektnél fut.
+
 ---
-*Last verified: 2026-02-08 - Critical render bug fixed (1486 → 68 boxes)*
+*Last verified: 2026-02-08 - Inferred baseArea logic added for universal resolver application*
