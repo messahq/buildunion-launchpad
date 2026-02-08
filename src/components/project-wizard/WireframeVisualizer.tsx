@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -101,100 +101,120 @@ const DEFAULT_WIREFRAME: WireframeLine[] = [
   { id: 't2', x1: 160, y1: 170, x2: 140, y2: 190, delay: 0.5 },
 ];
 
-const WireframeVisualizer = ({ workType }: WireframeVisualizerProps) => {
-  const [isBuilding, setIsBuilding] = useState(true);
-  const lines = WIREFRAME_TEMPLATES[workType] || DEFAULT_WIREFRAME;
+const WireframeVisualizer = forwardRef<HTMLDivElement, WireframeVisualizerProps>(
+  ({ workType }, ref) => {
+    const [isBuilding, setIsBuilding] = useState(true);
+    const lines = WIREFRAME_TEMPLATES[workType] || DEFAULT_WIREFRAME;
 
-  useEffect(() => {
-    setIsBuilding(true);
-    const maxDelay = Math.max(...lines.map(l => l.delay));
-    const timer = setTimeout(() => setIsBuilding(false), (maxDelay + 0.5) * 1000);
-    return () => clearTimeout(timer);
-  }, [workType]);
+    useEffect(() => {
+      setIsBuilding(true);
+      const maxDelay = Math.max(...lines.map(l => l.delay));
+      const timer = setTimeout(() => setIsBuilding(false), (maxDelay + 0.5) * 1000);
+      return () => clearTimeout(timer);
+    }, [workType, lines]);
 
-  return (
-    <div className="relative h-64 bg-gradient-to-b from-muted/30 to-muted/60">
-      {/* Grid background */}
-      <svg className="absolute inset-0 w-full h-full opacity-20">
-        <defs>
-          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5"/>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
-
-      {/* Main wireframe SVG */}
-      <svg 
-        viewBox="0 0 300 200" 
-        className="w-full h-full"
-        style={{ maxWidth: '100%' }}
+    return (
+      <div 
+        ref={ref}
+        className="relative h-64 bg-gradient-to-b from-amber-500/5 via-orange-500/10 to-amber-600/5"
       >
-        {lines.map((line) => (
-          <motion.line
-            key={line.id}
-            x1={line.x1}
-            y1={line.y1}
-            x2={line.x1}
-            y2={line.y1}
-            animate={{
-              x2: line.x2,
-              y2: line.y2,
-            }}
-            transition={{
-              duration: 0.5,
-              delay: line.delay,
-              ease: "easeOut",
-            }}
-            stroke="hsl(var(--primary))"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className={cn(
-              line.id.startsWith('e') && workType === 'renovation' && "stroke-muted-foreground opacity-50"
-            )}
-          />
-        ))}
+        {/* Grid background with amber tint */}
+        <svg className="absolute inset-0 w-full h-full opacity-30">
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="hsl(35 90% 55%)" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
 
-        {/* Building animation indicator */}
-        {isBuilding && (
-          <motion.circle
-            cx="150"
-            cy="100"
-            r="8"
-            fill="hsl(var(--primary))"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1.2, 0.8] }}
-            transition={{ repeat: Infinity, duration: 1 }}
-          />
-        )}
-      </svg>
+        {/* Ambient glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 via-transparent to-orange-500/5 pointer-events-none" />
 
-      {/* Building status */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-        className="absolute bottom-3 left-3 right-3 flex items-center justify-between"
-      >
-        <div className="flex items-center gap-2">
-          <motion.div
-            className={cn(
-              "w-2 h-2 rounded-full",
-              isBuilding ? "bg-accent" : "bg-primary"
-            )}
-            animate={isBuilding ? { opacity: [1, 0.5, 1] } : {}}
-            transition={{ repeat: Infinity, duration: 0.8 }}
-          />
-          <span className="text-xs text-muted-foreground">
-            {isBuilding ? "Generating wireframe..." : "Wireframe ready"}
+        {/* Main wireframe SVG */}
+        <svg 
+          viewBox="0 0 300 200" 
+          className="w-full h-full relative z-10"
+          style={{ maxWidth: '100%' }}
+        >
+          {/* Glow filter for amber effect */}
+          <defs>
+            <filter id="amber-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          {lines.map((line) => (
+            <motion.line
+              key={line.id}
+              x1={line.x1}
+              y1={line.y1}
+              x2={line.x1}
+              y2={line.y1}
+              animate={{
+                x2: line.x2,
+                y2: line.y2,
+              }}
+              transition={{
+                duration: 0.5,
+                delay: line.delay,
+                ease: "easeOut",
+              }}
+              stroke="hsl(35 90% 55%)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              filter="url(#amber-glow)"
+              className={cn(
+                line.id.startsWith('e') && workType === 'renovation' && "opacity-50"
+              )}
+            />
+          ))}
+
+          {/* Building animation indicator - amber pulsing */}
+          {isBuilding && (
+            <motion.circle
+              cx="150"
+              cy="100"
+              r="8"
+              fill="hsl(35 90% 55%)"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: [0.5, 1, 0.5], scale: [0.8, 1.2, 0.8] }}
+              transition={{ repeat: Infinity, duration: 1 }}
+              filter="url(#amber-glow)"
+            />
+          )}
+        </svg>
+
+        {/* Building status with amber theme */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="absolute bottom-3 left-3 right-3 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <motion.div
+              className={cn(
+                "w-2 h-2 rounded-full",
+                isBuilding ? "bg-amber-500" : "bg-amber-600"
+              )}
+              animate={isBuilding ? { opacity: [1, 0.5, 1] } : {}}
+              transition={{ repeat: Infinity, duration: 0.8 }}
+            />
+            <span className="text-xs text-amber-700 dark:text-amber-400">
+              {isBuilding ? "Generating wireframe..." : "Wireframe ready"}
+            </span>
+          </div>
+          <span className="text-xs font-mono text-amber-600/60 dark:text-amber-400/60">
+            {lines.length} elements
           </span>
-        </div>
-        <span className="text-xs font-mono text-muted-foreground/60">
-          {lines.length} elements
-        </span>
-      </motion.div>
-    </div>
-  );
-};
+        </motion.div>
+      </div>
+    );
+  }
+);
+
+WireframeVisualizer.displayName = "WireframeVisualizer";
 
 export default WireframeVisualizer;
