@@ -5,6 +5,7 @@
 // - Each panel represents a key project domain
 // - Tier-based visibility (Owner/Foreman/Worker/Public)
 // - Inline editing for authorized users
+// - Full-screen panel view option
 // - AI Analysis, PDF, Summary actions at bottom
 // ============================================
 
@@ -41,6 +42,8 @@ import {
   DollarSign,
   Building2,
   Thermometer,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +54,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -277,6 +286,7 @@ export default function Stage8FinalReview({
   
   // UI state
   const [activePanel, setActivePanel] = useState<string | null>('panel-1-basics');
+  const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   
@@ -863,11 +873,202 @@ export default function Stage8FinalReview({
     renderCitationValue,
   ]);
   
+  // Render fullscreen panel content
+  const renderFullscreenContent = useCallback((panel: PanelConfig) => {
+    const panelCitations = getCitationsForPanel(panel.dataKeys);
+    
+    return (
+      <div className="space-y-6">
+        {/* All Citations */}
+        {panelCitations.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Verified Data ({panelCitations.length})
+            </h4>
+            <div className="grid gap-3">
+              {panelCitations.map(citation => (
+                <div
+                  key={citation.id}
+                  className="group flex items-start justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                      {citation.cite_type.replace(/_/g, ' ')}
+                    </p>
+                    {renderCitationValue(citation)}
+                    {citation.metadata && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {format(new Date(citation.timestamp), 'MMM dd, yyyy HH:mm')}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    [{citation.id.slice(0, 8)}]
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Panel-specific extra content */}
+        {panel.id === 'panel-4-team' && teamMembers.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Team Members ({teamMembers.length})
+            </h4>
+            <div className="grid gap-2">
+              {teamMembers.map(member => (
+                <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold">
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium">{member.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {panel.id === 'panel-5-timeline' && tasks.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              All Tasks ({tasks.length})
+            </h4>
+            <div className="grid gap-2">
+              {tasks.map(task => (
+                <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <span className="font-medium">{task.title}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{task.priority}</Badge>
+                    <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
+                      {task.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {panel.id === 'panel-6-documents' && (
+          <div className="space-y-4">
+            {documents.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <FolderOpen className="h-4 w-4" />
+                  Documents ({documents.length})
+                </h4>
+                <div className="grid gap-2">
+                  {documents.map(doc => (
+                    <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                      <FileText className="h-5 w-5 text-pink-500" />
+                      <span className="font-medium">{doc.file_name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {contracts.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <FileCheck className="h-4 w-4" />
+                  Contracts ({contracts.length})
+                </h4>
+                <div className="grid gap-2">
+                  {contracts.map(contract => (
+                    <div key={contract.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <FileCheck className="h-5 w-5 text-pink-600" />
+                        <span className="font-medium">#{contract.contract_number}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{contract.status}</Badge>
+                        {contract.total_amount && (
+                          <span className="font-semibold">${contract.total_amount.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {panel.id === 'panel-7-weather' && weatherData && (
+          <div>
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Cloud className="h-4 w-4" />
+              Current Conditions
+            </h4>
+            <div className="p-6 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30">
+              <div className="flex items-center gap-4">
+                <Thermometer className="h-12 w-12 text-sky-600" />
+                <div>
+                  <p className="text-4xl font-bold text-sky-700 dark:text-sky-300">
+                    {weatherData.temp !== undefined ? `${Math.round(weatherData.temp)}°C` : 'N/A'}
+                  </p>
+                  <p className="text-lg text-sky-600/80 dark:text-sky-400/80 capitalize">
+                    {weatherData.condition || 'Unknown'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {panel.id === 'panel-8-financial' && canViewFinancials && (
+          <div>
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Financial Overview
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 rounded-xl bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30">
+                <p className="text-sm text-muted-foreground mb-1">Total Contract Value</p>
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300">
+                  ${contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="p-6 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30">
+                <p className="text-sm text-muted-foreground mb-1">Active Contracts</p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">
+                  {contracts.filter(c => c.status !== 'archived').length}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {panelCitations.length === 0 && !['panel-4-team', 'panel-5-timeline', 'panel-6-documents', 'panel-7-weather', 'panel-8-financial'].includes(panel.id) && (
+          <div className="text-center py-8">
+            <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">No data recorded for this panel yet</p>
+          </div>
+        )}
+      </div>
+    );
+  }, [getCitationsForPanel, renderCitationValue, teamMembers, tasks, documents, contracts, weatherData, canViewFinancials]);
+  
   // Render single panel
   const renderPanel = useCallback((panel: PanelConfig) => {
     const hasAccess = hasAccessToTier(panel.visibilityTier);
     const isActive = activePanel === panel.id;
     const Icon = panel.icon;
+    const panelCitations = getCitationsForPanel(panel.dataKeys);
+    const dataCount = panelCitations.length + 
+      (panel.id === 'panel-4-team' ? teamMembers.length : 0) +
+      (panel.id === 'panel-5-timeline' ? tasks.length : 0) +
+      (panel.id === 'panel-6-documents' ? documents.length + contracts.length : 0);
     
     if (!hasAccess) {
       return (
@@ -906,18 +1107,33 @@ export default function Stage8FinalReview({
       <motion.div
         key={panel.id}
         className={cn(
-          "relative rounded-xl border-2 overflow-hidden cursor-pointer transition-all duration-200",
+          "relative rounded-xl border-2 overflow-hidden transition-all duration-200",
           panel.borderColor,
           isActive && "ring-2 ring-offset-2",
           isActive && panel.color.replace('text-', 'ring-')
         )}
-        onClick={() => setActivePanel(isActive ? null : panel.id)}
         whileHover={{ scale: 1.02 }}
         layout
       >
+        {/* Fullscreen Button */}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="absolute top-2 right-2 z-10 h-7 w-7 p-0 opacity-70 hover:opacity-100"
+          onClick={(e) => {
+            e.stopPropagation();
+            setFullscreenPanel(panel.id);
+          }}
+        >
+          <Maximize2 className="h-4 w-4" />
+        </Button>
+        
         {/* Panel Header */}
-        <div className={cn("p-3 border-b", panel.bgColor)}>
-          <div className="flex items-center justify-between">
+        <div 
+          className={cn("p-3 border-b cursor-pointer", panel.bgColor)}
+          onClick={() => setActivePanel(isActive ? null : panel.id)}
+        >
+          <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2">
               <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", panel.bgColor)}>
                 <Icon className={cn("h-4 w-4", panel.color)} />
@@ -926,7 +1142,9 @@ export default function Stage8FinalReview({
                 <h3 className={cn("text-sm font-semibold", panel.color)}>
                   {t(panel.titleKey, panel.title)}
                 </h3>
-                <p className="text-[10px] text-muted-foreground">{panel.description}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {dataCount > 0 ? `${dataCount} items` : panel.description}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -961,10 +1179,20 @@ export default function Stage8FinalReview({
   }, [
     hasAccessToTier,
     activePanel,
+    getCitationsForPanel,
+    teamMembers,
+    tasks,
+    documents,
+    contracts,
     getTierBadge,
     renderPanelContent,
     t,
   ]);
+  
+  // Get current fullscreen panel config
+  const fullscreenPanelConfig = useMemo(() => {
+    return PANELS.find(p => p.id === fullscreenPanel);
+  }, [fullscreenPanel]);
   
   if (isLoading) {
     return (
@@ -1036,6 +1264,33 @@ export default function Stage8FinalReview({
           {PANELS.map(renderPanel)}
         </div>
       </div>
+      
+      {/* Fullscreen Panel Dialog */}
+      <Dialog open={!!fullscreenPanel} onOpenChange={(open) => !open && setFullscreenPanel(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          {fullscreenPanelConfig && (
+            <>
+              <DialogHeader className={cn("pb-4 border-b", fullscreenPanelConfig.bgColor)}>
+                <div className="flex items-center gap-3">
+                  <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", fullscreenPanelConfig.bgColor)}>
+                    <fullscreenPanelConfig.icon className={cn("h-5 w-5", fullscreenPanelConfig.color)} />
+                  </div>
+                  <div className="flex-1">
+                    <DialogTitle className={cn("text-lg", fullscreenPanelConfig.color)}>
+                      {t(fullscreenPanelConfig.titleKey, fullscreenPanelConfig.title)}
+                    </DialogTitle>
+                    <p className="text-sm text-muted-foreground">{fullscreenPanelConfig.description}</p>
+                  </div>
+                  {getTierBadge(fullscreenPanelConfig.visibilityTier)}
+                </div>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto py-4">
+                {renderFullscreenContent(fullscreenPanelConfig)}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       
       {/* Bottom Action Bar */}
       <div className="border-t border-violet-200/50 dark:border-violet-800/30 bg-gradient-to-r from-violet-50/80 via-background to-purple-50/80 dark:from-violet-950/50 dark:via-background dark:to-purple-950/50 p-4 shrink-0">
