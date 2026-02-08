@@ -717,6 +717,13 @@ const CanvasPanel = ({
                     step={1}
                     value={wastePercent}
                     onChange={(e) => onWastePercentChange(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
+                    onFocus={(e) => {
+                      if (wastePercent === 0) {
+                        e.target.value = '';
+                      } else {
+                        e.target.select();
+                      }
+                    }}
                     className="w-16 h-8 text-center text-sm font-semibold"
                   />
                   <span className="text-sm font-medium text-amber-600 dark:text-amber-400">%</span>
@@ -758,6 +765,13 @@ const CanvasPanel = ({
                     step={1}
                     value={markupPercent}
                     onChange={(e) => onMarkupPercentChange(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                    onFocus={(e) => {
+                      if (markupPercent === 0) {
+                        e.target.value = '';
+                      } else {
+                        e.target.select();
+                      }
+                    }}
                     className="w-14 h-7 text-center text-sm"
                   />
                   <span className="text-sm text-muted-foreground">%</span>
