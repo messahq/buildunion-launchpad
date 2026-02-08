@@ -58,8 +58,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import { useIsTeamMember } from "@/hooks/useIsTeamMember";
-import { useTeamMembers, TeamMemberInfo } from "@/hooks/useTeamMembers";
+// Team hooks removed for Project 3.0
+interface TeamMemberInfo { 
+  id: string; 
+  full_name: string | null;
+  userId?: string;
+  fullName?: string;
+  avatarUrl?: string;
+  companyName?: string;
+  primaryTrade?: string;
+  role?: string;
+  projectName?: string;
+}
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -212,8 +222,9 @@ export default function BuildUnionMessages() {
   const navigate = useNavigate();
   const { subscription } = useSubscription();
   const { isAdmin } = useAdminRole();
-  const { isTeamMember } = useIsTeamMember();
-  const { teamMembers, isLoading: isLoadingTeamMembers } = useTeamMembers();
+  const isTeamMember = false; // useIsTeamMember removed for Project 3.0
+  const teamMembers: TeamMemberInfo[] = []; // useTeamMembers removed for Project 3.0
+  const isLoadingTeamMembers = false;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);

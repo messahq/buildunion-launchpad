@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
-import AskMessaChat from "@/components/AskMessaChat";
+// AskMessaChat removed - will be rebuilt in Project 3.0
 import FAQDialog from "@/components/community/FAQDialog";
 import UnionBenefitsDialog from "@/components/community/UnionBenefitsDialog";
 import CertificationsDialog from "@/components/community/CertificationsDialog";
@@ -676,7 +676,7 @@ const BuildUnionCommunity = () => {
       <BuildUnionFooter />
       
       {/* Dialogs */}
-      <AskMessaChat isOpen={isMessaChatOpen} onClose={() => setIsMessaChatOpen(false)} />
+      {/* AskMessaChat removed for Project 3.0 */}
       <FAQDialog isOpen={isFAQOpen} onClose={() => setIsFAQOpen(false)} />
       <UnionBenefitsDialog isOpen={isUnionBenefitsOpen} onClose={() => setIsUnionBenefitsOpen(false)} />
       <CertificationsDialog isOpen={isCertificationsOpen} onClose={() => setIsCertificationsOpen(false)} />

@@ -2,7 +2,6 @@
 // Implements tiered model usage for cost optimization
 
 import { SubscriptionTier } from "@/hooks/useSubscription";
-import { FilterAnswers, AITriggers } from "@/components/projects2/FilterQuestions";
 
 // ============================================
 // MODEL DEFINITIONS
@@ -45,38 +44,20 @@ export interface ModelConfig {
 
 export function selectModels(
   tier: SubscriptionTier,
-  filterAnswers?: FilterAnswers | null,
-  aiTriggers?: AITriggers | null,
   taskComplexity: "simple" | "standard" | "complex" = "standard"
 ): ModelConfig {
   const isPremium = tier === "premium" || tier === "enterprise";
   const isPro = tier === "pro" || isPremium;
   const isFree = !isPro;
   
-  // Determine if work is complex (structural/mechanical)
-  const hasComplexWork = 
-    filterAnswers?.technicalFilter?.affectsStructure ||
-    filterAnswers?.technicalFilter?.affectsMechanical ||
-    filterAnswers?.technicalFilter?.affectsFacade;
-  
   // Determine if dual engine should run
-  // Premium: always available
-  // Pro: only if conflicts detected or complex work
-  // Free: never
   let runDualEngine = false;
   if (isPremium) {
-    runDualEngine = true; // Premium has full control
-  } else if (isPro && hasComplexWork) {
-    runDualEngine = true; // Pro gets dual engine for complex work
+    runDualEngine = true;
   }
   
   // Determine if OBC validation should run
-  // Only for Pro+ with structural/mechanical work
-  const runOBCValidation = isPro && (
-    aiTriggers?.obcSearch ||
-    filterAnswers?.technicalFilter?.affectsStructure ||
-    filterAnswers?.technicalFilter?.affectsMechanical
-  );
+  const runOBCValidation = isPro;
   
   // Select models based on tier and complexity
   let visualModel: string;
@@ -85,13 +66,11 @@ export function selectModels(
   let tokenTier: keyof typeof TOKEN_LIMITS;
   
   if (isPremium) {
-    // Premium: Best models
-    visualModel = AI_MODELS.GEMINI_FLASH; // Pro for deep analysis
+    visualModel = AI_MODELS.GEMINI_FLASH;
     estimationModel = AI_MODELS.GEMINI_FLASH;
     obcModel = runOBCValidation ? AI_MODELS.GPT5_MINI : null;
     tokenTier = "premium";
   } else if (isPro) {
-    // Pro: Balanced models
     visualModel = taskComplexity === "complex" 
       ? AI_MODELS.GEMINI_FLASH 
       : AI_MODELS.GEMINI_FLASH_LITE;
@@ -99,7 +78,6 @@ export function selectModels(
     obcModel = runOBCValidation ? AI_MODELS.GPT5_NANO : null;
     tokenTier = "standard";
   } else {
-    // Free: Cheapest models, single engine only
     visualModel = AI_MODELS.GEMINI_FLASH_LITE;
     estimationModel = AI_MODELS.GEMINI_FLASH_LITE;
     obcModel = null;
@@ -124,7 +102,6 @@ export function selectModels(
 
 export function detectTaskComplexity(
   description: string,
-  filterAnswers?: FilterAnswers | null,
   imageCount: number = 1,
   documentCount: number = 0
 ): "simple" | "standard" | "complex" {
@@ -132,16 +109,12 @@ export function detectTaskComplexity(
   
   // Complex indicators
   const complexIndicators = [
-    filterAnswers?.technicalFilter?.affectsStructure,
-    filterAnswers?.technicalFilter?.affectsMechanical,
-    filterAnswers?.technicalFilter?.affectsFacade,
     documentCount > 2,
     imageCount > 3,
     descLower.includes("blueprint"),
     descLower.includes("structural"),
     descLower.includes("renovation"),
     descLower.includes("permit"),
-    filterAnswers?.workflowFilter?.subcontractorCount === "6+",
   ].filter(Boolean).length;
   
   // Simple indicators
@@ -150,42 +123,9 @@ export function detectTaskComplexity(
     descLower.includes("simple"),
     descLower.includes("small"),
     imageCount === 1 && documentCount === 0,
-    !filterAnswers?.technicalFilter?.affectsStructure,
-    !filterAnswers?.technicalFilter?.affectsMechanical,
   ].filter(Boolean).length;
   
   if (complexIndicators >= 3) return "complex";
-  if (simpleIndicators >= 4) return "simple";
+  if (simpleIndicators >= 3) return "simple";
   return "standard";
-}
-
-// ============================================
-// SHOULD RUN ANALYSIS
-// ============================================
-
-export function shouldRunSecondEngine(
-  tier: SubscriptionTier,
-  firstEngineResult: {
-    hasConflicts?: boolean;
-    confidence?: "high" | "medium" | "low";
-    area?: number | null;
-  },
-  filterAnswers?: FilterAnswers | null
-): boolean {
-  const isPremium = tier === "premium" || tier === "enterprise";
-  const isPro = tier === "pro" || isPremium;
-  
-  // Premium always has the option
-  if (isPremium) return true;
-  
-  // Pro: run if conflicts detected or low confidence or complex work
-  if (isPro) {
-    if (firstEngineResult.hasConflicts) return true;
-    if (firstEngineResult.confidence === "low") return true;
-    if (filterAnswers?.technicalFilter?.affectsStructure) return true;
-    if (filterAnswers?.technicalFilter?.affectsMechanical) return true;
-  }
-  
-  // Free: never run second engine
-  return false;
 }

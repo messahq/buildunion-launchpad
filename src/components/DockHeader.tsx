@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
-import AskMessaChat from "@/components/AskMessaChat";
+// AskMessaChat removed - will be rebuilt in Project 3.0
 
 interface DockHeaderProps {
   logo?: React.ReactNode;
@@ -264,8 +264,7 @@ const DockHeader = ({
         </div>
       </div>
 
-      {/* Ask Messa Chat */}
-      <AskMessaChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      {/* Ask Messa Chat - removed for Project 3.0 */}
     </header>
   );
 };

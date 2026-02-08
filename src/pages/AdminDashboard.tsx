@@ -69,7 +69,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import DatabaseSyncDashboard from "@/components/admin/DatabaseSyncDashboard";
+// DatabaseSyncDashboard removed for Project 3.0
 
 interface UserWithProfile {
   id: string;
@@ -802,9 +802,13 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Database Sync Tab */}
+          {/* Database Sync Tab - removed for Project 3.0 */}
           <TabsContent value="sync" className="space-y-6">
-            <DatabaseSyncDashboard />
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                Database Sync Dashboard will be rebuilt in Project 3.0
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
