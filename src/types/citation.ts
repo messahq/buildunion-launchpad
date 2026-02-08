@@ -24,6 +24,10 @@ export const CITATION_TYPES = {
   TIMELINE: 'TIMELINE',
   END_DATE: 'END_DATE',
   DNA_FINALIZED: 'DNA_FINALIZED',
+  // Stage 5: Visual Intelligence
+  BLUEPRINT_UPLOAD: 'BLUEPRINT_UPLOAD',
+  SITE_PHOTO: 'SITE_PHOTO',
+  VISUAL_VERIFICATION: 'VISUAL_VERIFICATION',
 } as const;
 
 export type CitationType = typeof CITATION_TYPES[keyof typeof CITATION_TYPES];
