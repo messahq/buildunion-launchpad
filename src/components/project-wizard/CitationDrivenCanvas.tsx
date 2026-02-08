@@ -18,6 +18,7 @@ interface CitationDrivenCanvasProps {
   highlightedCitationId?: string | null;
   isLoading?: boolean;
   className?: string;
+  onGfaLocked?: boolean; // Trigger when GFA was just locked
 }
 
 /**
@@ -28,7 +29,7 @@ interface CitationDrivenCanvasProps {
  * The rendering order and components are determined by cite_type.
  */
 const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProps>(
-  ({ citations, onCitationClick, highlightedCitationId, isLoading, className }, ref) => {
+  ({ citations, onCitationClick, highlightedCitationId, isLoading, className, onGfaLocked }, ref) => {
     
     // Organize citations by type for structured rendering
     const organizedCitations = useMemo(() => {
@@ -130,6 +131,8 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
                       citation={organizedCitations.workType}
                       onCitationClick={onCitationClick}
                       isHighlighted={highlightedCitationId === organizedCitations.workType.id}
+                      gfaValue={organizedCitations.gfa?.metadata?.gfa_value as number | undefined}
+                      onGfaLocked={onGfaLocked}
                     />
                   )}
                 </div>

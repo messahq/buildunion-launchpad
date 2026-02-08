@@ -220,14 +220,33 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
       });
 
       // For address, include place data with coordinates
-      if (question.key === 'project_address' && placeData) {
+      if (question.key === 'project_address') {
+        let finalAddress = answer;
+        let finalCoordinates: { lat: number; lng: number } | null = null;
+        
+        if (placeData) {
+          // User selected from autocomplete - use exact data
+          finalAddress = placeData.formattedAddress;
+          finalCoordinates = placeData.coordinates;
+          console.log("[WizardChat] Using autocomplete coordinates:", finalCoordinates);
+        } else {
+          // User typed manually - attempt geocoding as fallback
+          console.log("[WizardChat] No placeData, attempting geocode for:", answer);
+          finalCoordinates = await geocodeAddress(answer);
+          if (finalCoordinates) {
+            console.log("[WizardChat] Geocoded coordinates:", finalCoordinates);
+          } else {
+            console.warn("[WizardChat] Geocoding failed, proceeding without coordinates");
+          }
+        }
+        
         citation = {
           ...citation,
-          answer: placeData.formattedAddress,
-          value: placeData.formattedAddress,
+          answer: finalAddress,
+          value: finalAddress,
           metadata: {
             ...citation.metadata,
-            coordinates: placeData.coordinates,
+            coordinates: finalCoordinates || undefined,
           },
         };
       }
@@ -236,9 +255,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
       const userMessage: ChatMessage = {
         id: `user_${Date.now()}`,
         type: 'user',
-        content: question.key === 'work_type' 
-          ? WORK_TYPE_LABELS[answer as WorkType] || answer 
-          : (placeData?.formattedAddress || answer),
+        content: citation.answer, // Use the final citation answer (includes formatted address)
         citation,
         timestamp: new Date().toISOString(),
         isSaving: true,

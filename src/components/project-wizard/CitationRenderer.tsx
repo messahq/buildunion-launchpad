@@ -20,6 +20,9 @@ interface CitationRendererProps {
   onCitationClick?: (citationId: string) => void;
   isHighlighted?: boolean;
   className?: string;
+  // For reactive wireframe
+  gfaValue?: number;
+  onGfaLocked?: boolean;
 }
 
 /**
@@ -27,7 +30,7 @@ interface CitationRendererProps {
  * Decides what to render based on cite_type
  */
 const CitationRenderer = forwardRef<HTMLDivElement, CitationRendererProps>(
-  ({ citation, onCitationClick, isHighlighted, className }, ref) => {
+  ({ citation, onCitationClick, isHighlighted, className, gfaValue, onGfaLocked }, ref) => {
     
     // Render based on citation type
     switch (citation.cite_type) {
@@ -50,6 +53,8 @@ const CitationRenderer = forwardRef<HTMLDivElement, CitationRendererProps>(
             onCitationClick={onCitationClick}
             isHighlighted={isHighlighted}
             className={className}
+            gfaValue={gfaValue}
+            onGfaLocked={onGfaLocked}
           />
         );
       
@@ -171,9 +176,15 @@ LocationRenderer.displayName = "LocationRenderer";
 
 /**
  * WORK_TYPE Renderer - Wireframe SVG Animation
+ * Now accepts optional gfaValue for reactive sizing
  */
-const WorkTypeRenderer = forwardRef<HTMLDivElement, SubRendererProps>(
-  ({ citation, onCitationClick, isHighlighted, className }, ref) => {
+interface WorkTypeRendererProps extends SubRendererProps {
+  gfaValue?: number;
+  onGfaLocked?: boolean;
+}
+
+const WorkTypeRenderer = forwardRef<HTMLDivElement, WorkTypeRendererProps>(
+  ({ citation, onCitationClick, isHighlighted, className, gfaValue, onGfaLocked }, ref) => {
     const workType = citation.metadata?.work_type_key || citation.answer;
     const label = WORK_TYPE_LABELS[workType as WorkType] || workType;
 
@@ -200,7 +211,11 @@ const WorkTypeRenderer = forwardRef<HTMLDivElement, SubRendererProps>(
             <CitationBadge citationId={citation.id} />
           </div>
           
-          <WireframeVisualizer workType={workType} />
+          <WireframeVisualizer 
+            workType={workType} 
+            gfaValue={gfaValue}
+            onGfaLocked={onGfaLocked}
+          />
         </div>
       </motion.div>
     );
