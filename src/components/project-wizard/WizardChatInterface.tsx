@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Send, FileText, MapPin, Building2, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { Citation, CITATION_TYPES, getCitationType, createCitation } from "@/types/citation";
 import { WORK_TYPES, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
+import AddressAutocomplete, { type PlaceData } from "@/components/AddressAutocomplete";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,9 @@ interface WizardChatInterfaceProps {
   onStepComplete: () => void;
 }
 
+// Track place data for address submissions
+let pendingPlaceData: PlaceData | null = null;
+
 const WIZARD_QUESTIONS = [
   {
     key: 'project_name',
@@ -47,7 +51,7 @@ const WIZARD_QUESTIONS = [
   {
     key: 'project_address',
     question: 'Where is the project located?',
-    placeholder: 'Enter the full address...',
+    placeholder: 'Enter the full address (Toronto-focused)...',
     icon: MapPin,
     citeType: CITATION_TYPES.LOCATION,
   },
@@ -67,6 +71,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [placeData, setPlaceData] = useState<PlaceData | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const highlightedRef = useRef<HTMLDivElement>(null);
 
@@ -201,8 +206,8 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
 
       const question = WIZARD_QUESTIONS[currentStep];
       
-      // Create the citation
-      const citation = createCitation({
+      // Create the citation base
+      let citation = createCitation({
         cite_type: question.citeType,
         question_key: question.key,
         answer: question.key === 'work_type' 
@@ -214,13 +219,26 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
           : undefined,
       });
 
+      // For address, include place data with coordinates
+      if (question.key === 'project_address' && placeData) {
+        citation = {
+          ...citation,
+          answer: placeData.formattedAddress,
+          value: placeData.formattedAddress,
+          metadata: {
+            ...citation.metadata,
+            coordinates: placeData.coordinates,
+          },
+        };
+      }
+
       // Create user message with saving state
       const userMessage: ChatMessage = {
         id: `user_${Date.now()}`,
         type: 'user',
         content: question.key === 'work_type' 
           ? WORK_TYPE_LABELS[answer as WorkType] || answer 
-          : answer,
+          : (placeData?.formattedAddress || answer),
         citation,
         timestamp: new Date().toISOString(),
         isSaving: true,
@@ -228,16 +246,9 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
 
       setMessages(prev => [...prev, userMessage]);
       setInputValue("");
+      setPlaceData(null); // Reset place data after use
       setIsSaving(true);
       scrollToBottom();
-
-      // If address, geocode first
-      if (question.key === 'project_address') {
-        const coords = await geocodeAddress(answer);
-        if (coords) {
-          citation.metadata = { ...citation.metadata, coordinates: coords };
-        }
-      }
 
       // CRITICAL: Save to DB FIRST
       const saveSuccess = await saveCitationToDb(citation);
@@ -426,7 +437,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 </div>
               </div>
             ) : (
-              /* Text Input */
+              /* Text/Address Input */
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -434,18 +445,33 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 }}
                 className="flex gap-2"
               >
-                <div className="flex-1 relative">
-                  {currentQuestion.icon && (
-                    <currentQuestion.icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+                <div className="flex-1">
+                  {currentQuestion.key === 'project_address' ? (
+                    <AddressAutocomplete
+                      value={inputValue}
+                      onChange={setInputValue}
+                      onPlaceSelected={(placeData) => {
+                        setPlaceData(placeData);
+                        console.log("[WizardChat] Place selected:", placeData);
+                      }}
+                      placeholder={currentQuestion.placeholder}
+                      className="pl-10 h-11 rounded-full bg-card border-amber-200 dark:border-amber-800 focus:border-amber-500 focus:ring-amber-500/20"
+                    />
+                  ) : (
+                    <div className="relative">
+                      {currentQuestion.icon && (
+                        <currentQuestion.icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+                      )}
+                      <Input
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        placeholder={currentQuestion.placeholder}
+                        className="pl-10 h-11 rounded-full bg-card border-amber-200 dark:border-amber-800 focus:border-amber-500 focus:ring-amber-500/20"
+                        autoFocus
+                        disabled={isSaving}
+                      />
+                    </div>
                   )}
-                  <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder={currentQuestion.placeholder}
-                    className="pl-10 h-11 rounded-full bg-card border-amber-200 dark:border-amber-800 focus:border-amber-500 focus:ring-amber-500/20"
-                    autoFocus
-                    disabled={isSaving}
-                  />
                 </div>
                 <Button
                   type="submit"

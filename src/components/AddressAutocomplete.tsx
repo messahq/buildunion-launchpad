@@ -7,19 +7,28 @@ import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 
 const libraries: ("places")[] = ["places"];
 
+export interface PlaceData {
+  formattedAddress: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+}
+
 interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onPlaceSelected?: (placeData: PlaceData) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
 }
 
 // Inner component that only mounts when we have a valid API key
-// This ensures useJsApiLoader is only called once with the correct key
 const AddressAutocompleteWithMaps = ({
   value,
   onChange,
+  onPlaceSelected,
   placeholder,
   className,
   disabled,
@@ -37,24 +46,39 @@ const AddressAutocompleteWithMaps = ({
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
     libraries,
+    language: "en",
   });
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
+    // Restrict to Canada with Toronto bias
+    autocomplete.setComponentRestrictions({ country: "ca" });
+    autocomplete.setOptions({
+      fields: ["formatted_address", "geometry", "address_components"],
+      types: ["geocode"],
+    });
     autocompleteRef.current = autocomplete;
   }, []);
 
   const onPlaceChanged = useCallback(() => {
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
-      if (place.formatted_address) {
-        setInputValue(place.formatted_address);
-        onChange(place.formatted_address);
-      } else if (place.name) {
-        setInputValue(place.name);
-        onChange(place.name);
+      
+      if (place.formatted_address && place.geometry?.location) {
+        const formattedAddress = place.formatted_address;
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        
+        setInputValue(formattedAddress);
+        onChange(formattedAddress);
+        
+        // Emit complete place data with coordinates
+        onPlaceSelected?.({
+          formattedAddress,
+          coordinates: { lat, lng },
+        });
       }
     }
-  }, [onChange]);
+  }, [onChange, onPlaceSelected]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -106,8 +130,8 @@ const AddressAutocompleteWithMaps = ({
       onPlaceChanged={onPlaceChanged}
       options={{
         componentRestrictions: { country: "ca" },
-        types: ["geocode", "establishment"],
-        fields: ["formatted_address", "name", "address_components", "geometry"],
+        types: ["geocode"],
+        fields: ["formatted_address", "geometry", "address_components"],
       }}
     >
       <div className="relative">
@@ -129,7 +153,8 @@ const AddressAutocompleteWithMaps = ({
 export const AddressAutocomplete = ({
   value,
   onChange,
-  placeholder = "Enter address...",
+  onPlaceSelected,
+  placeholder = "Enter address (Toronto-focused search)...",
   className,
   disabled = false,
 }: AddressAutocompleteProps) => {
@@ -158,7 +183,7 @@ export const AddressAutocomplete = ({
           className={cn("pr-10", className)}
           disabled={disabled}
         />
-        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50 animate-spin" />
       </div>
     );
   }
@@ -175,10 +200,10 @@ export const AddressAutocomplete = ({
             className={cn("pr-10", className)}
             disabled={disabled}
           />
-          <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
         </div>
         <p className="text-xs text-muted-foreground">
-          Include city and province for accurate location (e.g., 123 Main St, Toronto, ON)
+          Include full address with city & province (e.g., 15 Norton Ave, Toronto, ON)
         </p>
       </div>
     );
@@ -189,6 +214,7 @@ export const AddressAutocomplete = ({
     <AddressAutocompleteWithMaps
       value={value}
       onChange={onChange}
+      onPlaceSelected={onPlaceSelected}
       placeholder={placeholder}
       className={className}
       disabled={disabled}
