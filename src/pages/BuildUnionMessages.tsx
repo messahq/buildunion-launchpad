@@ -223,11 +223,20 @@ export default function BuildUnionMessages() {
   const { subscription } = useSubscription();
   const { isAdmin } = useAdminRole();
   
+  // ✓ FRESH CHAT CONTEXT: Read project ID from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const contextProjectId = urlParams.get('project');
+  const contextUserId = urlParams.get('user');
+  
   // ✓ PROJECT 3.0 TEAM MEMBER STATE - Check if user is a team member of any project
   const [isTeamMemberOfProject, setIsTeamMemberOfProject] = useState(false);
   const [projectOwnerHasValidTier, setProjectOwnerHasValidTier] = useState(false);
   const [teamMembersFromProjects, setTeamMembersFromProjects] = useState<TeamMemberInfo[]>([]);
   const [isLoadingTeamAccess, setIsLoadingTeamAccess] = useState(true);
+  
+  // ✓ FRESH CHAT CONTEXT: Project-specific team members when accessed from Stage 8
+  const [projectSpecificTeamMembers, setProjectSpecificTeamMembers] = useState<TeamMemberInfo[]>([]);
+  const [currentProjectName, setCurrentProjectName] = useState<string | null>(null);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
@@ -282,6 +291,107 @@ export default function BuildUnionMessages() {
     sent_at: string;
   }>>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  
+  // ✓ FRESH CHAT CONTEXT: Load project-specific team members when projectId is in URL
+  useEffect(() => {
+    const loadProjectContext = async () => {
+      if (!contextProjectId || !user) return;
+      
+      try {
+        // Get project name
+        const { data: project } = await supabase
+          .from('projects')
+          .select('name, user_id')
+          .eq('id', contextProjectId)
+          .single();
+        
+        if (project) {
+          setCurrentProjectName(project.name);
+        }
+        
+        // Get project-specific team members (NOT from previous projects)
+        const { data: members } = await supabase
+          .from('project_members')
+          .select('user_id, role')
+          .eq('project_id', contextProjectId)
+          .neq('user_id', user.id);
+        
+        if (members && members.length > 0) {
+          const userIds = members.map(m => m.user_id);
+          
+          // Include project owner if not the current user
+          if (project?.user_id && project.user_id !== user.id) {
+            userIds.push(project.user_id);
+          }
+          
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, avatar_url')
+            .in('user_id', userIds);
+          
+          const teamList: TeamMemberInfo[] = members.map(m => {
+            const profile = profiles?.find(p => p.user_id === m.user_id);
+            return {
+              id: m.user_id,
+              full_name: profile?.full_name || 'Team Member',
+              userId: m.user_id,
+              fullName: profile?.full_name || 'Team Member',
+              avatarUrl: profile?.avatar_url || undefined,
+              role: m.role,
+              projectName: project?.name,
+            };
+          });
+          
+          // Add owner if needed
+          if (project?.user_id && project.user_id !== user.id) {
+            const ownerProfile = profiles?.find(p => p.user_id === project.user_id);
+            teamList.unshift({
+              id: project.user_id,
+              full_name: ownerProfile?.full_name || 'Project Owner',
+              userId: project.user_id,
+              fullName: ownerProfile?.full_name || 'Project Owner',
+              avatarUrl: ownerProfile?.avatar_url || undefined,
+              role: 'owner',
+              projectName: project.name,
+            });
+          }
+          
+          // Deduplicate
+          const uniqueTeam = teamList.filter((member, index, self) =>
+            index === self.findIndex(m => m.userId === member.userId)
+          );
+          
+          setProjectSpecificTeamMembers(uniqueTeam);
+          console.log('[Messages] ✓ Fresh Chat Context: Loaded', uniqueTeam.length, 'team members for project', contextProjectId);
+        }
+        
+        // If contextUserId is provided, auto-select that conversation
+        if (contextUserId && user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('user_id', contextUserId)
+            .single();
+          
+          if (profile) {
+            setSelectedConversation({
+              partnerId: contextUserId,
+              partnerName: profile.full_name || 'Team Member',
+              partnerAvatar: profile.avatar_url || undefined,
+              lastMessage: '',
+              lastMessageTime: new Date().toISOString(),
+              unreadCount: 0,
+              isLastMessageMine: false,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[Messages] Failed to load project context:', err);
+      }
+    };
+    
+    loadProjectContext();
+  }, [contextProjectId, contextUserId, user]);
   
   // ✓ CHAT ACCESS LOGIC: Check team membership and owner tier
   useEffect(() => {

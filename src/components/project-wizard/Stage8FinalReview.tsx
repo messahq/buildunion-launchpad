@@ -702,15 +702,16 @@ export default function Stage8FinalReview({
   
   // ✓ PERSISTENCE CHECK: Sync citations to localStorage whenever they change
   // Prevents data loss on Dev Refresh
+  // ✓ CRITICAL: No hardcoded fallbacks - only use actual project data
   useEffect(() => {
     if (projectId && citations.length > 0) {
-      // Get GFA value from citations for sync
+      // Get GFA value from citations for sync - NO DEFAULT FALLBACK
       const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
       const gfaValue = typeof gfaCitation?.value === 'number' 
         ? gfaCitation.value 
         : typeof gfaCitation?.metadata?.gfa_value === 'number'
           ? gfaCitation.metadata.gfa_value
-          : 1200;
+          : 0; // ✓ NO HARDCODED FALLBACK - 0 means "not set"
       
       syncCitationsToLocalStorage(projectId, citations, 8, gfaValue);
       console.log('[Stage8] ✓ Citations synced to localStorage:', citations.length);
@@ -1474,36 +1475,60 @@ export default function Stage8FinalReview({
     const panelCitations = getCitationsForPanel(panel.dataKeys);
     
     // ======= PANEL 2: Area & Dimensions =======
-    // ✓ KÉNYSZERÍTETT ADAT-BEHÚZÁS: Fix 1,200 sq ft ha nincs citáció
+    // ✓ CRITICAL: NO HARDCODED FALLBACKS - Read only from current session/projects table
     if (panel.id === 'panel-2-gfa') {
       const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
       const blueprintCitation = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
       const siteConditionCitation = citations.find(c => c.cite_type === 'SITE_CONDITION');
       
-      // ✓ FALLBACK: Fix 1,200 sq ft érték ha nincs GFA citáció
+      // ✓ NO FALLBACK: Only use actual citation data
+      const hasGfaData = gfaCitation && (
+        typeof gfaCitation.value === 'number' || 
+        typeof gfaCitation.metadata?.gfa_value === 'number'
+      );
       const gfaValue = typeof gfaCitation?.value === 'number' 
         ? gfaCitation.value 
         : typeof gfaCitation?.metadata?.gfa_value === 'number'
           ? gfaCitation.metadata.gfa_value
-          : 1200; // ✓ DEFAULT: 1,200 sq ft
+          : null; // ✓ NULL means not set - no hardcoded fallback
       const gfaUnit = gfaCitation?.metadata?.gfa_unit || 'sq ft';
       
       return (
         <div className="space-y-4">
-          {/* GFA Primary Display - Always show locked */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/50 dark:border-blue-800/30">
+          {/* GFA Primary Display - Show actual data or "Not Set" */}
+          <div className={cn(
+            "p-4 rounded-xl border",
+            hasGfaData 
+              ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200/50 dark:border-blue-800/30"
+              : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200/50 dark:border-gray-800/30"
+          )}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Gross Floor Area</span>
-              <Badge variant="outline" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 gap-1 animate-pulse">
-                <Lock className="h-2.5 w-2.5" />
-                LOCKED
-              </Badge>
+              <span className={cn(
+                "text-xs font-medium uppercase tracking-wide",
+                hasGfaData ? "text-blue-600 dark:text-blue-400" : "text-gray-500"
+              )}>Gross Floor Area</span>
+              {hasGfaData ? (
+                <Badge variant="outline" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 gap-1 animate-pulse">
+                  <Lock className="h-2.5 w-2.5" />
+                  LOCKED
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] bg-gray-100 text-gray-500">
+                  Not Set
+                </Badge>
+              )}
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                {gfaValue.toLocaleString()}
+              <span className={cn(
+                "text-3xl font-bold",
+                hasGfaData ? "text-blue-700 dark:text-blue-300" : "text-gray-400"
+              )}>
+                {gfaValue !== null ? gfaValue.toLocaleString() : '—'}
               </span>
-              <span className="text-lg text-blue-600/70 dark:text-blue-400/70">{gfaUnit}</span>
+              <span className={cn(
+                "text-lg",
+                hasGfaData ? "text-blue-600/70 dark:text-blue-400/70" : "text-gray-400"
+              )}>{gfaUnit}</span>
             </div>
             {gfaCitation && (
               <p className="text-[10px] text-blue-500 mt-1">
@@ -1555,19 +1580,31 @@ export default function Stage8FinalReview({
     }
     
     // ======= PANEL 3: Trade & Template =======
-    // ✓ UNIVERSAL TRADE OVERRIDE: Use citations or fallback to painting
+    // ✓ CRITICAL: NO HARDCODED FALLBACKS - Dynamic label shows Sub-worktype from citations
     if (panel.id === 'panel-3-trade') {
       const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
       const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
       const executionCitation = citations.find(c => c.cite_type === 'EXECUTION_MODE');
       const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
       
-      // ✓ KÉNYSZERÍTETT OVERRIDE: Ha nincs trade citation, használd a workType-ot vagy 'painting' default
-      const selectedTrade = tradeCitation?.answer || workTypeCitation?.answer || 'painting';
-      const normalizedTrade = selectedTrade.toLowerCase().trim();
+      // ✓ NO DEFAULT FALLBACK: Only use actual citation data
+      const hasTradeCitation = tradeCitation || workTypeCitation;
+      const selectedTrade = tradeCitation?.answer || workTypeCitation?.answer || null;
+      const normalizedTrade = selectedTrade?.toLowerCase().trim() || null;
+      
+      // ✓ DYNAMIC PANEL TITLE: Use Sub-worktype from citation chain, not main category
+      const subWorktype = tradeCitation?.metadata?.subworktype as string | undefined
+        || tradeCitation?.metadata?.sub_worktype as string | undefined
+        || templateCitation?.metadata?.subworktype as string | undefined
+        || (normalizedTrade && normalizedTrade !== 'interior finishing' ? normalizedTrade : null);
       
       // ✓ UNIVERSAL TEMPLATE GENERATOR: Trade-specifikus anyagszükséglet és task lista
-      const getTemplateForTrade = (trade: string, gfa: number) => {
+      // Only calculate if we have actual GFA data - NO FALLBACK
+      const getTemplateForTrade = (trade: string, gfa: number | null) => {
+        if (gfa === null || gfa === 0) {
+          return { materials: [], tasks: [], hasData: false };
+        }
+        
         const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
           painting: {
             materials: [
@@ -1598,68 +1635,109 @@ export default function Stage8FinalReview({
             tasks: ['Demolition', 'Framing check', 'Hang drywall', 'Tape & mud', 'Sand & finish'],
           },
         };
-        return templates[trade] || templates.painting;
+        const result = templates[trade] || (trade ? templates.painting : null);
+        return result ? { ...result, hasData: true } : { materials: [], tasks: [], hasData: false };
       };
       
-      // Get GFA for template calculation
+      // Get GFA for template calculation - NO FALLBACK
       const templateGfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
       const templateGfaValue = typeof templateGfaCitation?.value === 'number' 
         ? templateGfaCitation.value 
         : typeof templateGfaCitation?.metadata?.gfa_value === 'number'
           ? templateGfaCitation.metadata.gfa_value
-          : 1200;
+          : null; // ✓ NO HARDCODED FALLBACK
       
-      const tradeTemplate = getTemplateForTrade(normalizedTrade, templateGfaValue);
+      const tradeTemplate = normalizedTrade 
+        ? getTemplateForTrade(normalizedTrade, templateGfaValue)
+        : { materials: [], tasks: [], hasData: false };
       
       return (
         <div className="space-y-4">
-          {/* Trade Selection Display */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200/50 dark:border-orange-800/30">
+          {/* ✓ DYNAMIC LABEL: Show Sub-worktype, not main category */}
+          <div className={cn(
+            "p-4 rounded-xl border",
+            hasTradeCitation
+              ? "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200/50 dark:border-orange-800/30"
+              : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200/50"
+          )}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">Selected Trade</span>
-              <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                ✓ Active
-              </Badge>
+              <span className={cn(
+                "text-xs font-medium uppercase tracking-wide",
+                hasTradeCitation ? "text-orange-600 dark:text-orange-400" : "text-gray-500"
+              )}>
+                {/* ✓ Show Sub-worktype in header if available */}
+                {subWorktype ? 'Sub-Worktype' : 'Selected Trade'}
+              </span>
+              {hasTradeCitation ? (
+                <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                  ✓ Active
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] bg-gray-100 text-gray-500">
+                  Not Set
+                </Badge>
+              )}
             </div>
-            <p className="text-xl font-bold text-orange-700 dark:text-orange-300 capitalize">
-              {selectedTrade}
+            <p className={cn(
+              "text-xl font-bold capitalize",
+              hasTradeCitation ? "text-orange-700 dark:text-orange-300" : "text-gray-400"
+            )}>
+              {/* ✓ DYNAMIC: Display Sub-worktype prominently, or "Not Set" */}
+              {subWorktype || selectedTrade || '—'}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              @ {templateGfaValue.toLocaleString()} sq ft
-            </p>
+            {templateGfaValue !== null && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                @ {templateGfaValue.toLocaleString()} sq ft
+              </p>
+            )}
           </div>
           
-          {/* ✓ UNIVERSAL MATERIAL REQUIREMENTS */}
-          <div className="p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-2 mb-2">
-              <ClipboardList className="h-4 w-4 text-orange-500" />
-              <span className="text-xs font-medium">Material Requirements</span>
+          {/* ✓ MATERIAL REQUIREMENTS - Only show if we have actual data */}
+          {tradeTemplate.hasData && tradeTemplate.materials.length > 0 && (
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <ClipboardList className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-medium">Material Requirements</span>
+              </div>
+              <div className="space-y-1.5">
+                {tradeTemplate.materials.map((mat, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{mat.name}</span>
+                    <span className="font-medium">{mat.qty.toLocaleString()} {mat.unit}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="space-y-1.5">
-              {tradeTemplate.materials.map((mat, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{mat.name}</span>
-                  <span className="font-medium">{mat.qty.toLocaleString()} {mat.unit}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
           
-          {/* ✓ UNIVERSAL TASK CHECKLIST */}
-          <div className="p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span className="text-xs font-medium">Task Phases</span>
+          {/* ✓ TASK CHECKLIST - Only show if we have actual data */}
+          {tradeTemplate.hasData && tradeTemplate.tasks.length > 0 && (
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span className="text-xs font-medium">Task Phases</span>
+              </div>
+              <div className="space-y-1">
+                {tradeTemplate.tasks.map((task, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs">
+                    <div className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+                    <span>{task}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="space-y-1">
-              {tradeTemplate.tasks.map((task, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs">
-                  <div className="h-1.5 w-1.5 rounded-full bg-orange-400" />
-                  <span>{task}</span>
-                </div>
-              ))}
+          )}
+          
+          {/* Show message when no data */}
+          {!tradeTemplate.hasData && (
+            <div className="p-3 rounded-lg bg-muted/30 border border-dashed text-center">
+              <p className="text-xs text-muted-foreground italic">
+                {!hasTradeCitation 
+                  ? 'No trade selected in wizard' 
+                  : 'GFA required to calculate materials'}
+              </p>
             </div>
-          </div>
+          )}
           
           {/* Template Info */}
           {templateCitation && (
@@ -1702,9 +1780,36 @@ export default function Stage8FinalReview({
     switch (panel.id) {
       case 'panel-4-team':
         // ✓ TEAM TRIGGER PREPARATION: Kommunikációs modul aktiválása
+        // ✓ PERSISTENCE GUARD: Force sync before navigation
         const handleTeamCommunication = () => {
-          // Navigate to messages with project context
+          // Force full save before navigating to Messages
+          if (projectId && citations.length > 0) {
+            const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+            const gfaValue = typeof gfaCitation?.value === 'number' 
+              ? gfaCitation.value 
+              : typeof gfaCitation?.metadata?.gfa_value === 'number'
+                ? gfaCitation.metadata.gfa_value
+                : 0;
+            syncCitationsToLocalStorage(projectId, citations, 8, gfaValue);
+            console.log('[Stage8] ✓ Persistence Guard: Citations synced before navigation');
+          }
+          // Navigate to messages with project context (fresh chat)
           window.location.href = `/buildunion/messages?project=${projectId}`;
+        };
+        
+        // ✓ PERSISTENCE GUARD for individual member messaging
+        const handleMemberMessage = (memberId: string) => {
+          if (projectId && citations.length > 0) {
+            const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+            const gfaValue = typeof gfaCitation?.value === 'number' 
+              ? gfaCitation.value 
+              : typeof gfaCitation?.metadata?.gfa_value === 'number'
+                ? gfaCitation.metadata.gfa_value
+                : 0;
+            syncCitationsToLocalStorage(projectId, citations, 8, gfaValue);
+            console.log('[Stage8] ✓ Persistence Guard: Citations synced before member message');
+          }
+          window.location.href = `/buildunion/messages?user=${memberId}&project=${projectId}`;
         };
         
         return (
@@ -1742,11 +1847,11 @@ export default function Stage8FinalReview({
                         <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                       </div>
                     </div>
-                    {/* Individual message button */}
+                    {/* Individual message button with persistence guard */}
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => window.location.href = `/buildunion/messages?user=${member.userId}`}
+                      onClick={() => handleMemberMessage(member.userId)}
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-teal-600"
                     >
                       <MessageSquare className="h-3.5 w-3.5" />
@@ -1786,26 +1891,46 @@ export default function Stage8FinalReview({
         return renderPanel6Content();
       
       case 'panel-7-weather':
-        // ✓ Weather widget - Panel 1 címének kiolvasása LOCATION citációból
+        // ✓ Weather widget - Read from LOCATION citation, NO hardcoded fallback
         const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
-        const weatherAddress = locationCitation?.answer || projectData?.address || '15 Norton Ave, Toronto';
+        const hasLocationData = locationCitation?.answer || projectData?.address;
+        const weatherAddress = locationCitation?.answer || projectData?.address || null;
         
         return (
           <div className="space-y-3">
             {/* Address Display */}
-            <div className="p-2 rounded-lg bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200/50 dark:border-sky-800/30">
+            <div className={cn(
+              "p-2 rounded-lg border",
+              hasLocationData 
+                ? "bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/50 dark:border-sky-800/30"
+                : "bg-gray-50 dark:bg-gray-950/20 border-gray-200/50"
+            )}>
               <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-sky-600" />
-                <span className="text-xs font-medium text-sky-700 dark:text-sky-300 truncate">{weatherAddress}</span>
+                <MapPin className={cn("h-3.5 w-3.5", hasLocationData ? "text-sky-600" : "text-gray-400")} />
+                <span className={cn(
+                  "text-xs font-medium truncate",
+                  hasLocationData ? "text-sky-700 dark:text-sky-300" : "text-gray-400"
+                )}>
+                  {weatherAddress || 'No location set'}
+                </span>
               </div>
             </div>
             
-            {/* Integrated Weather Widget */}
-            <WeatherWidget 
-              location={weatherAddress}
-              showForecast={true}
-              className="border-0 shadow-none"
-            />
+            {/* Integrated Weather Widget - only if we have an address */}
+            {weatherAddress ? (
+              <WeatherWidget 
+                location={weatherAddress}
+                showForecast={true}
+                className="border-0 shadow-none"
+              />
+            ) : (
+              <div className="p-4 rounded-lg bg-muted/30 border border-dashed text-center">
+                <Cloud className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground italic">
+                  Set a project address to enable weather forecasts
+                </p>
+              </div>
+            )}
             
             {/* Site Condition Citations */}
             {panelCitations.length > 0 && (
@@ -1839,22 +1964,38 @@ export default function Stage8FinalReview({
           );
         }
         
-        // ✓ Owner view - Full financial data access with FIXED VALUES
+        // ✓ Owner view - Read from citations and contracts, NO hardcoded fallbacks
         const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
         const budgetCitation = panelCitations.find(c => c.cite_type === 'BUDGET');
         const materialCitation = panelCitations.find(c => c.cite_type === 'MATERIAL');
         const demoPriceCitation = panelCitations.find(c => c.cite_type === 'DEMOLITION_PRICE');
         const financialGfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+        
+        // ✓ NO HARDCODED FALLBACK - read actual values
         const financialGfaValue = typeof financialGfaCitation?.value === 'number' 
           ? financialGfaCitation.value 
           : typeof financialGfaCitation?.metadata?.gfa_value === 'number'
             ? financialGfaCitation.metadata.gfa_value
-            : 1200; // Default 1,200 sq ft
+            : null;
         
-        // ✓ KÉNYSZERÍTETT ADAT: $21,984.63 bruttó érték
-        const fixedGrossTotal = 21984.63;
-        const fixedMaterialCost = 14500.00;
-        const fixedLaborCost = 7484.63;
+        // ✓ Calculate totals from actual citations, NOT hardcoded values
+        const materialCost = typeof materialCitation?.value === 'number' 
+          ? materialCitation.value 
+          : typeof materialCitation?.metadata?.total === 'number'
+            ? materialCitation.metadata.total
+            : null;
+        
+        const demoCost = typeof demoPriceCitation?.value === 'number' && financialGfaValue
+          ? demoPriceCitation.value * financialGfaValue
+          : null;
+        
+        const budgetTotal = typeof budgetCitation?.value === 'number'
+          ? budgetCitation.value
+          : totalContractValue > 0 
+            ? totalContractValue 
+            : null;
+        
+        const hasFinancialData = budgetTotal !== null || materialCost !== null || totalContractValue > 0;
         
         return (
           <div className="space-y-3">
@@ -1871,54 +2012,76 @@ export default function Stage8FinalReview({
               )}
             </div>
             
-            {/* ✓ Gross Total - FIXED $21,984.63 */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-2 border-emerald-300 dark:border-emerald-700">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Gross Total</span>
-                <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-700 gap-1">
-                  <Lock className="h-2.5 w-2.5" />
-                  Final
-                </Badge>
-              </div>
-              <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
-                ${fixedGrossTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-            </div>
-            
-            {/* Cost Breakdown */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200/50 dark:border-blue-800/30">
-                <p className="text-xs text-muted-foreground">Materials</p>
-                <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                  ${fixedMaterialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {/* ✓ Gross Total - From actual data, not hardcoded */}
+            {hasFinancialData ? (
+              <>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-2 border-emerald-300 dark:border-emerald-700">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Total</span>
+                    <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-700 gap-1">
+                      <Lock className="h-2.5 w-2.5" />
+                      Final
+                    </Badge>
+                  </div>
+                  <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
+                    ${(budgetTotal || totalContractValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+                
+                {/* Cost Breakdown - only show if we have actual data */}
+                <div className="grid grid-cols-2 gap-3">
+                  {materialCost !== null && (
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200/50 dark:border-blue-800/30">
+                      <p className="text-xs text-muted-foreground">Materials</p>
+                      <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                        ${materialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                  {demoCost !== null && (
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200/50 dark:border-purple-800/30">
+                      <p className="text-xs text-muted-foreground">Demolition</p>
+                      <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                        ${demoCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Contract & GFA Info */}
+                <div className="grid grid-cols-2 gap-3">
+                  {totalContractValue > 0 && (
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200/50 dark:border-red-800/30">
+                      <p className="text-xs text-muted-foreground">Contract Value</p>
+                      <p className="text-lg font-bold text-red-700 dark:text-red-300">
+                        ${totalContractValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                  {financialGfaValue !== null && budgetTotal !== null && (
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200/50 dark:border-amber-800/30">
+                      <p className="text-xs text-muted-foreground">Cost per sq ft</p>
+                      <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
+                        ${(budgetTotal / financialGfaValue).toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        @ {financialGfaValue.toLocaleString()} sq ft
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="p-4 rounded-lg bg-muted/30 border border-dashed text-center">
+                <DollarSign className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground italic">
+                  No financial data recorded yet
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Add budget, materials, or contracts to see financials
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200/50 dark:border-purple-800/30">
-                <p className="text-xs text-muted-foreground">Labor</p>
-                <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
-                  ${fixedLaborCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-            </div>
-            
-            {/* Contract & GFA Info */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200/50 dark:border-red-800/30">
-                <p className="text-xs text-muted-foreground">Contract Value</p>
-                <p className="text-lg font-bold text-red-700 dark:text-red-300">
-                  ${(totalContractValue || fixedGrossTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200/50 dark:border-amber-800/30">
-                <p className="text-xs text-muted-foreground">Cost per sq ft</p>
-                <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
-                  ${(fixedGrossTotal / financialGfaValue).toFixed(2)}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  @ {financialGfaValue.toLocaleString()} sq ft
-                </p>
-              </div>
-            </div>
+            )}
             
             {/* All Financial Citations */}
             {panelCitations.length > 0 && (
