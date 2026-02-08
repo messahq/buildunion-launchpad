@@ -57,6 +57,8 @@ import {
   ChevronUp,
   User,
   FileUp,
+  LockKeyhole,
+  Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +90,11 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { Citation, CITATION_TYPES } from "@/types/citation";
 import { useTranslation } from "react-i18next";
+import {
+  restoreProjectFromLocalStorage,
+  syncCitationsToLocalStorage,
+  logCriticalError,
+} from "@/lib/projectPersistence";
 
 // ============================================
 // VISIBILITY TIERS
@@ -365,14 +372,32 @@ export default function Stage8FinalReview({
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [selectedUploadCategory, setSelectedUploadCategory] = useState<DocumentCategory>('technical');
   
-  // Check user permissions
+  // Financial lock state - only Owner can view financials
+  const [isFinancialLocked, setIsFinancialLocked] = useState(true);
+  const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
+  
+  // Check user permissions - Owner sees everything, others are blocked from financials
   const canEdit = useMemo(() => {
     return userRole === 'owner' || userRole === 'foreman';
   }, [userRole]);
   
+  // CRITICAL: Only Owner can view financial data - Foreman/Subcontractor are blocked
   const canViewFinancials = useMemo(() => {
+    // Strictly Owner only - no exceptions
     return userRole === 'owner';
   }, [userRole]);
+  
+  // Check if Financial Summary is unlocked for navigation
+  const isFinancialSummaryUnlocked = useMemo(() => {
+    // Unlocked when: Owner role + financial data exists
+    if (!canViewFinancials) return false;
+    
+    const financialCitations = citations.filter(c => 
+      ['BUDGET', 'MATERIAL', 'DEMOLITION_PRICE'].includes(c.cite_type)
+    );
+    
+    return financialCitations.length > 0 || contracts.length > 0;
+  }, [canViewFinancials, citations, contracts]);
   
   // Determine visibility tier access
   const hasAccessToTier = useCallback((tier: VisibilityTier): boolean => {
@@ -440,10 +465,11 @@ export default function Stage8FinalReview({
     return 'technical';
   }, []);
   
-  // Load all project data
+  // Load all project data with localStorage fallback
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
+      let usedLocalStorage = false;
       
       try {
         // 1. Load project
@@ -466,39 +492,95 @@ export default function Stage8FinalReview({
           .from('project_summaries')
           .select('verified_facts')
           .eq('project_id', projectId)
-          .single();
+          .maybeSingle();
+        
+        let loadedCitations: Citation[] = [];
         
         if (summary?.verified_facts) {
           const facts = Array.isArray(summary.verified_facts) 
             ? (summary.verified_facts as unknown as Citation[])
             : [];
-          setCitations(facts);
+          loadedCitations = facts;
+          console.log('[Stage8] Loaded citations from Supabase:', facts.length);
         }
         
-        // 3. Load team members
+        // ✓ FALLBACK: If Supabase has no citations, try localStorage
+        if (loadedCitations.length === 0) {
+          const localState = restoreProjectFromLocalStorage(projectId);
+          if (localState?.citations && localState.citations.length > 0) {
+            loadedCitations = localState.citations;
+            usedLocalStorage = true;
+            console.log('[Stage8] ✓ Restored citations from localStorage:', localState.citations.length);
+            toast.info('Data restored from local backup', { duration: 3000 });
+            
+            // Sync back to Supabase
+            try {
+              await supabase
+                .from('project_summaries')
+                .upsert({
+                  project_id: projectId,
+                  user_id: userId,
+                  verified_facts: loadedCitations as any,
+                  status: 'active',
+                });
+              console.log('[Stage8] Citations synced back to Supabase');
+            } catch (syncErr) {
+              logCriticalError('[Stage8] Failed to sync localStorage to Supabase', syncErr);
+            }
+          }
+        }
+        
+        setCitations(loadedCitations);
+        setDataSource(usedLocalStorage ? 'localStorage' : 'supabase');
+        
+        // 3. Load team members (add owner as well)
         const { data: members } = await supabase
           .from('project_members')
           .select('id, user_id, role')
           .eq('project_id', projectId);
         
-        if (members && members.length > 0) {
-          const userIds = members.map(m => m.user_id);
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('user_id, full_name')
-            .in('user_id', userIds);
-          
-          const teamData = members.map(m => {
-            const profile = profiles?.find(p => p.user_id === m.user_id);
-            return {
-              id: m.id,
-              userId: m.user_id,
-              role: m.role,
-              name: profile?.full_name || 'Team Member',
-            };
+        // Always include Owner (the project creator)
+        let teamData: {id: string; userId: string; role: string; name: string}[] = [];
+        
+        // Add owner first
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (ownerProfile) {
+          teamData.push({
+            id: `owner-${userId}`,
+            userId: userId,
+            role: 'owner',
+            name: ownerProfile.full_name || 'Owner',
           });
-          setTeamMembers(teamData);
         }
+        
+        if (members && members.length > 0) {
+          const userIds = members.map(m => m.user_id).filter(id => id !== userId);
+          if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('user_id, full_name')
+              .in('user_id', userIds);
+            
+            const memberData = members
+              .filter(m => m.user_id !== userId)
+              .map(m => {
+                const profile = profiles?.find(p => p.user_id === m.user_id);
+                return {
+                  id: m.id,
+                  userId: m.user_id,
+                  role: m.role,
+                  name: profile?.full_name || 'Team Member',
+                };
+              });
+            teamData = [...teamData, ...memberData];
+          }
+        }
+        setTeamMembers(teamData);
         
         // 4. Load tasks and transform to checklist format
         const { data: tasksData } = await supabase
@@ -537,22 +619,42 @@ export default function Stage8FinalReview({
           setTasks(tasksWithChecklist);
         }
         
-        // 5. Load documents
+        // 5. Load documents + add document citations from verified_facts
         const { data: docsData } = await supabase
           .from('project_documents')
           .select('id, file_name, file_path, uploaded_at')
           .eq('project_id', projectId);
         
+        let docsWithCategory: DocumentWithCategory[] = [];
         if (docsData) {
-          const docsWithCategory: DocumentWithCategory[] = docsData.map(doc => ({
+          docsWithCategory = docsData.map(doc => ({
             id: doc.id,
             file_name: doc.file_name,
             file_path: doc.file_path,
             category: categorizeDocument(doc.file_name),
             uploadedAt: doc.uploaded_at,
           }));
-          setDocuments(docsWithCategory);
         }
+        
+        // Add documents from citations (BLUEPRINT_UPLOAD, SITE_PHOTO)
+        const docCitations = loadedCitations.filter(c => 
+          ['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION'].includes(c.cite_type)
+        );
+        docCitations.forEach(c => {
+          if (c.metadata?.fileName && !docsWithCategory.some(d => d.file_name === c.metadata?.fileName)) {
+            docsWithCategory.push({
+              id: c.id,
+              file_name: c.metadata.fileName as string,
+              file_path: typeof c.value === 'string' ? c.value : '',
+              category: c.cite_type === 'BLUEPRINT_UPLOAD' ? 'technical' : 
+                        c.cite_type === 'VISUAL_VERIFICATION' ? 'verification' : 'visual',
+              citationId: c.id,
+              uploadedAt: c.timestamp,
+            });
+          }
+        });
+        
+        setDocuments(docsWithCategory);
         
         // 6. Load contracts
         const { data: contractsData } = await supabase
@@ -565,16 +667,38 @@ export default function Stage8FinalReview({
           setContracts(contractsData);
         }
         
+        // Financial lock: Only unlocked if owner has financial data
+        if (userRole === 'owner') {
+          const hasFinancialData = loadedCitations.some(c => 
+            ['BUDGET', 'MATERIAL', 'DEMOLITION_PRICE'].includes(c.cite_type)
+          ) || (contractsData && contractsData.length > 0);
+          
+          setIsFinancialLocked(!hasFinancialData);
+        } else {
+          // Always locked for non-owners
+          setIsFinancialLocked(true);
+        }
+        
       } catch (err) {
         console.error('[Stage8] Failed to load data:', err);
-        toast.error('Failed to load project data');
+        logCriticalError('[Stage8] Data load failed', err);
+        
+        // ✓ CRITICAL FALLBACK: Try localStorage if Supabase fails completely
+        const localState = restoreProjectFromLocalStorage(projectId);
+        if (localState?.citations) {
+          setCitations(localState.citations);
+          setDataSource('localStorage');
+          toast.warning('Loaded from offline backup - connection issue detected');
+        } else {
+          toast.error('Failed to load project data');
+        }
       } finally {
         setIsLoading(false);
       }
     };
     
     loadData();
-  }, [projectId, categorizeDocument]);
+  }, [projectId, userId, userRole, categorizeDocument]);
   
   // Fetch weather data
   const fetchWeather = async (address: string) => {
@@ -812,8 +936,22 @@ export default function Stage8FinalReview({
   
   // Complete and go to dashboard
   const handleComplete = useCallback(async () => {
+    // NAVIGATION LOCK: Owner must have financial data unlocked to proceed
+    if (userRole === 'owner' && !isFinancialSummaryUnlocked) {
+      toast.error('Financial Summary must be active before activation', {
+        description: 'Add budget or contract data to unlock the Financial panel',
+        duration: 5000,
+      });
+      return;
+    }
+    
     setIsSaving(true);
     try {
+      // Sync citations to localStorage one final time
+      if (projectId) {
+        syncCitationsToLocalStorage(projectId, citations, 8, 0);
+      }
+      
       await supabase
         .from('projects')
         .update({ status: 'active' })
@@ -823,11 +961,12 @@ export default function Stage8FinalReview({
       onComplete();
     } catch (err) {
       console.error('[Stage8] Failed to complete:', err);
+      logCriticalError('[Stage8] Failed to complete project', err);
       toast.error('Failed to finalize project');
     } finally {
       setIsSaving(false);
     }
-  }, [projectId, onComplete]);
+  }, [projectId, onComplete, userRole, isFinancialSummaryUnlocked, citations]);
   
   // Render citation value
   const renderCitationValue = useCallback((citation: Citation) => {
@@ -1344,40 +1483,91 @@ export default function Stage8FinalReview({
         );
       
       case 'panel-8-financial':
+        // CRITICAL: Strictly Owner-only - Foreman/Subcontractor see lock
         if (!canViewFinancials) {
           return (
             <div className="text-center py-6">
-              <Lock className="h-8 w-8 text-red-400 mx-auto mb-2" />
-              <p className="text-sm font-medium text-red-600">Owner Access Required</p>
-              <p className="text-xs text-muted-foreground">Financial data is restricted</p>
+              <div className="h-16 w-16 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center mx-auto mb-3">
+                <LockKeyhole className="h-8 w-8 text-red-500" />
+              </div>
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400">Financial Data Locked</p>
+              <p className="text-xs text-muted-foreground mt-1">Only the project Owner can view financial information</p>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Your role: <span className="font-medium capitalize">{userRole}</span>
+              </p>
             </div>
           );
         }
         
+        // Owner view - Full financial data access
         const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
+        const budgetCitation = panelCitations.find(c => c.cite_type === 'BUDGET');
+        const materialCitation = panelCitations.find(c => c.cite_type === 'MATERIAL');
+        const demoPriceCitation = panelCitations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+        const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+        const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : 0;
         
         return (
           <div className="space-y-3">
+            {/* Owner Unlocked Badge */}
+            <div className="flex items-center justify-between">
+              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 gap-1">
+                <Unlock className="h-3 w-3" />
+                Owner Access
+              </Badge>
+              {dataSource !== 'supabase' && (
+                <Badge variant="outline" className="text-[10px] text-amber-600">
+                  ⚠ Local Data
+                </Badge>
+              )}
+            </div>
+            
+            {/* Financial Summary Cards */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200/50 dark:border-red-800/30">
                 <p className="text-xs text-muted-foreground">Contract Value</p>
                 <p className="text-lg font-bold text-red-700 dark:text-red-300">
                   ${totalContractValue.toLocaleString()}
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
-                <p className="text-xs text-muted-foreground">Contracts</p>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200/50 dark:border-green-800/30">
+                <p className="text-xs text-muted-foreground">Active Contracts</p>
                 <p className="text-lg font-bold text-green-700 dark:text-green-300">{contracts.length}</p>
               </div>
             </div>
+            
+            {/* GFA-based cost estimates */}
+            {demoPriceCitation && gfaValue > 0 && (
+              <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200/50 dark:border-amber-800/30">
+                <p className="text-xs text-muted-foreground">Estimated Demolition Cost</p>
+                <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
+                  ${(typeof demoPriceCitation.value === 'number' ? demoPriceCitation.value * gfaValue : 0).toLocaleString()}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  @ ${typeof demoPriceCitation.value === 'number' ? demoPriceCitation.value.toFixed(2) : 0}/sq ft × {gfaValue.toLocaleString()} sq ft
+                </p>
+              </div>
+            )}
+            
+            {/* All Financial Citations */}
             {panelCitations.length > 0 && (
               <div className="pt-3 border-t space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Financial Data Points</p>
                 {panelCitations.map(c => (
-                  <div key={c.id} className="group text-xs">
-                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
-                    {renderCitationValue(c)}
+                  <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
+                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
+                    <span className="font-medium">{renderCitationValue(c)}</span>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {/* Empty state for financial data */}
+            {panelCitations.length === 0 && contracts.length === 0 && (
+              <div className="text-center py-4 bg-muted/20 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-amber-500 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">No financial data recorded yet</p>
+                <p className="text-[10px] text-muted-foreground">Add budget or pricing citations to unlock</p>
               </div>
             )}
           </div>
@@ -1710,6 +1900,39 @@ export default function Stage8FinalReview({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Data Source Indicator */}
+            {dataSource !== 'supabase' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 gap-1 text-[10px]">
+                      <AlertTriangle className="h-2.5 w-2.5" />
+                      {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Data loaded from local backup</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            {/* Financial Lock Status */}
+            {canViewFinancials && (
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "gap-1 text-[10px]",
+                  isFinancialSummaryUnlocked 
+                    ? "bg-green-50 dark:bg-green-900/30 text-green-600" 
+                    : "bg-red-50 dark:bg-red-900/30 text-red-600"
+                )}
+              >
+                {isFinancialSummaryUnlocked ? <Unlock className="h-2.5 w-2.5" /> : <LockKeyhole className="h-2.5 w-2.5" />}
+                {isFinancialSummaryUnlocked ? 'Unlocked' : 'Locked'}
+              </Badge>
+            )}
+            
             <Badge variant="outline" className="bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
               {projectData?.name || 'Project'}
             </Badge>
@@ -1898,19 +2121,39 @@ export default function Stage8FinalReview({
                 </Button>
               )}
               
-              {/* Complete Button */}
-              <Button
-                onClick={handleComplete}
-                disabled={isSaving}
-                className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <LayoutDashboard className="h-4 w-4" />
-                )}
-                {t('stage8.generateDashboard', 'Generate Project Dashboard (8 Panels)')}
-              </Button>
+              {/* Complete Button - Requires Financial Unlock for Owner */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        onClick={handleComplete}
+                        disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
+                        className={cn(
+                          "gap-2",
+                          userRole === 'owner' && !isFinancialSummaryUnlocked
+                            ? "bg-muted text-muted-foreground cursor-not-allowed"
+                            : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                        )}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : userRole === 'owner' && !isFinancialSummaryUnlocked ? (
+                          <LockKeyhole className="h-4 w-4" />
+                        ) : (
+                          <LayoutDashboard className="h-4 w-4" />
+                        )}
+                        {t('stage8.generateDashboard', 'Generate Project Dashboard (8 Panels)')}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {userRole === 'owner' && !isFinancialSummaryUnlocked && (
+                    <TooltipContent side="top">
+                      <p className="text-xs">Add financial data (budget/contracts) to unlock</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
