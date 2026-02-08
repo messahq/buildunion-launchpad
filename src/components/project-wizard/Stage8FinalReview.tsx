@@ -1,9 +1,9 @@
 // ============================================
 // STAGE 8: FINAL REVIEW & ANALYSIS DASHBOARD
 // ============================================
-// Complete project summary before AI analysis
-// - Stage-by-stage summary cards (expandable)
-// - Tier-based visibility (Owner/Foreman/Worker)
+// 8-Panel Summary before AI analysis
+// - Each panel represents a key project domain
+// - Tier-based visibility (Owner/Foreman/Worker/Public)
 // - Inline editing for authorized users
 // - AI Analysis, PDF, Summary actions at bottom
 // ============================================
@@ -35,23 +35,16 @@ import {
   Settings,
   Briefcase,
   ClipboardList,
+  FileCheck,
+  Cloud,
+  FolderOpen,
+  DollarSign,
+  Building2,
+  Thermometer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Tooltip,
   TooltipContent,
@@ -75,6 +68,7 @@ interface TierConfig {
   label: string;
   icon: React.ElementType;
   color: string;
+  bgColor: string;
   canEdit: boolean;
   description: string;
 }
@@ -84,42 +78,46 @@ const VISIBILITY_TIERS: TierConfig[] = [
     key: 'owner',
     label: 'Owner Only',
     icon: Shield,
-    color: 'text-red-600 bg-red-50 dark:bg-red-950/30',
+    color: 'text-red-600',
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
     canEdit: true,
-    description: 'Financial data, profit margins, sensitive info',
+    description: 'Financial data, profit margins, sensitive contracts',
   },
   {
     key: 'foreman',
     label: 'Foreman+',
     icon: Users,
-    color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
     canEdit: true,
-    description: 'Team management, scheduling, task assignment',
+    description: 'Team management, scheduling, documents',
   },
   {
     key: 'worker',
     label: 'All Team',
     icon: Eye,
-    color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/30',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
     canEdit: false,
-    description: 'Task details, work instructions, basic project info',
+    description: 'Task details, work instructions, weather alerts',
   },
   {
     key: 'public',
     label: 'Public',
     icon: EyeOff,
-    color: 'text-green-600 bg-green-50 dark:bg-green-950/30',
+    color: 'text-green-600',
+    bgColor: 'bg-green-50 dark:bg-green-950/30',
     canEdit: false,
-    description: 'Client-safe information',
+    description: 'Client-safe project overview',
   },
 ];
 
 // ============================================
-// STAGE DEFINITIONS
+// 8 PANEL DEFINITIONS
 // ============================================
-interface StageSection {
+interface PanelConfig {
   id: string;
-  stageNumber: number;
+  panelNumber: number;
   title: string;
   titleKey: string;
   icon: React.ElementType;
@@ -128,104 +126,113 @@ interface StageSection {
   borderColor: string;
   visibilityTier: VisibilityTier;
   dataKeys: string[]; // Citation types to include
+  description: string;
 }
 
-const STAGE_SECTIONS: StageSection[] = [
+const PANELS: PanelConfig[] = [
   {
-    id: 'stage-1',
-    stageNumber: 1,
-    title: 'Basic Information',
-    titleKey: 'stage8.basicInfo',
-    icon: FileText,
+    id: 'panel-1-basics',
+    panelNumber: 1,
+    title: 'Project Basics',
+    titleKey: 'stage8.panel1',
+    icon: Building2,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
-    borderColor: 'border-emerald-200 dark:border-emerald-800',
+    borderColor: 'border-emerald-300 dark:border-emerald-700',
     visibilityTier: 'public',
     dataKeys: ['PROJECT_NAME', 'LOCATION', 'WORK_TYPE'],
+    description: 'Name, address, work type',
   },
   {
-    id: 'stage-2',
-    stageNumber: 2,
-    title: 'Area Lock (GFA)',
-    titleKey: 'stage8.areaLock',
+    id: 'panel-2-gfa',
+    panelNumber: 2,
+    title: 'Area & Dimensions',
+    titleKey: 'stage8.panel2',
     icon: Ruler,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    borderColor: 'border-blue-200 dark:border-blue-800',
+    borderColor: 'border-blue-300 dark:border-blue-700',
     visibilityTier: 'foreman',
-    dataKeys: ['GFA_LOCK', 'BLUEPRINT_UPLOAD'],
+    dataKeys: ['GFA_LOCK', 'BLUEPRINT_UPLOAD', 'SITE_CONDITION'],
+    description: 'GFA, blueprints, site conditions',
   },
   {
-    id: 'stage-3',
-    stageNumber: 3,
+    id: 'panel-3-trade',
+    panelNumber: 3,
     title: 'Trade & Template',
-    titleKey: 'stage8.tradeTemplate',
+    titleKey: 'stage8.panel3',
     icon: Hammer,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-    borderColor: 'border-orange-200 dark:border-orange-800',
+    borderColor: 'border-orange-300 dark:border-orange-700',
     visibilityTier: 'foreman',
-    dataKeys: ['TRADE_SELECTION', 'TEMPLATE_LOCK'],
+    dataKeys: ['TRADE_SELECTION', 'TEMPLATE_LOCK', 'EXECUTION_MODE'],
+    description: 'Trade, template, execution mode',
   },
   {
-    id: 'stage-4',
-    stageNumber: 4,
-    title: 'Execution Flow',
-    titleKey: 'stage8.executionFlow',
-    icon: Settings,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50 dark:bg-purple-950/30',
-    borderColor: 'border-purple-200 dark:border-purple-800',
-    visibilityTier: 'foreman',
-    dataKeys: ['EXECUTION_MODE', 'SITE_CONDITION', 'DEMOLITION_PRICE', 'TEAM_SIZE', 'TIMELINE', 'END_DATE'],
-  },
-  {
-    id: 'stage-5',
-    stageNumber: 5,
-    title: 'Visual Intelligence',
-    titleKey: 'stage8.visualIntelligence',
-    icon: Eye,
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50 dark:bg-pink-950/30',
-    borderColor: 'border-pink-200 dark:border-pink-800',
-    visibilityTier: 'worker',
-    dataKeys: ['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION'],
-  },
-  {
-    id: 'stage-6',
-    stageNumber: 6,
+    id: 'panel-4-team',
+    panelNumber: 4,
     title: 'Team Architecture',
-    titleKey: 'stage8.teamArchitecture',
+    titleKey: 'stage8.panel4',
     icon: Users,
     color: 'text-teal-600',
     bgColor: 'bg-teal-50 dark:bg-teal-950/30',
-    borderColor: 'border-teal-200 dark:border-teal-800',
+    borderColor: 'border-teal-300 dark:border-teal-700',
     visibilityTier: 'foreman',
-    dataKeys: ['TEAM_STRUCTURE', 'TEAM_MEMBER_INVITE', 'TEAM_PERMISSION_SET'],
+    dataKeys: ['TEAM_STRUCTURE', 'TEAM_MEMBER_INVITE', 'TEAM_PERMISSION_SET', 'TEAM_SIZE'],
+    description: 'Members, roles, permissions',
   },
   {
-    id: 'stage-7',
-    stageNumber: 7,
+    id: 'panel-5-timeline',
+    panelNumber: 5,
     title: 'Execution Timeline',
-    titleKey: 'stage8.executionTimeline',
+    titleKey: 'stage8.panel5',
     icon: Calendar,
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50 dark:bg-indigo-950/30',
-    borderColor: 'border-indigo-200 dark:border-indigo-800',
+    borderColor: 'border-indigo-300 dark:border-indigo-700',
     visibilityTier: 'worker',
     dataKeys: ['TIMELINE', 'END_DATE', 'DNA_FINALIZED'],
+    description: 'Start/end dates, tasks, phases',
   },
   {
-    id: 'financial',
-    stageNumber: 0,
+    id: 'panel-6-documents',
+    panelNumber: 6,
+    title: 'Documents & Contracts',
+    titleKey: 'stage8.panel6',
+    icon: FolderOpen,
+    color: 'text-pink-600',
+    bgColor: 'bg-pink-50 dark:bg-pink-950/30',
+    borderColor: 'border-pink-300 dark:border-pink-700',
+    visibilityTier: 'foreman',
+    dataKeys: ['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION'],
+    description: 'Blueprints, photos, contracts',
+  },
+  {
+    id: 'panel-7-weather',
+    panelNumber: 7,
+    title: 'Weather & Conditions',
+    titleKey: 'stage8.panel7',
+    icon: Cloud,
+    color: 'text-sky-600',
+    bgColor: 'bg-sky-50 dark:bg-sky-950/30',
+    borderColor: 'border-sky-300 dark:border-sky-700',
+    visibilityTier: 'worker',
+    dataKeys: ['WEATHER_ALERT', 'SITE_CONDITION'],
+    description: 'Weather alerts, site conditions',
+  },
+  {
+    id: 'panel-8-financial',
+    panelNumber: 8,
     title: 'Financial Summary',
-    titleKey: 'stage8.financialSummary',
-    icon: Briefcase,
+    titleKey: 'stage8.panel8',
+    icon: DollarSign,
     color: 'text-red-600',
     bgColor: 'bg-red-50 dark:bg-red-950/30',
-    borderColor: 'border-red-200 dark:border-red-800',
+    borderColor: 'border-red-300 dark:border-red-700',
     visibilityTier: 'owner',
     dataKeys: ['BUDGET', 'MATERIAL', 'DEMOLITION_PRICE'],
+    description: 'Budget, costs, profit (Owner only)',
   },
 ];
 
@@ -264,9 +271,12 @@ export default function Stage8FinalReview({
   const [citations, setCitations] = useState<Citation[]>([]);
   const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string}[]>([]);
   const [tasks, setTasks] = useState<{id: string; title: string; status: string; priority: string}[]>([]);
+  const [documents, setDocuments] = useState<{id: string; file_name: string; file_path: string}[]>([]);
+  const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null}[]>([]);
+  const [weatherData, setWeatherData] = useState<{temp?: number; condition?: string; alerts?: string[]} | null>(null);
   
   // UI state
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['stage-1']));
+  const [activePanel, setActivePanel] = useState<string | null>('panel-1-basics');
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   
@@ -316,6 +326,11 @@ export default function Stage8FinalReview({
         
         if (project) {
           setProjectData(project);
+          
+          // Try to fetch weather if address exists
+          if (project.address) {
+            fetchWeather(project.address);
+          }
         }
         
         // 2. Load citations from project_summaries
@@ -367,6 +382,27 @@ export default function Stage8FinalReview({
           setTasks(tasksData);
         }
         
+        // 5. Load documents
+        const { data: docsData } = await supabase
+          .from('project_documents')
+          .select('id, file_name, file_path')
+          .eq('project_id', projectId);
+        
+        if (docsData) {
+          setDocuments(docsData);
+        }
+        
+        // 6. Load contracts
+        const { data: contractsData } = await supabase
+          .from('contracts')
+          .select('id, contract_number, status, total_amount')
+          .eq('project_id', projectId)
+          .is('archived_at', null);
+        
+        if (contractsData) {
+          setContracts(contractsData);
+        }
+        
       } catch (err) {
         console.error('[Stage8] Failed to load data:', err);
         toast.error('Failed to load project data');
@@ -378,21 +414,27 @@ export default function Stage8FinalReview({
     loadData();
   }, [projectId]);
   
-  // Toggle section expansion
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => {
-      const next = new Set(prev);
-      if (next.has(sectionId)) {
-        next.delete(sectionId);
-      } else {
-        next.add(sectionId);
+  // Fetch weather data
+  const fetchWeather = async (address: string) => {
+    try {
+      const response = await supabase.functions.invoke('get-weather', {
+        body: { address }
+      });
+      
+      if (response.data?.current) {
+        setWeatherData({
+          temp: response.data.current.temp,
+          condition: response.data.current.description,
+          alerts: response.data.alerts || [],
+        });
       }
-      return next;
-    });
-  }, []);
+    } catch (err) {
+      console.error('[Stage8] Weather fetch failed:', err);
+    }
+  };
   
-  // Get citations for a specific stage
-  const getCitationsForStage = useCallback((dataKeys: string[]): Citation[] => {
+  // Get citations for a specific panel
+  const getCitationsForPanel = useCallback((dataKeys: string[]): Citation[] => {
     return citations.filter(c => dataKeys.includes(c.cite_type));
   }, [citations]);
   
@@ -568,8 +610,8 @@ export default function Stage8FinalReview({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="outline" className={cn("text-xs gap-1", config.color)}>
-              <Icon className="h-3 w-3" />
+            <Badge variant="outline" className={cn("text-[10px] gap-1 px-1.5 py-0", config.color, config.bgColor)}>
+              <Icon className="h-2.5 w-2.5" />
               {config.label}
             </Badge>
           </TooltipTrigger>
@@ -581,117 +623,347 @@ export default function Stage8FinalReview({
     );
   }, []);
   
-  // Render stage section
-  const renderStageSection = useCallback((section: StageSection) => {
-    // Check access
-    if (!hasAccessToTier(section.visibilityTier)) {
+  // Render panel content based on panel ID
+  const renderPanelContent = useCallback((panel: PanelConfig) => {
+    const panelCitations = getCitationsForPanel(panel.dataKeys);
+    
+    // Special handling for different panels
+    switch (panel.id) {
+      case 'panel-4-team':
+        return (
+          <div className="space-y-3">
+            <div className="text-sm font-medium text-muted-foreground mb-2">
+              Team Members ({teamMembers.length})
+            </div>
+            {teamMembers.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No team members added</p>
+            ) : (
+              <div className="space-y-2">
+                {teamMembers.map(member => (
+                  <div key={member.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-xs font-bold">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{member.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {panelCitations.length > 0 && (
+              <div className="pt-3 border-t space-y-2">
+                {panelCitations.map(c => (
+                  <div key={c.id} className="group text-xs">
+                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
+                    {renderCitationValue(c)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'panel-5-timeline':
+        return (
+          <div className="space-y-3">
+            <div className="text-sm font-medium text-muted-foreground mb-2">
+              Tasks ({tasks.length})
+            </div>
+            {tasks.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No tasks created</p>
+            ) : (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {tasks.slice(0, 5).map(task => (
+                  <div key={task.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                    <span className="text-sm truncate flex-1">{task.title}</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px]">
+                        {task.priority}
+                      </Badge>
+                      <Badge 
+                        variant={task.status === 'completed' ? 'default' : 'secondary'} 
+                        className={cn("text-[10px]", task.status === 'completed' && 'bg-green-500')}
+                      >
+                        {task.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                {tasks.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center">+{tasks.length - 5} more tasks</p>
+                )}
+              </div>
+            )}
+            {panelCitations.length > 0 && (
+              <div className="pt-3 border-t space-y-2">
+                {panelCitations.map(c => (
+                  <div key={c.id} className="group text-xs">
+                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
+                    {renderCitationValue(c)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'panel-6-documents':
+        return (
+          <div className="space-y-3">
+            <div className="text-sm font-medium text-muted-foreground mb-2">
+              Documents ({documents.length}) • Contracts ({contracts.length})
+            </div>
+            {documents.length === 0 && contracts.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No documents or contracts</p>
+            ) : (
+              <div className="space-y-2">
+                {documents.slice(0, 3).map(doc => (
+                  <div key={doc.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                    <FileText className="h-4 w-4 text-pink-500" />
+                    <span className="text-sm truncate">{doc.file_name}</span>
+                  </div>
+                ))}
+                {contracts.slice(0, 2).map(contract => (
+                  <div key={contract.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="h-4 w-4 text-pink-600" />
+                      <span className="text-sm">Contract #{contract.contract_number}</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">{contract.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'panel-7-weather':
+        return (
+          <div className="space-y-3">
+            {weatherData ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/30">
+                  <Thermometer className="h-8 w-8 text-sky-500" />
+                  <div>
+                    <p className="text-2xl font-bold text-sky-700 dark:text-sky-300">
+                      {weatherData.temp !== undefined ? `${Math.round(weatherData.temp)}°C` : 'N/A'}
+                    </p>
+                    <p className="text-sm text-sky-600/80 dark:text-sky-400/80 capitalize">
+                      {weatherData.condition || 'Unknown'}
+                    </p>
+                  </div>
+                </div>
+                {weatherData.alerts && weatherData.alerts.length > 0 && (
+                  <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-xs font-medium">Weather Alerts Active</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Cloud className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">No weather data available</p>
+                <p className="text-[10px] text-muted-foreground">Set project address to enable</p>
+              </div>
+            )}
+            {panelCitations.length > 0 && (
+              <div className="pt-3 border-t space-y-2">
+                {panelCitations.map(c => (
+                  <div key={c.id} className="group text-xs">
+                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
+                    {renderCitationValue(c)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'panel-8-financial':
+        if (!canViewFinancials) {
+          return (
+            <div className="text-center py-6">
+              <Lock className="h-8 w-8 text-red-400 mx-auto mb-2" />
+              <p className="text-sm font-medium text-red-600">Owner Access Required</p>
+              <p className="text-xs text-muted-foreground">Financial data is restricted</p>
+            </div>
+          );
+        }
+        
+        const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
+        
+        return (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30">
+                <p className="text-xs text-muted-foreground">Contract Value</p>
+                <p className="text-lg font-bold text-red-700 dark:text-red-300">
+                  ${totalContractValue.toLocaleString()}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                <p className="text-xs text-muted-foreground">Contracts</p>
+                <p className="text-lg font-bold text-green-700 dark:text-green-300">{contracts.length}</p>
+              </div>
+            </div>
+            {panelCitations.length > 0 && (
+              <div className="pt-3 border-t space-y-2">
+                {panelCitations.map(c => (
+                  <div key={c.id} className="group text-xs">
+                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
+                    {renderCitationValue(c)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      
+      default:
+        // Default: show citations
+        return (
+          <div className="space-y-2">
+            {panelCitations.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic py-4 text-center">
+                No data recorded for this panel
+              </p>
+            ) : (
+              panelCitations.map(citation => (
+                <div
+                  key={citation.id}
+                  className="group flex items-start justify-between p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                      {citation.cite_type.replace(/_/g, ' ')}
+                    </p>
+                    {renderCitationValue(citation)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        );
+    }
+  }, [
+    getCitationsForPanel,
+    teamMembers,
+    tasks,
+    documents,
+    contracts,
+    weatherData,
+    canViewFinancials,
+    renderCitationValue,
+  ]);
+  
+  // Render single panel
+  const renderPanel = useCallback((panel: PanelConfig) => {
+    const hasAccess = hasAccessToTier(panel.visibilityTier);
+    const isActive = activePanel === panel.id;
+    const Icon = panel.icon;
+    
+    if (!hasAccess) {
       return (
-        <Card key={section.id} className={cn("opacity-50", section.borderColor)}>
-          <CardHeader className="py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", section.bgColor)}>
-                  <Lock className={cn("h-4 w-4", section.color)} />
+        <motion.div
+          key={panel.id}
+          className={cn(
+            "relative rounded-xl border-2 overflow-hidden cursor-not-allowed",
+            "bg-muted/30 border-dashed border-muted-foreground/20"
+          )}
+          whileHover={{ scale: 1.01 }}
+        >
+          <div className="p-4 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-sm">{section.title}</CardTitle>
-                  <CardDescription className="text-xs">Restricted Access</CardDescription>
+                  <h3 className="text-sm font-semibold text-muted-foreground">{panel.title}</h3>
+                  <p className="text-[10px] text-muted-foreground">Restricted</p>
                 </div>
               </div>
-              {getTierBadge(section.visibilityTier)}
+              {getTierBadge(panel.visibilityTier)}
             </div>
-          </CardHeader>
-        </Card>
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-xs text-muted-foreground text-center">
+                Requires {panel.visibilityTier} access
+              </p>
+            </div>
+          </div>
+        </motion.div>
       );
     }
     
-    const stageCitations = getCitationsForStage(section.dataKeys);
-    const isExpanded = expandedSections.has(section.id);
-    const Icon = section.icon;
-    
     return (
-      <Collapsible
-        key={section.id}
-        open={isExpanded}
-        onOpenChange={() => toggleSection(section.id)}
+      <motion.div
+        key={panel.id}
+        className={cn(
+          "relative rounded-xl border-2 overflow-hidden cursor-pointer transition-all duration-200",
+          panel.borderColor,
+          isActive && "ring-2 ring-offset-2",
+          isActive && panel.color.replace('text-', 'ring-')
+        )}
+        onClick={() => setActivePanel(isActive ? null : panel.id)}
+        whileHover={{ scale: 1.02 }}
+        layout
       >
-        <Card className={cn(
-          "transition-all duration-200",
-          section.borderColor,
-          isExpanded && "ring-2 ring-offset-2",
-          isExpanded && section.color.replace('text-', 'ring-')
-        )}>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="py-3 cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", section.bgColor)}>
-                    <Icon className={cn("h-4 w-4", section.color)} />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      {section.stageNumber > 0 && (
-                        <span className={cn("text-xs font-normal", section.color)}>
-                          Stage {section.stageNumber}
-                        </span>
-                      )}
-                      {section.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {stageCitations.length} {stageCitations.length === 1 ? 'item' : 'items'} recorded
-                    </CardDescription>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getTierBadge(section.visibilityTier)}
-                  {isExpanded ? (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
+        {/* Panel Header */}
+        <div className={cn("p-3 border-b", panel.bgColor)}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", panel.bgColor)}>
+                <Icon className={cn("h-4 w-4", panel.color)} />
               </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent>
-            <CardContent className="pt-0 pb-4">
-              {stageCitations.length === 0 ? (
-                <div className="text-center py-4 text-sm text-muted-foreground">
-                  No data recorded for this stage
-                </div>
+              <div>
+                <h3 className={cn("text-sm font-semibold", panel.color)}>
+                  {t(panel.titleKey, panel.title)}
+                </h3>
+                <p className="text-[10px] text-muted-foreground">{panel.description}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {getTierBadge(panel.visibilityTier)}
+              {isActive ? (
+                <ChevronDown className={cn("h-4 w-4", panel.color)} />
               ) : (
-                <div className="space-y-3">
-                  {stageCitations.map((citation) => (
-                    <div
-                      key={citation.id}
-                      className="group flex items-start justify-between p-3 rounded-lg bg-muted/30 border border-transparent hover:border-muted-foreground/20 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          {citation.cite_type.replace(/_/g, ' ')}
-                        </p>
-                        {renderCitationValue(citation)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {format(new Date(citation.timestamp), 'MMM dd, HH:mm')}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+            </div>
+          </div>
+        </div>
+        
+        {/* Panel Content - Collapsible */}
+        <AnimatePresence>
+          {isActive && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="p-4 bg-background">
+                {renderPanelContent(panel)}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     );
   }, [
     hasAccessToTier,
-    getCitationsForStage,
-    expandedSections,
-    toggleSection,
+    activePanel,
     getTierBadge,
-    renderCitationValue,
+    renderPanelContent,
+    t,
   ]);
   
   if (isLoading) {
@@ -711,14 +983,14 @@ export default function Stage8FinalReview({
       <div className="p-4 border-b border-violet-200/50 dark:border-violet-800/30 bg-gradient-to-r from-violet-50/80 via-background to-purple-50/80 dark:from-violet-950/50 dark:via-background dark:to-purple-950/50 shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-            <ClipboardList className="h-6 w-6 text-white" />
+            <LayoutDashboard className="h-6 w-6 text-white" />
           </div>
           <div className="flex-1">
             <h2 className="font-semibold text-violet-700 dark:text-violet-300">
-              {t('stage8.title', 'Final Review')}
+              {t('stage8.title', 'Final Review Dashboard')}
             </h2>
             <p className="text-xs text-violet-600/70 dark:text-violet-400/70">
-              {t('stage8.subtitle', 'Stage 8 • Complete Project Summary')}
+              {t('stage8.subtitle', 'Stage 8 • 8-Panel Summary • Review & Edit before activation')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -735,98 +1007,54 @@ export default function Stage8FinalReview({
         </div>
       </div>
       
-      {/* Main Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
-          {/* Project Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-violet-200 dark:border-violet-800">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-violet-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="font-medium text-sm">{projectData?.address || 'Not set'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-violet-200 dark:border-violet-800">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-violet-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Team Size</p>
-                    <p className="font-medium text-sm">{teamMembers.length} members</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-violet-200 dark:border-violet-800">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-violet-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tasks Created</p>
-                    <p className="font-medium text-sm">{tasks.length} tasks</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Visibility Legend */}
-          <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-muted/50 border">
-            <span className="text-xs font-medium text-muted-foreground mr-2">Visibility Tiers:</span>
-            {VISIBILITY_TIERS.map((tier) => (
-              <TooltipProvider key={tier.key}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className={cn("text-xs gap-1 cursor-help", tier.color)}>
-                      <tier.icon className="h-3 w-3" />
-                      {tier.label}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs max-w-[200px]">{tier.description}</p>
-                    {tier.canEdit && <p className="text-xs text-green-500 mt-1">✓ Can edit</p>}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
-          </div>
-          
-          {/* Stage Sections */}
-          <div className="space-y-4">
-            {STAGE_SECTIONS.filter(s => s.stageNumber > 0).map(renderStageSection)}
-            
-            {/* Financial Summary - Owner Only */}
-            {canViewFinancials && (
-              <div className="pt-4 border-t border-dashed">
-                <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Owner-Only Data
-                </h3>
-                {renderStageSection(STAGE_SECTIONS.find(s => s.id === 'financial')!)}
-              </div>
-            )}
-          </div>
+      {/* Visibility Legend */}
+      <div className="px-4 py-2 border-b bg-muted/30 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground mr-2">Visibility:</span>
+          {VISIBILITY_TIERS.map((tier) => (
+            <TooltipProvider key={tier.key}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className={cn("text-[10px] gap-1 cursor-help", tier.color, tier.bgColor)}>
+                    <tier.icon className="h-2.5 w-2.5" />
+                    {tier.label}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-[200px]">{tier.description}</p>
+                  {tier.canEdit && <p className="text-xs text-green-500 mt-1">✓ Can edit</p>}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ))}
+        </div>
+      </div>
+      
+      {/* Main Content - 8 Panel Grid */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
+          {PANELS.map(renderPanel)}
         </div>
       </div>
       
       {/* Bottom Action Bar */}
       <div className="border-t border-violet-200/50 dark:border-violet-800/30 bg-gradient-to-r from-violet-50/80 via-background to-purple-50/80 dark:from-violet-950/50 dark:via-background dark:to-purple-950/50 p-4 shrink-0">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Left - Info */}
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-violet-600 dark:text-violet-400">
-                {citations.length} citations
+            {/* Left - Stats */}
+            <div className="text-sm text-muted-foreground flex flex-wrap gap-4">
+              <span>
+                <span className="font-medium text-violet-600 dark:text-violet-400">{citations.length}</span> citations
               </span>
-              {' • '}
-              <span>{teamMembers.length} team members</span>
-              {' • '}
-              <span>{tasks.length} tasks</span>
+              <span>
+                <span className="font-medium text-teal-600 dark:text-teal-400">{teamMembers.length}</span> team
+              </span>
+              <span>
+                <span className="font-medium text-indigo-600 dark:text-indigo-400">{tasks.length}</span> tasks
+              </span>
+              <span>
+                <span className="font-medium text-pink-600 dark:text-pink-400">{documents.length}</span> docs
+              </span>
             </div>
             
             {/* Right - Actions */}
