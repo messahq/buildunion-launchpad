@@ -185,37 +185,37 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
       <div 
         ref={ref} 
         className={cn(
-          "h-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20",
+          "h-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-y-auto",
           className
         )}
       >
         {/* Stage Header */}
-        <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
+        <div className="p-3 md:p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm flex-shrink-0">
+          <div className="flex items-center gap-2 md:gap-3">
             <motion.div 
-              className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25"
+              className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25 flex-shrink-0"
               animate={isLocked ? { scale: [1, 1.1, 1] } : {}}
               transition={{ repeat: isLocked ? Infinity : 0, duration: 2 }}
             >
               {isLocked ? (
-                <Lock className="h-5 w-5 text-white" />
+                <Lock className="h-4 w-4 md:h-5 md:w-5 text-white" />
               ) : (
-                <Ruler className="h-5 w-5 text-white" />
+                <Ruler className="h-4 w-4 md:h-5 md:w-5 text-white" />
               )}
             </motion.div>
-            <div>
-              <h2 className="font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+            <div className="min-w-0">
+              <h2 className="font-semibold text-sm md:text-base bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
                 {isLocked ? "Area Locked" : "Lock Project Area"}
               </h2>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
+              <p className="text-[10px] md:text-xs text-amber-600/70 dark:text-amber-400/70 truncate">
                 {isLocked ? "GFA is your budget foundation" : "Enter Gross Floor Area to proceed"}
               </p>
             </div>
           </div>
         </div>
         
-        {/* Main Content */}
-        <div className="flex-1 flex items-center justify-center p-8">
+        {/* Main Content - scrollable on mobile with safe area bottom */}
+        <div className="flex-1 flex items-start md:items-center justify-center p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
           <AnimatePresence mode="wait">
             {!isLocked ? (
               /* INPUT STATE */
@@ -225,7 +225,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, x: -100 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="w-full max-w-md space-y-6"
+                className="w-full max-w-md space-y-4 md:space-y-6"
               >
                 <div className="text-center space-y-2">
                   <motion.div
@@ -235,28 +235,28 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     }}
                     transition={{ repeat: Infinity, duration: 4 }}
                   >
-                    <Calculator className="h-16 w-16 mx-auto text-amber-500 drop-shadow-lg" />
+                    <Calculator className="h-12 w-12 md:h-16 md:w-16 mx-auto text-amber-500 drop-shadow-lg" />
                   </motion.div>
-                  <h3 className="text-xl font-semibold text-foreground">
+                  <h3 className="text-lg md:text-xl font-semibold text-foreground">
                     Define Your Project Area
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground px-2">
                     This value will be locked and used for all cost calculations
                   </p>
                 </div>
                 
                 {/* GFA Input Field */}
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   <div className="relative">
                     <Input
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       placeholder="e.g., 1500 sq ft or 140 sqm"
-                      className="h-14 text-lg text-center font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500/30 bg-card placeholder:text-muted-foreground/50"
+                      className="h-12 md:h-14 text-base md:text-lg text-center font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500/30 bg-card placeholder:text-muted-foreground/50"
                       autoFocus
                     />
                     <motion.div 
-                      className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full"
+                      className="absolute -top-1 -right-1 w-2.5 h-2.5 md:w-3 md:h-3 bg-amber-500 rounded-full"
                       animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                       transition={{ repeat: Infinity, duration: 1.5 }}
                     />
@@ -307,16 +307,16 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   <Button
                     onClick={handleLockGFA}
                     disabled={!parsedValue || isLocking}
-                    className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 rounded-xl gap-2"
+                    className="w-full h-11 md:h-12 text-base md:text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 rounded-xl gap-2"
                   >
                     {isLocking ? (
                       <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
                         Locking...
                       </>
                     ) : (
                       <>
-                        <Lock className="h-5 w-5" />
+                        <Lock className="h-4 w-4 md:h-5 md:w-5" />
                         Lock GFA & Continue
                       </>
                     )}
@@ -324,7 +324,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 </motion.div>
                 
                 {/* Info text */}
-                <p className="text-xs text-center text-muted-foreground">
+                <p className="text-[10px] md:text-xs text-center text-muted-foreground px-2">
                   Once locked, this value becomes the foundation for your project budget
                 </p>
               </motion.div>
