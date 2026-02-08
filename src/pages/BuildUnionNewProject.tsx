@@ -19,13 +19,15 @@ import WizardChatInterface from "@/components/project-wizard/WizardChatInterface
 import CitationDrivenCanvas from "@/components/project-wizard/CitationDrivenCanvas";
 import GFALockStage from "@/components/project-wizard/GFALockStage";
 import DefinitionFlowStage from "@/components/project-wizard/DefinitionFlowStage";
+import TeamSetupStage from "@/components/project-wizard/TeamSetupStage";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 
 // Stage definitions
 const STAGES = {
   STAGE_1: 0, // Name, Address, Work Type
   STAGE_2: 1, // GFA Lock & Blueprint
-  STAGE_3: 2, // Definition Flow (Trade, Template, Team, Site, Finalize)
+  STAGE_3: 2, // Definition Flow (Trade, Template, Site, Finalize)
+  STAGE_7: 3, // Team Architecture (Permissions)
 } as const;
 
 const BuildUnionNewProject = () => {
@@ -182,15 +184,34 @@ const BuildUnionNewProject = () => {
     }, 800);
   }, []);
 
-  // Handle Definition Flow complete
+  // Handle Definition Flow complete - now goes to Team Setup
   const handleDefinitionFlowComplete = useCallback((newCitations: Citation[]) => {
     setCitations(prev => [...prev, ...newCitations]);
     
+    // Transition to Team Setup (Stage 7)
+    toast.success("Project DNA ready! Now let's set up your team...");
+    setTimeout(() => {
+      setCurrentStage(STAGES.STAGE_7);
+    }, 800);
+  }, []);
+
+  // Handle Team Setup complete
+  const handleTeamSetupComplete = useCallback((newCitations: Citation[]) => {
+    setCitations(prev => [...prev, ...newCitations]);
+    
     // Navigate to project details
-    toast.success("Project DNA Finalized! Opening project...");
+    toast.success("Team configured! Opening project...");
     setTimeout(() => {
       navigate(`/buildunion/project/${projectId}`);
-    }, 1500);
+    }, 1000);
+  }, [projectId, navigate]);
+
+  // Handle Team Setup skip
+  const handleTeamSetupSkip = useCallback(() => {
+    toast.success("Solo mode! Opening project...");
+    setTimeout(() => {
+      navigate(`/buildunion/project/${projectId}`);
+    }, 800);
   }, [projectId, navigate]);
 
   // Handle citation click from chat (highlight on canvas)
@@ -226,7 +247,8 @@ const BuildUnionNewProject = () => {
   const stageLabels: Record<number, string> = {
     [STAGES.STAGE_1]: `Stage 1: Project Basics (${Math.min(currentStep + 1, STAGE_1_STEPS)}/${STAGE_1_STEPS})`,
     [STAGES.STAGE_2]: "Stage 2: Lock Area",
-    [STAGES.STAGE_3]: "Stage 3: Definition Flow",
+    [STAGES.STAGE_3]: "Stage 3-5: Definition Flow",
+    [STAGES.STAGE_7]: "Stage 7: Team Architecture",
   };
   const stageLabel = stageLabels[currentStage] || "";
 
@@ -374,13 +396,13 @@ const BuildUnionNewProject = () => {
                 />
               </motion.div>
             </motion.div>
-          ) : (
+          ) : currentStage === STAGES.STAGE_3 ? (
             /* ========== STAGE 3: Definition Flow ========== */
             <motion.div
               key="stage-3"
               initial={{ opacity: 0, x: "100%" }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: "100%" }}
+              exit={{ opacity: 0, x: "-100%" }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute inset-0"
             >
@@ -390,6 +412,24 @@ const BuildUnionNewProject = () => {
                 userId={user.id}
                 gfaValue={gfaValue}
                 onFlowComplete={handleDefinitionFlowComplete}
+                className="h-full"
+              />
+            </motion.div>
+          ) : (
+            /* ========== STAGE 7: Team Architecture ========== */
+            <motion.div
+              key="stage-7"
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              <TeamSetupStage
+                projectId={projectId}
+                userId={user.id}
+                onComplete={handleTeamSetupComplete}
+                onSkip={handleTeamSetupSkip}
                 className="h-full"
               />
             </motion.div>
