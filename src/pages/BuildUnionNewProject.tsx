@@ -2,12 +2,13 @@
 // BUILD UNION NEW PROJECT - Citation-Driven Flow
 // ============================================
 // DB-First: Project is created FIRST, then citations are saved
+// Horizontal Stage Transitions: No vertical scrolling!
 // ============================================
 
-import { useState, useCallback, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +17,15 @@ import { useTranslation } from "react-i18next";
 import { Citation, CITATION_TYPES } from "@/types/citation";
 import WizardChatInterface from "@/components/project-wizard/WizardChatInterface";
 import CitationDrivenCanvas from "@/components/project-wizard/CitationDrivenCanvas";
+import GFALockStage from "@/components/project-wizard/GFALockStage";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
+
+// Stage definitions
+const STAGES = {
+  STAGE_1: 0, // Name, Address, Work Type
+  STAGE_2: 1, // GFA Lock & Blueprint
+  STAGE_3: 2, // Budget & Materials (future)
+} as const;
 
 const BuildUnionNewProject = () => {
   const navigate = useNavigate();
@@ -29,10 +38,14 @@ const BuildUnionNewProject = () => {
   
   // Citation-driven state
   const [citations, setCitations] = useState<Citation[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0); // Steps within Stage 1
+  const [currentStage, setCurrentStage] = useState<number>(STAGES.STAGE_1);
   
   // Cross-panel highlighting
   const [highlightedCitationId, setHighlightedCitationId] = useState<string | null>(null);
+  
+  // Stage 1 has 3 questions (name, address, work_type)
+  const STAGE_1_STEPS = 3;
   
   // Create draft project on mount
   useEffect(() => {
@@ -96,26 +109,36 @@ const BuildUnionNewProject = () => {
     }
   }, [projectId]);
 
-  // Handle step complete
+  // Handle step complete within Stage 1
   const handleStepComplete = useCallback(() => {
-    setCurrentStep(prev => prev + 1);
-  }, []);
+    const nextStep = currentStep + 1;
+    setCurrentStep(nextStep);
+    
+    // Check if Stage 1 is complete (all 3 questions answered)
+    if (nextStep >= STAGE_1_STEPS) {
+      // Transition to Stage 2 with slight delay for animation
+      setTimeout(() => {
+        setCurrentStage(STAGES.STAGE_2);
+      }, 500);
+    }
+  }, [currentStep]);
+
+  // Handle GFA Lock completion
+  const handleGFALocked = useCallback((citation: Citation) => {
+    setCitations(prev => [...prev, citation]);
+    
+    // After GFA is locked, navigate to project details
+    toast.success("Project foundation locked! Proceeding to details...");
+    setTimeout(() => {
+      navigate(`/buildunion/project/${projectId}`);
+    }, 1500);
+  }, [projectId, navigate]);
 
   // Handle citation click from chat (highlight on canvas)
   const handleCitationClick = useCallback((citationId: string) => {
     setHighlightedCitationId(citationId);
     setTimeout(() => setHighlightedCitationId(null), 3000);
   }, []);
-
-  // Navigate to project details when wizard complete
-  useEffect(() => {
-    if (currentStep >= 3 && projectId) {
-      toast.success("Project created successfully!");
-      setTimeout(() => {
-        navigate(`/buildunion/project/${projectId}`);
-      }, 1500);
-    }
-  }, [currentStep, projectId, navigate]);
 
   // Auth check
   if (authLoading || isInitializing) {
@@ -140,12 +163,17 @@ const BuildUnionNewProject = () => {
     return null;
   }
 
+  // Determine stage progress for header
+  const stageLabel = currentStage === STAGES.STAGE_1 
+    ? `Stage 1: Project Basics (${Math.min(currentStep + 1, STAGE_1_STEPS)}/${STAGE_1_STEPS})`
+    : "Stage 2: Lock Area";
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
+    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
       <BuildUnionHeader />
       
       {/* Top Navigation */}
-      <div className="border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-background/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm sticky top-0 z-40">
+      <div className="border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-background/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm sticky top-0 z-40 shrink-0">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             <Button
@@ -158,46 +186,134 @@ const BuildUnionNewProject = () => {
               {t("common.back", "Back")}
             </Button>
             
-            <h1 className="font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-              {t("project.newProject", "Project 3.0 Wizard")}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+                {t("project.newProject", "Project 3.0 Wizard")}
+              </h1>
+              <ChevronRight className="h-4 w-4 text-amber-500" />
+              <span className="text-sm text-amber-600/70 dark:text-amber-400/70">
+                {stageLabel}
+              </span>
+            </div>
             
             <div className="w-20" />
           </div>
         </div>
       </div>
 
-      {/* Main Content - Split View */}
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Chat Interface */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col"
-        >
-          <WizardChatInterface
-            projectId={projectId}
-            userId={user.id}
-            onCitationSaved={handleCitationSaved}
-            onCitationClick={handleCitationClick}
-            highlightedCitationId={highlightedCitationId}
-            currentStep={currentStep}
-            onStepComplete={handleStepComplete}
-          />
-        </motion.div>
+      {/* Main Content - Horizontal Slide Container */}
+      <main className="flex-1 flex overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          {currentStage === STAGES.STAGE_1 ? (
+            /* ========== STAGE 1: Name/Address/Type ========== */
+            <motion.div
+              key="stage-1"
+              initial={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "-100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0 flex"
+            >
+              {/* Left Panel - Chat Interface */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col h-full"
+              >
+                <WizardChatInterface
+                  projectId={projectId}
+                  userId={user.id}
+                  onCitationSaved={handleCitationSaved}
+                  onCitationClick={handleCitationClick}
+                  highlightedCitationId={highlightedCitationId}
+                  currentStep={currentStep}
+                  onStepComplete={handleStepComplete}
+                />
+              </motion.div>
 
-        {/* Right Panel - Citation-Driven Canvas */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="hidden md:flex flex-1 flex-col"
-        >
-          <CitationDrivenCanvas
-            citations={citations}
-            onCitationClick={handleCitationClick}
-            highlightedCitationId={highlightedCitationId}
-          />
-        </motion.div>
+              {/* Right Panel - Citation-Driven Canvas */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="hidden md:flex flex-1 flex-col h-full"
+              >
+                <CitationDrivenCanvas
+                  citations={citations}
+                  onCitationClick={handleCitationClick}
+                  highlightedCitationId={highlightedCitationId}
+                />
+              </motion.div>
+            </motion.div>
+          ) : (
+            /* ========== STAGE 2: GFA Lock ========== */
+            <motion.div
+              key="stage-2"
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0 flex"
+            >
+              {/* Left Panel - Stage 2 Chat Summary */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col h-full bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10"
+              >
+                {/* Summary Header */}
+                <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50">
+                  <h3 className="font-semibold text-amber-700 dark:text-amber-300">
+                    ✓ Stage 1 Complete
+                  </h3>
+                  <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
+                    Project basics verified
+                  </p>
+                </div>
+                
+                {/* Citations Summary */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {citations.map((citation, index) => (
+                    <motion.div
+                      key={citation.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => handleCitationClick(citation.id)}
+                      className="p-3 rounded-lg bg-card border border-amber-200/50 dark:border-amber-800/30 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">
+                          {citation.question_key.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs font-mono text-amber-500/70">
+                          {citation.id.slice(0, 8)}...
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium mt-1 text-foreground">
+                        {citation.answer}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Right Panel - GFA Lock Stage */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="hidden md:flex flex-1 flex-col h-full"
+              >
+                <GFALockStage
+                  projectId={projectId}
+                  userId={user.id}
+                  onGFALocked={handleGFALocked}
+                  existingGFA={citations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK)}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
