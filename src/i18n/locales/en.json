@@ -975,5 +975,28 @@
     "mm": "mm",
     "cuyd": "cu yd",
     "cum": "cu m"
+  },
+  "stage8": {
+    "title": "Final Review",
+    "subtitle": "Stage 8 • Complete Project Summary",
+    "basicInfo": "Basic Information",
+    "areaLock": "Area Lock (GFA)",
+    "tradeTemplate": "Trade & Template",
+    "executionFlow": "Execution Flow",
+    "visualIntelligence": "Visual Intelligence",
+    "teamArchitecture": "Team Architecture",
+    "executionTimeline": "Execution Timeline",
+    "financialSummary": "Financial Summary",
+    "exportPDF": "Export PDF",
+    "aiAnalysis": "AI Analysis",
+    "generateDashboard": "Generate Project Dashboard (8 Panels)",
+    "ownerOnly": "Owner Only",
+    "foremanPlus": "Foreman+",
+    "allTeam": "All Team",
+    "public": "Public",
+    "restrictedAccess": "Restricted Access",
+    "noData": "No data recorded for this stage",
+    "itemsRecorded": "items recorded",
+    "itemRecorded": "item recorded"
   }
 }
