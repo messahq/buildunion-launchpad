@@ -203,6 +203,11 @@ const BuildUnionProjectDetails = () => {
   ) as Citation | undefined;
   const gfaValue = gfaCitation?.metadata?.gfa_value as number | undefined;
 
+  // Check if DNA is finalized (Stage 3 complete)
+  const dnaFinalized = verifiedFacts.some(
+    (f) => (f as Citation).cite_type === CITATION_TYPES.DNA_FINALIZED
+  );
+
   // Get work type from citation if project.trade is missing
   const workTypeCitation = verifiedFacts.find(
     (f) => (f as Citation).cite_type === CITATION_TYPES.WORK_TYPE ||
@@ -211,6 +216,9 @@ const BuildUnionProjectDetails = () => {
   const workType = project.trade || 
     (workTypeCitation as Citation)?.metadata?.work_type_key ||
     (workTypeCitation as WizardCitation)?.answer;
+  
+  // Determine if we can continue to Stage 3
+  const canContinueToDefinition = gfaValue && !dnaFinalized;
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
@@ -611,31 +619,76 @@ const BuildUnionProjectDetails = () => {
               </motion.div>
             )}
             
-            {/* BLUEPRINT PANEL - Coming Soon */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-xl overflow-hidden border-2 border-dashed border-amber-200/50 dark:border-amber-800/30 opacity-60"
-            >
-              {/* Panel Header */}
-              <div className="p-3 bg-amber-50/50 dark:bg-amber-950/30 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-amber-700/70 dark:text-amber-300/70">
-                  <FileText className="h-4 w-4" />
-                  <span className="text-sm font-semibold">Blueprint Analysis</span>
+            {/* CONTINUE TO DEFINITION or BLUEPRINT PANEL */}
+            {canContinueToDefinition ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => {
+                  // Store the projectId and stage in sessionStorage for BuildUnionNewProject to pick up
+                  sessionStorage.setItem('continueFromProjectId', projectId || '');
+                  sessionStorage.setItem('continueFromStage', '3');
+                  sessionStorage.setItem('continueGfaValue', gfaValue?.toString() || '0');
+                  // Navigate to new project with continue mode
+                  navigate('/buildunion/new-project');
+                }}
+                className="rounded-xl overflow-hidden border-2 border-amber-400 dark:border-amber-600 cursor-pointer transition-all bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-950/50 dark:to-orange-950/50 hover:shadow-lg hover:shadow-amber-500/25"
+              >
+                {/* Panel Header */}
+                <div className="p-4 bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-white">
+                    <ChevronRight className="h-5 w-5" />
+                    <span className="text-sm font-bold">Continue to Definition Flow</span>
+                  </div>
+                  <Badge className="bg-white text-amber-700 font-bold text-[10px] px-2">
+                    STAGE 3
+                  </Badge>
                 </div>
-                <Badge variant="outline" className="text-[10px] border-amber-300/50 dark:border-amber-700/50">
-                  Coming Soon
-                </Badge>
-              </div>
-              {/* Placeholder Content */}
-              <div className="p-6 bg-gradient-to-br from-amber-100/20 to-orange-100/20 dark:from-amber-950/20 dark:to-orange-950/20 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <FileText className="h-8 w-8 mx-auto text-amber-500/50" />
-                  <p className="text-xs text-muted-foreground">Upload blueprints for AI analysis</p>
+                {/* Content */}
+                <div className="p-6 flex items-center justify-center min-h-[120px]">
+                  <div className="text-center space-y-3 w-full">
+                    <p className="text-sm text-muted-foreground">
+                      GFA is locked. Ready to define your project scope, team, and timeline?
+                    </p>
+                    <Button
+                      className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0 w-full"
+                      size="sm"
+                    >
+                      Start Definition Flow
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="rounded-xl overflow-hidden border-2 border-dashed border-amber-200/50 dark:border-amber-800/30 opacity-60"
+              >
+                {/* Panel Header */}
+                <div className="p-3 bg-amber-50/50 dark:bg-amber-950/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-700/70 dark:text-amber-300/70">
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Blueprint Analysis</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-amber-300/50 dark:border-amber-700/50">
+                    Coming Soon
+                  </Badge>
+                </div>
+                {/* Placeholder Content */}
+                <div className="p-6 bg-gradient-to-br from-amber-100/20 to-orange-100/20 dark:from-amber-950/20 dark:to-orange-950/20 flex items-center justify-center">
+                  <div className="text-center space-y-2">
+                    <FileText className="h-8 w-8 mx-auto text-amber-500/50" />
+                    <p className="text-xs text-muted-foreground">Upload blueprints for AI analysis</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </main>
