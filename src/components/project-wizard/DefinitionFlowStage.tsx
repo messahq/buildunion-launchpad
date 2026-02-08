@@ -140,14 +140,16 @@ interface ChatPanelProps {
   siteCondition: 'clear' | 'demolition';
   timeline: 'asap' | 'scheduled';
   scheduledDate: Date | undefined;
+  scheduledEndDate: Date | undefined;
   demolitionCost: number;
+  demolitionUnitPrice: number;
   onTradeSelect: (trade: string) => void;
   onLockTemplate: () => void;
   onTeamSizeSelect: (size: string) => void;
   onSiteConditionChange: (condition: 'clear' | 'demolition') => void;
   onTimelineChange: (timeline: 'asap' | 'scheduled') => void;
   onScheduledDateChange: (date: Date | undefined) => void;
-  onFinalLock: () => void;
+  onScheduledEndDateChange: (date: Date | undefined) => void;
   isSaving: boolean;
 }
 
@@ -160,14 +162,16 @@ const ChatPanel = ({
   siteCondition,
   timeline,
   scheduledDate,
+  scheduledEndDate,
   demolitionCost,
+  demolitionUnitPrice,
   onTradeSelect,
   onLockTemplate,
   onTeamSizeSelect,
   onSiteConditionChange,
   onTimelineChange,
   onScheduledDateChange,
-  onFinalLock,
+  onScheduledEndDateChange,
   isSaving,
 }: ChatPanelProps) => {
   // Determine stage and step labels
@@ -448,7 +452,7 @@ const ChatPanel = ({
                     )}
                   >
                     <p className="font-medium text-sm">Demolition Needed</p>
-                    <p className="text-xs text-orange-600 dark:text-orange-400">+${demolitionCost.toLocaleString()} ($2.50/sq ft)</p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">+${demolitionCost.toLocaleString()} (${demolitionUnitPrice.toFixed(2)}/sq ft)</p>
                   </motion.button>
                 </div>
               </div>
@@ -477,7 +481,7 @@ const ChatPanel = ({
           </>
         )}
         
-        {/* STAGE 4 STEP 3: Start Date */}
+        {/* STAGE 4 STEP 3: Timeline (Start Date & End Date) */}
         {currentSubStep >= 3 && templateLocked && (
           <>
             <motion.div
@@ -526,18 +530,19 @@ const ChatPanel = ({
                   </motion.button>
                 </div>
                 
-                {/* Date Picker */}
+                {/* Start Date Picker */}
                 {timeline === 'scheduled' && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     className="mb-3"
                   >
+                    <Label className="text-xs text-muted-foreground mb-1 block">Start Date</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-left font-normal">
                           <Calendar className="mr-2 h-4 w-4" />
-                          {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick a date'}
+                          {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick start date'}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -547,35 +552,59 @@ const ChatPanel = ({
                           onSelect={onScheduledDateChange}
                           initialFocus
                           disabled={(date) => date < new Date()}
+                          className={cn("p-3 pointer-events-auto")}
                         />
                       </PopoverContent>
                     </Popover>
                   </motion.div>
                 )}
                 
-                {/* Final Lock Button */}
+                {/* End Date Picker - Always visible after timeline selection */}
                 {(timeline === 'asap' || (timeline === 'scheduled' && scheduledDate)) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mb-3"
+                  >
+                    <Label className="text-xs text-muted-foreground mb-1 block">Estimated End Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {scheduledEndDate ? format(scheduledEndDate, 'PPP') : 'Pick end date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={scheduledEndDate}
+                          onSelect={onScheduledEndDateChange}
+                          initialFocus
+                          disabled={(date) => {
+                            const minDate = timeline === 'asap' ? new Date() : (scheduledDate || new Date());
+                            return date < minDate;
+                          }}
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </motion.div>
+                )}
+                
+                {/* Show completion status - Stage 4 complete message (no finalize button yet) */}
+                {scheduledEndDate && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
+                    className="p-3 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800"
                   >
-                    <Button
-                      onClick={onFinalLock}
-                      disabled={isSaving}
-                      className="w-full h-12 text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30 gap-2"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          Finalizing Project...
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-5 w-5" />
-                          FINALIZE PROJECT
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Execution details complete!</span>
+                    </div>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      Continue to the next stage...
+                    </p>
                   </motion.div>
                 )}
               </div>
@@ -601,6 +630,7 @@ interface CanvasPanelProps {
   materialTotal: number;
   laborTotal: number;
   demolitionCost: number;
+  demolitionUnitPrice: number;
   subtotal: number;
   markupPercent: number;
   markupAmount: number;
@@ -610,6 +640,7 @@ interface CanvasPanelProps {
   wastePercent: number;
   onWastePercentChange: (value: number) => void;
   onMarkupPercentChange: (value: number) => void;
+  onDemolitionUnitPriceChange: (value: number) => void;
   onUpdateItem: (itemId: string, field: keyof TemplateItem, value: number | string) => void;
   onDeleteItem: (itemId: string) => void;
   onAddItem: () => void;
@@ -629,6 +660,7 @@ const CanvasPanel = ({
   materialTotal,
   laborTotal,
   demolitionCost,
+  demolitionUnitPrice,
   subtotal,
   markupPercent,
   markupAmount,
@@ -638,6 +670,7 @@ const CanvasPanel = ({
   wastePercent,
   onWastePercentChange,
   onMarkupPercentChange,
+  onDemolitionUnitPriceChange,
   onUpdateItem,
   onDeleteItem,
   onAddItem,
@@ -836,10 +869,32 @@ const CanvasPanel = ({
                 <span className="text-muted-foreground">Labor</span>
                 <span>${laborTotal.toLocaleString()}</span>
               </div>
-              {demolitionCost > 0 && (
-                <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
-                  <span>Demolition</span>
-                  <span>+${demolitionCost.toLocaleString()}</span>
+              {siteCondition === 'demolition' && (
+                <div className="flex items-center justify-between text-sm text-orange-600 dark:text-orange-400">
+                  <span>Demolition ({gfaValue.toLocaleString()} sq ft)</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      step={0.25}
+                      value={demolitionUnitPrice}
+                      onChange={(e) => onDemolitionUnitPriceChange(Math.max(0, Math.min(50, parseFloat(e.target.value) || 0)))}
+                      onFocus={(e) => {
+                        if (demolitionUnitPrice === 0) {
+                          e.target.value = '';
+                        } else {
+                          e.target.select();
+                        }
+                      }}
+                      className="w-16 h-7 text-center text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">/sq ft</span>
+                    <span className="text-sm ml-2 min-w-[70px] text-right font-medium">
+                      +${demolitionCost.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               )}
               <div className="flex justify-between text-sm pt-1.5 border-t border-amber-200/50 dark:border-amber-700/50">
@@ -972,10 +1027,12 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     
     // Stage 4 Step 2: Site condition
     const [siteCondition, setSiteCondition] = useState<'clear' | 'demolition'>('clear');
+    const [demolitionUnitPrice, setDemolitionUnitPrice] = useState(2.5); // Editable $/sq ft
     
     // Stage 4 Step 3: Timeline
     const [timeline, setTimeline] = useState<'asap' | 'scheduled'>('asap');
     const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+    const [scheduledEndDate, setScheduledEndDate] = useState<Date | undefined>(undefined);
     
     // Collected citations
     const [flowCitations, setFlowCitations] = useState<Citation[]>([]);
@@ -1003,13 +1060,18 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Calculate totals
     const materialTotal = templateItems.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
     const laborTotal = templateItems.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
-    const demolitionCost = siteCondition === 'demolition' ? gfaValue * 2.5 : 0;
+    const demolitionCost = siteCondition === 'demolition' ? gfaValue * demolitionUnitPrice : 0;
     const subtotal = materialTotal + laborTotal + demolitionCost;
     const markupAmount = subtotal * (markupPercent / 100);
     const subtotalWithMarkup = subtotal + markupAmount;
     const taxRate = 0.13; // 13% HST for Ontario
     const taxAmount = subtotalWithMarkup * taxRate;
     const grandTotal = subtotalWithMarkup + taxAmount;
+    
+    // Handle demolition unit price change
+    const handleDemolitionUnitPriceChange = useCallback((newPrice: number) => {
+      setDemolitionUnitPrice(newPrice);
+    }, []);
     
     // Handle trade selection
     const handleTradeSelect = (trade: string) => {
@@ -1125,6 +1187,19 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           },
         });
         
+        // Demolition price citation (only if demolition selected)
+        const demolitionPriceCitation = siteCondition === 'demolition' ? createCitation({
+          cite_type: CITATION_TYPES.DEMOLITION_PRICE,
+          question_key: 'demolition_unit_price',
+          answer: `$${demolitionUnitPrice.toFixed(2)}/sq ft`,
+          value: demolitionUnitPrice,
+          metadata: {
+            unit_price: demolitionUnitPrice,
+            total_cost: demolitionCost,
+            gfa: gfaValue,
+          },
+        }) : null;
+        
         const timelineCitation = createCitation({
           cite_type: CITATION_TYPES.TIMELINE,
           question_key: 'timeline',
@@ -1134,6 +1209,17 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             start_date: timeline === 'asap' ? new Date().toISOString() : scheduledDate?.toISOString(),
           },
         });
+        
+        // End date citation
+        const endDateCitation = scheduledEndDate ? createCitation({
+          cite_type: CITATION_TYPES.END_DATE,
+          question_key: 'end_date',
+          answer: format(scheduledEndDate, 'PPP'),
+          value: scheduledEndDate.toISOString(),
+          metadata: {
+            end_date: scheduledEndDate.toISOString(),
+          },
+        }) : null;
         
         const dnaCitation = createCitation({
           cite_type: CITATION_TYPES.DNA_FINALIZED,
@@ -1146,6 +1232,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             site_condition: siteCondition,
             timeline: timeline,
             grand_total: grandTotal,
+            start_date: timeline === 'asap' ? new Date().toISOString() : scheduledDate?.toISOString(),
+            end_date: scheduledEndDate?.toISOString(),
           },
           metadata: {
             finalized_at: new Date().toISOString(),
@@ -1153,10 +1241,18 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             material_total: materialTotal,
             labor_total: laborTotal,
             demolition_cost: demolitionCost,
+            demolition_unit_price: demolitionUnitPrice,
           },
         });
         
-        const allCitations = [...flowCitations, siteCitation, timelineCitation, dnaCitation];
+        const allCitations = [
+          ...flowCitations, 
+          siteCitation, 
+          ...(demolitionPriceCitation ? [demolitionPriceCitation] : []),
+          timelineCitation,
+          ...(endDateCitation ? [endDateCitation] : []),
+          dnaCitation
+        ];
         
         const { data: currentData } = await supabase
           .from("project_summaries")
@@ -1208,7 +1304,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       } finally {
         setIsSaving(false);
       }
-    }, [projectId, userId, flowCitations, siteCondition, timeline, scheduledDate, templateItems, grandTotal, materialTotal, laborTotal, demolitionCost, gfaValue, selectedTrade, teamSize, onFlowComplete]);
+    }, [projectId, userId, flowCitations, siteCondition, timeline, scheduledDate, scheduledEndDate, templateItems, grandTotal, materialTotal, laborTotal, demolitionCost, demolitionUnitPrice, gfaValue, selectedTrade, teamSize, onFlowComplete]);
     
     return (
       <div
@@ -1239,14 +1335,16 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             siteCondition={siteCondition}
             timeline={timeline}
             scheduledDate={scheduledDate}
+            scheduledEndDate={scheduledEndDate}
             demolitionCost={demolitionCost}
+            demolitionUnitPrice={demolitionUnitPrice}
             onTradeSelect={handleTradeSelect}
             onLockTemplate={handleLockTemplate}
             onTeamSizeSelect={handleTeamSizeSelect}
             onSiteConditionChange={handleSiteConditionChange}
             onTimelineChange={setTimeline}
             onScheduledDateChange={setScheduledDate}
-            onFinalLock={handleFinalLock}
+            onScheduledEndDateChange={setScheduledEndDate}
             isSaving={isSaving}
           />
         </div>
@@ -1268,6 +1366,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               materialTotal={materialTotal}
               laborTotal={laborTotal}
               demolitionCost={demolitionCost}
+              demolitionUnitPrice={demolitionUnitPrice}
               subtotal={subtotal}
               markupPercent={markupPercent}
               markupAmount={markupAmount}
@@ -1277,6 +1376,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               wastePercent={wastePercent}
               onWastePercentChange={handleWastePercentChange}
               onMarkupPercentChange={handleMarkupPercentChange}
+              onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
               onUpdateItem={handleUpdateItem}
               onDeleteItem={handleDeleteItem}
               onAddItem={handleAddItem}
