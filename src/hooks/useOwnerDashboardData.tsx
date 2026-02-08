@@ -198,60 +198,86 @@ interface OwnerDashboardData {
      const completedTasks = tasks?.filter(t => t.status === "completed").length || 0;
      const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
  
-     // Extract financials from summary - prefer line_items over direct fields
-     const totalCost = summary?.total_cost || 0;
-     
-     // Parse line_items JSON to get actual material/labor costs
-     const lineItems = summary?.line_items as {
-       materials?: Array<{ totalPrice?: number }>;
-       labor?: Array<{ totalPrice?: number }>;
-       other?: Array<{ totalPrice?: number }>;
-     } | null;
-     
-     // Calculate actual costs from line_items (Materials tab data)
-     const calculatedMaterialCost = lineItems?.materials?.reduce(
-       (sum, item) => sum + (Number(item.totalPrice) || 0), 0
-     ) || 0;
-     const calculatedLaborCost = lineItems?.labor?.reduce(
-       (sum, item) => sum + (Number(item.totalPrice) || 0), 0
-     ) || 0;
-     const calculatedOtherCost = lineItems?.other?.reduce(
-       (sum, item) => sum + (Number(item.totalPrice) || 0), 0
-     ) || 0;
-     
-     // ===== AI WORKFLOW CONFIG - Budget Version Tracking =====
-     const aiConfig = summary?.ai_workflow_config as {
-       budgetVersion?: 'initial' | 'change_order';
-       budgetUpdatedAt?: string;
-       grandTotal?: number;
-       latestBudgetDocId?: string;
-       pendingBudgetChange?: {
-         submittedBy: string;
-         submittedByName?: string;
-         submittedAt: string;
-         proposedGrandTotal: number;
-         previousGrandTotal: number;
-         proposedLineItems?: {
-           materials?: Array<{ item: string; totalPrice: number }>;
-           labor?: Array<{ item: string; totalPrice: number }>;
-           other?: Array<{ item: string; totalPrice: number }>;
-         };
-         reason?: string;
-         status: 'pending' | 'approved' | 'declined';
-       };
-     } | null;
-     
-     const budgetVersion = aiConfig?.budgetVersion || 'initial';
-     const budgetUpdatedAt = aiConfig?.budgetUpdatedAt || null;
-     const pendingBudgetChange = aiConfig?.pendingBudgetChange || null;
-     
-     // If ai_workflow_config has a grandTotal, prefer it (most recent budget)
-     const aiConfigGrandTotal = aiConfig?.grandTotal || 0;
-     
-     // Use calculated values if available, otherwise fall back to summary fields
-     const materialCost = calculatedMaterialCost > 0 ? calculatedMaterialCost : (summary?.material_cost || 0);
-     const laborCost = calculatedLaborCost > 0 ? calculatedLaborCost : (summary?.labor_cost || 0);
-     const otherCost = calculatedOtherCost;
+      // Extract financials from summary - prefer line_items over direct fields
+      const totalCost = summary?.total_cost || 0;
+      
+      // ===== AI WORKFLOW CONFIG - Budget Version Tracking =====
+      const aiConfig = summary?.ai_workflow_config as {
+        budgetVersion?: 'initial' | 'change_order';
+        budgetUpdatedAt?: string;
+        grandTotal?: number;
+        latestBudgetDocId?: string;
+        userEdits?: { wastePercent?: number };
+        pendingBudgetChange?: {
+          submittedBy: string;
+          submittedByName?: string;
+          submittedAt: string;
+          proposedGrandTotal: number;
+          previousGrandTotal: number;
+          proposedLineItems?: {
+            materials?: Array<{ item: string; totalPrice: number }>;
+            labor?: Array<{ item: string; totalPrice: number }>;
+            other?: Array<{ item: string; totalPrice: number }>;
+          };
+          reason?: string;
+          status: 'pending' | 'approved' | 'declined';
+        };
+      } | null;
+      
+      // Get waste percent from config or default to 10%
+      const wastePercent = aiConfig?.userEdits?.wastePercent ?? 10;
+      
+      // Parse line_items JSON to get actual material/labor costs
+      const lineItems = summary?.line_items as {
+        materials?: Array<{ 
+          totalPrice?: number;
+          quantity?: number;
+          baseQuantity?: number;
+          unitPrice?: number;
+          isEssential?: boolean;
+          item?: string;
+        }>;
+        labor?: Array<{ totalPrice?: number }>;
+        other?: Array<{ totalPrice?: number }>;
+      } | null;
+      
+      // ===== IRON LAW #1: Materials Total MUST use GROSS (with waste) =====
+      // For essential materials, calculate GROSS = baseQty × (1 + waste%) × unitPrice
+      const calculatedMaterialCost = lineItems?.materials?.reduce((sum, item) => {
+        const baseQty = item.baseQuantity ?? item.quantity ?? 0;
+        const unitPrice = item.unitPrice ?? 0;
+        const isEssential = item.isEssential !== false;
+        
+        // Calculate GROSS quantity with waste for essential materials
+        const grossQty = isEssential 
+          ? Math.ceil(baseQty * (1 + wastePercent / 100))
+          : baseQty;
+        
+        // Use dynamically calculated GROSS price if we have unitPrice
+        // Otherwise fall back to stored totalPrice (which should already be GROSS)
+        const grossTotalPrice = unitPrice > 0 ? grossQty * unitPrice : (Number(item.totalPrice) || 0);
+        
+        return sum + grossTotalPrice;
+      }, 0) || 0;
+      
+      const calculatedLaborCost = lineItems?.labor?.reduce(
+        (sum, item) => sum + (Number(item.totalPrice) || 0), 0
+      ) || 0;
+      const calculatedOtherCost = lineItems?.other?.reduce(
+        (sum, item) => sum + (Number(item.totalPrice) || 0), 0
+      ) || 0;
+      
+      const budgetVersion = aiConfig?.budgetVersion || 'initial';
+      const budgetUpdatedAt = aiConfig?.budgetUpdatedAt || null;
+      const pendingBudgetChange = aiConfig?.pendingBudgetChange || null;
+      
+      // If ai_workflow_config has a grandTotal, prefer it (most recent budget)
+      const aiConfigGrandTotal = aiConfig?.grandTotal || 0;
+      
+      // Use calculated GROSS values if available, otherwise fall back to summary fields
+      const materialCost = calculatedMaterialCost > 0 ? calculatedMaterialCost : (summary?.material_cost || 0);
+      const laborCost = calculatedLaborCost > 0 ? calculatedLaborCost : (summary?.labor_cost || 0);
+      const otherCost = calculatedOtherCost;
 
     // Current Spend = only COMPLETED tasks (realized expenditures)
     const completedTasksCost = tasks?.filter(t => t.status === 'completed')
