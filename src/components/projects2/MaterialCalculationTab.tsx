@@ -1860,19 +1860,24 @@ export function MaterialCalculationTab({
               </div>
               
               {/* Row 2: Qty/Unit + Price columns - using CONVERTED display values */}
-              {/* IRON LAW #1: For essential materials, show NET → GROSS → waste% in vertical stack */}
-              {/* BULLETPROOF: Always calculate dynamically to avoid stale data issues */}
+              {/* IRON LAW #1: For essential materials, show NET area → GROSS (boxes/gallons) from resolver */}
+              {/* CRITICAL FIX: DO NOT recalculate here - use the resolver's calculated values! */}
               {(() => {
-                // IRON LAW #1: DYNAMIC CALCULATION - never trust saved gross values
-                // NET = baseQuantity (or quantity if baseQuantity missing)
-                // GROSS = NET × (1 + waste%)
-                const netQty = item.baseQuantity ?? item.quantity;
-                const calculatedGross = item.isEssential 
-                  ? Math.ceil(netQty * (1 + wastePercent / 100))
-                  : netQty;
-                // For display, use the calculated GROSS (item.quantity SHOULD match, but use calculated as source of truth)
-                const displayGross = item.isEssential ? calculatedGross : item.quantity;
-                const displayNet = item.isEssential ? netQty : item.quantity;
+                // IRON LAW #1 + QUANTITY RESOLVER:
+                // - baseQuantity = NET area in sq ft (e.g., 1350 sq ft)
+                // - quantity = GROSS units (boxes, gallons, rolls) from resolver (e.g., 68 boxes)
+                // 
+                // CRITICAL: We do NOT multiply quantity by waste% here because:
+                // 1. The resolver already applied waste% when converting area → units
+                // 2. item.quantity is already the FINAL value to display and order
+                //
+                // For display purposes:
+                // - NET: baseQuantity (the original area: 1350 sq ft)
+                // - GROSS: quantity (the final unit count: 68 boxes) - NO recalculation!
+                
+                const netAreaSqFt = item.baseQuantity ?? baseArea ?? item.quantity;
+                const displayGross = item.quantity; // ALREADY calculated by resolver - DO NOT MODIFY
+                const displayNet = netAreaSqFt;
                 
                 return (
                   <div className="grid grid-cols-4 gap-2 items-center">
