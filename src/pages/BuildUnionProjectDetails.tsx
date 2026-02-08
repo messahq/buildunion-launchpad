@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import { WizardCitation, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
+import { Citation, CITATION_TYPES } from "@/types/citation";
 import WireframeVisualizer from "@/components/project-wizard/WireframeVisualizer";
 import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
@@ -27,7 +28,7 @@ interface ProjectData {
 
 interface ProjectSummary {
   id: string;
-  verified_facts: WizardCitation[] | null;
+  verified_facts: (WizardCitation | Citation)[] | null;
   blueprint_analysis: any | null;
   total_cost: number | null;
   material_cost: number | null;
@@ -93,12 +94,6 @@ const BuildUnionProjectDetails = () => {
 
       setProject(projectData);
 
-      // Geocode address if available
-      if (projectData.address) {
-        const coords = await geocodeAddress(projectData.address);
-        if (coords) setCoordinates(coords);
-      }
-
       // Load summary
       const { data: summaryData } = await supabase
         .from("project_summaries")
@@ -108,10 +103,10 @@ const BuildUnionProjectDetails = () => {
 
       if (summaryData) {
         // Parse verified_facts from JSON
-        let parsedFacts: WizardCitation[] = [];
+        let parsedFacts: (WizardCitation | Citation)[] = [];
         if (Array.isArray(summaryData.verified_facts)) {
-          parsedFacts = (summaryData.verified_facts as unknown as WizardCitation[]).filter(
-            (fact): fact is WizardCitation => 
+          parsedFacts = (summaryData.verified_facts as unknown as (WizardCitation | Citation)[]).filter(
+            (fact): fact is (WizardCitation | Citation) => 
               fact !== null && 
               typeof fact === 'object' && 
               'id' in fact && 
@@ -123,6 +118,28 @@ const BuildUnionProjectDetails = () => {
           ...summaryData,
           verified_facts: parsedFacts
         });
+
+        // PRIORITY: Extract coordinates from LOCATION citation first
+        const locationCitation = parsedFacts.find(
+          (f) => (f as Citation).cite_type === CITATION_TYPES.LOCATION || 
+                 (f as WizardCitation).questionKey === 'project_address'
+        );
+        
+        const citationCoords = (locationCitation as Citation)?.metadata?.coordinates;
+        
+        if (citationCoords) {
+          console.log("[ProjectDetails] Using coordinates from citation:", citationCoords);
+          setCoordinates(citationCoords);
+        } else if (projectData.address) {
+          // Fallback: Geocode the address if no coordinates in citation
+          console.log("[ProjectDetails] No citation coords, geocoding address:", projectData.address);
+          const coords = await geocodeAddress(projectData.address);
+          if (coords) setCoordinates(coords);
+        }
+      } else if (projectData.address) {
+        // No summary at all, try geocoding
+        const coords = await geocodeAddress(projectData.address);
+        if (coords) setCoordinates(coords);
       }
 
       setLoading(false);
@@ -144,6 +161,21 @@ const BuildUnionProjectDetails = () => {
   }
 
   const verifiedFacts = summary?.verified_facts || [];
+  
+  // Extract GFA value from citations
+  const gfaCitation = verifiedFacts.find(
+    (f) => (f as Citation).cite_type === CITATION_TYPES.GFA_LOCK
+  ) as Citation | undefined;
+  const gfaValue = gfaCitation?.metadata?.gfa_value as number | undefined;
+
+  // Get work type from citation if project.trade is missing
+  const workTypeCitation = verifiedFacts.find(
+    (f) => (f as Citation).cite_type === CITATION_TYPES.WORK_TYPE ||
+           ('questionKey' in f && f.questionKey === 'work_type')
+  );
+  const workType = project.trade || 
+    (workTypeCitation as Citation)?.metadata?.work_type_key ||
+    (workTypeCitation as WizardCitation)?.answer;
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
@@ -287,15 +319,10 @@ const BuildUnionProjectDetails = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {project.trade ? (
-                    <WireframeVisualizer workType={project.trade} />
+                  {workType ? (
+                    <WireframeVisualizer workType={workType} gfaValue={gfaValue} />
                   ) : (
-                    <div className="h-64 flex items-center justify-center text-amber-600/70 dark:text-amber-400/70">
-                      <div className="text-center space-y-2">
-                        <Building className="h-8 w-8 mx-auto opacity-50" />
-                        <p className="text-sm">No work type specified</p>
-                      </div>
-                    </div>
+                    <WireframeVisualizer />
                   )}
                 </CardContent>
               </Card>
@@ -334,10 +361,11 @@ const BuildUnionProjectDetails = () => {
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
                             <div className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">
-                              {fact.questionKey?.replace(/_/g, ' ')}
+                              {('questionKey' in fact ? fact.questionKey : (fact as Citation).question_key)?.replace(/_/g, ' ')}
                             </div>
                             <div className="text-sm font-medium">
-                              {fact.questionKey === 'work_type' 
+                              {(('questionKey' in fact ? fact.questionKey : (fact as Citation).question_key) === 'work_type' ||
+                                (fact as Citation).cite_type === CITATION_TYPES.WORK_TYPE)
                                 ? WORK_TYPE_LABELS[fact.answer as WorkType] || fact.answer
                                 : fact.answer
                               }
