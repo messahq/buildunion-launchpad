@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UseGoogleMapsApiReturn {
@@ -7,16 +7,33 @@ interface UseGoogleMapsApiReturn {
   error: boolean;
 }
 
+// Session-level cache to prevent repeated API calls
+let cachedApiKey: string | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
 export const useGoogleMapsApi = (): UseGoogleMapsApiReturn => {
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [apiKey, setApiKey] = useState<string | null>(cachedApiKey);
+  const [isLoading, setIsLoading] = useState(!cachedApiKey);
   const [error, setError] = useState(false);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
+    // Return cached key if still valid
+    if (cachedApiKey && Date.now() - cacheTimestamp < CACHE_DURATION_MS) {
+      console.log("[useGoogleMapsApi] Using cached API key");
+      setApiKey(cachedApiKey);
+      setIsLoading(false);
+      return;
+    }
+
+    // Prevent duplicate fetches in strict mode
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
     const fetchApiKey = async () => {
       console.log("[useGoogleMapsApi] Starting API key fetch...");
       try {
-        // Get session if available (for logged-in users)
         const { data: { session } } = await supabase.auth.getSession();
         console.log("[useGoogleMapsApi] Session:", session ? "authenticated" : "guest");
         
@@ -35,6 +52,8 @@ export const useGoogleMapsApi = (): UseGoogleMapsApiReturn => {
         if (fetchError) throw fetchError;
         if (data?.key) {
           console.log("[useGoogleMapsApi] API key received successfully");
+          cachedApiKey = data.key;
+          cacheTimestamp = Date.now();
           setApiKey(data.key);
         } else {
           console.error("[useGoogleMapsApi] No key in response data");
