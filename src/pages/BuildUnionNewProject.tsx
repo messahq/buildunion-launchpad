@@ -178,25 +178,25 @@ const BuildUnionNewProject = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
       <BuildUnionHeader />
       
-      {/* Top Navigation */}
-      <div className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+      {/* Top Navigation with Amber accent */}
+      <div className="border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-background/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate("/buildunion/workspace")}
-              className="gap-2"
+              className="gap-2 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
             >
               <ArrowLeft className="h-4 w-4" />
               {t("common.back", "Back")}
             </Button>
             
-            <h1 className="font-semibold">
-              {t("project.newProject", "New Project")}
+            <h1 className="font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+              {t("project.newProject", "Project 3.0 Wizard")}
             </h1>
             
             <div className="w-20" /> {/* Spacer for centering */}
@@ -210,7 +210,7 @@ const BuildUnionNewProject = () => {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-full md:w-[400px] lg:w-[450px] border-r flex flex-col"
+          className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col"
         >
           <WizardChatInterface
             onAnswerSubmit={handleAnswerSubmit}
