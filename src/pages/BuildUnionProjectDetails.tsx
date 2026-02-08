@@ -744,24 +744,45 @@ const BuildUnionProjectDetails = () => {
               </AnimatePresence>
             )}
 
-            {/* DNA Finalized confirmation */}
+            {/* DNA Finalized confirmation + Ready for Execution CTA */}
             {dnaFinalized && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                className="flex justify-start"
-              >
-                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-500 shadow-lg shadow-green-500/25">
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
-                    <Lock className="h-4 w-4" />
-                    <span className="text-xs font-semibold">Project DNA Finalized</span>
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="flex justify-start"
+                >
+                  <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-500 shadow-lg shadow-green-500/25">
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                      <Lock className="h-4 w-4" />
+                      <span className="text-xs font-semibold">Project DNA Finalized</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      All project parameters are locked. Ready for execution.
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    All project parameters are locked. Ready for execution.
-                  </p>
-                </div>
-              </motion.div>
+                </motion.div>
+                
+                {/* Ready for Execution CTA Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1 }}
+                  className="pt-4"
+                >
+                  <Button
+                    onClick={() => {
+                      toast.success("Project ready! Redirecting to Workspace...");
+                      setTimeout(() => navigate("/buildunion/workspace"), 800);
+                    }}
+                    className="w-full h-14 text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30 gap-2"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                    Ready for Execution — Go to Workspace
+                  </Button>
+                </motion.div>
+              </>
             )}
           </div>
         </div>
