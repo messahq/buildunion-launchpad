@@ -18,13 +18,14 @@ import { Citation, CITATION_TYPES } from "@/types/citation";
 import WizardChatInterface from "@/components/project-wizard/WizardChatInterface";
 import CitationDrivenCanvas from "@/components/project-wizard/CitationDrivenCanvas";
 import GFALockStage from "@/components/project-wizard/GFALockStage";
+import DefinitionFlowStage from "@/components/project-wizard/DefinitionFlowStage";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 
 // Stage definitions
 const STAGES = {
   STAGE_1: 0, // Name, Address, Work Type
   STAGE_2: 1, // GFA Lock & Blueprint
-  STAGE_3: 2, // Budget & Materials (future)
+  STAGE_3: 2, // Definition Flow (Trade, Template, Team, Site, Finalize)
 } as const;
 
 const BuildUnionNewProject = () => {
@@ -40,6 +41,9 @@ const BuildUnionNewProject = () => {
   const [citations, setCitations] = useState<Citation[]>([]);
   const [currentStep, setCurrentStep] = useState(0); // Steps within Stage 1
   const [currentStage, setCurrentStage] = useState<number>(STAGES.STAGE_1);
+  
+  // GFA value for Stage 3
+  const [gfaValue, setGfaValue] = useState<number>(0);
   
   // Cross-panel highlighting
   const [highlightedCitationId, setHighlightedCitationId] = useState<string | null>(null);
@@ -123,12 +127,28 @@ const BuildUnionNewProject = () => {
     }
   }, [currentStep]);
 
-  // Handle GFA Lock completion
+  // Handle GFA Lock completion - now transitions to Stage 3
   const handleGFALocked = useCallback((citation: Citation) => {
     setCitations(prev => [...prev, citation]);
     
-    // After GFA is locked, navigate to project details
-    toast.success("Project foundation locked! Proceeding to details...");
+    // Extract GFA value for Stage 3
+    const gfa = citation.metadata?.gfa_value as number || 0;
+    setGfaValue(gfa);
+    
+    toast.success("GFA locked! Proceeding to Definition Flow...");
+    
+    // Transition to Stage 3 after animation
+    setTimeout(() => {
+      setCurrentStage(STAGES.STAGE_3);
+    }, 800);
+  }, []);
+
+  // Handle Definition Flow complete
+  const handleDefinitionFlowComplete = useCallback((newCitations: Citation[]) => {
+    setCitations(prev => [...prev, ...newCitations]);
+    
+    // Navigate to project details
+    toast.success("Project DNA Finalized! Opening project...");
     setTimeout(() => {
       navigate(`/buildunion/project/${projectId}`);
     }, 1500);
@@ -164,9 +184,12 @@ const BuildUnionNewProject = () => {
   }
 
   // Determine stage progress for header
-  const stageLabel = currentStage === STAGES.STAGE_1 
-    ? `Stage 1: Project Basics (${Math.min(currentStep + 1, STAGE_1_STEPS)}/${STAGE_1_STEPS})`
-    : "Stage 2: Lock Area";
+  const stageLabels: Record<number, string> = {
+    [STAGES.STAGE_1]: `Stage 1: Project Basics (${Math.min(currentStep + 1, STAGE_1_STEPS)}/${STAGE_1_STEPS})`,
+    [STAGES.STAGE_2]: "Stage 2: Lock Area",
+    [STAGES.STAGE_3]: "Stage 3: Definition Flow",
+  };
+  const stageLabel = stageLabels[currentStage] || "";
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
@@ -243,13 +266,13 @@ const BuildUnionNewProject = () => {
                 />
               </motion.div>
             </motion.div>
-          ) : (
+          ) : currentStage === STAGES.STAGE_2 ? (
             /* ========== STAGE 2: GFA Lock ========== */
             <motion.div
               key="stage-2"
               initial={{ opacity: 0, x: "100%" }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: "100%" }}
+              exit={{ opacity: 0, x: "-100%" }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute inset-0 flex"
             >
@@ -309,6 +332,75 @@ const BuildUnionNewProject = () => {
                   userId={user.id}
                   onGFALocked={handleGFALocked}
                   existingGFA={citations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK)}
+                />
+              </motion.div>
+            </motion.div>
+          ) : (
+            /* ========== STAGE 3: Definition Flow ========== */
+            <motion.div
+              key="stage-3"
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0 flex"
+            >
+              {/* Left Panel - Previous Citations Summary */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col h-full bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10"
+              >
+                {/* Summary Header */}
+                <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50">
+                  <h3 className="font-semibold text-amber-700 dark:text-amber-300">
+                    ✓ Stage 1 & 2 Complete
+                  </h3>
+                  <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
+                    Foundation locked: {gfaValue.toLocaleString()} sq ft
+                  </p>
+                </div>
+                
+                {/* All Citations Summary */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-20 md:pb-4">
+                  {citations.map((citation, index) => (
+                    <motion.div
+                      key={citation.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleCitationClick(citation.id)}
+                      className="p-3 rounded-lg bg-card border border-amber-200/50 dark:border-amber-800/30 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">
+                          {citation.question_key.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs font-mono text-amber-500/70">
+                          {citation.id.slice(0, 8)}...
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium mt-1 text-foreground">
+                        {citation.answer}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Right Panel - Definition Flow */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="hidden md:flex flex-1 flex-col h-full"
+              >
+                <DefinitionFlowStage
+                  projectId={projectId}
+                  userId={user.id}
+                  gfaValue={gfaValue}
+                  onFlowComplete={handleDefinitionFlowComplete}
                 />
               </motion.div>
             </motion.div>
