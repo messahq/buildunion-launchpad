@@ -55,6 +55,45 @@ const BuildUnionNewProject = () => {
   useEffect(() => {
     if (!user || projectId) return;
     
+    // Check if continuing from existing project
+    const continueProjectId = sessionStorage.getItem('continueFromProjectId');
+    const continueStage = parseInt(sessionStorage.getItem('continueFromStage') || '0');
+    const continueGfaValue = parseFloat(sessionStorage.getItem('continueGfaValue') || '0');
+    
+    if (continueProjectId && continueStage === 3) {
+      // Load existing project instead of creating new
+      console.log("[NewProject] Continuing from project:", continueProjectId);
+      setProjectId(continueProjectId);
+      setCurrentStage(STAGES.STAGE_3);
+      setGfaValue(continueGfaValue);
+      
+      // Load citations from existing project
+      const loadCitations = async () => {
+        const { data: summary } = await supabase
+          .from('project_summaries')
+          .select('verified_facts')
+          .eq('project_id', continueProjectId)
+          .single();
+        
+        if (summary?.verified_facts) {
+          const facts = Array.isArray(summary.verified_facts) ? (summary.verified_facts as unknown as Citation[]) : [];
+          setCitations(facts);
+        }
+        setIsInitializing(false);
+      };
+      
+      loadCitations().catch(error => {
+        console.error("Failed to load citations:", error);
+        setIsInitializing(false);
+      });
+      
+      // Clear session storage
+      sessionStorage.removeItem('continueFromProjectId');
+      sessionStorage.removeItem('continueFromStage');
+      sessionStorage.removeItem('continueGfaValue');
+      return;
+    }
+    
     const createDraftProject = async () => {
       try {
         const { data: project, error } = await supabase
