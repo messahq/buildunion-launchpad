@@ -95,6 +95,7 @@ import {
   syncCitationsToLocalStorage,
   logCriticalError,
 } from "@/lib/projectPersistence";
+import { WeatherWidget } from "@/components/WeatherWidget";
 
 // ============================================
 // VISIBILITY TIERS
@@ -372,9 +373,9 @@ export default function Stage8FinalReview({
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [selectedUploadCategory, setSelectedUploadCategory] = useState<DocumentCategory>('technical');
   
-  // Financial lock state - only Owner can view financials
   const [isFinancialLocked, setIsFinancialLocked] = useState(true);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
+  const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   
   // Check user permissions - Owner sees everything, others are blocked from financials
   const canEdit = useMemo(() => {
@@ -1350,13 +1351,14 @@ export default function Stage8FinalReview({
         </div>
         
         {/* Contracts Section */}
-        {contracts.length > 0 && (
-          <div className="pt-3 border-t">
-            <div className="flex items-center gap-2 mb-2">
-              <FileCheck className="h-4 w-4 text-pink-600" />
-              <span className="text-xs font-medium text-pink-600">Contracts</span>
-              <Badge variant="outline" className="text-[10px]">{contracts.length}</Badge>
-            </div>
+        <div className="pt-3 border-t">
+          <div className="flex items-center gap-2 mb-2">
+            <FileCheck className="h-4 w-4 text-pink-600" />
+            <span className="text-xs font-medium text-pink-600">Contracts</span>
+            <Badge variant="outline" className="text-[10px]">{contracts.length}</Badge>
+          </div>
+          
+          {contracts.length > 0 ? (
             <div className="space-y-1">
               {contracts.map(contract => (
                 <div key={contract.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
@@ -1370,8 +1372,50 @@ export default function Stage8FinalReview({
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">No contracts created yet</p>
+              
+              {/* Contract Type Selector */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium">Select contract type to create:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: 'residential', label: 'Residential', icon: '🏠' },
+                    { key: 'commercial', label: 'Commercial', icon: '🏢' },
+                    { key: 'industrial', label: 'Industrial', icon: '🏭' },
+                    { key: 'renovation', label: 'Renovation', icon: '🔨' },
+                  ].map(type => (
+                    <button
+                      key={type.key}
+                      onClick={() => setSelectedContractType(type.key)}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-all",
+                        selectedContractType === type.key
+                          ? "border-pink-500 bg-pink-50 dark:bg-pink-950/30"
+                          : "border-muted hover:border-pink-300 hover:bg-pink-50/50 dark:hover:bg-pink-950/20"
+                      )}
+                    >
+                      <span className="text-lg">{type.icon}</span>
+                      <span className="font-medium">{type.label}</span>
+                    </button>
+                  ))}
+                </div>
+                
+                {selectedContractType && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowContractPreview(true)}
+                    className="w-full gap-2 bg-pink-600 hover:bg-pink-700 text-white"
+                  >
+                    <FileCheck className="h-4 w-4" />
+                    Create {selectedContractType.charAt(0).toUpperCase() + selectedContractType.slice(1)} Contract
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }, [
@@ -1382,15 +1426,181 @@ export default function Stage8FinalReview({
     isUploading,
     isDraggingOver,
     selectedUploadCategory,
+    selectedContractType,
     handleDragOver,
     handleDragLeave,
     handleDrop,
     handleFileUpload,
   ]);
   
+  // Contract type options for new contract selection
+  const CONTRACT_TYPE_OPTIONS = [
+    { key: 'residential', label: 'Residential', icon: '🏠' },
+    { key: 'commercial', label: 'Commercial', icon: '🏢' },
+    { key: 'industrial', label: 'Industrial', icon: '🏭' },
+    { key: 'renovation', label: 'Renovation', icon: '🔨' },
+  ];
+  
   // Render panel content based on panel ID
   const renderPanelContent = useCallback((panel: PanelConfig) => {
     const panelCitations = getCitationsForPanel(panel.dataKeys);
+    
+    // ======= PANEL 2: Area & Dimensions =======
+    if (panel.id === 'panel-2-gfa') {
+      const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const blueprintCitation = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+      const siteConditionCitation = citations.find(c => c.cite_type === 'SITE_CONDITION');
+      
+      const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : 
+                       typeof gfaCitation?.metadata?.gfa_value === 'number' ? gfaCitation.metadata.gfa_value : 0;
+      const gfaUnit = gfaCitation?.metadata?.gfa_unit || 'sq ft';
+      
+      return (
+        <div className="space-y-4">
+          {/* GFA Primary Display */}
+          <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/50 dark:border-blue-800/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Gross Floor Area</span>
+              {gfaCitation && (
+                <Badge variant="outline" className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                  ✓ Locked
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                {gfaValue > 0 ? gfaValue.toLocaleString() : '—'}
+              </span>
+              <span className="text-lg text-blue-600/70 dark:text-blue-400/70">{gfaUnit}</span>
+            </div>
+          </div>
+          
+          {/* Blueprint Info */}
+          {blueprintCitation && (
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-1">
+                <FileImage className="h-4 w-4 text-blue-500" />
+                <span className="text-xs font-medium">Blueprint</span>
+              </div>
+              <p className="text-sm text-muted-foreground truncate">
+                {String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}
+              </p>
+            </div>
+          )}
+          
+          {/* Site Condition */}
+          {siteConditionCitation && (
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-1">
+                <Hammer className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-medium">Site Condition</span>
+              </div>
+              <p className="text-sm font-medium capitalize">
+                {siteConditionCitation.answer}
+              </p>
+            </div>
+          )}
+          
+          {/* All GFA Citations */}
+          {panelCitations.length > 0 && (
+            <div className="pt-3 border-t space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">All Citations</p>
+              {panelCitations.map(c => (
+                <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
+                  <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <span className="font-medium">{renderCitationValue(c)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {!gfaCitation && panelCitations.length === 0 && (
+            <div className="text-center py-4 bg-muted/20 rounded-lg">
+              <Ruler className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">No area data recorded</p>
+              <p className="text-[10px] text-muted-foreground">Complete GFA Lock stage to populate</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // ======= PANEL 3: Trade & Template =======
+    if (panel.id === 'panel-3-trade') {
+      const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+      const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      const executionCitation = citations.find(c => c.cite_type === 'EXECUTION_MODE');
+      const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
+      
+      const selectedTrade = tradeCitation?.answer || workTypeCitation?.answer || 'Not selected';
+      
+      return (
+        <div className="space-y-4">
+          {/* Trade Selection Display */}
+          <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200/50 dark:border-orange-800/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">Selected Trade</span>
+              {(tradeCitation || workTypeCitation) && (
+                <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                  ✓ Confirmed
+                </Badge>
+              )}
+            </div>
+            <p className="text-xl font-bold text-orange-700 dark:text-orange-300 capitalize">
+              {selectedTrade}
+            </p>
+          </div>
+          
+          {/* Template Info */}
+          {templateCitation && (
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-1">
+                <ClipboardList className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-medium">Template</span>
+              </div>
+              <p className="text-sm font-medium">{templateCitation.answer}</p>
+              {templateCitation.metadata && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {Object.keys(templateCitation.metadata).length} configuration items
+                </p>
+              )}
+            </div>
+          )}
+          
+          {/* Execution Mode */}
+          {executionCitation && (
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-1">
+                <Settings className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-medium">Execution Mode</span>
+              </div>
+              <p className="text-sm font-medium capitalize">{executionCitation.answer}</p>
+            </div>
+          )}
+          
+          {/* All Trade Citations */}
+          {panelCitations.length > 0 && (
+            <div className="pt-3 border-t space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">All Citations</p>
+              {panelCitations.map(c => (
+                <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
+                  <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <span className="font-medium">{renderCitationValue(c)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {!tradeCitation && !workTypeCitation && panelCitations.length === 0 && (
+            <div className="text-center py-4 bg-muted/20 rounded-lg">
+              <Hammer className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">No trade data recorded</p>
+              <p className="text-[10px] text-muted-foreground">Complete Definition Flow to populate</p>
+            </div>
+          )}
+        </div>
+      );
+    }
     
     switch (panel.id) {
       case 'panel-4-team':
@@ -1438,43 +1648,24 @@ export default function Stage8FinalReview({
         return renderPanel6Content();
       
       case 'panel-7-weather':
+        // Use the WeatherWidget component with project address
         return (
           <div className="space-y-3">
-            {weatherData ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/30">
-                  <Thermometer className="h-8 w-8 text-sky-500" />
-                  <div>
-                    <p className="text-2xl font-bold text-sky-700 dark:text-sky-300">
-                      {weatherData.temp !== undefined ? `${Math.round(weatherData.temp)}°C` : 'N/A'}
-                    </p>
-                    <p className="text-sm text-sky-600/80 dark:text-sky-400/80 capitalize">
-                      {weatherData.condition || 'Unknown'}
-                    </p>
-                  </div>
-                </div>
-                {weatherData.alerts && weatherData.alerts.length > 0 && (
-                  <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="text-xs font-medium">Weather Alerts Active</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <Cloud className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">No weather data available</p>
-                <p className="text-[10px] text-muted-foreground">Set project address to enable</p>
-              </div>
-            )}
+            {/* Integrated Weather Widget */}
+            <WeatherWidget 
+              location={projectData?.address}
+              showForecast={true}
+              className="border-0 shadow-none"
+            />
+            
+            {/* Site Condition Citations */}
             {panelCitations.length > 0 && (
               <div className="pt-3 border-t space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Site Conditions</p>
                 {panelCitations.map(c => (
-                  <div key={c.id} className="group text-xs">
-                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
-                    {renderCitationValue(c)}
+                  <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
+                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
+                    <span className="font-medium">{renderCitationValue(c)}</span>
                   </div>
                 ))}
               </div>
@@ -1601,9 +1792,12 @@ export default function Stage8FinalReview({
   }, [
     getCitationsForPanel,
     teamMembers,
-    weatherData,
+    projectData,
+    citations,
     contracts,
     canViewFinancials,
+    userRole,
+    dataSource,
     renderCitationValue,
     renderPanel5Content,
     renderPanel6Content,
