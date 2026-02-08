@@ -20,7 +20,7 @@ import CitationDrivenCanvas from "@/components/project-wizard/CitationDrivenCanv
 import GFALockStage from "@/components/project-wizard/GFALockStage";
 import DefinitionFlowStage from "@/components/project-wizard/DefinitionFlowStage";
 import TeamSetupStage from "@/components/project-wizard/TeamSetupStage";
-import Stage7Placeholder from "@/components/project-wizard/Stage7Placeholder";
+import Stage7GanttSetup from "@/components/project-wizard/Stage7GanttSetup";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 
 // Stage definitions
@@ -268,7 +268,7 @@ const BuildUnionNewProject = () => {
     [STAGES.STAGE_2]: "Stage 2: Lock Area",
     [STAGES.STAGE_3]: "Stage 3-5: Definition Flow",
     [STAGES.STAGE_6]: "Stage 6: Team Architecture",
-    [STAGES.STAGE_7]: "Stage 7: Coming Soon",
+    [STAGES.STAGE_7]: "Stage 7: Execution Timeline",
   };
   const stageLabel = stageLabels[currentStage] || "";
 
@@ -425,7 +425,7 @@ const BuildUnionNewProject = () => {
               />
             </motion.div>
           ) : (
-            /* ========== STAGE 7: Placeholder ========== */
+            /* ========== STAGE 7: Gantt Setup & Task Orchestration ========== */
             <motion.div
               key="stage-7"
               initial={{ opacity: 0, x: "100%" }}
@@ -434,8 +434,10 @@ const BuildUnionNewProject = () => {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute inset-0"
             >
-              <Stage7Placeholder
-                onNext={() => navigate("/buildunion/workspace")}
+              <Stage7GanttSetup
+                projectId={projectId}
+                userId={user.id}
+                onComplete={() => navigate(`/buildunion/project/${projectId}`)}
               />
             </motion.div>
           )}
