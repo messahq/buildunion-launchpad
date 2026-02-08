@@ -23,6 +23,13 @@ import TeamSetupStage from "@/components/project-wizard/TeamSetupStage";
 import Stage7GanttSetup from "@/components/project-wizard/Stage7GanttSetup";
 import Stage8FinalReview from "@/components/project-wizard/Stage8FinalReview";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
+import {
+  saveProjectToLocalStorage,
+  restoreProjectFromLocalStorage,
+  syncCitationsToLocalStorage,
+  logCriticalError,
+  canDeleteProject,
+} from "@/lib/projectPersistence";
 
 // Stage definitions
 const STAGES = {
@@ -102,14 +109,15 @@ const BuildUnionNewProject = () => {
     
     const createDraftProject = async () => {
       try {
-        const projectName = `Draft-${Date.now()}`;
+        const projectName = `Project-${Date.now()}`;
         
+        // ✓ IMMEDIATE PERSISTENCE: Create project with 'active' status from the start
         const { data: newProject, error } = await supabase
           .from('projects')
           .insert({
             name: projectName,
             user_id: user.id,
-            status: 'draft',
+            status: 'active', // NOT 'draft' - active from minute 1
           })
           .select('id')
           .single();
@@ -117,24 +125,35 @@ const BuildUnionNewProject = () => {
         if (error) throw error;
         if (!newProject) throw new Error('No project returned');
 
-        console.log('[NewProject] Draft project created:', newProject.id);
+        console.log('[NewProject] Active project created:', newProject.id);
         setProjectId(newProject.id);
         
-        // Create project_summaries record
+        // Create project_summaries record with 'active' status
         const { error: summaryError } = await supabase
           .from('project_summaries')
           .insert({
             project_id: newProject.id,
             user_id: user.id,
-            status: 'draft',
+            status: 'active',
             verified_facts: [],
           });
 
         if (summaryError) {
-          console.error('[NewProject] Failed to create summary:', summaryError);
+          logCriticalError('[NewProject] Failed to create summary', summaryError);
+          // Non-fatal - continue anyway
         }
+
+        // ✓ LOCAL BACKUP: Save to localStorage immediately
+        saveProjectToLocalStorage({
+          projectId: newProject.id,
+          userId: user.id,
+          currentStage: 0,
+          citations: [],
+          gfaValue: 0,
+          timestamp: Date.now(),
+        });
       } catch (err) {
-        console.error('[NewProject] Failed to create project:', err);
+        logCriticalError('[NewProject] Failed to create project', err);
         toast.error('Failed to initialize project');
         navigate('/buildunion/workspace');
       } finally {
@@ -149,13 +168,18 @@ const BuildUnionNewProject = () => {
   const handleCitationSaved = useCallback((citation: Citation) => {
     console.log('[NewProject] Citation saved:', citation.cite_type);
     setCitations(prev => {
-      const exists = prev.some(c => c.id === citation.id);
-      if (exists) {
-        return prev.map(c => c.id === citation.id ? citation : c);
+      const newCitations = prev.some(c => c.id === citation.id)
+        ? prev.map(c => c.id === citation.id ? citation : c)
+        : [...prev, citation];
+      
+      // ✓ SYNC: Update localStorage in real-time
+      if (projectId) {
+        syncCitationsToLocalStorage(projectId, newCitations, currentStage, gfaValue);
       }
-      return [...prev, citation];
+      
+      return newCitations;
     });
-  }, []);
+  }, [projectId, currentStage, gfaValue]);
 
   // Handle citation click (cross-panel highlighting)
   const handleCitationClick = useCallback((citationId: string) => {
@@ -168,21 +192,35 @@ const BuildUnionNewProject = () => {
     const newStep = currentStep + 1;
     if (newStep >= STAGE_1_STEPS) {
       console.log('[NewProject] Stage 1 Complete, moving to Stage 2');
-      setCurrentStage(STAGES.STAGE_2);
+      const newStage = STAGES.STAGE_2;
+      setCurrentStage(newStage);
       setCurrentStep(0);
+      
+      // ✓ SYNC: Update localStorage with new stage
+      if (projectId) {
+        syncCitationsToLocalStorage(projectId, citations, newStage, gfaValue);
+      }
     } else {
       setCurrentStep(newStep);
     }
-  }, [currentStep, STAGE_1_STEPS]);
+  }, [currentStep, STAGE_1_STEPS, projectId, citations, gfaValue]);
 
   // Handle Stage 2 (GFA Lock) completion
   const handleGFALockComplete = useCallback((citation: Citation) => {
     console.log('[NewProject] GFA Lock complete:', citation.value);
+    let newGfaValue = gfaValue;
     if (typeof citation.value === 'number') {
-      setGfaValue(citation.value);
+      newGfaValue = citation.value;
+      setGfaValue(newGfaValue);
     }
-    setCurrentStage(STAGES.STAGE_3);
-  }, []);
+    const newStage = STAGES.STAGE_3;
+    setCurrentStage(newStage);
+    
+    // ✓ SYNC: Update localStorage with GFA value and new stage
+    if (projectId) {
+      syncCitationsToLocalStorage(projectId, citations, newStage, newGfaValue);
+    }
+  }, [projectId, citations, gfaValue]);
 
   // Handle Stage 3 (Definition Flow) completion
   const handleDefinitionFlowComplete = useCallback(async (citations_data: Citation[]) => {
@@ -200,7 +238,11 @@ const BuildUnionNewProject = () => {
         .eq('project_id', projectId);
 
       if (error) {
-        console.error('[NewProject] Failed to save citations:', error);
+        logCriticalError('[NewProject] Failed to save citations', error);
+        // Continue anyway - localStorage has backup
+      } else {
+        // ✓ SYNC: Update localStorage after successful DB save
+        syncCitationsToLocalStorage(projectId, allCitations, STAGES.STAGE_6, gfaValue);
       }
     }
     
@@ -208,7 +250,7 @@ const BuildUnionNewProject = () => {
     setTimeout(() => {
       setCurrentStage(STAGES.STAGE_6);
     }, 800);
-  }, [projectId, citations]);
+  }, [projectId, citations, gfaValue]);
 
   // Handle Team Setup completion
   const handleTeamSetupComplete = useCallback(async (teamCitations: Citation[]) => {
@@ -226,7 +268,10 @@ const BuildUnionNewProject = () => {
         .eq('project_id', projectId);
 
       if (error) {
-        console.error('[NewProject] Failed to save team citations:', error);
+        logCriticalError('[NewProject] Failed to save team citations', error);
+        // Continue - localStorage has backup
+      } else {
+        syncCitationsToLocalStorage(projectId, allCitations, STAGES.STAGE_7, gfaValue);
       }
     }
     
@@ -234,7 +279,7 @@ const BuildUnionNewProject = () => {
     setTimeout(() => {
       setCurrentStage(STAGES.STAGE_7);
     }, 800);
-  }, [projectId, citations]);
+  }, [projectId, citations, gfaValue]);
 
   // Handle Team Setup skip
   const handleTeamSetupSkip = useCallback(() => {
