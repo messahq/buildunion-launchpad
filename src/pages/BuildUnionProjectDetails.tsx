@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, MapPin, Building, FileText, Sparkles, ChevronRight, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Building, FileText, Sparkles, ChevronRight, Trash2, User, Users, Lock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -10,10 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import { WizardCitation, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
-import { Citation, CITATION_TYPES } from "@/types/citation";
+import { Citation, CITATION_TYPES, createCitation } from "@/types/citation";
 import WireframeVisualizer from "@/components/project-wizard/WireframeVisualizer";
 import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +62,14 @@ const BuildUnionProjectDetails = () => {
   const [highlightedCitation, setHighlightedCitation] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Stage 4 Execution Flow state
+  const [stage4Step, setStage4Step] = useState(0); // 0=not started, 1=team, 2=site, 3=date
+  const [executionMode, setExecutionMode] = useState<'solo' | 'team' | null>(null);
+  const [siteCondition, setSiteCondition] = useState<'clear' | 'demolition' | null>(null);
+  const [timeline, setTimeline] = useState<'asap' | 'scheduled' | null>(null);
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [isSavingStage4, setIsSavingStage4] = useState(false);
 
   // Geocode address
   const geocodeAddress = useCallback(async (address: string) => {
@@ -180,6 +191,90 @@ const BuildUnionProjectDetails = () => {
     } finally {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
+    }
+  };
+
+  // Handle Stage 4 finalization
+  const handleFinalizeProject = async () => {
+    if (!project || !user || !executionMode || !siteCondition || !timeline) return;
+    
+    setIsSavingStage4(true);
+    try {
+      const gfaVal = (summary?.verified_facts || []).find(
+        (f) => (f as Citation).cite_type === CITATION_TYPES.GFA_LOCK
+      ) as Citation | undefined;
+      const gfaValue = gfaVal?.metadata?.gfa_value as number || 0;
+      const demolitionCost = siteCondition === 'demolition' ? gfaValue * 2.5 : 0;
+
+      const executionCitation = createCitation({
+        cite_type: CITATION_TYPES.EXECUTION_MODE,
+        question_key: 'execution_mode',
+        answer: executionMode === 'solo' ? 'Solo Installation' : 'Team Installation',
+        value: executionMode,
+        metadata: { is_team: executionMode === 'team' },
+      });
+
+      const siteCitation = createCitation({
+        cite_type: CITATION_TYPES.SITE_CONDITION,
+        question_key: 'site_condition',
+        answer: siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed',
+        value: siteCondition,
+        metadata: { 
+          demolition_required: siteCondition === 'demolition',
+          demolition_cost: demolitionCost,
+        },
+      });
+
+      const timelineCitation = createCitation({
+        cite_type: CITATION_TYPES.TIMELINE,
+        question_key: 'timeline',
+        answer: timeline === 'asap' ? 'ASAP' : `Scheduled: ${scheduledDate ? format(scheduledDate, 'PPP') : 'TBD'}`,
+        value: timeline,
+        metadata: {
+          start_date: timeline === 'asap' ? new Date().toISOString() : scheduledDate?.toISOString(),
+        },
+      });
+
+      const dnaCitation = createCitation({
+        cite_type: CITATION_TYPES.DNA_FINALIZED,
+        question_key: 'project_dna',
+        answer: `Project DNA Locked: ${gfaValue.toLocaleString()} sq ft`,
+        value: {
+          gfa: gfaValue,
+          execution_mode: executionMode,
+          site_condition: siteCondition,
+          timeline: timeline,
+          demolition_cost: demolitionCost,
+        },
+        metadata: {
+          finalized_at: new Date().toISOString(),
+        },
+      });
+
+      const newCitations = [executionCitation, siteCitation, timelineCitation, dnaCitation];
+      const currentFacts = Array.isArray(summary?.verified_facts) ? summary.verified_facts : [];
+      const updatedFacts = [...currentFacts, ...newCitations.map(c => c as unknown as Record<string, unknown>)];
+
+      const { error } = await supabase
+        .from("project_summaries")
+        .update({
+          verified_facts: updatedFacts as unknown as null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("project_id", project.id);
+
+      if (error) throw error;
+
+      toast.success("Project DNA Finalized!");
+      
+      // Reload the page to show finalized state
+      window.location.reload();
+      
+    } catch (err) {
+      console.error("[ProjectDetails] Finalize failed:", err);
+      toast.error("Failed to finalize project - please try again");
+    } finally {
+      setIsSavingStage4(false);
     }
   };
 
@@ -408,32 +503,266 @@ const BuildUnionProjectDetails = () => {
               </>
             )}
 
-            {/* Next question prompt */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="flex justify-start"
-            >
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 shadow-sm">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="text-xs font-semibold">Next Step</span>
+            {/* STAGE 4: Execution Flow (if GFA locked but DNA not finalized) */}
+            {gfaValue && !dnaFinalized && (
+              <AnimatePresence mode="wait">
+                {/* Stage 4 Step 1: Who is handling the installation? */}
+                {stage4Step === 0 && (
+                  <motion.div
+                    key="stage4-start"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="flex justify-start"
+                  >
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-300 dark:border-green-700 shadow-sm">
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                        <Sparkles className="h-4 w-4" />
+                        <span className="text-xs font-semibold">MESSA AI • Stage 4</span>
+                      </div>
+                      <p className="text-sm text-foreground mb-3">
+                        <strong>Who is handling the installation?</strong>
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setExecutionMode('solo');
+                            setStage4Step(1);
+                          }}
+                          className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
+                        >
+                          <User className="h-6 w-6 text-green-500" />
+                          <span className="text-sm font-medium">Solo</span>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setExecutionMode('team');
+                            setStage4Step(1);
+                          }}
+                          className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
+                        >
+                          <Users className="h-6 w-6 text-green-500" />
+                          <span className="text-sm font-medium">Team</span>
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* User Answer - Execution Mode */}
+                {executionMode && stage4Step >= 1 && (
+                  <motion.div
+                    key="exec-answer"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-end"
+                  >
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
+                      <p className="font-medium">{executionMode === 'solo' ? 'Solo Installation' : 'Team Installation'}</p>
+                      <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                        <FileText className="h-3 w-3" />
+                        <span>cite_execution...</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Stage 4 Step 2: Site Condition */}
+                {stage4Step >= 1 && !siteCondition && (
+                  <motion.div
+                    key="site-question"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-start"
+                  >
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-300 dark:border-green-700 shadow-sm">
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                        <Sparkles className="h-4 w-4" />
+                        <span className="text-xs font-semibold">MESSA AI</span>
+                      </div>
+                      <p className="text-sm text-foreground mb-3">
+                        <strong>What's the site condition?</strong>
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setSiteCondition('clear');
+                            setStage4Step(2);
+                          }}
+                          className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all text-left"
+                        >
+                          <p className="font-medium text-sm">Clear Site</p>
+                          <p className="text-xs text-muted-foreground">Ready to work</p>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setSiteCondition('demolition');
+                            setStage4Step(2);
+                          }}
+                          className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-orange-400 dark:hover:border-orange-600 transition-all text-left"
+                        >
+                          <p className="font-medium text-sm">Demolition Needed</p>
+                          <p className="text-xs text-orange-600 dark:text-orange-400">+${((gfaValue || 0) * 2.5).toLocaleString()} ($2.50/sq ft)</p>
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* User Answer - Site Condition */}
+                {siteCondition && stage4Step >= 2 && (
+                  <motion.div
+                    key="site-answer"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-end"
+                  >
+                    <div className={`max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-white shadow-lg ${
+                      siteCondition === 'demolition'
+                        ? 'bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-500/25'
+                        : 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25'
+                    }`}>
+                      <p className="font-medium">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
+                      {siteCondition === 'demolition' && (
+                        <p className="text-xs text-white/80">+${((gfaValue || 0) * 2.5).toLocaleString()} added</p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Stage 4 Step 3: Start Date */}
+                {stage4Step >= 2 && (
+                  <motion.div
+                    key="date-question"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-start"
+                  >
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-300 dark:border-green-700 shadow-sm">
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                        <Sparkles className="h-4 w-4" />
+                        <span className="text-xs font-semibold">MESSA AI</span>
+                      </div>
+                      <p className="text-sm text-foreground mb-3">
+                        <strong>When do you want to start?</strong>
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setTimeline('asap')}
+                          className={`p-3 rounded-xl border-2 transition-all text-left ${
+                            timeline === 'asap'
+                              ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                              : 'border-green-200 dark:border-green-800 hover:border-green-400'
+                          }`}
+                        >
+                          <p className="font-medium text-sm">ASAP</p>
+                          <p className="text-xs text-muted-foreground">Start immediately</p>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setTimeline('scheduled')}
+                          className={`p-3 rounded-xl border-2 transition-all text-left ${
+                            timeline === 'scheduled'
+                              ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                              : 'border-green-200 dark:border-green-800 hover:border-green-400'
+                          }`}
+                        >
+                          <p className="font-medium text-sm">Scheduled</p>
+                          <p className="text-xs text-muted-foreground">Pick a date</p>
+                        </motion.button>
+                      </div>
+                      
+                      {/* Date Picker */}
+                      {timeline === 'scheduled' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="mb-3"
+                        >
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                <Calendar className="mr-2 h-4 w-4" />
+                                {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick a date'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CalendarComponent
+                                mode="single"
+                                selected={scheduledDate}
+                                onSelect={setScheduledDate}
+                                initialFocus
+                                disabled={(date) => date < new Date()}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </motion.div>
+                      )}
+                      
+                      {/* Final Lock Button */}
+                      {(timeline === 'asap' || (timeline === 'scheduled' && scheduledDate)) && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          <Button
+                            onClick={handleFinalizeProject}
+                            disabled={isSavingStage4}
+                            className="w-full h-12 text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30 gap-2"
+                          >
+                            {isSavingStage4 ? (
+                              <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                Finalizing Project...
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-5 w-5" />
+                                FINALIZE PROJECT
+                              </>
+                            )}
+                          </Button>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
+
+            {/* DNA Finalized confirmation */}
+            {dnaFinalized && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-500 shadow-lg shadow-green-500/25">
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                    <Lock className="h-4 w-4" />
+                    <span className="text-xs font-semibold">Project DNA Finalized</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    All project parameters are locked. Ready for execution.
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Ready to upload blueprints for AI analysis?
-                </p>
-                <Button 
-                  className="mt-3 gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
-                  size="sm"
-                  disabled
-                >
-                  Upload Blueprint
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <p className="text-xs text-amber-500/70 mt-2">Coming soon...</p>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
           </div>
         </div>
 
