@@ -46,10 +46,12 @@ interface TemplateItem {
   id: string;
   name: string;
   category: 'material' | 'labor';
-  quantity: number;
+  baseQuantity: number; // Original quantity without waste
+  quantity: number; // Quantity with waste applied
   unit: string;
   unitPrice: number;
   totalPrice: number;
+  applyWaste?: boolean; // Whether waste % applies to this item
 }
 
 interface DefinitionFlowStageProps {
@@ -76,37 +78,53 @@ const TEAM_SIZE_OPTIONS = [
   { key: 'large', label: '5+ Pros', description: 'Large Scale', icon: Building2 },
 ];
 
-// Generate template items based on trade and GFA
+// Generate template items based on trade and GFA (base quantities without waste)
 function generateTemplateItems(trade: string, gfaSqft: number): TemplateItem[] {
   const templates: Record<string, TemplateItem[]> = {
     flooring: [
-      { id: '1', name: 'Hardwood Flooring (sq ft)', category: 'material', quantity: gfaSqft, unit: 'sq ft', unitPrice: 8.50, totalPrice: gfaSqft * 8.50 },
-      { id: '2', name: 'Underlayment', category: 'material', quantity: gfaSqft, unit: 'sq ft', unitPrice: 0.75, totalPrice: gfaSqft * 0.75 },
-      { id: '3', name: 'Transition Strips', category: 'material', quantity: Math.ceil(gfaSqft / 200), unit: 'pcs', unitPrice: 25, totalPrice: Math.ceil(gfaSqft / 200) * 25 },
-      { id: '4', name: 'Installation Labor', category: 'labor', quantity: gfaSqft, unit: 'sq ft', unitPrice: 4.50, totalPrice: gfaSqft * 4.50 },
-      { id: '5', name: 'Baseboards', category: 'material', quantity: Math.round(4 * Math.sqrt(gfaSqft) * 0.85), unit: 'ln ft', unitPrice: 3.25, totalPrice: Math.round(4 * Math.sqrt(gfaSqft) * 0.85) * 3.25 },
+      { id: '1', name: 'Hardwood Flooring', category: 'material', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 8.50, totalPrice: gfaSqft * 8.50, applyWaste: true },
+      { id: '2', name: 'Underlayment', category: 'material', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 0.75, totalPrice: gfaSqft * 0.75, applyWaste: true },
+      { id: '3', name: 'Transition Strips', category: 'material', baseQuantity: Math.ceil(gfaSqft / 200), quantity: Math.ceil(gfaSqft / 200), unit: 'pcs', unitPrice: 25, totalPrice: Math.ceil(gfaSqft / 200) * 25, applyWaste: false },
+      { id: '4', name: 'Installation Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 4.50, totalPrice: gfaSqft * 4.50, applyWaste: false },
+      { id: '5', name: 'Baseboards', category: 'material', baseQuantity: Math.round(4 * Math.sqrt(gfaSqft) * 0.85), quantity: Math.round(4 * Math.sqrt(gfaSqft) * 0.85), unit: 'ln ft', unitPrice: 3.25, totalPrice: Math.round(4 * Math.sqrt(gfaSqft) * 0.85) * 3.25, applyWaste: true },
     ],
     painting: [
-      { id: '1', name: 'Interior Paint (Premium)', category: 'material', quantity: Math.ceil(gfaSqft / 350), unit: 'gal', unitPrice: 45, totalPrice: Math.ceil(gfaSqft / 350) * 45 },
-      { id: '2', name: 'Primer', category: 'material', quantity: Math.ceil(gfaSqft / 400), unit: 'gal', unitPrice: 35, totalPrice: Math.ceil(gfaSqft / 400) * 35 },
-      { id: '3', name: 'Supplies (Brushes, Rollers, Tape)', category: 'material', quantity: 1, unit: 'kit', unitPrice: 85, totalPrice: 85 },
-      { id: '4', name: 'Surface Prep Labor', category: 'labor', quantity: gfaSqft, unit: 'sq ft', unitPrice: 0.75, totalPrice: gfaSqft * 0.75 },
-      { id: '5', name: 'Painting Labor', category: 'labor', quantity: gfaSqft, unit: 'sq ft', unitPrice: 2.50, totalPrice: gfaSqft * 2.50 },
+      { id: '1', name: 'Interior Paint (Premium)', category: 'material', baseQuantity: Math.ceil(gfaSqft / 350), quantity: Math.ceil(gfaSqft / 350), unit: 'gal', unitPrice: 45, totalPrice: Math.ceil(gfaSqft / 350) * 45, applyWaste: true },
+      { id: '2', name: 'Primer', category: 'material', baseQuantity: Math.ceil(gfaSqft / 400), quantity: Math.ceil(gfaSqft / 400), unit: 'gal', unitPrice: 35, totalPrice: Math.ceil(gfaSqft / 400) * 35, applyWaste: true },
+      { id: '3', name: 'Supplies (Brushes, Rollers, Tape)', category: 'material', baseQuantity: 1, quantity: 1, unit: 'kit', unitPrice: 85, totalPrice: 85, applyWaste: false },
+      { id: '4', name: 'Surface Prep Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 0.75, totalPrice: gfaSqft * 0.75, applyWaste: false },
+      { id: '5', name: 'Painting Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 2.50, totalPrice: gfaSqft * 2.50, applyWaste: false },
     ],
     drywall: [
-      { id: '1', name: 'Drywall Sheets (4x8)', category: 'material', quantity: Math.ceil(gfaSqft / 32), unit: 'sheets', unitPrice: 18, totalPrice: Math.ceil(gfaSqft / 32) * 18 },
-      { id: '2', name: 'Joint Compound', category: 'material', quantity: Math.ceil(gfaSqft / 500), unit: 'buckets', unitPrice: 22, totalPrice: Math.ceil(gfaSqft / 500) * 22 },
-      { id: '3', name: 'Drywall Tape', category: 'material', quantity: Math.ceil(gfaSqft / 100), unit: 'rolls', unitPrice: 8, totalPrice: Math.ceil(gfaSqft / 100) * 8 },
-      { id: '4', name: 'Installation Labor', category: 'labor', quantity: gfaSqft, unit: 'sq ft', unitPrice: 2.25, totalPrice: gfaSqft * 2.25 },
-      { id: '5', name: 'Finishing Labor (Tape & Mud)', category: 'labor', quantity: gfaSqft, unit: 'sq ft', unitPrice: 1.75, totalPrice: gfaSqft * 1.75 },
+      { id: '1', name: 'Drywall Sheets (4x8)', category: 'material', baseQuantity: Math.ceil(gfaSqft / 32), quantity: Math.ceil(gfaSqft / 32), unit: 'sheets', unitPrice: 18, totalPrice: Math.ceil(gfaSqft / 32) * 18, applyWaste: true },
+      { id: '2', name: 'Joint Compound', category: 'material', baseQuantity: Math.ceil(gfaSqft / 500), quantity: Math.ceil(gfaSqft / 500), unit: 'buckets', unitPrice: 22, totalPrice: Math.ceil(gfaSqft / 500) * 22, applyWaste: true },
+      { id: '3', name: 'Drywall Tape', category: 'material', baseQuantity: Math.ceil(gfaSqft / 100), quantity: Math.ceil(gfaSqft / 100), unit: 'rolls', unitPrice: 8, totalPrice: Math.ceil(gfaSqft / 100) * 8, applyWaste: true },
+      { id: '4', name: 'Installation Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 2.25, totalPrice: gfaSqft * 2.25, applyWaste: false },
+      { id: '5', name: 'Finishing Labor (Tape & Mud)', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 1.75, totalPrice: gfaSqft * 1.75, applyWaste: false },
     ],
     custom: [
-      { id: '1', name: 'Custom Material', category: 'material', quantity: gfaSqft, unit: 'sq ft', unitPrice: 5, totalPrice: gfaSqft * 5 },
-      { id: '2', name: 'Custom Labor', category: 'labor', quantity: gfaSqft, unit: 'sq ft', unitPrice: 3, totalPrice: gfaSqft * 3 },
+      { id: '1', name: 'Custom Material', category: 'material', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 5, totalPrice: gfaSqft * 5, applyWaste: true },
+      { id: '2', name: 'Custom Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 3, totalPrice: gfaSqft * 3, applyWaste: false },
     ],
   };
   
   return templates[trade] || templates.custom;
+}
+
+// Apply waste percentage to template items
+function applyWasteToItems(items: TemplateItem[], wastePercent: number): TemplateItem[] {
+  const wasteFactor = 1 + (wastePercent / 100);
+  return items.map(item => {
+    if (item.applyWaste && item.category === 'material') {
+      const newQuantity = Math.ceil(item.baseQuantity * wasteFactor);
+      return {
+        ...item,
+        quantity: newQuantity,
+        totalPrice: newQuantity * item.unitPrice,
+      };
+    }
+    return item;
+  });
 }
 
 // ============================================
@@ -491,6 +509,8 @@ interface CanvasPanelProps {
   demolitionCost: number;
   grandTotal: number;
   editingItem: string | null;
+  wastePercent: number;
+  onWastePercentChange: (value: number) => void;
   onUpdateItem: (itemId: string, field: keyof TemplateItem, value: number | string) => void;
   onDeleteItem: (itemId: string) => void;
   onAddItem: () => void;
@@ -509,6 +529,8 @@ const CanvasPanel = ({
   demolitionCost,
   grandTotal,
   editingItem,
+  wastePercent,
+  onWastePercentChange,
   onUpdateItem,
   onDeleteItem,
   onAddItem,
@@ -689,10 +711,39 @@ const CanvasPanel = ({
                   Add Item
                 </button>
                 
+                {/* Waste % Adjustment */}
+                <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-t border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                        Waste Factor
+                      </Label>
+                      <Badge variant="outline" className="text-xs border-amber-400 text-amber-600 dark:text-amber-400">
+                        Applied to materials
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={50}
+                        step={1}
+                        value={wastePercent}
+                        onChange={(e) => onWastePercentChange(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
+                        className="w-20 h-8 text-center text-sm font-semibold"
+                      />
+                      <span className="text-sm font-medium text-amber-600 dark:text-amber-400">%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Adds {wastePercent}% to material quantities for cuts & waste
+                  </p>
+                </div>
+                
                 {/* Totals */}
-                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-1">
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Materials</span>
+                    <span className="text-muted-foreground">Materials (incl. {wastePercent}% waste)</span>
                     <span>${materialTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -785,6 +836,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     const [templateItems, setTemplateItems] = useState<TemplateItem[]>([]);
     const [editingItem, setEditingItem] = useState<string | null>(null);
     
+    // Waste percentage (editable)
+    const [wastePercent, setWastePercent] = useState(10);
+    
     // Step 2: Team size
     const [teamSize, setTeamSize] = useState<string | null>(null);
     
@@ -799,10 +853,17 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Generate template when trade is selected
     useEffect(() => {
       if (selectedTrade) {
-        const items = generateTemplateItems(selectedTrade, gfaValue);
-        setTemplateItems(items);
+        const baseItems = generateTemplateItems(selectedTrade, gfaValue);
+        const itemsWithWaste = applyWasteToItems(baseItems, wastePercent);
+        setTemplateItems(itemsWithWaste);
       }
     }, [selectedTrade, gfaValue]);
+    
+    // Recalculate when waste percent changes
+    const handleWastePercentChange = useCallback((newWastePercent: number) => {
+      setWastePercent(newWastePercent);
+      setTemplateItems(prev => applyWasteToItems(prev, newWastePercent));
+    }, []);
     
     // Calculate totals
     const materialTotal = templateItems.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
@@ -838,10 +899,12 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         id: `new_${Date.now()}`,
         name: 'New Item',
         category: 'material',
+        baseQuantity: 1,
         quantity: 1,
         unit: 'pcs',
         unitPrice: 0,
         totalPrice: 0,
+        applyWaste: true,
       };
       setTemplateItems(prev => [...prev, newItem]);
       setEditingItem(newItem.id);
@@ -1035,6 +1098,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             demolitionCost={demolitionCost}
             grandTotal={grandTotal}
             editingItem={editingItem}
+            wastePercent={wastePercent}
+            onWastePercentChange={handleWastePercentChange}
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
             onAddItem={handleAddItem}
