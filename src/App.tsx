@@ -32,6 +32,7 @@ import OrbPage from "./pages/OrbPage";
 // ContractView removed for Project 3.0
 import AdminDashboard from "./pages/AdminDashboard";
 import BuildUnionAbout from "./pages/BuildUnionAbout";
+import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
                     <Route path="/dock" element={<Index />} />
                     {/* Protected routes - require email verification */}
                     <Route path="/buildunion/workspace" element={<RequireEmailVerification><BuildUnionWorkspace /></RequireEmailVerification>} />
+                    <Route path="/buildunion/new-project" element={<RequireEmailVerification><BuildUnionNewProject /></RequireEmailVerification>} />
                     <Route path="/buildunion/profile" element={<RequireEmailVerification><BuildUnionProfile /></RequireEmailVerification>} />
                     <Route path="/buildunion/profile/view" element={<RequireEmailVerification><BuildUnionProfileView /></RequireEmailVerification>} />
                     <Route path="/buildunion/messages" element={<RequireEmailVerification><BuildUnionMessages /></RequireEmailVerification>} />

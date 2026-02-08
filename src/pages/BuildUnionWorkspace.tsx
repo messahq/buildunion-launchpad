@@ -55,11 +55,9 @@ const BuildUnionWorkspace = () => {
     loadProjects();
   }, [user, authLoading]);
 
-  // Handle new project creation placeholder
+  // Navigate to new project wizard
   const handleNewProject = () => {
-    toast.info("New project wizard coming soon!", {
-      description: "The new Project 3.0 wizard is being built."
-    });
+    navigate("/buildunion/new-project");
   };
 
   if (authLoading || loading) {
