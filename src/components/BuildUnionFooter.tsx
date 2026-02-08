@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Link } from "react-router-dom";
 import { Linkedin, Twitter, Youtube, Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -9,7 +10,7 @@ const socialLinks = [
   { icon: Mail, href: "#", label: "Email" },
 ];
 
-const BuildUnionFooter = () => {
+const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>((props, ref) => {
   const { t } = useTranslation();
 
   const footerLinks = {
@@ -39,7 +40,7 @@ const BuildUnionFooter = () => {
   };
 
   return (
-    <footer className="bg-secondary text-foreground border-t border-border transition-colors">
+    <footer ref={ref} {...props} className="bg-secondary text-foreground border-t border-border transition-colors">
       {/* Main Footer */}
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
@@ -177,6 +178,8 @@ const BuildUnionFooter = () => {
       </div>
     </footer>
   );
-};
+});
+
+BuildUnionFooter.displayName = "BuildUnionFooter";
 
 export default BuildUnionFooter;

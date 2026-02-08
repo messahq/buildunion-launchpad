@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Folder, User, FileText, X, Loader2 } from "lucide-react";
 import {
@@ -32,7 +32,7 @@ interface GlobalSearchProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export const GlobalSearch = ({ open, onOpenChange }: GlobalSearchProps) => {
+export const GlobalSearch = forwardRef<HTMLDivElement, GlobalSearchProps>(({ open, onOpenChange }, ref) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -408,7 +408,9 @@ export const GlobalSearch = ({ open, onOpenChange }: GlobalSearchProps) => {
       </div>
     </CommandDialog>
   );
-};
+});
+
+GlobalSearch.displayName = "GlobalSearch";
 
 // Search trigger button component
 export const GlobalSearchTrigger = ({ onClick }: { onClick: () => void }) => {
