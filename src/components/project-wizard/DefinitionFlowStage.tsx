@@ -550,7 +550,7 @@ const CanvasPanel = ({
       </div>
       
       {/* Canvas Content */}
-      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
+      <div className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6">
         <AnimatePresence mode="wait">
           {!selectedTrade ? (
             /* Waiting state */
@@ -575,19 +575,19 @@ const CanvasPanel = ({
               </div>
             </motion.div>
           ) : (
-            /* Template Review Card */
+            /* Template Review Card - FULL WIDTH */
             <motion.div
               key="template"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
               transition={{ duration: 0.4 }}
-              className="space-y-4"
+              className="w-full space-y-4"
             >
-              {/* Template Card */}
-              <div className="bg-card border-2 border-amber-300 dark:border-amber-700 rounded-xl shadow-lg overflow-hidden">
+              {/* Template Card - Full Width */}
+              <div className="w-full bg-card border-2 border-amber-300 dark:border-amber-700 rounded-2xl shadow-xl overflow-hidden">
                 {/* Template Header */}
-                <div className="p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                <div className="p-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon && (
@@ -608,15 +608,15 @@ const CanvasPanel = ({
                   </div>
                 </div>
                 
-                {/* Items List */}
-                <div className="divide-y divide-amber-100 dark:divide-amber-900 max-h-72 overflow-y-auto">
+                {/* Items List - Expanded Height */}
+                <div className="divide-y divide-amber-100 dark:divide-amber-900 max-h-[400px] overflow-y-auto">
                   {templateItems.map(item => (
                     <motion.div
                       key={item.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="p-3 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 group"
+                      className="p-4 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 group"
                     >
                       {editingItem === item.id ? (
                         /* Editing Mode */
