@@ -165,12 +165,11 @@ interface TierConfig {
 interface ProjectQuestionnaireProps {
   onComplete: (answers: ProjectAnswers, workflow: WorkflowRecommendation) => void;
   onCancel: () => void;
-  onSkipAI?: (answers: ProjectAnswers) => void; // NEW: Skip AI analysis and go directly to dashboard
   saving?: boolean;
   tierConfig?: TierConfig;
 }
 
-export default function ProjectQuestionnaire({ onComplete, onCancel, onSkipAI, saving, tierConfig }: ProjectQuestionnaireProps) {
+export default function ProjectQuestionnaire({ onComplete, onCancel, saving, tierConfig }: ProjectQuestionnaireProps) {
   const maxImages = tierConfig?.maxImages || 2;
   const maxDocuments = 3; // PDF limit
   
@@ -312,14 +311,6 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, onSkipAI, s
     const workflow = determineWorkflow(answers);
     const citations = collectCitations();
     onComplete({ ...answers, collectedCitations: citations }, workflow);
-  };
-
-  // NEW: Handle Skip AI - create project without analysis
-  const handleSkipAI = () => {
-    if (onSkipAI) {
-      const citations = collectCitations();
-      onSkipAI({ ...answers, collectedCitations: citations });
-    }
   };
 
   // Validation - name is required, work type helps AI
@@ -537,41 +528,27 @@ export default function ProjectQuestionnaire({ onComplete, onCancel, onSkipAI, s
       </div>
 
       {/* Actions */}
-      <div className="space-y-3 pt-2">
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={onCancel} disabled={saving} className="flex-1">
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            disabled={!isValid || saving}
-            className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Create & Analyze
-              </>
-            )}
-          </Button>
-        </div>
-        
-        {/* Skip AI Option */}
-        {onSkipAI && (
-          <Button 
-            variant="ghost" 
-            onClick={handleSkipAI}
-            disabled={!isValid || saving}
-            className="w-full text-muted-foreground hover:text-foreground"
-          >
-            Skip AI Analysis → Create Manual Project
-          </Button>
-        )}
+      <div className="flex gap-3 pt-2">
+        <Button variant="outline" onClick={onCancel} disabled={saving} className="flex-1">
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmit}
+          disabled={!isValid || saving}
+          className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Upload className="mr-2 h-4 w-4" />
+              Create & Analyze
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

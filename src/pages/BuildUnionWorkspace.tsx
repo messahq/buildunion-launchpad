@@ -733,114 +733,6 @@ const BuildUnionProjects2 = () => {
     setShowQuestionnaire(true);
   };
 
-  // NEW: Skip AI Analysis - create project and go directly to dashboard
-  const handleSkipAI = async (answers: ProjectAnswers) => {
-    if (!user) {
-      toast.error("Please sign in to create a project");
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      // Map work type to trade
-      const tradeMap: Record<string, string> = {
-        painting: "painter",
-        flooring: "flooring_specialist",
-        drywall: "drywall_installer",
-        electrical: "electrician",
-        plumbing: "plumber",
-        hvac: "hvac_technician",
-        roofing: "roofer",
-        carpentry: "carpenter",
-        concrete: "concrete_worker",
-        renovation: "general_contractor",
-        new_construction: "general_contractor",
-        repair: "general_contractor",
-        other: "other"
-      };
-
-      // Create project
-      const { data: projectData, error: projectError } = await supabase
-        .from("projects")
-        .insert({
-          user_id: user.id,
-          name: answers.name,
-          address: answers.location || null,
-          trade: answers.workType ? tradeMap[answers.workType] : null,
-          description: answers.description || "Manual project - no AI analysis",
-          status: "active" // Directly active, not draft
-        })
-        .select()
-        .single();
-
-      if (projectError) throw projectError;
-
-      // Create project_summaries with manual mode flag
-      const manualWorkflowConfig = {
-        createdManually: true,
-        skipAI: true,
-        userEdits: { wastePercent: 10 },
-        tierAtCreation: subscription.tier,
-        createdAt: new Date().toISOString(),
-      };
-
-      const { error: summaryError } = await supabase
-        .from("project_summaries")
-        .insert({
-          project_id: projectData.id,
-          user_id: user.id,
-          mode: "solo",
-          status: "active",
-          ai_workflow_config: JSON.parse(JSON.stringify(manualWorkflowConfig)),
-          line_items: { materials: [], labor: [], other: [] },
-        });
-
-      if (summaryError) throw summaryError;
-
-      toast.success(`Manual project "${answers.name}" created!`, {
-        description: "No AI analysis - add materials manually in the Dashboard."
-      });
-
-      // Close questionnaire and navigate to project
-      setShowQuestionnaire(false);
-      setQuestionnaireData(null);
-      
-      // Navigate to project details
-      setSelectedProjectId(projectData.id);
-
-      // Refresh projects list
-      const { data: refreshedProjects } = await supabase
-        .from("projects")
-        .select("id, name, address, trade, status, description, created_at")
-        .eq("user_id", user.id)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
-      
-      if (refreshedProjects) {
-        setProjects(refreshedProjects);
-      }
-
-    } catch (error) {
-      console.error("Error creating manual project:", error);
-      toast.error("Failed to create project");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // NEW: Skip AI from FilterQuestions step - uses stored questionnaireData
-  const handleFilterSkipAI = async () => {
-    if (!questionnaireData) {
-      toast.error("No project data available");
-      return;
-    }
-    // Re-use the existing handleSkipAI with stored questionnaire answers
-    await handleSkipAI(questionnaireData.answers);
-    // Also close filter questions view
-    setShowFilterQuestions(false);
-  };
-
   // Handle project export
   const handleProjectExport = async (format: ExportFormat, options: ExportOptions) => {
     const allProjects = [...projects, ...sharedProjects.map(p => ({ ...p, is_shared: true }))];
@@ -945,7 +837,6 @@ const BuildUnionProjects2 = () => {
               <ProjectQuestionnaire 
                 onComplete={handleQuestionnaireComplete}
                 onCancel={() => setShowQuestionnaire(false)}
-                onSkipAI={handleSkipAI}
                 saving={saving}
                 tierConfig={tierConfig}
               />
@@ -964,7 +855,6 @@ const BuildUnionProjects2 = () => {
                 }}
                 onComplete={handleFilterComplete}
                 onBack={handleFilterBack}
-                onSkipAI={handleFilterSkipAI}
               />
             </div>
           )}
