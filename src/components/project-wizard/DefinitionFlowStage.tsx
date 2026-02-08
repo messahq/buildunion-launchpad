@@ -206,7 +206,7 @@ const ChatPanel = ({
                   </div>
                   <p className="text-sm text-foreground">
                     Selected: <strong>{gfaValue.toLocaleString()} sq ft Interior</strong>. 
-                    <br />Milyen munkát végzünk?
+                    <br />What trade are we performing?
                   </p>
                   
                   {/* Trade selection buttons - DIRECTLY BELOW THE QUESTION */}
@@ -260,7 +260,7 @@ const ChatPanel = ({
                       <span className="text-xs font-semibold">Template Ready</span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      A {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template kész. Ellenőrizd és szerkeszd a jobb oldalon, majd kattints a folytatáshoz.
+                      Your {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template is ready. Review and edit on the right, then continue.
                     </p>
                     <Button 
                       onClick={onProceedFromTemplate}
@@ -292,7 +292,7 @@ const ChatPanel = ({
                   <span className="text-xs font-semibold">MESSA AI</span>
                 </div>
                 <p className="text-sm text-foreground">
-                  Execution scale? Hány fővel dolgozol?
+                  What's your execution scale?
                 </p>
                 
                 {/* Team size buttons - DIRECTLY BELOW THE QUESTION */}
@@ -351,7 +351,7 @@ const ChatPanel = ({
                   <span className="text-xs font-semibold">MESSA AI</span>
                 </div>
                 <p className="text-sm text-foreground mb-4">
-                  Site condition és Start date? Utolsó lépés a véglegesítés előtt.
+                  What's your site condition and start date?
                 </p>
                 
                 {/* Site Condition */}
@@ -370,7 +370,7 @@ const ChatPanel = ({
                           : "border-amber-200 dark:border-amber-800"
                       )}
                     >
-                      <p className="font-medium text-sm">Clear</p>
+                      <p className="font-medium text-sm">Clear Site</p>
                       <p className="text-xs text-muted-foreground">Ready to work</p>
                     </button>
                     <button
@@ -416,7 +416,7 @@ const ChatPanel = ({
                           : "border-amber-200 dark:border-amber-800"
                       )}
                     >
-                      <p className="font-medium text-sm">Schedule</p>
+                      <p className="font-medium text-sm">Scheduled</p>
                       <p className="text-xs text-muted-foreground">Pick a date</p>
                     </button>
                   </div>
@@ -1000,7 +1000,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         className={cn("h-full flex", className)}
       >
         {/* LEFT PANEL - Chat (INPUT) */}
-        <div className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex-shrink-0">
+        <div className="w-full md:w-[400px] lg:w-[400px] border-r border-amber-200/50 dark:border-amber-800/30 flex-shrink-0">
           <ChatPanel
             currentSubStep={currentSubStep}
             gfaValue={gfaValue}
