@@ -59,6 +59,7 @@ import {
   FileUp,
   LockKeyhole,
   Unlock,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1554,13 +1555,61 @@ export default function Stage8FinalReview({
     }
     
     // ======= PANEL 3: Trade & Template =======
+    // ✓ UNIVERSAL TRADE OVERRIDE: Use citations or fallback to painting
     if (panel.id === 'panel-3-trade') {
       const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
       const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
       const executionCitation = citations.find(c => c.cite_type === 'EXECUTION_MODE');
       const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
       
-      const selectedTrade = tradeCitation?.answer || workTypeCitation?.answer || 'Not selected';
+      // ✓ KÉNYSZERÍTETT OVERRIDE: Ha nincs trade citation, használd a workType-ot vagy 'painting' default
+      const selectedTrade = tradeCitation?.answer || workTypeCitation?.answer || 'painting';
+      const normalizedTrade = selectedTrade.toLowerCase().trim();
+      
+      // ✓ UNIVERSAL TEMPLATE GENERATOR: Trade-specifikus anyagszükséglet és task lista
+      const getTemplateForTrade = (trade: string, gfa: number) => {
+        const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
+          painting: {
+            materials: [
+              { name: 'Interior Paint (Premium)', qty: Math.ceil(gfa / 350), unit: 'gal' },
+              { name: 'Primer', qty: Math.ceil(gfa / 400), unit: 'gal' },
+              { name: 'Supplies (Brushes, Rollers, Tape)', qty: 1, unit: 'kit' },
+              { name: 'Drop Cloths', qty: Math.ceil(gfa / 500), unit: 'pcs' },
+              { name: 'Caulking', qty: Math.ceil(gfa / 300), unit: 'tubes' },
+            ],
+            tasks: ['Surface prep & cleaning', 'Priming', 'First coat', 'Second coat', 'Touch-ups & cleanup'],
+          },
+          flooring: {
+            materials: [
+              { name: 'Hardwood Flooring', qty: gfa, unit: 'sq ft' },
+              { name: 'Underlayment', qty: gfa, unit: 'sq ft' },
+              { name: 'Transition Strips', qty: Math.ceil(gfa / 200), unit: 'pcs' },
+              { name: 'Baseboards', qty: Math.round(4 * Math.sqrt(gfa) * 0.85), unit: 'ln ft' },
+            ],
+            tasks: ['Remove old flooring', 'Subfloor prep', 'Install underlayment', 'Install flooring', 'Install baseboards'],
+          },
+          drywall: {
+            materials: [
+              { name: 'Drywall Sheets (4x8)', qty: Math.ceil(gfa / 32), unit: 'sheets' },
+              { name: 'Joint Compound', qty: Math.ceil(gfa / 500), unit: 'buckets' },
+              { name: 'Drywall Tape', qty: Math.ceil(gfa / 100), unit: 'rolls' },
+              { name: 'Screws', qty: Math.ceil(gfa / 50), unit: 'boxes' },
+            ],
+            tasks: ['Demolition', 'Framing check', 'Hang drywall', 'Tape & mud', 'Sand & finish'],
+          },
+        };
+        return templates[trade] || templates.painting;
+      };
+      
+      // Get GFA for template calculation
+      const templateGfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const templateGfaValue = typeof templateGfaCitation?.value === 'number' 
+        ? templateGfaCitation.value 
+        : typeof templateGfaCitation?.metadata?.gfa_value === 'number'
+          ? templateGfaCitation.metadata.gfa_value
+          : 1200;
+      
+      const tradeTemplate = getTemplateForTrade(normalizedTrade, templateGfaValue);
       
       return (
         <div className="space-y-4">
@@ -1568,30 +1617,58 @@ export default function Stage8FinalReview({
           <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200/50 dark:border-orange-800/30">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">Selected Trade</span>
-              {(tradeCitation || workTypeCitation) && (
-                <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                  ✓ Confirmed
-                </Badge>
-              )}
+              <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                ✓ Active
+              </Badge>
             </div>
             <p className="text-xl font-bold text-orange-700 dark:text-orange-300 capitalize">
               {selectedTrade}
             </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              @ {templateGfaValue.toLocaleString()} sq ft
+            </p>
+          </div>
+          
+          {/* ✓ UNIVERSAL MATERIAL REQUIREMENTS */}
+          <div className="p-3 rounded-lg bg-muted/50 border">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList className="h-4 w-4 text-orange-500" />
+              <span className="text-xs font-medium">Material Requirements</span>
+            </div>
+            <div className="space-y-1.5">
+              {tradeTemplate.materials.map((mat, idx) => (
+                <div key={idx} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{mat.name}</span>
+                  <span className="font-medium">{mat.qty.toLocaleString()} {mat.unit}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* ✓ UNIVERSAL TASK CHECKLIST */}
+          <div className="p-3 rounded-lg bg-muted/50 border">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="text-xs font-medium">Task Phases</span>
+            </div>
+            <div className="space-y-1">
+              {tradeTemplate.tasks.map((task, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-xs">
+                  <div className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+                  <span>{task}</span>
+                </div>
+              ))}
+            </div>
           </div>
           
           {/* Template Info */}
           {templateCitation && (
             <div className="p-3 rounded-lg bg-muted/50 border">
               <div className="flex items-center gap-2 mb-1">
-                <ClipboardList className="h-4 w-4 text-orange-500" />
-                <span className="text-xs font-medium">Template</span>
+                <Lock className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-medium">Template Locked</span>
               </div>
               <p className="text-sm font-medium">{templateCitation.answer}</p>
-              {templateCitation.metadata && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {Object.keys(templateCitation.metadata).length} configuration items
-                </p>
-              )}
             </div>
           )}
           
@@ -1618,25 +1695,38 @@ export default function Stage8FinalReview({
               ))}
             </div>
           )}
-          
-          {!tradeCitation && !workTypeCitation && panelCitations.length === 0 && (
-            <div className="text-center py-4 bg-muted/20 rounded-lg">
-              <Hammer className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No trade data recorded</p>
-              <p className="text-[10px] text-muted-foreground">Complete Definition Flow to populate</p>
-            </div>
-          )}
         </div>
       );
     }
     
     switch (panel.id) {
       case 'panel-4-team':
+        // ✓ TEAM TRIGGER PREPARATION: Kommunikációs modul aktiválása
+        const handleTeamCommunication = () => {
+          // Navigate to messages with project context
+          window.location.href = `/buildunion/messages?project=${projectId}`;
+        };
+        
         return (
           <div className="space-y-3">
-            <div className="text-sm font-medium text-muted-foreground mb-2">
-              Team Members ({teamMembers.length})
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Team Members ({teamMembers.length})
+              </span>
+              {/* ✓ COMMUNICATION MODULE TRIGGER */}
+              {teamMembers.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleTeamCommunication}
+                  className="h-7 text-xs gap-1 border-teal-300 text-teal-700 hover:bg-teal-50"
+                >
+                  <MessageSquare className="h-3 w-3" />
+                  Team Chat
+                </Button>
+              )}
             </div>
+            
             {teamMembers.length === 0 ? (
               <p className="text-xs text-muted-foreground italic">No team members added</p>
             ) : (
@@ -1652,10 +1742,30 @@ export default function Stage8FinalReview({
                         <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                       </div>
                     </div>
+                    {/* Individual message button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => window.location.href = `/buildunion/messages?user=${member.userId}`}
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-teal-600"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 ))}
               </div>
             )}
+            
+            {/* Communication enabled badge */}
+            {teamMembers.length > 0 && (
+              <div className="p-2 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
+                <div className="flex items-center gap-2 text-xs text-teal-700 dark:text-teal-300">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>Team messaging enabled</span>
+                </div>
+              </div>
+            )}
+            
             {panelCitations.length > 0 && (
               <div className="pt-3 border-t space-y-2">
                 {panelCitations.map(c => (
