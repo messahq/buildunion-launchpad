@@ -249,6 +249,60 @@ function getCoverageKey(category: MaterialCategory, materialName: string): strin
 }
 
 // ============================================================================
+// LINEAR MATERIALS - Special handling (not area-based!)
+// ============================================================================
+
+/**
+ * Check if material is a LINEAR type that should NOT use sq ft area directly.
+ * These materials are measured in linear feet, not square feet.
+ */
+function isLinearMaterial(materialName: string): boolean {
+  const name = materialName.toLowerCase();
+  return (
+    name.includes('transition') ||
+    name.includes('threshold') ||
+    name.includes('strip') ||
+    name.includes('baseboard') ||
+    name.includes('crown') ||
+    name.includes('molding') ||
+    name.includes('moulding') ||
+    name.includes('trim') ||
+    name.includes('casing') ||
+    name.includes('quarter round')
+  );
+}
+
+/**
+ * Estimate perimeter from area for linear materials.
+ * Formula: perimeter ≈ 4 × √area (assumes roughly square room)
+ * For multiple doors/transitions, we use a more conservative estimate.
+ */
+function estimateLinearFeetFromArea(areaSqFt: number, materialType: string): { linearFt: number; confidence: 'medium' | 'low' } {
+  const name = materialType.toLowerCase();
+  
+  // Transition strips: typically 1-3 per room (3-9 ft each)
+  // Conservative estimate: ~20-30 ft for average room
+  if (name.includes('transition') || name.includes('threshold')) {
+    // For larger areas, assume more transitions needed
+    const estimatedRooms = Math.max(1, Math.ceil(areaSqFt / 200)); // ~200 sq ft per "zone"
+    const ftPerTransition = 3; // Average transition strip length
+    const transitionsPerRoom = 2; // Conservative average
+    return { 
+      linearFt: Math.ceil(estimatedRooms * transitionsPerRoom * ftPerTransition),
+      confidence: 'low' as const
+    };
+  }
+  
+  // Baseboards, crown molding, trim: perimeter-based
+  // perimeter ≈ 4 × √area, minus ~20% for doors/windows
+  const estimatedPerimeter = 4 * Math.sqrt(areaSqFt) * 0.85;
+  return { 
+    linearFt: Math.ceil(estimatedPerimeter),
+    confidence: 'medium' as const
+  };
+}
+
+// ============================================================================
 // MAIN RESOLVER FUNCTION
 // ============================================================================
 
@@ -289,6 +343,31 @@ export function resolveQuantity(input: QuantityResolverInput): QuantityResolverO
       resolution_method: 'passthrough',
       confidence: 'high',
       calculation_trace: `${input.input_value} ${inputUnit} × ${wasteMultiplier.toFixed(2)} waste = ${grossQty} ${inputUnit}`,
+    };
+  }
+  
+  // ========== CRITICAL FIX: LINEAR MATERIALS ==========
+  // If input is sq ft but material is LINEAR (transition strips, baseboards, etc.),
+  // we CANNOT directly convert sq ft to linear ft 1:1.
+  // Instead: estimate linear ft from area OR require manual input.
+  const isLinear = isLinearMaterial(input.material_name);
+  const inputIsSqFt = inputUnit.includes('sq') || inputUnit.includes('ft²');
+  
+  if (isLinear && inputIsSqFt) {
+    // Estimate linear feet from area
+    const { linearFt, confidence } = estimateLinearFeetFromArea(input.input_value, input.material_name);
+    const grossLinearFt = Math.ceil(linearFt * wasteMultiplier);
+    
+    console.log(`[QUANTITY RESOLVER] LINEAR MATERIAL: ${input.material_name} - estimated ${linearFt} linear ft from ${input.input_value} sq ft (${confidence} confidence)`);
+    
+    return {
+      success: true,
+      resolved_quantity: linearFt,
+      resolved_unit: 'linear ft',
+      gross_quantity: grossLinearFt,
+      resolution_method: 'linear_to_pieces',
+      confidence: confidence,
+      calculation_trace: `${input.input_value} sq ft area → estimated perimeter/transitions = ${linearFt} linear ft × ${wasteMultiplier.toFixed(2)} waste = ${grossLinearFt} linear ft`,
     };
   }
   
