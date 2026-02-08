@@ -1,7 +1,8 @@
 // ============================================
-// DEFINITION FLOW STAGE - Stage 3 of Project Wizard
+// DEFINITION FLOW STAGE - Stage 3 & 4 of Project Wizard
 // ============================================
-// Trade Selection → Template Review → Team Size → Site & Time → Finalize DNA
+// Stage 3: Trade Selection → Template Review → Lock Template
+// Stage 4: Execution Flow (Solo/Team → Site Condition → Start Date → Final Lock)
 // LEFT PANEL: Chat with AI questions and selection buttons (INPUT)
 // RIGHT PANEL: Template cards and visualizations (OUTPUT)
 // ============================================
@@ -134,18 +135,19 @@ interface ChatPanelProps {
   currentSubStep: number;
   gfaValue: number;
   selectedTrade: string | null;
+  templateLocked: boolean;
   teamSize: string | null;
   siteCondition: 'clear' | 'demolition';
   timeline: 'asap' | 'scheduled';
   scheduledDate: Date | undefined;
   demolitionCost: number;
   onTradeSelect: (trade: string) => void;
+  onLockTemplate: () => void;
   onTeamSizeSelect: (size: string) => void;
   onSiteConditionChange: (condition: 'clear' | 'demolition') => void;
   onTimelineChange: (timeline: 'asap' | 'scheduled') => void;
   onScheduledDateChange: (date: Date | undefined) => void;
-  onProceedFromTemplate: () => void;
-  onFinalizeDNA: () => void;
+  onFinalLock: () => void;
   isSaving: boolean;
 }
 
@@ -153,65 +155,96 @@ const ChatPanel = ({
   currentSubStep,
   gfaValue,
   selectedTrade,
+  templateLocked,
   teamSize,
   siteCondition,
   timeline,
   scheduledDate,
   demolitionCost,
   onTradeSelect,
+  onLockTemplate,
   onTeamSizeSelect,
   onSiteConditionChange,
   onTimelineChange,
   onScheduledDateChange,
-  onProceedFromTemplate,
-  onFinalizeDNA,
+  onFinalLock,
   isSaving,
 }: ChatPanelProps) => {
+  // Determine stage and step labels
+  const isStage4 = templateLocked;
+  const stage4Step = currentSubStep - 1; // 0 = Team, 1 = Site, 2 = Date
+  const totalSteps = isStage4 ? 4 : 1;
+  const displayStep = isStage4 ? stage4Step + 2 : 1;
+  
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50/50 via-background to-slate-100/30 dark:from-slate-950/30 dark:via-background dark:to-slate-900/20">
       {/* Chat Header */}
       <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+          <div className={cn(
+            "h-10 w-10 rounded-full flex items-center justify-center shadow-lg",
+            isStage4 
+              ? "bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25"
+              : "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25"
+          )}>
             <Hammer className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="font-semibold text-amber-700 dark:text-amber-300">
-              Definition Flow
+            <h2 className={cn(
+              "font-semibold",
+              isStage4 ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-300"
+            )}>
+              {isStage4 ? "Execution Flow" : "Definition Flow"}
             </h2>
-            <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
-              Step {currentSubStep + 1} of 3 • {gfaValue.toLocaleString()} sq ft
+            <p className={cn(
+              "text-xs",
+              isStage4 ? "text-green-600/70 dark:text-green-400/70" : "text-amber-600/70 dark:text-amber-400/70"
+            )}>
+              {isStage4 
+                ? `Step ${stage4Step + 1} of 3 • Stage 4`
+                : `Template Setup • ${gfaValue.toLocaleString()} sq ft`
+              }
             </p>
           </div>
         </div>
         
         {/* Progress dots */}
         <div className="flex gap-2 mt-3">
-          {[0, 1, 2].map(step => (
+          {isStage4 ? (
+            // Stage 4: 3 steps (Team, Site, Date)
+            [0, 1, 2].map(step => (
+              <motion.div
+                key={step}
+                className={cn(
+                  "h-2 rounded-full transition-all duration-300",
+                  step === stage4Step
+                    ? "w-8 bg-gradient-to-r from-green-500 to-emerald-500"
+                    : step < stage4Step
+                      ? "w-2 bg-green-500"
+                      : "w-2 bg-green-200 dark:bg-green-800"
+                )}
+                animate={step === stage4Step ? { scale: [1, 1.1, 1] } : {}}
+                transition={{ repeat: step === stage4Step ? Infinity : 0, duration: 1.5 }}
+              />
+            ))
+          ) : (
+            // Stage 3: Just template setup
             <motion.div
-              key={step}
-              className={cn(
-                "h-2 rounded-full transition-all duration-300",
-                step === currentSubStep
-                  ? "w-8 bg-gradient-to-r from-amber-500 to-orange-500"
-                  : step < currentSubStep
-                    ? "w-2 bg-amber-500"
-                    : "w-2 bg-amber-200 dark:bg-amber-800"
-              )}
-              animate={step === currentSubStep ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ repeat: step === currentSubStep ? Infinity : 0, duration: 1.5 }}
+              className="h-2 w-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
             />
-          ))}
+          )}
         </div>
       </div>
       
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 md:pb-4">
-        {/* STEP 1: Trade Selection */}
+        {/* STAGE 3: Trade Selection & Template Lock */}
         <AnimatePresence mode="wait">
           {currentSubStep >= 0 && (
             <>
-              {/* AI Question */}
+              {/* AI Question - Trade */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -227,8 +260,8 @@ const ChatPanel = ({
                     <br />What trade are we performing?
                   </p>
                   
-                  {/* Trade selection buttons - DIRECTLY BELOW THE QUESTION */}
-                  {currentSubStep === 0 && !selectedTrade && (
+                  {/* Trade selection buttons */}
+                  {!selectedTrade && (
                     <div className="grid grid-cols-2 gap-2 mt-4">
                       {TRADE_OPTIONS.map(trade => (
                         <motion.button
@@ -247,7 +280,7 @@ const ChatPanel = ({
                 </div>
               </motion.div>
               
-              {/* User Answer - Trade (if selected) */}
+              {/* User Answer - Trade */}
               {selectedTrade && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -264,8 +297,8 @@ const ChatPanel = ({
                 </motion.div>
               )}
               
-              {/* Proceed button after trade is selected */}
-              {selectedTrade && currentSubStep === 0 && (
+              {/* Template Lock prompt (before Stage 4) */}
+              {selectedTrade && !templateLocked && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -278,16 +311,29 @@ const ChatPanel = ({
                       <span className="text-xs font-semibold">Template Ready</span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Your {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template is ready. Review and edit on the right, then continue.
+                      Your {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template is ready. 
+                      Review materials & pricing on the right, then lock it to proceed.
                     </p>
-                    <Button 
-                      onClick={onProceedFromTemplate}
-                      className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
-                      size="sm"
-                    >
-                      Confirm & Continue
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    <p className="text-xs text-muted-foreground italic">
+                      👉 Click "Lock Template & Continue" on the card to proceed to Stage 4.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+              
+              {/* Template Locked confirmation */}
+              {templateLocked && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-end"
+                >
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      <p className="font-medium">Template Locked</p>
+                    </div>
+                    <p className="text-xs text-white/80 mt-1">Materials & pricing confirmed</p>
                   </div>
                 </motion.div>
               )}
@@ -295,25 +341,25 @@ const ChatPanel = ({
           )}
         </AnimatePresence>
         
-        {/* STEP 2: Team Size */}
-        {currentSubStep >= 1 && (
+        {/* STAGE 4 STEP 1: Execution Mode (Solo/Team) */}
+        {currentSubStep >= 1 && templateLocked && (
           <>
-            {/* AI Question */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex justify-start"
             >
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
                   <Sparkles className="h-4 w-4" />
-                  <span className="text-xs font-semibold">MESSA AI</span>
+                  <span className="text-xs font-semibold">MESSA AI • Stage 4</span>
                 </div>
                 <p className="text-sm text-foreground">
-                  What's your execution scale?
+                  Great! Template locked. Now let's plan execution.<br/>
+                  <strong>What's your team size?</strong>
                 </p>
                 
-                {/* Team size buttons - DIRECTLY BELOW THE QUESTION */}
+                {/* Team size buttons */}
                 {currentSubStep === 1 && !teamSize && (
                   <div className="grid grid-cols-2 gap-2 mt-4">
                     {TEAM_SIZE_OPTIONS.map(option => (
@@ -322,9 +368,9 @@ const ChatPanel = ({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => onTeamSizeSelect(option.key)}
-                        className="p-3 rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-card hover:border-amber-400 dark:hover:border-amber-600 transition-all flex flex-col items-center gap-1 text-center"
+                        className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
                       >
-                        <option.icon className="h-6 w-6 text-amber-500" />
+                        <option.icon className="h-6 w-6 text-green-500" />
                         <span className="text-sm font-medium">{option.label}</span>
                         <span className="text-xs text-muted-foreground">{option.description}</span>
                       </motion.button>
@@ -334,14 +380,14 @@ const ChatPanel = ({
               </div>
             </motion.div>
             
-            {/* User Answer - Team Size (if selected) */}
+            {/* User Answer - Team Size */}
             {teamSize && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex justify-end"
               >
-                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
+                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
                   <p className="font-medium">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}</p>
                   <p className="text-xs text-white/80">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.description}</p>
                   <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
@@ -354,137 +400,181 @@ const ChatPanel = ({
           </>
         )}
         
-        {/* STEP 3: Site & Timeline */}
-        {currentSubStep >= 2 && (
+        {/* STAGE 4 STEP 2: Site Condition */}
+        {currentSubStep >= 2 && templateLocked && (
           <>
-            {/* AI Question */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex justify-start"
             >
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
                   <Sparkles className="h-4 w-4" />
                   <span className="text-xs font-semibold">MESSA AI</span>
                 </div>
-                <p className="text-sm text-foreground mb-4">
-                  What's your site condition and start date?
+                <p className="text-sm text-foreground mb-3">
+                  <strong>What's the site condition?</strong>
                 </p>
                 
-                {/* Site Condition */}
-                <div className="space-y-3 mb-4">
-                  <Label className="text-xs font-medium flex items-center gap-2">
-                    <MapPin className="h-3 w-3 text-amber-500" />
-                    Site Condition
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => onSiteConditionChange('clear')}
-                      className={cn(
-                        "p-3 rounded-xl border-2 transition-all text-left",
-                        siteCondition === 'clear'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}
-                    >
-                      <p className="font-medium text-sm">Clear Site</p>
-                      <p className="text-xs text-muted-foreground">Ready to work</p>
-                    </button>
-                    <button
-                      onClick={() => onSiteConditionChange('demolition')}
-                      className={cn(
-                        "p-3 rounded-xl border-2 transition-all text-left",
-                        siteCondition === 'demolition'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}
-                    >
-                      <p className="font-medium text-sm">Demo Needed</p>
-                      <p className="text-xs text-muted-foreground">+${demolitionCost.toLocaleString()}</p>
-                    </button>
-                  </div>
+                {/* Site Condition buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onSiteConditionChange('clear')}
+                    className={cn(
+                      "p-3 rounded-xl border-2 transition-all text-left",
+                      siteCondition === 'clear'
+                        ? "border-green-500 bg-green-50 dark:bg-green-950/30"
+                        : "border-green-200 dark:border-green-800 hover:border-green-400"
+                    )}
+                  >
+                    <p className="font-medium text-sm">Clear Site</p>
+                    <p className="text-xs text-muted-foreground">Ready to work</p>
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onSiteConditionChange('demolition')}
+                    className={cn(
+                      "p-3 rounded-xl border-2 transition-all text-left",
+                      siteCondition === 'demolition'
+                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
+                        : "border-green-200 dark:border-green-800 hover:border-orange-400"
+                    )}
+                  >
+                    <p className="font-medium text-sm">Demolition Needed</p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">+${demolitionCost.toLocaleString()} ($2.50/sq ft)</p>
+                  </motion.button>
                 </div>
-                
-                {/* Timeline */}
-                <div className="space-y-3 mb-4">
-                  <Label className="text-xs font-medium flex items-center gap-2">
-                    <Calendar className="h-3 w-3 text-amber-500" />
-                    Start Timeline
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => onTimelineChange('asap')}
-                      className={cn(
-                        "p-3 rounded-xl border-2 transition-all text-left",
-                        timeline === 'asap'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}
-                    >
-                      <p className="font-medium text-sm">ASAP</p>
-                      <p className="text-xs text-muted-foreground">Start immediately</p>
-                    </button>
-                    <button
-                      onClick={() => onTimelineChange('scheduled')}
-                      className={cn(
-                        "p-3 rounded-xl border-2 transition-all text-left",
-                        timeline === 'scheduled'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}
-                    >
-                      <p className="font-medium text-sm">Scheduled</p>
-                      <p className="text-xs text-muted-foreground">Pick a date</p>
-                    </button>
-                  </div>
-                  
-                  {/* Date Picker */}
-                  {timeline === 'scheduled' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="pt-2"
-                    >
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal">
-                            <Calendar className="mr-2 h-4 w-4" />
-                            {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick a date'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={scheduledDate}
-                            onSelect={onScheduledDateChange}
-                            initialFocus
-                            disabled={(date) => date < new Date()}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </motion.div>
+              </div>
+            </motion.div>
+            
+            {/* Show site condition answer if selected and we're past this step */}
+            {siteCondition && currentSubStep >= 3 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-end"
+              >
+                <div className={cn(
+                  "max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-white shadow-lg",
+                  siteCondition === 'demolition'
+                    ? "bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-500/25"
+                    : "bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25"
+                )}>
+                  <p className="font-medium">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
+                  {siteCondition === 'demolition' && (
+                    <p className="text-xs text-white/80">+${demolitionCost.toLocaleString()} added</p>
                   )}
                 </div>
+              </motion.div>
+            )}
+          </>
+        )}
+        
+        {/* STAGE 4 STEP 3: Start Date */}
+        {currentSubStep >= 3 && templateLocked && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-xs font-semibold">MESSA AI</span>
+                </div>
+                <p className="text-sm text-foreground mb-3">
+                  <strong>When do you want to start?</strong>
+                </p>
                 
-                {/* Finalize DNA Button */}
-                <Button
-                  onClick={onFinalizeDNA}
-                  disabled={isSaving}
-                  className="w-full h-12 text-base font-bold bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/30 gap-2"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Locking DNA...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-5 w-5" />
-                      FINALIZE DNA
-                    </>
-                  )}
-                </Button>
+                {/* Timeline buttons */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onTimelineChange('asap')}
+                    className={cn(
+                      "p-3 rounded-xl border-2 transition-all text-left",
+                      timeline === 'asap'
+                        ? "border-green-500 bg-green-50 dark:bg-green-950/30"
+                        : "border-green-200 dark:border-green-800 hover:border-green-400"
+                    )}
+                  >
+                    <p className="font-medium text-sm">ASAP</p>
+                    <p className="text-xs text-muted-foreground">Start immediately</p>
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onTimelineChange('scheduled')}
+                    className={cn(
+                      "p-3 rounded-xl border-2 transition-all text-left",
+                      timeline === 'scheduled'
+                        ? "border-green-500 bg-green-50 dark:bg-green-950/30"
+                        : "border-green-200 dark:border-green-800 hover:border-green-400"
+                    )}
+                  >
+                    <p className="font-medium text-sm">Scheduled</p>
+                    <p className="text-xs text-muted-foreground">Pick a date</p>
+                  </motion.button>
+                </div>
+                
+                {/* Date Picker */}
+                {timeline === 'scheduled' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mb-3"
+                  >
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={scheduledDate}
+                          onSelect={onScheduledDateChange}
+                          initialFocus
+                          disabled={(date) => date < new Date()}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </motion.div>
+                )}
+                
+                {/* Final Lock Button */}
+                {(timeline === 'asap' || (timeline === 'scheduled' && scheduledDate)) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Button
+                      onClick={onFinalLock}
+                      disabled={isSaving}
+                      className="w-full h-12 text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30 gap-2"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Finalizing Project...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-5 w-5" />
+                          FINALIZE PROJECT
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           </>
@@ -500,6 +590,7 @@ const ChatPanel = ({
 interface CanvasPanelProps {
   currentSubStep: number;
   selectedTrade: string | null;
+  templateLocked: boolean;
   teamSize: string | null;
   siteCondition: 'clear' | 'demolition';
   gfaValue: number;
@@ -520,13 +611,14 @@ interface CanvasPanelProps {
   onDeleteItem: (itemId: string) => void;
   onAddItem: () => void;
   onSetEditingItem: (id: string | null) => void;
-  onFinalizeDNA: () => void;
+  onLockTemplate: () => void;
   isSaving: boolean;
 }
 
 const CanvasPanel = ({
   currentSubStep,
   selectedTrade,
+  templateLocked,
   teamSize,
   siteCondition,
   gfaValue,
@@ -547,7 +639,7 @@ const CanvasPanel = ({
   onDeleteItem,
   onAddItem,
   onSetEditingItem,
-  onFinalizeDNA,
+  onLockTemplate,
   isSaving,
 }: CanvasPanelProps) => {
   return (
@@ -794,26 +886,38 @@ const CanvasPanel = ({
               </div>
             </div>
             
-            {/* Finalize DNA Button */}
-            <div className="px-4 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-t border-amber-200 dark:border-amber-800">
-              <Button
-                onClick={onFinalizeDNA}
-                disabled={isSaving}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-base shadow-lg"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Finalizing...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-5 w-5 mr-2" />
-                    Finalize Project DNA
-                  </>
-                )}
-              </Button>
-            </div>
+            {/* Lock Template Button - Only show if not yet locked */}
+            {!templateLocked && (
+              <div className="px-4 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-t border-amber-200 dark:border-amber-800">
+                <Button
+                  onClick={onLockTemplate}
+                  disabled={isSaving}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-base shadow-lg"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      Locking...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-5 w-5 mr-2" />
+                      Lock Template & Continue
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {/* Template Locked indicator */}
+            {templateLocked && (
+              <div className="px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-950/50 dark:to-emerald-950/50 border-t border-green-300 dark:border-green-800">
+                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
+                  <Lock className="h-4 w-4" />
+                  <span className="font-semibold text-sm">Template Locked</span>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Additional info cards - Inline */}
@@ -847,6 +951,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Step 1: Trade selection
     const [selectedTrade, setSelectedTrade] = useState<string | null>(null);
     
+    // Template lock state (Stage 3 → Stage 4 transition)
+    const [templateLocked, setTemplateLocked] = useState(false);
+    
     // Template items (editable)
     const [templateItems, setTemplateItems] = useState<TemplateItem[]>([]);
     const [editingItem, setEditingItem] = useState<string | null>(null);
@@ -857,11 +964,13 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Markup percentage (editable)
     const [markupPercent, setMarkupPercent] = useState(0);
     
-    // Step 2: Team size
+    // Stage 4 Step 1: Team size
     const [teamSize, setTeamSize] = useState<string | null>(null);
     
-    // Step 3: Site & Time
+    // Stage 4 Step 2: Site condition
     const [siteCondition, setSiteCondition] = useState<'clear' | 'demolition'>('clear');
+    
+    // Stage 4 Step 3: Timeline
     const [timeline, setTimeline] = useState<'asap' | 'scheduled'>('asap');
     const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
     
@@ -938,8 +1047,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setEditingItem(newItem.id);
     };
     
-    // Proceed from template to team size
-    const handleProceedFromTemplate = () => {
+    // Lock template and proceed to Stage 4 (from the card button)
+    const handleLockTemplate = () => {
       if (templateItems.length === 0) {
         toast.error("Add at least one item to the template");
         return;
@@ -962,13 +1071,17 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           items: templateItems,
           material_total: materialTotal,
           labor_total: laborTotal,
+          markup_percent: markupPercent,
         },
       });
       
       setFlowCitations([tradeCitation, templateCitation]);
-      setCurrentSubStep(1);
+      setTemplateLocked(true);
+      setCurrentSubStep(1); // Move to Stage 4 Step 1 (Team Size)
+      toast.success("Template locked! Now let's plan the execution.");
     };
     
+    // Stage 4 Step 1: Team size selection
     const handleTeamSizeSelect = (size: string) => {
       setTeamSize(size);
       
@@ -981,11 +1094,20 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       });
       
       setFlowCitations(prev => [...prev, teamCitation]);
-      setCurrentSubStep(2);
+      setCurrentSubStep(2); // Move to Stage 4 Step 2 (Site Condition)
     };
     
-    // Final lock
-    const handleFinalizeDNA = useCallback(async () => {
+    // Stage 4 Step 2: Site condition change (triggers live card update)
+    const handleSiteConditionChange = (condition: 'clear' | 'demolition') => {
+      setSiteCondition(condition);
+      // If user picks demolition and we haven't moved to step 3 yet, auto-advance
+      if (currentSubStep === 2) {
+        setCurrentSubStep(3); // Move to Stage 4 Step 3 (Timeline)
+      }
+    };
+    
+    // Stage 4 Final: Lock the entire project
+    const handleFinalLock = useCallback(async () => {
       setIsSaving(true);
       
       try {
@@ -1109,18 +1231,19 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             currentSubStep={currentSubStep}
             gfaValue={gfaValue}
             selectedTrade={selectedTrade}
+            templateLocked={templateLocked}
             teamSize={teamSize}
             siteCondition={siteCondition}
             timeline={timeline}
             scheduledDate={scheduledDate}
             demolitionCost={demolitionCost}
             onTradeSelect={handleTradeSelect}
+            onLockTemplate={handleLockTemplate}
             onTeamSizeSelect={handleTeamSizeSelect}
-            onSiteConditionChange={setSiteCondition}
+            onSiteConditionChange={handleSiteConditionChange}
             onTimelineChange={setTimeline}
             onScheduledDateChange={setScheduledDate}
-            onProceedFromTemplate={handleProceedFromTemplate}
-            onFinalizeDNA={handleFinalizeDNA}
+            onFinalLock={handleFinalLock}
             isSaving={isSaving}
           />
         </div>
@@ -1155,8 +1278,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               onDeleteItem={handleDeleteItem}
               onAddItem={handleAddItem}
               onSetEditingItem={setEditingItem}
-              onFinalizeDNA={handleFinalizeDNA}
+              onLockTemplate={handleLockTemplate}
               isSaving={isSaving}
+              templateLocked={templateLocked}
             />
           </div>
         )}
