@@ -303,6 +303,19 @@ export default function TeamSetupStage({
         
         // If it's an email invite, create the team_invitation record
         if (member.type === 'email' && member.email) {
+          // First get the project name and inviter name for the email
+          const { data: projectData } = await supabase
+            .from('projects')
+            .select('name')
+            .eq('id', projectId)
+            .single();
+          
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', userId)
+            .single();
+          
           const { error: inviteError } = await supabase
             .from('team_invitations')
             .insert({
@@ -315,16 +328,26 @@ export default function TeamSetupStage({
           
           if (inviteError) {
             console.error('[TeamSetup] Failed to create invitation:', inviteError);
+            toast.error(`Failed to invite ${member.email}`);
           } else {
-            // Send invitation email
+            // Send invitation email via Resend
             try {
-              await supabase.functions.invoke('send-invitation-email', {
+              const emailResult = await supabase.functions.invoke('send-invitation-email', {
                 body: {
-                  email: member.email,
+                  recipientEmail: member.email,
+                  projectName: projectData?.name || 'Unnamed Project',
                   projectId,
+                  inviterName: profileData?.full_name || 'A BuildUnion user',
                   role: member.accessLevel,
                 },
               });
+              
+              if (emailResult.error) {
+                console.error('[TeamSetup] Email API error:', emailResult.error);
+              } else {
+                console.log('[TeamSetup] Invitation email sent successfully to:', member.email);
+                toast.success(`Invitation sent to ${member.email}`);
+              }
             } catch (emailErr) {
               console.error('[TeamSetup] Failed to send email:', emailErr);
             }
