@@ -16,6 +16,7 @@ import {
   getTemplateByWorkType,
   calculateTemplateEstimate,
 } from "@/lib/workTypeTemplates";
+import { resolveQuantity, type QuantityResolverInput, inferMaterialCategory } from "@/lib/quantityResolver";
 
 export interface FinancialSummary {
   materialCost: number;
@@ -74,27 +75,110 @@ const DEFAULT_UNIT_PRICES: Record<string, number> = {
   "default": 10.00,
 };
 
+// Essential material patterns that need Quantity Resolver
+const ESSENTIAL_PATTERNS = [
+  /laminate|flooring/i,
+  /underlayment/i,
+  /baseboard|trim|transition|threshold/i,
+  /adhesive|glue|supplies/i,
+  /paint|primer/i,
+  /drywall|gypsum/i,
+  /tile|ceramic/i,
+  /carpet/i,
+];
+
+const isEssentialMaterial = (itemName: string): boolean => {
+  return ESSENTIAL_PATTERNS.some(pattern => pattern.test(itemName));
+};
+
 /**
  * Enrich AI-detected materials with template-based unit prices
+ * AND apply Quantity Resolver for proper unit conversion!
+ * 
+ * CRITICAL FIX (2026-02-08): This function now applies the same Quantity Resolver
+ * logic that MaterialCalculationTab uses, ensuring Budget Overview shows
+ * the same calculated quantities (boxes, rolls, gallons) instead of raw sq ft.
  */
 function enrichMaterialsWithPrices(
   materials: MaterialItem[],
   workType: string | null,
-  confirmedArea: number | null
+  confirmedArea: number | null,
+  wastePercent: number = 10
 ): MaterialItem[] {
+  // ============ CRITICAL FIX (2026-02-08): INFER baseArea FROM MATERIALS ============
+  // This mirrors MaterialCalculationTab logic to ensure Budget Overview
+  // shows the same calculated quantities as the Materials tab.
+  
+  let authorityBaseArea = confirmedArea ?? 0;
+  
+  if (!authorityBaseArea || authorityBaseArea <= 0) {
+    // Find the largest sq ft quantity from materials - this is our base area
+    let maxSqFtQty = 0;
+    for (const m of materials) {
+      const unit = (m.unit || '').toLowerCase();
+      const isSqFtUnit = unit.includes('sq') || unit.includes('ft²');
+      if (isSqFtUnit && m.quantity > maxSqFtQty) {
+        maxSqFtQty = m.quantity;
+      }
+    }
+    if (maxSqFtQty > 0) {
+      authorityBaseArea = maxSqFtQty;
+      console.log(`[BUDGET SYNC] Inferred baseArea: ${authorityBaseArea} sq ft`);
+    }
+  }
+  
   // Try to get template prices
   const workTypeId = workType?.toLowerCase() as WorkTypeId | undefined;
   const template = workTypeId ? getTemplateByWorkType(workTypeId) : null;
   
   return materials.map((material, index) => {
-    // Skip if already has valid unitPrice
-    if (material.unitPrice && material.unitPrice > 0 && material.totalPrice && material.totalPrice > 0) {
-      return material;
+    const itemLower = material.item.toLowerCase();
+    const isEssential = isEssentialMaterial(material.item);
+    
+    // ============ APPLY QUANTITY RESOLVER ============
+    // For essential materials with sq ft units, convert to proper units (boxes, rolls, etc.)
+    let finalQuantity = material.quantity;
+    let finalUnit = material.unit;
+    // Note: MaterialItem doesn't have baseQuantity, so we track it locally
+    let finalBaseQty = material.quantity;
+    
+    const isSqFtUnit = (material.unit || '').toLowerCase().includes('sq') || 
+                       (material.unit || '').toLowerCase().includes('ft²');
+    
+    if (isEssential && isSqFtUnit && authorityBaseArea > 0) {
+      // Run Quantity Resolver for physics-based calculation
+      const resolverInput: QuantityResolverInput = {
+        material_name: material.item,
+        input_unit: 'sq ft',
+        input_value: authorityBaseArea,
+        waste_percent: wastePercent,
+      };
+      
+      const resolved = resolveQuantity(resolverInput);
+      
+      if (resolved.success && resolved.gross_quantity && resolved.resolved_unit) {
+        // ✅ RESOLVER SUCCEEDED: Use calculated values
+        finalQuantity = resolved.gross_quantity;
+        finalUnit = resolved.resolved_unit;
+        finalBaseQty = resolved.resolved_quantity ?? authorityBaseArea;
+        console.log(`[BUDGET SYNC RESOLVER] ${material.item}: ${resolved.calculation_trace}`);
+      }
     }
     
-    // Try to find matching template material
-    const itemLower = material.item.toLowerCase();
+    // ============ DETERMINE UNIT PRICE ============
     let unitPrice = material.unitPrice || 0;
+    
+    // Skip price enrichment if already has valid prices with resolved quantities
+    if (material.unitPrice && material.unitPrice > 0 && material.totalPrice && material.totalPrice > 0) {
+      // Already has valid prices - recalculate total with new resolved quantity
+      const totalPrice = finalQuantity * material.unitPrice;
+      return {
+        ...material,
+        quantity: finalQuantity,
+        unit: finalUnit,
+        totalPrice,
+      } as MaterialItem;
+    }
     
     // First try template match
     if (template) {
@@ -117,28 +201,37 @@ function enrichMaterialsWithPrices(
       }
     }
     
-    // Final fallback based on unit type
+    // Final fallback based on resolved unit type
     if (unitPrice === 0) {
-      if (material.unit === "sq ft") {
+      const unitLower = (finalUnit || '').toLowerCase();
+      if (unitLower.includes('box')) {
+        unitPrice = 55.00; // Per box flooring average
+      } else if (unitLower.includes('roll')) {
+        unitPrice = 35.00; // Per roll underlayment average
+      } else if (unitLower.includes('gallon')) {
+        unitPrice = 45.00; // Per gallon paint average
+      } else if (unitLower === 'sq ft') {
         unitPrice = 2.50; // Generic per sq ft
-      } else if (material.unit === "ft") {
-        unitPrice = 1.50; // Generic per linear ft
-      } else if (material.unit === "gal") {
-        unitPrice = 45.00; // Generic per gallon
+      } else if (unitLower.includes('linear')) {
+        unitPrice = 12.00; // Generic per linear ft
       } else {
         unitPrice = DEFAULT_UNIT_PRICES.default;
       }
     }
     
-    const totalPrice = material.quantity * unitPrice;
+    const totalPrice = finalQuantity * unitPrice;
+    
+    console.log(`[BUDGET SYNC] ${material.item}: ${finalQuantity} ${finalUnit} × $${unitPrice} = $${totalPrice.toFixed(2)}`);
     
     return {
       ...material,
+      quantity: finalQuantity,
+      unit: finalUnit,
       unitPrice,
       totalPrice,
       citationSource: material.citationSource || "template_preset",
       citationId: material.citationId || `[TMPL-${String(index + 1).padStart(3, '0')}]`,
-    };
+    } as MaterialItem;
   });
 }
 
@@ -283,7 +376,8 @@ export function useDashboardFinancialSync() {
       const enrichedMaterials = enrichMaterialsWithPrices(
         sourceMaterials,
         page1.workType,
-        operationalTruth.confirmedArea.value
+        operationalTruth.confirmedArea.value,
+        10 // Default 10% waste
       );
       
       // Write to CENTRAL (not page2)
@@ -309,12 +403,14 @@ export function useDashboardFinancialSync() {
     actions,
   ]);
 
-  // Enrich materials for display (always apply to ensure prices)
+  // Enrich materials for display (always apply Quantity Resolver!)
+  // CRITICAL FIX: This now uses the same resolver as MaterialCalculationTab
   const effectiveMaterials = useMemo(() => {
     return enrichMaterialsWithPrices(
       centralMaterials.items,
       page1.workType,
-      operationalTruth.confirmedArea.value
+      operationalTruth.confirmedArea.value,
+      10 // Default 10% waste - synced with MaterialCalculationTab
     );
   }, [centralMaterials.items, page1.workType, operationalTruth.confirmedArea.value]);
 
