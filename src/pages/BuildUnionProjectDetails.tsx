@@ -429,84 +429,213 @@ const BuildUnionProjectDetails = () => {
           </div>
         </div>
 
-        {/* RIGHT PANEL - Dynamic Canvas (Map + Wireframe) */}
-        <div className="w-full md:w-1/2 flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20">
+        {/* RIGHT PANEL - Interactive Visual Panels (Clickable for Editing) */}
+        <div className="w-full md:w-1/2 flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-y-auto pb-20 md:pb-0">
           
           {/* Canvas Header */}
           <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/50 dark:to-orange-950/50">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
                 <Building className="h-4 w-4" />
-                <span className="font-semibold uppercase">PROJECT 3.0</span>
+                <span className="font-semibold uppercase tracking-wider">PROJECT 3.0</span>
               </div>
             </div>
             <h2 className="text-xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 dark:from-amber-300 dark:to-orange-300 bg-clip-text text-transparent mt-1">
               {project.name}
             </h2>
+            <p className="text-xs text-muted-foreground mt-1">Click any panel to edit</p>
           </div>
           
-          {/* Map Section */}
-          <div className="border-b border-amber-200/50 dark:border-amber-800/30">
-            <div className="p-3 bg-amber-50/50 dark:bg-amber-950/30 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                <MapPin className="h-4 w-4" />
-                <span className="text-sm font-medium">Project Location</span>
-              </div>
-              <Badge variant="outline" className="text-xs font-mono border-amber-300 dark:border-amber-700">
-                cite_locatio...
-              </Badge>
-            </div>
-            <div className="h-48 md:h-56 bg-gradient-to-br from-amber-100/30 to-orange-100/30 dark:from-amber-950/30 dark:to-orange-950/30">
-              {mapsLoading ? (
-                <div className="h-full flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+          {/* Interactive Panels Container */}
+          <div className="p-3 md:p-4 space-y-3 md:space-y-4">
+            
+            {/* LOCATION PANEL - Clickable */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => {
+                setHighlightedCitation('location');
+                toast.info("Location editing coming soon...");
+              }}
+              className={`rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                highlightedCitation === 'location' 
+                  ? 'border-amber-500 shadow-lg shadow-amber-500/25' 
+                  : 'border-amber-200/50 dark:border-amber-800/30 hover:border-amber-400 dark:hover:border-amber-600'
+              }`}
+            >
+              {/* Panel Header */}
+              <div className="p-3 bg-amber-50/80 dark:bg-amber-950/50 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-sm font-semibold">Project Location</span>
                 </div>
-              ) : apiKey && coordinates ? (
-                <LoadScript googleMapsApiKey={apiKey}>
-                  <GoogleMap
-                    mapContainerStyle={{ width: '100%', height: '100%' }}
-                    center={coordinates}
-                    zoom={15}
-                    options={{
-                      disableDefaultUI: true,
-                      zoomControl: true,
-                      styles: [{ featureType: "all", stylers: [{ saturation: -20 }] }]
-                    }}
+                <Badge 
+                  variant="outline" 
+                  className="text-[10px] font-mono border-amber-300 dark:border-amber-700 bg-amber-100/50 dark:bg-amber-900/30 px-2"
+                >
+                  cite_location_{project.id.slice(0, 6)}
+                </Badge>
+              </div>
+              {/* Map Content */}
+              <div className="h-36 md:h-44 bg-gradient-to-br from-amber-100/30 to-orange-100/30 dark:from-amber-950/30 dark:to-orange-950/30">
+                {mapsLoading ? (
+                  <div className="h-full flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                  </div>
+                ) : apiKey && coordinates ? (
+                  <LoadScript googleMapsApiKey={apiKey}>
+                    <GoogleMap
+                      mapContainerStyle={{ width: '100%', height: '100%' }}
+                      center={coordinates}
+                      zoom={15}
+                      options={{
+                        disableDefaultUI: true,
+                        zoomControl: false,
+                        styles: [{ featureType: "all", stylers: [{ saturation: -20 }] }]
+                      }}
+                    >
+                      <Marker position={coordinates} />
+                    </GoogleMap>
+                  </LoadScript>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-amber-600/70 dark:text-amber-400/70">
+                    <div className="text-center space-y-1">
+                      <MapPin className="h-6 w-6 mx-auto opacity-50" />
+                      <p className="text-xs">No location set</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Panel Footer - Address */}
+              {project.address && (
+                <div className="px-3 py-2 bg-white/80 dark:bg-slate-900/50 border-t border-amber-200/30 dark:border-amber-800/20">
+                  <p className="text-xs text-muted-foreground truncate">{project.address}</p>
+                </div>
+              )}
+            </motion.div>
+            
+            {/* WORK TYPE / WIREFRAME PANEL - Clickable */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => {
+                setHighlightedCitation('worktype');
+                toast.info("Work type editing coming soon...");
+              }}
+              className={`rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                highlightedCitation === 'worktype' 
+                  ? 'border-amber-500 shadow-lg shadow-amber-500/25' 
+                  : 'border-amber-200/50 dark:border-amber-800/30 hover:border-amber-400 dark:hover:border-amber-600'
+              }`}
+            >
+              {/* Panel Header */}
+              <div className="p-3 bg-amber-50/80 dark:bg-amber-950/50 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                  <Building className="h-4 w-4" />
+                  <span className="text-sm font-semibold">Work Type</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {workType && (
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-[10px] px-2">
+                      {WORK_TYPE_LABELS[workType as WorkType] || workType}
+                    </Badge>
+                  )}
+                  <Badge 
+                    variant="outline" 
+                    className="text-[10px] font-mono border-amber-300 dark:border-amber-700 bg-amber-100/50 dark:bg-amber-900/30 px-2"
                   >
-                    <Marker position={coordinates} />
-                  </GoogleMap>
-                </LoadScript>
-              ) : (
-                <div className="h-full flex items-center justify-center text-amber-600/70 dark:text-amber-400/70">
-                  <div className="text-center space-y-2">
-                    <MapPin className="h-8 w-8 mx-auto opacity-50" />
-                    <p className="text-sm">No location available</p>
+                    cite_work_{project.id.slice(0, 6)}
+                  </Badge>
+                </div>
+              </div>
+              {/* Wireframe Content */}
+              <div className="h-32 md:h-40">
+                {workType ? (
+                  <WireframeVisualizer workType={workType} gfaValue={gfaValue} />
+                ) : (
+                  <WireframeVisualizer />
+                )}
+              </div>
+            </motion.div>
+            
+            {/* GFA PANEL - Clickable (if exists) */}
+            {gfaValue && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => {
+                  setHighlightedCitation('gfa');
+                  toast.info("GFA editing coming soon...");
+                }}
+                className={`rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                  highlightedCitation === 'gfa' 
+                    ? 'border-amber-500 shadow-lg shadow-amber-500/25' 
+                    : 'border-amber-200/50 dark:border-amber-800/30 hover:border-amber-400 dark:hover:border-amber-600'
+                }`}
+              >
+                {/* Panel Header */}
+                <div className="p-3 bg-amber-50/80 dark:bg-amber-950/50 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Gross Floor Area</span>
+                  </div>
+                  <Badge 
+                    variant="outline" 
+                    className="text-[10px] font-mono border-amber-300 dark:border-amber-700 bg-amber-100/50 dark:bg-amber-900/30 px-2"
+                  >
+                    cite_gfa_{project.id.slice(0, 6)}
+                  </Badge>
+                </div>
+                {/* GFA Content */}
+                <div className="p-4 bg-gradient-to-br from-amber-100/30 to-orange-100/30 dark:from-amber-950/30 dark:to-orange-950/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">
+                        {gfaValue.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">square feet</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                      <span className="text-white text-xs font-bold">LOCKED</span>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Wireframe Section */}
-          <div className="flex-1">
-            <div className="p-3 bg-amber-50/50 dark:bg-amber-950/30 flex items-center justify-between border-b border-amber-200/50 dark:border-amber-800/30">
-              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                <Building className="h-4 w-4" />
-                <span className="text-sm font-medium">Project Visualization</span>
-              </div>
-              {workType && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs">
-                  {WORK_TYPE_LABELS[workType as WorkType] || workType}
+              </motion.div>
+            )}
+            
+            {/* BLUEPRINT PANEL - Coming Soon */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="rounded-xl overflow-hidden border-2 border-dashed border-amber-200/50 dark:border-amber-800/30 opacity-60"
+            >
+              {/* Panel Header */}
+              <div className="p-3 bg-amber-50/50 dark:bg-amber-950/30 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-700/70 dark:text-amber-300/70">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm font-semibold">Blueprint Analysis</span>
+                </div>
+                <Badge variant="outline" className="text-[10px] border-amber-300/50 dark:border-amber-700/50">
+                  Coming Soon
                 </Badge>
-              )}
-            </div>
-            <div className="h-48 md:h-auto md:flex-1">
-              {workType ? (
-                <WireframeVisualizer workType={workType} gfaValue={gfaValue} />
-              ) : (
-                <WireframeVisualizer />
-              )}
-            </div>
+              </div>
+              {/* Placeholder Content */}
+              <div className="p-6 bg-gradient-to-br from-amber-100/20 to-orange-100/20 dark:from-amber-950/20 dark:to-orange-950/20 flex items-center justify-center">
+                <div className="text-center space-y-2">
+                  <FileText className="h-8 w-8 mx-auto text-amber-500/50" />
+                  <p className="text-xs text-muted-foreground">Upload blueprints for AI analysis</p>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </main>
