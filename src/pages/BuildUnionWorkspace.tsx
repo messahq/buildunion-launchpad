@@ -3,13 +3,14 @@ import { motion } from "framer-motion";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Loader2, MapPin, Trash2 } from "lucide-react";
+import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SavedProject {
   id: string;
@@ -31,11 +33,43 @@ interface SavedProject {
   created_at: string;
 }
 
+interface SharedProject {
+  id: string;
+  name: string;
+  address: string | null;
+  trade: string | null;
+  status: string;
+  role: string;
+  owner_name: string | null;
+  joined_at: string;
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  foreman: "Foreman",
+  subcontractor: "Subcontractor",
+  inspector: "Inspector / QC",
+  supplier: "Supplier / Vendor",
+  client: "Client Representative",
+  worker: "Worker",
+  member: "Team Member",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  foreman: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  subcontractor: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+  inspector: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  supplier: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  client: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300",
+  worker: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
+  member: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+};
+
 const BuildUnionWorkspace = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<SavedProject[]>([]);
+  const [sharedProjects, setSharedProjects] = useState<SharedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<SavedProject | null>(null);
@@ -50,19 +84,80 @@ const BuildUnionWorkspace = () => {
     }
 
     const loadProjects = async () => {
-      const { data, error } = await supabase
+      // Load own projects
+      const { data: ownProjects, error: ownError } = await supabase
         .from("projects")
         .select("id, name, address, trade, status, description, created_at")
         .eq("user_id", user.id)
         .is("archived_at", null)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading projects:", error);
+      if (ownError) {
+        console.error("Error loading own projects:", ownError);
         toast.error("Failed to load projects");
       } else {
-        setProjects(data || []);
+        setProjects(ownProjects || []);
       }
+
+      // Load shared projects (projects where user is a team member)
+      const { data: memberData, error: memberError } = await supabase
+        .from("project_members")
+        .select(`
+          project_id,
+          role,
+          joined_at,
+          projects!inner(
+            id,
+            name,
+            address,
+            trade,
+            status,
+            user_id,
+            archived_at
+          )
+        `)
+        .eq("user_id", user.id);
+
+      if (memberError) {
+        console.error("Error loading shared projects:", memberError);
+      } else if (memberData) {
+        // Filter out archived projects and get owner names
+        const activeSharedProjects = memberData.filter(
+          (m: any) => m.projects?.archived_at === null
+        );
+
+        // Get owner profiles
+        const ownerIds = [...new Set(activeSharedProjects.map((m: any) => m.projects?.user_id).filter(Boolean))];
+        
+        let ownerProfiles: Record<string, string> = {};
+        if (ownerIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, full_name")
+            .in("user_id", ownerIds);
+          
+          if (profiles) {
+            ownerProfiles = profiles.reduce((acc: Record<string, string>, p: any) => {
+              acc[p.user_id] = p.full_name || "Unknown";
+              return acc;
+            }, {});
+          }
+        }
+
+        const formatted: SharedProject[] = activeSharedProjects.map((m: any) => ({
+          id: m.projects.id,
+          name: m.projects.name,
+          address: m.projects.address,
+          trade: m.projects.trade,
+          status: m.projects.status,
+          role: m.role,
+          owner_name: ownerProfiles[m.projects.user_id] || null,
+          joined_at: m.joined_at,
+        }));
+
+        setSharedProjects(formatted);
+      }
+
       setLoading(false);
     };
 
@@ -142,6 +237,8 @@ const BuildUnionWorkspace = () => {
     );
   }
 
+  const hasSharedProjects = sharedProjects.length > 0;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <BuildUnionHeader />
@@ -167,84 +264,36 @@ const BuildUnionWorkspace = () => {
             </Button>
           </div>
 
-          {/* Empty State with Amber theme */}
-          {projects.length === 0 ? (
-            <Card className="text-center py-16 border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20">
-              <CardContent>
-                <FolderOpen className="h-16 w-16 mx-auto text-amber-500/50 mb-4" />
-                <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-                  {t("workspace.noProjects", "No projects yet")}
-                </h2>
-                <p className="text-amber-700/70 dark:text-amber-400/70 mb-6 max-w-md mx-auto">
-                  {t("workspace.noProjectsDescription", "Start by creating your first project. The new Project 3.0 wizard will guide you through the process.")}
-                </p>
-                <Button 
-                  onClick={handleNewProject} 
-                  size="lg" 
-                  className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
+          {/* Tabs for My Projects vs Shared with me */}
+          {hasSharedProjects ? (
+            <Tabs defaultValue="my-projects" className="w-full">
+              <TabsList className="mb-6 bg-amber-100/50 dark:bg-amber-900/20">
+                <TabsTrigger 
+                  value="my-projects" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white"
                 >
-                  <Plus className="h-5 w-5" />
-                  {t("workspace.createFirstProject", "Create Your First Project")}
-                </Button>
-              </CardContent>
-            </Card>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  My Projects ({projects.length})
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="shared-with-me"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Shared with me ({sharedProjects.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="my-projects">
+                {renderOwnProjects()}
+              </TabsContent>
+
+              <TabsContent value="shared-with-me">
+                {renderSharedProjects()}
+              </TabsContent>
+            </Tabs>
           ) : (
-            /* Project List with Amber theme */
-            <div className="grid gap-4">
-              {projects.map((project) => (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  <Card 
-                    className="cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group"
-                    onClick={() => navigate(`/buildunion/project/${project.id}`)}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                          {project.name}
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            onClick={(e) => openDeleteDialog(e, project)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <motion.div
-                            className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
-                            animate={{ scale: [1, 1.3, 1] }}
-                            transition={{ repeat: Infinity, duration: 1.5 }}
-                          />
-                        </div>
-                      </div>
-                      {project.address && (
-                        <CardDescription className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {project.address}
-                        </CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {project.trade && (
-                          <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
-                        )}
-                        <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
-                          {project.status}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+            renderOwnProjects()
           )}
         </div>
       </main>
@@ -284,6 +333,146 @@ const BuildUnionWorkspace = () => {
       <BuildUnionFooter />
     </div>
   );
+
+  function renderOwnProjects() {
+    if (projects.length === 0) {
+      return (
+        <Card className="text-center py-16 border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20">
+          <CardContent>
+            <FolderOpen className="h-16 w-16 mx-auto text-amber-500/50 mb-4" />
+            <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+              {t("workspace.noProjects", "No projects yet")}
+            </h2>
+            <p className="text-amber-700/70 dark:text-amber-400/70 mb-6 max-w-md mx-auto">
+              {t("workspace.noProjectsDescription", "Start by creating your first project. The new Project 3.0 wizard will guide you through the process.")}
+            </p>
+            <Button 
+              onClick={handleNewProject} 
+              size="lg" 
+              className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
+            >
+              <Plus className="h-5 w-5" />
+              {t("workspace.createFirstProject", "Create Your First Project")}
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="grid gap-4">
+        {projects.map((project) => (
+          <motion.div
+            key={project.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group"
+              onClick={() => navigate(`/buildunion/project/${project.id}`)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                    {project.name}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      onClick={(e) => openDeleteDialog(e, project)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <motion.div
+                      className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    />
+                  </div>
+                </div>
+                {project.address && (
+                  <CardDescription className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {project.address}
+                  </CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  {project.trade && (
+                    <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
+                  )}
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
+                    {project.status}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    );
+  }
+
+  function renderSharedProjects() {
+    return (
+      <div className="grid gap-4">
+        {sharedProjects.map((project) => (
+          <motion.div
+            key={project.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-all border-indigo-200/50 dark:border-indigo-800/30 hover:border-indigo-300 dark:hover:border-indigo-600 bg-gradient-to-r from-background via-indigo-50/10 to-background dark:from-background dark:via-indigo-950/10 dark:to-background group"
+              onClick={() => navigate(`/buildunion/project/${project.id}`)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      {project.name}
+                    </CardTitle>
+                    {project.owner_name && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        Owner: {project.owner_name}
+                      </p>
+                    )}
+                  </div>
+                  <Badge className={ROLE_COLORS[project.role] || ROLE_COLORS.member}>
+                    {ROLE_LABELS[project.role] || project.role}
+                  </Badge>
+                </div>
+                {project.address && (
+                  <CardDescription className="flex items-center gap-1 mt-2">
+                    <MapPin className="h-3 w-3" />
+                    {project.address}
+                  </CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  {project.trade && (
+                    <span className="text-indigo-600 dark:text-indigo-400">{project.trade}</span>
+                  )}
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs">
+                    {project.status}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    );
+  }
 };
 
 export default BuildUnionWorkspace;
