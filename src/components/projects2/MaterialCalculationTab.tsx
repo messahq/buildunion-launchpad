@@ -945,9 +945,14 @@ export function MaterialCalculationTab({
 
   // Handle GROSS quantity change for essential materials (user edits the order quantity)
   // This recalculates the baseQuantity from the gross value
-  const handleGrossQuantityChange = (id: string, newGrossQty: number) => {
+  // FIXED: Now accepts setItems as parameter to work with ALL sections (materials, labor, other)
+  const handleGrossQuantityChange = (
+    setItems: React.Dispatch<React.SetStateAction<CostItem[]>>,
+    id: string, 
+    newGrossQty: number
+  ) => {
     setHasUnsavedChanges(true);
-    setMaterialItems(prev => prev.map(item => {
+    setItems(prev => prev.map(item => {
       if (item.id !== id) return item;
       
       // Calculate base from gross: base = gross / (1 + waste%)
@@ -1940,7 +1945,7 @@ export function MaterialCalculationTab({
                               inputMode="decimal"
                               key={`gross-${item.id}-${displayGross}`}
                               defaultValue={displayGross}
-                              onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                              onBlur={(e) => handleGrossQuantityChange(setItems, item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
                               className="h-6 w-14 text-xs text-center p-0.5 border-dashed font-semibold text-green-700 dark:text-green-400"
                               title={t("materials.editGrossQty", "Edit order quantity (with waste)")}
                             />
@@ -1960,7 +1965,7 @@ export function MaterialCalculationTab({
                             type="text"
                             inputMode="decimal"
                             defaultValue={item.quantity || ''}
-                            onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                            onBlur={(e) => handleGrossQuantityChange(setItems, item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
                             className="h-7 w-16 text-xs text-center p-1 border-dashed font-medium"
                             title={t("materials.editQty", "Edit quantity")}
                           />
@@ -1973,7 +1978,7 @@ export function MaterialCalculationTab({
                               type="text"
                               inputMode="decimal"
                               defaultValue={item.quantity || ''}
-                              onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                              onBlur={(e) => handleGrossQuantityChange(setItems, item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
                               className="h-7 w-14 text-xs text-center p-1 border-dashed font-medium"
                               title={t("materials.editGrossQty", "Edit order quantity (gross)")}
                             />
@@ -1989,7 +1994,7 @@ export function MaterialCalculationTab({
                             type="text"
                             inputMode="decimal"
                             defaultValue={item.quantity || ''}
-                            onBlur={(e) => handleGrossQuantityChange(item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
+                            onBlur={(e) => handleGrossQuantityChange(setItems, item.id, parseFloat(e.target.value.replace(',', '.')) || 0)}
                             className="h-7 w-14 text-xs text-center p-1 border-dashed font-medium"
                             title={t("materials.editQty", "Edit quantity")}
                           />
