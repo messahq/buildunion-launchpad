@@ -500,8 +500,40 @@ export default function Stage8FinalReview({
           const facts = Array.isArray(summary.verified_facts) 
             ? (summary.verified_facts as unknown as Citation[])
             : [];
-          loadedCitations = facts;
-          console.log('[Stage8] Loaded citations from Supabase:', facts.length);
+          
+          // ✓ NORMALIZE CITATIONS: Handle both old (questionKey) and new (cite_type) formats
+          loadedCitations = facts.map((fact: any) => {
+            // If already has cite_type, use as-is
+            if (fact.cite_type) {
+              return fact as Citation;
+            }
+            // Convert legacy format (questionKey) to new format (cite_type)
+            const questionKey = fact.questionKey || fact.question_key;
+            let citeType: string = 'PROJECT_NAME';
+            
+            switch (questionKey) {
+              case 'project_name': citeType = 'PROJECT_NAME'; break;
+              case 'project_address': citeType = 'LOCATION'; break;
+              case 'work_type': citeType = 'WORK_TYPE'; break;
+              case 'gfa': case 'gross_floor_area': citeType = 'GFA_LOCK'; break;
+              case 'trade_selection': case 'trade': citeType = 'TRADE_SELECTION'; break;
+              case 'template_lock': citeType = 'TEMPLATE_LOCK'; break;
+              case 'team_member_invite': citeType = 'TEAM_MEMBER_INVITE'; break;
+              case 'team_structure': citeType = 'TEAM_STRUCTURE'; break;
+              case 'timeline': case 'start_date': citeType = 'TIMELINE'; break;
+              case 'end_date': citeType = 'END_DATE'; break;
+              default: citeType = fact.elementType?.toUpperCase() || 'PROJECT_NAME';
+            }
+            
+            return {
+              ...fact,
+              cite_type: citeType,
+              question_key: questionKey,
+            } as Citation;
+          });
+          
+          console.log('[Stage8] Loaded & normalized citations from Supabase:', loadedCitations.length);
+          loadedCitations.forEach(c => console.log(`  - ${c.cite_type}: ${c.answer}`));
         }
         
         // ✓ FALLBACK: If Supabase has no citations, try localStorage
@@ -1589,14 +1621,28 @@ export default function Stage8FinalReview({
       
       // ✓ NO DEFAULT FALLBACK: Only use actual citation data
       const hasTradeCitation = tradeCitation || workTypeCitation;
-      const selectedTrade = tradeCitation?.answer || workTypeCitation?.answer || null;
-      const normalizedTrade = selectedTrade?.toLowerCase().trim() || null;
       
-      // ✓ DYNAMIC PANEL TITLE: Use Sub-worktype from citation chain, not main category
+      // ✓ Priority: TRADE_SELECTION > WORK_TYPE metadata.work_type_key > WORK_TYPE answer
+      const selectedTrade = tradeCitation?.answer 
+        || (workTypeCitation?.metadata?.work_type_key as string)
+        || workTypeCitation?.answer 
+        || null;
+      
+      const normalizedTrade = selectedTrade?.toLowerCase().trim().replace(/_/g, ' ') || null;
+      
+      // ✓ DYNAMIC PANEL TITLE: Use Sub-worktype from citation chain
+      // Check for subworktype in multiple places: metadata fields, or infer from trade selection
       const subWorktype = tradeCitation?.metadata?.subworktype as string | undefined
         || tradeCitation?.metadata?.sub_worktype as string | undefined
         || templateCitation?.metadata?.subworktype as string | undefined
-        || (normalizedTrade && normalizedTrade !== 'interior finishing' ? normalizedTrade : null);
+        || workTypeCitation?.metadata?.subworktype as string | undefined
+        // If the trade is specific (not a broad category), use it as subworktype
+        || (normalizedTrade && !['interior finishing', 'exterior', 'renovation'].includes(normalizedTrade) 
+            ? normalizedTrade.charAt(0).toUpperCase() + normalizedTrade.slice(1) 
+            : null);
+      
+      // ✓ Display trade - prioritize subworktype if available
+      const displayTrade = subWorktype || normalizedTrade || null;
       
       // ✓ UNIVERSAL TEMPLATE GENERATOR: Trade-specifikus anyagszükséglet és task lista
       // Only calculate if we have actual GFA data - NO FALLBACK
@@ -1604,6 +1650,8 @@ export default function Stage8FinalReview({
         if (gfa === null || gfa === 0) {
           return { materials: [], tasks: [], hasData: false };
         }
+        
+        const tradeLower = trade.toLowerCase().replace(/ /g, '_');
         
         const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
           painting: {
@@ -1634,8 +1682,22 @@ export default function Stage8FinalReview({
             ],
             tasks: ['Demolition', 'Framing check', 'Hang drywall', 'Tape & mud', 'Sand & finish'],
           },
+          interior_finishing: {
+            materials: [
+              { name: 'Interior Paint', qty: Math.ceil(gfa / 350), unit: 'gal' },
+              { name: 'Primer', qty: Math.ceil(gfa / 400), unit: 'gal' },
+              { name: 'Supplies', qty: 1, unit: 'kit' },
+            ],
+            tasks: ['Surface prep', 'Priming', 'Finish coat', 'Touch-ups'],
+          },
         };
-        const result = templates[trade] || (trade ? templates.painting : null);
+        
+        // Try exact match, then partial match
+        const result = templates[tradeLower] 
+          || templates[tradeLower.replace(/_/g, '')] 
+          || Object.entries(templates).find(([key]) => tradeLower.includes(key))?.[1]
+          || null;
+          
         return result ? { ...result, hasData: true } : { materials: [], tasks: [], hasData: false };
       };
       
@@ -1683,7 +1745,7 @@ export default function Stage8FinalReview({
               hasTradeCitation ? "text-orange-700 dark:text-orange-300" : "text-gray-400"
             )}>
               {/* ✓ DYNAMIC: Display Sub-worktype prominently, or "Not Set" */}
-              {subWorktype || selectedTrade || '—'}
+              {displayTrade || '—'}
             </p>
             {templateGfaValue !== null && (
               <p className="text-[10px] text-muted-foreground mt-1">
