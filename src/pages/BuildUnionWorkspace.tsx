@@ -102,32 +102,41 @@ const BuildUnionWorkspace = () => {
       
       <main className="flex-1 container mx-auto px-4 py-8 pb-28">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
+          {/* Header with Amber accent */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-bold">Projects 3.0</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+                Projects 3.0
+              </h1>
+              <p className="text-amber-700/70 dark:text-amber-400/70">
                 Smart workflow based on AI analysis
               </p>
             </div>
-            <Button onClick={handleNewProject} className="gap-2">
+            <Button 
+              onClick={handleNewProject} 
+              className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
+            >
               <Plus className="h-4 w-4" />
               {t("workspace.newProject", "New Project")}
             </Button>
           </div>
 
-          {/* Empty State */}
+          {/* Empty State with Amber theme */}
           {projects.length === 0 ? (
-            <Card className="text-center py-16">
+            <Card className="text-center py-16 border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20">
               <CardContent>
-                <FolderOpen className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                <h2 className="text-xl font-semibold mb-2">
+                <FolderOpen className="h-16 w-16 mx-auto text-amber-500/50 mb-4" />
+                <h2 className="text-xl font-semibold mb-2 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
                   {t("workspace.noProjects", "No projects yet")}
                 </h2>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                <p className="text-amber-700/70 dark:text-amber-400/70 mb-6 max-w-md mx-auto">
                   {t("workspace.noProjectsDescription", "Start by creating your first project. The new Project 3.0 wizard will guide you through the process.")}
                 </p>
-                <Button onClick={handleNewProject} size="lg" className="gap-2">
+                <Button 
+                  onClick={handleNewProject} 
+                  size="lg" 
+                  className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
+                >
                   <Plus className="h-5 w-5" />
                   {t("workspace.createFirstProject", "Create Your First Project")}
                 </Button>
