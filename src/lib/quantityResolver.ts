@@ -31,8 +31,6 @@ export type MaterialCategory =
   | 'sealant'
   | 'lumber'
   | 'concrete'
-  | 'concrete_volume'    // Concrete mix - needs volume calculation
-  | 'area_direct'        // Vapor barrier, rebar mesh - direct area * waste
   | 'roofing'
   | 'unknown';
 
@@ -41,9 +39,7 @@ export type ResolutionMethod =
   | 'area_to_boxes'       // sq ft → boxes (flooring, tile)
   | 'area_to_sheets'      // sq ft → sheets (drywall, underlayment)
   | 'area_to_rolls'       // sq ft → rolls (insulation, roofing)
-  | 'area_to_bags'        // sq ft → bags (grout, thinset)
-  | 'area_to_volume'      // sq ft × thickness → cubic yards (concrete mix)
-  | 'area_direct'         // sq ft × waste → sq ft (vapor barrier, rebar mesh)
+  | 'area_to_bags'        // sq ft → bags (concrete, grout)
   | 'linear_to_pieces'    // linear ft → pieces (trim, lumber)
   | 'passthrough'         // unit stays as-is (already resolved)
   | 'manual_required';    // cannot resolve - needs human input
@@ -58,7 +54,6 @@ export interface QuantityResolverInput {
   coverage_rate?: number;        // e.g., 350 sq ft per gallon
   container_unit?: string;       // e.g., "gallon", "box"
   waste_percent?: number;        // e.g., 10 for 10%
-  thickness_inches?: number;     // For concrete: slab thickness in inches (default 4")
 }
 
 export interface QuantityResolverOutput {
@@ -128,44 +123,10 @@ export const COVERAGE_RATES: Record<string, { rate: number; inputUnit: string; o
   // Roofing (sq ft per bundle/roll)
   'shingles': { rate: 33.3, inputUnit: 'sq ft', outputUnit: 'bundle' },
   'roofing_felt': { rate: 400, inputUnit: 'sq ft', outputUnit: 'roll' },
+  
+  // Concrete (sq ft per bag at standard depth)
+  'concrete': { rate: 4, inputUnit: 'sq ft', outputUnit: 'bag' }, // 4" depth
 };
-
-// ============================================================================
-// CONCRETE PROJECT MATERIALS - Special Physics
-// ============================================================================
-
-/**
- * Area-direct materials: quantity = base_area × waste_multiplier
- * These don't need coverage rate conversion - just apply waste.
- */
-export const AREA_DIRECT_MATERIALS: string[] = [
-  'vapor barrier',
-  'vapor_barrier',
-  'moisture barrier',
-  'poly sheeting',
-  'plastic sheeting',
-  'rebar',
-  'wire mesh',
-  'rebar mesh',
-  'reinforcement mesh',
-  'welded wire',
-  'wwf',
-  'reinforcing steel',
-];
-
-/**
- * Concrete volume calculation constants.
- * Formula: (Area sq ft × Thickness inches) ÷ 324 = Cubic Yards
- * The 324 comes from: 27 cu ft per cu yd × 12 inches per ft = 324
- */
-export const CONCRETE_VOLUME_MATERIALS: string[] = [
-  'concrete mix',
-  'concrete',
-  'ready mix',
-  'cement',
-  'redi-mix',
-  'ready-mix concrete',
-];
 
 // ============================================================================
 // MATERIAL TYPE DETECTION
@@ -177,28 +138,6 @@ export const CONCRETE_VOLUME_MATERIALS: string[] = [
  */
 export function inferMaterialCategory(materialName: string): MaterialCategory {
   const name = materialName.toLowerCase();
-  
-  // ============================================================================
-  // CONCRETE PROJECT MATERIALS - Check FIRST (priority over generic 'concrete')
-  // ============================================================================
-  
-  // Area-direct materials: vapor barrier, rebar, wire mesh
-  // These use: base_area × waste_multiplier (no coverage rate conversion)
-  if (AREA_DIRECT_MATERIALS.some(m => name.includes(m))) {
-    console.log('[QUANTITY RESOLVER] Detected area_direct material:', name);
-    return 'area_direct';
-  }
-  
-  // Concrete volume materials: concrete mix, ready mix, cement
-  // These use: (area × thickness) ÷ 324 = cubic yards
-  if (CONCRETE_VOLUME_MATERIALS.some(m => name.includes(m))) {
-    console.log('[QUANTITY RESOLVER] Detected concrete_volume material:', name);
-    return 'concrete_volume';
-  }
-  
-  // ============================================================================
-  // STANDARD MATERIALS
-  // ============================================================================
   
   // Paint family
   if (name.includes('paint') || name.includes('wall color')) return 'paint';
@@ -237,6 +176,9 @@ export function inferMaterialCategory(materialName: string): MaterialCategory {
   // Roofing
   if (name.includes('shingle')) return 'roofing';
   if (name.includes('roofing') || name.includes('felt')) return 'roofing';
+  
+  // Concrete
+  if (name.includes('concrete') || name.includes('cement')) return 'concrete';
   
   // Lumber
   if (name.includes('lumber') || name.includes('2x4') || name.includes('2x6')) return 'lumber';
@@ -295,13 +237,11 @@ function getCoverageKey(category: MaterialCategory, materialName: string): strin
       if (name.includes('shingle')) return 'shingles';
       return 'roofing_felt';
       
+    case 'concrete':
+      return 'concrete';
+      
     case 'lumber':
       return 'lumber_2x4';
-    
-    // Special categories - no coverage rate lookup needed
-    case 'area_direct':
-    case 'concrete_volume':
-      return null; // Handled by special physics, not coverage rate
       
     default:
       return null;
@@ -336,61 +276,9 @@ export function resolveQuantity(input: QuantityResolverInput): QuantityResolverO
     };
   }
   
-  // ============================================================================
-  // SPECIAL PHYSICS: Area-Direct Materials (Vapor Barrier, Rebar, Wire Mesh)
-  // Formula: base_area × waste_multiplier = gross_quantity (in sq ft)
-  // ============================================================================
-  if (category === 'area_direct') {
-    const netQty = Math.ceil(input.input_value);
-    const grossQty = Math.ceil(input.input_value * wasteMultiplier);
-    const calculationTrace = `${input.input_value} sq ft × ${wasteMultiplier.toFixed(2)} waste = ${grossQty} sq ft`;
-    
-    console.log('[QUANTITY RESOLVER] AREA_DIRECT:', calculationTrace);
-    
-    return {
-      success: true,
-      resolved_quantity: netQty,
-      resolved_unit: 'sq ft',
-      gross_quantity: grossQty,
-      resolution_method: 'area_direct',
-      confidence: 'high',
-      calculation_trace: calculationTrace,
-    };
-  }
-  
-  // ============================================================================
-  // SPECIAL PHYSICS: Concrete Volume Materials (Concrete Mix)
-  // Formula: (Area sq ft × Thickness inches) ÷ 324 = Cubic Yards
-  // 324 = 27 cu ft per cu yd × 12 inches per ft
-  // Default thickness: 4 inches
-  // ============================================================================
-  if (category === 'concrete_volume') {
-    const thickness = input.thickness_inches ?? 4; // Default 4" slab
-    const cubicYards = (input.input_value * thickness) / 324;
-    const netQty = Math.ceil(cubicYards);
-    const grossQty = Math.ceil(cubicYards * wasteMultiplier);
-    const calculationTrace = `(${input.input_value} sq ft × ${thickness}" thick) ÷ 324 = ${cubicYards.toFixed(2)} → ${netQty} cu yd × ${wasteMultiplier.toFixed(2)} waste = ${grossQty} cubic yard`;
-    
-    console.log('[QUANTITY RESOLVER] CONCRETE_VOLUME:', calculationTrace);
-    
-    return {
-      success: true,
-      resolved_quantity: netQty,
-      resolved_unit: 'cubic yard',
-      gross_quantity: grossQty,
-      resolution_method: 'area_to_volume',
-      confidence: 'high',
-      calculation_trace: calculationTrace,
-    };
-  }
-  
-  // ============================================================================
-  // STANDARD PHYSICS: Coverage Rate Conversion
-  // ============================================================================
-  
   // Step 2: Check if input is already in final units (passthrough)
   const inputUnit = input.input_unit.toLowerCase().trim();
-  if (['gallon', 'gallons', 'box', 'boxes', 'sheet', 'sheets', 'roll', 'rolls', 'piece', 'pieces', 'bag', 'bags', 'bundle', 'bundles', 'cubic yard', 'cu yd'].includes(inputUnit)) {
+  if (['gallon', 'gallons', 'box', 'boxes', 'sheet', 'sheets', 'roll', 'rolls', 'piece', 'pieces', 'bag', 'bags', 'bundle', 'bundles'].includes(inputUnit)) {
     const grossQty = Math.ceil(input.input_value * wasteMultiplier);
     console.log('[QUANTITY RESOLVER] Passthrough - already in container units:', inputUnit);
     return {

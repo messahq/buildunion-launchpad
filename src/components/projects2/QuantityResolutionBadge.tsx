@@ -44,8 +44,6 @@ const methodLabels: Record<ResolutionMethod, string> = {
   area_to_sheets: 'Area → Sheets',
   area_to_rolls: 'Area → Rolls',
   area_to_bags: 'Area → Bags',
-  area_to_volume: 'Area → Volume',
-  area_direct: 'Area Direct',
   linear_to_pieces: 'Linear → Pieces',
   passthrough: 'Direct',
   manual_required: 'Manual Required',
