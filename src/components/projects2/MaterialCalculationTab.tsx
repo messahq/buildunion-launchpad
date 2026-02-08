@@ -145,7 +145,7 @@ interface MaterialCalculationTabProps {
 const ESSENTIAL_PATTERNS = [
   /laminate|flooring/i,
   /underlayment/i,
-  /baseboard|trim/i,
+  /baseboard|trim|transition|threshold/i,
   /adhesive|glue|supplies/i,
   /paint|primer/i,
   /drywall|gypsum/i,
