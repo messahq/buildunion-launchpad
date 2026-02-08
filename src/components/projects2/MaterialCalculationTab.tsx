@@ -685,14 +685,32 @@ export function MaterialCalculationTab({
   // Get laminate base quantity for sync dependency
   const laminateBaseQty = materialItems.find(m => /laminate|flooring/i.test(m.item))?.baseQuantity;
   
+  // ============ CRITICAL FIX (2026-02-08): STABLE REFS FOR DATA LOCK ============
+  // Problem: dataLock object in dependency array causes infinite loop because
+  // it's a new object reference on every render.
+  // 
+  // Solution: Extract stable values (isLocked) instead of object reference.
+  const isDataLocked = dataLock.isLocked;
+  
+  // Ref to track if we've already logged the blocked operation (prevents spam)
+  const underlaymentSyncBlockedRef = useRef(false);
+  
   // Sync underlayment when laminate changes
   // DATA LOCK: Block this for saved data - user's values are authoritative
   useEffect(() => {
     // DATA LOCK: Block background sync for saved data
-    if (dataLock.shouldBlockOperation('background_sync')) {
-      dataLock.logBlockedOperation('underlayment_sync', 'Data is in SAVED state - user values protected');
+    // Use stable boolean instead of function to prevent infinite loop
+    if (isDataLocked) {
+      // Only log once per lock state to prevent console spam
+      if (!underlaymentSyncBlockedRef.current) {
+        console.log('[DATA LOCK] underlayment_sync blocked - Data is in SAVED state');
+        underlaymentSyncBlockedRef.current = true;
+      }
       return;
     }
+    
+    // Reset block log flag when data becomes unlocked
+    underlaymentSyncBlockedRef.current = false;
     
     const laminateItem = materialItems.find(m => /laminate|flooring/i.test(m.item));
     const underlaymentItem = materialItems.find(m => /^underlayment$/i.test(m.item.trim()));
@@ -717,8 +735,7 @@ export function MaterialCalculationTab({
         }));
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [laminateBaseQty, dataLock]);
+  }, [laminateBaseQty, isDataLocked, materialItems, DYNAMIC_WASTE]);
   
   // ====== DYNAMIC SYNC: Recalculate when baseArea or wastePercent changes ======
   // CRITICAL: NO 'saved' exception - mathematics ALWAYS guarantees Operational Truth
