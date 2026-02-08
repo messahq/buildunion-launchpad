@@ -828,7 +828,7 @@ const ChatPanel = ({
               </div>
             </motion.div>
             
-            {/* AI Question - Documentation */}
+            {/* AI Question - Documentation with GFA Context */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -840,135 +840,424 @@ const ChatPanel = ({
                   <Sparkles className="h-4 w-4" />
                   <span className="text-xs font-semibold">MESSA AI • Stage 5</span>
                 </div>
+                <p className="text-sm text-foreground mb-2">
+                  I see the DNA is locked at <strong>{gfaValue.toLocaleString()} sq ft</strong>. 
+                </p>
                 <p className="text-sm text-foreground mb-3">
-                  <strong>Documentation:</strong> Do you have blueprints or site photos to verify the area?
+                  Please upload the blueprint or site photos here to <strong>verify these dimensions</strong>.
                 </p>
                 
-                {/* Drag & Drop Upload Zone */}
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  className={cn(
-                    "border-2 border-dashed rounded-xl p-4 transition-all text-center",
-                    isDragOver 
-                      ? "border-purple-500 bg-purple-50 dark:bg-purple-950/30" 
-                      : "border-purple-300 dark:border-purple-700 hover:border-purple-400"
-                  )}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  
-                  <Upload className={cn(
-                    "h-8 w-8 mx-auto mb-2 transition-colors",
-                    isDragOver ? "text-purple-500" : "text-purple-400"
-                  )} />
-                  
-                  <p className="text-sm font-medium text-foreground mb-1">
-                    Drag & drop files here
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    or click to browse
-                  </p>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-purple-300 text-purple-600 hover:bg-purple-50"
-                  >
-                    <FileImage className="h-4 w-4 mr-2" />
-                    Select Files
-                  </Button>
-                  
-                  <div className="flex justify-center gap-2 mt-3">
-                    <Badge variant="outline" className="text-xs border-purple-200 text-purple-600">
-                      PDF
-                    </Badge>
-                    <Badge variant="outline" className="text-xs border-purple-200 text-purple-600">
-                      JPG
-                    </Badge>
-                    <Badge variant="outline" className="text-xs border-purple-200 text-purple-600">
-                      PNG
-                    </Badge>
-                  </div>
-                </div>
+                {/* Reference to Canvas */}
+                <p className="text-xs text-purple-600 dark:text-purple-400 italic">
+                  👉 Use the Visual Upload Center on the right to upload your documents.
+                </p>
                 
-                {/* Uploaded Files List */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {uploadedFiles.map(file => (
-                      <motion.div
-                        key={file.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-2 p-2 bg-purple-50 dark:bg-purple-950/30 rounded-lg"
-                      >
-                        {file.type === 'blueprint' ? (
-                          <FileText className="h-4 w-4 text-purple-500 shrink-0" />
-                        ) : (
-                          <FileImage className="h-4 w-4 text-purple-500 shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{file.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {file.type === 'blueprint' ? 'Blueprint/PDF' : 'Site Photo'}
-                            {file.uploaded && ' • Uploaded ✓'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => onRemoveFile(file.id)}
-                          className="p-1 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded"
-                        >
-                          <X className="h-3.5 w-3.5 text-purple-500" />
-                        </button>
-                      </motion.div>
-                    ))}
+                {/* DNA Summary in Chat */}
+                <div className="mt-4 p-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-2">
+                    Locked Project DNA:
+                  </p>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">GFA:</span>
+                      <span className="font-mono text-purple-700 dark:text-purple-300">{gfaValue.toLocaleString()} sq ft</span>
+                    </div>
+                    {siteCondition === 'demolition' && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Demolition:</span>
+                        <span className="font-mono text-orange-600">+${demolitionCost.toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-                
-                {/* Action Buttons */}
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onSkipUpload}
-                    className="flex-1 text-muted-foreground"
-                    disabled={isUploading}
-                  >
-                    Skip for now
-                  </Button>
-                  {uploadedFiles.length > 0 && (
-                    <Button
-                      size="sm"
-                      onClick={onConfirmUploads}
-                      disabled={isUploading}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Confirm ({uploadedFiles.length})
-                        </>
-                      )}
-                    </Button>
-                  )}
                 </div>
               </div>
             </motion.div>
+            
+            {/* File Upload Status in Chat */}
+            {uploadedFiles.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-end"
+              >
+                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/25">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <p className="font-medium">{uploadedFiles.length} file(s) ready</p>
+                  </div>
+                  <p className="text-xs text-white/80 mt-1">
+                    {uploadedFiles.filter(f => f.type === 'blueprint').length} blueprint(s), {uploadedFiles.filter(f => f.type === 'site_photo').length} photo(s)
+                  </p>
+                </div>
+              </motion.div>
+            )}
           </>
         )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// STAGE 5 - Visual Upload Center Canvas
+// ============================================
+interface VisualUploadCanvasPanelProps {
+  gfaValue: number;
+  selectedTrade: string | null;
+  grandTotal: number;
+  uploadedFiles: UploadedFile[];
+  isUploading: boolean;
+  flowCitations: Citation[];
+  onFilesDrop: (files: File[]) => void;
+  onRemoveFile: (fileId: string) => void;
+  onSkipUpload: () => void;
+  onConfirmUploads: () => void;
+}
+
+const VisualUploadCanvasPanel = ({
+  gfaValue,
+  selectedTrade,
+  grandTotal,
+  uploadedFiles,
+  isUploading,
+  flowCitations,
+  onFilesDrop,
+  onRemoveFile,
+  onSkipUpload,
+  onConfirmUploads,
+}: VisualUploadCanvasPanelProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    const validFiles = files.filter(f => 
+      f.type === 'application/pdf' || 
+      f.type === 'image/jpeg' || 
+      f.type === 'image/png' ||
+      f.type === 'image/jpg'
+    );
+    if (validFiles.length > 0) {
+      onFilesDrop(validFiles);
+    } else {
+      toast.error("Only PDF, JPG, and PNG files are supported");
+    }
+  };
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      onFilesDrop(files);
+    }
+  };
+  
+  // Filter relevant citations to display
+  const relevantCitationTypes: string[] = [
+    CITATION_TYPES.GFA_LOCK, 
+    CITATION_TYPES.TRADE_SELECTION, 
+    CITATION_TYPES.TEMPLATE_LOCK, 
+    CITATION_TYPES.TEAM_SIZE, 
+    CITATION_TYPES.EXECUTION_MODE
+  ];
+  const relevantCitations = flowCitations.filter(c => 
+    relevantCitationTypes.includes(c.cite_type)
+  );
+  
+  return (
+    <div className="h-full w-full flex flex-col bg-gradient-to-br from-purple-50/50 via-background to-indigo-50/50 dark:from-purple-950/20 dark:via-background dark:to-indigo-950/20 overflow-hidden">
+      {/* Canvas Header */}
+      <div className="px-4 py-3 border-b border-purple-200/50 dark:border-purple-800/30 bg-gradient-to-r from-purple-50/80 to-indigo-50/80 dark:from-purple-950/50 dark:to-indigo-950/50 shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-purple-600 dark:text-purple-400">
+              <Image className="h-4 w-4" />
+              <span className="font-semibold uppercase tracking-wider">VISUAL UPLOAD CENTER</span>
+            </div>
+            <h2 className="text-lg font-bold bg-gradient-to-r from-purple-700 to-indigo-600 dark:from-purple-300 dark:to-indigo-300 bg-clip-text text-transparent">
+              Blueprint & Site Documentation
+            </h2>
+          </div>
+          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-0">
+            Stage 5
+          </Badge>
+        </div>
+      </div>
+      
+      {/* Canvas Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* DNA Citations Summary - Operational Truth */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-slate-800 rounded-xl border-2 border-purple-200 dark:border-purple-800 shadow-lg overflow-hidden"
+        >
+          <div className="px-4 py-3 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-950/50 dark:to-indigo-950/50 border-b border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">Project DNA Locked</span>
+            </div>
+          </div>
+          <div className="p-4 space-y-2">
+            {/* GFA Citation */}
+            <div className="flex items-center justify-between py-2 px-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-purple-500" />
+                <span className="text-sm font-medium">Gross Floor Area</span>
+              </div>
+              <Badge variant="outline" className="font-mono text-purple-600 dark:text-purple-400 border-purple-300">
+                cite_gfa_lock
+              </Badge>
+              <span className="font-semibold text-purple-700 dark:text-purple-300">{gfaValue.toLocaleString()} sq ft</span>
+            </div>
+            
+            {/* Trade Citation */}
+            {selectedTrade && (
+              <div className="flex items-center justify-between py-2 px-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Hammer className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm font-medium">Trade</span>
+                </div>
+                <Badge variant="outline" className="font-mono text-purple-600 dark:text-purple-400 border-purple-300">
+                  cite_trade
+                </Badge>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">
+                  {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label}
+                </span>
+              </div>
+            )}
+            
+            {/* Template/Budget Citation */}
+            {grandTotal > 0 && (
+              <div className="flex items-center justify-between py-2 px-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm font-medium">Template Total</span>
+                </div>
+                <Badge variant="outline" className="font-mono text-purple-600 dark:text-purple-400 border-purple-300">
+                  cite_template
+                </Badge>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">${grandTotal.toLocaleString()}</span>
+              </div>
+            )}
+            
+            {/* Show other citations from flow */}
+            {relevantCitations.filter(c => c.cite_type === CITATION_TYPES.TEAM_SIZE).map(c => (
+              <div key={c.id} className="flex items-center justify-between py-2 px-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm font-medium">Execution Mode</span>
+                </div>
+                <Badge variant="outline" className="font-mono text-purple-600 dark:text-purple-400 border-purple-300">
+                  cite_execution
+                </Badge>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">{c.answer}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+        
+        {/* Main Upload Zone */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="relative"
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "min-h-[280px] rounded-2xl border-3 border-dashed transition-all duration-300 cursor-pointer flex flex-col items-center justify-center p-8",
+              isDragOver
+                ? "border-purple-500 bg-purple-100/50 dark:bg-purple-900/30 scale-[1.02]"
+                : "border-purple-300 dark:border-purple-700 bg-white/50 dark:bg-slate-800/50 hover:border-purple-400 hover:bg-purple-50/50"
+            )}
+          >
+            {uploadedFiles.length === 0 ? (
+              <>
+                <motion.div
+                  animate={{ 
+                    y: [0, -8, 0],
+                    scale: isDragOver ? 1.1 : 1 
+                  }}
+                  transition={{ 
+                    y: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    scale: { duration: 0.2 }
+                  }}
+                  className="mb-6"
+                >
+                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-xl shadow-purple-500/25">
+                    <Upload className="h-10 w-10 text-white" />
+                  </div>
+                </motion.div>
+                
+                <h3 className="text-xl font-bold text-purple-700 dark:text-purple-300 mb-2">
+                  Drop Your Documents Here
+                </h3>
+                <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
+                  Upload blueprints (PDF) or site photos (JPG/PNG) to verify the {gfaValue.toLocaleString()} sq ft area
+                </p>
+                
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                    <FileText className="h-4 w-4 text-purple-500" />
+                    <span className="text-xs font-medium text-purple-700 dark:text-purple-300">PDF</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                    <FileImage className="h-4 w-4 text-purple-500" />
+                    <span className="text-xs font-medium text-purple-700 dark:text-purple-300">JPG / PNG</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Uploaded Files Grid */
+              <div className="w-full space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-purple-700 dark:text-purple-300">
+                    Uploaded Documents ({uploadedFiles.length})
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="text-purple-600 hover:text-purple-700"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add More
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {uploadedFiles.map(file => (
+                    <motion.div
+                      key={file.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-purple-200 dark:border-purple-800 shadow-sm"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Preview */}
+                      {file.previewUrl ? (
+                        <div className="h-14 w-14 rounded-lg overflow-hidden bg-purple-100 dark:bg-purple-900/30 shrink-0">
+                          <img src={file.previewUrl} alt={file.name} className="h-full w-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="h-14 w-14 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                          <FileText className="h-6 w-6 text-purple-500" />
+                        </div>
+                      )}
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{file.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="outline" className="text-xs border-purple-300 text-purple-600">
+                            {file.type === 'blueprint' ? 'Blueprint' : 'Site Photo'}
+                          </Badge>
+                          {file.uploaded && (
+                            <span className="text-xs text-green-600 flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Ready
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveFile(file.id);
+                        }}
+                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+        
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex gap-3"
+        >
+          <Button
+            variant="outline"
+            onClick={onSkipUpload}
+            disabled={isUploading}
+            className="flex-1 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400"
+          >
+            Skip for now
+          </Button>
+          {uploadedFiles.length > 0 && (
+            <Button
+              onClick={onConfirmUploads}
+              disabled={isUploading}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/25"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analyze & Continue
+                </>
+              )}
+            </Button>
+          )}
+        </motion.div>
+        
+        {/* AI Analysis Note */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex items-start gap-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-xl border border-purple-200 dark:border-purple-800"
+        >
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shrink-0">
+            <Sparkles className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-purple-700 dark:text-purple-300">AI Blueprint Analysis</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              When you upload blueprints, our AI will automatically extract dimensions, room layouts, and verify the total area matches your locked GFA of {gfaValue.toLocaleString()} sq ft.
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -1885,37 +2174,54 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           <div className={cn(
             "order-1 md:order-2",
             "flex-1 min-h-0",
-            "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
+            stage5Active 
+              ? "border-b md:border-b-0 border-purple-200/50 dark:border-purple-800/30"
+              : "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
           )}>
-            <CanvasPanel
-              currentSubStep={currentSubStep}
-              selectedTrade={selectedTrade}
-              teamSize={teamSize}
-              siteCondition={siteCondition}
-              gfaValue={gfaValue}
-              templateItems={templateItems}
-              materialTotal={materialTotal}
-              laborTotal={laborTotal}
-              demolitionCost={demolitionCost}
-              demolitionUnitPrice={demolitionUnitPrice}
-              subtotal={subtotal}
-              markupPercent={markupPercent}
-              markupAmount={markupAmount}
-              taxAmount={taxAmount}
-              grandTotal={grandTotal}
-              editingItem={editingItem}
-              wastePercent={wastePercent}
-              onWastePercentChange={handleWastePercentChange}
-              onMarkupPercentChange={handleMarkupPercentChange}
-              onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
-              onUpdateItem={handleUpdateItem}
-              onDeleteItem={handleDeleteItem}
-              onAddItem={handleAddItem}
-              onSetEditingItem={setEditingItem}
-              onLockTemplate={handleLockTemplate}
-              isSaving={isSaving}
-              templateLocked={templateLocked}
-            />
+            {stage5Active ? (
+              <VisualUploadCanvasPanel
+                gfaValue={gfaValue}
+                selectedTrade={selectedTrade}
+                grandTotal={grandTotal}
+                uploadedFiles={uploadedFiles}
+                isUploading={isUploading}
+                flowCitations={flowCitations}
+                onFilesDrop={handleFilesDrop}
+                onRemoveFile={handleRemoveFile}
+                onSkipUpload={handleSkipUpload}
+                onConfirmUploads={handleConfirmUploads}
+              />
+            ) : (
+              <CanvasPanel
+                currentSubStep={currentSubStep}
+                selectedTrade={selectedTrade}
+                teamSize={teamSize}
+                siteCondition={siteCondition}
+                gfaValue={gfaValue}
+                templateItems={templateItems}
+                materialTotal={materialTotal}
+                laborTotal={laborTotal}
+                demolitionCost={demolitionCost}
+                demolitionUnitPrice={demolitionUnitPrice}
+                subtotal={subtotal}
+                markupPercent={markupPercent}
+                markupAmount={markupAmount}
+                taxAmount={taxAmount}
+                grandTotal={grandTotal}
+                editingItem={editingItem}
+                wastePercent={wastePercent}
+                onWastePercentChange={handleWastePercentChange}
+                onMarkupPercentChange={handleMarkupPercentChange}
+                onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
+                onUpdateItem={handleUpdateItem}
+                onDeleteItem={handleDeleteItem}
+                onAddItem={handleAddItem}
+                onSetEditingItem={setEditingItem}
+                onLockTemplate={handleLockTemplate}
+                isSaving={isSaving}
+                templateLocked={templateLocked}
+              />
+            )}
           </div>
         )}
       </div>
