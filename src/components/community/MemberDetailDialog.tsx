@@ -24,7 +24,8 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useIsTeamMember } from "@/hooks/useIsTeamMember";
+// useIsTeamMember removed for Project 3.0
+const useIsTeamMember = () => ({ isTeamMemberOf: false });
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -103,7 +104,7 @@ export const MemberDetailDialog = ({ member, profileName, open, onOpenChange }: 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { subscription } = useSubscription();
-  const { isTeamMember } = useIsTeamMember();
+  const { isTeamMemberOf: isTeamMember } = useIsTeamMember();
   const [showChat, setShowChat] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
