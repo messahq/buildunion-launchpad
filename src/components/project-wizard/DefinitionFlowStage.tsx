@@ -74,10 +74,24 @@ const TRADE_OPTIONS = [
 // Team size options for Step 2
 const TEAM_SIZE_OPTIONS = [
   { key: 'solo', label: 'Solo', description: 'User/Client only', icon: User },
-  { key: 'small', label: '1-2 Pros', description: 'Small Crew', icon: Users },
-  { key: 'team', label: '3-5 Pros', description: 'Team', icon: UsersRound },
-  { key: 'large', label: '5+ Pros', description: 'Large Scale', icon: Building2 },
+  { key: 'team', label: 'Team', description: 'Multiple workers', icon: Users },
 ];
+
+// Team role options
+const TEAM_ROLES = [
+  { key: 'foreman', label: 'Foreman' },
+  { key: 'instructor', label: 'Instructor' },
+  { key: 'worker', label: 'Worker' },
+  { key: 'apprentice', label: 'Apprentice' },
+  { key: 'helper', label: 'Helper' },
+];
+
+// Team member interface
+interface TeamMember {
+  id: string;
+  role: string;
+  count: number;
+}
 
 // Generate template items based on trade and GFA (base quantities without waste)
 function generateTemplateItems(trade: string, gfaSqft: number): TemplateItem[] {
@@ -137,6 +151,7 @@ interface ChatPanelProps {
   selectedTrade: string | null;
   templateLocked: boolean;
   teamSize: string | null;
+  teamMembers: TeamMember[];
   siteCondition: 'clear' | 'demolition';
   timeline: 'asap' | 'scheduled';
   scheduledDate: Date | undefined;
@@ -146,6 +161,7 @@ interface ChatPanelProps {
   onTradeSelect: (trade: string) => void;
   onLockTemplate: () => void;
   onTeamSizeSelect: (size: string) => void;
+  onTeamMembersChange: (members: TeamMember[]) => void;
   onSiteConditionChange: (condition: 'clear' | 'demolition') => void;
   onTimelineChange: (timeline: 'asap' | 'scheduled') => void;
   onScheduledDateChange: (date: Date | undefined) => void;
@@ -159,6 +175,7 @@ const ChatPanel = ({
   selectedTrade,
   templateLocked,
   teamSize,
+  teamMembers,
   siteCondition,
   timeline,
   scheduledDate,
@@ -168,6 +185,7 @@ const ChatPanel = ({
   onTradeSelect,
   onLockTemplate,
   onTeamSizeSelect,
+  onTeamMembersChange,
   onSiteConditionChange,
   onTimelineChange,
   onScheduledDateChange,
@@ -362,50 +380,144 @@ const ChatPanel = ({
                    <strong>Who is handling the installation?</strong>
                  </p>
                  
-                 {/* Solo/Team buttons */}
-                 {currentSubStep === 1 && !teamSize && (
-                   <div className="grid grid-cols-2 gap-2">
-                     <motion.button
-                       whileHover={{ scale: 1.02 }}
-                       whileTap={{ scale: 0.98 }}
-                       onClick={() => onTeamSizeSelect('solo')}
-                       className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
-                     >
-                       <User className="h-6 w-6 text-green-500" />
-                       <span className="text-sm font-medium">Solo</span>
-                     </motion.button>
-                     <motion.button
-                       whileHover={{ scale: 1.02 }}
-                       whileTap={{ scale: 0.98 }}
-                       onClick={() => onTeamSizeSelect('team')}
-                       className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
-                     >
-                       <Users className="h-6 w-6 text-green-500" />
-                       <span className="text-sm font-medium">Team</span>
-                     </motion.button>
-                   </div>
-                 )}
-               </div>
-             </motion.div>
-             
-             {/* User Answer - Installation Handler */}
-             {teamSize && (
-               <motion.div
-                 initial={{ opacity: 0, y: 10 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 className="flex justify-end"
-               >
-                 <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
-                   <p className="font-medium">{teamSize === 'solo' ? 'Solo Installation' : 'Team Installation'}</p>
-                   <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
-                     <FileText className="h-3 w-3" />
-                     <span>cite_execution...</span>
-                   </div>
-                 </div>
-               </motion.div>
-             )}
-           </>
-         )}
+                  {/* Solo/Team buttons */}
+                  {currentSubStep === 1 && !teamSize && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onTeamSizeSelect('solo')}
+                        className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
+                      >
+                        <User className="h-6 w-6 text-green-500" />
+                        <span className="text-sm font-medium">Solo</span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onTeamSizeSelect('team')}
+                        className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
+                      >
+                        <Users className="h-6 w-6 text-green-500" />
+                        <span className="text-sm font-medium">Team</span>
+                      </motion.button>
+                    </div>
+                  )}
+                  
+                  {/* Team configuration - show when Team is selected */}
+                  {teamSize === 'team' && currentSubStep === 1 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 space-y-3"
+                    >
+                      <p className="text-xs text-muted-foreground">Configure your team:</p>
+                      
+                      {teamMembers.map((member, index) => (
+                        <div key={member.id} className="flex items-center gap-2 bg-green-50/50 dark:bg-green-950/20 p-2 rounded-lg">
+                          <select
+                            value={member.role}
+                            onChange={(e) => {
+                              const updated = [...teamMembers];
+                              updated[index] = { ...member, role: e.target.value };
+                              onTeamMembersChange(updated);
+                            }}
+                            className="flex-1 h-8 text-sm rounded-md border border-input bg-background px-2"
+                          >
+                            {TEAM_ROLES.map(role => (
+                              <option key={role.key} value={role.key}>{role.label}</option>
+                            ))}
+                          </select>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={50}
+                            value={member.count || ''}
+                            onChange={(e) => {
+                              const updated = [...teamMembers];
+                              updated[index] = { ...member, count: parseInt(e.target.value) || 0 };
+                              onTeamMembersChange(updated);
+                            }}
+                            onFocus={(e) => e.target.select()}
+                            placeholder="0"
+                            className="w-16 h-8 text-center text-sm"
+                          />
+                          <span className="text-xs text-muted-foreground">ppl</span>
+                          {teamMembers.length > 1 && (
+                            <button
+                              onClick={() => {
+                                const updated = teamMembers.filter((_, i) => i !== index);
+                                onTeamMembersChange(updated);
+                              }}
+                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      
+                      <button
+                        onClick={() => {
+                          const newMember: TeamMember = {
+                            id: `member_${Date.now()}`,
+                            role: 'worker',
+                            count: 1,
+                          };
+                          onTeamMembersChange([...teamMembers, newMember]);
+                        }}
+                        className="w-full p-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 flex items-center justify-center gap-1 rounded-lg border border-dashed border-green-300 dark:border-green-700"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Role
+                      </button>
+                      
+                      {/* Confirm team button */}
+                      {teamMembers.some(m => m.count > 0) && (
+                        <Button
+                          onClick={() => onTeamSizeSelect('team_confirmed')}
+                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                          size="sm"
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Confirm Team ({teamMembers.reduce((sum, m) => sum + m.count, 0)} people)
+                        </Button>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+              
+              {/* User Answer - Installation Handler */}
+              {teamSize && (teamSize === 'solo' || teamSize === 'team_confirmed') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-end"
+                >
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
+                    <p className="font-medium">
+                      {teamSize === 'solo' 
+                        ? 'Solo Installation' 
+                        : `Team: ${teamMembers.reduce((sum, m) => sum + m.count, 0)} people`
+                      }
+                    </p>
+                    {teamSize === 'team_confirmed' && (
+                      <p className="text-xs text-white/80 mt-1">
+                        {teamMembers.filter(m => m.count > 0).map(m => 
+                          `${m.count} ${TEAM_ROLES.find(r => r.key === m.role)?.label}`
+                        ).join(', ')}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                      <FileText className="h-3 w-3" />
+                      <span>cite_execution...</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </>
+          )}
         
         {/* STAGE 4 STEP 2: Site Condition */}
         {currentSubStep >= 2 && templateLocked && (
@@ -747,8 +859,10 @@ const CanvasPanel = ({
                           <Label className="text-xs">Qty</Label>
                           <Input
                             type="number"
-                            value={item.quantity}
+                            value={item.quantity || ''}
                             onChange={(e) => onUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                            onFocus={(e) => e.target.select()}
+                            placeholder="0"
                             className="h-8 text-sm"
                           />
                         </div>
@@ -757,8 +871,10 @@ const CanvasPanel = ({
                           <Input
                             type="number"
                             step="0.01"
-                            value={item.unitPrice}
+                            value={item.unitPrice || ''}
                             onChange={(e) => onUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            onFocus={(e) => e.target.select()}
+                            placeholder="0.00"
                             className="h-8 text-sm"
                           />
                         </div>
@@ -1022,8 +1138,12 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Markup percentage (editable)
     const [markupPercent, setMarkupPercent] = useState(0);
     
-    // Stage 4 Step 1: Team size
+    // Stage 4 Step 1: Team size and members
     const [teamSize, setTeamSize] = useState<string | null>(null);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
+      { id: 'member_1', role: 'foreman', count: 1 },
+      { id: 'member_2', role: 'worker', count: 2 },
+    ]);
     
     // Stage 4 Step 2: Site condition
     const [siteCondition, setSiteCondition] = useState<'clear' | 'demolition'>('clear');
@@ -1148,19 +1268,37 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     
     // Stage 4 Step 1: Team size selection
     const handleTeamSizeSelect = (size: string) => {
+      // 'team' is just selection, 'team_confirmed' means user finalized team config
+      // 'solo' moves to next step immediately
+      if (size === 'team') {
+        setTeamSize(size);
+        // Don't advance yet - wait for team configuration
+        return;
+      }
+      
       setTeamSize(size);
       
       const teamCitation = createCitation({
         cite_type: CITATION_TYPES.TEAM_SIZE,
         question_key: 'team_size',
-        answer: TEAM_SIZE_OPTIONS.find(t => t.key === size)?.label || size,
+        answer: size === 'solo' 
+          ? 'Solo Installation' 
+          : `Team: ${teamMembers.reduce((sum, m) => sum + m.count, 0)} people`,
         value: size,
-        metadata: { team_size_key: size },
+        metadata: { 
+          team_size_key: size,
+          team_members: size === 'team_confirmed' ? teamMembers : undefined,
+        },
       });
       
       setFlowCitations(prev => [...prev, teamCitation]);
       setCurrentSubStep(2); // Move to Stage 4 Step 2 (Site Condition)
     };
+    
+    // Handle team members change
+    const handleTeamMembersChange = useCallback((members: TeamMember[]) => {
+      setTeamMembers(members);
+    }, []);
     
     // Stage 4 Step 2: Site condition change (triggers live card update)
     const handleSiteConditionChange = (condition: 'clear' | 'demolition') => {
@@ -1332,6 +1470,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             selectedTrade={selectedTrade}
             templateLocked={templateLocked}
             teamSize={teamSize}
+            teamMembers={teamMembers}
             siteCondition={siteCondition}
             timeline={timeline}
             scheduledDate={scheduledDate}
@@ -1341,6 +1480,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             onTradeSelect={handleTradeSelect}
             onLockTemplate={handleLockTemplate}
             onTeamSizeSelect={handleTeamSizeSelect}
+            onTeamMembersChange={handleTeamMembersChange}
             onSiteConditionChange={handleSiteConditionChange}
             onTimelineChange={setTimeline}
             onScheduledDateChange={setScheduledDate}
