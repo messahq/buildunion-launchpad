@@ -975,5 +975,28 @@
     "mm": "mm",
     "cuyd": "köbyard",
     "cum": "m³"
+  },
+  "stage8": {
+    "title": "Végső Áttekintés",
+    "subtitle": "Stage 8 • Teljes Projekt Összefoglaló",
+    "basicInfo": "Alapinformációk",
+    "areaLock": "Terület Rögzítés (GFA)",
+    "tradeTemplate": "Szakma & Sablon",
+    "executionFlow": "Végrehajtási Folyamat",
+    "visualIntelligence": "Vizuális Intelligencia",
+    "teamArchitecture": "Csapat Felépítés",
+    "executionTimeline": "Végrehajtási Ütemterv",
+    "financialSummary": "Pénzügyi Összefoglaló",
+    "exportPDF": "PDF Exportálás",
+    "aiAnalysis": "AI Elemzés",
+    "generateDashboard": "Projekt Dashboard Generálás (8 Panel)",
+    "ownerOnly": "Csak Tulajdonos",
+    "foremanPlus": "Művezető+",
+    "allTeam": "Teljes Csapat",
+    "public": "Nyilvános",
+    "restrictedAccess": "Korlátozott Hozzáférés",
+    "noData": "Nincs rögzített adat ennél a fázisnál",
+    "itemsRecorded": "rögzített elem",
+    "itemRecorded": "rögzített elem"
   }
 }

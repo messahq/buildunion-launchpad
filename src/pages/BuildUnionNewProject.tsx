@@ -21,6 +21,7 @@ import GFALockStage from "@/components/project-wizard/GFALockStage";
 import DefinitionFlowStage from "@/components/project-wizard/DefinitionFlowStage";
 import TeamSetupStage from "@/components/project-wizard/TeamSetupStage";
 import Stage7GanttSetup from "@/components/project-wizard/Stage7GanttSetup";
+import Stage8FinalReview from "@/components/project-wizard/Stage8FinalReview";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 
 // Stage definitions
@@ -29,7 +30,8 @@ const STAGES = {
   STAGE_2: 1, // GFA Lock & Blueprint
   STAGE_3: 2, // Definition Flow (Trade, Template, Site, Finalize)
   STAGE_6: 3, // Team Architecture (Permissions)
-  STAGE_7: 4, // Placeholder (Coming Soon)
+  STAGE_7: 4, // Gantt Setup & Task Orchestration
+  STAGE_8: 5, // Final Review & Analysis Dashboard
 } as const;
 
 const BuildUnionNewProject = () => {
@@ -269,6 +271,7 @@ const BuildUnionNewProject = () => {
     [STAGES.STAGE_3]: "Stage 3-5: Definition Flow",
     [STAGES.STAGE_6]: "Stage 6: Team Architecture",
     [STAGES.STAGE_7]: "Stage 7: Execution Timeline",
+    [STAGES.STAGE_8]: "Stage 8: Final Review",
   };
   const stageLabel = stageLabels[currentStage] || "";
 
@@ -424,19 +427,36 @@ const BuildUnionNewProject = () => {
                 className="h-full"
               />
             </motion.div>
-          ) : (
+          ) : currentStage === STAGES.STAGE_7 ? (
             /* ========== STAGE 7: Gantt Setup & Task Orchestration ========== */
             <motion.div
               key="stage-7"
               initial={{ opacity: 0, x: "100%" }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: "100%" }}
+              exit={{ opacity: 0, x: "-100%" }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute inset-0"
             >
               <Stage7GanttSetup
                 projectId={projectId}
                 userId={user.id}
+                onComplete={() => setCurrentStage(STAGES.STAGE_8)}
+              />
+            </motion.div>
+          ) : (
+            /* ========== STAGE 8: Final Review & Analysis Dashboard ========== */
+            <motion.div
+              key="stage-8"
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              <Stage8FinalReview
+                projectId={projectId}
+                userId={user.id}
+                userRole="owner"
                 onComplete={() => navigate(`/buildunion/project/${projectId}`)}
               />
             </motion.div>
