@@ -218,7 +218,8 @@ export function useDashboardFinancialSync() {
   }, [summaryData]);
 
   // Calculate actuals from line_items stored in Supabase
-  // IRON LAW: Materials MUST use GROSS (with waste) totals
+  // IRON LAW: USE SAVED totalPrice DIRECTLY - NO RECALCULATION!
+  // The Materials tab already saves GROSS values, trust the database!
   const supabaseTotals = useMemo(() => {
     const lineItems = summaryData?.line_items as {
       materials?: Array<{ 
@@ -226,62 +227,41 @@ export function useDashboardFinancialSync() {
         total?: number; 
         item?: string; 
         name?: string;
-        quantity?: number;
-        baseQuantity?: number;
-        unitPrice?: number;
-        isEssential?: boolean;
       }>;
       labor?: Array<{ totalPrice?: number; total?: number }>;
       other?: Array<{ totalPrice?: number; total?: number }>;
     } | null;
 
-    // Get waste percent from ai_workflow_config or default to 10%
-    const aiConfig = summaryData?.ai_workflow_config as { userEdits?: { wastePercent?: number } } | null;
-    const wastePercent = aiConfig?.userEdits?.wastePercent ?? 10;
-
-    // IRON LAW #1: Materials Total = GROSS (with waste) × unitPrice
-    // For essential materials, we MUST apply waste to get the GROSS amount
+    // ===== ZERO TOLERANCE: USE SAVED GROSS VALUES DIRECTLY =====
+    // The Materials tab saves totalPrice as GROSS (with waste already applied)
+    // DO NOT recalculate - just SUM the stored values!
     const materialCost = (lineItems?.materials || []).reduce((sum, item) => {
-      // Get the base values
-      const baseQty = item.baseQuantity ?? item.quantity ?? 0;
-      const unitPrice = item.unitPrice ?? 0;
-      const isEssential = item.isEssential !== false; // Default to essential if not specified
+      // Direct read from database - this IS the GROSS value
+      let price = item.totalPrice ?? item.total ?? 0;
       
-      // Calculate GROSS quantity with waste for essential materials
-      const grossQty = isEssential 
-        ? Math.ceil(baseQty * (1 + wastePercent / 100))
-        : baseQty;
+      // Heuristic: convert cents to dollars if needed (legacy data)
+      if (price > 10000 && price % 100 === 0) price /= 100;
       
-      // Calculate GROSS total price
-      const grossTotalPrice = grossQty * unitPrice;
-      
-      // Use the dynamically calculated GROSS price if we have unitPrice
-      // Otherwise fall back to stored totalPrice (which should already be GROSS)
-      let price = unitPrice > 0 ? grossTotalPrice : (item.totalPrice ?? item.total ?? 0);
-      
-      // Heuristic: convert cents to dollars if needed
-      if (price > 100 && price % 100 === 0) price /= 100;
-      
-      console.log(`[GROSS-SYNC] ${item.item || item.name}: baseQty=${baseQty}, grossQty=${grossQty}, unitPrice=${unitPrice}, grossTotal=${price}`);
+      console.log(`[DIRECT-SYNC] ${item.item || item.name}: totalPrice(GROSS)=$${price}`);
       
       return sum + price;
     }, 0);
 
-    // Sum labor (no waste applied)
+    // Sum labor (direct read)
     const laborCost = (lineItems?.labor || []).reduce((sum, item) => {
       let price = item.totalPrice ?? item.total ?? 0;
-      if (price > 100 && price % 100 === 0) price /= 100;
+      if (price > 10000 && price % 100 === 0) price /= 100;
       return sum + price;
     }, 0);
 
-    // Sum other (no waste applied)
+    // Sum other (direct read)
     const otherCost = (lineItems?.other || []).reduce((sum, item) => {
       let price = item.totalPrice ?? item.total ?? 0;
-      if (price > 100 && price % 100 === 0) price /= 100;
+      if (price > 10000 && price % 100 === 0) price /= 100;
       return sum + price;
     }, 0);
 
-    console.log(`[GROSS-SYNC TOTALS] Materials(GROSS): $${materialCost.toFixed(2)}, Labor: $${laborCost.toFixed(2)}, Other: $${otherCost.toFixed(2)}`);
+    console.log(`[DIRECT-SYNC TOTALS] Materials(GROSS from DB): $${materialCost.toFixed(2)}, Labor: $${laborCost.toFixed(2)}, Other: $${otherCost.toFixed(2)}`);
 
     return { materialCost, laborCost, otherCost };
   }, [summaryData]);
