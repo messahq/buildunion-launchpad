@@ -829,6 +829,18 @@ const BuildUnionProjects2 = () => {
     }
   };
 
+  // NEW: Skip AI from FilterQuestions step - uses stored questionnaireData
+  const handleFilterSkipAI = async () => {
+    if (!questionnaireData) {
+      toast.error("No project data available");
+      return;
+    }
+    // Re-use the existing handleSkipAI with stored questionnaire answers
+    await handleSkipAI(questionnaireData.answers);
+    // Also close filter questions view
+    setShowFilterQuestions(false);
+  };
+
   // Handle project export
   const handleProjectExport = async (format: ExportFormat, options: ExportOptions) => {
     const allProjects = [...projects, ...sharedProjects.map(p => ({ ...p, is_shared: true }))];
@@ -952,6 +964,7 @@ const BuildUnionProjects2 = () => {
                 }}
                 onComplete={handleFilterComplete}
                 onBack={handleFilterBack}
+                onSkipAI={handleFilterSkipAI}
               />
             </div>
           )}

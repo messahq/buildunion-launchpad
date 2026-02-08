@@ -66,6 +66,7 @@ export interface FilterQuestionsProps {
   previousCitations?: CollectedCitation[]; // Citations from Page 1
   onComplete: (answers: FilterAnswers, triggers: AITriggers) => void;
   onBack: () => void;
+  onSkipAI?: () => void; // NEW: Skip AI analysis entirely and create manual project
 }
 
 // Default answers
@@ -160,7 +161,8 @@ export default function FilterQuestions({
   projectData,
   previousCitations = [],
   onComplete, 
-  onBack 
+  onBack,
+  onSkipAI 
 }: FilterQuestionsProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<FilterAnswers>(() => {
@@ -404,6 +406,18 @@ export default function FilterQuestions({
           )}
         </Button>
       </div>
+
+      {/* Skip AI Option - Create Manual Project */}
+      {onSkipAI && (
+        <Button 
+          variant="ghost" 
+          onClick={onSkipAI}
+          className="w-full text-muted-foreground hover:text-foreground"
+        >
+          <SkipForward className="h-4 w-4 mr-1" />
+          Skip AI Analysis → Create Manual Project
+        </Button>
+      )}
     </div>
   );
 }
