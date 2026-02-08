@@ -3,13 +3,23 @@ import { motion } from "framer-motion";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Loader2, MapPin } from "lucide-react";
+import { Plus, FolderOpen, Loader2, MapPin, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SavedProject {
   id: string;
@@ -27,6 +37,9 @@ const BuildUnionWorkspace = () => {
   const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<SavedProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<SavedProject | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load projects from database
   useEffect(() => {
@@ -59,6 +72,38 @@ const BuildUnionWorkspace = () => {
   // Navigate to new project wizard
   const handleNewProject = () => {
     navigate("/buildunion/new-project");
+  };
+
+  // Handle project deletion (soft delete)
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("id", projectToDelete.id);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+      toast.success(t("workspace.projectDeleted", "Project deleted successfully"));
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast.error(t("workspace.deleteError", "Failed to delete project"));
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
+    }
+  };
+
+  const openDeleteDialog = (e: React.MouseEvent, project: SavedProject) => {
+    e.stopPropagation(); // Prevent card click
+    setProjectToDelete(project);
+    setDeleteDialogOpen(true);
   };
 
   if (authLoading || loading) {
@@ -163,11 +208,21 @@ const BuildUnionWorkspace = () => {
                         <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                           {project.name}
                         </CardTitle>
-                        <motion.div
-                          className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
-                          animate={{ scale: [1, 1.3, 1] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                            onClick={(e) => openDeleteDialog(e, project)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <motion.div
+                            className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
+                            animate={{ scale: [1, 1.3, 1] }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
+                          />
+                        </div>
                       </div>
                       {project.address && (
                         <CardDescription className="flex items-center gap-1">
@@ -193,6 +248,38 @@ const BuildUnionWorkspace = () => {
           )}
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("workspace.deleteProject", "Delete Project")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("workspace.deleteConfirmation", "Are you sure you want to delete")} <strong>{projectToDelete?.name}</strong>? 
+              {t("workspace.deleteWarning", " This action cannot be undone.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              {t("common.cancel", "Cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {t("common.deleting", "Deleting...")}
+                </>
+              ) : (
+                t("common.delete", "Delete")
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BuildUnionFooter />
     </div>
