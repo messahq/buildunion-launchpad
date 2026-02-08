@@ -342,63 +342,66 @@ const ChatPanel = ({
         </AnimatePresence>
         
         {/* STAGE 4 STEP 1: Execution Mode (Solo/Team) */}
-        {currentSubStep >= 1 && templateLocked && (
-          <>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-start"
-            >
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="text-xs font-semibold">MESSA AI • Stage 4</span>
-                </div>
-                <p className="text-sm text-foreground">
-                  Great! Template locked. Now let's plan execution.<br/>
-                  <strong>What's your team size?</strong>
-                </p>
-                
-                {/* Team size buttons */}
-                {currentSubStep === 1 && !teamSize && (
-                  <div className="grid grid-cols-2 gap-2 mt-4">
-                    {TEAM_SIZE_OPTIONS.map(option => (
-                      <motion.button
-                        key={option.key}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => onTeamSizeSelect(option.key)}
-                        className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
-                      >
-                        <option.icon className="h-6 w-6 text-green-500" />
-                        <span className="text-sm font-medium">{option.label}</span>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </motion.button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-            
-            {/* User Answer - Team Size */}
-            {teamSize && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-end"
-              >
-                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
-                  <p className="font-medium">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}</p>
-                  <p className="text-xs text-white/80">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.description}</p>
-                  <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
-                    <FileText className="h-3 w-3" />
-                    <span>cite_team...</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </>
-        )}
+         {currentSubStep >= 1 && templateLocked && (
+           <>
+             <motion.div
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="flex justify-start"
+             >
+               <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
+                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                   <Sparkles className="h-4 w-4" />
+                   <span className="text-xs font-semibold">MESSA AI • Stage 4</span>
+                 </div>
+                 <p className="text-sm text-foreground mb-3">
+                   <strong>Who is handling the installation?</strong>
+                 </p>
+                 
+                 {/* Solo/Team buttons */}
+                 {currentSubStep === 1 && !teamSize && (
+                   <div className="grid grid-cols-2 gap-2">
+                     <motion.button
+                       whileHover={{ scale: 1.02 }}
+                       whileTap={{ scale: 0.98 }}
+                       onClick={() => onTeamSizeSelect('solo')}
+                       className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
+                     >
+                       <User className="h-6 w-6 text-green-500" />
+                       <span className="text-sm font-medium">Solo</span>
+                     </motion.button>
+                     <motion.button
+                       whileHover={{ scale: 1.02 }}
+                       whileTap={{ scale: 0.98 }}
+                       onClick={() => onTeamSizeSelect('team')}
+                       className="p-3 rounded-xl border-2 border-green-200 dark:border-green-800 bg-card hover:border-green-400 dark:hover:border-green-600 transition-all flex flex-col items-center gap-1 text-center"
+                     >
+                       <Users className="h-6 w-6 text-green-500" />
+                       <span className="text-sm font-medium">Team</span>
+                     </motion.button>
+                   </div>
+                 )}
+               </div>
+             </motion.div>
+             
+             {/* User Answer - Installation Handler */}
+             {teamSize && (
+               <motion.div
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 className="flex justify-end"
+               >
+                 <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
+                   <p className="font-medium">{teamSize === 'solo' ? 'Solo Installation' : 'Team Installation'}</p>
+                   <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                     <FileText className="h-3 w-3" />
+                     <span>cite_execution...</span>
+                   </div>
+                 </div>
+               </motion.div>
+             )}
+           </>
+         )}
         
         {/* STAGE 4 STEP 2: Site Condition */}
         {currentSubStep >= 2 && templateLocked && (
