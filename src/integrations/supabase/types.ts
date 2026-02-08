@@ -668,6 +668,7 @@ export type Database = {
           project_end_date: string | null
           project_id: string | null
           project_start_date: string | null
+          quantity_logic_version: number | null
           status: string
           template_items: Json | null
           total_cost: number | null
@@ -701,6 +702,7 @@ export type Database = {
           project_end_date?: string | null
           project_id?: string | null
           project_start_date?: string | null
+          quantity_logic_version?: number | null
           status?: string
           template_items?: Json | null
           total_cost?: number | null
@@ -734,6 +736,7 @@ export type Database = {
           project_end_date?: string | null
           project_id?: string | null
           project_start_date?: string | null
+          quantity_logic_version?: number | null
           status?: string
           template_items?: Json | null
           total_cost?: number | null
