@@ -2,6 +2,8 @@
 // DEFINITION FLOW STAGE - Stage 3 of Project Wizard
 // ============================================
 // Trade Selection → Template Review → Team Size → Site & Time → Finalize DNA
+// LEFT PANEL: Chat with AI questions and selection buttons (INPUT)
+// RIGHT PANEL: Template cards and visualizations (OUTPUT)
 // ============================================
 
 import { useState, useCallback, useEffect, forwardRef } from "react";
@@ -21,15 +23,16 @@ import {
   Edit2,
   Calendar,
   MapPin,
-  Wrench,
   Sparkles,
   Lock,
   Loader2,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -106,6 +109,669 @@ function generateTemplateItems(trade: string, gfaSqft: number): TemplateItem[] {
   return templates[trade] || templates.custom;
 }
 
+// ============================================
+// LEFT PANEL - Chat Interface (INPUT)
+// ============================================
+interface ChatPanelProps {
+  currentSubStep: number;
+  gfaValue: number;
+  selectedTrade: string | null;
+  teamSize: string | null;
+  siteCondition: 'clear' | 'demolition';
+  timeline: 'asap' | 'scheduled';
+  scheduledDate: Date | undefined;
+  demolitionCost: number;
+  onTradeSelect: (trade: string) => void;
+  onTeamSizeSelect: (size: string) => void;
+  onSiteConditionChange: (condition: 'clear' | 'demolition') => void;
+  onTimelineChange: (timeline: 'asap' | 'scheduled') => void;
+  onScheduledDateChange: (date: Date | undefined) => void;
+  onProceedFromTemplate: () => void;
+  onFinalizeDNA: () => void;
+  isSaving: boolean;
+}
+
+const ChatPanel = ({
+  currentSubStep,
+  gfaValue,
+  selectedTrade,
+  teamSize,
+  siteCondition,
+  timeline,
+  scheduledDate,
+  demolitionCost,
+  onTradeSelect,
+  onTeamSizeSelect,
+  onSiteConditionChange,
+  onTimelineChange,
+  onScheduledDateChange,
+  onProceedFromTemplate,
+  onFinalizeDNA,
+  isSaving,
+}: ChatPanelProps) => {
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-b from-slate-50/50 via-background to-slate-100/30 dark:from-slate-950/30 dark:via-background dark:to-slate-900/20">
+      {/* Chat Header */}
+      <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+            <Hammer className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-amber-700 dark:text-amber-300">
+              Definition Flow
+            </h2>
+            <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
+              Step {currentSubStep + 1} of 3 • {gfaValue.toLocaleString()} sq ft
+            </p>
+          </div>
+        </div>
+        
+        {/* Progress dots */}
+        <div className="flex gap-2 mt-3">
+          {[0, 1, 2].map(step => (
+            <motion.div
+              key={step}
+              className={cn(
+                "h-2 rounded-full transition-all duration-300",
+                step === currentSubStep
+                  ? "w-8 bg-gradient-to-r from-amber-500 to-orange-500"
+                  : step < currentSubStep
+                    ? "w-2 bg-amber-500"
+                    : "w-2 bg-amber-200 dark:bg-amber-800"
+              )}
+              animate={step === currentSubStep ? { scale: [1, 1.1, 1] } : {}}
+              transition={{ repeat: step === currentSubStep ? Infinity : 0, duration: 1.5 }}
+            />
+          ))}
+        </div>
+      </div>
+      
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 md:pb-4">
+        {/* STEP 1: Trade Selection */}
+        <AnimatePresence mode="wait">
+          {currentSubStep >= 0 && (
+            <>
+              {/* AI Question */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-xs font-semibold">MESSA AI</span>
+                  </div>
+                  <p className="text-sm text-foreground">
+                    Selected: <strong>{gfaValue.toLocaleString()} sq ft Interior</strong>. 
+                    <br />Milyen munkát végzünk?
+                  </p>
+                  
+                  {/* Trade selection buttons - DIRECTLY BELOW THE QUESTION */}
+                  {currentSubStep === 0 && !selectedTrade && (
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      {TRADE_OPTIONS.map(trade => (
+                        <motion.button
+                          key={trade.key}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => onTradeSelect(trade.key)}
+                          className="p-3 rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-card hover:border-amber-400 dark:hover:border-amber-600 transition-all flex flex-col items-center gap-1"
+                        >
+                          <trade.icon className="h-6 w-6 text-amber-500" />
+                          <span className="text-sm font-medium">{trade.label}</span>
+                        </motion.button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+              
+              {/* User Answer - Trade (if selected) */}
+              {selectedTrade && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-end"
+                >
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
+                    <p className="font-medium">{TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label}</p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                      <FileText className="h-3 w-3" />
+                      <span>cite_trade...</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              
+              {/* Proceed button after trade is selected */}
+              {selectedTrade && currentSubStep === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex justify-start"
+                >
+                  <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 shadow-sm">
+                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-xs font-semibold">Template Ready</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      A {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template kész. Ellenőrizd és szerkeszd a jobb oldalon, majd kattints a folytatáshoz.
+                    </p>
+                    <Button 
+                      onClick={onProceedFromTemplate}
+                      className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
+                      size="sm"
+                    >
+                      Confirm & Continue
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </>
+          )}
+        </AnimatePresence>
+        
+        {/* STEP 2: Team Size */}
+        {currentSubStep >= 1 && (
+          <>
+            {/* AI Question */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-xs font-semibold">MESSA AI</span>
+                </div>
+                <p className="text-sm text-foreground">
+                  Execution scale? Hány fővel dolgozol?
+                </p>
+                
+                {/* Team size buttons - DIRECTLY BELOW THE QUESTION */}
+                {currentSubStep === 1 && !teamSize && (
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    {TEAM_SIZE_OPTIONS.map(option => (
+                      <motion.button
+                        key={option.key}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onTeamSizeSelect(option.key)}
+                        className="p-3 rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-card hover:border-amber-400 dark:hover:border-amber-600 transition-all flex flex-col items-center gap-1 text-center"
+                      >
+                        <option.icon className="h-6 w-6 text-amber-500" />
+                        <span className="text-sm font-medium">{option.label}</span>
+                        <span className="text-xs text-muted-foreground">{option.description}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+            
+            {/* User Answer - Team Size (if selected) */}
+            {teamSize && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-end"
+              >
+                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
+                  <p className="font-medium">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}</p>
+                  <p className="text-xs text-white/80">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.description}</p>
+                  <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                    <FileText className="h-3 w-3" />
+                    <span>cite_team...</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
+        
+        {/* STEP 3: Site & Timeline */}
+        {currentSubStep >= 2 && (
+          <>
+            {/* AI Question */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-xs font-semibold">MESSA AI</span>
+                </div>
+                <p className="text-sm text-foreground mb-4">
+                  Site condition és Start date? Utolsó lépés a véglegesítés előtt.
+                </p>
+                
+                {/* Site Condition */}
+                <div className="space-y-3 mb-4">
+                  <Label className="text-xs font-medium flex items-center gap-2">
+                    <MapPin className="h-3 w-3 text-amber-500" />
+                    Site Condition
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => onSiteConditionChange('clear')}
+                      className={cn(
+                        "p-3 rounded-xl border-2 transition-all text-left",
+                        siteCondition === 'clear'
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+                          : "border-amber-200 dark:border-amber-800"
+                      )}
+                    >
+                      <p className="font-medium text-sm">Clear</p>
+                      <p className="text-xs text-muted-foreground">Ready to work</p>
+                    </button>
+                    <button
+                      onClick={() => onSiteConditionChange('demolition')}
+                      className={cn(
+                        "p-3 rounded-xl border-2 transition-all text-left",
+                        siteCondition === 'demolition'
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+                          : "border-amber-200 dark:border-amber-800"
+                      )}
+                    >
+                      <p className="font-medium text-sm">Demo Needed</p>
+                      <p className="text-xs text-muted-foreground">+${demolitionCost.toLocaleString()}</p>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Timeline */}
+                <div className="space-y-3 mb-4">
+                  <Label className="text-xs font-medium flex items-center gap-2">
+                    <Calendar className="h-3 w-3 text-amber-500" />
+                    Start Timeline
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => onTimelineChange('asap')}
+                      className={cn(
+                        "p-3 rounded-xl border-2 transition-all text-left",
+                        timeline === 'asap'
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+                          : "border-amber-200 dark:border-amber-800"
+                      )}
+                    >
+                      <p className="font-medium text-sm">ASAP</p>
+                      <p className="text-xs text-muted-foreground">Start immediately</p>
+                    </button>
+                    <button
+                      onClick={() => onTimelineChange('scheduled')}
+                      className={cn(
+                        "p-3 rounded-xl border-2 transition-all text-left",
+                        timeline === 'scheduled'
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+                          : "border-amber-200 dark:border-amber-800"
+                      )}
+                    >
+                      <p className="font-medium text-sm">Schedule</p>
+                      <p className="text-xs text-muted-foreground">Pick a date</p>
+                    </button>
+                  </div>
+                  
+                  {/* Date Picker */}
+                  {timeline === 'scheduled' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="pt-2"
+                    >
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full justify-start text-left font-normal">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick a date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={scheduledDate}
+                            onSelect={onScheduledDateChange}
+                            initialFocus
+                            disabled={(date) => date < new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </motion.div>
+                  )}
+                </div>
+                
+                {/* Finalize DNA Button */}
+                <Button
+                  onClick={onFinalizeDNA}
+                  disabled={isSaving}
+                  className="w-full h-12 text-base font-bold bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/30 gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Locking DNA...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-5 w-5" />
+                      FINALIZE DNA
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// RIGHT PANEL - Canvas (OUTPUT)
+// ============================================
+interface CanvasPanelProps {
+  currentSubStep: number;
+  selectedTrade: string | null;
+  teamSize: string | null;
+  siteCondition: 'clear' | 'demolition';
+  gfaValue: number;
+  templateItems: TemplateItem[];
+  materialTotal: number;
+  laborTotal: number;
+  demolitionCost: number;
+  grandTotal: number;
+  editingItem: string | null;
+  onUpdateItem: (itemId: string, field: keyof TemplateItem, value: number | string) => void;
+  onDeleteItem: (itemId: string) => void;
+  onAddItem: () => void;
+  onSetEditingItem: (id: string | null) => void;
+}
+
+const CanvasPanel = ({
+  currentSubStep,
+  selectedTrade,
+  teamSize,
+  siteCondition,
+  gfaValue,
+  templateItems,
+  materialTotal,
+  laborTotal,
+  demolitionCost,
+  grandTotal,
+  editingItem,
+  onUpdateItem,
+  onDeleteItem,
+  onAddItem,
+  onSetEditingItem,
+}: CanvasPanelProps) => {
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20">
+      {/* Canvas Header */}
+      <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/50 dark:to-orange-950/50 shrink-0">
+        <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+          <Building2 className="h-4 w-4" />
+          <span className="font-semibold uppercase tracking-wider">STAGE 3 CANVAS</span>
+        </div>
+        <h2 className="text-xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 dark:from-amber-300 dark:to-orange-300 bg-clip-text text-transparent mt-1">
+          {selectedTrade ? `${TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Template` : 'Awaiting Selection...'}
+        </h2>
+      </div>
+      
+      {/* Canvas Content */}
+      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
+        <AnimatePresence mode="wait">
+          {!selectedTrade ? (
+            /* Waiting state */
+            <motion.div
+              key="waiting"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="h-full flex items-center justify-center"
+            >
+              <div className="text-center space-y-4">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-amber-200 to-orange-200 dark:from-amber-800/50 dark:to-orange-800/50 flex items-center justify-center"
+                >
+                  <Layers className="h-10 w-10 text-amber-500/50" />
+                </motion.div>
+                <p className="text-amber-600/70 dark:text-amber-400/70">
+                  Select a trade on the left to generate template
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            /* Template Review Card */
+            <motion.div
+              key="template"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-4"
+            >
+              {/* Template Card */}
+              <div className="bg-card border-2 border-amber-300 dark:border-amber-700 rounded-xl shadow-lg overflow-hidden">
+                {/* Template Header */}
+                <div className="p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon && (
+                        <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
+                          {(() => {
+                            const Icon = TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon;
+                            return Icon ? <Icon className="h-5 w-5" /> : null;
+                          })()}
+                        </motion.div>
+                      )}
+                      <span className="font-semibold">
+                        {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Template
+                      </span>
+                    </div>
+                    <Badge className="bg-white/20 text-white border-0">
+                      {gfaValue.toLocaleString()} sq ft
+                    </Badge>
+                  </div>
+                </div>
+                
+                {/* Items List */}
+                <div className="divide-y divide-amber-100 dark:divide-amber-900 max-h-72 overflow-y-auto">
+                  {templateItems.map(item => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="p-3 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 group"
+                    >
+                      {editingItem === item.id ? (
+                        /* Editing Mode */
+                        <div className="space-y-2">
+                          <Input
+                            value={item.name}
+                            onChange={(e) => onUpdateItem(item.id, 'name', e.target.value)}
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-xs">Qty</Label>
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => onUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Unit Price</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={item.unitPrice}
+                                onChange={(e) => onUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <Button
+                                size="sm"
+                                onClick={() => onSetEditingItem(null)}
+                                className="w-full h-8"
+                              >
+                                Done
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Display Mode */
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "text-xs px-1.5 py-0.5 rounded",
+                                item.category === 'material'
+                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                  : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                              )}>
+                                {item.category === 'material' ? 'MAT' : 'LAB'}
+                              </span>
+                              <span className="text-sm font-medium truncate">{item.name}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {item.quantity} {item.unit} × ${item.unitPrice.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">
+                              ${item.totalPrice.toLocaleString()}
+                            </span>
+                            <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                              <button
+                                onClick={() => onSetEditingItem(item.id)}
+                                className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded"
+                              >
+                                <Edit2 className="h-3.5 w-3.5 text-amber-600" />
+                              </button>
+                              <button
+                                onClick={() => onDeleteItem(item.id)}
+                                className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {/* Add Item Button */}
+                <button
+                  onClick={onAddItem}
+                  className="w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center justify-center gap-1 border-t border-amber-200 dark:border-amber-800"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Item
+                </button>
+                
+                {/* Totals */}
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Materials</span>
+                    <span>${materialTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Labor</span>
+                    <span>${laborTotal.toLocaleString()}</span>
+                  </div>
+                  {demolitionCost > 0 && (
+                    <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
+                      <span>Demolition</span>
+                      <span>+${demolitionCost.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-amber-200 dark:border-amber-700">
+                    <span>Total</span>
+                    <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Additional info cards based on progress */}
+              {teamSize && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                      {TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.icon && (
+                        (() => {
+                          const Icon = TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.icon;
+                          return Icon ? <Icon className="h-5 w-5 text-white" /> : null;
+                        })()
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}</p>
+                      <p className="text-xs text-muted-foreground">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.description}</p>
+                    </div>
+                    <Badge className="ml-auto bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0">
+                      Team Set
+                    </Badge>
+                  </div>
+                </motion.div>
+              )}
+              
+              {currentSubStep >= 2 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                      <MapPin className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Required'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {siteCondition === 'demolition' ? `+$${demolitionCost.toLocaleString()} added to estimate` : 'Ready to begin work'}
+                      </p>
+                    </div>
+                    <Badge className="ml-auto bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0">
+                      Site Set
+                    </Badge>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>(
   ({ projectId, userId, gfaValue, onFlowComplete, className }, ref) => {
     // Flow step state
@@ -141,7 +807,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Calculate totals
     const materialTotal = templateItems.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
     const laborTotal = templateItems.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
-    const demolitionCost = siteCondition === 'demolition' ? gfaValue * 2.5 : 0; // $2.50/sqft demo
+    const demolitionCost = siteCondition === 'demolition' ? gfaValue * 2.5 : 0;
     const grandTotal = materialTotal + laborTotal + demolitionCost;
     
     // Handle trade selection
@@ -154,7 +820,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setTemplateItems(prev => prev.map(item => {
         if (item.id === itemId) {
           const updated = { ...item, [field]: value };
-          // Recalculate total if quantity or unit price changed
           if (field === 'quantity' || field === 'unitPrice') {
             updated.totalPrice = Number(updated.quantity) * Number(updated.unitPrice);
           }
@@ -182,14 +847,13 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setEditingItem(newItem.id);
     };
     
-    // Proceed to next step
+    // Proceed from template to team size
     const handleProceedFromTemplate = () => {
       if (templateItems.length === 0) {
         toast.error("Add at least one item to the template");
         return;
       }
       
-      // Create trade selection citation
       const tradeCitation = createCitation({
         cite_type: CITATION_TYPES.TRADE_SELECTION,
         question_key: 'trade_selection',
@@ -198,7 +862,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         metadata: { trade_key: selectedTrade },
       });
       
-      // Create template lock citation
       const templateCitation = createCitation({
         cite_type: CITATION_TYPES.TEMPLATE_LOCK,
         question_key: 'template_items',
@@ -212,7 +875,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       });
       
       setFlowCitations([tradeCitation, templateCitation]);
-      setCurrentSubStep(1); // Move to team size
+      setCurrentSubStep(1);
     };
     
     const handleTeamSizeSelect = (size: string) => {
@@ -227,7 +890,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       });
       
       setFlowCitations(prev => [...prev, teamCitation]);
-      setCurrentSubStep(2); // Move to site & time
+      setCurrentSubStep(2);
     };
     
     // Final lock
@@ -235,7 +898,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setIsSaving(true);
       
       try {
-        // Create site condition citation
         const siteCitation = createCitation({
           cite_type: CITATION_TYPES.SITE_CONDITION,
           question_key: 'site_condition',
@@ -247,7 +909,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           },
         });
         
-        // Create timeline citation
         const timelineCitation = createCitation({
           cite_type: CITATION_TYPES.TIMELINE,
           question_key: 'timeline',
@@ -258,7 +919,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           },
         });
         
-        // Create final DNA citation
         const dnaCitation = createCitation({
           cite_type: CITATION_TYPES.DNA_FINALIZED,
           question_key: 'project_dna',
@@ -282,7 +942,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         
         const allCitations = [...flowCitations, siteCitation, timelineCitation, dnaCitation];
         
-        // Save all citations to database
         const { data: currentData } = await supabase
           .from("project_summaries")
           .select("id, verified_facts")
@@ -338,500 +997,49 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     return (
       <div
         ref={ref}
-        className={cn(
-          "h-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20",
-          className
-        )}
+        className={cn("h-full flex", className)}
       >
-        {/* Stage Header */}
-        <div className="p-3 md:p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <motion.div
-              className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25"
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 3 }}
-            >
-              <Hammer className="h-5 w-5 text-white" />
-            </motion.div>
-            <div>
-              <h2 className="font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-                Stage 3: Definition Flow
-              </h2>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
-                Step {currentSubStep + 1} of 3 • {gfaValue.toLocaleString()} sq ft Interior
-              </p>
-            </div>
-          </div>
-          
-          {/* Progress dots */}
-          <div className="flex gap-2 mt-3">
-            {[0, 1, 2].map(step => (
-              <motion.div
-                key={step}
-                className={cn(
-                  "h-2 rounded-full transition-all duration-300",
-                  step === currentSubStep
-                    ? "w-8 bg-gradient-to-r from-amber-500 to-orange-500"
-                    : step < currentSubStep
-                      ? "w-2 bg-amber-500"
-                      : "w-2 bg-amber-200 dark:bg-amber-800"
-                )}
-                animate={step === currentSubStep ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ repeat: step === currentSubStep ? Infinity : 0, duration: 1.5 }}
-              />
-            ))}
-          </div>
+        {/* LEFT PANEL - Chat (INPUT) */}
+        <div className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex-shrink-0">
+          <ChatPanel
+            currentSubStep={currentSubStep}
+            gfaValue={gfaValue}
+            selectedTrade={selectedTrade}
+            teamSize={teamSize}
+            siteCondition={siteCondition}
+            timeline={timeline}
+            scheduledDate={scheduledDate}
+            demolitionCost={demolitionCost}
+            onTradeSelect={handleTradeSelect}
+            onTeamSizeSelect={handleTeamSizeSelect}
+            onSiteConditionChange={setSiteCondition}
+            onTimelineChange={setTimeline}
+            onScheduledDateChange={setScheduledDate}
+            onProceedFromTemplate={handleProceedFromTemplate}
+            onFinalizeDNA={handleFinalizeDNA}
+            isSaving={isSaving}
+          />
         </div>
         
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-hidden">
-          <AnimatePresence mode="wait">
-            {/* STEP 1: Trade Selection & Template */}
-            {currentSubStep === 0 && (
-              <motion.div
-                key="step-1"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ duration: 0.4 }}
-                className="h-full flex flex-col"
-              >
-                {/* AI Prompt */}
-                <div className="p-4 bg-gradient-to-r from-amber-100/50 to-orange-100/50 dark:from-amber-900/30 dark:to-orange-900/30 border-b border-amber-200/50 dark:border-amber-800/30">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-amber-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-800 dark:text-amber-200">
-                        Selected: {gfaValue.toLocaleString()} sq ft Interior
-                      </p>
-                      <p className="text-sm text-amber-700/70 dark:text-amber-300/70">
-                        Specify the trade to generate your template
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {!selectedTrade ? (
-                  /* Trade Selection Grid */
-                  <div className="flex-1 p-4 overflow-y-auto">
-                    <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-                      {TRADE_OPTIONS.map(trade => (
-                        <motion.button
-                          key={trade.key}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleTradeSelect(trade.key)}
-                          className="p-4 rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-card hover:border-amber-400 dark:hover:border-amber-600 transition-all flex flex-col items-center gap-2"
-                        >
-                          <trade.icon className="h-8 w-8 text-amber-500" />
-                          <span className="font-medium">{trade.label}</span>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  /* Template Review Card */
-                  <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4">
-                    <div className="bg-card border-2 border-amber-300 dark:border-amber-700 rounded-xl shadow-lg max-w-lg mx-auto overflow-hidden">
-                      {/* Template Header */}
-                      <div className="p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon && (
-                              <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
-                                {(() => {
-                                  const Icon = TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon;
-                                  return Icon ? <Icon className="h-5 w-5" /> : null;
-                                })()}
-                              </motion.div>
-                            )}
-                            <span className="font-semibold">
-                              {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Template
-                            </span>
-                          </div>
-                          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                            {gfaValue.toLocaleString()} sq ft
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Items List */}
-                      <div className="divide-y divide-amber-100 dark:divide-amber-900 max-h-72 overflow-y-auto">
-                        {templateItems.map(item => (
-                          <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="p-3 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 group"
-                          >
-                            {editingItem === item.id ? (
-                              /* Editing Mode */
-                              <div className="space-y-2">
-                                <Input
-                                  value={item.name}
-                                  onChange={(e) => handleUpdateItem(item.id, 'name', e.target.value)}
-                                  className="h-8 text-sm"
-                                  autoFocus
-                                />
-                                <div className="grid grid-cols-3 gap-2">
-                                  <div>
-                                    <Label className="text-xs">Qty</Label>
-                                    <Input
-                                      type="number"
-                                      value={item.quantity}
-                                      onChange={(e) => handleUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                      className="h-8 text-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label className="text-xs">Unit Price</Label>
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      value={item.unitPrice}
-                                      onChange={(e) => handleUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                      className="h-8 text-sm"
-                                    />
-                                  </div>
-                                  <div className="flex items-end">
-                                    <Button
-                                      size="sm"
-                                      onClick={() => setEditingItem(null)}
-                                      className="w-full h-8"
-                                    >
-                                      Done
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              /* Display Mode */
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className={cn(
-                                      "text-xs px-1.5 py-0.5 rounded",
-                                      item.category === 'material'
-                                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                        : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                                    )}>
-                                      {item.category === 'material' ? 'MAT' : 'LAB'}
-                                    </span>
-                                    <span className="text-sm font-medium truncate">{item.name}</span>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {item.quantity} {item.unit} × ${item.unitPrice.toFixed(2)}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-sm">
-                                    ${item.totalPrice.toLocaleString()}
-                                  </span>
-                                  <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                                    <button
-                                      onClick={() => setEditingItem(item.id)}
-                                      className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded"
-                                    >
-                                      <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteItem(item.id)}
-                                      className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </motion.div>
-                        ))}
-                      </div>
-                      
-                      {/* Add Item Button */}
-                      <button
-                        onClick={handleAddItem}
-                        className="w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center justify-center gap-1 border-t border-amber-200 dark:border-amber-800"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Item
-                      </button>
-                      
-                      {/* Totals */}
-                      <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Materials</span>
-                          <span>${materialTotal.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Labor</span>
-                          <span>${laborTotal.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-lg pt-2 border-t border-amber-200 dark:border-amber-700">
-                          <span>Total</span>
-                          <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Proceed Button */}
-                    <div className="mt-4 max-w-lg mx-auto">
-                      <Button
-                        onClick={handleProceedFromTemplate}
-                        className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 gap-2"
-                      >
-                        Confirm Template
-                        <ChevronRight className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
-            
-            {/* STEP 2: Team Size */}
-            {currentSubStep === 1 && (
-              <motion.div
-                key="step-2"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ duration: 0.4 }}
-                className="h-full flex flex-col p-4"
-              >
-                {/* AI Prompt */}
-                <div className="p-4 bg-gradient-to-r from-amber-100/50 to-orange-100/50 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl mb-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-amber-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-800 dark:text-amber-200">
-                        Execution scale?
-                      </p>
-                      <p className="text-sm text-amber-700/70 dark:text-amber-300/70">
-                        Select your team size for this project
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Team Size Options */}
-                <div className="flex-1 flex items-center justify-center pb-16">
-                  <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-                    {TEAM_SIZE_OPTIONS.map(option => (
-                      <motion.button
-                        key={option.key}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => handleTeamSizeSelect(option.key)}
-                        className="p-5 rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-card hover:border-amber-400 dark:hover:border-amber-600 transition-all flex flex-col items-center gap-2 text-center"
-                      >
-                        <option.icon className="h-10 w-10 text-amber-500" />
-                        <span className="font-semibold">{option.label}</span>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-            
-            {/* STEP 3: Site & Time + Finalize */}
-            {currentSubStep === 2 && (
-              <motion.div
-                key="step-3"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ duration: 0.4 }}
-                className="h-full flex flex-col p-4 overflow-y-auto pb-24 md:pb-4"
-              >
-                {/* AI Prompt */}
-                <div className="p-4 bg-gradient-to-r from-amber-100/50 to-orange-100/50 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl mb-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-amber-500 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-800 dark:text-amber-200">
-                        Site condition and Start date?
-                      </p>
-                      <p className="text-sm text-amber-700/70 dark:text-amber-300/70">
-                        Final details before locking your project DNA
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="max-w-md mx-auto w-full space-y-6">
-                  {/* Site Condition Toggle */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-amber-500" />
-                      Site Condition
-                    </Label>
-                    <RadioGroup
-                      value={siteCondition}
-                      onValueChange={(v) => setSiteCondition(v as 'clear' | 'demolition')}
-                      className="grid grid-cols-2 gap-3"
-                    >
-                      <label className={cn(
-                        "flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                        siteCondition === 'clear'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}>
-                        <RadioGroupItem value="clear" id="clear" />
-                        <div>
-                          <p className="font-medium">Clear</p>
-                          <p className="text-xs text-muted-foreground">Ready to work</p>
-                        </div>
-                      </label>
-                      <label className={cn(
-                        "flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                        siteCondition === 'demolition'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}>
-                        <RadioGroupItem value="demolition" id="demolition" />
-                        <div>
-                          <p className="font-medium">Demo Needed</p>
-                          <p className="text-xs text-muted-foreground">+${demolitionCost.toLocaleString()}</p>
-                        </div>
-                      </label>
-                    </RadioGroup>
-                  </div>
-                  
-                  {/* Timeline Selection */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-amber-500" />
-                      Start Timeline
-                    </Label>
-                    <RadioGroup
-                      value={timeline}
-                      onValueChange={(v) => setTimeline(v as 'asap' | 'scheduled')}
-                      className="grid grid-cols-2 gap-3"
-                    >
-                      <label className={cn(
-                        "flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                        timeline === 'asap'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}>
-                        <RadioGroupItem value="asap" id="asap" />
-                        <div>
-                          <p className="font-medium">ASAP</p>
-                          <p className="text-xs text-muted-foreground">Start immediately</p>
-                        </div>
-                      </label>
-                      <label className={cn(
-                        "flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                        timeline === 'scheduled'
-                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-                          : "border-amber-200 dark:border-amber-800"
-                      )}>
-                        <RadioGroupItem value="scheduled" id="scheduled" />
-                        <div>
-                          <p className="font-medium">Schedule</p>
-                          <p className="text-xs text-muted-foreground">Pick a date</p>
-                        </div>
-                      </label>
-                    </RadioGroup>
-                    
-                    {/* Date Picker */}
-                    {timeline === 'scheduled' && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="pt-2"
-                      >
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-start text-left font-normal h-12"
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick a start date'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="center">
-                            <CalendarComponent
-                              mode="single"
-                              selected={scheduledDate}
-                              onSelect={setScheduledDate}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                              className="pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </motion.div>
-                    )}
-                  </div>
-                  
-                  {/* Summary Card */}
-                  <div className="bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 rounded-xl p-4 border border-amber-300 dark:border-amber-700">
-                    <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-3">
-                      Project DNA Summary
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-amber-700/70 dark:text-amber-300/70">Area</span>
-                        <span className="font-medium">{gfaValue.toLocaleString()} sq ft</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-amber-700/70 dark:text-amber-300/70">Trade</span>
-                        <span className="font-medium">{TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-amber-700/70 dark:text-amber-300/70">Team</span>
-                        <span className="font-medium">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-amber-700/70 dark:text-amber-300/70">Materials</span>
-                        <span className="font-medium">${materialTotal.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-amber-700/70 dark:text-amber-300/70">Labor</span>
-                        <span className="font-medium">${laborTotal.toLocaleString()}</span>
-                      </div>
-                      {siteCondition === 'demolition' && (
-                        <div className="flex justify-between text-orange-600 dark:text-orange-400">
-                          <span>Demolition</span>
-                          <span className="font-medium">+${demolitionCost.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between pt-2 border-t border-amber-300/50 dark:border-amber-700/50 text-lg font-bold">
-                        <span className="text-amber-800 dark:text-amber-200">Grand Total</span>
-                        <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* FINALIZE DNA Button */}
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      onClick={handleFinalizeDNA}
-                      disabled={isSaving || (timeline === 'scheduled' && !scheduledDate)}
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-600 hover:via-orange-600 hover:to-amber-600 text-white shadow-xl shadow-amber-500/30 gap-3 animate-[gradient_3s_ease_infinite] bg-[length:200%_100%]"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                          Finalizing...
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-6 w-6" />
-                          FINALIZE DNA
-                        </>
-                      )}
-                    </Button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        {/* RIGHT PANEL - Canvas (OUTPUT) */}
+        <div className="hidden md:flex flex-1">
+          <CanvasPanel
+            currentSubStep={currentSubStep}
+            selectedTrade={selectedTrade}
+            teamSize={teamSize}
+            siteCondition={siteCondition}
+            gfaValue={gfaValue}
+            templateItems={templateItems}
+            materialTotal={materialTotal}
+            laborTotal={laborTotal}
+            demolitionCost={demolitionCost}
+            grandTotal={grandTotal}
+            editingItem={editingItem}
+            onUpdateItem={handleUpdateItem}
+            onDeleteItem={handleDeleteItem}
+            onAddItem={handleAddItem}
+            onSetEditingItem={setEditingItem}
+          />
         </div>
       </div>
     );

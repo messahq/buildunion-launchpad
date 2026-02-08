@@ -382,66 +382,16 @@ const BuildUnionNewProject = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute inset-0 flex"
+              className="absolute inset-0"
             >
-              {/* Left Panel - Previous Citations Summary */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col h-full bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10"
-              >
-                {/* Summary Header */}
-                <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50">
-                  <h3 className="font-semibold text-amber-700 dark:text-amber-300">
-                    ✓ Stage 1 & 2 Complete
-                  </h3>
-                  <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
-                    Foundation locked: {gfaValue.toLocaleString()} sq ft
-                  </p>
-                </div>
-                
-                {/* All Citations Summary */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-20 md:pb-4">
-                  {citations.map((citation, index) => (
-                    <motion.div
-                      key={citation.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => handleCitationClick(citation.id)}
-                      className="p-3 rounded-lg bg-card border border-amber-200/50 dark:border-amber-800/30 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">
-                          {citation.question_key.replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-xs font-mono text-amber-500/70">
-                          {citation.id.slice(0, 8)}...
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium mt-1 text-foreground">
-                        {citation.answer}
-                      </p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Right Panel - Definition Flow */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-                className="hidden md:flex flex-1 flex-col h-full"
-              >
-                <DefinitionFlowStage
-                  projectId={projectId}
-                  userId={user.id}
-                  gfaValue={gfaValue}
-                  onFlowComplete={handleDefinitionFlowComplete}
-                />
-              </motion.div>
+              {/* DefinitionFlowStage now includes both LEFT (Chat) and RIGHT (Canvas) panels */}
+              <DefinitionFlowStage
+                projectId={projectId}
+                userId={user.id}
+                gfaValue={gfaValue}
+                onFlowComplete={handleDefinitionFlowComplete}
+                className="h-full"
+              />
             </motion.div>
           )}
         </AnimatePresence>
