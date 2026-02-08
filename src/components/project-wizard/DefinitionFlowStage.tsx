@@ -537,284 +537,216 @@ const CanvasPanel = ({
   onSetEditingItem,
 }: CanvasPanelProps) => {
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20">
-      {/* Canvas Header */}
-      <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/50 dark:to-orange-950/50 shrink-0">
-        <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
-          <Building2 className="h-4 w-4" />
-          <span className="font-semibold uppercase tracking-wider">STAGE 3 CANVAS</span>
+    <div className="h-full w-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-hidden">
+      {/* Canvas Header - Compact */}
+      <div className="px-4 py-3 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/50 dark:to-orange-950/50 shrink-0 flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+            <Building2 className="h-4 w-4" />
+            <span className="font-semibold uppercase tracking-wider">TEMPLATE EDITOR</span>
+          </div>
+          <h2 className="text-lg font-bold bg-gradient-to-r from-amber-700 to-orange-600 dark:from-amber-300 dark:to-orange-300 bg-clip-text text-transparent">
+            {selectedTrade ? `${TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} - ${gfaValue.toLocaleString()} sq ft` : 'Awaiting Selection...'}
+          </h2>
         </div>
-        <h2 className="text-xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 dark:from-amber-300 dark:to-orange-300 bg-clip-text text-transparent mt-1">
-          {selectedTrade ? `${TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Template` : 'Awaiting Selection...'}
-        </h2>
+        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border-0">
+          Waste: {wastePercent}%
+        </Badge>
       </div>
       
-      {/* Canvas Content */}
-      <div className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6">
-        <AnimatePresence mode="wait">
-          {!selectedTrade ? (
-            /* Waiting state */
-            <motion.div
-              key="waiting"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full flex items-center justify-center"
-            >
-              <div className="text-center space-y-4">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-amber-200 to-orange-200 dark:from-amber-800/50 dark:to-orange-800/50 flex items-center justify-center"
-                >
-                  <Layers className="h-10 w-10 text-amber-500/50" />
-                </motion.div>
-                <p className="text-amber-600/70 dark:text-amber-400/70">
-                  Select a trade on the left to generate template
-                </p>
+      {/* Canvas Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Template Card - Full Width */}
+        <motion.div
+          key="template"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full space-y-3"
+        >
+          {/* Template Card */}
+          <div className="w-full bg-card border-2 border-amber-300 dark:border-amber-700 rounded-xl shadow-lg overflow-hidden">
+            {/* Template Header - Compact */}
+            <div className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon && (
+                  (() => {
+                    const Icon = TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon;
+                    return Icon ? <Icon className="h-5 w-5" /> : null;
+                  })()
+                )}
+                <span className="font-semibold">
+                  {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Materials & Labor
+                </span>
               </div>
-            </motion.div>
-          ) : (
-            /* Template Review Card - FULL WIDTH */
-            <motion.div
-              key="template"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.4 }}
-              className="w-full space-y-4"
-            >
-              {/* Template Card - Full Width */}
-              <div className="w-full bg-card border-2 border-amber-300 dark:border-amber-700 rounded-2xl shadow-xl overflow-hidden">
-                {/* Template Header */}
-                <div className="p-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon && (
-                        <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
-                          {(() => {
-                            const Icon = TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon;
-                            return Icon ? <Icon className="h-5 w-5" /> : null;
-                          })()}
-                        </motion.div>
-                      )}
-                      <span className="font-semibold">
-                        {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Template
-                      </span>
-                    </div>
-                    <Badge className="bg-white/20 text-white border-0">
-                      {gfaValue.toLocaleString()} sq ft
-                    </Badge>
-                  </div>
-                </div>
+              <Badge className="bg-white/20 text-white border-0">
+                {gfaValue.toLocaleString()} sq ft
+              </Badge>
+            </div>
                 
-                {/* Items List - Expanded Height */}
-                <div className="divide-y divide-amber-100 dark:divide-amber-900 max-h-[400px] overflow-y-auto">
-                  {templateItems.map(item => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="p-4 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 group"
-                    >
-                      {editingItem === item.id ? (
-                        /* Editing Mode */
-                        <div className="space-y-2">
-                          <Input
-                            value={item.name}
-                            onChange={(e) => onUpdateItem(item.id, 'name', e.target.value)}
-                            className="h-8 text-sm"
-                            autoFocus
-                          />
-                          <div className="grid grid-cols-3 gap-2">
-                            <div>
-                              <Label className="text-xs">Qty</Label>
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => onUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                className="h-8 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Unit Price</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={item.unitPrice}
-                                onChange={(e) => onUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                className="h-8 text-sm"
-                              />
-                            </div>
-                            <div className="flex items-end">
-                              <Button
-                                size="sm"
-                                onClick={() => onSetEditingItem(null)}
-                                className="w-full h-8"
-                              >
-                                Done
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Display Mode */
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className={cn(
-                                "text-xs px-1.5 py-0.5 rounded",
-                                item.category === 'material'
-                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                  : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                              )}>
-                                {item.category === 'material' ? 'MAT' : 'LAB'}
-                              </span>
-                              <span className="text-sm font-medium truncate">{item.name}</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {item.quantity} {item.unit} × ${item.unitPrice.toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">
-                              ${item.totalPrice.toLocaleString()}
-                            </span>
-                            <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                              <button
-                                onClick={() => onSetEditingItem(item.id)}
-                                className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded"
-                              >
-                                <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                              </button>
-                              <button
-                                onClick={() => onDeleteItem(item.id)}
-                                className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-                
-                {/* Add Item Button */}
-                <button
-                  onClick={onAddItem}
-                  className="w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center justify-center gap-1 border-t border-amber-200 dark:border-amber-800"
+            {/* Items List */}
+            <div className="divide-y divide-amber-100 dark:divide-amber-900">
+              {templateItems.map(item => (
+                <div
+                  key={item.id}
+                  className="p-3 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 group"
                 >
-                  <Plus className="h-4 w-4" />
-                  Add Item
-                </button>
-                
-                {/* Waste % Adjustment */}
-                <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-t border-amber-200 dark:border-amber-800">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                        Waste Factor
-                      </Label>
-                      <Badge variant="outline" className="text-xs border-amber-400 text-amber-600 dark:text-amber-400">
-                        Applied to materials
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
+                  {editingItem === item.id ? (
+                    /* Editing Mode */
+                    <div className="space-y-2">
                       <Input
-                        type="number"
-                        min={0}
-                        max={50}
-                        step={1}
-                        value={wastePercent}
-                        onChange={(e) => onWastePercentChange(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
-                        className="w-20 h-8 text-center text-sm font-semibold"
+                        value={item.name}
+                        onChange={(e) => onUpdateItem(item.id, 'name', e.target.value)}
+                        className="h-8 text-sm"
+                        autoFocus
                       />
-                      <span className="text-sm font-medium text-amber-600 dark:text-amber-400">%</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-xs">Qty</Label>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => onUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Unit Price</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.unitPrice}
+                            onChange={(e) => onUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <Button
+                            size="sm"
+                            onClick={() => onSetEditingItem(null)}
+                            className="w-full h-8"
+                          >
+                            Done
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Adds {wastePercent}% to material quantities for cuts & waste
-                  </p>
-                </div>
-                
-                {/* Totals */}
-                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Materials (incl. {wastePercent}% waste)</span>
-                    <span>${materialTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Labor</span>
-                    <span>${laborTotal.toLocaleString()}</span>
-                  </div>
-                  {demolitionCost > 0 && (
-                    <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
-                      <span>Demolition</span>
-                      <span>+${demolitionCost.toLocaleString()}</span>
+                  ) : (
+                    /* Display Mode */
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-xs px-1.5 py-0.5 rounded",
+                            item.category === 'material'
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                              : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                          )}>
+                            {item.category === 'material' ? 'MAT' : 'LAB'}
+                          </span>
+                          <span className="text-sm font-medium truncate">{item.name}</span>
+                          {item.applyWaste && item.category === 'material' && (
+                            <span className="text-xs text-orange-500">+{wastePercent}%</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {item.quantity} {item.unit} × ${item.unitPrice.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">
+                          ${item.totalPrice.toLocaleString()}
+                        </span>
+                        <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                          <button
+                            onClick={() => onSetEditingItem(item.id)}
+                            className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded"
+                          >
+                            <Edit2 className="h-3.5 w-3.5 text-amber-600" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteItem(item.id)}
+                            className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-amber-200 dark:border-amber-700">
-                    <span>Total</span>
-                    <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString()}</span>
-                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Add Item Button */}
+            <button
+              onClick={onAddItem}
+              className="w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center justify-center gap-1 border-t border-amber-200 dark:border-amber-800"
+            >
+              <Plus className="h-4 w-4" />
+              Add Item
+            </button>
+            
+            {/* Waste % Adjustment */}
+            <div className="px-4 py-3 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-t border-amber-200 dark:border-amber-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    Waste Factor
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={50}
+                    step={1}
+                    value={wastePercent}
+                    onChange={(e) => onWastePercentChange(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
+                    className="w-16 h-8 text-center text-sm font-semibold"
+                  />
+                  <span className="text-sm font-medium text-amber-600 dark:text-amber-400">%</span>
                 </div>
               </div>
-              
-              {/* Additional info cards based on progress */}
-              {teamSize && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-card border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                      {TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.icon && (
-                        (() => {
-                          const Icon = TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.icon;
-                          return Icon ? <Icon className="h-5 w-5 text-white" /> : null;
-                        })()
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}</p>
-                      <p className="text-xs text-muted-foreground">{TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.description}</p>
-                    </div>
-                    <Badge className="ml-auto bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0">
-                      Team Set
-                    </Badge>
-                  </div>
-                </motion.div>
+            </div>
+            
+            {/* Totals */}
+            <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Materials (incl. {wastePercent}% waste)</span>
+                <span>${materialTotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Labor</span>
+                <span>${laborTotal.toLocaleString()}</span>
+              </div>
+              {demolitionCost > 0 && (
+                <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
+                  <span>Demolition</span>
+                  <span>+${demolitionCost.toLocaleString()}</span>
+                </div>
               )}
-              
-              {currentSubStep >= 2 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-card border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                      <MapPin className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Required'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {siteCondition === 'demolition' ? `+$${demolitionCost.toLocaleString()} added to estimate` : 'Ready to begin work'}
-                      </p>
-                    </div>
-                    <Badge className="ml-auto bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0">
-                      Site Set
-                    </Badge>
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="flex justify-between font-bold text-base pt-2 border-t border-amber-200 dark:border-amber-700">
+                <span>Total</span>
+                <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Additional info cards - Inline */}
+          <div className="flex flex-wrap gap-2">
+            {teamSize && (
+              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0 py-1.5 px-3">
+                Team: {TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}
+              </Badge>
+            )}
+            {currentSubStep >= 2 && (
+              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0 py-1.5 px-3">
+                Site: {siteCondition === 'clear' ? 'Clear' : 'Demolition'}
+              </Badge>
+            )}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -1060,10 +992,38 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     return (
       <div
         ref={ref}
-        className={cn("h-full flex", className)}
+        className={cn("h-full flex flex-col overflow-hidden", className)}
       >
-        {/* LEFT PANEL - Chat (INPUT) */}
-        <div className="w-full md:w-[400px] lg:w-[400px] border-r border-amber-200/50 dark:border-amber-800/30 flex-shrink-0">
+        {/* TOP - Canvas/Template (OUTPUT) - Always visible, takes priority */}
+        {selectedTrade && (
+          <div className="flex-1 min-h-0 border-b border-amber-200/50 dark:border-amber-800/30">
+            <CanvasPanel
+              currentSubStep={currentSubStep}
+              selectedTrade={selectedTrade}
+              teamSize={teamSize}
+              siteCondition={siteCondition}
+              gfaValue={gfaValue}
+              templateItems={templateItems}
+              materialTotal={materialTotal}
+              laborTotal={laborTotal}
+              demolitionCost={demolitionCost}
+              grandTotal={grandTotal}
+              editingItem={editingItem}
+              wastePercent={wastePercent}
+              onWastePercentChange={handleWastePercentChange}
+              onUpdateItem={handleUpdateItem}
+              onDeleteItem={handleDeleteItem}
+              onAddItem={handleAddItem}
+              onSetEditingItem={setEditingItem}
+            />
+          </div>
+        )}
+        
+        {/* BOTTOM - Chat (INPUT) - Compact when template is visible */}
+        <div className={cn(
+          "flex-shrink-0 border-t border-amber-200/50 dark:border-amber-800/30",
+          selectedTrade ? "h-[280px] md:h-[320px]" : "flex-1"
+        )}>
           <ChatPanel
             currentSubStep={currentSubStep}
             gfaValue={gfaValue}
@@ -1081,29 +1041,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             onProceedFromTemplate={handleProceedFromTemplate}
             onFinalizeDNA={handleFinalizeDNA}
             isSaving={isSaving}
-          />
-        </div>
-        
-        {/* RIGHT PANEL - Canvas (OUTPUT) */}
-        <div className="hidden md:flex flex-1">
-          <CanvasPanel
-            currentSubStep={currentSubStep}
-            selectedTrade={selectedTrade}
-            teamSize={teamSize}
-            siteCondition={siteCondition}
-            gfaValue={gfaValue}
-            templateItems={templateItems}
-            materialTotal={materialTotal}
-            laborTotal={laborTotal}
-            demolitionCost={demolitionCost}
-            grandTotal={grandTotal}
-            editingItem={editingItem}
-            wastePercent={wastePercent}
-            onWastePercentChange={handleWastePercentChange}
-            onUpdateItem={handleUpdateItem}
-            onDeleteItem={handleDeleteItem}
-            onAddItem={handleAddItem}
-            onSetEditingItem={setEditingItem}
           />
         </div>
       </div>
