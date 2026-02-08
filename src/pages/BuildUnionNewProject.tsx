@@ -20,6 +20,7 @@ import CitationDrivenCanvas from "@/components/project-wizard/CitationDrivenCanv
 import GFALockStage from "@/components/project-wizard/GFALockStage";
 import DefinitionFlowStage from "@/components/project-wizard/DefinitionFlowStage";
 import TeamSetupStage from "@/components/project-wizard/TeamSetupStage";
+import Stage7Placeholder from "@/components/project-wizard/Stage7Placeholder";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 
 // Stage definitions
@@ -27,7 +28,8 @@ const STAGES = {
   STAGE_1: 0, // Name, Address, Work Type
   STAGE_2: 1, // GFA Lock & Blueprint
   STAGE_3: 2, // Definition Flow (Trade, Template, Site, Finalize)
-  STAGE_7: 3, // Team Architecture (Permissions)
+  STAGE_6: 3, // Team Architecture (Permissions)
+  STAGE_7: 4, // Placeholder (Coming Soon)
 } as const;
 
 const BuildUnionNewProject = () => {
@@ -98,157 +100,175 @@ const BuildUnionNewProject = () => {
     
     const createDraftProject = async () => {
       try {
-        const { data: project, error } = await supabase
-          .from("projects")
+        const projectName = `Draft-${Date.now()}`;
+        
+        const { data: newProject, error } = await supabase
+          .from('projects')
           .insert({
+            name: projectName,
             user_id: user.id,
-            name: "Untitled Project",
-            status: "draft",
+            status: 'draft',
           })
-          .select()
+          .select('id')
           .single();
 
         if (error) throw error;
+        if (!newProject) throw new Error('No project returned');
+
+        console.log('[NewProject] Draft project created:', newProject.id);
+        setProjectId(newProject.id);
         
-        setProjectId(project.id);
-        console.log("[NewProject] Draft project created:", project.id);
-      } catch (error) {
-        console.error("[NewProject] Failed to create draft:", error);
-        toast.error("Failed to initialize project");
-        navigate("/buildunion/workspace");
+        // Create project_summaries record
+        const { error: summaryError } = await supabase
+          .from('project_summaries')
+          .insert({
+            project_id: newProject.id,
+            user_id: user.id,
+            status: 'draft',
+            verified_facts: [],
+          });
+
+        if (summaryError) {
+          console.error('[NewProject] Failed to create summary:', summaryError);
+        }
+      } catch (err) {
+        console.error('[NewProject] Failed to create project:', err);
+        toast.error('Failed to initialize project');
+        navigate('/buildunion/workspace');
       } finally {
         setIsInitializing(false);
       }
     };
 
     createDraftProject();
-  }, [user, projectId, navigate]);
+  }, [user, navigate]);
 
-  // Handle citation saved (from WizardChatInterface)
-  const handleCitationSaved = useCallback(async (citation: Citation) => {
-    // Add to local state (this is an EFFECT of successful DB save)
-    setCitations(prev => [...prev, citation]);
-    
-    // Update project with extracted data
-    if (projectId) {
-      const updates: Record<string, string | null> = {};
-      
-      switch (citation.cite_type) {
-        case CITATION_TYPES.PROJECT_NAME:
-          updates.name = citation.answer;
-          break;
-        case CITATION_TYPES.LOCATION:
-          updates.address = citation.answer;
-          break;
-        case CITATION_TYPES.WORK_TYPE:
-          updates.trade = citation.metadata?.work_type_key as string || citation.value as string;
-          break;
+  // Handle citation saved
+  const handleCitationSaved = useCallback((citation: Citation) => {
+    console.log('[NewProject] Citation saved:', citation.cite_type);
+    setCitations(prev => {
+      const exists = prev.some(c => c.id === citation.id);
+      if (exists) {
+        return prev.map(c => c.id === citation.id ? citation : c);
       }
-      
-      if (Object.keys(updates).length > 0) {
-        await supabase
-          .from("projects")
-          .update(updates)
-          .eq("id", projectId);
-      }
-    }
-  }, [projectId]);
-
-  // Handle step complete within Stage 1
-  const handleStepComplete = useCallback(() => {
-    const nextStep = currentStep + 1;
-    setCurrentStep(nextStep);
-    
-    // Check if Stage 1 is complete (all 3 questions answered)
-    if (nextStep >= STAGE_1_STEPS) {
-      // Transition to Stage 2 with slight delay for animation
-      setTimeout(() => {
-        setCurrentStage(STAGES.STAGE_2);
-      }, 500);
-    }
-  }, [currentStep]);
-
-  // Handle GFA Lock completion - now transitions to Stage 3
-  const handleGFALocked = useCallback((citation: Citation) => {
-    setCitations(prev => [...prev, citation]);
-    
-    // Extract GFA value for Stage 3
-    const gfa = citation.metadata?.gfa_value as number || 0;
-    setGfaValue(gfa);
-    
-    toast.success("GFA locked! Proceeding to Definition Flow...");
-    
-    // Transition to Stage 3 after animation
-    setTimeout(() => {
-      setCurrentStage(STAGES.STAGE_3);
-    }, 800);
+      return [...prev, citation];
+    });
   }, []);
 
-  // Handle Definition Flow complete - now goes to Team Setup
-  const handleDefinitionFlowComplete = useCallback((newCitations: Citation[]) => {
-    setCitations(prev => [...prev, ...newCitations]);
-    
-    // Transition to Team Setup (Stage 7)
-    toast.success("Project DNA ready! Now let's set up your team...");
-    setTimeout(() => {
-      setCurrentStage(STAGES.STAGE_7);
-    }, 800);
-  }, []);
-
-  // Handle Team Setup complete
-  const handleTeamSetupComplete = useCallback((newCitations: Citation[]) => {
-    setCitations(prev => [...prev, ...newCitations]);
-    
-    // Navigate to project details
-    toast.success("Team configured! Opening project...");
-    setTimeout(() => {
-      navigate(`/buildunion/project/${projectId}`);
-    }, 1000);
-  }, [projectId, navigate]);
-
-  // Handle Team Setup skip
-  const handleTeamSetupSkip = useCallback(() => {
-    toast.success("Solo mode! Opening project...");
-    setTimeout(() => {
-      navigate(`/buildunion/project/${projectId}`);
-    }, 800);
-  }, [projectId, navigate]);
-
-  // Handle citation click from chat (highlight on canvas)
+  // Handle citation click (cross-panel highlighting)
   const handleCitationClick = useCallback((citationId: string) => {
     setHighlightedCitationId(citationId);
     setTimeout(() => setHighlightedCitationId(null), 3000);
   }, []);
 
-  // Auth check
+  // Handle Stage 1 completion
+  const handleStepComplete = useCallback(() => {
+    const newStep = currentStep + 1;
+    if (newStep >= STAGE_1_STEPS) {
+      console.log('[NewProject] Stage 1 Complete, moving to Stage 2');
+      setCurrentStage(STAGES.STAGE_2);
+      setCurrentStep(0);
+    } else {
+      setCurrentStep(newStep);
+    }
+  }, [currentStep, STAGE_1_STEPS]);
+
+  // Handle Stage 2 (GFA Lock) completion
+  const handleGFALockComplete = useCallback((citation: Citation) => {
+    console.log('[NewProject] GFA Lock complete:', citation.value);
+    if (typeof citation.value === 'number') {
+      setGfaValue(citation.value);
+    }
+    setCurrentStage(STAGES.STAGE_3);
+  }, []);
+
+  // Handle Stage 3 (Definition Flow) completion
+  const handleDefinitionFlowComplete = useCallback(async (citations_data: Citation[]) => {
+    console.log('[NewProject] Definition Flow complete');
+    
+    // Save citations to project
+    if (projectId) {
+      const allCitations = [...citations, ...citations_data];
+      
+      const { error } = await supabase
+        .from('project_summaries')
+        .update({
+          verified_facts: allCitations as any,
+        })
+        .eq('project_id', projectId);
+
+      if (error) {
+        console.error('[NewProject] Failed to save citations:', error);
+      }
+    }
+    
+    toast.success("Project DNA ready! Now let's set up your team...");
+    setTimeout(() => {
+      setCurrentStage(STAGES.STAGE_6);
+    }, 800);
+  }, [projectId, citations]);
+
+  // Handle Team Setup completion
+  const handleTeamSetupComplete = useCallback(async (teamCitations: Citation[]) => {
+    console.log('[NewProject] Team setup complete');
+    
+    // Save team citations
+    if (projectId) {
+      const allCitations = [...citations, ...teamCitations];
+      
+      const { error } = await supabase
+        .from('project_summaries')
+        .update({
+          verified_facts: allCitations as any,
+        })
+        .eq('project_id', projectId);
+
+      if (error) {
+        console.error('[NewProject] Failed to save team citations:', error);
+      }
+    }
+    
+    toast.success("Team structure set! Moving to next phase...");
+    setTimeout(() => {
+      setCurrentStage(STAGES.STAGE_7);
+    }, 800);
+  }, [projectId, citations]);
+
+  // Handle Team Setup skip
+  const handleTeamSetupSkip = useCallback(() => {
+    console.log('[NewProject] Team setup skipped');
+    toast.info("You can add team members later from the workspace");
+    setTimeout(() => {
+      setCurrentStage(STAGES.STAGE_7);
+    }, 600);
+  }, []);
+
+  // Loading state
   if (authLoading || isInitializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-500 mx-auto" />
-          <p className="text-sm text-amber-600/70 dark:text-amber-400/70">
-            Initializing Project 3.0...
-          </p>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-amber-600 dark:text-amber-400" />
+          <p className="text-sm text-muted-foreground">Initializing project...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    navigate("/buildunion/login");
-    return null;
+  if (!user || !projectId) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Unable to initialize project</p>
+      </div>
+    );
   }
 
-  if (!projectId) {
-    return null;
-  }
-
-  // Determine stage progress for header
   const stageLabels: Record<number, string> = {
-    [STAGES.STAGE_1]: `Stage 1: Project Basics (${Math.min(currentStep + 1, STAGE_1_STEPS)}/${STAGE_1_STEPS})`,
+    [STAGES.STAGE_1]: "Stage 1: Basic Info",
     [STAGES.STAGE_2]: "Stage 2: Lock Area",
     [STAGES.STAGE_3]: "Stage 3-5: Definition Flow",
-    [STAGES.STAGE_7]: "Stage 7: Team Architecture",
+    [STAGES.STAGE_6]: "Stage 6: Team Architecture",
+    [STAGES.STAGE_7]: "Stage 7: Coming Soon",
   };
   const stageLabel = stageLabels[currentStage] || "";
 
@@ -349,50 +369,21 @@ const BuildUnionNewProject = () => {
                   <h3 className="font-semibold text-amber-700 dark:text-amber-300">
                     ✓ Stage 1 Complete
                   </h3>
-                  <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
-                    Project basics verified
-                  </p>
-                </div>
-                
-                {/* Citations Summary */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {citations.map((citation, index) => (
-                    <motion.div
-                      key={citation.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      onClick={() => handleCitationClick(citation.id)}
-                      className="p-3 rounded-lg bg-card border border-amber-200/50 dark:border-amber-800/30 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">
-                          {citation.question_key.replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-xs font-mono text-amber-500/70">
-                          {citation.id.slice(0, 8)}...
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium mt-1 text-foreground">
-                        {citation.answer}
-                      </p>
-                    </motion.div>
-                  ))}
                 </div>
               </motion.div>
 
               {/* Right Panel - GFA Lock Stage */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-                className="hidden md:flex flex-1 flex-col h-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="hidden md:flex flex-1"
               >
                 <GFALockStage
                   projectId={projectId}
                   userId={user.id}
-                  onGFALocked={handleGFALocked}
-                  existingGFA={citations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK)}
+                  onGFALocked={handleGFALockComplete}
+                  className="w-full"
                 />
               </motion.div>
             </motion.div>
@@ -415,10 +406,10 @@ const BuildUnionNewProject = () => {
                 className="h-full"
               />
             </motion.div>
-          ) : (
-            /* ========== STAGE 7: Team Architecture ========== */
+          ) : currentStage === STAGES.STAGE_6 ? (
+            /* ========== STAGE 6: Team Architecture ========== */
             <motion.div
-              key="stage-7"
+              key="stage-6"
               initial={{ opacity: 0, x: "100%" }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
@@ -431,6 +422,20 @@ const BuildUnionNewProject = () => {
                 onComplete={handleTeamSetupComplete}
                 onSkip={handleTeamSetupSkip}
                 className="h-full"
+              />
+            </motion.div>
+          ) : (
+            /* ========== STAGE 7: Placeholder ========== */
+            <motion.div
+              key="stage-7"
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              <Stage7Placeholder
+                onNext={() => navigate("/buildunion/workspace")}
               />
             </motion.div>
           )}

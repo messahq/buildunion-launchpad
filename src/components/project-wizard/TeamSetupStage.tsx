@@ -395,7 +395,7 @@ export default function TeamSetupStage({
                 Team Architecture
               </h2>
               <p className="text-xs text-indigo-600/70 dark:text-indigo-400/70">
-                Stage 7 • Permission Setup
+                Stage 6 • Permission Setup
               </p>
             </div>
           </div>
