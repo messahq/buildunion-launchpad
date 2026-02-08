@@ -45,35 +45,63 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // Access Level definitions with visibility rules
+// NOTE: Owner is AUTOMATIC (project creator) - not selectable
+import { Clipboard, Hammer, Eye as EyeIcon, Truck } from "lucide-react";
+
 const ACCESS_LEVELS = [
-  {
-    key: 'owner',
-    label: 'Owner / Admin',
-    description: 'Full access: Prices, Budget, Tasks, Team Management',
-    icon: Crown,
-    color: 'amber',
-    canSeePrices: true,
-    canSeeTasks: true,
-    canManageTeam: true,
-  },
   {
     key: 'foreman',
     label: 'Foreman',
-    description: 'Tasks, Deadlines, Materials list (NO prices visible)',
+    description: 'Site supervision, task management, material coordination',
     icon: HardHat,
     color: 'blue',
     canSeePrices: false,
     canSeeTasks: true,
+    canUpdateTasks: true,
     canManageTeam: false,
   },
   {
-    key: 'worker',
-    label: 'Worker',
-    description: 'Only their own assigned daily tasks',
-    icon: Wrench,
+    key: 'subcontractor',
+    label: 'Subcontractor',
+    description: 'Trade-specific scope, assigned work packages only',
+    icon: Hammer,
+    color: 'orange',
+    canSeePrices: false,
+    canSeeTasks: true, // Only their scope
+    canUpdateTasks: true,
+    canManageTeam: false,
+  },
+  {
+    key: 'inspector',
+    label: 'Inspector / QC',
+    description: 'Quality control, verification, sign-off authority',
+    icon: Clipboard,
+    color: 'purple',
+    canSeePrices: false,
+    canSeeTasks: true,
+    canUpdateTasks: false, // Read + verify only
+    canManageTeam: false,
+  },
+  {
+    key: 'supplier',
+    label: 'Supplier / Vendor',
+    description: 'Material delivery schedules, quantities only',
+    icon: Truck,
     color: 'green',
     canSeePrices: false,
-    canSeeTasks: false, // Only own tasks
+    canSeeTasks: false,
+    canUpdateTasks: false,
+    canManageTeam: false,
+  },
+  {
+    key: 'client',
+    label: 'Client Representative',
+    description: 'Progress reports, milestone updates, read-only',
+    icon: EyeIcon,
+    color: 'slate',
+    canSeePrices: false,
+    canSeeTasks: false,
+    canUpdateTasks: false,
     canManageTeam: false,
   },
 ];
@@ -85,7 +113,7 @@ interface TeamMemberInvite {
   userId?: string;
   userName?: string;
   userAvatar?: string;
-  accessLevel: 'owner' | 'foreman' | 'worker';
+  accessLevel: 'foreman' | 'subcontractor' | 'inspector' | 'supplier' | 'client';
   status: 'pending' | 'active' | 'invited';
   invitedAt: string;
 }
@@ -219,7 +247,7 @@ export default function TeamSetupStage({
       userId: pendingInvite.userId,
       userName: pendingInvite.userName,
       userAvatar: pendingInvite.userAvatar,
-      accessLevel: selectedAccessLevel as 'owner' | 'foreman' | 'worker',
+      accessLevel: selectedAccessLevel as 'foreman' | 'subcontractor' | 'inspector' | 'supplier' | 'client',
       status: pendingInvite.type === 'email' ? 'pending' : 'active',
       invitedAt: new Date().toISOString(),
     };
@@ -327,9 +355,11 @@ export default function TeamSetupStage({
         value: {
           total_members: teamMembers.length,
           by_role: {
-            owners: teamMembers.filter(m => m.accessLevel === 'owner').length,
             foremen: teamMembers.filter(m => m.accessLevel === 'foreman').length,
-            workers: teamMembers.filter(m => m.accessLevel === 'worker').length,
+            subcontractors: teamMembers.filter(m => m.accessLevel === 'subcontractor').length,
+            inspectors: teamMembers.filter(m => m.accessLevel === 'inspector').length,
+            suppliers: teamMembers.filter(m => m.accessLevel === 'supplier').length,
+            clients: teamMembers.filter(m => m.accessLevel === 'client').length,
           },
         },
         metadata: {
