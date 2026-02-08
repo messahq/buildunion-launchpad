@@ -1,25 +1,39 @@
-import { useState, useRef, useEffect, forwardRef } from "react";
+// ============================================
+// WIZARD CHAT INTERFACE - Citation-Driven
+// ============================================
+// DB-First Architecture: Save citation FIRST, then UI updates as EFFECT
+// ============================================
+
+import { useState, useRef, useEffect, forwardRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, FileText, MapPin, Building2, Loader2, Sparkles } from "lucide-react";
-import { WizardCitation, WORK_TYPES, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
+import { Send, FileText, MapPin, Building2, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Citation, CITATION_TYPES, getCitationType, createCitation } from "@/types/citation";
+import { WORK_TYPES, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChatMessage {
   id: string;
   type: 'system' | 'user';
   content: string;
-  citation?: WizardCitation;
+  citation?: Citation;
   timestamp: string;
+  isSaving?: boolean;
+  saveError?: boolean;
 }
 
 interface WizardChatInterfaceProps {
-  onAnswerSubmit: (questionKey: string, answer: string, citation: WizardCitation) => void;
+  projectId: string;
+  userId: string;
+  onCitationSaved: (citation: Citation) => void;
   onCitationClick: (citationId: string) => void;
   highlightedCitationId?: string | null;
   currentStep: number;
+  onStepComplete: () => void;
 }
 
 const WIZARD_QUESTIONS = [
@@ -28,12 +42,14 @@ const WIZARD_QUESTIONS = [
     question: 'What would you like to name this project?',
     placeholder: 'e.g., Downtown Office Renovation',
     icon: FileText,
+    citeType: CITATION_TYPES.PROJECT_NAME,
   },
   {
     key: 'project_address',
     question: 'Where is the project located?',
     placeholder: 'Enter the full address...',
     icon: MapPin,
+    citeType: CITATION_TYPES.LOCATION,
   },
   {
     key: 'work_type',
@@ -41,15 +57,16 @@ const WIZARD_QUESTIONS = [
     placeholder: 'Select work type...',
     icon: Building2,
     options: WORK_TYPES,
+    citeType: CITATION_TYPES.WORK_TYPE,
   },
 ];
 
 const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>(
-  ({ onAnswerSubmit, onCitationClick, highlightedCitationId, currentStep }, ref) => {
+  ({ projectId, userId, onCitationSaved, onCitationClick, highlightedCitationId, currentStep, onStepComplete }, ref) => {
     const { t } = useTranslation();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState("");
-    const [isTyping, setIsTyping] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const highlightedRef = useRef<HTMLDivElement>(null);
 
@@ -106,23 +123,98 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
       scrollToBottom();
     };
 
-    const handleSubmit = (value?: string) => {
+    /**
+     * CORE FUNCTION: Save citation to DB FIRST, then update UI as EFFECT
+     */
+    const saveCitationToDb = useCallback(async (citation: Citation): Promise<boolean> => {
+      try {
+        // Get current citations from DB
+        const { data: currentData } = await supabase
+          .from("project_summaries")
+          .select("id, verified_facts")
+          .eq("project_id", projectId)
+          .maybeSingle();
+
+        const currentFacts = Array.isArray(currentData?.verified_facts) 
+          ? currentData.verified_facts 
+          : [];
+
+        // Append new citation
+        const updatedFacts = [...currentFacts, citation as unknown as Record<string, unknown>];
+
+        // Save to database
+        let error;
+        if (currentData?.id) {
+          const result = await supabase
+            .from("project_summaries")
+            .update({
+              verified_facts: updatedFacts as unknown as null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("project_id", projectId);
+          error = result.error;
+        } else {
+          const result = await supabase
+            .from("project_summaries")
+            .insert({
+              project_id: projectId,
+              user_id: userId,
+              verified_facts: updatedFacts as unknown as null,
+            });
+          error = result.error;
+        }
+
+        if (error) throw error;
+        return true;
+
+      } catch (err) {
+        console.error("[WizardChat] Citation save failed:", err);
+        return false;
+      }
+    }, [projectId, userId]);
+
+    /**
+     * Geocode address and return coordinates
+     */
+    const geocodeAddress = useCallback(async (address: string): Promise<{ lat: number; lng: number } | null> => {
+      try {
+        const { data } = await supabase.functions.invoke("get-maps-key");
+        if (!data?.key) return null;
+
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${data.key}`
+        );
+        const result = await response.json();
+        
+        if (result.results?.[0]?.geometry?.location) {
+          return result.results[0].geometry.location;
+        }
+      } catch (error) {
+        console.error("Geocoding error:", error);
+      }
+      return null;
+    }, []);
+
+    const handleSubmit = async (value?: string) => {
       const answer = value || inputValue.trim();
-      if (!answer || currentStep >= WIZARD_QUESTIONS.length) return;
+      if (!answer || currentStep >= WIZARD_QUESTIONS.length || isSaving) return;
 
       const question = WIZARD_QUESTIONS[currentStep];
-      const citationId = `citation_${question.key}_${Date.now()}`;
       
-      const citation: WizardCitation = {
-        id: citationId,
-        questionKey: question.key,
-        answer: answer,
-        timestamp: new Date().toISOString(),
-        elementType: question.key === 'project_name' ? 'project_label' 
-          : question.key === 'project_address' ? 'map_location' 
-          : 'wireframe',
-      };
+      // Create the citation
+      const citation = createCitation({
+        cite_type: question.citeType,
+        question_key: question.key,
+        answer: question.key === 'work_type' 
+          ? WORK_TYPE_LABELS[answer as WorkType] || answer 
+          : answer,
+        value: answer,
+        metadata: question.key === 'work_type' 
+          ? { work_type_key: answer }
+          : undefined,
+      });
 
+      // Create user message with saving state
       const userMessage: ChatMessage = {
         id: `user_${Date.now()}`,
         type: 'user',
@@ -131,19 +223,49 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
           : answer,
         citation,
         timestamp: new Date().toISOString(),
+        isSaving: true,
       };
 
       setMessages(prev => [...prev, userMessage]);
       setInputValue("");
-      setIsTyping(true);
-
-      // Simulate typing delay
-      setTimeout(() => {
-        setIsTyping(false);
-        onAnswerSubmit(question.key, answer, citation);
-      }, 300);
-
+      setIsSaving(true);
       scrollToBottom();
+
+      // If address, geocode first
+      if (question.key === 'project_address') {
+        const coords = await geocodeAddress(answer);
+        if (coords) {
+          citation.metadata = { ...citation.metadata, coordinates: coords };
+        }
+      }
+
+      // CRITICAL: Save to DB FIRST
+      const saveSuccess = await saveCitationToDb(citation);
+
+      if (saveSuccess) {
+        // SUCCESS: Update message state to show saved
+        setMessages(prev => prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, isSaving: false, citation } 
+            : msg
+        ));
+        
+        // EFFECT: Notify parent that citation was saved
+        onCitationSaved(citation);
+        
+        // EFFECT: Move to next step
+        onStepComplete();
+      } else {
+        // FAILURE: Mark message as failed
+        setMessages(prev => prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, isSaving: false, saveError: true } 
+            : msg
+        ));
+        toast.error("Failed to save - please try again");
+      }
+
+      setIsSaving(false);
     };
 
     const currentQuestion = WIZARD_QUESTIONS[currentStep];
@@ -151,7 +273,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
 
     return (
       <div ref={ref} className="flex flex-col h-full bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10">
-        {/* Chat Header with Amber accent */}
+        {/* Chat Header */}
         <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
@@ -166,7 +288,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               </p>
             </div>
           </div>
-          {/* Progress bar with amber gradient */}
+          {/* Progress bar */}
           <div className="mt-3 h-1.5 bg-amber-100 dark:bg-amber-950 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
@@ -206,12 +328,13 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                     message.type === 'user'
                       ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-br-md shadow-lg shadow-amber-500/25"
                       : "bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm rounded-bl-md",
-                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2"
+                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2",
+                    message.saveError && "ring-2 ring-red-500"
                   )}
                 >
                   <p className="text-sm leading-relaxed">{message.content}</p>
                   
-                  {/* Citation Badge with amber styling */}
+                  {/* Citation Badge */}
                   {message.citation && (
                     <button
                       onClick={() => onCitationClick(message.citation!.id)}
@@ -222,9 +345,19 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                           : "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50"
                       )}
                     >
-                      <FileText className="h-3 w-3" />
+                      {message.isSaving ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : message.saveError ? (
+                        <AlertCircle className="h-3 w-3" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
+                      )}
                       <span className="font-mono">
-                        {message.citation.id.slice(0, 12)}...
+                        {message.isSaving 
+                          ? "Saving..." 
+                          : message.saveError 
+                            ? "Failed" 
+                            : `${message.citation.id.slice(0, 12)}...`}
                       </span>
                     </button>
                   )}
@@ -233,9 +366,9 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
             ))}
           </AnimatePresence>
 
-          {/* Typing Indicator with amber theme */}
+          {/* Typing Indicator */}
           <AnimatePresence>
-            {isTyping && (
+            {isSaving && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -268,7 +401,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area with amber theme */}
+        {/* Input Area */}
         <div className="p-4 border-t border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm">
           {currentStep < WIZARD_QUESTIONS.length ? (
             isSelectQuestion ? (
@@ -284,7 +417,8 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleSubmit(option)}
-                      className="p-3 text-sm text-left rounded-lg border border-amber-200 dark:border-amber-800 bg-card hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/50 dark:hover:to-orange-950/50 hover:border-amber-400 dark:hover:border-amber-600 transition-all"
+                      disabled={isSaving}
+                      className="p-3 text-sm text-left rounded-lg border border-amber-200 dark:border-amber-800 bg-card hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/50 dark:hover:to-orange-950/50 hover:border-amber-400 dark:hover:border-amber-600 transition-all disabled:opacity-50"
                     >
                       {WORK_TYPE_LABELS[option as WorkType]}
                     </motion.button>
@@ -292,7 +426,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 </div>
               </div>
             ) : (
-              /* Text Input with amber styling */
+              /* Text Input */
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -310,28 +444,33 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                     placeholder={currentQuestion.placeholder}
                     className="pl-10 h-11 rounded-full bg-card border-amber-200 dark:border-amber-800 focus:border-amber-500 focus:ring-amber-500/20"
                     autoFocus
+                    disabled={isSaving}
                   />
                 </div>
                 <Button
                   type="submit"
                   size="icon"
                   className="h-11 w-11 rounded-full shrink-0 bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/25"
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() || isSaving}
                 >
-                  <Send className="h-4 w-4" />
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </form>
             )
           ) : (
-            /* Completion State with amber theme */
+            /* Completion State */
             <div className="text-center py-4">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 text-amber-700 dark:text-amber-300"
               >
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm font-medium">Generating project...</span>
+                <Sparkles className="h-4 w-4" />
+                <span className="text-sm font-medium">All citations verified!</span>
               </motion.div>
             </div>
           )}

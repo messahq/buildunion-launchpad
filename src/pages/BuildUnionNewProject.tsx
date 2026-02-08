@@ -1,3 +1,9 @@
+// ============================================
+// BUILD UNION NEW PROJECT - Citation-Driven Flow
+// ============================================
+// DB-First: Project is created FIRST, then citations are saved
+// ============================================
+
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -7,9 +13,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { WizardCitation } from "@/types/projectWizard";
+import { Citation, CITATION_TYPES } from "@/types/citation";
 import WizardChatInterface from "@/components/project-wizard/WizardChatInterface";
-import DynamicCanvas from "@/components/project-wizard/DynamicCanvas";
+import CitationDrivenCanvas from "@/components/project-wizard/CitationDrivenCanvas";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 
 const BuildUnionNewProject = () => {
@@ -17,157 +23,110 @@ const BuildUnionNewProject = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   
-  // Wizard state
+  // Project state - created FIRST before any citations
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Citation-driven state
+  const [citations, setCitations] = useState<Citation[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
-  const [citations, setCitations] = useState<Record<string, WizardCitation>>({});
-  const [projectName, setProjectName] = useState<string | null>(null);
-  const [projectAddress, setProjectAddress] = useState<string | null>(null);
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
-  const [workType, setWorkType] = useState<string | null>(null);
   
   // Cross-panel highlighting
   const [highlightedCitationId, setHighlightedCitationId] = useState<string | null>(null);
-  const [highlightedElementId, setHighlightedElementId] = useState<string | null>(null);
   
-  const [isCreating, setIsCreating] = useState(false);
+  // Create draft project on mount
+  useEffect(() => {
+    if (!user || projectId) return;
+    
+    const createDraftProject = async () => {
+      try {
+        const { data: project, error } = await supabase
+          .from("projects")
+          .insert({
+            user_id: user.id,
+            name: "Untitled Project",
+            status: "draft",
+          })
+          .select()
+          .single();
 
-  // Geocode address to coordinates
-  const geocodeAddress = useCallback(async (address: string) => {
-    try {
-      const { data } = await supabase.functions.invoke("get-maps-key");
-      if (!data?.key) return null;
-
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${data.key}`
-      );
-      const result = await response.json();
-      
-      if (result.results?.[0]?.geometry?.location) {
-        return result.results[0].geometry.location;
+        if (error) throw error;
+        
+        setProjectId(project.id);
+        console.log("[NewProject] Draft project created:", project.id);
+      } catch (error) {
+        console.error("[NewProject] Failed to create draft:", error);
+        toast.error("Failed to initialize project");
+        navigate("/buildunion/workspace");
+      } finally {
+        setIsInitializing(false);
       }
-    } catch (error) {
-      console.error("Geocoding error:", error);
+    };
+
+    createDraftProject();
+  }, [user, projectId, navigate]);
+
+  // Handle citation saved (from WizardChatInterface)
+  const handleCitationSaved = useCallback(async (citation: Citation) => {
+    // Add to local state (this is an EFFECT of successful DB save)
+    setCitations(prev => [...prev, citation]);
+    
+    // Update project with extracted data
+    if (projectId) {
+      const updates: Record<string, string | null> = {};
+      
+      switch (citation.cite_type) {
+        case CITATION_TYPES.PROJECT_NAME:
+          updates.name = citation.answer;
+          break;
+        case CITATION_TYPES.LOCATION:
+          updates.address = citation.answer;
+          break;
+        case CITATION_TYPES.WORK_TYPE:
+          updates.trade = citation.metadata?.work_type_key as string || citation.value as string;
+          break;
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await supabase
+          .from("projects")
+          .update(updates)
+          .eq("id", projectId);
+      }
     }
-    return null;
-  }, []);
+  }, [projectId]);
 
-  // Handle answer submission from chat
-  const handleAnswerSubmit = useCallback(async (
-    questionKey: string,
-    answer: string,
-    citation: WizardCitation
-  ) => {
-    // Store citation
-    setCitations(prev => ({
-      ...prev,
-      [citation.id]: citation
-    }));
-
-    // Process answer based on question type
-    switch (questionKey) {
-      case 'project_name':
-        setProjectName(answer);
-        break;
-      case 'project_address':
-        setProjectAddress(answer);
-        const coords = await geocodeAddress(answer);
-        if (coords) {
-          setCoordinates(coords);
-        }
-        break;
-      case 'work_type':
-        setWorkType(answer);
-        break;
-    }
-
-    // Move to next step
+  // Handle step complete
+  const handleStepComplete = useCallback(() => {
     setCurrentStep(prev => prev + 1);
-  }, [geocodeAddress]);
-
-  // Handle citation click from chat (highlight element on canvas)
-  const handleCitationClick = useCallback((citationId: string) => {
-    setHighlightedElementId(citationId);
-    setHighlightedCitationId(null);
-    
-    // Clear highlight after 3 seconds
-    setTimeout(() => setHighlightedElementId(null), 3000);
   }, []);
 
-  // Handle element click from canvas (highlight message in chat)
-  const handleElementClick = useCallback((citationId: string) => {
+  // Handle citation click from chat (highlight on canvas)
+  const handleCitationClick = useCallback((citationId: string) => {
     setHighlightedCitationId(citationId);
-    setHighlightedElementId(null);
-    
-    // Clear highlight after 3 seconds
     setTimeout(() => setHighlightedCitationId(null), 3000);
   }, []);
 
-  // Create project when all steps complete
+  // Navigate to project details when wizard complete
   useEffect(() => {
-    if (currentStep >= 3 && projectName && projectAddress && workType && !isCreating) {
-      createProject();
-    }
-  }, [currentStep, projectName, projectAddress, workType]);
-
-  const createProject = async () => {
-    if (!user || isCreating) return;
-    
-    setIsCreating(true);
-    
-    try {
-      // Create project in database
-      const { data: project, error: projectError } = await supabase
-        .from("projects")
-        .insert({
-          user_id: user.id,
-          name: projectName!,
-          address: projectAddress,
-          trade: workType,
-          status: "draft",
-        })
-        .select()
-        .single();
-
-      if (projectError) throw projectError;
-
-      // Create project summary with citations
-      const { error: summaryError } = await supabase
-        .from("project_summaries")
-        .insert({
-          user_id: user.id,
-          project_id: project.id,
-          verified_facts: Object.values(citations).map(c => ({
-            id: c.id,
-            questionKey: c.questionKey,
-            answer: c.answer,
-            timestamp: c.timestamp,
-            elementType: c.elementType,
-          })),
-          mode: "solo",
-          status: "draft",
-        });
-
-      if (summaryError) throw summaryError;
-
+    if (currentStep >= 3 && projectId) {
       toast.success("Project created successfully!");
-      
-      // Navigate to workspace after short delay
       setTimeout(() => {
-        navigate("/buildunion/workspace");
+        navigate(`/buildunion/project/${projectId}`);
       }, 1500);
-      
-    } catch (error) {
-      console.error("Error creating project:", error);
-      toast.error("Failed to create project");
-      setIsCreating(false);
     }
-  };
+  }, [currentStep, projectId, navigate]);
 
   // Auth check
-  if (authLoading) {
+  if (authLoading || isInitializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-amber-500 mx-auto" />
+          <p className="text-sm text-amber-600/70 dark:text-amber-400/70">
+            Initializing Project 3.0...
+          </p>
+        </div>
       </div>
     );
   }
@@ -177,11 +136,15 @@ const BuildUnionNewProject = () => {
     return null;
   }
 
+  if (!projectId) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
       <BuildUnionHeader />
       
-      {/* Top Navigation with Amber accent */}
+      {/* Top Navigation */}
       <div className="border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-background/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14">
@@ -199,7 +162,7 @@ const BuildUnionNewProject = () => {
               {t("project.newProject", "Project 3.0 Wizard")}
             </h1>
             
-            <div className="w-20" /> {/* Spacer for centering */}
+            <div className="w-20" />
           </div>
         </div>
       </div>
@@ -213,27 +176,26 @@ const BuildUnionNewProject = () => {
           className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col"
         >
           <WizardChatInterface
-            onAnswerSubmit={handleAnswerSubmit}
+            projectId={projectId}
+            userId={user.id}
+            onCitationSaved={handleCitationSaved}
             onCitationClick={handleCitationClick}
             highlightedCitationId={highlightedCitationId}
             currentStep={currentStep}
+            onStepComplete={handleStepComplete}
           />
         </motion.div>
 
-        {/* Right Panel - Dynamic Canvas */}
+        {/* Right Panel - Citation-Driven Canvas */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="hidden md:flex flex-1 flex-col"
         >
-          <DynamicCanvas
-            projectName={projectName}
-            address={projectAddress}
-            coordinates={coordinates}
-            workType={workType}
+          <CitationDrivenCanvas
             citations={citations}
-            onElementClick={handleElementClick}
-            highlightedElementId={highlightedElementId}
+            onCitationClick={handleCitationClick}
+            highlightedCitationId={highlightedCitationId}
           />
         </motion.div>
       </main>
