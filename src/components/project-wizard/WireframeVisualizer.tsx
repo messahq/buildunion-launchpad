@@ -85,6 +85,37 @@ const WIREFRAME_TEMPLATES: Record<string, WireframeLine[]> = {
     { id: 'p1', x1: 200, y1: 120, x2: 230, y2: 120, delay: 0.7 },
     { id: 'p2', x1: 215, y1: 105, x2: 215, y2: 135, delay: 0.7 },
   ],
+  foundation: [
+    // Ground level baseline
+    { id: 'g1', x1: 20, y1: 190, x2: 280, y2: 190, delay: 0 },
+    // Excavation outline
+    { id: 'ex1', x1: 30, y1: 190, x2: 30, y2: 160, delay: 0.1 },
+    { id: 'ex2', x1: 270, y1: 190, x2: 270, y2: 160, delay: 0.1 },
+    { id: 'ex3', x1: 30, y1: 160, x2: 270, y2: 160, delay: 0.2 },
+    // Footing (thick base)
+    { id: 'ft1', x1: 40, y1: 180, x2: 260, y2: 180, delay: 0.3 },
+    { id: 'ft2', x1: 40, y1: 170, x2: 260, y2: 170, delay: 0.3 },
+    { id: 'ft3', x1: 40, y1: 180, x2: 40, y2: 170, delay: 0.4 },
+    { id: 'ft4', x1: 260, y1: 180, x2: 260, y2: 170, delay: 0.4 },
+    // Foundation walls
+    { id: 'fw1', x1: 50, y1: 170, x2: 50, y2: 80, delay: 0.5 },
+    { id: 'fw2', x1: 250, y1: 170, x2: 250, y2: 80, delay: 0.5 },
+    { id: 'fw3', x1: 60, y1: 170, x2: 60, y2: 80, delay: 0.5 },
+    { id: 'fw4', x1: 240, y1: 170, x2: 240, y2: 80, delay: 0.5 },
+    // Top cap
+    { id: 'cap1', x1: 50, y1: 80, x2: 250, y2: 80, delay: 0.6 },
+    { id: 'cap2', x1: 60, y1: 90, x2: 240, y2: 90, delay: 0.6 },
+    // Rebar indicators
+    { id: 'rb1', x1: 80, y1: 175, x2: 90, y2: 165, delay: 0.7 },
+    { id: 'rb2', x1: 90, y1: 175, x2: 80, y2: 165, delay: 0.7 },
+    { id: 'rb3', x1: 200, y1: 175, x2: 210, y2: 165, delay: 0.8 },
+    { id: 'rb4', x1: 210, y1: 175, x2: 200, y2: 165, delay: 0.8 },
+    // Concrete pour indicator
+    { id: 'cp1', x1: 140, y1: 50, x2: 140, y2: 70, delay: 0.9 },
+    { id: 'cp2', x1: 160, y1: 50, x2: 160, y2: 70, delay: 0.9 },
+    { id: 'cp3', x1: 130, y1: 60, x2: 150, y2: 60, delay: 1.0 },
+    { id: 'cp4', x1: 150, y1: 60, x2: 170, y2: 60, delay: 1.0 },
+  ],
 };
 
 // Default wireframe for other work types
