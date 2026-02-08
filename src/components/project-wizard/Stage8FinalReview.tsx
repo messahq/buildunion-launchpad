@@ -7,9 +7,12 @@
 // - Inline editing for authorized users
 // - Full-screen panel view option
 // - AI Analysis, PDF, Summary actions at bottom
+// - Panel 5: Granular Tasklist with checklists
+// - Panel 6: Document Engine with upload/drag-drop
+// - Cross-panel sync for verification photos
 // ============================================
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -44,10 +47,21 @@ import {
   Thermometer,
   Maximize2,
   Minimize2,
+  Upload,
+  Image,
+  FileImage,
+  Camera,
+  Check,
+  Circle,
+  Plus,
+  ChevronUp,
+  User,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -59,7 +73,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -122,6 +144,18 @@ const VISIBILITY_TIERS: TierConfig[] = [
 ];
 
 // ============================================
+// DOCUMENT CATEGORIES
+// ============================================
+type DocumentCategory = 'legal' | 'technical' | 'visual' | 'verification';
+
+const DOCUMENT_CATEGORIES: { key: DocumentCategory; label: string; icon: React.ElementType; color: string }[] = [
+  { key: 'legal', label: 'Legal', icon: FileCheck, color: 'text-red-600' },
+  { key: 'technical', label: 'Technical', icon: FileText, color: 'text-blue-600' },
+  { key: 'visual', label: 'Visual', icon: Image, color: 'text-green-600' },
+  { key: 'verification', label: 'Verification', icon: Camera, color: 'text-purple-600' },
+];
+
+// ============================================
 // 8 PANEL DEFINITIONS
 // ============================================
 interface PanelConfig {
@@ -134,7 +168,7 @@ interface PanelConfig {
   bgColor: string;
   borderColor: string;
   visibilityTier: VisibilityTier;
-  dataKeys: string[]; // Citation types to include
+  dataKeys: string[];
   description: string;
 }
 
@@ -246,6 +280,16 @@ const PANELS: PanelConfig[] = [
 ];
 
 // ============================================
+// TASK PHASES FOR PANEL 5
+// ============================================
+const TASK_PHASES = [
+  { key: 'demolition', label: 'Demolition', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950/30' },
+  { key: 'preparation', label: 'Preparation', color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-950/30' },
+  { key: 'installation', label: 'Installation', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30' },
+  { key: 'finishing', label: 'Finishing & QC', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950/30' },
+];
+
+// ============================================
 // PROPS
 // ============================================
 interface Stage8FinalReviewProps {
@@ -254,6 +298,31 @@ interface Stage8FinalReviewProps {
   userRole: 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'member';
   onComplete: () => void;
   className?: string;
+}
+
+// ============================================
+// TASK WITH CHECKLIST INTERFACE
+// ============================================
+interface TaskWithChecklist {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  phase: string;
+  assigned_to: string;
+  checklist: { id: string; text: string; done: boolean; photoUrl?: string }[];
+}
+
+// ============================================
+// DOCUMENT WITH CATEGORY
+// ============================================
+interface DocumentWithCategory {
+  id: string;
+  file_name: string;
+  file_path: string;
+  category: DocumentCategory;
+  citationId?: string;
+  uploadedAt?: string;
 }
 
 // ============================================
@@ -267,9 +336,11 @@ export default function Stage8FinalReview({
   className,
 }: Stage8FinalReviewProps) {
   const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Project data
   const [projectData, setProjectData] = useState<{
@@ -278,17 +349,21 @@ export default function Stage8FinalReview({
     status: string;
   } | null>(null);
   const [citations, setCitations] = useState<Citation[]>([]);
-  const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string}[]>([]);
-  const [tasks, setTasks] = useState<{id: string; title: string; status: string; priority: string}[]>([]);
-  const [documents, setDocuments] = useState<{id: string; file_name: string; file_path: string}[]>([]);
+  const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string; userId: string}[]>([]);
+  const [tasks, setTasks] = useState<TaskWithChecklist[]>([]);
+  const [documents, setDocuments] = useState<DocumentWithCategory[]>([]);
   const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null}[]>([]);
   const [weatherData, setWeatherData] = useState<{temp?: number; condition?: string; alerts?: string[]} | null>(null);
   
   // UI state
-  const [activePanel, setActivePanel] = useState<string | null>('panel-1-basics');
+  const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set());
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['demolition', 'preparation', 'installation', 'finishing']));
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [showContractPreview, setShowContractPreview] = useState(false);
+  const [selectedUploadCategory, setSelectedUploadCategory] = useState<DocumentCategory>('technical');
   
   // Check user permissions
   const canEdit = useMemo(() => {
@@ -321,6 +396,50 @@ export default function Stage8FinalReview({
     return tierHierarchy[userTier] >= tierHierarchy[tier];
   }, [userRole]);
   
+  // Toggle panel collapse
+  const togglePanelCollapse = useCallback((panelId: string) => {
+    setCollapsedPanels(prev => {
+      const next = new Set(prev);
+      if (next.has(panelId)) {
+        next.delete(panelId);
+      } else {
+        next.add(panelId);
+      }
+      return next;
+    });
+  }, []);
+  
+  // Toggle phase expansion
+  const togglePhaseExpansion = useCallback((phaseKey: string) => {
+    setExpandedPhases(prev => {
+      const next = new Set(prev);
+      if (next.has(phaseKey)) {
+        next.delete(phaseKey);
+      } else {
+        next.add(phaseKey);
+      }
+      return next;
+    });
+  }, []);
+  
+  // Categorize document based on file name
+  const categorizeDocument = useCallback((fileName: string): DocumentCategory => {
+    const lowerName = fileName.toLowerCase();
+    if (lowerName.includes('contract') || lowerName.includes('legal') || lowerName.includes('agreement')) {
+      return 'legal';
+    }
+    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.includes('pdf')) {
+      return 'technical';
+    }
+    if (lowerName.includes('verification') || lowerName.includes('inspect') || lowerName.includes('qc')) {
+      return 'verification';
+    }
+    if (lowerName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) {
+      return 'visual';
+    }
+    return 'technical';
+  }, []);
+  
   // Load all project data
   useEffect(() => {
     const loadData = async () => {
@@ -337,7 +456,6 @@ export default function Stage8FinalReview({
         if (project) {
           setProjectData(project);
           
-          // Try to fetch weather if address exists
           if (project.address) {
             fetchWeather(project.address);
           }
@@ -374,6 +492,7 @@ export default function Stage8FinalReview({
             const profile = profiles?.find(p => p.user_id === m.user_id);
             return {
               id: m.id,
+              userId: m.user_id,
               role: m.role,
               name: profile?.full_name || 'Team Member',
             };
@@ -381,25 +500,58 @@ export default function Stage8FinalReview({
           setTeamMembers(teamData);
         }
         
-        // 4. Load tasks
+        // 4. Load tasks and transform to checklist format
         const { data: tasksData } = await supabase
           .from('project_tasks')
-          .select('id, title, status, priority')
+          .select('id, title, status, priority, description, assigned_to')
           .eq('project_id', projectId)
           .is('archived_at', null);
         
         if (tasksData) {
-          setTasks(tasksData);
+          const tasksWithChecklist: TaskWithChecklist[] = tasksData.map(task => {
+            // Infer phase from priority/title
+            let phase = 'installation';
+            const titleLower = task.title.toLowerCase();
+            if (titleLower.includes('demo') || titleLower.includes('remove') || titleLower.includes('tear')) {
+              phase = 'demolition';
+            } else if (titleLower.includes('prep') || titleLower.includes('measure') || titleLower.includes('setup')) {
+              phase = 'preparation';
+            } else if (titleLower.includes('finish') || titleLower.includes('qc') || titleLower.includes('inspect') || titleLower.includes('clean')) {
+              phase = 'finishing';
+            }
+            
+            return {
+              id: task.id,
+              title: task.title,
+              status: task.status,
+              priority: task.priority,
+              phase,
+              assigned_to: task.assigned_to,
+              checklist: [
+                { id: `${task.id}-start`, text: 'Task started', done: task.status !== 'pending' },
+                { id: `${task.id}-complete`, text: 'Task completed', done: task.status === 'completed' },
+                { id: `${task.id}-verify`, text: 'Verification photo', done: false },
+              ],
+            };
+          });
+          setTasks(tasksWithChecklist);
         }
         
         // 5. Load documents
         const { data: docsData } = await supabase
           .from('project_documents')
-          .select('id, file_name, file_path')
+          .select('id, file_name, file_path, uploaded_at')
           .eq('project_id', projectId);
         
         if (docsData) {
-          setDocuments(docsData);
+          const docsWithCategory: DocumentWithCategory[] = docsData.map(doc => ({
+            id: doc.id,
+            file_name: doc.file_name,
+            file_path: doc.file_path,
+            category: categorizeDocument(doc.file_name),
+            uploadedAt: doc.uploaded_at,
+          }));
+          setDocuments(docsWithCategory);
         }
         
         // 6. Load contracts
@@ -422,7 +574,7 @@ export default function Stage8FinalReview({
     };
     
     loadData();
-  }, [projectId]);
+  }, [projectId, categorizeDocument]);
   
   // Fetch weather data
   const fetchWeather = async (address: string) => {
@@ -461,7 +613,6 @@ export default function Stage8FinalReview({
     
     setIsSaving(true);
     try {
-      // Find and update the citation
       const updatedCitations = citations.map(c => {
         if (c.id === editingField) {
           return { ...c, answer: editValue, value: editValue };
@@ -469,7 +620,6 @@ export default function Stage8FinalReview({
         return c;
       });
       
-      // Save to database
       const { error } = await supabase
         .from('project_summaries')
         .update({ verified_facts: updatedCitations as any })
@@ -495,11 +645,159 @@ export default function Stage8FinalReview({
     setEditValue('');
   }, []);
   
+  // Update task checklist item
+  const updateChecklistItem = useCallback(async (taskId: string, checklistItemId: string, done: boolean) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        return {
+          ...task,
+          checklist: task.checklist.map(item => 
+            item.id === checklistItemId ? { ...item, done } : item
+          ),
+        };
+      }
+      return task;
+    }));
+    
+    // If this is a verification photo and it's being checked, show upload prompt
+    if (checklistItemId.includes('-verify') && done) {
+      toast.info('Verification photo required - please upload via Documents panel');
+    }
+  }, []);
+  
+  // Update task assignee
+  const updateTaskAssignee = useCallback(async (taskId: string, assigneeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('project_tasks')
+        .update({ assigned_to: assigneeId })
+        .eq('id', taskId);
+      
+      if (error) throw error;
+      
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? { ...task, assigned_to: assigneeId } : task
+      ));
+      
+      toast.success('Assignee updated');
+    } catch (err) {
+      console.error('[Stage8] Failed to update assignee:', err);
+      toast.error('Failed to update assignee');
+    }
+  }, []);
+  
+  // Handle file upload
+  const handleFileUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0 || !canEdit) return;
+    
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${file.name}`;
+        const filePath = `${projectId}/${fileName}`;
+        
+        // Upload to storage
+        const { error: uploadError } = await supabase.storage
+          .from('project-documents')
+          .upload(filePath, file);
+        
+        if (uploadError) throw uploadError;
+        
+        // Create document record
+        const { data: docRecord, error: insertError } = await supabase
+          .from('project_documents')
+          .insert({
+            project_id: projectId,
+            file_name: file.name,
+            file_path: filePath,
+            file_size: file.size,
+          })
+          .select()
+          .single();
+        
+        if (insertError) throw insertError;
+        
+        // Add to local state with category
+        const newDoc: DocumentWithCategory = {
+          id: docRecord.id,
+          file_name: file.name,
+          file_path: filePath,
+          category: selectedUploadCategory,
+          uploadedAt: new Date().toISOString(),
+        };
+        
+        setDocuments(prev => [...prev, newDoc]);
+        
+        // Create citation for cross-panel sync
+        const newCitation: Citation = {
+          id: `doc-${docRecord.id}`,
+          cite_type: selectedUploadCategory === 'verification' ? 'VISUAL_VERIFICATION' : 'SITE_PHOTO',
+          question_key: 'document_upload',
+          answer: `Uploaded: ${file.name}`,
+          value: filePath,
+          timestamp: new Date().toISOString(),
+          metadata: {
+            category: selectedUploadCategory,
+            fileName: file.name,
+            fileSize: file.size,
+          },
+        };
+        
+        setCitations(prev => [...prev, newCitation]);
+      }
+      
+      toast.success(`Uploaded ${files.length} file(s)`);
+    } catch (err) {
+      console.error('[Stage8] Upload failed:', err);
+      toast.error('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [projectId, selectedUploadCategory, canEdit]);
+  
+  // Handle drag and drop
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  }, []);
+  
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  }, []);
+  
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    handleFileUpload(e.dataTransfer.files);
+  }, [handleFileUpload]);
+  
+  // Generate contract preview data
+  const generateContractPreviewData = useMemo(() => {
+    const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
+    const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+    const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+    const timelineCitation = citations.find(c => c.cite_type === 'TIMELINE');
+    const endDateCitation = citations.find(c => c.cite_type === 'END_DATE');
+    
+    return {
+      projectName: projectData?.name || 'Untitled Project',
+      projectAddress: locationCitation?.answer || projectData?.address || 'Address not set',
+      gfa: gfaCitation?.value || 'Not specified',
+      gfaUnit: gfaCitation?.metadata?.gfa_unit || 'sq ft',
+      trade: tradeCitation?.answer || 'General Construction',
+      startDate: timelineCitation?.metadata?.start_date || 'Not set',
+      endDate: endDateCitation?.value || 'Not set',
+      teamSize: teamMembers.length,
+      taskCount: tasks.length,
+    };
+  }, [citations, projectData, teamMembers.length, tasks.length]);
+  
   // Generate AI Analysis
   const handleAIAnalysis = useCallback(async () => {
     setIsGeneratingAI(true);
     try {
-      // TODO: Call AI analysis edge function
       toast.info('AI Analysis feature coming soon!');
       await new Promise(r => setTimeout(r, 1500));
     } finally {
@@ -516,7 +814,6 @@ export default function Stage8FinalReview({
   const handleComplete = useCallback(async () => {
     setIsSaving(true);
     try {
-      // Update project status
       await supabase
         .from('projects')
         .update({ status: 'active' })
@@ -536,13 +833,12 @@ export default function Stage8FinalReview({
   const renderCitationValue = useCallback((citation: Citation) => {
     const isEditing = editingField === citation.id;
     
-    // Format based on type
     let displayValue = citation.answer;
     
     if (citation.cite_type === 'TIMELINE' && citation.metadata?.start_date) {
       try {
         displayValue = format(parseISO(citation.metadata.start_date as string), 'MMM dd, yyyy');
-      } catch (e) {
+      } catch {
         displayValue = citation.metadata.start_date as string;
       }
     }
@@ -550,7 +846,7 @@ export default function Stage8FinalReview({
     if (citation.cite_type === 'END_DATE' && typeof citation.value === 'string') {
       try {
         displayValue = format(parseISO(citation.value), 'MMM dd, yyyy');
-      } catch (e) {
+      } catch {
         displayValue = citation.value;
       }
     }
@@ -633,11 +929,330 @@ export default function Stage8FinalReview({
     );
   }, []);
   
+  // Get member name by userId
+  const getMemberName = useCallback((memberId: string) => {
+    const member = teamMembers.find(m => m.userId === memberId);
+    return member?.name || 'Unassigned';
+  }, [teamMembers]);
+  
+  // Render Panel 5 - Timeline with Granular Tasklist
+  const renderPanel5Content = useCallback(() => {
+    const panelCitations = getCitationsForPanel(['TIMELINE', 'END_DATE', 'DNA_FINALIZED']);
+    
+    // Group tasks by phase
+    const tasksByPhase = TASK_PHASES.map(phase => ({
+      ...phase,
+      tasks: tasks.filter(t => t.phase === phase.key),
+    }));
+    
+    return (
+      <div className="space-y-4">
+        {/* Date citations */}
+        {panelCitations.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {panelCitations.map(c => (
+              <div key={c.id} className="p-2 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20">
+                <p className="text-[10px] text-muted-foreground uppercase">{c.cite_type.replace(/_/g, ' ')}</p>
+                <span className="text-sm font-medium">{renderCitationValue(c)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Task Phases with Checklists */}
+        <div className="space-y-3">
+          {tasksByPhase.map(phase => (
+            <div key={phase.key} className={cn("rounded-lg border overflow-hidden", phase.bgColor)}>
+              {/* Phase Header */}
+              <button
+                onClick={() => togglePhaseExpansion(phase.key)}
+                className="w-full flex items-center justify-between p-3 hover:bg-black/5 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className={cn("h-6 w-6 rounded flex items-center justify-center", phase.bgColor)}>
+                    <ClipboardList className={cn("h-3.5 w-3.5", phase.color)} />
+                  </div>
+                  <span className={cn("font-medium text-sm", phase.color)}>{phase.label}</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {phase.tasks.length} tasks
+                  </Badge>
+                </div>
+                {expandedPhases.has(phase.key) ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+              
+              {/* Phase Tasks */}
+              <AnimatePresence>
+                {expandedPhases.has(phase.key) && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-3 pt-0 space-y-2">
+                      {phase.tasks.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic py-2">No tasks in this phase</p>
+                      ) : (
+                        phase.tasks.map(task => (
+                          <div key={task.id} className="bg-background rounded-lg border p-3 space-y-2">
+                            {/* Task Header */}
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium truncate flex-1">{task.title}</span>
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant={task.status === 'completed' ? 'default' : 'secondary'}
+                                  className={cn("text-[10px]", task.status === 'completed' && 'bg-green-500')}
+                                >
+                                  {task.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            {/* Assignee Selector */}
+                            <div className="flex items-center gap-2">
+                              <User className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Select
+                                value={task.assigned_to}
+                                onValueChange={(value) => updateTaskAssignee(task.id, value)}
+                                disabled={!canEdit}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-40">
+                                  <SelectValue placeholder="Assign to..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {teamMembers.map(member => (
+                                    <SelectItem key={member.userId} value={member.userId} className="text-xs">
+                                      {member.name} ({member.role})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {/* Checklist */}
+                            <div className="pl-2 space-y-1.5 border-l-2 border-muted">
+                              {task.checklist.map(item => (
+                                <div key={item.id} className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={item.id}
+                                    checked={item.done}
+                                    onCheckedChange={(checked) => updateChecklistItem(task.id, item.id, !!checked)}
+                                    disabled={!canEdit}
+                                    className="h-4 w-4"
+                                  />
+                                  <label
+                                    htmlFor={item.id}
+                                    className={cn(
+                                      "text-xs cursor-pointer",
+                                      item.done && "line-through text-muted-foreground"
+                                    )}
+                                  >
+                                    {item.text}
+                                  </label>
+                                  {item.id.includes('-verify') && item.done && (
+                                    <Camera className="h-3 w-3 text-purple-500" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }, [
+    getCitationsForPanel,
+    tasks,
+    expandedPhases,
+    togglePhaseExpansion,
+    teamMembers,
+    canEdit,
+    updateTaskAssignee,
+    updateChecklistItem,
+    renderCitationValue,
+  ]);
+  
+  // Render Panel 6 - Documents with Upload and Contract Generator
+  const renderPanel6Content = useCallback(() => {
+    // Group documents by category
+    const docsByCategory = DOCUMENT_CATEGORIES.map(cat => ({
+      ...cat,
+      documents: documents.filter(d => d.category === cat.key),
+    }));
+    
+    return (
+      <div className="space-y-4">
+        {/* Upload Section */}
+        {canEdit && (
+          <div className="space-y-3">
+            {/* Category Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Upload to:</span>
+              <Select
+                value={selectedUploadCategory}
+                onValueChange={(v) => setSelectedUploadCategory(v as DocumentCategory)}
+              >
+                <SelectTrigger className="h-8 w-32 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOCUMENT_CATEGORIES.map(cat => (
+                    <SelectItem key={cat.key} value={cat.key} className="text-xs">
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Drag & Drop Zone */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={cn(
+                "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer",
+                isDraggingOver 
+                  ? "border-pink-500 bg-pink-50 dark:bg-pink-950/30" 
+                  : "border-muted-foreground/30 hover:border-pink-400 hover:bg-pink-50/50 dark:hover:bg-pink-950/20"
+              )}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFileUpload(e.target.files)}
+              />
+              {isUploading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-pink-500" />
+                  <span className="text-sm text-pink-600">Uploading...</span>
+                </div>
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Drag & drop files here or <span className="text-pink-600 font-medium">click to browse</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PDF, Images, Blueprints, Contracts
+                  </p>
+                </>
+              )}
+            </div>
+            
+            {/* Upload Button */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="w-full gap-2 border-pink-300 text-pink-700 hover:bg-pink-50"
+            >
+              <FileUp className="h-4 w-4" />
+              Upload Document
+            </Button>
+          </div>
+        )}
+        
+        {/* Contract Generator Button */}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowContractPreview(true)}
+          className="w-full gap-2 border-pink-400 text-pink-700 hover:bg-pink-50"
+        >
+          <FileCheck className="h-4 w-4" />
+          Contract Generator Preview
+        </Button>
+        
+        {/* Documents by Category */}
+        <div className="space-y-3">
+          {docsByCategory.map(cat => (
+            <div key={cat.key}>
+              <div className="flex items-center gap-2 mb-2">
+                <cat.icon className={cn("h-4 w-4", cat.color)} />
+                <span className={cn("text-xs font-medium", cat.color)}>{cat.label}</span>
+                <Badge variant="outline" className="text-[10px]">{cat.documents.length}</Badge>
+              </div>
+              {cat.documents.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic pl-6">No {cat.label.toLowerCase()} documents</p>
+              ) : (
+                <div className="space-y-1 pl-6">
+                  {cat.documents.slice(0, 3).map(doc => (
+                    <div key={doc.id} className="flex items-center gap-2 p-2 rounded bg-muted/30 hover:bg-muted/50">
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs truncate flex-1">{doc.file_name}</span>
+                      {doc.citationId && (
+                        <Badge variant="outline" className="text-[8px]">cited</Badge>
+                      )}
+                    </div>
+                  ))}
+                  {cat.documents.length > 3 && (
+                    <p className="text-[10px] text-muted-foreground">+{cat.documents.length - 3} more</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* Contracts Section */}
+        {contracts.length > 0 && (
+          <div className="pt-3 border-t">
+            <div className="flex items-center gap-2 mb-2">
+              <FileCheck className="h-4 w-4 text-pink-600" />
+              <span className="text-xs font-medium text-pink-600">Contracts</span>
+              <Badge variant="outline" className="text-[10px]">{contracts.length}</Badge>
+            </div>
+            <div className="space-y-1">
+              {contracts.map(contract => (
+                <div key={contract.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
+                  <span className="text-xs">#{contract.contract_number}</span>
+                  <div className="flex items-center gap-2">
+                    {canViewFinancials && contract.total_amount && (
+                      <span className="text-xs text-muted-foreground">${contract.total_amount.toLocaleString()}</span>
+                    )}
+                    <Badge variant="outline" className="text-[10px]">{contract.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }, [
+    documents,
+    contracts,
+    canEdit,
+    canViewFinancials,
+    isUploading,
+    isDraggingOver,
+    selectedUploadCategory,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleFileUpload,
+  ]);
+  
   // Render panel content based on panel ID
   const renderPanelContent = useCallback((panel: PanelConfig) => {
     const panelCitations = getCitationsForPanel(panel.dataKeys);
     
-    // Special handling for different panels
     switch (panel.id) {
       case 'panel-4-team':
         return (
@@ -678,78 +1293,10 @@ export default function Stage8FinalReview({
         );
       
       case 'panel-5-timeline':
-        return (
-          <div className="space-y-3">
-            <div className="text-sm font-medium text-muted-foreground mb-2">
-              Tasks ({tasks.length})
-            </div>
-            {tasks.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No tasks created</p>
-            ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {tasks.slice(0, 5).map(task => (
-                  <div key={task.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                    <span className="text-sm truncate flex-1">{task.title}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px]">
-                        {task.priority}
-                      </Badge>
-                      <Badge 
-                        variant={task.status === 'completed' ? 'default' : 'secondary'} 
-                        className={cn("text-[10px]", task.status === 'completed' && 'bg-green-500')}
-                      >
-                        {task.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-                {tasks.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center">+{tasks.length - 5} more tasks</p>
-                )}
-              </div>
-            )}
-            {panelCitations.length > 0 && (
-              <div className="pt-3 border-t space-y-2">
-                {panelCitations.map(c => (
-                  <div key={c.id} className="group text-xs">
-                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
-                    {renderCitationValue(c)}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
+        return renderPanel5Content();
       
       case 'panel-6-documents':
-        return (
-          <div className="space-y-3">
-            <div className="text-sm font-medium text-muted-foreground mb-2">
-              Documents ({documents.length}) • Contracts ({contracts.length})
-            </div>
-            {documents.length === 0 && contracts.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No documents or contracts</p>
-            ) : (
-              <div className="space-y-2">
-                {documents.slice(0, 3).map(doc => (
-                  <div key={doc.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                    <FileText className="h-4 w-4 text-pink-500" />
-                    <span className="text-sm truncate">{doc.file_name}</span>
-                  </div>
-                ))}
-                {contracts.slice(0, 2).map(contract => (
-                  <div key={contract.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <FileCheck className="h-4 w-4 text-pink-600" />
-                      <span className="text-sm">Contract #{contract.contract_number}</span>
-                    </div>
-                    <Badge variant="outline" className="text-[10px]">{contract.status}</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
+        return renderPanel6Content();
       
       case 'panel-7-weather':
         return (
@@ -837,7 +1384,6 @@ export default function Stage8FinalReview({
         );
       
       default:
-        // Default: show citations
         return (
           <div className="space-y-2">
             {panelCitations.length === 0 ? (
@@ -865,12 +1411,12 @@ export default function Stage8FinalReview({
   }, [
     getCitationsForPanel,
     teamMembers,
-    tasks,
-    documents,
-    contracts,
     weatherData,
+    contracts,
     canViewFinancials,
     renderCitationValue,
+    renderPanel5Content,
+    renderPanel6Content,
   ]);
   
   // Render fullscreen panel content
@@ -879,7 +1425,6 @@ export default function Stage8FinalReview({
     
     return (
       <div className="space-y-6">
-        {/* All Citations */}
         {panelCitations.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -912,7 +1457,6 @@ export default function Stage8FinalReview({
           </div>
         )}
         
-        {/* Panel-specific extra content */}
         {panel.id === 'panel-4-team' && teamMembers.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -937,70 +1481,15 @@ export default function Stage8FinalReview({
           </div>
         )}
         
-        {panel.id === 'panel-5-timeline' && tasks.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              All Tasks ({tasks.length})
-            </h4>
-            <div className="grid gap-2">
-              {tasks.map(task => (
-                <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                  <span className="font-medium">{task.title}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{task.priority}</Badge>
-                    <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
-                      {task.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {panel.id === 'panel-5-timeline' && (
+          <div className="overflow-y-auto max-h-[50vh]">
+            {renderPanel5Content()}
           </div>
         )}
         
         {panel.id === 'panel-6-documents' && (
-          <div className="space-y-4">
-            {documents.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4" />
-                  Documents ({documents.length})
-                </h4>
-                <div className="grid gap-2">
-                  {documents.map(doc => (
-                    <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                      <FileText className="h-5 w-5 text-pink-500" />
-                      <span className="font-medium">{doc.file_name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {contracts.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <FileCheck className="h-4 w-4" />
-                  Contracts ({contracts.length})
-                </h4>
-                <div className="grid gap-2">
-                  {contracts.map(contract => (
-                    <div key={contract.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <FileCheck className="h-5 w-5 text-pink-600" />
-                        <span className="font-medium">#{contract.contract_number}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{contract.status}</Badge>
-                        {contract.total_amount && (
-                          <span className="font-semibold">${contract.total_amount.toLocaleString()}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="overflow-y-auto max-h-[50vh]">
+            {renderPanel6Content()}
           </div>
         )}
         
@@ -1057,12 +1546,12 @@ export default function Stage8FinalReview({
         )}
       </div>
     );
-  }, [getCitationsForPanel, renderCitationValue, teamMembers, tasks, documents, contracts, weatherData, canViewFinancials]);
+  }, [getCitationsForPanel, renderCitationValue, teamMembers, weatherData, contracts, canViewFinancials, renderPanel5Content, renderPanel6Content]);
   
   // Render single panel
   const renderPanel = useCallback((panel: PanelConfig) => {
     const hasAccess = hasAccessToTier(panel.visibilityTier);
-    const isActive = activePanel === panel.id;
+    const isCollapsed = collapsedPanels.has(panel.id);
     const Icon = panel.icon;
     const panelCitations = getCitationsForPanel(panel.dataKeys);
     const dataCount = panelCitations.length + 
@@ -1108,11 +1597,9 @@ export default function Stage8FinalReview({
         key={panel.id}
         className={cn(
           "relative rounded-xl border-2 overflow-hidden transition-all duration-200",
-          panel.borderColor,
-          isActive && "ring-2 ring-offset-2",
-          isActive && panel.color.replace('text-', 'ring-')
+          panel.borderColor
         )}
-        whileHover={{ scale: 1.02 }}
+        whileHover={{ scale: 1.01 }}
         layout
       >
         {/* Fullscreen Button */}
@@ -1128,10 +1615,10 @@ export default function Stage8FinalReview({
           <Maximize2 className="h-4 w-4" />
         </Button>
         
-        {/* Panel Header */}
+        {/* Panel Header - Clickable to collapse/expand */}
         <div 
-          className={cn("p-3 border-b cursor-pointer", panel.bgColor)}
-          onClick={() => setActivePanel(isActive ? null : panel.id)}
+          className={cn("p-3 border-b cursor-pointer select-none", panel.bgColor)}
+          onClick={() => togglePanelCollapse(panel.id)}
         >
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2">
@@ -1149,10 +1636,10 @@ export default function Stage8FinalReview({
             </div>
             <div className="flex items-center gap-2">
               {getTierBadge(panel.visibilityTier)}
-              {isActive ? (
-                <ChevronDown className={cn("h-4 w-4", panel.color)} />
-              ) : (
+              {isCollapsed ? (
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className={cn("h-4 w-4", panel.color)} />
               )}
             </div>
           </div>
@@ -1160,7 +1647,7 @@ export default function Stage8FinalReview({
         
         {/* Panel Content - Collapsible */}
         <AnimatePresence>
-          {isActive && (
+          {!isCollapsed && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -1168,7 +1655,7 @@ export default function Stage8FinalReview({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="p-4 bg-background">
+              <div className="p-4 bg-background max-h-80 overflow-y-auto">
                 {renderPanelContent(panel)}
               </div>
             </motion.div>
@@ -1178,7 +1665,7 @@ export default function Stage8FinalReview({
     );
   }, [
     hasAccessToTier,
-    activePanel,
+    collapsedPanels,
     getCitationsForPanel,
     teamMembers,
     tasks,
@@ -1186,6 +1673,7 @@ export default function Stage8FinalReview({
     contracts,
     getTierBadge,
     renderPanelContent,
+    togglePanelCollapse,
     t,
   ]);
   
@@ -1289,6 +1777,73 @@ export default function Stage8FinalReview({
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Contract Preview Dialog */}
+      <Dialog open={showContractPreview} onOpenChange={setShowContractPreview}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-pink-600" />
+              Contract Generator Preview
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Project Name</p>
+                <p className="font-medium">{generateContractPreviewData.projectName}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Address</p>
+                <p className="font-medium">{generateContractPreviewData.projectAddress}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">GFA</p>
+                <p className="font-medium">{String(generateContractPreviewData.gfa)} {generateContractPreviewData.gfaUnit}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Trade</p>
+                <p className="font-medium">{generateContractPreviewData.trade}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Start Date</p>
+                <p className="font-medium">{String(generateContractPreviewData.startDate)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">End Date</p>
+                <p className="font-medium">{String(generateContractPreviewData.endDate)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Team Size</p>
+                <p className="font-medium">{generateContractPreviewData.teamSize} members</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Tasks</p>
+                <p className="font-medium">{generateContractPreviewData.taskCount} scheduled</p>
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t">
+              <p className="text-xs text-muted-foreground mb-2">This data will be used to generate a construction contract template.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowContractPreview(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="gap-2 bg-pink-600 hover:bg-pink-700"
+              onClick={() => {
+                toast.info('Contract generation feature coming soon!');
+                setShowContractPreview(false);
+              }}
+            >
+              <FileCheck className="h-4 w-4" />
+              Generate Contract
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
