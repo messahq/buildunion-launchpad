@@ -1587,14 +1587,8 @@ export default function Stage8FinalReview({
                                    disabled={!canEdit}
                                  >
                                    <SelectTrigger className="h-7 text-xs w-40">
-                                     <SelectValue 
-                                       placeholder="Assign to..." 
-                                       defaultValue={
-                                         teamMembers.find(m => m.userId === task.assigned_to)?.name 
-                                         || 'Assign to...'
-                                       }
-                                     />
-                                   </SelectTrigger>
+                                      <SelectValue placeholder="Assign to..." />
+                                    </SelectTrigger>
                                    <SelectContent>
                                      {teamMembers.map(member => (
                                        <SelectItem key={member.userId} value={member.userId} className="text-xs">
