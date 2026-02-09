@@ -1072,8 +1072,9 @@ export default function Stage8FinalReview({
     }
   }, []);
   
-  // ✓ Get public URL for document preview
+  // ✓ Get public URL for document preview (bucket is now public)
   const getDocumentPreviewUrl = useCallback((filePath: string) => {
+    // Use public URL for the now-public bucket
     const { data } = supabase.storage
       .from('project-documents')
       .getPublicUrl(filePath);
