@@ -173,8 +173,6 @@ export function TeamChatPanel({
 
     setIsUploading(true);
     try {
-      // Upload to project-documents bucket
-      const ext = file.name.split(".").pop();
       const filePath = `${projectId}/chat/${Date.now()}-${file.name}`;
 
       const { error: uploadError } = await supabase.storage
@@ -183,7 +181,6 @@ export function TeamChatPanel({
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("project-documents")
         .getPublicUrl(filePath);
@@ -230,16 +227,16 @@ export function TeamChatPanel({
   const chatHeight = compact ? "h-[280px]" : "h-[400px]";
 
   return (
-    <div className="flex flex-col rounded-xl border border-teal-500/20 bg-gradient-to-br from-teal-950/15 to-cyan-950/10 overflow-hidden">
+    <div className="flex flex-col rounded-xl border border-amber-400/25 bg-gradient-to-br from-amber-50/90 via-orange-50/70 to-yellow-50/80 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-yellow-950/25 overflow-hidden shadow-sm">
       {/* Chat Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-teal-500/15 bg-gradient-to-r from-teal-950/25 to-cyan-950/20">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-amber-300/30 dark:border-amber-500/15 bg-gradient-to-r from-amber-100/80 to-orange-100/60 dark:from-amber-950/40 dark:to-orange-950/30">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
-          <span className="text-[11px] font-bold text-teal-900 dark:text-teal-100 uppercase tracking-wider">
+          <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.5)]" />
+          <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">
             Project Chat
           </span>
         </div>
-        <span className="text-[9px] text-teal-700 dark:text-teal-400/60">
+        <span className="text-[9px] text-amber-700/70 dark:text-amber-400/60">
           {messages.length} message{messages.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -248,12 +245,12 @@ export function TeamChatPanel({
       <div className={cn("overflow-y-auto px-3 py-2 space-y-2", chatHeight)} ref={scrollRef}>
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-5 w-5 animate-spin text-teal-500/50" />
+            <Loader2 className="h-5 w-5 animate-spin text-amber-500/50" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <Send className="h-6 w-6 text-teal-500/30 mb-2" />
-            <p className="text-[11px] text-teal-700 dark:text-teal-400/50">
+            <Send className="h-6 w-6 text-amber-400/40 mb-2" />
+            <p className="text-[11px] text-amber-800/60 dark:text-amber-400/50">
               No messages yet. Start the conversation!
             </p>
           </div>
@@ -292,17 +289,17 @@ export function TeamChatPanel({
                     className={cn(
                       "max-w-[75%] rounded-xl px-3 py-2 space-y-1",
                       isOwn
-                        ? "bg-gradient-to-br from-teal-500/20 to-cyan-500/15 border border-teal-500/20"
-                        : "bg-gradient-to-br from-teal-950/20 to-cyan-950/15 border border-teal-500/10"
+                        ? "bg-gradient-to-br from-amber-200/60 to-orange-200/50 dark:from-amber-500/20 dark:to-orange-500/15 border border-amber-300/40 dark:border-amber-500/20"
+                        : "bg-gradient-to-br from-amber-100/50 to-yellow-100/40 dark:from-amber-950/25 dark:to-yellow-950/20 border border-amber-200/30 dark:border-amber-500/10"
                     )}
                   >
                     {/* Sender name */}
                     {showAvatar && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-teal-900 dark:text-teal-200">
+                        <span className="text-[10px] font-semibold text-amber-900 dark:text-amber-200">
                           {msg.sender_name}
                         </span>
-                        <span className="text-[8px] text-teal-600 dark:text-teal-400/50 capitalize">
+                        <span className="text-[8px] text-amber-600/70 dark:text-amber-400/50 capitalize">
                           {msg.sender_role}
                         </span>
                       </div>
@@ -317,7 +314,7 @@ export function TeamChatPanel({
                         className="block"
                       >
                         {isImage(msg.attachment_name) ? (
-                          <div className="rounded-lg overflow-hidden border border-teal-500/15 mt-1">
+                          <div className="rounded-lg overflow-hidden border border-amber-300/25 dark:border-amber-500/15 mt-1">
                             <img
                               src={msg.attachment_url}
                               alt={msg.attachment_name || "attachment"}
@@ -325,9 +322,9 @@ export function TeamChatPanel({
                             />
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-teal-500/10 border border-teal-500/15 mt-1">
-                            <FileText className="h-4 w-4 text-teal-600 dark:text-teal-300" />
-                            <span className="text-[10px] text-teal-800 dark:text-teal-200 truncate">
+                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-200/40 dark:bg-amber-500/10 border border-amber-300/30 dark:border-amber-500/15 mt-1">
+                            <FileText className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                            <span className="text-[10px] text-amber-900 dark:text-amber-200 truncate">
                               {msg.attachment_name}
                             </span>
                           </div>
@@ -337,13 +334,13 @@ export function TeamChatPanel({
 
                     {/* Message text */}
                     {msg.message && !msg.message.startsWith("📎") && (
-                      <p className="text-[11px] text-teal-900 dark:text-white/85 leading-relaxed">
+                      <p className="text-[11px] text-amber-950 dark:text-white/85 leading-relaxed">
                         {msg.message}
                       </p>
                     )}
 
                     {/* Timestamp */}
-                    <p className="text-[8px] text-teal-600 dark:text-teal-500/50 text-right">
+                    <p className="text-[8px] text-amber-600/60 dark:text-amber-500/50 text-right">
                       {format(new Date(msg.created_at), "HH:mm")}
                     </p>
                   </div>
@@ -356,7 +353,7 @@ export function TeamChatPanel({
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-teal-500/15 p-2 bg-gradient-to-r from-teal-950/20 to-cyan-950/15">
+      <div className="border-t border-amber-300/30 dark:border-amber-500/15 p-2 bg-gradient-to-r from-amber-100/70 to-orange-100/50 dark:from-amber-950/35 dark:to-orange-950/25">
         <div className="flex items-center gap-1.5">
           {/* File upload button */}
           <Button
@@ -365,7 +362,7 @@ export function TeamChatPanel({
             variant="ghost"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="h-8 w-8 p-0 text-teal-600 dark:text-teal-400/70 hover:text-teal-800 dark:hover:text-teal-200 hover:bg-teal-500/10"
+            className="h-8 w-8 p-0 text-amber-700 dark:text-amber-400/70 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-200/40 dark:hover:bg-amber-500/10"
           >
             {isUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -392,7 +389,7 @@ export function TeamChatPanel({
               }
             }}
             placeholder="Type a message..."
-            className="flex-1 h-8 text-[11px] bg-teal-950/10 border-teal-500/15 placeholder:text-teal-500/40 text-teal-900 dark:text-white/90 focus-visible:ring-teal-500/30"
+            className="flex-1 h-8 text-[11px] bg-white/60 dark:bg-amber-950/20 border-amber-300/30 dark:border-amber-500/15 placeholder:text-amber-500/50 text-amber-950 dark:text-white/90 focus-visible:ring-amber-400/30"
             disabled={isSending}
           />
 
@@ -402,7 +399,7 @@ export function TeamChatPanel({
             size="sm"
             onClick={handleSend}
             disabled={isSending || (!newMessage.trim() && !isUploading)}
-            className="h-8 w-8 p-0 bg-gradient-to-br from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white shadow-md disabled:opacity-30"
+            className="h-8 w-8 p-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white shadow-md disabled:opacity-30"
           >
             <Send className="h-3.5 w-3.5" />
           </Button>
