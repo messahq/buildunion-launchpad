@@ -97,6 +97,11 @@ import {
   logCriticalError,
 } from "@/lib/projectPersistence";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import { 
+  downloadContractPDF, 
+  buildContractHTML,
+  type ContractTemplateData 
+} from "@/lib/pdfGenerator";
 
 // ============================================
 // VISIBILITY TIERS
@@ -373,6 +378,8 @@ export default function Stage8FinalReview({
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [selectedUploadCategory, setSelectedUploadCategory] = useState<DocumentCategory>('technical');
+  const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+  const [isSendingContract, setIsSendingContract] = useState(false);
   
   const [isFinancialLocked, setIsFinancialLocked] = useState(true);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
@@ -961,18 +968,29 @@ export default function Stage8FinalReview({
     const timelineCitation = citations.find(c => c.cite_type === 'TIMELINE');
     const endDateCitation = citations.find(c => c.cite_type === 'END_DATE');
     
+    // Generate a unique contract number
+    const contractNumber = `BU-${projectId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+    
+    // Get GFA as number
+    const gfaValue = typeof gfaCitation?.value === 'number' 
+      ? gfaCitation.value 
+      : typeof gfaCitation?.metadata?.gfa_value === 'number'
+        ? gfaCitation.metadata.gfa_value
+        : 0;
+    
     return {
+      contractNumber,
       projectName: projectData?.name || 'Untitled Project',
       projectAddress: locationCitation?.answer || projectData?.address || 'Address not set',
-      gfa: gfaCitation?.value || 'Not specified',
-      gfaUnit: gfaCitation?.metadata?.gfa_unit || 'sq ft',
+      gfa: gfaValue,
+      gfaUnit: (gfaCitation?.metadata?.gfa_unit as string) || 'sq ft',
       trade: tradeCitation?.answer || 'General Construction',
       startDate: timelineCitation?.metadata?.start_date || 'Not set',
       endDate: endDateCitation?.value || 'Not set',
       teamSize: teamMembers.length,
       taskCount: tasks.length,
     };
-  }, [citations, projectData, teamMembers.length, tasks.length]);
+  }, [citations, projectData, teamMembers.length, tasks.length, projectId]);
   
   // Generate AI Analysis
   const handleAIAnalysis = useCallback(async () => {
@@ -1411,16 +1429,7 @@ export default function Stage8FinalReview({
           </div>
         )}
         
-        {/* Contract Generator Button */}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setShowContractPreview(true)}
-          className="w-full gap-2 border-pink-400 text-pink-700 hover:bg-pink-50"
-        >
-          <FileCheck className="h-4 w-4" />
-          Contract Generator Preview
-        </Button>
+        {/* Contract Templates - removed redundant "Preview" button - type selection opens template directly */}
         
         {/* Documents by Category with Citation Badges */}
         <div className="space-y-3">
@@ -2843,68 +2852,169 @@ export default function Stage8FinalReview({
         </DialogContent>
       </Dialog>
       
-      {/* Contract Preview Dialog */}
+      {/* Contract Template Dialog - Full Preview with PDF & Send */}
       <Dialog open={showContractPreview} onOpenChange={setShowContractPreview}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileCheck className="h-5 w-5 text-pink-600" />
-              Contract Generator Preview
-            </DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-4 border-b bg-gradient-to-r from-pink-50/80 to-rose-50/80 dark:from-pink-950/30 dark:to-rose-950/30 -mx-6 -mt-6 px-6 pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center">
+                <FileCheck className="h-5 w-5 text-pink-600" />
+              </div>
+              <div className="flex-1">
+                <DialogTitle className="text-lg text-pink-700 dark:text-pink-300">
+                  {selectedContractType ? 
+                    `${selectedContractType.charAt(0).toUpperCase() + selectedContractType.slice(1)} Contract Template` :
+                    'Contract Template'
+                  }
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">Contract #{generateContractPreviewData.contractNumber}</p>
+              </div>
+              <Badge className="bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                {selectedContractType === 'residential' ? '🏠' : 
+                 selectedContractType === 'commercial' ? '🏢' :
+                 selectedContractType === 'industrial' ? '🏭' : '🔨'}
+                {selectedContractType?.toUpperCase()}
+              </Badge>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Project Name</p>
-                <p className="font-medium">{generateContractPreviewData.projectName}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Address</p>
-                <p className="font-medium">{generateContractPreviewData.projectAddress}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">GFA</p>
-                <p className="font-medium">{String(generateContractPreviewData.gfa)} {generateContractPreviewData.gfaUnit}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Trade</p>
-                <p className="font-medium">{generateContractPreviewData.trade}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Start Date</p>
-                <p className="font-medium">{String(generateContractPreviewData.startDate)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">End Date</p>
-                <p className="font-medium">{String(generateContractPreviewData.endDate)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Team Size</p>
-                <p className="font-medium">{generateContractPreviewData.teamSize} members</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Tasks</p>
-                <p className="font-medium">{generateContractPreviewData.taskCount} scheduled</p>
+          
+          {/* Contract Preview Content */}
+          <div className="flex-1 overflow-y-auto py-4 space-y-4">
+            {/* Project Details */}
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <h4 className="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">Project Details</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div><p className="text-xs text-muted-foreground">Project Name</p><p className="font-medium">{generateContractPreviewData.projectName}</p></div>
+                <div><p className="text-xs text-muted-foreground">Trade / Service</p><p className="font-medium">{generateContractPreviewData.trade}</p></div>
+                <div><p className="text-xs text-muted-foreground">Address</p><p className="font-medium">{generateContractPreviewData.projectAddress}</p></div>
+                <div><p className="text-xs text-muted-foreground">Gross Floor Area</p><p className="font-medium">{String(generateContractPreviewData.gfa)} {generateContractPreviewData.gfaUnit}</p></div>
               </div>
             </div>
             
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground mb-2">This data will be used to generate a construction contract template.</p>
+            {/* Timeline & Resources */}
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <h4 className="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">Timeline & Resources</h4>
+              <div className="grid grid-cols-4 gap-4">
+                <div><p className="text-xs text-muted-foreground">Start Date</p><p className="font-medium">{String(generateContractPreviewData.startDate)}</p></div>
+                <div><p className="text-xs text-muted-foreground">End Date</p><p className="font-medium">{String(generateContractPreviewData.endDate)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Team Size</p><p className="font-medium">{generateContractPreviewData.teamSize} members</p></div>
+                <div><p className="text-xs text-muted-foreground">Tasks</p><p className="font-medium">{generateContractPreviewData.taskCount} scheduled</p></div>
+              </div>
+            </div>
+            
+            {/* Team Members to Send */}
+            {teamMembers.length > 0 && (
+              <div className="p-4 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
+                <h4 className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Send Contract To</h4>
+                <div className="space-y-2">
+                  {teamMembers.map(member => (
+                    <div key={member.id} className="flex items-center justify-between p-2 rounded bg-background/50">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-teal-500 flex items-center justify-center text-white text-[10px] font-bold">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm">{member.name}</span>
+                        <Badge variant="outline" className="text-[9px]">{member.role}</Badge>
+                      </div>
+                      <Checkbox defaultChecked className="h-4 w-4" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Standard Terms Preview */}
+            <div className="p-4 rounded-lg bg-muted/30 border border-dashed">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Standard Terms (Preview)</h4>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Warranty: {selectedContractType === 'commercial' ? '2 years' : selectedContractType === 'industrial' ? '3 years' : selectedContractType === 'renovation' ? '6 months' : '1 year'} from completion</p>
+                <p>• Payment: {selectedContractType === 'commercial' ? '30% deposit, 40% midpoint, 30% completion' : selectedContractType === 'industrial' ? '25% phases' : '50% deposit, 50% completion'}</p>
+                <p>• Changes must be agreed in writing by both parties</p>
+                <p>• Contractor maintains liability insurance and WSIB coverage</p>
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          
+          <DialogFooter className="pt-4 border-t gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setShowContractPreview(false)}>
               Cancel
             </Button>
+            
+            {/* Download PDF */}
             <Button 
-              className="gap-2 bg-pink-600 hover:bg-pink-700"
-              onClick={() => {
-                toast.info('Contract generation feature coming soon!');
-                setShowContractPreview(false);
+              variant="outline"
+              className="gap-2"
+              disabled={isGeneratingContract}
+              onClick={async () => {
+                setIsGeneratingContract(true);
+                try {
+                  const contractData: ContractTemplateData = {
+                    contractNumber: generateContractPreviewData.contractNumber,
+                    contractType: (selectedContractType as ContractTemplateData['contractType']) || 'residential',
+                    projectName: generateContractPreviewData.projectName,
+                    projectAddress: generateContractPreviewData.projectAddress,
+                    gfa: generateContractPreviewData.gfa,
+                    gfaUnit: generateContractPreviewData.gfaUnit,
+                    trade: generateContractPreviewData.trade,
+                    startDate: String(generateContractPreviewData.startDate),
+                    endDate: String(generateContractPreviewData.endDate),
+                    teamSize: generateContractPreviewData.teamSize,
+                    taskCount: generateContractPreviewData.taskCount,
+                  };
+                  await downloadContractPDF(contractData);
+                  toast.success('Contract PDF downloaded!');
+                } catch (err) {
+                  console.error('PDF generation failed:', err);
+                  toast.error('Failed to generate PDF');
+                } finally {
+                  setIsGeneratingContract(false);
+                }
               }}
             >
-              <FileCheck className="h-4 w-4" />
-              Generate Contract
+              {isGeneratingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Download PDF
+            </Button>
+            
+            {/* Send to Team */}
+            <Button 
+              className="gap-2 bg-pink-600 hover:bg-pink-700"
+              disabled={isSendingContract || teamMembers.length === 0}
+              onClick={async () => {
+                setIsSendingContract(true);
+                try {
+                  // Create contract in database
+                  const { data: newContract, error } = await supabase.from('contracts').insert({
+                    user_id: userId,
+                    project_id: projectId,
+                    contract_number: generateContractPreviewData.contractNumber,
+                    template_type: selectedContractType || 'residential',
+                    project_name: generateContractPreviewData.projectName,
+                    project_address: generateContractPreviewData.projectAddress,
+                    status: 'draft',
+                  }).select().single();
+                  
+                  if (error) throw error;
+                  
+                  toast.success(`Contract created! Send emails to ${teamMembers.length} team member(s) coming soon.`);
+                  setShowContractPreview(false);
+                  
+                  // Refresh contracts list
+                  const { data: updatedContracts } = await supabase
+                    .from('contracts')
+                    .select('id, contract_number, status, total_amount')
+                    .eq('project_id', projectId);
+                  if (updatedContracts) setContracts(updatedContracts);
+                  
+                } catch (err) {
+                  console.error('Contract creation failed:', err);
+                  toast.error('Failed to create contract');
+                } finally {
+                  setIsSendingContract(false);
+                }
+              }}
+            >
+              {isSendingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
+              {teamMembers.length > 0 ? `Create & Send to ${teamMembers.length} Member${teamMembers.length > 1 ? 's' : ''}` : 'Create Contract'}
             </Button>
           </DialogFooter>
         </DialogContent>
