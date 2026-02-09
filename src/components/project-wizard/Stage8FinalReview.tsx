@@ -4655,21 +4655,23 @@ export default function Stage8FinalReview({
         </div>
       </div>
 
-      {/* Weather & Location Modal */}
-      <WeatherMapModal
-        open={weatherModalOpen}
-        onOpenChange={setWeatherModalOpen}
-        location={
-          citations.find(c => c.cite_type === 'LOCATION')?.answer || undefined
-        }
-        lat={
-          (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lat || undefined
-        }
-        lon={
-          (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lng || undefined
-        }
-        projectName={projectData?.name || 'Project'}
-      />
+      {/* Weather & Location Modal - Conditional render for build compatibility */}
+      {weatherModalOpen && (
+        <WeatherMapModal
+          open={weatherModalOpen}
+          onOpenChange={setWeatherModalOpen}
+          location={
+            citations.find(c => c.cite_type === 'LOCATION')?.answer || undefined
+          }
+          lat={
+            (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lat || undefined
+          }
+          lon={
+            (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lng || undefined
+          }
+          projectName={projectData?.name || 'Project'}
+        />
+      )}
     </div>
   );
 }
