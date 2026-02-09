@@ -3024,87 +3024,289 @@ export default function Stage8FinalReview({
                 </div>
               )}
               
-              {/* ✓ GANTT-STYLE WORK PHASES - Grouped by Phase */}
-              {template.hasData && template.phases && template.phases.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-indigo-500" />
-                    Work Phases (Gantt Structure)
-                    {hasDemolitionPhase && (
-                      <Badge variant="outline" className="text-[10px] bg-red-50 text-red-600 ml-2">
-                        Demolition Included
-                      </Badge>
-                    )}
-                  </h4>
-                  <div className="space-y-4">
-                    {template.phases.map((phase: { phaseId: string; tasks: string[]; verificationLabel: string; meta: { name: string; color: string; bgColor: string; borderColor: string } }) => (
-                      <div 
-                        key={phase.phaseId}
-                        className={cn(
-                          "rounded-xl border-2 overflow-hidden",
-                          phase.meta.borderColor
-                        )}
-                      >
-                        {/* Phase Header */}
-                        <div className={cn(
-                          "px-4 py-3 flex items-center justify-between",
-                          phase.meta.bgColor
-                        )}>
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
-                              phase.phaseId === 'demolition' ? 'bg-red-500' :
-                              phase.phaseId === 'preparation' ? 'bg-amber-500' :
-                              phase.phaseId === 'installation' ? 'bg-blue-500' : 'bg-green-500'
-                            )}>
-                              {phase.phaseId === 'demolition' ? 'D' :
-                               phase.phaseId === 'preparation' ? 'P' :
-                               phase.phaseId === 'installation' ? 'I' : 'F'}
-                            </div>
-                            <span className={cn("font-semibold", phase.meta.color)}>
-                              {phase.meta.name}
-                            </span>
-                          </div>
-                          <Badge variant="outline" className="text-[10px]">
-                            {phase.tasks.length} tasks
-                          </Badge>
-                        </div>
-                        
-                        {/* Phase Tasks */}
-                        <div className="p-4 space-y-2 bg-background/50">
-                          {phase.tasks.map((taskName, idx) => (
-                            <div 
-                              key={idx}
-                              className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+              {/* ✓ GANTT-STYLE WORK PHASES - Grouped by Phase with Assignees & Status */}
+              {template.hasData && template.phases && template.phases.length > 0 && (() => {
+                // Get timeline citations for Gantt bar positioning
+                const timelineCite = citations.find(c => c.cite_type === 'TIMELINE');
+                const endDateCite = citations.find(c => c.cite_type === 'END_DATE');
+                const startDate = timelineCite?.metadata?.start_date 
+                  ? new Date(timelineCite.metadata.start_date as string) 
+                  : null;
+                const endDate = endDateCite?.value 
+                  ? new Date(endDateCite.value as string) 
+                  : endDateCite?.metadata?.end_date
+                    ? new Date(endDateCite.metadata.end_date as string)
+                    : null;
+                
+                const totalDays = startDate && endDate 
+                  ? Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                  : 30; // Default 30 days
+                
+                // Calculate phase durations (based on Stage 7 percentages)
+                const phaseDurations: Record<string, number> = {
+                  demolition: 15,
+                  preparation: 25,
+                  installation: 45,
+                  finishing: 15,
+                };
+                
+                // Get phase status from actual tasks
+                const getPhaseProgress = (phaseId: string) => {
+                  const phaseTasks = tasks.filter(t => t.phase === phaseId);
+                  if (phaseTasks.length === 0) return { completed: 0, total: 0, percent: 0 };
+                  const completed = phaseTasks.filter(t => t.status === 'completed').length;
+                  return { 
+                    completed, 
+                    total: phaseTasks.length, 
+                    percent: Math.round((completed / phaseTasks.length) * 100) 
+                  };
+                };
+                
+                // Helper to find assignee for a task by matching title
+                const findTaskAssignee = (taskTitle: string) => {
+                  const titleLower = taskTitle.toLowerCase();
+                  const matchingTask = tasks.find(t => 
+                    t.title.toLowerCase().includes(titleLower.slice(0, 15)) ||
+                    titleLower.includes(t.title.toLowerCase().slice(0, 15))
+                  );
+                  if (!matchingTask) return null;
+                  const member = teamMembers.find(m => m.userId === matchingTask.assigned_to);
+                  return member ? { ...member, status: matchingTask.status } : null;
+                };
+                
+                // Calculate Gantt bar positions
+                let cumulativePercent = 0;
+                const phaseGanttBars = template.phases.map((phase: { phaseId: string }) => {
+                  const durationPercent = phaseDurations[phase.phaseId] || 25;
+                  const left = cumulativePercent;
+                  cumulativePercent += durationPercent;
+                  return { phaseId: phase.phaseId, left, width: durationPercent };
+                });
+                
+                return (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-indigo-500" />
+                      Work Phases (Gantt Structure)
+                      {hasDemolitionPhase && (
+                        <Badge variant="outline" className="text-[10px] bg-red-50 text-red-600 ml-2">
+                          Demolition Included
+                        </Badge>
+                      )}
+                    </h4>
+                    
+                    {/* ✓ MINI GANTT CHART */}
+                    <div className="mb-6 p-4 rounded-xl border bg-muted/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">
+                          {startDate ? startDate.toLocaleDateString() : 'Start'}
+                        </span>
+                        <span className="text-xs font-medium">{totalDays} days</span>
+                        <span className="text-xs text-muted-foreground">
+                          {endDate ? endDate.toLocaleDateString() : 'End'}
+                        </span>
+                      </div>
+                      <div className="relative h-10 rounded-lg bg-muted/50 overflow-hidden">
+                        {phaseGanttBars.map((bar) => {
+                          const progress = getPhaseProgress(bar.phaseId);
+                          const phaseColors: Record<string, string> = {
+                            demolition: 'bg-red-500',
+                            preparation: 'bg-amber-500',
+                            installation: 'bg-blue-500',
+                            finishing: 'bg-green-500',
+                          };
+                          return (
+                            <div
+                              key={bar.phaseId}
+                              className="absolute top-0 bottom-0 flex items-center justify-center transition-all"
+                              style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
                             >
                               <div className={cn(
-                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold",
-                                phase.meta.bgColor, phase.meta.color
-                              )}>
-                                {idx + 1}
-                              </div>
-                              <span className="text-sm">{taskName}</span>
+                                "h-full w-full opacity-30 absolute",
+                                phaseColors[bar.phaseId]
+                              )} />
+                              <div 
+                                className={cn(
+                                  "h-full absolute left-0 top-0",
+                                  phaseColors[bar.phaseId]
+                                )}
+                                style={{ width: `${progress.percent}%` }}
+                              />
+                              <span className="relative z-10 text-[10px] font-bold text-white drop-shadow-sm">
+                                {bar.phaseId.charAt(0).toUpperCase()}
+                                {progress.percent > 0 && ` ${progress.percent}%`}
+                              </span>
                             </div>
-                          ))}
-                          
-                          {/* Verification Node */}
-                          <div className="flex items-center gap-3 p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 mt-3">
-                            <div className="h-6 w-6 rounded-full bg-purple-500 flex items-center justify-center">
-                              <Camera className="h-3 w-3 text-white" />
-                            </div>
-                            <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                              {phase.verificationLabel}
-                            </span>
-                            <Badge className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600">
-                              Required
-                            </Badge>
-                          </div>
-                        </div>
+                          );
+                        })}
                       </div>
-                    ))}
+                      <div className="flex justify-between mt-2">
+                        {template.phases.map((phase: { phaseId: string; meta: { name: string; color: string } }) => {
+                          const progress = getPhaseProgress(phase.phaseId);
+                          return (
+                            <div key={phase.phaseId} className="text-center">
+                              <span className={cn("text-[10px] font-medium", phase.meta.color)}>
+                                {progress.completed}/{progress.total || '?'}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* PHASE CARDS WITH ASSIGNEES */}
+                    <div className="space-y-4">
+                      {template.phases.map((phase: { phaseId: string; tasks: string[]; verificationLabel: string; meta: { name: string; color: string; bgColor: string; borderColor: string } }) => {
+                        const progress = getPhaseProgress(phase.phaseId);
+                        
+                        return (
+                          <div 
+                            key={phase.phaseId}
+                            className={cn(
+                              "rounded-xl border-2 overflow-hidden",
+                              phase.meta.borderColor
+                            )}
+                          >
+                            {/* Phase Header with Progress */}
+                            <div className={cn(
+                              "px-4 py-3 flex items-center justify-between",
+                              phase.meta.bgColor
+                            )}>
+                              <div className="flex items-center gap-3">
+                                <div className={cn(
+                                  "h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                                  phase.phaseId === 'demolition' ? 'bg-red-500' :
+                                  phase.phaseId === 'preparation' ? 'bg-amber-500' :
+                                  phase.phaseId === 'installation' ? 'bg-blue-500' : 'bg-green-500'
+                                )}>
+                                  {phase.phaseId === 'demolition' ? 'D' :
+                                   phase.phaseId === 'preparation' ? 'P' :
+                                   phase.phaseId === 'installation' ? 'I' : 'F'}
+                                </div>
+                                <div>
+                                  <span className={cn("font-semibold", phase.meta.color)}>
+                                    {phase.meta.name}
+                                  </span>
+                                  {progress.total > 0 && (
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <div className="w-20 h-1.5 rounded-full bg-black/10">
+                                        <div 
+                                          className={cn(
+                                            "h-full rounded-full transition-all",
+                                            phase.phaseId === 'demolition' ? 'bg-red-500' :
+                                            phase.phaseId === 'preparation' ? 'bg-amber-500' :
+                                            phase.phaseId === 'installation' ? 'bg-blue-500' : 'bg-green-500'
+                                          )}
+                                          style={{ width: `${progress.percent}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {progress.percent}%
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {progress.completed === progress.total && progress.total > 0 && (
+                                  <Badge className="bg-green-500 text-white text-[10px]">
+                                    ✓ Complete
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" className="text-[10px]">
+                                  {progress.completed}/{progress.total || phase.tasks.length}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            {/* Phase Tasks with Assignees */}
+                            <div className="p-4 space-y-2 bg-background/50">
+                              {phase.tasks.map((taskName, idx) => {
+                                const assignee = findTaskAssignee(taskName);
+                                const isCompleted = assignee?.status === 'completed';
+                                const isInProgress = assignee?.status === 'in_progress';
+                                
+                                return (
+                                  <div 
+                                    key={idx}
+                                    className={cn(
+                                      "flex items-center gap-3 p-2 rounded-lg transition-colors",
+                                      isCompleted 
+                                        ? "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
+                                        : isInProgress
+                                          ? "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
+                                          : "bg-muted/30 hover:bg-muted/50"
+                                    )}
+                                  >
+                                    {/* Status indicator */}
+                                    <div className={cn(
+                                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold",
+                                      isCompleted 
+                                        ? "bg-green-500 text-white"
+                                        : isInProgress
+                                          ? "bg-blue-500 text-white"
+                                          : cn(phase.meta.bgColor, phase.meta.color)
+                                    )}>
+                                      {isCompleted ? '✓' : isInProgress ? '▶' : idx + 1}
+                                    </div>
+                                    
+                                    {/* Task name */}
+                                    <span className={cn(
+                                      "text-sm flex-1",
+                                      isCompleted && "line-through text-muted-foreground"
+                                    )}>
+                                      {taskName}
+                                    </span>
+                                    
+                                    {/* Assignee */}
+                                    {assignee ? (
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-[10px] font-bold">
+                                          {assignee.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                                          {assignee.name.split(' ')[0]}
+                                        </span>
+                                        <Badge 
+                                          variant="outline" 
+                                          className={cn(
+                                            "text-[9px]",
+                                            isCompleted && "bg-green-100 text-green-700",
+                                            isInProgress && "bg-blue-100 text-blue-700"
+                                          )}
+                                        >
+                                          {isCompleted ? 'Done' : isInProgress ? 'Active' : 'Pending'}
+                                        </Badge>
+                                      </div>
+                                    ) : (
+                                      <Badge variant="outline" className="text-[9px] text-muted-foreground">
+                                        Unassigned
+                                      </Badge>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              
+                              {/* Verification Node */}
+                              <div className="flex items-center gap-3 p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 mt-3">
+                                <div className="h-6 w-6 rounded-full bg-purple-500 flex items-center justify-center">
+                                  <Camera className="h-3 w-3 text-white" />
+                                </div>
+                                <span className="text-sm font-medium text-purple-700 dark:text-purple-300 flex-1">
+                                  {phase.verificationLabel}
+                                </span>
+                                <Badge className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600">
+                                  Required
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               
               {/* No Data Message */}
               {!template.hasData && (
