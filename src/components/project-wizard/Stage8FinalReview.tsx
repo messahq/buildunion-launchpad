@@ -4199,30 +4199,30 @@ export default function Stage8FinalReview({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-950/40 via-orange-950/30 to-yellow-950/20 p-5"
+            className="relative overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-900/40 via-cyan-800/25 to-sky-900/20 p-5"
           >
             {/* Ambient glow */}
-            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-orange-500/8 blur-2xl pointer-events-none" />
+            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-sky-400/8 blur-2xl pointer-events-none" />
             
             <div className="relative z-10">
               {/* Project Name */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-400/60 mb-1">Project Identity</p>
-                  <h2 className="text-xl font-bold text-amber-100 leading-tight">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-300/70 mb-1">Project Identity</p>
+                  <h2 className="text-xl font-bold text-white leading-tight">
                     {nameCit?.answer || projectData?.name || '—'}
                   </h2>
                   {nameCit && (
-                    <p className="text-[9px] text-amber-500/50 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
+                    <p className="text-[9px] text-cyan-400/50 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
                   )}
                 </div>
                 <motion.div
                   animate={{ rotate: [0, 360] }}
                   transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  className="w-12 h-12 rounded-full border border-amber-500/20 flex items-center justify-center bg-amber-500/5"
+                  className="w-12 h-12 rounded-full border border-cyan-400/20 flex items-center justify-center bg-cyan-400/5"
                 >
-                  <Building2 className="h-5 w-5 text-amber-400" />
+                  <Building2 className="h-5 w-5 text-cyan-400" />
                 </motion.div>
               </div>
 
@@ -4231,7 +4231,7 @@ export default function Stage8FinalReview({
                 {/* SVG Ring */}
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-                    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(245,158,11,0.1)" strokeWidth="4" />
+                    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(34,211,238,0.1)" strokeWidth="4" />
                     <motion.circle
                       cx="32" cy="32" r="28"
                       fill="none"
@@ -4245,18 +4245,18 @@ export default function Stage8FinalReview({
                     />
                     <defs>
                       <linearGradient id="amberGradBasics" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#f59e0b" />
-                        <stop offset="100%" stopColor="#ea580c" />
+                        <stop offset="0%" stopColor="#22d3ee" />
+                        <stop offset="100%" stopColor="#0ea5e9" />
                       </linearGradient>
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-bold text-amber-300">{completionPct}%</span>
+                    <span className="text-sm font-bold text-cyan-300">{completionPct}%</span>
                   </div>
                 </div>
 
                 <div className="flex-1 space-y-1.5">
-                  <p className="text-[10px] font-mono text-amber-400/50 uppercase tracking-wider">Data Integrity</p>
+                  <p className="text-[10px] font-mono text-cyan-400/50 uppercase tracking-wider">Data Integrity</p>
                   <div className="flex gap-1.5">
                     {[
                       { label: 'Name', done: !!nameCit, icon: '📋' },
@@ -4271,13 +4271,13 @@ export default function Stage8FinalReview({
                         className={cn(
                           "flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-medium transition-all",
                           item.done
-                            ? "border-amber-500/30 bg-amber-500/10 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.15)]"
-                            : "border-slate-700/30 bg-slate-900/30 text-slate-500"
+                            ? "border-cyan-400/30 bg-cyan-500/10 text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.15)]"
+                            : "border-slate-600/30 bg-slate-800/30 text-slate-400"
                         )}
                       >
                         <span>{item.icon}</span>
                         <span>{item.label}</span>
-                        {item.done && <CheckCircle2 className="h-2.5 w-2.5 text-amber-400" />}
+                        {item.done && <CheckCircle2 className="h-2.5 w-2.5 text-cyan-400" />}
                       </motion.div>
                     ))}
                   </div>
@@ -4294,8 +4294,8 @@ export default function Stage8FinalReview({
             className={cn(
               "rounded-xl border p-4 transition-all",
               locCit
-                ? "border-cyan-500/20 bg-gradient-to-br from-cyan-950/30 to-blue-950/20"
-                : "border-slate-700/20 bg-slate-950/20"
+                ? "border-cyan-400/25 bg-gradient-to-br from-cyan-900/30 via-slate-800/40 to-blue-900/20"
+                : "border-slate-600/20 bg-slate-800/30"
             )}
           >
             <div className="flex items-center gap-3">
@@ -4335,8 +4335,8 @@ export default function Stage8FinalReview({
             className={cn(
               "rounded-xl border p-4 transition-all",
               workCit
-                ? "border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 to-teal-950/20"
-                : "border-slate-700/20 bg-slate-950/20"
+                ? "border-emerald-400/25 bg-gradient-to-br from-emerald-900/30 via-slate-800/40 to-teal-900/20"
+                : "border-slate-600/20 bg-slate-800/30"
             )}
           >
             <div className="flex items-center gap-3">
@@ -4372,18 +4372,18 @@ export default function Stage8FinalReview({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="pt-3 border-t border-amber-500/10"
+              className="pt-3 border-t border-cyan-500/10"
             >
-              <p className="text-[10px] font-mono uppercase tracking-wider text-amber-400/40 mb-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400/50 mb-2">
                 Source Citations ({panelCitations.length})
               </p>
               <div className="space-y-1">
                 {panelCitations.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10 text-[10px]">
-                    <span className="text-amber-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-cyan-500/5 border border-cyan-500/10 text-[10px]">
+                    <span className="text-cyan-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-amber-200/80 truncate max-w-[160px]">{renderCitationValue(c)}</span>
-                      <span className="text-amber-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
+                      <span className="font-medium text-cyan-200/80 truncate max-w-[160px]">{renderCitationValue(c)}</span>
+                      <span className="text-cyan-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
                     </div>
                   </div>
                 ))}
