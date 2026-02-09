@@ -4699,89 +4699,124 @@ export default function Stage8FinalReview({
         
         return (
           <div className="space-y-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground">
-                Team Members ({teamMembers.length})
-              </span>
-              {/* ✓ COMMUNICATION MODULE TRIGGER */}
-              {teamMembers.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleTeamCommunication}
-                  className="h-7 text-xs gap-1 border-teal-300 text-teal-700 hover:bg-teal-50"
+            {/* ─── Futuristic Header ─── */}
+            <div className="flex items-center justify-between p-2 rounded-lg border border-teal-500/25 bg-gradient-to-r from-teal-950/30 via-cyan-950/20 to-teal-950/30">
+              <div className="flex items-center gap-2">
+                <motion.div
+                  animate={{ boxShadow: ['0 0 8px rgba(20,184,166,0.2)', '0 0 16px rgba(20,184,166,0.4)', '0 0 8px rgba(20,184,166,0.2)'] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-7 w-7 rounded-md bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center"
                 >
-                  <MessageSquare className="h-3 w-3" />
-                  Team Chat
-                </Button>
-              )}
+                  <Users className="h-4 w-4 text-white" />
+                </motion.div>
+                <div>
+                  <span className="text-xs font-bold text-teal-900 dark:text-teal-100">Team Command</span>
+                  <p className="text-[8px] text-teal-700 dark:text-teal-400/80">{teamMembers.length} operative{teamMembers.length !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {teamMembers.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleTeamCommunication}
+                    className="h-6 text-[9px] gap-1 text-teal-700 dark:text-teal-300 hover:bg-teal-500/10 px-2"
+                  >
+                    <MessageSquare className="h-2.5 w-2.5" />
+                    Chat
+                  </Button>
+                )}
+                <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/30 text-[9px] px-1.5 py-0 gap-0.5">
+                  <Shield className="h-2 w-2" /> Active
+                </Badge>
+              </div>
             </div>
             
-            {/* Team Size Citation Badge */}
+            {/* Team Size Citation */}
             {teamSizeCitation && (
-              <div className="p-2 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
+              <div className="p-2 rounded-lg border border-teal-500/15 bg-gradient-to-r from-teal-950/15 to-cyan-950/10">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-teal-700 dark:text-teal-300">Team Size</span>
-                  <span className="text-[10px] text-teal-500 font-mono">cite: [{teamSizeCitation.id.slice(0, 8)}]</span>
+                  <span className="text-[9px] text-teal-700 dark:text-teal-300/80 uppercase tracking-widest font-semibold">Team Size</span>
+                  <span className="text-[8px] text-teal-600 dark:text-teal-400/60 font-mono">[{teamSizeCitation.id.slice(0, 8)}]</span>
                 </div>
-                <p className="text-sm font-medium">{renderCitationValue(teamSizeCitation)}</p>
+                <p className="text-sm font-bold text-teal-900 dark:text-white mt-0.5">{renderCitationValue(teamSizeCitation)}</p>
               </div>
             )}
             
+            {/* Member Cards */}
             {teamMembers.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No team members added</p>
+              <div className="p-4 rounded-lg border border-dashed border-teal-500/20 text-center bg-teal-950/5 dark:bg-teal-950/10">
+                <Users className="h-6 w-6 text-teal-500/40 mx-auto mb-1.5" />
+                <p className="text-[10px] text-teal-700 dark:text-teal-400/60">No team members added</p>
+              </div>
             ) : (
-              <div className="space-y-2">
-                {teamMembers.map((member, idx) => (
-                  <div key={member.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-xs font-bold">
-                        {member.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{member.name}</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
-                          {teamInviteCitation && idx === 0 && (
-                            <span className="text-[9px] text-teal-500 font-mono">cite: [{teamInviteCitation.id.slice(0, 6)}]</span>
-                          )}
+              <div className="space-y-1.5">
+                {teamMembers.map((member, idx) => {
+                  const roleColors: Record<string, string> = {
+                    owner: 'from-amber-400 to-orange-500',
+                    foreman: 'from-teal-400 to-cyan-500',
+                    worker: 'from-blue-400 to-indigo-500',
+                    inspector: 'from-purple-400 to-violet-500',
+                    subcontractor: 'from-pink-400 to-rose-500',
+                    member: 'from-slate-400 to-slate-500',
+                  };
+                  const gradient = roleColors[member.role] || roleColors.member;
+                  return (
+                    <motion.div
+                      key={member.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="flex items-center justify-between p-2 rounded-lg border border-teal-500/15 bg-gradient-to-r from-teal-950/10 to-cyan-950/5 hover:from-teal-950/20 hover:to-cyan-950/15 transition-colors group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn("h-7 w-7 rounded-md bg-gradient-to-br flex items-center justify-center text-white text-[10px] font-bold shadow-sm", gradient)}>
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-semibold text-teal-900 dark:text-white/90">{member.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-teal-700 dark:text-teal-400/70 capitalize font-medium">{member.role}</span>
+                            {teamInviteCitation && idx === 0 && (
+                              <span className="text-[7px] text-teal-500/60 font-mono">[{teamInviteCitation.id.slice(0, 6)}]</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    {/* Individual message button with persistence guard */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleMemberMessage(member.userId)}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-teal-600"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleMemberMessage(member.userId)}
+                        className="h-6 w-6 p-0 text-teal-500/40 hover:text-teal-600 dark:hover:text-teal-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </Button>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
             
-            {/* Communication enabled badge */}
+            {/* Communication Status */}
             {teamMembers.length > 0 && (
-              <div className="p-2 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
-                <div className="flex items-center gap-2 text-xs text-teal-700 dark:text-teal-300">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  <span>Team messaging enabled</span>
+              <div className="p-2 rounded-lg border border-teal-500/15 bg-gradient-to-r from-teal-950/10 to-cyan-950/5">
+                <div className="flex items-center gap-2 text-[10px] text-teal-700 dark:text-teal-300/80">
+                  <div className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+                  <span className="font-medium">Real-time messaging enabled</span>
                 </div>
               </div>
             )}
             
-            {/* All Team Citations with badges */}
+            {/* Citations */}
             {panelCitations.length > 0 && (
-              <div className="pt-3 border-t space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">All Citations</p>
+              <div className="pt-2 border-t border-teal-500/10 space-y-1">
+                <p className="text-[9px] text-teal-700 dark:text-teal-400/60 uppercase tracking-widest font-semibold mb-1">Citations ({panelCitations.length})</p>
                 {panelCitations.map(c => (
-                  <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
-                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{renderCitationValue(c)}</span>
-                      <span className="text-[10px] text-teal-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-md bg-teal-950/5 dark:bg-teal-950/10 border border-teal-500/8">
+                    <span className="text-[9px] text-teal-700 dark:text-teal-400/70">{c.cite_type.replace(/_/g, ' ')}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-medium text-teal-900 dark:text-white/80">{renderCitationValue(c)}</span>
+                      <span className="text-[7px] text-teal-500/50 font-mono">[{c.id.slice(0, 6)}]</span>
                     </div>
                   </div>
                 ))}
@@ -5507,27 +5542,125 @@ export default function Stage8FinalReview({
         })()}
         
         {panel.id === 'panel-4-team' && teamMembers.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Team Members ({teamMembers.length})
-            </h4>
-            <div className="grid gap-2">
-              {teamMembers.map(member => (
-                <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold">
-                      {member.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
-                    </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-4"
+          >
+            {/* Futuristic Team Header */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-teal-500/25 bg-gradient-to-r from-teal-950/25 via-cyan-950/15 to-teal-950/25">
+              <div className="flex items-center gap-3">
+                <motion.div
+                  animate={{ boxShadow: ['0 0 10px rgba(20,184,166,0.2)', '0 0 20px rgba(20,184,166,0.4)', '0 0 10px rgba(20,184,166,0.2)'] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-9 w-9 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center"
+                >
+                  <Users className="h-5 w-5 text-white" />
+                </motion.div>
+                <div>
+                  <h4 className="text-sm font-bold text-teal-900 dark:text-teal-100 tracking-tight">Team Operatives</h4>
+                  <p className="text-[10px] text-teal-700 dark:text-teal-400/80">{teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''} deployed</p>
+                </div>
+              </div>
+              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/30 text-[10px] px-2 py-0.5 gap-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+                Online
+              </Badge>
+            </div>
+
+            {/* Role Distribution Bar */}
+            {(() => {
+              const roleCounts = teamMembers.reduce((acc, m) => { acc[m.role] = (acc[m.role] || 0) + 1; return acc; }, {} as Record<string, number>);
+              const roleColorMap: Record<string, string> = {
+                owner: '#f59e0b',
+                foreman: '#14b8a6',
+                worker: '#3b82f6',
+                inspector: '#8b5cf6',
+                subcontractor: '#ec4899',
+                member: '#94a3b8',
+              };
+              return (
+                <div className="space-y-2">
+                  <div className="h-2 rounded-full overflow-hidden flex bg-teal-900/15">
+                    {Object.entries(roleCounts).map(([role, count]) => (
+                      <div
+                        key={role}
+                        style={{ width: `${(count / teamMembers.length) * 100}%`, backgroundColor: roleColorMap[role] || '#94a3b8' }}
+                        className="h-full first:rounded-l-full last:rounded-r-full"
+                      />
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(roleCounts).map(([role, count]) => (
+                      <div key={role} className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: roleColorMap[role] || '#94a3b8' }} />
+                        <span className="text-[10px] text-teal-800 dark:text-teal-300/70 capitalize">{role} ({count})</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              );
+            })()}
+
+            {/* Member Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {teamMembers.map((member, idx) => {
+                const roleColors: Record<string, string> = {
+                  owner: 'from-amber-400 to-orange-500',
+                  foreman: 'from-teal-400 to-cyan-500',
+                  worker: 'from-blue-400 to-indigo-500',
+                  inspector: 'from-purple-400 to-violet-500',
+                  subcontractor: 'from-pink-400 to-rose-500',
+                  member: 'from-slate-400 to-slate-500',
+                };
+                const roleBorderColors: Record<string, string> = {
+                  owner: 'border-amber-500/20',
+                  foreman: 'border-teal-500/20',
+                  worker: 'border-blue-500/20',
+                  inspector: 'border-purple-500/20',
+                  subcontractor: 'border-pink-500/20',
+                  member: 'border-slate-500/20',
+                };
+                const gradient = roleColors[member.role] || roleColors.member;
+                const borderColor = roleBorderColors[member.role] || roleBorderColors.member;
+                return (
+                  <motion.div
+                    key={member.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border bg-gradient-to-r from-teal-950/10 to-cyan-950/5 hover:from-teal-950/20 hover:to-cyan-950/15 transition-all group",
+                      borderColor
+                    )}
+                  >
+                    <div className={cn("h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center text-white text-sm font-bold shadow-md", gradient)}>
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-teal-900 dark:text-white/90 truncate">{member.name}</p>
+                      <p className="text-[10px] text-teal-700 dark:text-teal-400/70 capitalize font-medium">{member.role}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (projectId && citations.length > 0) {
+                          const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+                          const gfaVal = typeof gfaCit?.value === 'number' ? gfaCit.value : typeof gfaCit?.metadata?.gfa_value === 'number' ? gfaCit.metadata.gfa_value : 0;
+                          syncCitationsToLocalStorage(projectId, citations, 8, gfaVal);
+                        }
+                        window.location.href = `/buildunion/messages?user=${member.userId}&project=${projectId}`;
+                      }}
+                      className="h-8 w-8 p-0 text-teal-500/30 hover:text-teal-600 dark:hover:text-teal-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                );
+              })}
             </div>
-          </div>
+          </motion.div>
         )}
         
         {panel.id === 'panel-5-timeline' && (
