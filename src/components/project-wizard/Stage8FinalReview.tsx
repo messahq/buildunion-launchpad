@@ -6303,7 +6303,6 @@ export default function Stage8FinalReview({
                       onClick={() => {
                         if (!hasAccess) return;
                         setActiveOrbitalPanel(panel.id);
-                        setFullscreenPanel(panel.id);
                       }}
                       whileHover={hasAccess ? { scale: 1.02 } : undefined}
                       whileTap={hasAccess ? { scale: 0.98 } : undefined}
@@ -6364,78 +6363,60 @@ export default function Stage8FinalReview({
                   );
                 })}
 
-                {/* CENTRAL CANVAS - Isolated photo/visualization zone */}
-                <div
-                  className="relative rounded-2xl overflow-hidden flex items-center justify-center"
+                {/* CENTRAL CANVAS - Active panel content display */}
+                <motion.div
+                  className="relative rounded-2xl overflow-hidden flex flex-col"
                   style={{ gridColumn: '3 / 4', gridRow: '1 / 4' }}
+                  layout
                 >
                   {/* Neon border ring */}
                   <div className="absolute inset-0 rounded-2xl border border-cyan-700/30 pointer-events-none z-20" />
                   <div className="absolute inset-[1px] rounded-2xl border border-cyan-500/10 pointer-events-none z-20" />
 
                   {/* Canvas background */}
-                  <div className="absolute inset-0 bg-[#080c16]" />
+                  <div className="absolute inset-0 bg-[#0c1120]/95 backdrop-blur-sm rounded-2xl" />
 
-                  {/* Project photo or visualization */}
-                  {(() => {
-                    // Try to find a site photo or blueprint from citations
-                    const sitePhotoCitation = citations.find(c => c.cite_type === 'SITE_PHOTO');
-                    const blueprintCitation = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
-                    const visualDoc = documents.find(d => d.category === 'visual');
+                  {/* Canvas header */}
+                  <div className="relative z-10 px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40 rounded-t-2xl">
+                    <div className="flex items-center gap-2">
+                      <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
+                      <span className="text-sm font-semibold text-cyan-200">
+                        {activePanelConfig.id === 'panel-3-trade' 
+                          ? (() => { const tc = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return tc?.answer ? `${tc.answer} Template` : activePanelConfig.title; })()
+                          : t(activePanelConfig.titleKey, activePanelConfig.title)
+                        }
+                      </span>
+                      {getTierBadge(activePanelConfig.visibilityTier)}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
+                      onClick={() => setFullscreenPanel(activePanelConfig.id)}
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
 
-                    const imageSource = sitePhotoCitation?.value || blueprintCitation?.value || (visualDoc ? visualDoc.file_path : null);
-
-                    if (imageSource && typeof imageSource === 'string') {
-                      const imageUrl = getDocumentPreviewUrl(imageSource);
-                      return (
-                        <img
-                          src={imageUrl}
-                          alt="Project visualization"
-                          className="absolute inset-0 w-full h-full object-contain z-10"
-                        />
-                      );
-                    }
-
-                    // Fallback: stylized placeholder
-                    return (
-                      <div className="flex flex-col items-center gap-3 z-10">
-                        <motion.div
-                          className="w-24 h-24 rounded-2xl border-2 border-dashed border-cyan-800/40 flex items-center justify-center"
-                          animate={{ borderColor: ['rgba(34,211,238,0.15)', 'rgba(34,211,238,0.35)', 'rgba(34,211,238,0.15)'] }}
-                          transition={{ duration: 3, repeat: Infinity }}
-                        >
-                          <Building2 className="h-10 w-10 text-cyan-800/40" />
-                        </motion.div>
-                        <div className="text-center">
-                          <p className="text-xs font-medium text-cyan-600/50">{projectData?.name || 'Project'}</p>
-                          <p className="text-[10px] text-cyan-800/30 mt-0.5">Upload site photos to preview</p>
+                  {/* Canvas content - renders active panel */}
+                  <div className="relative z-10 flex-1 overflow-y-auto">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeOrbitalPanel}
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.97 }}
+                        transition={{ duration: 0.25 }}
+                        className="p-4 [&_*]:text-foreground dark:[&_*]:text-foreground min-h-full"
+                        style={{ colorScheme: 'light' }}
+                      >
+                        <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
+                          {renderPanelContent(activePanelConfig)}
                         </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Project name overlay - bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4 z-20">
-                    <p className="text-sm font-semibold text-cyan-200">{projectData?.name || 'Project'}</p>
-                    <p className="text-[10px] text-cyan-500/60">{projectData?.address || 'No address set'}</p>
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
-
-                  {/* Stats overlay - top-right */}
-                  <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-20">
-                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
-                      {citations.length} citations
-                    </div>
-                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
-                      {teamMembers.length} team
-                    </div>
-                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
-                      {tasks.length} tasks
-                    </div>
-                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
-                      {documents.length} docs
-                    </div>
-                  </div>
-                </div>
+                </motion.div>
 
                 {/* SVG Connection lines - from panels to central canvas edges */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ gridColumn: '1 / -1', gridRow: '1 / -1' }}>
