@@ -14,6 +14,8 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTierFeatures } from "@/hooks/useTierFeatures";
+import { downloadInvoicePDF, InvoiceData } from "@/lib/invoiceGenerator";
 import {
   CheckCircle2,
   ChevronDown,
@@ -420,6 +422,10 @@ export default function Stage8FinalReview({
     { email: '', name: '' }
   ]);
   const [isSendingToMultiple, setIsSendingToMultiple] = useState(false);
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const [isRunningAIAnalysis, setIsRunningAIAnalysis] = useState(false);
+
+  const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
   // ✓ Team member document sharing state (in-app messages)
   const [selectedTeamRecipients, setSelectedTeamRecipients] = useState<string[]>([]);
@@ -5224,10 +5230,15 @@ export default function Stage8FinalReview({
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateInvoice}
-                  className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300"
+                  disabled={isGeneratingInvoice}
+                  className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 disabled:opacity-50"
                 >
-                  <FileText className="h-4 w-4" />
-                  Generate Invoice
+                  {isGeneratingInvoice ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  {isGeneratingInvoice ? 'Generating...' : 'Generate Invoice'}
                 </Button>
               )}
               
