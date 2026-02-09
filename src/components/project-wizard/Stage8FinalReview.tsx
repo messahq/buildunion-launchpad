@@ -1422,21 +1422,149 @@ export default function Stage8FinalReview({
     };
   }, [citations, projectData, teamMembers.length, tasks.length, projectId]);
   
-  // Generate AI Analysis
+  // Generate AI Analysis - Tier-based with dual engine support
   const handleAIAnalysis = useCallback(async () => {
     setIsGeneratingAI(true);
     try {
-      toast.info('AI Analysis feature coming soon!');
-      await new Promise(r => setTimeout(r, 1500));
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) {
+        toast.error('Please sign in to use AI Analysis');
+        return;
+      }
+      
+      // TODO: Get actual tier from subscription hook
+      const tier = 'pro'; // Default to pro for now
+      
+      const { data, error } = await supabase.functions.invoke('ai-project-analysis', {
+        body: {
+          projectId,
+          analysisType: 'full',
+          tier,
+        },
+      });
+      
+      if (error) {
+        if (error.message?.includes('Rate limit')) {
+          toast.error('AI rate limit reached. Please try again in a few minutes.');
+        } else if (error.message?.includes('credits')) {
+          toast.error('AI credits exhausted. Please add credits to continue.');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      
+      // Display analysis results
+      if (data?.analysis) {
+        toast.success('AI Analysis Complete!', {
+          description: data.dualEngineUsed ? 'Dual engine validation applied' : 'Analysis ready',
+          duration: 5000,
+        });
+        
+        // Log the analysis for debugging
+        console.log('[AI Analysis Result]', data);
+        
+        // TODO: Show analysis in a modal or panel
+      }
+    } catch (err) {
+      console.error('[Stage8] AI Analysis failed:', err);
+      toast.error('AI Analysis failed. Please try again.');
     } finally {
       setIsGeneratingAI(false);
     }
-  }, []);
+  }, [projectId]);
   
   // Generate PDF Summary
   const handleGeneratePDF = useCallback(async () => {
-    toast.info('PDF generation feature coming soon!');
-  }, []);
+    try {
+      const { buildProjectSummaryHTML, downloadPDF } = await import('@/lib/pdfGenerator');
+      
+      // Gather data from citations
+      const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+      const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
+      
+      const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : 0;
+      const trade = tradeCitation?.answer || 'General';
+      const address = locationCitation?.answer || projectData?.address || '';
+      
+      // Build line items from financial summary or tasks
+      const lineItems = [
+        { name: `${trade} Materials`, quantity: gfaValue || 1, unit: gfaValue ? 'sq ft' : 'lot', unit_price: financialSummary?.material_cost ? (financialSummary.material_cost / (gfaValue || 1)) : 0 },
+        { name: `${trade} Labor`, quantity: gfaValue || 1, unit: gfaValue ? 'sq ft' : 'lot', unit_price: financialSummary?.labor_cost ? (financialSummary.labor_cost / (gfaValue || 1)) : 0 },
+      ].filter(item => item.unit_price > 0);
+      
+      const html = buildProjectSummaryHTML({
+        quoteNumber: `QT-${projectId.slice(0, 8).toUpperCase()}`,
+        currentDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        clientInfo: {
+          name: 'Client',
+          email: '',
+          phone: '',
+          address: address,
+        },
+        editedItems: lineItems,
+        materialTotal: financialSummary?.material_cost || 0,
+        grandTotal: financialSummary?.total_cost || 0,
+        notes: `Project: ${projectData?.name || 'Untitled'}`,
+        formatCurrency: (amount: number) => `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        companyName: 'BuildUnion',
+      });
+      
+      await downloadPDF(html, {
+        filename: `project-summary-${projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export'}.pdf`,
+        pageFormat: 'letter',
+        margin: 15,
+      });
+      
+      toast.success('PDF downloaded successfully!');
+    } catch (err) {
+      console.error('[Stage8] PDF generation failed:', err);
+      toast.error('Failed to generate PDF');
+    }
+  }, [projectId, citations, projectData, financialSummary]);
+  
+  // Generate Invoice
+  const handleGenerateInvoice = useCallback(async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) {
+        toast.error('Please sign in to generate invoices');
+        return;
+      }
+      
+      toast.loading('Generating invoice...', { id: 'invoice-gen' });
+      
+      const { data, error } = await supabase.functions.invoke('generate-invoice', {
+        body: {
+          projectId,
+          notes: `Invoice for ${projectData?.name || 'Project'}`,
+        },
+      });
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Download the invoice as PDF
+        const { buildInvoiceHTML, generateInvoicePDF } = await import('@/lib/invoiceGenerator');
+        const invoiceBlob = await generateInvoicePDF(data);
+        
+        const url = URL.createObjectURL(invoiceBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-${data.invoiceNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast.success(`Invoice ${data.invoiceNumber} generated!`, { id: 'invoice-gen' });
+      }
+    } catch (err) {
+      console.error('[Stage8] Invoice generation failed:', err);
+      toast.error('Failed to generate invoice', { id: 'invoice-gen' });
+    }
+  }, [projectId, projectData]);
   
   // Complete and go to dashboard
   const handleComplete = useCallback(async () => {
@@ -5090,6 +5218,19 @@ export default function Stage8FinalReview({
             
             {/* Right - Actions */}
             <div className="flex items-center gap-3">
+              {/* Invoice Generation - Owner only */}
+              {canViewFinancials && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateInvoice}
+                  className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300"
+                >
+                  <FileText className="h-4 w-4" />
+                  Generate Invoice
+                </Button>
+              )}
+              
               {/* PDF Export */}
               <Button
                 variant="outline"
