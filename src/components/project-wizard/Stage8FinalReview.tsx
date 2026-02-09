@@ -501,10 +501,10 @@ export default function Stage8FinalReview({
       let usedLocalStorage = false;
       
       try {
-        // 1. Load project
+        // 1. Load project - ALSO load trade field for fallback
         const { data: project } = await supabase
           .from('projects')
-          .select('name, address, status')
+          .select('name, address, status, trade')
           .eq('id', projectId)
           .single();
         
@@ -515,6 +515,9 @@ export default function Stage8FinalReview({
             fetchWeather(project.address);
           }
         }
+        
+        // Store project trade for fallback use if no TRADE_SELECTION citation
+        const projectTrade = project?.trade || null;
         
         // 2. Load citations AND financial data from project_summaries
         const { data: summary } = await supabase
@@ -597,6 +600,52 @@ export default function Stage8FinalReview({
             } catch (syncErr) {
               logCriticalError('[Stage8] Failed to sync localStorage to Supabase', syncErr);
             }
+          }
+        }
+        
+        // ✓ CRITICAL FALLBACK: If no TRADE_SELECTION citation but projects.trade exists, create synthetic citation
+        const hasTradeSelection = loadedCitations.some(c => c.cite_type === 'TRADE_SELECTION');
+        if (!hasTradeSelection && projectTrade) {
+          // Create label from key (flooring -> Flooring)
+          const tradeLabel = projectTrade.charAt(0).toUpperCase() + projectTrade.slice(1).replace(/_/g, ' ');
+          
+          const syntheticTradeCitation: Citation = {
+            id: `synthetic_trade_${Date.now()}`,
+            cite_type: 'TRADE_SELECTION',
+            question_key: 'trade_selection',
+            answer: tradeLabel,
+            value: projectTrade,
+            timestamp: new Date().toISOString(),
+            metadata: { 
+              trade_key: projectTrade,
+              source: 'projects.trade_fallback',
+            },
+          };
+          
+          loadedCitations.push(syntheticTradeCitation);
+          console.log('[Stage8] ✓ Created synthetic TRADE_SELECTION from projects.trade:', projectTrade);
+          
+          // Also persist this to verified_facts to prevent future issues
+          try {
+            const { data: currentSummary } = await supabase
+              .from('project_summaries')
+              .select('id, verified_facts')
+              .eq('project_id', projectId)
+              .maybeSingle();
+            
+            if (currentSummary?.id) {
+              const currentFacts = Array.isArray(currentSummary.verified_facts) ? currentSummary.verified_facts : [];
+              const updatedFacts = [...currentFacts, syntheticTradeCitation as unknown as Record<string, unknown>];
+              
+              await supabase
+                .from('project_summaries')
+                .update({ verified_facts: updatedFacts as unknown as null })
+                .eq('id', currentSummary.id);
+              
+              console.log('[Stage8] ✓ Persisted synthetic TRADE_SELECTION to verified_facts');
+            }
+          } catch (persistErr) {
+            console.error('[Stage8] Failed to persist synthetic citation:', persistErr);
           }
         }
         
