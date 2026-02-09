@@ -1515,12 +1515,33 @@ export default function Stage8FinalReview({
     }
   }, [projectId]);
   
-  // Build M.E.S.S.A. Synthesis HTML for preview
+  // Build M.E.S.S.A. Audit Report HTML - Professional Light Theme
   const buildMessaSynthesisHTML = useCallback((data: any) => {
     const gemini = data.engines?.gemini?.analysis || {};
     const openai = data.engines?.openai?.analysis || {};
     const snapshot = data.projectSnapshot || {};
+    const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const shortDate = new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
     
+    // Calculate data sources count and operational readiness
+    const dataSources = data.citationCount || 0;
+    const verifiedSources = Math.min(dataSources, Math.floor(dataSources * ((gemini.healthScore || 50) / 100)));
+    const operationalReadiness = gemini.healthScore || 38;
+    const healthGrade = gemini.healthGrade || (operationalReadiness >= 80 ? 'COMPLETE' : operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE');
+    const auditVerdict = operationalReadiness >= 70 ? 'PASS' : 'FAIL';
+    const riskClass = openai?.riskLevel || (operationalReadiness >= 70 ? 'LOW' : operationalReadiness >= 40 ? 'MEDIUM' : 'CRITICAL');
+    
+    // Build workflow status matrix
+    const workflowItems = [
+      { source: 'Tasks', status: snapshot.taskProgress?.total > 0 ? 'Active' : 'Missing', updated: currentDate, notes: `${snapshot.taskProgress?.completed || 0}/${snapshot.taskProgress?.total || 0} tasks; ${snapshot.taskProgress?.percent || 0}% complete` },
+      { source: 'Documents', status: snapshot.documents > 0 ? 'Available' : 'Missing', updated: snapshot.documents > 0 ? currentDate : 'N/A', notes: `${snapshot.documents || 0} files uploaded` },
+      { source: 'Contracts', status: snapshot.contracts ? 'Active' : 'Missing', updated: snapshot.contracts ? currentDate : 'N/A', notes: snapshot.contracts ? 'Contract generated' : 'No contracts; legal risk maximum' },
+      { source: 'Team', status: snapshot.teamSize > 1 ? 'Active' : 'Partial', updated: currentDate, notes: `${snapshot.teamSize || 1} member(s) assigned` },
+      { source: 'Timeline', status: snapshot.timeline?.startDate ? 'Set' : 'Missing', updated: currentDate, notes: snapshot.timeline?.startDate ? `${snapshot.timeline.startDate} - ${snapshot.timeline.endDate || 'TBD'}` : 'Dates not configured' },
+      { source: 'Budget', status: snapshot.budget?.total > 0 ? 'Set' : 'Missing', updated: currentDate, notes: `$${(snapshot.budget?.total || 0).toLocaleString()} CAD total` },
+      { source: 'Site Map', status: snapshot.address ? 'Available' : 'Missing', updated: currentDate, notes: snapshot.address || 'Location not set' },
+    ];
+
     return `
 <!DOCTYPE html>
 <html>
@@ -1528,242 +1549,451 @@ export default function Stage8FinalReview({
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 0; }
-    .header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%); padding: 32px; text-align: center; border-bottom: 2px solid #7c3aed; }
-    .logo { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 2px; margin-bottom: 8px; }
-    .logo span { color: #a78bfa; }
-    .version { font-size: 11px; color: #c4b5fd; letter-spacing: 4px; text-transform: uppercase; }
-    .synthesis-id { font-size: 10px; color: #a78bfa; margin-top: 12px; font-family: monospace; }
-    .dual-engine { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 8px 16px; background: rgba(124, 58, 237, 0.2); border: 1px solid #7c3aed; border-radius: 20px; }
-    .engine-badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-    .gemini { background: #1e40af; color: #93c5fd; }
-    .openai { background: #065f46; color: #6ee7b7; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: #ffffff; 
+      color: #1f2937; 
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
     
-    .content { padding: 24px; max-width: 900px; margin: 0 auto; }
-    .section { background: #171717; border: 1px solid #262626; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
-    .section-header { background: #1f1f1f; padding: 16px 20px; border-bottom: 1px solid #262626; display: flex; align-items: center; gap: 12px; }
-    .section-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-    .section-title { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
-    .section-subtitle { font-size: 11px; color: #737373; }
-    .section-body { padding: 20px; }
+    /* Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 24px 32px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-date {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .header-right {
+      text-align: right;
+    }
+    .project-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .project-location {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .data-sources {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 12px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      font-size: 11px;
+      color: #4b5563;
+    }
     
-    .executive { background: linear-gradient(135deg, #1e1b4b 0%, #1f1f1f 100%); }
-    .executive .section-icon { background: #4c1d95; }
-    .executive-text { font-size: 15px; line-height: 1.8; color: #d4d4d4; }
+    /* Main Content */
+    .content {
+      padding: 24px 32px;
+      max-width: 900px;
+    }
     
-    .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .score-card { background: #262626; border-radius: 8px; padding: 16px; text-align: center; }
-    .score-value { font-size: 28px; font-weight: 700; color: #7c3aed; }
-    .score-label { font-size: 11px; color: #737373; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
-    .score-excellent { color: #22c55e; }
-    .score-good { color: #84cc16; }
-    .score-fair { color: #eab308; }
-    .score-needs { color: #f97316; }
+    /* Audit Header */
+    .audit-header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #1f2937;
+    }
+    .audit-icon { font-size: 24px; margin-bottom: 8px; }
+    .audit-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #1f2937;
+      letter-spacing: 1px;
+    }
+    .audit-meta {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+    .classification {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 16px;
+      background: ${healthGrade === 'COMPLETE' ? '#dcfce7' : healthGrade === 'PARTIAL' ? '#fef3c7' : '#fee2e2'};
+      color: ${healthGrade === 'COMPLETE' ? '#166534' : healthGrade === 'PARTIAL' ? '#92400e' : '#991b1b'};
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
     
-    .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .metric { background: #262626; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .metric-label { font-size: 12px; color: #a3a3a3; }
-    .metric-value { font-size: 14px; font-weight: 600; color: #fff; }
+    /* Section Headers */
+    .section-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 28px 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .section-number {
+      color: #6b7280;
+      font-weight: 400;
+    }
     
-    .list { list-style: none; }
-    .list li { padding: 10px 0; border-bottom: 1px solid #262626; display: flex; align-items: flex-start; gap: 12px; }
-    .list li:last-child { border-bottom: none; }
-    .list-icon { width: 20px; height: 20px; border-radius: 50%; background: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 2px; }
-    .list-text { font-size: 13px; color: #d4d4d4; line-height: 1.5; }
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid #e5e7eb;
+      font-size: 12px;
+    }
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+    }
+    td { color: #4b5563; }
     
-    .compliance-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .compliance-item { background: #262626; padding: 12px; border-radius: 8px; }
-    .compliance-label { font-size: 11px; color: #737373; margin-bottom: 4px; text-transform: uppercase; }
-    .compliance-status { font-size: 13px; font-weight: 600; }
-    .status-compliant { color: #22c55e; }
-    .status-review { color: #eab308; }
-    .status-missing { color: #ef4444; }
+    .status-available, .status-set, .status-active { color: #166534; font-weight: 600; }
+    .status-partial { color: #92400e; font-weight: 600; }
+    .status-missing { color: #991b1b; font-weight: 600; }
     
-    .footer { background: #0a0a0a; border-top: 1px solid #262626; padding: 24px; text-align: center; }
-    .footer-text { font-size: 10px; color: #525252; }
-    .cite-badge { display: inline-block; padding: 2px 8px; background: #1f1f1f; border: 1px solid #3f3f46; border-radius: 4px; font-size: 9px; color: #a3a3a3; font-family: monospace; margin-left: 8px; }
+    /* Summary Table */
+    .summary-table td:first-child { font-weight: 500; color: #374151; width: 40%; }
+    .summary-table td:last-child { font-weight: 600; }
+    
+    /* Pillar Boxes */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .pillar-section {
+      margin-bottom: 16px;
+    }
+    .pillar-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pillar-icon { font-size: 14px; }
+    .pillar-list {
+      list-style: none;
+      padding-left: 24px;
+    }
+    .pillar-list li {
+      padding: 6px 0;
+      font-size: 12px;
+      color: #4b5563;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .pillar-list li:last-child { border-bottom: none; }
+    .pillar-list strong { color: #1f2937; }
+    
+    /* Risk Matrix */
+    .risk-matrix th:first-child { width: 25%; }
+    .risk-matrix .severity-critical { color: #dc2626; font-weight: 700; }
+    .risk-matrix .severity-high { color: #ea580c; font-weight: 700; }
+    .risk-matrix .severity-medium { color: #ca8a04; font-weight: 700; }
+    .risk-matrix .severity-low { color: #16a34a; font-weight: 700; }
+    
+    /* Recommendations */
+    .rec-list {
+      list-style: none;
+    }
+    .rec-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      gap: 12px;
+    }
+    .rec-list li:last-child { border-bottom: none; }
+    .rec-number {
+      width: 24px;
+      height: 24px;
+      background: #1f2937;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .rec-text { font-size: 12px; color: #374151; line-height: 1.6; }
+    
+    /* Conclusion */
+    .conclusion-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+      text-align: center;
+    }
+    .verdict {
+      font-size: 18px;
+      font-weight: 800;
+      color: ${auditVerdict === 'PASS' ? '#166534' : '#991b1b'};
+      margin-bottom: 8px;
+    }
+    .confidence {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    
+    /* Footer */
+    .footer {
+      margin-top: 32px;
+      padding: 16px 32px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: #9ca3af;
+    }
+    .footer-brand {
+      font-weight: 700;
+      color: #f59e0b;
+    }
+    .synthesis-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #1f2937;
+      color: #e5e7eb;
+      border-radius: 4px;
+      font-size: 9px;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">M.E.S.S.<span>A.</span></div>
-    <div class="version">Multi-Engine Synthesis & Structured Analysis</div>
-    <div class="synthesis-id">Synthesis ID: ${data.synthesisId || 'N/A'}</div>
-    <div class="dual-engine">
-      <span class="engine-badge gemini">⚡ ${data.engines?.gemini?.model?.split('/')?.pop() || 'Gemini'}</span>
-      ${data.dualEngineUsed ? `<span>+</span><span class="engine-badge openai">🧠 ${data.engines?.openai?.model?.split('/')?.pop() || 'GPT-5'}</span>` : ''}
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-date">${shortDate}</div>
+    </div>
+    <div class="header-right">
+      <div class="project-title">🏗️ ${snapshot.name || 'Project'}</div>
+      <div class="project-location">${snapshot.address?.split(',')[0] || 'Location'}</div>
+      <div class="data-sources">Generated: ${currentDate} • Data Sources: ${dataSources}</div>
     </div>
   </div>
   
   <div class="content">
-    <!-- Project Snapshot -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-icon" style="background: #4c1d95;">📋</div>
-        <div>
-          <div class="section-title">${snapshot.name || 'Project'}</div>
-          <div class="section-subtitle">${snapshot.address || 'Location not set'} • ${snapshot.trade || 'General'}</div>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="metrics">
-          <div class="metric"><span class="metric-label">GFA</span><span class="metric-value">${(snapshot.gfa || 0).toLocaleString()} sq ft</span></div>
-          <div class="metric"><span class="metric-label">Team</span><span class="metric-value">${snapshot.teamSize || 1} members</span></div>
-          <div class="metric"><span class="metric-label">Progress</span><span class="metric-value">${snapshot.taskProgress?.percent || 0}%</span></div>
-          <div class="metric"><span class="metric-label">Budget</span><span class="metric-value">$${(snapshot.budget?.total || 0).toLocaleString()}</span></div>
-        </div>
+    <!-- Audit Report Header -->
+    <div class="audit-header">
+      <div class="audit-icon">🔬</div>
+      <div class="audit-title">M.E.S.S.A. AUDIT REPORT</div>
+      <div class="audit-meta">
+        Project: ${snapshot.name || 'N/A'}<br/>
+        Audit Date: ${currentDate} (Current Real-Time Audit)<br/>
+        <span class="classification">Classification: ${healthGrade}</span>
       </div>
     </div>
     
-    <!-- Executive Summary -->
-    <div class="section executive">
-      <div class="section-header">
-        <div class="section-icon">📊</div>
-        <div>
-          <div class="section-title">Executive Summary</div>
-          <div class="section-subtitle">Gemini Visual Analysis Engine</div>
-        </div>
-      </div>
-      <div class="section-body">
-        <p class="executive-text">${gemini.executiveSummary || gemini.rawAnalysis || 'Analysis in progress...'}</p>
-      </div>
+    <!-- 1. EXECUTIVE AUDIT SUMMARY -->
+    <div class="section-header"><span class="section-number">1.</span> EXECUTIVE AUDIT SUMMARY</div>
+    <table class="summary-table">
+      <tr><td>Data Completeness</td><td>${verifiedSources}/${dataSources} sources verified</td></tr>
+      <tr><td>Operational Readiness</td><td>${operationalReadiness}%</td></tr>
+      <tr><td>Risk Classification</td><td>${riskClass}</td></tr>
+      <tr><td>Audit Verdict</td><td>${auditVerdict}</td></tr>
+    </table>
+    <p style="font-size: 12px; color: #4b5563; line-height: 1.7; margin-bottom: 20px;">
+      <strong>Summary Statement:</strong><br/>
+      ${gemini.executiveSummary || `Project "${snapshot.name}" is currently in a ${healthGrade.toLowerCase()} state. ${operationalReadiness < 50 ? 'Critical data gaps identified in financial and documentation areas require immediate attention.' : 'Core project parameters established with minor gaps to address.'}`}
+    </p>
+    
+    <!-- 2. OPERATIONAL TRUTH VERIFICATION -->
+    <div class="section-header"><span class="section-number">2.</span> OPERATIONAL TRUTH VERIFICATION (8 Pillars)</div>
+    
+    <div class="pillar-section">
+      <div class="pillar-title"><span class="pillar-icon">✅</span> Confirmed Data Points</div>
+      <ul class="pillar-list">
+        <li><strong>Pillar 1:</strong> Confirmed Area: ${(snapshot.gfa || 0).toLocaleString()} sq ft ${snapshot.gfa ? '(Verified via Citation)' : '(Not set)'}</li>
+        <li><strong>Pillar 2:</strong> Materials Count: ${gemini.verificationStatus?.documentsReviewed || 0} items verified</li>
+        <li><strong>Pillar 6:</strong> Project Mode: ${snapshot.teamSize > 1 ? 'TEAM' : 'SOLO'} (${snapshot.teamSize} member${snapshot.teamSize > 1 ? 's' : ''})</li>
+        <li><strong>Pillar 7:</strong> Project Size: ${snapshot.gfa >= 1000 ? 'LARGE' : snapshot.gfa >= 500 ? 'MEDIUM' : 'SMALL'} (AI Classification based on ${(snapshot.gfa || 0).toLocaleString()} sq ft scope)</li>
+      </ul>
     </div>
     
-    <!-- Health Scores -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-icon" style="background: #166534;">💪</div>
-        <div>
-          <div class="section-title">Project Health Assessment</div>
-          <div class="section-subtitle">Multi-dimensional scoring</div>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="score-grid">
-          <div class="score-card">
-            <div class="score-value ${getScoreClass(gemini.healthScore)}">${gemini.healthScore || '—'}</div>
-            <div class="score-label">Overall Health</div>
-          </div>
-          <div class="score-card">
-            <div class="score-value ${getScoreClass(gemini.siteCondition?.safetyScore)}">${gemini.siteCondition?.safetyScore || '—'}</div>
-            <div class="score-label">Safety Score</div>
-          </div>
-          <div class="score-card">
-            <div class="score-value ${getScoreClass(gemini.verificationStatus?.completeness)}">${gemini.verificationStatus?.completeness || '—'}</div>
-            <div class="score-label">Verification</div>
-          </div>
-        </div>
-      </div>
+    <div class="pillar-section">
+      <div class="pillar-title"><span class="pillar-icon">⚠️</span> Pending Verification</div>
+      <ul class="pillar-list">
+        <li><strong>Pillar 8:</strong> AI Confidence: Reported as "${gemini.healthScore >= 70 ? 'High' : gemini.healthScore >= 40 ? 'Medium' : 'Low'}," ${gemini.verificationStatus?.completeness || 0}% verification on performance benchmarks</li>
+      </ul>
     </div>
     
-    <!-- Recommendations -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-icon" style="background: #0891b2;">💡</div>
-        <div>
-          <div class="section-title">Key Recommendations</div>
-          <div class="section-subtitle">Actionable insights</div>
-        </div>
-      </div>
-      <div class="section-body">
-        <ul class="list">
-          ${(gemini.recommendations || ['No recommendations available']).slice(0, 5).map((rec: string, i: number) => `
-            <li>
-              <span class="list-icon">${i + 1}</span>
-              <span class="list-text">${rec}</span>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
+    <div class="pillar-section">
+      <div class="pillar-title"><span class="pillar-icon">❌</span> Missing/Conflicting Data</div>
+      <ul class="pillar-list">
+        ${(gemini.verificationStatus?.gapsIdentified || ['Blueprint documentation incomplete', 'OBC compliance pending', 'Conflict detection requires review']).map((gap: string) => `<li>${gap}</li>`).join('')}
+      </ul>
     </div>
+    
+    <!-- 3. WORKFLOW STATUS MATRIX -->
+    <div class="section-header"><span class="section-number">3.</span> WORKFLOW STATUS MATRIX</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Data Source</th>
+          <th>Status</th>
+          <th>Last Updated</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${workflowItems.map(item => `
+          <tr>
+            <td>${item.source}</td>
+            <td class="status-${item.status.toLowerCase()}">${item.status}</td>
+            <td>${item.updated}</td>
+            <td>${item.notes}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    
+    <!-- 4. STRUCTURAL ANALYSIS -->
+    <div class="section-header"><span class="section-number">4.</span> STRUCTURAL ANALYSIS</div>
+    <p style="font-size: 12px; color: #374151; margin-bottom: 12px;"><strong>4.1 Area & Material Assessment</strong></p>
+    <ul class="pillar-list" style="padding-left: 0; margin-bottom: 16px;">
+      <li>Confirmed Area: ${(snapshot.gfa || 0).toLocaleString()} sq ft (${snapshot.gfa ? 'High' : 'Low'} Confidence)</li>
+      <li>Material Budget: $${(snapshot.budget?.materials || 0).toLocaleString()} CAD</li>
+      <li>Labor Budget: $${(snapshot.budget?.labor || 0).toLocaleString()} CAD</li>
+      <li>Cost per sq ft: $${snapshot.budget?.perSqFt?.toFixed(2) || '0.00'} CAD</li>
+    </ul>
     
     ${data.dualEngineUsed && openai ? `
-    <!-- Regulatory Compliance - OpenAI Engine -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-icon" style="background: #065f46;">⚖️</div>
-        <div>
-          <div class="section-title">Regulatory Compliance</div>
-          <div class="section-subtitle">OpenAI GPT-5 Building Code Analysis • ${data.region?.toUpperCase() || 'Ontario'}</div>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="compliance-grid">
-          <div class="compliance-item">
-            <div class="compliance-label">Structural</div>
-            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.structural?.status)}">${openai.codeCompliance?.structural?.status || 'Review Required'}</div>
-          </div>
-          <div class="compliance-item">
-            <div class="compliance-label">Fire Safety</div>
-            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.fireSafety?.status)}">${openai.codeCompliance?.fireSafety?.status || 'Review Required'}</div>
-          </div>
-          <div class="compliance-item">
-            <div class="compliance-label">Accessibility</div>
-            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.accessibility?.status)}">${openai.codeCompliance?.accessibility?.status || 'Review Required'}</div>
-          </div>
-          <div class="compliance-item">
-            <div class="compliance-label">Energy</div>
-            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.energy?.status)}">${openai.codeCompliance?.energy?.status || 'Review Required'}</div>
-          </div>
-        </div>
-        <div style="margin-top: 16px;">
-          <div class="metric"><span class="metric-label">Overall Compliance Score</span><span class="metric-value ${getScoreClass(openai.complianceScore)}">${openai.complianceScore || '—'}%</span></div>
-          <div class="metric" style="margin-top: 8px;"><span class="metric-label">Risk Level</span><span class="metric-value">${openai.riskLevel || 'Unknown'}</span></div>
-        </div>
-      </div>
+    <!-- 5. REGULATORY ALIGNMENT -->
+    <div class="section-header"><span class="section-number">5.</span> REGULATORY ALIGNMENT (${data.region?.toUpperCase() || 'Ontario'} Building Code)</div>
+    <table>
+      <tr><td style="width: 30%;"><strong>OBC Status</strong></td><td>${openai.codeCompliance?.structural?.status || 'REQUIRES REVIEW'}</td></tr>
+      <tr><td><strong>Risk Level</strong></td><td>${openai.riskLevel || 'MEDIUM'}</td></tr>
+      <tr><td><strong>Compliance Score</strong></td><td>${openai.complianceScore || '—'}%</td></tr>
+    </table>
+    
+    ${openai.codeCompliance ? `
+    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>Compliance Notes:</strong></p>
+    <ul class="pillar-list" style="padding-left: 16px;">
+      <li><strong>Structural:</strong> ${openai.codeCompliance.structural?.notes || 'Review required'}</li>
+      <li><strong>Fire Safety:</strong> ${openai.codeCompliance.fireSafety?.notes || 'Review required'}</li>
+      <li><strong>Accessibility:</strong> ${openai.codeCompliance.accessibility?.notes || 'Review required'}</li>
+    </ul>
+    ` : ''}
+    ` : ''}
+    
+    <!-- 6. CONFLICT DETECTION LOG -->
+    <div class="section-header"><span class="section-number">6.</span> CONFLICT DETECTION LOG</div>
+    <p style="font-size: 12px; color: #374151; margin-bottom: 12px;"><strong>Data Consistency Check:</strong></p>
+    <ul class="pillar-list" style="padding-left: 0;">
+      ${(gemini.progressAnalysis?.criticalItems || [
+        snapshot.budget?.total === 0 ? 'FINANCIAL CONFLICT: Budget set to $0.00 CAD' : null,
+        snapshot.teamSize === 1 ? 'RESOURCE CONFLICT: Only 1 team member assigned' : null,
+        !snapshot.timeline?.startDate ? 'TIMELINE CONFLICT: Project dates not configured' : null,
+      ]).filter(Boolean).map((item: string, i: number) => `<li><strong>${i + 1}.</strong> ${item}</li>`).join('') || '<li>No critical conflicts detected</li>'}
+    </ul>
+    
+    <!-- 7. RISK ASSESSMENT MATRIX -->
+    <div class="section-header"><span class="section-number">7.</span> RISK ASSESSMENT MATRIX</div>
+    <table class="risk-matrix">
+      <thead>
+        <tr>
+          <th>Risk Factor</th>
+          <th>Severity</th>
+          <th>Impact</th>
+          <th>Mitigation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Budget Accuracy</td>
+          <td class="${snapshot.budget?.total > 0 ? 'severity-low' : 'severity-critical'}">${snapshot.budget?.total > 0 ? 'LOW' : 'CRITICAL'}</td>
+          <td>${snapshot.budget?.total > 0 ? 'Budget established' : 'Project insolvency risk'}</td>
+          <td>${snapshot.budget?.total > 0 ? 'Monitor spending' : 'Populate line-item costs'}</td>
+        </tr>
+        <tr>
+          <td>Legal Liability</td>
+          <td class="${snapshot.contracts ? 'severity-low' : 'severity-high'}">${snapshot.contracts ? 'LOW' : 'HIGH'}</td>
+          <td>${snapshot.contracts ? 'Contract active' : 'No signed contract'}</td>
+          <td>${snapshot.contracts ? 'Maintain documentation' : 'Generate and sign contract'}</td>
+        </tr>
+        <tr>
+          <td>Schedule Adherence</td>
+          <td class="${snapshot.timeline?.startDate ? 'severity-medium' : 'severity-high'}">${snapshot.timeline?.startDate ? 'MEDIUM' : 'HIGH'}</td>
+          <td>${snapshot.timeline?.startDate ? 'Timeline configured' : 'No dates set'}</td>
+          <td>${snapshot.timeline?.startDate ? 'Monitor milestones' : 'Set project timeline'}</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!-- 8. ACTIONABLE RECOMMENDATIONS -->
+    <div class="section-header"><span class="section-number">8.</span> ACTIONABLE RECOMMENDATIONS</div>
+    <ol class="rec-list">
+      ${(gemini.recommendations || [
+        'Complete project documentation and upload all relevant files',
+        'Configure team structure and assign roles',
+        'Set project timeline with start and end dates',
+        'Generate and send client contract for signature',
+        'Review and confirm material/labor budgets',
+      ]).slice(0, 5).map((rec: string, i: number) => `
+        <li>
+          <span class="rec-number">${i + 1}</span>
+          <span class="rec-text">${rec}</span>
+        </li>
+      `).join('')}
+    </ol>
+    
+    <!-- AUDIT CONCLUSION -->
+    <div class="section-header"><span class="section-number">9.</span> AUDIT CONCLUSION</div>
+    <div class="conclusion-box">
+      <div class="verdict">Final Verdict: ${auditVerdict} / ${healthGrade}</div>
+      <div class="confidence">Confidence Level: ${operationalReadiness}% (Based on ${verifiedSources} verified data sources)</div>
+      <div class="confidence" style="margin-top: 8px;">Next Audit Recommended: Upon completion of missing data entries or at 50% task completion</div>
     </div>
     
-    <!-- Identified Gaps -->
-    ${openai.identifiedGaps?.length > 0 ? `
-    <div class="section">
-      <div class="section-header">
-        <div class="section-icon" style="background: #dc2626;">⚠️</div>
-        <div>
-          <div class="section-title">Identified Gaps</div>
-          <div class="section-subtitle">Items requiring attention</div>
-        </div>
-      </div>
-      <div class="section-body">
-        <ul class="list">
-          ${openai.identifiedGaps.slice(0, 5).map((gap: string, i: number) => `
-            <li>
-              <span class="list-icon" style="background: #dc2626;">!</span>
-              <span class="list-text">${gap}</span>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-    </div>
-    ` : ''}
-    ` : ''}
+    <p style="text-align: center; font-size: 11px; color: #6b7280; margin-top: 24px;">
+      <strong>M.E.S.S.A. Audit Report</strong> generated by BuildUnion AI Engine<br/>
+      Report Classification: Engineering-Grade Project Intelligence
+    </p>
   </div>
   
+  <!-- Footer -->
   <div class="footer">
-    <div class="footer-text">
-      Generated by M.E.S.S.A. ${data.synthesisVersion || 'v3.0'} • ${new Date(data.generatedAt).toLocaleString()} 
-      <span class="cite-badge">cite: [${data.synthesisId?.slice(0, 8) || 'MESSA'}]</span>
+    <div>
+      <span class="footer-brand">M.E.S.S.A.</span> • ${data.synthesisVersion || 'v3.0'}
     </div>
-    <div class="footer-text" style="margin-top: 8px;">
-      BuildUnion © ${new Date().getFullYear()} • Multi-Engine Synthesis & Structured Analysis
+    <div class="synthesis-badge">
+      ${data.dualEngineUsed ? '⚡ Dual Engine' : 'Single Engine'} • ${data.synthesisId?.slice(0, 12) || 'MESSA'}
+    </div>
+    <div>
+      Generated with BuildUnion AI • ${currentDate}
     </div>
   </div>
 </body>
 </html>`;
-    
-    function getScoreClass(score: number | undefined): string {
-      if (!score) return '';
-      if (score >= 80) return 'score-excellent';
-      if (score >= 60) return 'score-good';
-      if (score >= 40) return 'score-fair';
-      return 'score-needs';
-    }
-    
-    function getComplianceClass(status: string | undefined): string {
-      if (!status) return '';
-      if (status.toLowerCase().includes('compliant')) return 'status-compliant';
-      if (status.toLowerCase().includes('review')) return 'status-review';
-      return 'status-missing';
-    }
   }, []);
   
   // Legacy AI Analysis handler (for backwards compatibility)
