@@ -3641,125 +3641,6 @@ export default function Stage8FinalReview({
           ))}
         </div>
         
-        {/* Generated Reports Section - Summaries, Invoices, MESSA */}
-        <div className="pt-3 border-t">
-          <div className="flex items-center gap-2 mb-3">
-            <ClipboardList className="h-4 w-4 text-violet-600" />
-            <span className="text-xs font-medium text-violet-600">Generated Reports</span>
-          </div>
-          
-          {(() => {
-            // Filter generated reports from documents list
-            const reportDocs = documents.filter(d => {
-              const name = d.file_name.toLowerCase();
-              return name.includes('invoice') || name.includes('summary') || name.includes('messa') || name.includes('synthesis');
-            });
-            
-            // Sort by uploadedAt descending (latest first)
-            const sortedReports = [...reportDocs].sort((a, b) => {
-              const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
-              const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
-              return dateB - dateA;
-            });
-            
-            // Track latest per type for "Latest" badge
-            const latestByType = new Map<string, string>();
-            sortedReports.forEach(doc => {
-              const name = doc.file_name.toLowerCase();
-              let type = 'report';
-              if (name.includes('invoice')) type = 'invoice';
-              else if (name.includes('messa') || name.includes('synthesis')) type = 'messa';
-              else if (name.includes('summary')) type = 'summary';
-              if (!latestByType.has(type)) latestByType.set(type, doc.id);
-            });
-            
-            if (sortedReports.length === 0) {
-              return (
-                <div className="text-center py-3 text-xs text-muted-foreground italic rounded-lg bg-muted/20 border border-dashed">
-                  <Sparkles className="h-5 w-5 mx-auto mb-1.5 text-violet-400" />
-                  No reports generated yet. Use the action bar above.
-                </div>
-              );
-            }
-            
-            return (
-              <div className="space-y-1.5">
-                {sortedReports.map(doc => {
-                  const name = doc.file_name.toLowerCase();
-                  let reportType = 'Report';
-                  let reportIcon = <FileText className="h-3.5 w-3.5 text-gray-500" />;
-                  let reportColor = 'text-gray-600';
-                  let reportBg = 'bg-gray-50 dark:bg-gray-900/20';
-                  
-                  if (name.includes('invoice')) {
-                    reportType = 'Invoice';
-                    reportIcon = <DollarSign className="h-3.5 w-3.5 text-amber-500" />;
-                    reportColor = 'text-amber-600';
-                    reportBg = 'bg-amber-50/50 dark:bg-amber-950/20';
-                  } else if (name.includes('messa') || name.includes('synthesis')) {
-                    reportType = 'M.E.S.S.A.';
-                    reportIcon = <Sparkles className="h-3.5 w-3.5 text-violet-500" />;
-                    reportColor = 'text-violet-600';
-                    reportBg = 'bg-violet-50/50 dark:bg-violet-950/20';
-                  } else if (name.includes('summary')) {
-                    reportType = 'Summary';
-                    reportIcon = <ClipboardList className="h-3.5 w-3.5 text-blue-500" />;
-                    reportColor = 'text-blue-600';
-                    reportBg = 'bg-blue-50/50 dark:bg-blue-950/20';
-                  }
-                  
-                  const isLatest = Array.from(latestByType.values()).includes(doc.id);
-                  
-                  return (
-                    <div 
-                      key={doc.id} 
-                      className={cn(
-                        "group flex items-center gap-2 p-2.5 rounded-lg border transition-all cursor-pointer hover:shadow-sm",
-                        reportBg,
-                        isLatest ? "border-violet-300/50 dark:border-violet-700/30" : "border-transparent"
-                      )}
-                      onClick={() => setPreviewDocument({ 
-                        file_name: doc.file_name, 
-                        file_path: doc.file_path, 
-                        category: 'technical',
-                        citationId: doc.citationId 
-                      })}
-                    >
-                      <div className="h-8 w-8 rounded-lg bg-background/80 border flex items-center justify-center flex-shrink-0">
-                        {reportIcon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn("text-[10px] font-bold uppercase tracking-wider", reportColor)}>{reportType}</span>
-                          {isLatest && (
-                            <Badge className="h-4 px-1.5 text-[8px] bg-gradient-to-r from-violet-500 to-purple-500 text-white border-0">
-                              Latest
-                            </Badge>
-                          )}
-                        </div>
-                        <span className="text-xs truncate block text-foreground/80">{doc.file_name}</span>
-                        {doc.uploadedAt && (
-                          <span className="text-[9px] text-muted-foreground">{doc.uploadedAt}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
-                          <Download className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      {doc.citationId && (
-                        <Badge variant="outline" className="text-[8px] flex-shrink-0 bg-violet-50 dark:bg-violet-950/30 text-violet-500">
-                          [{doc.citationId.slice(0, 6)}]
-                        </Badge>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
-        
         {/* Contracts Section */}
         <div className="pt-3 border-t">
           <div className="flex items-center gap-2 mb-2">
@@ -3771,46 +3652,22 @@ export default function Stage8FinalReview({
           {contracts.length > 0 ? (
             <div className="space-y-1.5">
               {contracts.map(contract => (
-                <div key={contract.id} className="group flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 border border-transparent hover:border-pink-200/50 transition-all">
+                <div key={contract.id} className="group flex items-center justify-between p-2 rounded bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-pink-50 dark:bg-pink-950/30 border flex items-center justify-center flex-shrink-0">
-                      <FileCheck className="h-3.5 w-3.5 text-pink-500" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium block">#{contract.contract_number}</span>
-                      {canViewFinancials && contract.total_amount && (
-                        <span className="text-[10px] text-muted-foreground">${contract.total_amount.toLocaleString()}</span>
-                      )}
-                    </div>
+                    <span className="text-xs font-medium">#{contract.contract_number}</span>
+                    {canViewFinancials && contract.total_amount && (
+                      <span className="text-xs text-muted-foreground">${contract.total_amount.toLocaleString()}</span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => {
-                        setSelectedContractForEmail({
-                          id: contract.id,
-                          contract_number: contract.contract_number,
-                          share_token: contract.share_token || undefined,
-                          total_amount: contract.total_amount,
-                          status: contract.status,
-                        });
-                        setShowContractEmailDialog(true);
-                      }}
-                    >
-                      <Send className="h-3 w-3" />
-                    </Button>
-                    <Badge 
-                      variant={contract.status === 'signed' ? 'default' : 'outline'} 
-                      className={cn(
-                        "text-[10px]",
-                        contract.status === 'signed' && 'bg-green-500 text-white'
-                      )}
-                    >
-                      {contract.status}
-                    </Badge>
-                  </div>
+                  <Badge 
+                    variant={contract.status === 'signed' ? 'default' : 'outline'} 
+                    className={cn(
+                      "text-[10px]",
+                      contract.status === 'signed' && 'bg-green-500 text-white'
+                    )}
+                  >
+                    {contract.status}
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -6449,33 +6306,33 @@ export default function Stage8FinalReview({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "h-7 w-7 rounded-lg flex items-center justify-center",
-                        isActive ? "bg-cyan-500/20" : "bg-cyan-900/40"
+                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
                       )}>
                         {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-400")} />
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
                       </div>
                       <span className={cn(
-                        "text-xs font-bold tracking-wide",
-                        isActive ? "text-white" : "text-cyan-200"
+                        "text-xs font-semibold",
+                        isActive ? "text-cyan-200" : "text-cyan-500"
                       )}>
                         {displayTitle}
                       </span>
                     </div>
                     {dataCount > 0 && hasAccess && (
                       <span className={cn(
-                        "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded",
-                        isActive ? "bg-cyan-400/20 text-cyan-200" : "bg-cyan-900/40 text-cyan-300"
+                        "text-[10px] font-mono px-1.5 py-0.5 rounded",
+                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
                       )}>
                         {dataCount}
                       </span>
                     )}
                   </div>
                   <p className={cn(
-                    "text-[11px] leading-tight line-clamp-2 font-medium",
-                    isActive ? "text-cyan-100" : "text-cyan-300/80"
+                    "text-[11px] leading-tight line-clamp-2",
+                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
                   )}>
                     {getSummaryText()}
                   </p>
@@ -6596,33 +6453,33 @@ export default function Stage8FinalReview({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "h-7 w-7 rounded-lg flex items-center justify-center",
-                        isActive ? "bg-cyan-500/20" : "bg-cyan-900/40"
+                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
                       )}>
                         {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-400")} />
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
                       </div>
                       <span className={cn(
-                        "text-xs font-bold tracking-wide",
-                        isActive ? "text-white" : "text-cyan-200"
+                        "text-xs font-semibold",
+                        isActive ? "text-cyan-200" : "text-cyan-500"
                       )}>
                         {panel.title}
                       </span>
                     </div>
                     {dataCount > 0 && hasAccess && (
                       <span className={cn(
-                        "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded",
-                        isActive ? "bg-cyan-400/20 text-cyan-200" : "bg-cyan-900/40 text-cyan-300"
+                        "text-[10px] font-mono px-1.5 py-0.5 rounded",
+                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
                       )}>
                         {dataCount}
                       </span>
                     )}
                   </div>
                   <p className={cn(
-                    "text-[11px] leading-tight line-clamp-2 font-medium",
-                    isActive ? "text-cyan-100" : "text-cyan-300/80"
+                    "text-[11px] leading-tight line-clamp-2",
+                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
                   )}>
                     {getSummaryText()}
                   </p>
