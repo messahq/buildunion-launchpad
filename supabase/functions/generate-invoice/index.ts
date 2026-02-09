@@ -324,10 +324,10 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Fetch contractor profile
+    // Fetch contractor profile - FULL DATA from bu_profiles
     const { data: buProfile } = await supabaseClient
       .from("bu_profiles")
-      .select("company_name, phone, avatar_url")
+      .select("company_name, phone, avatar_url, service_area, company_website")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -336,6 +336,12 @@ serve(async (req) => {
       .select("full_name, avatar_url")
       .eq("user_id", user.id)
       .maybeSingle();
+    
+    logStep("Contractor profile loaded", { 
+      companyName: buProfile?.company_name, 
+      phone: buProfile?.phone,
+      email: user.email 
+    });
 
     // Extract verified facts for GFA, trade, and demolition
     const verifiedFacts = summary?.verified_facts as any[] || [];
@@ -497,6 +503,9 @@ serve(async (req) => {
         name: buProfile?.company_name || profile?.full_name || 'Contractor',
         phone: buProfile?.phone || '',
         email: user.email || '',
+        address: buProfile?.service_area || '',
+        website: buProfile?.company_website || '',
+        province: taxInfo.province,
       },
       
       client: {

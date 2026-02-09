@@ -45,6 +45,7 @@ export interface InvoiceData {
     address?: string;
     logo?: string;
     province?: string;
+    website?: string;
   };
   
   client: {
@@ -460,7 +461,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       <!-- MESSA Style Header -->
       <div class="header">
         <div class="header-left">
-          <div class="brand-name">M.E.S.S.A.</div>
+          <div class="brand-name">${escapeHtml(data.contractor.name) || 'M.E.S.S.A.'}</div>
           <div class="doc-type">Cost Breakdown</div>
           <div class="project-title">${escapeHtml(data.projectName)}</div>
         </div>
@@ -468,6 +469,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
           <div class="date">${currentDate}</div>
           <div class="province">${escapeHtml(provinceCode)}</div>
           <div class="phone">${escapeHtml(data.contractor.phone)}</div>
+          <div class="detail" style="font-size: 12px; color: #4b5563;">${escapeHtml(data.contractor.email)}</div>
           <div class="location">${escapeHtml(data.projectAddress?.split(',')[0] || data.contractor.address?.split(',')[0] || '')}</div>
         </div>
       </div>
@@ -600,8 +602,9 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       <!-- Footer -->
       <div class="footer">
         <div>
-          <span class="footer-brand">M.E.S.S.A.</span>
+          <span class="footer-brand">${escapeHtml(data.contractor.name) || 'M.E.S.S.A.'}</span>
           <span style="margin-left: 12px;">${escapeHtml(data.contractor.phone)}</span>
+          <span style="margin-left: 8px; color: #6b7280;">${escapeHtml(data.contractor.email)}</span>
         </div>
         <div class="footer-badge">
           Licensed & Insured • ${shortDate}
