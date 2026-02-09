@@ -337,11 +337,13 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Extract verified facts for GFA and trade
+    // Extract verified facts for GFA, trade, and demolition
     const verifiedFacts = summary?.verified_facts as any[] || [];
     const gfaCitation = verifiedFacts.find((f: any) => f.cite_type === 'GFA_LOCK');
     const tradeCitation = verifiedFacts.find((f: any) => f.cite_type === 'TRADE_SELECTION');
     const locationCitation = verifiedFacts.find((f: any) => f.cite_type === 'LOCATION');
+    const demolitionCitation = verifiedFacts.find((f: any) => f.cite_type === 'DEMOLITION_PRICE');
+    const siteConditionCitation = verifiedFacts.find((f: any) => f.cite_type === 'SITE_CONDITION');
 
     const gfaValue = gfaCitation?.metadata?.gfa_value || gfaCitation?.value || 0;
     const trade = tradeCitation?.answer || tradeCitation?.value || project.trade || 'General';
@@ -349,9 +351,28 @@ serve(async (req) => {
                           locationCitation?.answer || 
                           project.address || '';
 
+    // Extract demolition cost from citation or manual entry
+    let demolitionCost = 0;
+    let demolitionNeeded = false;
+    
+    if (demolitionCitation) {
+      demolitionCost = demolitionCitation.metadata?.demolition_cost || 
+                       demolitionCitation.metadata?.total_cost ||
+                       demolitionCitation.value || 0;
+      demolitionNeeded = demolitionCost > 0;
+      logStep("Demolition from citation", { cost: demolitionCost });
+    } else if (siteConditionCitation?.metadata?.needs_demolition || 
+               siteConditionCitation?.answer?.toLowerCase()?.includes('demolition')) {
+      // Calculate from GFA if demolition is needed but no explicit cost
+      const demolitionRate = 2.50; // $2.50/sq ft default
+      demolitionCost = gfaValue * demolitionRate;
+      demolitionNeeded = true;
+      logStep("Demolition calculated from site condition", { cost: demolitionCost, gfa: gfaValue });
+    }
+
     // Calculate tax based on location
     const taxInfo = getTaxRate(projectAddress);
-    logStep("Tax info calculated", { province: taxInfo.province, rate: taxInfo.rate });
+    logStep("Tax info calculated", { province: taxInfo.province, rate: taxInfo.rate, demolition: demolitionCost });
 
     // Build line items
     let lineItems: InvoiceLineItem[] = [];
@@ -417,6 +438,19 @@ serve(async (req) => {
           lineItems.push(...laborBreakdown);
         }
       }
+    }
+
+    // Add demolition as separate line item if applicable
+    if (demolitionNeeded && demolitionCost > 0) {
+      const demolitionSqft = gfaValue || 1000;
+      lineItems.push({
+        description: 'Site Demolition & Removal',
+        quantity: demolitionSqft,
+        unit: 'sq ft',
+        unitPrice: demolitionCost / demolitionSqft,
+        total: demolitionCost,
+      });
+      logStep("Added demolition line item", { cost: demolitionCost, sqft: demolitionSqft });
     }
 
     // Calculate totals
