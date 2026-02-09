@@ -7293,7 +7293,7 @@ export default function Stage8FinalReview({
       {/* Command Bar - Fixed Bottom Actions */}
       <Stage8CommandBar
         projectId={projectId}
-        isOwner={isOwner}
+        isOwner={userRole === 'owner'}
         pendingCount={pendingCount}
         onPendingClick={() => setShowPendingApprovalModal(true)}
         onGenerateInvoice={() => {
@@ -7310,12 +7310,12 @@ export default function Stage8FinalReview({
           // Future: Open conflict map modal
           toast.info('Conflict Map', { description: 'Coming soon - visual citation conflict analysis' });
         }}
-        onMessaSynthesis={() => setShowMessaModal(true)}
+        onMessaSynthesis={() => setShowMessaPreview(true)}
         isGeneratingMessa={isGeneratingAI}
       />
       
       {/* Bottom padding for command bar */}
       <div className="h-20" />
-    </>
+    </div>
   );
 }
