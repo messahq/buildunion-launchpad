@@ -2659,6 +2659,185 @@ export default function Stage8FinalReview({
           </div>
         )}
         
+        {/* ✓ PANEL 3: Trade & Template - Fullscreen View */}
+        {panel.id === 'panel-3-trade' && (() => {
+          const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+          const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+          const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
+          const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+          
+          const tradeLabel = tradeCitation?.answer || workTypeCitation?.answer || null;
+          const tradeKey = (tradeCitation?.value as string) || (tradeCitation?.metadata?.trade_key as string) || tradeLabel?.toLowerCase().replace(/ /g, '_') || null;
+          
+          const gfaValue = typeof gfaCitation?.value === 'number' 
+            ? gfaCitation.value 
+            : typeof gfaCitation?.metadata?.gfa_value === 'number'
+              ? gfaCitation.metadata.gfa_value
+              : null;
+          
+          const wastePercent = typeof templateCitation?.metadata?.waste_percent === 'number'
+            ? templateCitation.metadata.waste_percent
+            : 10;
+          
+          // Template generator
+          const getTemplateForTrade = (trade: string, gfa: number | null) => {
+            if (gfa === null || gfa === 0) return { materials: [], tasks: [], hasData: false };
+            
+            const tradeLower = trade.toLowerCase().replace(/ /g, '_');
+            const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
+              painting: {
+                materials: [
+                  { name: 'Interior Paint (Premium)', qty: Math.ceil(gfa / 350), unit: 'gal' },
+                  { name: 'Primer', qty: Math.ceil(gfa / 400), unit: 'gal' },
+                  { name: 'Supplies (Brushes, Rollers, Tape)', qty: 1, unit: 'kit' },
+                  { name: 'Drop Cloths', qty: Math.ceil(gfa / 500), unit: 'pcs' },
+                  { name: 'Caulking', qty: Math.ceil(gfa / 300), unit: 'tubes' },
+                ],
+                tasks: ['Surface prep & cleaning', 'Priming', 'First coat', 'Second coat', 'Touch-ups & cleanup'],
+              },
+              flooring: {
+                materials: [
+                  { name: 'Hardwood Flooring', qty: gfa, unit: 'sq ft' },
+                  { name: 'Underlayment', qty: gfa, unit: 'sq ft' },
+                  { name: 'Transition Strips', qty: Math.ceil(gfa / 200), unit: 'pcs' },
+                  { name: 'Baseboards', qty: Math.round(4 * Math.sqrt(gfa) * 0.85), unit: 'ln ft' },
+                ],
+                tasks: ['Remove old flooring', 'Subfloor prep', 'Install underlayment', 'Install flooring', 'Install baseboards'],
+              },
+              drywall: {
+                materials: [
+                  { name: 'Drywall Sheets (4x8)', qty: Math.ceil(gfa / 32), unit: 'sheets' },
+                  { name: 'Joint Compound', qty: Math.ceil(gfa / 500), unit: 'buckets' },
+                  { name: 'Drywall Tape', qty: Math.ceil(gfa / 100), unit: 'rolls' },
+                  { name: 'Screws', qty: Math.ceil(gfa / 50), unit: 'boxes' },
+                ],
+                tasks: ['Demolition', 'Framing check', 'Hang drywall', 'Tape & mud', 'Sand & finish'],
+              },
+            };
+            
+            const result = templates[tradeLower] 
+              || Object.entries(templates).find(([key]) => tradeLower.includes(key))?.[1]
+              || null;
+            return result ? { ...result, hasData: true } : { materials: [], tasks: [], hasData: false };
+          };
+          
+          const template = tradeKey ? getTemplateForTrade(tradeKey, gfaValue) : { materials: [], tasks: [], hasData: false };
+          
+          // Apply waste to materials
+          const materialsWithWaste = template.materials.map(mat => {
+            const applyWaste = mat.unit === 'sq ft' || mat.unit === 'ln ft' || mat.unit === 'sheets' || mat.unit === 'rolls';
+            if (applyWaste && wastePercent > 0) {
+              return { ...mat, qty: Math.ceil(mat.qty * (1 + wastePercent / 100)), hasWaste: true };
+            }
+            return { ...mat, hasWaste: false };
+          });
+          
+          return (
+            <div className="space-y-6">
+              {/* Trade Header */}
+              <div className={cn(
+                "p-6 rounded-xl border-2",
+                tradeLabel
+                  ? "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-300 dark:border-orange-700"
+                  : "bg-muted/30 border-dashed"
+              )}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                    {tradeLabel || 'No Trade Selected'}
+                  </h4>
+                  {tradeCitation && (
+                    <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                      cite: [{tradeCitation.id.slice(0, 8)}]
+                    </Badge>
+                  )}
+                </div>
+                {gfaValue && (
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4 text-orange-500" />
+                      <span className="text-sm font-medium">{gfaValue.toLocaleString()} sq ft</span>
+                    </div>
+                    {wastePercent > 0 && (
+                      <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600">
+                        +{wastePercent}% waste factor
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Materials Grid */}
+              {template.hasData && materialsWithWaste.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4 text-orange-500" />
+                    Material Requirements
+                    {templateCitation && (
+                      <span className="text-[10px] text-orange-500 font-mono ml-auto">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                    )}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {materialsWithWaste.map((mat, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-center justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <Hammer className="h-5 w-5 text-orange-500" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{mat.name}</p>
+                            {mat.hasWaste && (
+                              <p className="text-[10px] text-orange-500">+{wastePercent}% waste included</p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-sm font-bold">
+                          {mat.qty.toLocaleString()} {mat.unit}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Task Phases */}
+              {template.hasData && template.tasks.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    Work Phases ({template.tasks.length})
+                  </h4>
+                  <div className="grid gap-2">
+                    {template.tasks.map((task, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 font-bold text-sm">
+                          {idx + 1}
+                        </div>
+                        <span className="font-medium">{task}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* No Data Message */}
+              {!template.hasData && (
+                <div className="p-8 rounded-xl border-2 border-dashed text-center">
+                  <Hammer className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    {!tradeLabel ? 'No trade selected in wizard' : 'GFA required to calculate materials'}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        
         {panel.id === 'panel-4-team' && teamMembers.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
