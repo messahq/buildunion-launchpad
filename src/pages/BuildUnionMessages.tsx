@@ -72,6 +72,7 @@ interface TeamMemberInfo {
 }
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { PendingInvitationsPanel } from "@/components/PendingInvitationsPanel";
 
 // Email Templates
 interface EmailTemplate {
@@ -2170,6 +2171,11 @@ export default function BuildUnionMessages() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Pending Invitations Panel - Show at the top for invited users */}
+        <div className="mb-4">
+          <PendingInvitationsPanel />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-280px)] min-h-[500px]">
           {/* Conversations List */}
