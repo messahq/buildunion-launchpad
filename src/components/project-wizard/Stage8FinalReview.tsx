@@ -60,6 +60,8 @@ import {
   LockKeyhole,
   Unlock,
   MessageSquare,
+  Mail,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -384,6 +386,8 @@ export default function Stage8FinalReview({
   const [isFinancialLocked, setIsFinancialLocked] = useState(true);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientName, setClientName] = useState('');
   
   // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
@@ -2902,10 +2906,39 @@ export default function Stage8FinalReview({
               </div>
             </div>
             
-            {/* Team Members to Send */}
+            {/* Client Info for Contract */}
+            <div className="p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50">
+              <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-3">Client Information</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Client Name *</label>
+                  <Input
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="John Smith"
+                    className="h-9"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Client Email *</label>
+                  <Input
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="client@example.com"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                * Client will receive an email with a secure link to view and sign the contract
+              </p>
+            </div>
+            
+            {/* Team Members to notify (optional) */}
             {teamMembers.length > 0 && (
               <div className="p-4 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
-                <h4 className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Send Contract To</h4>
+                <h4 className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Notify Team Members (Optional)</h4>
                 <div className="space-y-2">
                   {teamMembers.map(member => (
                     <div key={member.id} className="flex items-center justify-between p-2 rounded bg-background/50">
@@ -2975,28 +3008,81 @@ export default function Stage8FinalReview({
               Download PDF
             </Button>
             
-            {/* Send to Team */}
+            {/* Send Contract to Client */}
             <Button 
               className="gap-2 bg-pink-600 hover:bg-pink-700"
-              disabled={isSendingContract || teamMembers.length === 0}
+              disabled={isSendingContract || !clientEmail || !clientName}
               onClick={async () => {
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(clientEmail)) {
+                  toast.error('Please enter a valid email address');
+                  return;
+                }
+                
                 setIsSendingContract(true);
                 try {
-                  // Create contract in database
-                  const { data: newContract, error } = await supabase.from('contracts').insert({
+                  // 1. Create contract in database with client info
+                  const { data: newContract, error: contractError } = await supabase.from('contracts').insert({
                     user_id: userId,
                     project_id: projectId,
                     contract_number: generateContractPreviewData.contractNumber,
                     template_type: selectedContractType || 'residential',
                     project_name: generateContractPreviewData.projectName,
                     project_address: generateContractPreviewData.projectAddress,
-                    status: 'draft',
+                    client_name: clientName,
+                    client_email: clientEmail,
+                    start_date: typeof generateContractPreviewData.startDate === 'string' && generateContractPreviewData.startDate !== 'Not set' 
+                      ? (() => { try { return new Date(generateContractPreviewData.startDate as string).toISOString().split('T')[0]; } catch { return null; } })()
+                      : null,
+                    estimated_end_date: typeof generateContractPreviewData.endDate === 'string' && generateContractPreviewData.endDate !== 'Not set'
+                      ? (() => { try { return new Date(generateContractPreviewData.endDate as string).toISOString().split('T')[0]; } catch { return null; } })()
+                      : null,
+                    status: 'pending_client',
                   }).select().single();
                   
-                  if (error) throw error;
+                  if (contractError) throw contractError;
                   
-                  toast.success(`Contract created! Send emails to ${teamMembers.length} team member(s) coming soon.`);
+                  // 2. Build the signing URL
+                  const baseUrl = window.location.origin;
+                  const contractUrl = `${baseUrl}/contract/sign?token=${newContract.share_token}`;
+                  
+                  // 3. Get current user's profile for contractor name
+                  const { data: userProfile } = await supabase
+                    .from('bu_profiles')
+                    .select('company_name')
+                    .eq('user_id', userId)
+                    .single();
+                  
+                  // 4. Send email via edge function
+                  const { data: session } = await supabase.auth.getSession();
+                  const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-contract-email', {
+                    body: {
+                      clientEmail: clientEmail,
+                      clientName: clientName,
+                      contractorName: userProfile?.company_name || 'Your Contractor',
+                      projectName: generateContractPreviewData.projectName,
+                      contractUrl: contractUrl,
+                      contractId: newContract.id,
+                    },
+                  });
+                  
+                  if (emailError) {
+                    console.error('Email send failed:', emailError);
+                    // Contract created but email failed - still show partial success
+                    toast.warning('Contract created but email failed to send. Share the link manually.');
+                  } else {
+                    // Update contract with sent timestamp
+                    await supabase.from('contracts').update({
+                      sent_to_client_at: new Date().toISOString(),
+                    }).eq('id', newContract.id);
+                    
+                    toast.success(`Contract sent to ${clientName}!`);
+                  }
+                  
                   setShowContractPreview(false);
+                  setClientEmail('');
+                  setClientName('');
                   
                   // Refresh contracts list
                   const { data: updatedContracts } = await supabase
@@ -3013,8 +3099,12 @@ export default function Stage8FinalReview({
                 }
               }}
             >
-              {isSendingContract ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
-              {teamMembers.length > 0 ? `Create & Send to ${teamMembers.length} Member${teamMembers.length > 1 ? 's' : ''}` : 'Create Contract'}
+              {isSendingContract ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {clientEmail && clientName ? 'Create & Send to Client' : 'Enter Client Info'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -29,7 +29,7 @@ import ResetPassword from "./pages/ResetPassword";
 import DockLogin from "./pages/DockLogin";
 import DockRegister from "./pages/DockRegister";
 import OrbPage from "./pages/OrbPage";
-// ContractView removed for Project 3.0
+import ContractSignature from "./pages/ContractSignature";
 import AdminDashboard from "./pages/AdminDashboard";
 import BuildUnionAbout from "./pages/BuildUnionAbout";
 import BuildUnionNewProject from "./pages/BuildUnionNewProject";
@@ -77,7 +77,8 @@ const App = () => (
                     <Route path="/dock/login" element={<DockLogin />} />
                     <Route path="/dock/register" element={<DockRegister />} />
                     <Route path="/orb" element={<OrbPage />} />
-                    {/* ContractView route removed for Project 3.0 */}
+                    {/* Public contract signing page - no auth required */}
+                    <Route path="/contract/sign" element={<ContractSignature />} />
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/buildunion/about" element={<BuildUnionAbout />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
