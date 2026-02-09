@@ -1985,7 +1985,24 @@ export default function Stage8FinalReview({
       
       return (
         <div className="space-y-4">
-          {/* ✓ DYNAMIC LABEL: Show Sub-worktype, not main category */}
+          {/* ✓ WORK TYPE - Main Category (Interior Finishing, Renovation, etc.) */}
+          {workTypeCitation && (
+            <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/50 dark:border-blue-800/30">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">
+                  Work Type
+                </span>
+                <span className="text-[9px] text-blue-500 font-mono">
+                  cite: [{workTypeCitation.id.slice(0, 8)}]
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 capitalize">
+                {workTypeCitation.answer?.replace(/_/g, ' ') || '—'}
+              </p>
+            </div>
+          )}
+          
+          {/* ✓ TRADE SELECTION - Sub-worktype (Flooring, Painting, Drywall) */}
           <div className={cn(
             "p-4 rounded-xl border",
             hasTradeCitation
@@ -1997,8 +2014,8 @@ export default function Stage8FinalReview({
                 "text-xs font-medium uppercase tracking-wide",
                 hasTradeCitation ? "text-orange-600 dark:text-orange-400" : "text-gray-500"
               )}>
-                {/* ✓ Show specific trade in header */}
-                {displayLabel ? 'Selected Trade' : 'Trade'}
+                {/* ✓ Show specific label in header */}
+                {displayLabel ? 'Selected Trade (Sub-worktype)' : 'Trade'}
               </span>
               {hasTradeCitation ? (
                 <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
