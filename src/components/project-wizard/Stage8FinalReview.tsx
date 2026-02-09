@@ -6239,23 +6239,36 @@ export default function Stage8FinalReview({
         </div>
       </div>
 
-      {/* Command Center Layout - works at ALL viewport sizes */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+      {/* Orbital Command Center Layout */}
+      <div className="flex-1 relative overflow-hidden">
         {/* Background grid effect */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+        <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: 'linear-gradient(rgba(56,189,248,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.3) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }} />
 
-        {/* TOP ROW: 4 panels */}
-        <div className="grid grid-cols-4 gap-2 px-3 pt-3 shrink-0 relative z-10">
-          {PANELS.slice(0, 4).map((panel) => {
+        {/* Orbital Ring - Desktop */}
+        <div className="hidden lg:flex absolute inset-0 items-center justify-center">
+          {/* Orbital ring glow */}
+          <div className="absolute w-[680px] h-[680px] rounded-full border border-cyan-800/20" />
+          <div className="absolute w-[682px] h-[682px] rounded-full border border-cyan-600/5" />
+
+          {/* 8 Orbital Nodes */}
+          {PANELS.map((panel, index) => {
+            const { rad } = getOrbitalPosition(index, PANELS.length);
+            const radius = 310; // Distance from center
+            const x = Math.cos(rad) * radius;
+            const y = Math.sin(rad) * radius;
             const isActive = activeOrbitalPanel === panel.id;
             const hasAccess = hasAccessToTier(panel.visibilityTier);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
-            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length : panelCitations.length;
+            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
+              : panel.id === 'panel-5-timeline' ? tasks.length
+              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
+              : panelCitations.length;
 
+            // Dynamic title for panel 3
             let displayTitle = panel.title;
             if (panel.id === 'panel-3-trade') {
               const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
@@ -6266,192 +6279,233 @@ export default function Stage8FinalReview({
               <motion.button
                 key={panel.id}
                 className={cn(
-                  "relative flex flex-col items-start justify-between p-2 sm:p-3 rounded-xl cursor-pointer overflow-hidden transition-all duration-300 group text-left min-h-[60px] sm:min-h-[80px]",
-                  "backdrop-blur-[10px] border",
-                  isActive
-                    ? "bg-cyan-500/10 border-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.25)]"
-                    : "bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.07] hover:border-cyan-500/30",
+                  "absolute flex flex-col items-center gap-1 group cursor-pointer z-10",
                   !hasAccess && "opacity-30 cursor-not-allowed"
                 )}
+                style={{ 
+                  left: `calc(50% + ${x}px - 44px)`,
+                  top: `calc(50% + ${y}px - 44px)`,
+                }}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02 } : undefined}
-                whileTap={hasAccess ? { scale: 0.98 } : undefined}
+                whileHover={hasAccess ? { scale: 1.15 } : undefined}
+                whileTap={hasAccess ? { scale: 0.95 } : undefined}
+                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               >
-                {isActive && (
-                  <motion.div
-                    className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                )}
-                <div className="flex items-center justify-between w-full">
-                  <div className={cn(
-                    "h-7 w-7 rounded-lg flex items-center justify-center",
-                    isActive ? "bg-cyan-500/20" : "bg-white/[0.06]"
-                  )}>
-                    {hasAccess ? (
-                      <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
-                    ) : (
-                      <Lock className="h-3 w-3 text-gray-600" />
-                    )}
-                  </div>
-                  {dataCount > 0 && hasAccess && (
-                    <span className={cn(
-                      "text-[10px] font-mono px-1.5 py-0.5 rounded-full",
-                      isActive ? "bg-cyan-500/20 text-cyan-300" : "bg-white/[0.06] text-cyan-700"
-                    )}>
-                      {dataCount}
-                    </span>
+                {/* Node circle */}
+                <motion.div
+                  className={cn(
+                    "w-[88px] h-[88px] rounded-2xl flex flex-col items-center justify-center relative transition-all duration-300",
+                    isActive 
+                      ? "bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border-2 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+                      : "bg-[#111827]/80 border border-cyan-900/30 hover:border-cyan-600/50 hover:shadow-[0_0_15px_rgba(34,211,238,0.15)]",
+                    !hasAccess && "border-gray-800/30"
                   )}
-                </div>
-                <div className="mt-auto">
-                  <span className={cn(
-                    "text-[10px] sm:text-xs font-semibold leading-tight block truncate",
-                    isActive ? "text-cyan-200" : "text-cyan-500/80"
-                  )}>
-                    {displayTitle}
-                  </span>
-                </div>
-                {isActive && (
-                  <motion.div
-                    className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400"
-                    animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  />
-                )}
+                  animate={isActive ? {
+                    boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.35)', '0 0 20px rgba(34,211,238,0.2)'],
+                  } : {}}
+                  transition={isActive ? { duration: 2, repeat: Infinity } : {}}
+                >
+                  {!hasAccess ? (
+                    <Lock className="h-5 w-5 text-gray-600" />
+                  ) : (
+                    <>
+                      <Icon className={cn("h-5 w-5 mb-1", isActive ? "text-cyan-300" : "text-cyan-600")} />
+                      {dataCount > 0 && (
+                        <span className={cn(
+                          "text-[9px] font-mono",
+                          isActive ? "text-cyan-200" : "text-cyan-700"
+                        )}>
+                          {dataCount}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyan-400"
+                      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                  )}
+                </motion.div>
+                {/* Label */}
+                <span className={cn(
+                  "text-[10px] font-medium text-center max-w-[90px] leading-tight",
+                  isActive ? "text-cyan-200" : "text-cyan-700",
+                  !hasAccess && "text-gray-700"
+                )}>
+                  {displayTitle}
+                </span>
               </motion.button>
             );
           })}
-        </div>
 
-        {/* CENTRAL CANVAS - flex-1 takes remaining space */}
-        <div className="flex-1 min-h-0 px-3 py-2 relative z-10">
-          <div
-            className="relative rounded-2xl overflow-hidden flex flex-col h-full cursor-pointer group/canvas border border-cyan-700/30"
-            onClick={() => setFullscreenPanel(activePanelConfig.id)}
+          {/* Central Canvas */}
+          <motion.div
+            className="relative w-[480px] h-[420px] rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden"
+            layout
+            key={activeOrbitalPanel}
           >
-            {/* Radar sweep ambient glow */}
-            <div className="absolute inset-[-2px] rounded-2xl pointer-events-none z-30 overflow-hidden">
-              <motion.div
-                className="absolute w-full h-full"
-                style={{
-                  background: 'conic-gradient(from 0deg, transparent 0deg, transparent 340deg, rgba(245,158,11,0.25) 355deg, rgba(34,211,238,0.35) 360deg)',
-                }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-              />
-              <div className="absolute inset-[2px] rounded-[14px] bg-[#0c1120]" />
-            </div>
-
-            <div className="absolute inset-0 bg-[#0c1120]/95 backdrop-blur-sm rounded-2xl" />
-
             {/* Canvas header */}
-            <div className="relative z-10 px-4 py-2 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40 rounded-t-2xl shrink-0">
+            <div className="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40">
               <div className="flex items-center gap-2">
                 <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
                 <span className="text-sm font-semibold text-cyan-200">
-                  {activePanelConfig.id === 'panel-3-trade'
+                  {activePanelConfig.id === 'panel-3-trade' 
                     ? (() => { const tc = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return tc?.answer ? `${tc.answer} Template` : activePanelConfig.title; })()
                     : t(activePanelConfig.titleKey, activePanelConfig.title)
                   }
                 </span>
                 {getTierBadge(activePanelConfig.visibilityTier)}
               </div>
-              <Maximize2 className="h-3.5 w-3.5 text-cyan-700 group-hover/canvas:text-cyan-400 transition-colors" />
-            </div>
-
-            {/* Canvas content */}
-            <div className="relative z-10 flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeOrbitalPanel}
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.97 }}
-                  transition={{ duration: 0.25 }}
-                  className="p-4 min-h-full"
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
+                  onClick={() => setFullscreenPanel(activePanelConfig.id)}
                 >
-                  <div className="bg-background rounded-xl p-3 min-h-full">
-                    {renderPanelContent(activePanelConfig)}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
+            {/* Canvas content */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeOrbitalPanel}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="p-4 overflow-y-auto h-[calc(100%-52px)] [&_*]:text-foreground dark:[&_*]:text-foreground"
+                style={{ colorScheme: 'light' }}
+              >
+                <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
+                  {renderPanelContent(activePanelConfig)}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
 
-            <div className="absolute inset-0 rounded-2xl bg-cyan-500/[0.03] opacity-0 group-hover/canvas:opacity-100 transition-opacity pointer-events-none z-20" />
+          {/* Connection lines from active node to center */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+            {PANELS.map((panel, index) => {
+              const { rad } = getOrbitalPosition(index, PANELS.length);
+              const radius = 310;
+              const x = Math.cos(rad) * radius;
+              const y = Math.sin(rad) * radius;
+              const isActive = activeOrbitalPanel === panel.id;
+              
+              return isActive ? (
+                <motion.line
+                  key={panel.id}
+                  x1="50%" y1="50%"
+                  x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`}
+                  stroke="rgba(34,211,238,0.3)"
+                  strokeWidth="1.5"
+                  strokeDasharray="6 4"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                />
+              ) : null;
+            })}
+          </svg>
+        </div>
+
+        {/* Mobile/Tablet: Tab-based layout */}
+        <div className="lg:hidden flex flex-col h-full">
+          {/* Tab strip */}
+          <div className="flex overflow-x-auto gap-1 px-3 py-2 border-b border-cyan-900/30 bg-[#0c1120]/80 shrink-0">
+            {PANELS.map((panel) => {
+              const isActive = activeOrbitalPanel === panel.id;
+              const hasAccess = hasAccessToTier(panel.visibilityTier);
+              const Icon = panel.icon;
+              return (
+                <button
+                  key={panel.id}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0",
+                    isActive 
+                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                      : "text-cyan-700 hover:text-cyan-400 hover:bg-cyan-950/30",
+                    !hasAccess && "opacity-30 cursor-not-allowed"
+                  )}
+                  onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                  disabled={!hasAccess}
+                >
+                  {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                  {panel.title}
+                </button>
+              );
+            })}
+          </div>
+          {/* Content area */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeOrbitalPanel}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="bg-background rounded-xl p-4 border border-cyan-900/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <activePanelConfig.icon className="h-5 w-5 text-cyan-600" />
+                      <h3 className="text-sm font-semibold">{t(activePanelConfig.titleKey, activePanelConfig.title)}</h3>
+                      {getTierBadge(activePanelConfig.visibilityTier)}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setFullscreenPanel(activePanelConfig.id)}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {renderPanelContent(activePanelConfig)}
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* BOTTOM ROW: 4 panels */}
-        <div className="grid grid-cols-4 gap-2 px-3 pb-3 shrink-0 relative z-10">
-          {PANELS.slice(4, 8).map((panel) => {
-            const isActive = activeOrbitalPanel === panel.id;
-            const hasAccess = hasAccessToTier(panel.visibilityTier);
-            const Icon = panel.icon;
-            const dataCount = panel.id === 'panel-5-timeline' ? tasks.length
-              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
-              : getCitationsForPanel(panel.dataKeys).length;
-
-            return (
-              <motion.button
-                key={panel.id}
-                className={cn(
-                  "relative flex flex-col items-start justify-between p-2 sm:p-3 rounded-xl cursor-pointer overflow-hidden transition-all duration-300 group text-left min-h-[60px] sm:min-h-[80px]",
-                  "backdrop-blur-[10px] border",
-                  isActive
-                    ? "bg-cyan-500/10 border-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.25)]"
-                    : "bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.07] hover:border-cyan-500/30",
-                  !hasAccess && "opacity-30 cursor-not-allowed"
-                )}
-                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02 } : undefined}
-                whileTap={hasAccess ? { scale: 0.98 } : undefined}
-              >
-                {isActive && (
-                  <motion.div
-                    className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                )}
-                <div className="flex items-center justify-between w-full">
-                  <div className={cn(
-                    "h-7 w-7 rounded-lg flex items-center justify-center",
-                    isActive ? "bg-cyan-500/20" : "bg-white/[0.06]"
-                  )}>
-                    {hasAccess ? (
-                      <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
-                    ) : (
-                      <Lock className="h-3 w-3 text-gray-600" />
-                    )}
-                  </div>
-                  {dataCount > 0 && hasAccess && (
-                    <span className={cn(
-                      "text-[10px] font-mono px-1.5 py-0.5 rounded-full",
-                      isActive ? "bg-cyan-500/20 text-cyan-300" : "bg-white/[0.06] text-cyan-700"
-                    )}>
-                      {dataCount}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-auto">
-                  <span className={cn(
-                    "text-[10px] sm:text-xs font-semibold leading-tight block truncate",
-                    isActive ? "text-cyan-200" : "text-cyan-500/80"
-                  )}>
-                    {panel.title}
-                  </span>
-                </div>
-                {isActive && (
-                  <motion.div
-                    className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400"
-                    animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  />
-                )}
-              </motion.button>
-            );
-          })}
+        {/* Navigation arrows - Desktop */}
+        <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 items-center gap-3 z-20">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
+            onClick={() => {
+              const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
+              const prevIdx = (currentIdx - 1 + PANELS.length) % PANELS.length;
+              setActiveOrbitalPanel(PANELS[prevIdx].id);
+            }}
+          >
+            <ChevronRight className="h-4 w-4 rotate-180" />
+            Previous
+          </Button>
+          <span className="text-[10px] text-cyan-700 font-mono">
+            {PANELS.findIndex(p => p.id === activeOrbitalPanel) + 1} / {PANELS.length}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
+            onClick={() => {
+              const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
+              const nextIdx = (currentIdx + 1) % PANELS.length;
+              setActiveOrbitalPanel(PANELS[nextIdx].id);
+            }}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
@@ -6459,14 +6513,18 @@ export default function Stage8FinalReview({
       <Dialog open={!!fullscreenPanel} onOpenChange={(open) => !open && setFullscreenPanel(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           {fullscreenPanelConfig && (() => {
+            // ✓ DYNAMIC TITLE for fullscreen Panel 3
             const getFullscreenTitle = () => {
               if (fullscreenPanelConfig.id === 'panel-3-trade') {
                 const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
                 const tradeLabel = tradeCitation?.answer;
-                if (tradeLabel) return `${tradeLabel} Template`;
+                if (tradeLabel) {
+                  return `${tradeLabel} Template`;
+                }
               }
               return t(fullscreenPanelConfig.titleKey, fullscreenPanelConfig.title);
             };
+            
             return (
               <>
                 <DialogHeader className={cn("pb-4 border-b", fullscreenPanelConfig.bgColor)}>
@@ -6492,7 +6550,7 @@ export default function Stage8FinalReview({
         </DialogContent>
       </Dialog>
       
-      {/* Contract Template Dialog */}
+      {/* Contract Template Dialog - Full Preview with PDF & Send */}
       <Dialog open={showContractPreview} onOpenChange={setShowContractPreview}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b bg-gradient-to-r from-pink-50/80 to-rose-50/80 dark:from-pink-950/30 dark:to-rose-950/30 -mx-6 -mt-6 px-6 pt-6">
@@ -6509,8 +6567,101 @@ export default function Stage8FinalReview({
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground">Contract #{generateContractPreviewData.contractNumber}</p>
               </div>
+              <Badge className="bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                {selectedContractType === 'residential' ? '🏠' : 
+                 selectedContractType === 'commercial' ? '🏢' :
+                 selectedContractType === 'industrial' ? '🏭' : '🔨'}
+                {selectedContractType?.toUpperCase()}
+              </Badge>
             </div>
           </DialogHeader>
+          
+          {/* Contract Preview Content */}
+          <div className="flex-1 overflow-y-auto py-4 space-y-4">
+            {/* Project Details */}
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <h4 className="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">Project Details</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div><p className="text-xs text-muted-foreground">Project Name</p><p className="font-medium">{generateContractPreviewData.projectName}</p></div>
+                <div><p className="text-xs text-muted-foreground">Trade / Service</p><p className="font-medium">{generateContractPreviewData.trade}</p></div>
+                <div><p className="text-xs text-muted-foreground">Address</p><p className="font-medium">{generateContractPreviewData.projectAddress}</p></div>
+                <div><p className="text-xs text-muted-foreground">Gross Floor Area</p><p className="font-medium">{String(generateContractPreviewData.gfa)} {generateContractPreviewData.gfaUnit}</p></div>
+              </div>
+            </div>
+            
+            {/* Timeline & Resources */}
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <h4 className="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">Timeline & Resources</h4>
+              <div className="grid grid-cols-4 gap-4">
+                <div><p className="text-xs text-muted-foreground">Start Date</p><p className="font-medium">{String(generateContractPreviewData.startDate)}</p></div>
+                <div><p className="text-xs text-muted-foreground">End Date</p><p className="font-medium">{String(generateContractPreviewData.endDate)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Team Size</p><p className="font-medium">{generateContractPreviewData.teamSize} members</p></div>
+                <div><p className="text-xs text-muted-foreground">Tasks</p><p className="font-medium">{generateContractPreviewData.taskCount} scheduled</p></div>
+              </div>
+            </div>
+            
+            {/* Client Info for Contract */}
+            <div className="p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50">
+              <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-3">Client Information</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Client Name *</label>
+                  <Input
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="John Smith"
+                    className="h-9"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Client Email *</label>
+                  <Input
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="client@example.com"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                * Client will receive an email with a secure link to view and sign the contract
+              </p>
+            </div>
+            
+            {/* Team Members to notify (optional) */}
+            {teamMembers.length > 0 && (
+              <div className="p-4 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
+                <h4 className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Notify Team Members (Optional)</h4>
+                <div className="space-y-2">
+                  {teamMembers.map(member => (
+                    <div key={member.id} className="flex items-center justify-between p-2 rounded bg-background/50">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-teal-500 flex items-center justify-center text-white text-[10px] font-bold">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm">{member.name}</span>
+                        <Badge variant="outline" className="text-[9px]">{member.role}</Badge>
+                      </div>
+                      <Checkbox defaultChecked className="h-4 w-4" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Standard Terms Preview */}
+            <div className="p-4 rounded-lg bg-muted/30 border border-dashed">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Standard Terms (Preview)</h4>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Warranty: {selectedContractType === 'commercial' ? '2 years' : selectedContractType === 'industrial' ? '3 years' : selectedContractType === 'renovation' ? '6 months' : '1 year'} from completion</p>
+                <p>• Payment: {selectedContractType === 'commercial' ? '30% deposit, 40% midpoint, 30% completion' : selectedContractType === 'industrial' ? '25% phases' : '50% deposit, 50% completion'}</p>
+                <p>• Changes must be agreed in writing by both parties</p>
+                <p>• Contractor maintains liability insurance and WSIB coverage</p>
+              </div>
+            </div>
+          </div>
+          
           <DialogFooter className="pt-4 border-t gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setShowContractPreview(false)}>
               Cancel
