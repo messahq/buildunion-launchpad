@@ -2179,54 +2179,15 @@ export default function Stage8FinalReview({
                       <span className="text-xs text-muted-foreground">${contract.total_amount.toLocaleString()}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {/* Send to multiple recipients button */}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className={cn(
-                              "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
-                              contract.status === 'signed' && "text-muted-foreground"
-                            )}
-                            disabled={contract.status === 'signed'}
-                            onClick={() => {
-                              if (contract.status === 'signed') {
-                                toast.info('This contract is already signed. Create a new contract for additional parties.');
-                                return;
-                              }
-                              setSelectedContractForEmail({
-                                id: contract.id,
-                                contract_number: contract.contract_number,
-                                total_amount: contract.total_amount,
-                                status: contract.status,
-                              });
-                              setContractRecipients([{ email: '', name: '' }]);
-                              setShowContractEmailDialog(true);
-                            }}
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {contract.status === 'signed' 
-                            ? 'Contract already signed - create new for additional parties' 
-                            : 'Send to multiple recipients'}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Badge 
-                      variant={contract.status === 'signed' ? 'default' : 'outline'} 
-                      className={cn(
-                        "text-[10px]",
-                        contract.status === 'signed' && 'bg-green-500 text-white'
-                      )}
-                    >
-                      {contract.status}
-                    </Badge>
-                  </div>
+                  <Badge 
+                    variant={contract.status === 'signed' ? 'default' : 'outline'} 
+                    className={cn(
+                      "text-[10px]",
+                      contract.status === 'signed' && 'bg-green-500 text-white'
+                    )}
+                  >
+                    {contract.status}
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -3631,31 +3592,125 @@ export default function Stage8FinalReview({
             
             {/* Contracts Section - Fullscreen */}
             <div>
-              <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                <FileCheck className="h-4 w-4" />
-                Contracts ({contracts.length})
-              </h4>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <FileCheck className="h-4 w-4" />
+                  Contracts ({contracts.length})
+                </h4>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedContractType(null)}
+                    className="gap-2 border-pink-300 text-pink-600 hover:bg-pink-50 dark:border-pink-700 dark:text-pink-400"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Contract
+                  </Button>
+                )}
+              </div>
+              
+              {/* Contract Template Selector - Fullscreen */}
+              {canEdit && !selectedContractType && contracts.length > 0 && (
+                <div className="mb-6 p-4 rounded-xl border-2 border-dashed border-pink-300 dark:border-pink-700 bg-pink-50/50 dark:bg-pink-950/20">
+                  <p className="text-sm font-medium text-pink-700 dark:text-pink-300 mb-3">Select contract template:</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      { key: 'residential', label: 'Residential', icon: '🏠' },
+                      { key: 'commercial', label: 'Commercial', icon: '🏢' },
+                      { key: 'industrial', label: 'Industrial', icon: '🏭' },
+                      { key: 'renovation', label: 'Renovation', icon: '🔨' },
+                    ].map(type => (
+                      <button
+                        key={type.key}
+                        onClick={() => {
+                          setSelectedContractType(type.key);
+                          setShowContractPreview(true);
+                        }}
+                        className="flex items-center gap-2 p-3 rounded-lg border text-left transition-all hover:border-pink-500 hover:bg-pink-100/50 dark:hover:bg-pink-950/30"
+                      >
+                        <span className="text-2xl">{type.icon}</span>
+                        <span className="font-medium">{type.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {contracts.length === 0 ? (
                 <div className="p-6 rounded-xl border-2 border-dashed text-center">
                   <FileCheck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">No contracts created yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Create a contract from the panel view</p>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">Select a template above to create your first contract</p>
+                  
+                  {/* Contract Template Selector for empty state */}
+                  {canEdit && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl mx-auto">
+                      {[
+                        { key: 'residential', label: 'Residential', icon: '🏠' },
+                        { key: 'commercial', label: 'Commercial', icon: '🏢' },
+                        { key: 'industrial', label: 'Industrial', icon: '🏭' },
+                        { key: 'renovation', label: 'Renovation', icon: '🔨' },
+                      ].map(type => (
+                        <button
+                          key={type.key}
+                          onClick={() => {
+                            setSelectedContractType(type.key);
+                            setShowContractPreview(true);
+                          }}
+                          className="flex flex-col items-center gap-2 p-4 rounded-lg border text-center transition-all hover:border-pink-500 hover:bg-pink-100/50 dark:hover:bg-pink-950/30"
+                        >
+                          <span className="text-3xl">{type.icon}</span>
+                          <span className="text-sm font-medium">{type.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {contracts.map(contract => (
                     <div 
                       key={contract.id} 
-                      className="p-4 rounded-xl border-2 border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20"
+                      className="group p-4 rounded-xl border-2 border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">#{contract.contract_number}</span>
-                        <Badge 
-                          variant={contract.status === 'signed' ? 'default' : 'outline'}
-                          className={contract.status === 'signed' ? 'bg-green-500' : ''}
-                        >
-                          {contract.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          {/* Send to recipients button - Only for non-signed contracts */}
+                          {contract.status !== 'signed' && canEdit && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => {
+                                      setSelectedContractForEmail({
+                                        id: contract.id,
+                                        contract_number: contract.contract_number,
+                                        total_amount: contract.total_amount,
+                                        status: contract.status,
+                                      });
+                                      setContractRecipients([{ email: '', name: '' }]);
+                                      setShowContractEmailDialog(true);
+                                    }}
+                                  >
+                                    <Send className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Send to recipients</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          <Badge 
+                            variant={contract.status === 'signed' ? 'default' : 'outline'}
+                            className={contract.status === 'signed' ? 'bg-green-500' : ''}
+                          >
+                            {contract.status}
+                          </Badge>
+                        </div>
                       </div>
                       {canViewFinancials && contract.total_amount && (
                         <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">
