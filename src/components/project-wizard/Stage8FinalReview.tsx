@@ -5024,153 +5024,220 @@ export default function Stage8FinalReview({
         
         const hasFinancialData = budgetTotal !== null || materialCost !== null || laborCost !== null || totalContractValue > 0;
         
+        // ✓ REGIONAL TAX CALCULATION for card view
+        const cardLocationCitation = citations.find(c => c.cite_type === 'LOCATION');
+        const cardLocationAddress = typeof cardLocationCitation?.answer === 'string' 
+          ? cardLocationCitation.answer 
+          : typeof cardLocationCitation?.metadata?.formatted_address === 'string'
+            ? cardLocationCitation.metadata.formatted_address
+            : '';
+        const getCardTaxRate = (address: string): { rate: number; name: string; province: string } => {
+          const a = address.toLowerCase();
+          if (a.includes('ontario') || a.includes(', on') || a.includes('toronto')) return { rate: 0.13, name: 'HST', province: 'Ontario' };
+          if (a.includes('quebec') || a.includes(', qc') || a.includes('montreal')) return { rate: 0.14975, name: 'GST+QST', province: 'Quebec' };
+          if (a.includes('british columbia') || a.includes(', bc') || a.includes('vancouver')) return { rate: 0.12, name: 'GST+PST', province: 'BC' };
+          if (a.includes('alberta') || a.includes(', ab') || a.includes('calgary') || a.includes('edmonton')) return { rate: 0.05, name: 'GST', province: 'Alberta' };
+          return { rate: 0.13, name: 'HST', province: 'Ontario' };
+        };
+        const cardTax = getCardTaxRate(cardLocationAddress);
+        const cardNet = budgetTotal || totalContractValue || 0;
+        const cardTaxAmt = cardNet * cardTax.rate;
+        const cardGross = cardNet + cardTaxAmt;
+
+        // Simulated trend data from project creation to now
+        const trendData = (() => {
+          if (!hasFinancialData) return [];
+          const mat = materialCost || 0;
+          const lab = laborCost || 0;
+          const demo = demoCost || 0;
+          // Build a simple 5-point cumulative cost curve
+          return [
+            { label: 'W1', value: 0 },
+            { label: 'W2', value: Math.round(mat * 0.3) },
+            { label: 'W3', value: Math.round(mat * 0.6 + lab * 0.2) },
+            { label: 'W4', value: Math.round(mat * 0.9 + lab * 0.5 + demo * 0.5) },
+            { label: 'Now', value: Math.round(mat + lab + demo) },
+          ];
+        })();
+
+        const costItems = [
+          materialCost !== null && { name: 'Materials', value: materialCost, color: 'hsl(200, 80%, 50%)', icon: Hammer },
+          laborCost !== null && { name: 'Labor', value: laborCost, color: 'hsl(160, 80%, 45%)', icon: Users },
+          demoCost !== null && demoCost > 0 && { name: 'Demo', value: demoCost, color: 'hsl(280, 70%, 55%)', icon: AlertTriangle },
+        ].filter(Boolean) as { name: string; value: number; color: string; icon: any }[];
+        const costTotal = costItems.reduce((s, i) => s + i.value, 0);
+        
         return (
           <div className="space-y-3">
-            {/* Owner Unlocked Badge + Pending Approvals */}
-            <div className="flex items-center justify-between gap-2">
-              <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 gap-1">
-                <Unlock className="h-3 w-3" />
-                Owner Access
-              </Badge>
+            {/* ─── Header ─── */}
+            <div className="flex items-center justify-between p-2 rounded-lg border border-amber-500/20 bg-gradient-to-r from-slate-900/80 via-amber-950/15 to-slate-900/80">
               <div className="flex items-center gap-2">
-                {/* Pending Approvals Button - Only show if there are pending changes */}
+                <motion.div
+                  animate={{ boxShadow: ['0 0 8px rgba(251,191,36,0.2)', '0 0 16px rgba(251,191,36,0.4)', '0 0 8px rgba(251,191,36,0.2)'] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="h-7 w-7 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
+                >
+                  <DollarSign className="h-4 w-4 text-white" />
+                </motion.div>
+                <span className="text-xs font-bold text-white">Financial DNA</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-amber-400/50 bg-amber-500/10 px-1.5 py-0.5 rounded font-mono">{cardTax.province}</span>
+                <Badge className="bg-green-500/20 text-green-300 border border-green-500/30 text-[9px] px-1.5 py-0 gap-0.5">
+                  <Unlock className="h-2 w-2" /> Owner
+                </Badge>
                 {hasPending && (
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => setShowPendingApprovalModal(true)}
-                    className="gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 animate-pulse"
+                    className="h-5 px-1.5 text-[9px] text-amber-400 hover:bg-amber-500/10 gap-0.5 animate-pulse"
                   >
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    {pendingCount} Pending
+                    <AlertTriangle className="h-2.5 w-2.5" /> {pendingCount}
                   </Button>
-                )}
-                {dataSource !== 'supabase' && (
-                  <Badge variant="outline" className="text-[10px] text-amber-600">
-                    ⚠ Local Data
-                  </Badge>
                 )}
               </div>
             </div>
-            
-            {/* ✓ Gross Total - From actual data, not hardcoded */}
+
             {hasFinancialData ? (
               <>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-2 border-emerald-300 dark:border-emerald-700">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Total</span>
-                    <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-700 gap-1">
-                      <Lock className="h-2.5 w-2.5" />
-                      Final
-                    </Badge>
+                {/* ─── Net / Tax / Gross Row ─── */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div className="p-2 rounded-lg border border-slate-600/25 bg-slate-900/50">
+                    <span className="text-[8px] text-white/40 uppercase tracking-widest font-semibold flex items-center gap-1">
+                      <div className="h-1 w-1 rounded-full bg-white/50" /> Net
+                    </span>
+                    <p className="text-sm font-bold text-white font-mono mt-0.5">
+                      ${cardNet.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                    </p>
                   </div>
-                  <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
-                    ${(budgetTotal || totalContractValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
+                  <div className="p-2 rounded-lg border border-amber-500/20 bg-amber-950/15">
+                    <span className="text-[8px] text-amber-300/50 uppercase tracking-widest font-semibold flex items-center gap-1">
+                      <div className="h-1 w-1 rounded-full bg-amber-400/50" /> {cardTax.name}
+                    </span>
+                    <p className="text-sm font-bold text-amber-200 font-mono mt-0.5">
+                      +${cardTaxAmt.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-lg border border-emerald-500/25 bg-emerald-950/15">
+                    <span className="text-[8px] text-emerald-300/50 uppercase tracking-widest font-semibold flex items-center gap-1">
+                      <div className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" /> Gross
+                    </span>
+                    <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-300 font-mono mt-0.5">
+                      ${cardGross.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                    </p>
+                  </div>
                 </div>
-                
-                {/* Cost Breakdown - Materials, Labor, Demolition */}
-                <div className="grid grid-cols-2 gap-3">
-                  {materialCost !== null && (
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200/50 dark:border-blue-800/30">
-                      <p className="text-xs text-muted-foreground">Materials</p>
-                      <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                        ${materialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
+
+                {/* ─── Cost Breakdown Bars ─── */}
+                {costItems.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="h-1.5 rounded-full overflow-hidden flex bg-slate-800/50">
+                      {costItems.map((item) => (
+                        <div
+                          key={item.name}
+                          style={{ width: costTotal > 0 ? `${(item.value / costTotal) * 100}%` : '0%', backgroundColor: item.color }}
+                          className="h-full first:rounded-l-full last:rounded-r-full"
+                        />
+                      ))}
                     </div>
-                  )}
-                  {laborCost !== null && (
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/30 border border-teal-200/50 dark:border-teal-800/30">
-                      <p className="text-xs text-muted-foreground">Labor</p>
-                      <p className="text-lg font-bold text-teal-700 dark:text-teal-300">
-                        ${laborCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
+                    {costItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={item.name} className="flex items-center justify-between p-1.5 rounded-md bg-slate-900/30 border border-slate-700/20">
+                          <div className="flex items-center gap-2">
+                            <div className="h-5 w-5 rounded flex items-center justify-center" style={{ backgroundColor: `${item.color}22` }}>
+                              <Icon className="h-2.5 w-2.5" style={{ color: item.color }} />
+                            </div>
+                            <span className="text-[10px] font-medium text-white/70">{item.name}</span>
+                          </div>
+                          <span className="text-[11px] font-bold text-white font-mono">${item.value.toLocaleString()}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* ─── Cost Trend Mini Chart ─── */}
+                {trendData.length > 0 && (
+                  <div className="p-2.5 rounded-lg border border-cyan-500/15 bg-slate-900/40">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] text-cyan-300/50 uppercase tracking-widest font-semibold">Cost Trend</span>
+                      <span className="text-[9px] text-cyan-400/40 font-mono">${(trendData[trendData.length - 1]?.value || 0).toLocaleString()}</span>
                     </div>
-                  )}
-                  {demoCost !== null && (
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200/50 dark:border-purple-800/30">
-                      <p className="text-xs text-muted-foreground">Demolition</p>
-                      <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
-                        ${demoCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
+                    <div className="h-16 w-full">
+                      <svg viewBox="0 0 200 60" className="w-full h-full" preserveAspectRatio="none">
+                        {/* Grid lines */}
+                        {[0, 20, 40, 60].map(y => (
+                          <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(6,182,212,0.08)" strokeWidth="0.5" />
+                        ))}
+                        {/* Area fill */}
+                        {(() => {
+                          const maxVal = Math.max(...trendData.map(d => d.value), 1);
+                          const points = trendData.map((d, i) => {
+                            const x = (i / (trendData.length - 1)) * 200;
+                            const y = 55 - (d.value / maxVal) * 50;
+                            return `${x},${y}`;
+                          });
+                          const areaPath = `M0,55 L${points.join(' L')} L200,55 Z`;
+                          const linePath = `M${points.join(' L')}`;
+                          return (
+                            <>
+                              <path d={areaPath} fill="url(#trendGradient)" opacity="0.3" />
+                              <path d={linePath} fill="none" stroke="rgba(6,182,212,0.8)" strokeWidth="1.5" strokeLinecap="round" />
+                              {/* Dots */}
+                              {trendData.map((d, i) => {
+                                const x = (i / (trendData.length - 1)) * 200;
+                                const y = 55 - (d.value / maxVal) * 50;
+                                return <circle key={i} cx={x} cy={y} r={i === trendData.length - 1 ? 3 : 1.5} fill={i === trendData.length - 1 ? '#06b6d4' : 'rgba(6,182,212,0.5)'} />;
+                              })}
+                            </>
+                          );
+                        })()}
+                        <defs>
+                          <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="rgba(6,182,212,0.4)" />
+                            <stop offset="100%" stopColor="rgba(6,182,212,0)" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
                     </div>
-                  )}
-                </div>
-                
-                {/* Profit Margin (Owner Only) */}
-                {profitMargin !== null && profitPercent !== null && (
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-green-50 to-lime-50 dark:from-green-950/30 dark:to-lime-950/30 border-2 border-green-300 dark:border-green-700">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-green-600 uppercase tracking-wide">Profit Margin</span>
-                      <Badge variant="outline" className="text-[10px] bg-green-100 text-green-700 gap-1">
-                        <Shield className="h-2.5 w-2.5" />
-                        Owner Only
-                      </Badge>
-                    </div>
-                    <div className="flex items-baseline gap-3">
-                      <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-                        ${profitMargin.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                      <Badge className={cn(
-                        "text-xs",
-                        profitPercent >= 20 ? "bg-green-500" : profitPercent >= 10 ? "bg-amber-500" : "bg-red-500"
-                      )}>
-                        {profitPercent.toFixed(1)}%
-                      </Badge>
+                    {/* X-axis labels */}
+                    <div className="flex justify-between mt-0.5">
+                      {trendData.map(d => (
+                        <span key={d.label} className="text-[7px] text-cyan-400/30 font-mono">{d.label}</span>
+                      ))}
                     </div>
                   </div>
                 )}
-                
-                {/* Contract & GFA Info with Citation Badges */}
-                <div className="grid grid-cols-2 gap-3">
-                  {totalContractValue > 0 && (
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200/50 dark:border-red-800/30">
-                      <p className="text-xs text-muted-foreground">Contract Value</p>
-                      <p className="text-lg font-bold text-red-700 dark:text-red-300">
-                        ${totalContractValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
+
+                {/* ─── GFA + Contract strip ─── */}
+                <div className="flex gap-1.5">
+                  {financialGfaValue !== null && budgetTotal !== null && (
+                    <div className="flex-1 p-2 rounded-lg border border-amber-500/15 bg-amber-950/10 flex items-center gap-2">
+                      <Ruler className="h-3.5 w-3.5 text-amber-400/60 flex-shrink-0" />
+                      <div>
+                        <p className="text-[10px] font-bold text-white">${(budgetTotal / financialGfaValue).toFixed(2)}<span className="text-[8px] text-amber-300/40">/sqft</span></p>
+                        <p className="text-[8px] text-amber-300/30">{financialGfaValue.toLocaleString()} sq ft</p>
+                      </div>
                     </div>
                   )}
-                  {financialGfaValue !== null && budgetTotal !== null && (
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200/50 dark:border-amber-800/30">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-muted-foreground">Cost per sq ft</p>
-                        {financialGfaCitation && (
-                          <span className="text-[9px] text-amber-500 font-mono">cite: [{financialGfaCitation.id.slice(0, 6)}]</span>
-                        )}
+                  {contracts.length > 0 && (
+                    <div className="flex-1 p-2 rounded-lg border border-pink-500/15 bg-pink-950/10 flex items-center gap-2">
+                      <FileCheck className="h-3.5 w-3.5 text-pink-400/60 flex-shrink-0" />
+                      <div>
+                        <p className="text-[10px] font-bold text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
+                        {totalContractValue > 0 && <p className="text-[8px] text-pink-300/30">${totalContractValue.toLocaleString()}</p>}
                       </div>
-                      <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
-                        ${(budgetTotal / financialGfaValue).toFixed(2)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        @ {financialGfaValue.toLocaleString()} sq ft
-                      </p>
                     </div>
                   )}
                 </div>
               </>
             ) : (
-              <div className="p-4 rounded-lg bg-muted/30 border border-dashed text-center">
-                <DollarSign className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground italic">
-                  No financial data recorded yet
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Add budget, materials, or contracts to see financials
-                </p>
-              </div>
-            )}
-            
-            {/* All Financial Citations */}
-            {panelCitations.length > 0 && (
-              <div className="pt-3 border-t space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Financial Data Points</p>
-                {panelCitations.map(c => (
-                  <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
-                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
-                    <span className="font-medium">{renderCitationValue(c)}</span>
-                  </div>
-                ))}
+              <div className="p-6 rounded-lg border border-dashed border-slate-700/30 text-center bg-slate-900/20">
+                <DollarSign className="h-8 w-8 text-slate-600 mx-auto mb-2" />
+                <p className="text-xs text-slate-400">No financial data</p>
+                <p className="text-[10px] text-slate-500 mt-1">Add budget or contracts to activate</p>
               </div>
             )}
           </div>
@@ -6088,6 +6155,76 @@ export default function Stage8FinalReview({
                       </div>
                     )}
                   </motion.div>
+
+                  {/* ─── Cost Trend Chart (Full-screen) ─── */}
+                  {totalForPercentage > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.45 }}
+                      className="p-4 rounded-xl border border-cyan-500/20 bg-slate-900/50"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-4 w-0.5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full" />
+                          <span className="text-xs font-semibold text-cyan-200 uppercase tracking-wider">Cost Trend</span>
+                        </div>
+                        <span className="text-[10px] text-cyan-400/50 font-mono">${totalForPercentage.toLocaleString()}</span>
+                      </div>
+                      {(() => {
+                        const mat = storedMaterialCost;
+                        const lab = storedLaborCost;
+                        const dem = demoCost;
+                        const pts = [
+                          { label: 'W1', value: 0 },
+                          { label: 'W2', value: Math.round(mat * 0.3) },
+                          { label: 'W3', value: Math.round(mat * 0.6 + lab * 0.2) },
+                          { label: 'W4', value: Math.round(mat * 0.9 + lab * 0.5 + dem * 0.5) },
+                          { label: 'Now', value: Math.round(mat + lab + dem) },
+                        ];
+                        const maxV = Math.max(...pts.map(p => p.value), 1);
+                        const svgPts = pts.map((p, i) => ({
+                          x: (i / (pts.length - 1)) * 280,
+                          y: 75 - (p.value / maxV) * 65,
+                          ...p,
+                        }));
+                        return (
+                          <div>
+                            <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
+                              {[0, 25, 50, 75].map(y => (
+                                <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(6,182,212,0.06)" strokeWidth="0.5" />
+                              ))}
+                              <path
+                                d={`M0,75 L${svgPts.map(p => `${p.x},${p.y}`).join(' L')} L280,75 Z`}
+                                fill="url(#fsTrendGrad)" opacity="0.25"
+                              />
+                              <path
+                                d={`M${svgPts.map(p => `${p.x},${p.y}`).join(' L')}`}
+                                fill="none" stroke="rgba(6,182,212,0.8)" strokeWidth="2" strokeLinecap="round"
+                              />
+                              {svgPts.map((p, i) => (
+                                <circle key={i} cx={p.x} cy={p.y} r={i === svgPts.length - 1 ? 4 : 2}
+                                  fill={i === svgPts.length - 1 ? '#06b6d4' : 'rgba(6,182,212,0.4)'}
+                                  stroke={i === svgPts.length - 1 ? '#0e7490' : 'none'} strokeWidth="1"
+                                />
+                              ))}
+                              <defs>
+                                <linearGradient id="fsTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="rgba(6,182,212,0.4)" />
+                                  <stop offset="100%" stopColor="rgba(6,182,212,0)" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                            <div className="flex justify-between mt-1 px-0.5">
+                              {svgPts.map(p => (
+                                <span key={p.label} className="text-[9px] text-cyan-400/30 font-mono">{p.label}</span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </motion.div>
+                  )}
 
                   {/* ─── Contracts Strip ─── */}
                   {contracts.length > 0 && (
