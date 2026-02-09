@@ -886,6 +886,75 @@ export default function Stage8FinalReview({
     }
   }, [projectId, citations]);
   
+  // ✓ REALTIME SYNC: Subscribe to task status changes for bidirectional updates
+  // Owner sees foreman's changes, foreman sees owner's changes - instantly
+  useEffect(() => {
+    if (!projectId) return;
+    
+    const channel = supabase
+      .channel(`tasks-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_tasks',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          console.log('[Stage8] ✓ Realtime task update received:', payload);
+          
+          if (payload.eventType === 'UPDATE') {
+            const updatedTask = payload.new as { id: string; status: string; assigned_to: string; title: string; priority: string };
+            setTasks(prev => prev.map(t => 
+              t.id === updatedTask.id 
+                ? { ...t, status: updatedTask.status, assigned_to: updatedTask.assigned_to }
+                : t
+            ));
+            // Show toast for status changes from other users
+            if (payload.old && (payload.old as any).status !== updatedTask.status) {
+              const teamMember = teamMembers.find(m => m.userId === updatedTask.assigned_to);
+              toast.info(`Task "${updatedTask.title}" ${updatedTask.status === 'completed' ? 'completed' : 'reopened'}`, {
+                description: teamMember ? `By ${teamMember.name}` : undefined,
+              });
+            }
+          } else if (payload.eventType === 'INSERT') {
+            const newTask = payload.new as { id: string; title: string; status: string; priority: string; assigned_to: string };
+            // Infer phase from title
+            let phase = 'installation';
+            const titleLower = newTask.title.toLowerCase();
+            if (titleLower.includes('demo') || titleLower.includes('remove')) phase = 'demolition';
+            else if (titleLower.includes('prep') || titleLower.includes('setup')) phase = 'preparation';
+            else if (titleLower.includes('finish') || titleLower.includes('qc')) phase = 'finishing';
+            
+            setTasks(prev => [...prev, {
+              id: newTask.id,
+              title: newTask.title,
+              status: newTask.status,
+              priority: newTask.priority,
+              phase,
+              assigned_to: newTask.assigned_to,
+              checklist: [
+                { id: `${newTask.id}-start`, text: 'Task started', done: newTask.status !== 'pending' },
+                { id: `${newTask.id}-complete`, text: 'Task completed', done: newTask.status === 'completed' },
+                { id: `${newTask.id}-verify`, text: 'Verification photo', done: false },
+              ],
+            }]);
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as { id: string }).id;
+            setTasks(prev => prev.filter(t => t.id !== deletedId));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Stage8] Realtime subscription status:', status);
+      });
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, teamMembers]);
+  
   // Fetch weather data
   const fetchWeather = async (address: string) => {
     try {
