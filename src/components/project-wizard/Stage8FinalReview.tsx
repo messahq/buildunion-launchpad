@@ -5082,7 +5082,7 @@ export default function Stage8FinalReview({
                 <span className="text-xs font-bold text-white">Financial DNA</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-amber-400/50 bg-amber-500/10 px-1.5 py-0.5 rounded font-mono">{cardTax.province}</span>
+                <span className="text-[9px] text-amber-300/80 bg-amber-500/15 px-1.5 py-0.5 rounded font-mono">{cardTax.province}</span>
                 <Badge className="bg-green-500/20 text-green-300 border border-green-500/30 text-[9px] px-1.5 py-0 gap-0.5">
                   <Unlock className="h-2 w-2" /> Owner
                 </Badge>
@@ -5104,7 +5104,7 @@ export default function Stage8FinalReview({
                 {/* ─── Net / Tax / Gross Row ─── */}
                 <div className="grid grid-cols-3 gap-1.5">
                   <div className="p-2 rounded-lg border border-slate-600/25 bg-slate-900/50">
-                    <span className="text-[8px] text-white/40 uppercase tracking-widest font-semibold flex items-center gap-1">
+                    <span className="text-[8px] text-white/70 uppercase tracking-widest font-semibold flex items-center gap-1">
                       <div className="h-1 w-1 rounded-full bg-white/50" /> Net
                     </span>
                     <p className="text-sm font-bold text-white font-mono mt-0.5">
@@ -5112,7 +5112,7 @@ export default function Stage8FinalReview({
                     </p>
                   </div>
                   <div className="p-2 rounded-lg border border-amber-500/20 bg-amber-950/15">
-                    <span className="text-[8px] text-amber-300/50 uppercase tracking-widest font-semibold flex items-center gap-1">
+                    <span className="text-[8px] text-amber-300/80 uppercase tracking-widest font-semibold flex items-center gap-1">
                       <div className="h-1 w-1 rounded-full bg-amber-400/50" /> {cardTax.name}
                     </span>
                     <p className="text-sm font-bold text-amber-200 font-mono mt-0.5">
@@ -5120,7 +5120,7 @@ export default function Stage8FinalReview({
                     </p>
                   </div>
                   <div className="p-2 rounded-lg border border-emerald-500/25 bg-emerald-950/15">
-                    <span className="text-[8px] text-emerald-300/50 uppercase tracking-widest font-semibold flex items-center gap-1">
+                    <span className="text-[8px] text-emerald-300/80 uppercase tracking-widest font-semibold flex items-center gap-1">
                       <div className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" /> Gross
                     </span>
                     <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-300 font-mono mt-0.5">
@@ -5149,7 +5149,7 @@ export default function Stage8FinalReview({
                             <div className="h-5 w-5 rounded flex items-center justify-center" style={{ backgroundColor: `${item.color}22` }}>
                               <Icon className="h-2.5 w-2.5" style={{ color: item.color }} />
                             </div>
-                            <span className="text-[10px] font-medium text-white/70">{item.name}</span>
+                            <span className="text-[10px] font-medium text-white/90">{item.name}</span>
                           </div>
                           <span className="text-[11px] font-bold text-white font-mono">${item.value.toLocaleString()}</span>
                         </div>
@@ -5162,8 +5162,8 @@ export default function Stage8FinalReview({
                 {trendData.length > 0 && (
                   <div className="p-2.5 rounded-lg border border-cyan-500/15 bg-slate-900/40">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] text-cyan-300/50 uppercase tracking-widest font-semibold">Cost Trend</span>
-                      <span className="text-[9px] text-cyan-400/40 font-mono">${(trendData[trendData.length - 1]?.value || 0).toLocaleString()}</span>
+                      <span className="text-[9px] text-cyan-300/80 uppercase tracking-widest font-semibold">Cost Trend</span>
+                      <span className="text-[9px] text-cyan-300/70 font-mono">${(trendData[trendData.length - 1]?.value || 0).toLocaleString()}</span>
                     </div>
                     <div className="h-16 w-full">
                       <svg viewBox="0 0 200 60" className="w-full h-full" preserveAspectRatio="none">
@@ -5205,7 +5205,7 @@ export default function Stage8FinalReview({
                     {/* X-axis labels */}
                     <div className="flex justify-between mt-0.5">
                       {trendData.map(d => (
-                        <span key={d.label} className="text-[7px] text-cyan-400/30 font-mono">{d.label}</span>
+                        <span key={d.label} className="text-[7px] text-cyan-300/60 font-mono">{d.label}</span>
                       ))}
                     </div>
                   </div>
@@ -5217,8 +5217,8 @@ export default function Stage8FinalReview({
                     <div className="flex-1 p-2 rounded-lg border border-amber-500/15 bg-amber-950/10 flex items-center gap-2">
                       <Ruler className="h-3.5 w-3.5 text-amber-400/60 flex-shrink-0" />
                       <div>
-                        <p className="text-[10px] font-bold text-white">${(budgetTotal / financialGfaValue).toFixed(2)}<span className="text-[8px] text-amber-300/40">/sqft</span></p>
-                        <p className="text-[8px] text-amber-300/30">{financialGfaValue.toLocaleString()} sq ft</p>
+                        <p className="text-[10px] font-bold text-white">${(budgetTotal / financialGfaValue).toFixed(2)}<span className="text-[8px] text-amber-300/70">/sqft</span></p>
+                        <p className="text-[8px] text-amber-300/60">{financialGfaValue.toLocaleString()} sq ft</p>
                       </div>
                     </div>
                   )}
@@ -5227,7 +5227,7 @@ export default function Stage8FinalReview({
                       <FileCheck className="h-3.5 w-3.5 text-pink-400/60 flex-shrink-0" />
                       <div>
                         <p className="text-[10px] font-bold text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
-                        {totalContractValue > 0 && <p className="text-[8px] text-pink-300/30">${totalContractValue.toLocaleString()}</p>}
+                        {totalContractValue > 0 && <p className="text-[8px] text-pink-300/60">${totalContractValue.toLocaleString()}</p>}
                       </div>
                     </div>
                   )}
@@ -5236,8 +5236,8 @@ export default function Stage8FinalReview({
             ) : (
               <div className="p-6 rounded-lg border border-dashed border-slate-700/30 text-center bg-slate-900/20">
                 <DollarSign className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                <p className="text-xs text-slate-400">No financial data</p>
-                <p className="text-[10px] text-slate-500 mt-1">Add budget or contracts to activate</p>
+                <p className="text-xs text-slate-300">No financial data</p>
+                <p className="text-[10px] text-slate-400 mt-1">Add budget or contracts to activate</p>
               </div>
             )}
           </div>
@@ -5954,11 +5954,11 @@ export default function Stage8FinalReview({
                   </motion.div>
                   <div>
                     <h4 className="text-sm font-bold text-white tracking-tight">Financial Command Center</h4>
-                    <p className="text-[10px] text-amber-400/60">Real-time budget analytics</p>
+                    <p className="text-[10px] text-amber-300/80">Real-time budget analytics</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-amber-400/50 bg-amber-500/10 px-2 py-0.5 rounded font-mono flex items-center gap-1">
+                  <span className="text-[10px] text-amber-300/80 bg-amber-500/15 px-2 py-0.5 rounded font-mono flex items-center gap-1">
                     <MapPin className="h-2.5 w-2.5" /> {taxInfo.province}
                   </span>
                   <Badge className="bg-green-500/20 text-green-300 border border-green-500/30 text-[10px] px-2 py-0.5 gap-1">
@@ -5982,7 +5982,7 @@ export default function Stage8FinalReview({
                       <div className="relative">
                         <div className="flex items-center gap-1.5 mb-1">
                           <div className="h-1.5 w-1.5 rounded-full bg-white/60" />
-                          <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Net</span>
+                          <span className="text-[9px] text-white/70 uppercase tracking-widest font-semibold">Net</span>
                         </div>
                         <p className="text-lg font-bold text-white font-mono leading-tight">
                           ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
@@ -5995,7 +5995,7 @@ export default function Stage8FinalReview({
                       <div className="relative">
                         <div className="flex items-center gap-1.5 mb-1">
                           <div className="h-1.5 w-1.5 rounded-full bg-amber-400/60" />
-                          <span className="text-[9px] text-amber-300/60 uppercase tracking-widest font-semibold">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%</span>
+                          <span className="text-[9px] text-amber-300/80 uppercase tracking-widest font-semibold">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%</span>
                         </div>
                         <p className="text-lg font-bold text-amber-200 font-mono leading-tight">
                           +${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
@@ -6008,7 +6008,7 @@ export default function Stage8FinalReview({
                       <div className="relative">
                         <div className="flex items-center gap-1.5 mb-1">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <span className="text-[9px] text-emerald-300/70 uppercase tracking-widest font-semibold">Gross</span>
+                          <span className="text-[9px] text-emerald-300/90 uppercase tracking-widest font-semibold">Gross</span>
                         </div>
                         <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-300 font-mono leading-tight">
                           ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
@@ -6060,7 +6060,7 @@ export default function Stage8FinalReview({
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs font-semibold text-white/80">{item.name}</span>
+                                  <span className="text-xs font-semibold text-white/90">{item.name}</span>
                                   <span className="text-sm font-bold text-white font-mono">${item.value.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
@@ -6073,7 +6073,7 @@ export default function Stage8FinalReview({
                                       style={{ backgroundColor: item.color }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-white/40 font-mono w-10 text-right">{pct}%</span>
+                                  <span className="text-[10px] text-white/60 font-mono w-10 text-right">{pct}%</span>
                                 </div>
                               </div>
                             </motion.div>
@@ -6121,14 +6121,14 @@ export default function Stage8FinalReview({
                             <circle cx="50" cy="50" r="22" fill="#0f172a" />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-[9px] font-bold text-white/70">${(totalForPercentage / 1000).toFixed(0)}K</span>
+                            <span className="text-[9px] font-bold text-white/90">${(totalForPercentage / 1000).toFixed(0)}K</span>
                           </div>
                         </div>
                         <div className="space-y-1">
                           {costBreakdownData.map(item => (
                             <div key={item.name} className="flex items-center gap-1.5">
                               <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                              <span className="text-[10px] text-white/50">{item.name}</span>
+                              <span className="text-[10px] text-white/70">{item.name}</span>
                             </div>
                           ))}
                         </div>
@@ -6142,10 +6142,10 @@ export default function Stage8FinalReview({
                           <Ruler className="h-4 w-4 text-amber-400" />
                         </div>
                         <div>
-                          <p className="text-[9px] text-amber-300/50 uppercase tracking-widest">GFA</p>
-                          <p className="text-sm font-bold text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-amber-300/50">sq ft</span></p>
+                          <p className="text-[9px] text-amber-300/80 uppercase tracking-widest">GFA</p>
+                          <p className="text-sm font-bold text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-amber-300/70">sq ft</span></p>
                           {budgetTotal > 0 && (
-                            <p className="text-[10px] text-amber-300/40 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
+                            <p className="text-[10px] text-amber-300/70 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
                           )}
                         </div>
                       </div>
@@ -6169,7 +6169,7 @@ export default function Stage8FinalReview({
                           <div className="h-4 w-0.5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full" />
                           <span className="text-xs font-semibold text-cyan-200 uppercase tracking-wider">Cost Trend</span>
                         </div>
-                        <span className="text-[10px] text-cyan-400/50 font-mono">${totalForPercentage.toLocaleString()}</span>
+                        <span className="text-[10px] text-cyan-300/70 font-mono">${totalForPercentage.toLocaleString()}</span>
                       </div>
                       {(() => {
                         const mat = storedMaterialCost;
@@ -6217,7 +6217,7 @@ export default function Stage8FinalReview({
                             </svg>
                             <div className="flex justify-between mt-1 px-0.5">
                               {svgPts.map(p => (
-                                <span key={p.label} className="text-[9px] text-cyan-400/30 font-mono">{p.label}</span>
+                                <span key={p.label} className="text-[9px] text-cyan-300/60 font-mono">{p.label}</span>
                               ))}
                             </div>
                           </div>
@@ -6236,7 +6236,7 @@ export default function Stage8FinalReview({
                     >
                       <div className="flex items-center gap-2 px-1">
                         <div className="h-3 w-0.5 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
-                        <span className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Contracts ({contracts.length})</span>
+                        <span className="text-[10px] text-white/60 uppercase tracking-widest font-semibold">Contracts ({contracts.length})</span>
                       </div>
                       {contracts.map((contract, i) => (
                         <motion.div
@@ -6248,7 +6248,7 @@ export default function Stage8FinalReview({
                         >
                           <div className="flex items-center gap-2">
                             <FileCheck className="h-3.5 w-3.5 text-pink-400/70" />
-                            <span className="font-mono text-xs text-white/70">#{contract.contract_number}</span>
+                            <span className="font-mono text-xs text-white/80">#{contract.contract_number}</span>
                             <Badge
                               variant={contract.status === 'signed' ? 'default' : 'outline'}
                               className={cn(
@@ -6296,7 +6296,7 @@ export default function Stage8FinalReview({
                         )}>
                           {profitPercent.toFixed(1)}%
                         </span>
-                        <span className="text-[9px] text-white/40 block">
+                        <span className="text-[9px] text-white/60 block">
                           {profitPercent >= 20 ? 'Excellent' : profitPercent >= 10 ? 'Good' : 'Review'}
                         </span>
                       </div>
@@ -6312,8 +6312,8 @@ export default function Stage8FinalReview({
                   <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
                     <DollarSign className="h-12 w-12 text-slate-600 mx-auto mb-4" />
                   </motion.div>
-                  <p className="text-sm font-medium text-slate-400">No Financial Data</p>
-                  <p className="text-xs text-slate-500 mt-1.5 max-w-xs mx-auto">
+                   <p className="text-sm font-medium text-slate-300">No Financial Data</p>
+                  <p className="text-xs text-slate-400 mt-1.5 max-w-xs mx-auto">
                     Add budget, materials, or contracts to activate
                   </p>
                 </motion.div>
