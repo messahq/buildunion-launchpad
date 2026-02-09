@@ -124,13 +124,14 @@ const BuildUnionProjectDetails = () => {
         .eq("project_id", projectId)
         .single();
 
-      // Check if project has reached Stage 8 (has GFA lock and active status)
+      // Check if project has reached Stage 8 (has GFA lock OR is active status)
+      // A project is considered "ready for Stage 8 dashboard" if it has been through the wizard
       let hasReachedStage8 = false;
       if (summaryData?.verified_facts && Array.isArray(summaryData.verified_facts)) {
         const facts = summaryData.verified_facts as unknown as Citation[];
         const hasGfaLock = facts.some(f => f.cite_type === CITATION_TYPES.GFA_LOCK);
-        const hasTemplateLock = facts.some(f => f.cite_type === CITATION_TYPES.TEMPLATE_LOCK);
-        hasReachedStage8 = hasGfaLock && hasTemplateLock;
+        // If project has GFA locked AND is active, it's ready for Stage 8
+        hasReachedStage8 = hasGfaLock && projectData.status === 'active';
       }
 
       if (!isOwner) {
