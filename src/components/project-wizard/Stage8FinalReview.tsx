@@ -1368,11 +1368,31 @@ export default function Stage8FinalReview({
   
   // Render Panel 6 - Documents with Upload and Contract Generator
   const renderPanel6Content = useCallback(() => {
-    // Group documents by category
-    const docsByCategory = DOCUMENT_CATEGORIES.map(cat => ({
-      ...cat,
-      documents: documents.filter(d => d.category === cat.key),
-    }));
+    // Group documents by category with citation linking
+    const panelCitations = getCitationsForPanel(['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION']);
+    
+    const docsByCategory = DOCUMENT_CATEGORIES.map(cat => {
+      const categoryDocs = documents.filter(d => d.category === cat.key);
+      // Link citations to documents
+      const docsWithCitations = categoryDocs.map(doc => {
+        // Find matching citation by file name
+        const matchingCitation = panelCitations.find(c => {
+          const citationFileName = c.metadata?.file_name || c.answer;
+          return citationFileName && doc.file_name.toLowerCase().includes(String(citationFileName).toLowerCase().slice(0, 10));
+        });
+        return {
+          ...doc,
+          citationId: matchingCitation?.id || doc.citationId,
+          citationType: matchingCitation?.cite_type,
+          uploadedAt: doc.uploadedAt || (matchingCitation?.timestamp ? format(new Date(matchingCitation.timestamp), 'MMM dd, yyyy') : undefined),
+        };
+      });
+      return {
+        ...cat,
+        documents: docsWithCitations,
+        citationCount: docsWithCitations.filter(d => d.citationId).length,
+      };
+    });
     
     return (
       <div className="space-y-4">
@@ -1451,34 +1471,77 @@ export default function Stage8FinalReview({
           </div>
         )}
         
-        {/* Contract Templates - removed redundant "Preview" button - type selection opens template directly */}
-        
         {/* Documents by Category with Citation Badges */}
         <div className="space-y-3">
           {docsByCategory.map(cat => (
-            <div key={cat.key}>
-              <div className="flex items-center gap-2 mb-2">
-                <cat.icon className={cn("h-4 w-4", cat.color)} />
-                <span className={cn("text-xs font-medium", cat.color)}>{cat.label}</span>
-                <Badge variant="outline" className="text-[10px]">{cat.documents.length}</Badge>
+            <div key={cat.key} className={cn(
+              "rounded-lg border p-3 transition-all",
+              cat.documents.length > 0 ? cat.color.replace('text-', 'bg-').replace('-600', '-50') + ' dark:' + cat.color.replace('text-', 'bg-').replace('-600', '-950/20') : "bg-muted/30"
+            )}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <cat.icon className={cn("h-4 w-4", cat.color)} />
+                  <span className={cn("text-xs font-medium", cat.color)}>{cat.label}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-[10px]">{cat.documents.length} files</Badge>
+                  {cat.citationCount > 0 && (
+                    <Badge variant="outline" className="text-[10px] bg-pink-100 dark:bg-pink-900/30 text-pink-600">
+                      {cat.citationCount} cited
+                    </Badge>
+                  )}
+                </div>
               </div>
               {cat.documents.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic pl-6">No {cat.label.toLowerCase()} documents</p>
+                <p className="text-xs text-muted-foreground italic">No {cat.label.toLowerCase()} documents</p>
               ) : (
-                <div className="space-y-1 pl-6">
+                <div className="space-y-1.5">
                   {cat.documents.slice(0, 3).map(doc => (
-                    <div key={doc.id} className="flex items-center gap-2 p-2 rounded bg-muted/30 hover:bg-muted/50">
-                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs truncate flex-1">{doc.file_name}</span>
-                      {doc.citationId ? (
-                        <span className="text-[9px] text-pink-500 font-mono">cite: [{doc.citationId.slice(0, 6)}]</span>
+                    <div key={doc.id} className="flex items-center gap-2 p-2 rounded bg-background/80 hover:bg-background border border-transparent hover:border-pink-200/50 transition-all">
+                      {/* File type icon */}
+                      {doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        <FileImage className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                      ) : doc.file_name.match(/\.pdf$/i) ? (
+                        <FileText className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                       ) : (
-                        <Badge variant="outline" className="text-[8px]">uploaded</Badge>
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs truncate block">{doc.file_name}</span>
+                        {doc.uploadedAt && (
+                          <span className="text-[9px] text-muted-foreground">{doc.uploadedAt}</span>
+                        )}
+                      </div>
+                      {doc.citationId ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge 
+                                variant="outline" 
+                                className="text-[9px] bg-pink-50 dark:bg-pink-950/30 text-pink-600 cursor-help flex-shrink-0"
+                              >
+                                cite: [{doc.citationId.slice(0, 6)}]
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">
+                                {doc.citationType?.replace(/_/g, ' ') || 'Document'} - Verified Source
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Badge variant="outline" className="text-[8px] flex-shrink-0">uploaded</Badge>
                       )}
                     </div>
                   ))}
                   {cat.documents.length > 3 && (
-                    <p className="text-[10px] text-muted-foreground">+{cat.documents.length - 3} more</p>
+                    <button 
+                      onClick={() => setFullscreenPanel('panel-6-documents')}
+                      className="text-[10px] text-pink-600 hover:text-pink-700 font-medium pl-6"
+                    >
+                      +{cat.documents.length - 3} more → View All
+                    </button>
                   )}
                 </div>
               )}
@@ -1567,6 +1630,8 @@ export default function Stage8FinalReview({
     handleDragLeave,
     handleDrop,
     handleFileUpload,
+    getCitationsForPanel,
+    setFullscreenPanel,
   ]);
   
   // Contract type options for new contract selection
@@ -2561,8 +2626,182 @@ export default function Stage8FinalReview({
         )}
         
         {panel.id === 'panel-6-documents' && (
-          <div className="overflow-y-auto max-h-[50vh]">
-            {renderPanel6Content()}
+          <div className="space-y-6">
+            {/* Document Categories Grid - Fullscreen View */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                <FolderOpen className="h-4 w-4" />
+                All Documents ({documents.length})
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {DOCUMENT_CATEGORIES.map(cat => {
+                  const categoryDocs = documents.filter(d => d.category === cat.key);
+                  const panelCitations = getCitationsForPanel(['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION']);
+                  
+                  return (
+                    <div 
+                      key={cat.key} 
+                      className={cn(
+                        "rounded-xl border-2 p-4 transition-all",
+                        categoryDocs.length > 0 
+                          ? "border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20" 
+                          : "border-dashed border-muted-foreground/20 bg-muted/20"
+                      )}
+                    >
+                      {/* Category Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "h-8 w-8 rounded-lg flex items-center justify-center",
+                            categoryDocs.length > 0 ? "bg-pink-100 dark:bg-pink-900/50" : "bg-muted"
+                          )}>
+                            <cat.icon className={cn("h-4 w-4", categoryDocs.length > 0 ? cat.color : "text-muted-foreground")} />
+                          </div>
+                          <div>
+                            <h5 className={cn("text-sm font-medium", categoryDocs.length > 0 ? cat.color : "text-muted-foreground")}>
+                              {cat.label}
+                            </h5>
+                            <p className="text-[10px] text-muted-foreground">
+                              {categoryDocs.length} {categoryDocs.length === 1 ? 'file' : 'files'}
+                            </p>
+                          </div>
+                        </div>
+                        {categoryDocs.filter(d => d.citationId).length > 0 && (
+                          <Badge className="bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 text-[10px]">
+                            {categoryDocs.filter(d => d.citationId).length} cited
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Documents List */}
+                      {categoryDocs.length === 0 ? (
+                        <div className="py-4 text-center">
+                          <p className="text-xs text-muted-foreground italic">No documents in this category</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {categoryDocs.map(doc => {
+                            // Find citation for this document
+                            const matchingCitation = panelCitations.find(c => {
+                              const citationFileName = c.metadata?.file_name || c.answer;
+                              return citationFileName && doc.file_name.toLowerCase().includes(String(citationFileName).toLowerCase().slice(0, 10));
+                            });
+                            
+                            return (
+                              <div 
+                                key={doc.id} 
+                                className="flex items-center gap-3 p-3 rounded-lg bg-background border hover:border-pink-300 transition-all group"
+                              >
+                                {/* File Preview/Icon */}
+                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                    <FileImage className="h-5 w-5 text-green-500" />
+                                  ) : doc.file_name.match(/\.pdf$/i) ? (
+                                    <FileText className="h-5 w-5 text-red-500" />
+                                  ) : (
+                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                
+                                {/* File Info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                                  <div className="flex items-center gap-2">
+                                    {doc.uploadedAt && (
+                                      <span className="text-[10px] text-muted-foreground">{doc.uploadedAt}</span>
+                                    )}
+                                    {matchingCitation && (
+                                      <span className="text-[10px] text-pink-500">
+                                        {matchingCitation.cite_type.replace(/_/g, ' ')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Citation Badge */}
+                                {(doc.citationId || matchingCitation) && (
+                                  <Badge 
+                                    variant="outline" 
+                                    className="text-[9px] bg-pink-50 dark:bg-pink-950/30 text-pink-600 flex-shrink-0"
+                                  >
+                                    cite: [{(doc.citationId || matchingCitation?.id || '').slice(0, 8)}]
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Contracts Section - Fullscreen */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                <FileCheck className="h-4 w-4" />
+                Contracts ({contracts.length})
+              </h4>
+              {contracts.length === 0 ? (
+                <div className="p-6 rounded-xl border-2 border-dashed text-center">
+                  <FileCheck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No contracts created yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Create a contract from the panel view</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {contracts.map(contract => (
+                    <div 
+                      key={contract.id} 
+                      className="p-4 rounded-xl border-2 border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">#{contract.contract_number}</span>
+                        <Badge 
+                          variant={contract.status === 'signed' ? 'default' : 'outline'}
+                          className={contract.status === 'signed' ? 'bg-green-500' : ''}
+                        >
+                          {contract.status}
+                        </Badge>
+                      </div>
+                      {canViewFinancials && contract.total_amount && (
+                        <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">
+                          ${contract.total_amount.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Related Citations */}
+            {panelCitations.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-pink-500" />
+                  Verified Citations ({panelCitations.length})
+                </h4>
+                <div className="grid gap-2">
+                  {panelCitations.map(citation => (
+                    <div
+                      key={citation.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="text-[10px]">
+                          {citation.cite_type.replace(/_/g, ' ')}
+                        </Badge>
+                        <span className="text-sm">{renderCitationValue(citation)}</span>
+                      </div>
+                      <span className="text-[10px] text-pink-500 font-mono">cite: [{citation.id.slice(0, 8)}]</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         
@@ -2619,7 +2858,7 @@ export default function Stage8FinalReview({
         )}
       </div>
     );
-  }, [getCitationsForPanel, renderCitationValue, teamMembers, weatherData, contracts, canViewFinancials, renderPanel5Content, renderPanel6Content]);
+  }, [getCitationsForPanel, renderCitationValue, teamMembers, weatherData, contracts, canViewFinancials, renderPanel5Content, documents, DOCUMENT_CATEGORIES]);
   
   // Render single panel
   const renderPanel = useCallback((panel: PanelConfig) => {
