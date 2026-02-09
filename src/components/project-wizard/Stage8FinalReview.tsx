@@ -418,10 +418,12 @@ export default function Stage8FinalReview({
     return ['worker', 'inspector', 'subcontractor', 'member'].includes(userRole);
   }, [userRole]);
   
-  // ✓ NEW: Task status toggle - owner always, assigned workers for their own tasks
+  // ✓ FIXED: Task status toggle - simpler logic
+  // Owner can ALWAYS toggle tasks (no edit mode required for task completion)
+  // Foreman can always toggle, workers can toggle their assigned tasks
   const canToggleTaskStatus = useCallback((taskAssignedTo: string) => {
-    // Owner can toggle any task (if edit mode enabled)
-    if (userRole === 'owner' && isEditModeEnabled) return true;
+    // Owner can toggle ANY task - this is the main use case
+    if (userRole === 'owner') return true;
     // Foreman can toggle any task
     if (userRole === 'foreman') return true;
     // Workers can toggle tasks assigned to them
@@ -429,7 +431,7 @@ export default function Stage8FinalReview({
       return taskAssignedTo === userId;
     }
     return false;
-  }, [userRole, isEditModeEnabled, userId]);
+  }, [userRole, userId]);
   
   // CRITICAL: Only Owner can view financial data - Foreman/Subcontractor are blocked
   const canViewFinancials = useMemo(() => {
@@ -1042,7 +1044,13 @@ export default function Stage8FinalReview({
           }
         };
         
-        // Create citation for cross-panel sync
+        // ✓ Get human-readable category label
+        const getCategoryLabel = (cat: DocumentCategory): string => {
+          const categoryInfo = DOCUMENT_CATEGORIES.find(c => c.key === cat);
+          return categoryInfo?.label || cat;
+        };
+        
+        // Create citation for cross-panel sync with CATEGORY info
         const newCitation: Citation = {
           id: `doc-${docRecord.id}`,
           cite_type: getCiteType(finalCategory) as any,
@@ -1052,8 +1060,10 @@ export default function Stage8FinalReview({
           timestamp: new Date().toISOString(),
           metadata: {
             category: finalCategory,
+            categoryLabel: getCategoryLabel(finalCategory),
             fileName: file.name,
             fileSize: file.size,
+            uploadedBy: userId,
           },
         };
         
@@ -1486,7 +1496,8 @@ export default function Stage8FinalReview({
                                             
                                             if (insertError) throw insertError;
                                             
-                                            // Create citation for cross-panel sync
+                                            // Create citation for cross-panel sync with PHASE info
+                                            const phaseInfo = TASK_PHASES.find(p => p.key === task.phase);
                                             const newCitation: Citation = {
                                               id: `doc-${docRecord.id}`,
                                               cite_type: 'SITE_PHOTO' as any,
@@ -1500,6 +1511,9 @@ export default function Stage8FinalReview({
                                                 fileSize: file.size,
                                                 taskId: task.id,
                                                 taskTitle: task.title,
+                                                // ✓ NEW: Include phase information
+                                                phase: task.phase,
+                                                phaseLabel: phaseInfo?.label || task.phase,
                                               },
                                             };
                                             
