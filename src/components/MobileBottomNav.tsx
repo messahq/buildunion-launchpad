@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Folder, Users, MessageSquare, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -5,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { cn } from "@/lib/utils";
 
-const MobileBottomNav = () => {
+const MobileBottomNav = forwardRef<HTMLElement, object>((_, ref) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -85,6 +86,8 @@ const MobileBottomNav = () => {
       </div>
     </nav>
   );
-};
+});
+
+MobileBottomNav.displayName = "MobileBottomNav";
 
 export default MobileBottomNav;
