@@ -1328,7 +1328,11 @@ export default function Stage8FinalReview({
        || (typeof siteConditionCitation?.value === 'string' && siteConditionCitation.value.toLowerCase().includes('demolition'));
      
      // ✓ Use REAL DB tasks - no fallback to default phases
-     const baseTasks: TaskWithChecklist[] = tasks;
+     // ✓ VISIBILITY: Worker/subcontractor/inspector only see tasks assigned to them
+     // Owner and foreman see all tasks
+     const baseTasks: TaskWithChecklist[] = (userRole === 'owner' || userRole === 'foreman')
+       ? tasks
+       : tasks.filter(t => t.assigned_to === userId);
      
      // ✓ Filter phases - only show demolition if hasDemolition
      const activePhasesConfig = hasDemolition 
