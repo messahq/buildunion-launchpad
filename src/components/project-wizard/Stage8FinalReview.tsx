@@ -4166,6 +4166,233 @@ export default function Stage8FinalReview({
   // Render panel content based on panel ID
   const renderPanelContent = useCallback((panel: PanelConfig) => {
     const panelCitations = getCitationsForPanel(panel.dataKeys);
+
+    // ======= PANEL 1: Project Basics — Futuristic Command Center =======
+    if (panel.id === 'panel-1-basics') {
+      const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
+      const locCit = citations.find(c => c.cite_type === 'LOCATION');
+      const workCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+      const filled = [nameCit, locCit, workCit].filter(Boolean).length;
+      const completionPct = Math.round((filled / 3) * 100);
+
+      // Derive work type icon
+      const workTypeValue = (workCit?.value as string) || workCit?.answer || '';
+      const getWorkTypeIcon = () => {
+        if (workTypeValue.includes('renovation') || workTypeValue.includes('Renovation')) return '🔨';
+        if (workTypeValue.includes('new_construction') || workTypeValue.includes('New')) return '🏗️';
+        if (workTypeValue.includes('demolition') || workTypeValue.includes('Demolition')) return '💥';
+        if (workTypeValue.includes('addition') || workTypeValue.includes('Addition')) return '➕';
+        if (workTypeValue.includes('repair') || workTypeValue.includes('Repair')) return '🔧';
+        if (workTypeValue.includes('electrical') || workTypeValue.includes('Electrical')) return '⚡';
+        if (workTypeValue.includes('plumbing') || workTypeValue.includes('Plumbing')) return '🚿';
+        if (workTypeValue.includes('roofing') || workTypeValue.includes('Roofing')) return '🏠';
+        if (workTypeValue.includes('landscaping') || workTypeValue.includes('Landscaping')) return '🌿';
+        if (workTypeValue.includes('interior') || workTypeValue.includes('Interior')) return '🎨';
+        if (workTypeValue.includes('exterior') || workTypeValue.includes('Exterior')) return '🧱';
+        return '📐';
+      };
+
+      return (
+        <div className="space-y-4">
+          {/* Hero Project Identity Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-950/40 via-orange-950/30 to-yellow-950/20 p-5"
+          >
+            {/* Ambient glow */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-orange-500/8 blur-2xl pointer-events-none" />
+            
+            <div className="relative z-10">
+              {/* Project Name */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-400/60 mb-1">Project Identity</p>
+                  <h2 className="text-xl font-bold text-amber-100 leading-tight">
+                    {nameCit?.answer || projectData?.name || '—'}
+                  </h2>
+                  {nameCit && (
+                    <p className="text-[9px] text-amber-500/50 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
+                  )}
+                </div>
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                  className="w-12 h-12 rounded-full border border-amber-500/20 flex items-center justify-center bg-amber-500/5"
+                >
+                  <Building2 className="h-5 w-5 text-amber-400" />
+                </motion.div>
+              </div>
+
+              {/* Completion Ring + Stats */}
+              <div className="flex items-center gap-4">
+                {/* SVG Ring */}
+                <div className="relative w-16 h-16 flex-shrink-0">
+                  <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
+                    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(245,158,11,0.1)" strokeWidth="4" />
+                    <motion.circle
+                      cx="32" cy="32" r="28"
+                      fill="none"
+                      stroke="url(#amberGradBasics)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 28}`}
+                      initial={{ strokeDashoffset: 2 * Math.PI * 28 }}
+                      animate={{ strokeDashoffset: 2 * Math.PI * 28 * (1 - completionPct / 100) }}
+                      transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+                    />
+                    <defs>
+                      <linearGradient id="amberGradBasics" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#ea580c" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-amber-300">{completionPct}%</span>
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-1.5">
+                  <p className="text-[10px] font-mono text-amber-400/50 uppercase tracking-wider">Data Integrity</p>
+                  <div className="flex gap-1.5">
+                    {[
+                      { label: 'Name', done: !!nameCit, icon: '📋' },
+                      { label: 'Location', done: !!locCit, icon: '📍' },
+                      { label: 'Work Type', done: !!workCit, icon: getWorkTypeIcon() },
+                    ].map(item => (
+                      <motion.div
+                        key={item.label}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: 0.4 }}
+                        className={cn(
+                          "flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-medium transition-all",
+                          item.done
+                            ? "border-amber-500/30 bg-amber-500/10 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.15)]"
+                            : "border-slate-700/30 bg-slate-900/30 text-slate-500"
+                        )}
+                      >
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                        {item.done && <CheckCircle2 className="h-2.5 w-2.5 text-amber-400" />}
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Location Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className={cn(
+              "rounded-xl border p-4 transition-all",
+              locCit
+                ? "border-cyan-500/20 bg-gradient-to-br from-cyan-950/30 to-blue-950/20"
+                : "border-slate-700/20 bg-slate-950/20"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-10 h-10 rounded-lg flex items-center justify-center",
+                locCit ? "bg-cyan-500/10" : "bg-slate-800/50"
+              )}>
+                <MapPin className={cn("h-5 w-5", locCit ? "text-cyan-400" : "text-slate-600")} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400/50 mb-0.5">Project Location</p>
+                <p className={cn(
+                  "text-sm font-medium truncate",
+                  locCit ? "text-cyan-200" : "text-slate-500 italic"
+                )}>
+                  {locCit?.answer || projectData?.address || 'Not set'}
+                </p>
+                {locCit && (
+                  <p className="text-[9px] text-cyan-500/40 font-mono mt-0.5">cite: [{locCit.id.slice(0, 12)}]</p>
+                )}
+              </div>
+              {locCit && (
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                />
+              )}
+            </div>
+          </motion.div>
+
+          {/* Work Type Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className={cn(
+              "rounded-xl border p-4 transition-all",
+              workCit
+                ? "border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 to-teal-950/20"
+                : "border-slate-700/20 bg-slate-950/20"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-10 h-10 rounded-lg flex items-center justify-center text-xl",
+                workCit ? "bg-emerald-500/10" : "bg-slate-800/50"
+              )}>
+                {workCit ? getWorkTypeIcon() : <Hammer className="h-5 w-5 text-slate-600" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400/50 mb-0.5">Work Type</p>
+                <p className={cn(
+                  "text-sm font-medium",
+                  workCit ? "text-emerald-200" : "text-slate-500 italic"
+                )}>
+                  {workCit?.answer || 'Not selected'}
+                </p>
+                {workCit && (
+                  <p className="text-[9px] text-emerald-500/40 font-mono mt-0.5">cite: [{workCit.id.slice(0, 12)}]</p>
+                )}
+              </div>
+              {workCit && (
+                <Badge className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_6px_rgba(52,211,153,0.15)]">
+                  Verified
+                </Badge>
+              )}
+            </div>
+          </motion.div>
+
+          {/* All Citations Footer */}
+          {panelCitations.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="pt-3 border-t border-amber-500/10"
+            >
+              <p className="text-[10px] font-mono uppercase tracking-wider text-amber-400/40 mb-2">
+                Source Citations ({panelCitations.length})
+              </p>
+              <div className="space-y-1">
+                {panelCitations.map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10 text-[10px]">
+                    <span className="text-amber-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-amber-200/80 truncate max-w-[160px]">{renderCitationValue(c)}</span>
+                      <span className="text-amber-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </div>
+      );
+    }
     
     // ======= PANEL 2: Area & Dimensions =======
     // ✓ CRITICAL: NO HARDCODED FALLBACKS - Read only from current session/projects table
