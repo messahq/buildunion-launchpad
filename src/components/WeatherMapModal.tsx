@@ -45,20 +45,23 @@ export function WeatherMapModal({
           </TabsContent>
 
           {/* Map Tab */}
-          <TabsContent value="location" className="space-y-4 flex-1 flex flex-col min-h-0">
+          <TabsContent value="location" className="space-y-4">
             {lat && lon ? (
-              <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                <div className="flex-1 min-h-[300px] max-h-[60vh] rounded-lg overflow-hidden border bg-muted/50">
+              <div className="space-y-4">
+                {/* Map Container with fixed height */}
+                <div className="h-[400px] w-full rounded-lg overflow-hidden border bg-muted/50">
                   <iframe
+                    title="Project Location Map"
                     width="100%"
                     height="100%"
-                    style={{ border: 0 }}
+                    style={{ border: 0, minHeight: '400px' }}
                     loading="lazy"
                     allowFullScreen
                     referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://maps.google.com/maps?q=${lat},${lon}&z=16&output=embed`}
+                    src={`https://www.google.com/maps?q=${lat},${lon}&z=16&output=embed`}
                   />
                 </div>
+                {/* Location Info */}
                 {location && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border">
                     <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
@@ -73,8 +76,9 @@ export function WeatherMapModal({
                 )}
               </div>
             ) : (
-              <div className="h-[500px] flex items-center justify-center rounded-lg border border-dashed bg-muted/50">
+              <div className="h-[400px] flex items-center justify-center rounded-lg border border-dashed bg-muted/50">
                 <div className="text-center text-muted-foreground">
+                  <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>Map location not available</p>
                   <p className="text-xs mt-1">Please set a project address first</p>
                 </div>
