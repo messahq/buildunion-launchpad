@@ -398,6 +398,15 @@ export default function Stage8FinalReview({
   const [clientEmail, setClientEmail] = useState('');
   const [clientName, setClientName] = useState('');
   
+  // ✓ Document preview modal state
+  const [previewDocument, setPreviewDocument] = useState<{
+    file_name: string;
+    file_path: string;
+    category: string;
+    citationId?: string;
+  } | null>(null);
+  const [isSendingDocument, setIsSendingDocument] = useState(false);
+  
   // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   
@@ -1023,6 +1032,74 @@ export default function Stage8FinalReview({
     setEditingField(null);
     setEditValue('');
   }, []);
+  
+  // ✓ Download document from storage
+  const handleDownloadDocument = useCallback(async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('project-documents')
+        .download(filePath);
+      
+      if (error) throw error;
+      
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Downloaded: ${fileName}`);
+    } catch (err) {
+      console.error('[Stage8] Download failed:', err);
+      toast.error('Failed to download file');
+    }
+  }, []);
+  
+  // ✓ Get public URL for document preview
+  const getDocumentPreviewUrl = useCallback((filePath: string) => {
+    const { data } = supabase.storage
+      .from('project-documents')
+      .getPublicUrl(filePath);
+    return data.publicUrl;
+  }, []);
+  
+  // ✓ Send document via email
+  const handleSendDocument = useCallback(async (doc: { file_name: string; file_path: string }) => {
+    if (!clientEmail) {
+      toast.error('Please enter client email first');
+      return;
+    }
+    
+    setIsSendingDocument(true);
+    try {
+      const publicUrl = getDocumentPreviewUrl(doc.file_path);
+      
+      const response = await supabase.functions.invoke('send-contract-email', {
+        body: {
+          recipientEmail: clientEmail,
+          recipientName: clientName || 'Client',
+          subject: `Document: ${doc.file_name}`,
+          projectName: projectData?.name || 'Project',
+          documentUrl: publicUrl,
+          documentName: doc.file_name,
+        }
+      });
+      
+      if (response.error) throw response.error;
+      
+      toast.success(`Document sent to ${clientEmail}`);
+      setPreviewDocument(null);
+    } catch (err) {
+      console.error('[Stage8] Send document failed:', err);
+      toast.error('Failed to send document');
+    } finally {
+      setIsSendingDocument(false);
+    }
+  }, [clientEmail, clientName, projectData, getDocumentPreviewUrl]);
   
   // Update task checklist item
   const updateChecklistItem = useCallback(async (taskId: string, checklistItemId: string, done: boolean) => {
@@ -1859,45 +1936,128 @@ export default function Stage8FinalReview({
                 <p className="text-xs text-muted-foreground italic">No {cat.label.toLowerCase()} documents</p>
               ) : (
                 <div className="space-y-1.5">
-                  {cat.documents.slice(0, 3).map(doc => (
-                    <div key={doc.id} className="flex items-center gap-2 p-2 rounded bg-background/80 hover:bg-background border border-transparent hover:border-pink-200/50 transition-all">
-                      {/* File type icon */}
-                      {doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <FileImage className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                      ) : doc.file_name.match(/\.pdf$/i) ? (
-                        <FileText className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                      ) : (
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs truncate block">{doc.file_name}</span>
-                        {doc.uploadedAt && (
-                          <span className="text-[9px] text-muted-foreground">{doc.uploadedAt}</span>
+                  {cat.documents.slice(0, 3).map(doc => {
+                    const isImage = doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                    const isPdf = doc.file_name.match(/\.pdf$/i);
+                    
+                    return (
+                      <div 
+                        key={doc.id} 
+                        className="group flex items-center gap-2 p-2 rounded bg-background/80 hover:bg-background border border-transparent hover:border-pink-200/50 transition-all"
+                      >
+                        {/* Clickable preview thumbnail */}
+                        <button
+                          onClick={() => setPreviewDocument({ 
+                            file_name: doc.file_name, 
+                            file_path: doc.file_path, 
+                            category: cat.key,
+                            citationId: doc.citationId 
+                          })}
+                          className="relative flex-shrink-0 w-10 h-10 rounded border overflow-hidden hover:ring-2 hover:ring-pink-300 transition-all"
+                        >
+                          {isImage ? (
+                            <img 
+                              src={getDocumentPreviewUrl(doc.file_path)} 
+                              alt={doc.file_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : isPdf ? (
+                            <div className="w-full h-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-red-500" />
+                            </div>
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                            <Eye className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </button>
+                        
+                        {/* File info */}
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs truncate block font-medium">{doc.file_name}</span>
+                          {doc.uploadedAt && (
+                            <span className="text-[9px] text-muted-foreground">{doc.uploadedAt}</span>
+                          )}
+                        </div>
+                        
+                        {/* Action buttons - visible on hover */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() => setPreviewDocument({ 
+                                    file_name: doc.file_name, 
+                                    file_path: doc.file_path, 
+                                    category: cat.key,
+                                    citationId: doc.citationId 
+                                  })}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Preview</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() => handleDownloadDocument(doc.file_path, doc.file_name)}
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Download</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          {canEdit && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    onClick={() => setPreviewDocument({ 
+                                      file_name: doc.file_name, 
+                                      file_path: doc.file_path, 
+                                      category: cat.key,
+                                      citationId: doc.citationId 
+                                    })}
+                                  >
+                                    <Send className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Send via Email</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                        
+                        {/* Citation badge */}
+                        {doc.citationId && (
+                          <Badge 
+                            variant="outline" 
+                            className="text-[9px] bg-pink-50 dark:bg-pink-950/30 text-pink-600 flex-shrink-0"
+                          >
+                            [{doc.citationId.slice(0, 6)}]
+                          </Badge>
                         )}
                       </div>
-                      {doc.citationId ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge 
-                                variant="outline" 
-                                className="text-[9px] bg-pink-50 dark:bg-pink-950/30 text-pink-600 cursor-help flex-shrink-0"
-                              >
-                                cite: [{doc.citationId.slice(0, 6)}]
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">
-                                {doc.citationType?.replace(/_/g, ' ') || 'Document'} - Verified Source
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <Badge variant="outline" className="text-[8px] flex-shrink-0">uploaded</Badge>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                   {cat.documents.length > 3 && (
                     <button 
                       onClick={() => setFullscreenPanel('panel-6-documents')}
@@ -1995,6 +2155,8 @@ export default function Stage8FinalReview({
     handleFileUpload,
     getCitationsForPanel,
     setFullscreenPanel,
+    getDocumentPreviewUrl,
+    handleDownloadDocument,
   ]);
   
   // Contract type options for new contract selection
@@ -4738,6 +4900,104 @@ export default function Stage8FinalReview({
           }
           projectName={projectData?.name || 'Project'}
         />
+      )}
+      
+      {/* Document Preview Modal */}
+      {previewDocument && (
+        <Dialog open={!!previewDocument} onOpenChange={() => setPreviewDocument(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                  <FileImage className="h-5 w-5 text-green-500" />
+                ) : (
+                  <FileText className="h-5 w-5 text-red-500" />
+                )}
+                {previewDocument.file_name}
+                {previewDocument.citationId && (
+                  <Badge variant="outline" className="text-[10px] ml-2">
+                    cite: [{previewDocument.citationId.slice(0, 8)}]
+                  </Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {/* Preview content */}
+            <div className="flex-1 overflow-auto bg-muted/30 rounded-lg p-4 min-h-[400px]">
+              {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                <img 
+                  src={getDocumentPreviewUrl(previewDocument.file_path)} 
+                  alt={previewDocument.file_name}
+                  className="max-w-full max-h-[60vh] mx-auto object-contain rounded-lg shadow-lg"
+                />
+              ) : previewDocument.file_name.match(/\.pdf$/i) ? (
+                <iframe
+                  src={getDocumentPreviewUrl(previewDocument.file_path)}
+                  className="w-full h-[60vh] rounded-lg border"
+                  title={previewDocument.file_name}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <FileText className="h-16 w-16 mb-4" />
+                  <p className="text-sm">Preview not available for this file type</p>
+                  <p className="text-xs mt-1">Click Download to view the file</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Send via Email Section */}
+            {canEdit && (
+              <div className="pt-4 border-t space-y-3">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Send via Email
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Recipient name"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    className="w-40"
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Recipient email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => handleSendDocument(previewDocument)}
+                    disabled={!clientEmail || isSendingDocument}
+                    className="gap-2"
+                  >
+                    {isSendingDocument ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    Send
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleDownloadDocument(previewDocument.file_path, previewDocument.file_name)}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+              <Button variant="ghost" onClick={() => setPreviewDocument(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
