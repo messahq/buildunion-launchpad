@@ -113,6 +113,7 @@ import { PendingApprovalModal } from "@/components/projects/PendingApprovalModal
 import { PendingChangeBadge } from "@/components/projects/PendingChangeBadge";
 import { Stage8CommandBar } from "@/components/project-wizard/Stage8CommandBar";
 import { ConflictMapModal } from "@/components/project-wizard/ConflictMapModal";
+import { TeamChatPanel } from "@/components/project-wizard/TeamChatPanel";
 
 // ============================================
 // VISIBILITY TIERS
@@ -4714,22 +4715,9 @@ export default function Stage8FinalReview({
                   <p className="text-[8px] text-teal-700 dark:text-teal-400/80">{teamMembers.length} operative{teamMembers.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                {teamMembers.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleTeamCommunication}
-                    className="h-6 text-[9px] gap-1 text-teal-700 dark:text-teal-300 hover:bg-teal-500/10 px-2"
-                  >
-                    <MessageSquare className="h-2.5 w-2.5" />
-                    Chat
-                  </Button>
-                )}
-                <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/30 text-[9px] px-1.5 py-0 gap-0.5">
-                  <Shield className="h-2 w-2" /> Active
-                </Badge>
-              </div>
+              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/30 text-[9px] px-1.5 py-0 gap-0.5">
+                <Shield className="h-2 w-2" /> Active
+              </Badge>
             </div>
             
             {/* Team Size Citation */}
@@ -4783,28 +4771,37 @@ export default function Stage8FinalReview({
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleMemberMessage(member.userId)}
-                        className="h-6 w-6 p-0 text-teal-500/40 hover:text-teal-600 dark:hover:text-teal-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <MessageSquare className="h-3 w-3" />
-                      </Button>
                     </motion.div>
                   );
                 })}
               </div>
             )}
             
-            {/* Communication Status */}
+            {/* ─── In-Panel Project Chat ─── */}
             {teamMembers.length > 0 && (
-              <div className="p-2 rounded-lg border border-teal-500/15 bg-gradient-to-r from-teal-950/10 to-cyan-950/5">
-                <div className="flex items-center gap-2 text-[10px] text-teal-700 dark:text-teal-300/80">
-                  <div className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
-                  <span className="font-medium">Real-time messaging enabled</span>
-                </div>
-              </div>
+              <TeamChatPanel
+                projectId={projectId}
+                userId={userId}
+                teamMembers={teamMembers}
+                compact={true}
+                onDocumentAdded={async () => {
+                  // Refresh documents from DB
+                  const { data: newDocs } = await supabase
+                    .from('project_documents')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .order('uploaded_at', { ascending: false });
+                  if (newDocs) {
+                    setDocuments(newDocs.map(doc => ({
+                      id: doc.id,
+                      file_name: doc.file_name,
+                      file_path: doc.file_path,
+                      category: categorizeDocument(doc.file_name),
+                      uploadedAt: doc.uploaded_at,
+                    })));
+                  }
+                }}
+              />
             )}
             
             {/* Citations */}
@@ -5641,25 +5638,34 @@ export default function Stage8FinalReview({
                       <p className="text-sm font-semibold text-teal-900 dark:text-white/90 truncate">{member.name}</p>
                       <p className="text-[10px] text-teal-700 dark:text-teal-400/70 capitalize font-medium">{member.role}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        if (projectId && citations.length > 0) {
-                          const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                          const gfaVal = typeof gfaCit?.value === 'number' ? gfaCit.value : typeof gfaCit?.metadata?.gfa_value === 'number' ? gfaCit.metadata.gfa_value : 0;
-                          syncCitationsToLocalStorage(projectId, citations, 8, gfaVal);
-                        }
-                        window.location.href = `/buildunion/messages?user=${member.userId}&project=${projectId}`;
-                      }}
-                      className="h-8 w-8 p-0 text-teal-500/30 hover:text-teal-600 dark:hover:text-teal-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
                   </motion.div>
                 );
               })}
             </div>
+
+            {/* ─── In-Panel Project Chat (Fullscreen) ─── */}
+            <TeamChatPanel
+              projectId={projectId}
+              userId={userId}
+              teamMembers={teamMembers}
+              compact={false}
+              onDocumentAdded={async () => {
+                const { data: newDocs } = await supabase
+                  .from('project_documents')
+                  .select('*')
+                  .eq('project_id', projectId)
+                  .order('uploaded_at', { ascending: false });
+                if (newDocs) {
+                  setDocuments(newDocs.map(doc => ({
+                    id: doc.id,
+                    file_name: doc.file_name,
+                    file_path: doc.file_path,
+                    category: categorizeDocument(doc.file_name),
+                    uploadedAt: doc.uploaded_at,
+                  })));
+                }
+              }}
+            />
           </motion.div>
         )}
         
