@@ -6247,170 +6247,236 @@ export default function Stage8FinalReview({
           backgroundSize: '40px 40px',
         }} />
 
-        {/* Orbital Ring - Desktop */}
-        <div className="hidden lg:flex absolute inset-0 items-center justify-center">
-          {/* Orbital ring glow */}
-          <div className="absolute w-[680px] h-[680px] rounded-full border border-cyan-800/20" />
-          <div className="absolute w-[682px] h-[682px] rounded-full border border-cyan-600/5" />
-
-          {/* 8 Orbital Nodes */}
-          {PANELS.map((panel, index) => {
-            const { rad } = getOrbitalPosition(index, PANELS.length);
-            const radius = 310; // Distance from center
-            const x = Math.cos(rad) * radius;
-            const y = Math.sin(rad) * radius;
-            const isActive = activeOrbitalPanel === panel.id;
-            const hasAccess = hasAccessToTier(panel.visibilityTier);
-            const Icon = panel.icon;
-            const panelCitations = getCitationsForPanel(panel.dataKeys);
-            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
-              : panel.id === 'panel-5-timeline' ? tasks.length
-              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
-              : panelCitations.length;
-
-            // Dynamic title for panel 3
-            let displayTitle = panel.title;
-            if (panel.id === 'panel-3-trade') {
-              const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-              if (tradeCitation?.answer) displayTitle = `${tradeCitation.answer} Template`;
-            }
+        {/* Desktop: Bento Grid Orbital Layout */}
+        <div className="hidden lg:grid absolute inset-4 z-10"
+          style={{
+            gridTemplateColumns: '1fr 1fr 2.2fr 1fr 1fr',
+            gridTemplateRows: '1fr 1fr 1fr',
+            gap: '10px',
+          }}
+        >
+          {/* Row 1: Top-left panels + Central Canvas (spans 2 rows) + Top-right panels */}
+          {/* Panel 0 - Project Basics (top-left) */}
+          {(() => {
+            const panelPositions = [
+              { col: '1 / 2', row: '1 / 2' },   // 0: top-left-1
+              { col: '2 / 3', row: '1 / 2' },   // 1: top-left-2
+              { col: '4 / 5', row: '1 / 2' },   // 2: top-right-1
+              { col: '5 / 6', row: '1 / 2' },   // 3: top-right-2
+              { col: '1 / 2', row: '3 / 4' },   // 4: bottom-left-1
+              { col: '2 / 3', row: '3 / 4' },   // 5: bottom-left-2
+              { col: '4 / 5', row: '3 / 4' },   // 6: bottom-right-1
+              { col: '5 / 6', row: '3 / 4' },   // 7: bottom-right-2
+            ];
 
             return (
-              <motion.button
-                key={panel.id}
-                className={cn(
-                  "absolute flex flex-col items-center gap-1 group cursor-pointer z-10",
-                  !hasAccess && "opacity-30 cursor-not-allowed"
-                )}
-                style={{ 
-                  left: `calc(50% + ${x}px - 44px)`,
-                  top: `calc(50% + ${y}px - 44px)`,
-                }}
-                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.15 } : undefined}
-                whileTap={hasAccess ? { scale: 0.95 } : undefined}
-                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                {/* Node circle */}
-                <motion.div
-                  className={cn(
-                    "w-[88px] h-[88px] rounded-2xl flex flex-col items-center justify-center relative transition-all duration-300",
-                    isActive 
-                      ? "bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border-2 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
-                      : "bg-[#111827]/80 border border-cyan-900/30 hover:border-cyan-600/50 hover:shadow-[0_0_15px_rgba(34,211,238,0.15)]",
-                    !hasAccess && "border-gray-800/30"
-                  )}
-                  animate={isActive ? {
-                    boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.35)', '0 0 20px rgba(34,211,238,0.2)'],
-                  } : {}}
-                  transition={isActive ? { duration: 2, repeat: Infinity } : {}}
-                >
-                  {!hasAccess ? (
-                    <Lock className="h-5 w-5 text-gray-600" />
-                  ) : (
-                    <>
-                      <Icon className={cn("h-5 w-5 mb-1", isActive ? "text-cyan-300" : "text-cyan-600")} />
-                      {dataCount > 0 && (
-                        <span className={cn(
-                          "text-[9px] font-mono",
-                          isActive ? "text-cyan-200" : "text-cyan-700"
-                        )}>
-                          {dataCount}
-                        </span>
-                      )}
-                    </>
-                  )}
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <motion.div
-                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyan-400"
-                      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                  )}
-                </motion.div>
-                {/* Label */}
-                <span className={cn(
-                  "text-[10px] font-medium text-center max-w-[90px] leading-tight",
-                  isActive ? "text-cyan-200" : "text-cyan-700",
-                  !hasAccess && "text-gray-700"
-                )}>
-                  {displayTitle}
-                </span>
-              </motion.button>
-            );
-          })}
+              <>
+                {PANELS.map((panel, index) => {
+                  const pos = panelPositions[index];
+                  const isActive = activeOrbitalPanel === panel.id;
+                  const hasAccess = hasAccessToTier(panel.visibilityTier);
+                  const Icon = panel.icon;
+                  const panelCitations = getCitationsForPanel(panel.dataKeys);
+                  const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
+                    : panel.id === 'panel-5-timeline' ? tasks.length
+                    : panel.id === 'panel-6-documents' ? documents.length + contracts.length
+                    : panelCitations.length;
 
-          {/* Central Canvas */}
-          <motion.div
-            className="relative w-[480px] h-[420px] rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden"
-            layout
-            key={activeOrbitalPanel}
-          >
-            {/* Canvas header */}
-            <div className="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40">
-              <div className="flex items-center gap-2">
-                <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
-                <span className="text-sm font-semibold text-cyan-200">
-                  {activePanelConfig.id === 'panel-3-trade' 
-                    ? (() => { const tc = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return tc?.answer ? `${tc.answer} Template` : activePanelConfig.title; })()
-                    : t(activePanelConfig.titleKey, activePanelConfig.title)
+                  let displayTitle = panel.title;
+                  if (panel.id === 'panel-3-trade') {
+                    const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+                    if (tradeCitation?.answer) displayTitle = `${tradeCitation.answer} Template`;
                   }
-                </span>
-                {getTierBadge(activePanelConfig.visibilityTier)}
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
-                  onClick={() => setFullscreenPanel(activePanelConfig.id)}
-                >
-                  <Maximize2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-            {/* Canvas content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeOrbitalPanel}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="p-4 overflow-y-auto h-[calc(100%-52px)] [&_*]:text-foreground dark:[&_*]:text-foreground"
-                style={{ colorScheme: 'light' }}
-              >
-                <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
-                  {renderPanelContent(activePanelConfig)}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
 
-          {/* Connection lines from active node to center */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+                  return (
+                    <motion.button
+                      key={panel.id}
+                      className={cn(
+                        "relative flex flex-col items-start justify-between p-3 rounded-xl cursor-pointer overflow-hidden transition-all duration-300 group text-left",
+                        "backdrop-blur-[10px] border",
+                        isActive
+                          ? "bg-cyan-500/10 border-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.25)]"
+                          : "bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.07] hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]",
+                        !hasAccess && "opacity-30 cursor-not-allowed"
+                      )}
+                      style={{ gridColumn: pos.col, gridRow: pos.row }}
+                      onClick={() => {
+                        if (!hasAccess) return;
+                        setActiveOrbitalPanel(panel.id);
+                        setFullscreenPanel(panel.id);
+                      }}
+                      whileHover={hasAccess ? { scale: 1.02 } : undefined}
+                      whileTap={hasAccess ? { scale: 0.98 } : undefined}
+                    >
+                      {/* Neon glow accent line */}
+                      {isActive && (
+                        <motion.div
+                          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
+                          animate={{ opacity: [0.5, 1, 0.5] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
+                      )}
+
+                      {/* Top row: icon + count */}
+                      <div className="flex items-center justify-between w-full">
+                        <div className={cn(
+                          "h-8 w-8 rounded-lg flex items-center justify-center",
+                          isActive ? "bg-cyan-500/20" : "bg-white/[0.06]"
+                        )}>
+                          {hasAccess ? (
+                            <Icon className={cn("h-4 w-4", isActive ? "text-cyan-300" : "text-cyan-600")} />
+                          ) : (
+                            <Lock className="h-3.5 w-3.5 text-gray-600" />
+                          )}
+                        </div>
+                        {dataCount > 0 && hasAccess && (
+                          <span className={cn(
+                            "text-[10px] font-mono px-1.5 py-0.5 rounded-full",
+                            isActive ? "bg-cyan-500/20 text-cyan-300" : "bg-white/[0.06] text-cyan-700"
+                          )}>
+                            {dataCount}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Title + description */}
+                      <div className="mt-auto">
+                        <span className={cn(
+                          "text-xs font-semibold leading-tight block",
+                          isActive ? "text-cyan-200" : "text-cyan-500/80 group-hover:text-cyan-300"
+                        )}>
+                          {displayTitle}
+                        </span>
+                        <span className="text-[9px] text-cyan-800/50 leading-tight mt-0.5 block">
+                          {panel.description}
+                        </span>
+                      </div>
+
+                      {/* Active pulse dot */}
+                      {isActive && (
+                        <motion.div
+                          className="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400"
+                          animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        />
+                      )}
+                    </motion.button>
+                  );
+                })}
+
+                {/* CENTRAL CANVAS - Isolated photo/visualization zone */}
+                <div
+                  className="relative rounded-2xl overflow-hidden flex items-center justify-center"
+                  style={{ gridColumn: '3 / 4', gridRow: '1 / 4' }}
+                >
+                  {/* Neon border ring */}
+                  <div className="absolute inset-0 rounded-2xl border border-cyan-700/30 pointer-events-none z-20" />
+                  <div className="absolute inset-[1px] rounded-2xl border border-cyan-500/10 pointer-events-none z-20" />
+
+                  {/* Canvas background */}
+                  <div className="absolute inset-0 bg-[#080c16]" />
+
+                  {/* Project photo or visualization */}
+                  {(() => {
+                    // Try to find a site photo or blueprint from citations
+                    const sitePhotoCitation = citations.find(c => c.cite_type === 'SITE_PHOTO');
+                    const blueprintCitation = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+                    const visualDoc = documents.find(d => d.category === 'visual');
+
+                    const imageSource = sitePhotoCitation?.value || blueprintCitation?.value || (visualDoc ? visualDoc.file_path : null);
+
+                    if (imageSource && typeof imageSource === 'string') {
+                      const imageUrl = getDocumentPreviewUrl(imageSource);
+                      return (
+                        <img
+                          src={imageUrl}
+                          alt="Project visualization"
+                          className="absolute inset-0 w-full h-full object-contain z-10"
+                        />
+                      );
+                    }
+
+                    // Fallback: stylized placeholder
+                    return (
+                      <div className="flex flex-col items-center gap-3 z-10">
+                        <motion.div
+                          className="w-24 h-24 rounded-2xl border-2 border-dashed border-cyan-800/40 flex items-center justify-center"
+                          animate={{ borderColor: ['rgba(34,211,238,0.15)', 'rgba(34,211,238,0.35)', 'rgba(34,211,238,0.15)'] }}
+                          transition={{ duration: 3, repeat: Infinity }}
+                        >
+                          <Building2 className="h-10 w-10 text-cyan-800/40" />
+                        </motion.div>
+                        <div className="text-center">
+                          <p className="text-xs font-medium text-cyan-600/50">{projectData?.name || 'Project'}</p>
+                          <p className="text-[10px] text-cyan-800/30 mt-0.5">Upload site photos to preview</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Project name overlay - bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4 z-20">
+                    <p className="text-sm font-semibold text-cyan-200">{projectData?.name || 'Project'}</p>
+                    <p className="text-[10px] text-cyan-500/60">{projectData?.address || 'No address set'}</p>
+                  </div>
+
+                  {/* Stats overlay - top-right */}
+                  <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-20">
+                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
+                      {citations.length} citations
+                    </div>
+                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
+                      {teamMembers.length} team
+                    </div>
+                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
+                      {tasks.length} tasks
+                    </div>
+                    <div className="px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
+                      {documents.length} docs
+                    </div>
+                  </div>
+                </div>
+
+                {/* SVG Connection lines - from panels to central canvas edges */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ gridColumn: '1 / -1', gridRow: '1 / -1' }}>
+                  {/* We use a simpler approach: lines are only drawn for active panel */}
+                </svg>
+              </>
+            );
+          })()}
+
+          {/* Neon connection lines overlay */}
+          <svg className="absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)] pointer-events-none z-30">
             {PANELS.map((panel, index) => {
-              const { rad } = getOrbitalPosition(index, PANELS.length);
-              const radius = 310;
-              const x = Math.cos(rad) * radius;
-              const y = Math.sin(rad) * radius;
               const isActive = activeOrbitalPanel === panel.id;
-              
-              return isActive ? (
+              if (!isActive) return null;
+
+              // Calculate approximate panel center and canvas edge based on position
+              const positions = [
+                { px: '10%', py: '25%', cx: '38%', cy: '25%' },   // 0: top-left-1
+                { px: '30%', py: '25%', cx: '38%', cy: '30%' },   // 1: top-left-2
+                { px: '70%', py: '25%', cx: '62%', cy: '25%' },   // 2: top-right-1
+                { px: '90%', py: '25%', cx: '62%', cy: '30%' },   // 3: top-right-2
+                { px: '10%', py: '83%', cx: '38%', cy: '75%' },   // 4: bottom-left-1
+                { px: '30%', py: '83%', cx: '38%', cy: '70%' },   // 5: bottom-left-2
+                { px: '70%', py: '83%', cx: '62%', cy: '75%' },   // 6: bottom-right-1
+                { px: '90%', py: '83%', cx: '62%', cy: '70%' },   // 7: bottom-right-2
+              ];
+              const pos = positions[index];
+
+              return (
                 <motion.line
                   key={panel.id}
-                  x1="50%" y1="50%"
-                  x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`}
-                  stroke="rgba(34,211,238,0.3)"
-                  strokeWidth="1.5"
-                  strokeDasharray="6 4"
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: 1 }}
-                  transition={{ duration: 0.5 }}
+                  x1={pos.px} y1={pos.py}
+                  x2={pos.cx} y2={pos.cy}
+                  stroke="rgba(34,211,238,0.35)"
+                  strokeWidth="1"
+                  strokeDasharray="4 3"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
                 />
-              ) : null;
+              );
             })}
           </svg>
         </div>
@@ -6476,19 +6542,19 @@ export default function Stage8FinalReview({
         </div>
 
         {/* Navigation arrows - Desktop */}
-        <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 items-center gap-3 z-20">
+        <div className="hidden lg:flex absolute bottom-3 left-1/2 -translate-x-1/2 items-center gap-3 z-40">
           <Button
             size="sm"
             variant="ghost"
-            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
+            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1 h-7 text-[10px]"
             onClick={() => {
               const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
               const prevIdx = (currentIdx - 1 + PANELS.length) % PANELS.length;
               setActiveOrbitalPanel(PANELS[prevIdx].id);
             }}
           >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Previous
+            <ChevronRight className="h-3 w-3 rotate-180" />
+            Prev
           </Button>
           <span className="text-[10px] text-cyan-700 font-mono">
             {PANELS.findIndex(p => p.id === activeOrbitalPanel) + 1} / {PANELS.length}
@@ -6496,7 +6562,7 @@ export default function Stage8FinalReview({
           <Button
             size="sm"
             variant="ghost"
-            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
+            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1 h-7 text-[10px]"
             onClick={() => {
               const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
               const nextIdx = (currentIdx + 1) % PANELS.length;
@@ -6504,7 +6570,7 @@ export default function Stage8FinalReview({
             }}
           >
             Next
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3 w-3" />
           </Button>
         </div>
       </div>
