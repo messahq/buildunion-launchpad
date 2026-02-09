@@ -117,6 +117,22 @@ const BuildUnionProjectDetails = () => {
       // Check if user is owner or team member
       const isOwner = projectData.user_id === user.id;
       
+      // Load summary to check project state
+      const { data: summaryData } = await supabase
+        .from("project_summaries")
+        .select("*")
+        .eq("project_id", projectId)
+        .single();
+
+      // Check if project has reached Stage 8 (has GFA lock and active status)
+      let hasReachedStage8 = false;
+      if (summaryData?.verified_facts && Array.isArray(summaryData.verified_facts)) {
+        const facts = summaryData.verified_facts as unknown as Citation[];
+        const hasGfaLock = facts.some(f => f.cite_type === CITATION_TYPES.GFA_LOCK);
+        const hasTemplateLock = facts.some(f => f.cite_type === CITATION_TYPES.TEMPLATE_LOCK);
+        hasReachedStage8 = hasGfaLock && hasTemplateLock;
+      }
+
       if (!isOwner) {
         // Check if user is a team member
         const { data: memberData } = await supabase
@@ -127,22 +143,20 @@ const BuildUnionProjectDetails = () => {
           .single();
         
         if (memberData) {
-          // Team members (foreman, worker, subcontractor, etc.) should see Stage 8 dashboard
-          // Redirect them to the new-project page with the project ID to show Stage 8
+          // Team members should see Stage 8 dashboard
           console.log("[ProjectDetails] Team member detected, redirecting to Stage 8 dashboard");
-          navigate(`/buildunion/new-project?projectId=${projectId}&stage=8&role=${memberData.role}`);
+          navigate(`/buildunion/new-project?projectId=${projectId}&stage=8&role=${memberData.role}`, { replace: true });
           return;
         }
+      } else if (hasReachedStage8) {
+        // Owner accessing a completed project - redirect to Stage 8 dashboard
+        console.log("[ProjectDetails] Owner accessing completed project, redirecting to Stage 8 dashboard");
+        navigate(`/buildunion/new-project?projectId=${projectId}&stage=8&role=owner`, { replace: true });
+        return;
       }
 
+      // Only reach here if project is NOT yet at Stage 8 (still in wizard flow)
       setProject(projectData);
-
-      // Load summary
-      const { data: summaryData } = await supabase
-        .from("project_summaries")
-        .select("*")
-        .eq("project_id", projectId)
-        .single();
 
       if (summaryData) {
         // Parse verified_facts from JSON
