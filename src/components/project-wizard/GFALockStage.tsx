@@ -24,11 +24,13 @@ import { Citation, CITATION_TYPES, createCitation } from "@/types/citation";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CitationBadge } from "./CitationBadge";
 
 interface GFALockStageProps {
   projectId: string;
   userId: string;
   onGFALocked: (citation: Citation) => void;
+  onCitationClick?: (citationId: string) => void;
   existingGFA?: Citation | null;
   className?: string;
 }
@@ -81,7 +83,7 @@ function parseGFAInput(input: string): { value: number; originalUnit: string; sq
 }
 
 const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
-  ({ projectId, userId, onGFALocked, existingGFA, className }, ref) => {
+  ({ projectId, userId, onGFALocked, onCitationClick, existingGFA, className }, ref) => {
     const [inputValue, setInputValue] = useState("");
     const [parsedValue, setParsedValue] = useState<ReturnType<typeof parseGFAInput>>(null);
     const [isLocking, setIsLocking] = useState(false);
@@ -392,26 +394,32 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   </motion.p>
                 </div>
                 
-                {/* Locked Badge */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 border border-amber-300 dark:border-amber-700"
-                >
+                {/* Locked Badge - Clickable Citation */}
+                {lockedCitation && (
                   <motion.div
-                    animate={{ rotate: [0, 360] }}
-                    transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex flex-col items-center gap-2"
                   >
-                    <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 border border-amber-300 dark:border-amber-700">
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+                      >
+                        <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      </motion.div>
+                      <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                        LOCKED
+                      </span>
+                    </div>
+                    <CitationBadge
+                      citation={lockedCitation}
+                      onClick={onCitationClick}
+                      variant="system"
+                    />
                   </motion.div>
-                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                    LOCKED
-                  </span>
-                  <span className="text-xs font-mono text-amber-600/70 dark:text-amber-400/70">
-                    {lockedCitation?.id.slice(0, 12)}...
-                  </span>
-                </motion.div>
+                )}
                 
                 {/* Budget Ready Indicator */}
                 <motion.div
