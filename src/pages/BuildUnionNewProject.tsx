@@ -65,7 +65,12 @@ const BuildUnionNewProject = () => {
   // Citation-driven state
   const [citations, setCitations] = useState<Citation[]>([]);
   const [currentStep, setCurrentStep] = useState(0); // Steps within Stage 1
-  const [currentStage, setCurrentStage] = useState<number>(queryStage === 8 ? STAGES.STAGE_8 : STAGES.STAGE_1);
+  
+  // ✓ Team members (non-owners) ALWAYS go to Stage 8 (dashboard) - never Stage 1
+  const isTeamMemberAccess = queryProjectId && queryRole && queryRole !== 'owner';
+  const [currentStage, setCurrentStage] = useState<number>(
+    isTeamMemberAccess || queryStage >= 8 ? STAGES.STAGE_8 : STAGES.STAGE_1
+  );
   
   // GFA value for Stage 3
   const [gfaValue, setGfaValue] = useState<number>(0);
