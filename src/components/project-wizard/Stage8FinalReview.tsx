@@ -436,6 +436,24 @@ export default function Stage8FinalReview({
   const [showSummaryPreview, setShowSummaryPreview] = useState(false);
   const [summaryPreviewHtml, setSummaryPreviewHtml] = useState<string>('');
   const [isSavingSummary, setIsSavingSummary] = useState(false);
+  
+  // ✓ M.E.S.S.A. Synthesis Preview Modal State
+  const [showMessaPreview, setShowMessaPreview] = useState(false);
+  const [messaSynthesisData, setMessaSynthesisData] = useState<{
+    synthesisId: string;
+    synthesisVersion: string;
+    dualEngineUsed: boolean;
+    generatedAt: string;
+    engines: {
+      gemini: { model: string; analysis: any };
+      openai: { model: string; analysis: any } | null;
+    };
+    projectSnapshot: any;
+    region: string;
+  } | null>(null);
+  const [messaPreviewHtml, setMessaPreviewHtml] = useState<string>('');
+  const [isSavingMessa, setIsSavingMessa] = useState(false);
+  const [isSendingMessa, setIsSendingMessa] = useState(false);
 
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
@@ -1440,57 +1458,316 @@ export default function Stage8FinalReview({
     };
   }, [citations, projectData, teamMembers.length, tasks.length, projectId]);
   
-  // Generate AI Analysis - Tier-based with dual engine support
-  const handleAIAnalysis = useCallback(async () => {
+  // ============================================
+  // M.E.S.S.A. SYNTHESIS - Grand Dual Engine Analysis
+  // ============================================
+  const handleMessaSynthesis = useCallback(async () => {
     setIsGeneratingAI(true);
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
-        toast.error('Please sign in to use AI Analysis');
+        toast.error('Please sign in to use M.E.S.S.A. Synthesis');
         return;
       }
       
-      // TODO: Get actual tier from subscription hook
-      const tier = 'pro'; // Default to pro for now
+      toast.loading('M.E.S.S.A. Synthesis in progress...', { id: 'messa-synth', description: 'Dual Engine Analysis with GPT-5 + Gemini Pro' });
       
       const { data, error } = await supabase.functions.invoke('ai-project-analysis', {
         body: {
           projectId,
-          analysisType: 'full',
-          tier,
+          analysisType: 'synthesis',
+          tier: 'messa', // Use top models
         },
       });
       
       if (error) {
         if (error.message?.includes('Rate limit')) {
-          toast.error('AI rate limit reached. Please try again in a few minutes.');
+          toast.error('AI rate limit reached. Please try again in a few minutes.', { id: 'messa-synth' });
         } else if (error.message?.includes('credits')) {
-          toast.error('AI credits exhausted. Please add credits to continue.');
+          toast.error('AI credits exhausted. Please add credits to continue.', { id: 'messa-synth' });
         } else {
           throw error;
         }
         return;
       }
       
-      // Display analysis results
-      if (data?.analysis) {
-        toast.success('AI Analysis Complete!', {
-          description: data.dualEngineUsed ? 'Dual engine validation applied' : 'Analysis ready',
+      if (data) {
+        // Build professional HTML preview
+        const html = buildMessaSynthesisHTML(data);
+        
+        setMessaSynthesisData(data);
+        setMessaPreviewHtml(html);
+        setShowMessaPreview(true);
+        
+        toast.success('M.E.S.S.A. Synthesis Complete!', { 
+          id: 'messa-synth',
+          description: data.dualEngineUsed ? '✓ Dual Engine (GPT-5 + Gemini Pro)' : 'Single Engine Analysis',
           duration: 5000,
         });
         
-        // Log the analysis for debugging
-        console.log('[AI Analysis Result]', data);
-        
-        // TODO: Show analysis in a modal or panel
+        console.log('[M.E.S.S.A. Synthesis Result]', data);
       }
     } catch (err) {
-      console.error('[Stage8] AI Analysis failed:', err);
-      toast.error('AI Analysis failed. Please try again.');
+      console.error('[Stage8] M.E.S.S.A. Synthesis failed:', err);
+      toast.error('M.E.S.S.A. Synthesis failed. Please try again.', { id: 'messa-synth' });
     } finally {
       setIsGeneratingAI(false);
     }
   }, [projectId]);
+  
+  // Build M.E.S.S.A. Synthesis HTML for preview
+  const buildMessaSynthesisHTML = useCallback((data: any) => {
+    const gemini = data.engines?.gemini?.analysis || {};
+    const openai = data.engines?.openai?.analysis || {};
+    const snapshot = data.projectSnapshot || {};
+    
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 0; }
+    .header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%); padding: 32px; text-align: center; border-bottom: 2px solid #7c3aed; }
+    .logo { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 2px; margin-bottom: 8px; }
+    .logo span { color: #a78bfa; }
+    .version { font-size: 11px; color: #c4b5fd; letter-spacing: 4px; text-transform: uppercase; }
+    .synthesis-id { font-size: 10px; color: #a78bfa; margin-top: 12px; font-family: monospace; }
+    .dual-engine { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 8px 16px; background: rgba(124, 58, 237, 0.2); border: 1px solid #7c3aed; border-radius: 20px; }
+    .engine-badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+    .gemini { background: #1e40af; color: #93c5fd; }
+    .openai { background: #065f46; color: #6ee7b7; }
+    
+    .content { padding: 24px; max-width: 900px; margin: 0 auto; }
+    .section { background: #171717; border: 1px solid #262626; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+    .section-header { background: #1f1f1f; padding: 16px 20px; border-bottom: 1px solid #262626; display: flex; align-items: center; gap: 12px; }
+    .section-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .section-title { font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+    .section-subtitle { font-size: 11px; color: #737373; }
+    .section-body { padding: 20px; }
+    
+    .executive { background: linear-gradient(135deg, #1e1b4b 0%, #1f1f1f 100%); }
+    .executive .section-icon { background: #4c1d95; }
+    .executive-text { font-size: 15px; line-height: 1.8; color: #d4d4d4; }
+    
+    .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .score-card { background: #262626; border-radius: 8px; padding: 16px; text-align: center; }
+    .score-value { font-size: 28px; font-weight: 700; color: #7c3aed; }
+    .score-label { font-size: 11px; color: #737373; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .score-excellent { color: #22c55e; }
+    .score-good { color: #84cc16; }
+    .score-fair { color: #eab308; }
+    .score-needs { color: #f97316; }
+    
+    .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .metric { background: #262626; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .metric-label { font-size: 12px; color: #a3a3a3; }
+    .metric-value { font-size: 14px; font-weight: 600; color: #fff; }
+    
+    .list { list-style: none; }
+    .list li { padding: 10px 0; border-bottom: 1px solid #262626; display: flex; align-items: flex-start; gap: 12px; }
+    .list li:last-child { border-bottom: none; }
+    .list-icon { width: 20px; height: 20px; border-radius: 50%; background: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 2px; }
+    .list-text { font-size: 13px; color: #d4d4d4; line-height: 1.5; }
+    
+    .compliance-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .compliance-item { background: #262626; padding: 12px; border-radius: 8px; }
+    .compliance-label { font-size: 11px; color: #737373; margin-bottom: 4px; text-transform: uppercase; }
+    .compliance-status { font-size: 13px; font-weight: 600; }
+    .status-compliant { color: #22c55e; }
+    .status-review { color: #eab308; }
+    .status-missing { color: #ef4444; }
+    
+    .footer { background: #0a0a0a; border-top: 1px solid #262626; padding: 24px; text-align: center; }
+    .footer-text { font-size: 10px; color: #525252; }
+    .cite-badge { display: inline-block; padding: 2px 8px; background: #1f1f1f; border: 1px solid #3f3f46; border-radius: 4px; font-size: 9px; color: #a3a3a3; font-family: monospace; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">M.E.S.S.<span>A.</span></div>
+    <div class="version">Multi-Engine Synthesis & Structured Analysis</div>
+    <div class="synthesis-id">Synthesis ID: ${data.synthesisId || 'N/A'}</div>
+    <div class="dual-engine">
+      <span class="engine-badge gemini">⚡ ${data.engines?.gemini?.model?.split('/')?.pop() || 'Gemini'}</span>
+      ${data.dualEngineUsed ? `<span>+</span><span class="engine-badge openai">🧠 ${data.engines?.openai?.model?.split('/')?.pop() || 'GPT-5'}</span>` : ''}
+    </div>
+  </div>
+  
+  <div class="content">
+    <!-- Project Snapshot -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background: #4c1d95;">📋</div>
+        <div>
+          <div class="section-title">${snapshot.name || 'Project'}</div>
+          <div class="section-subtitle">${snapshot.address || 'Location not set'} • ${snapshot.trade || 'General'}</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="metrics">
+          <div class="metric"><span class="metric-label">GFA</span><span class="metric-value">${(snapshot.gfa || 0).toLocaleString()} sq ft</span></div>
+          <div class="metric"><span class="metric-label">Team</span><span class="metric-value">${snapshot.teamSize || 1} members</span></div>
+          <div class="metric"><span class="metric-label">Progress</span><span class="metric-value">${snapshot.taskProgress?.percent || 0}%</span></div>
+          <div class="metric"><span class="metric-label">Budget</span><span class="metric-value">$${(snapshot.budget?.total || 0).toLocaleString()}</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Executive Summary -->
+    <div class="section executive">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div>
+          <div class="section-title">Executive Summary</div>
+          <div class="section-subtitle">Gemini Visual Analysis Engine</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <p class="executive-text">${gemini.executiveSummary || gemini.rawAnalysis || 'Analysis in progress...'}</p>
+      </div>
+    </div>
+    
+    <!-- Health Scores -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background: #166534;">💪</div>
+        <div>
+          <div class="section-title">Project Health Assessment</div>
+          <div class="section-subtitle">Multi-dimensional scoring</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="score-grid">
+          <div class="score-card">
+            <div class="score-value ${getScoreClass(gemini.healthScore)}">${gemini.healthScore || '—'}</div>
+            <div class="score-label">Overall Health</div>
+          </div>
+          <div class="score-card">
+            <div class="score-value ${getScoreClass(gemini.siteCondition?.safetyScore)}">${gemini.siteCondition?.safetyScore || '—'}</div>
+            <div class="score-label">Safety Score</div>
+          </div>
+          <div class="score-card">
+            <div class="score-value ${getScoreClass(gemini.verificationStatus?.completeness)}">${gemini.verificationStatus?.completeness || '—'}</div>
+            <div class="score-label">Verification</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Recommendations -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background: #0891b2;">💡</div>
+        <div>
+          <div class="section-title">Key Recommendations</div>
+          <div class="section-subtitle">Actionable insights</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <ul class="list">
+          ${(gemini.recommendations || ['No recommendations available']).slice(0, 5).map((rec: string, i: number) => `
+            <li>
+              <span class="list-icon">${i + 1}</span>
+              <span class="list-text">${rec}</span>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+    
+    ${data.dualEngineUsed && openai ? `
+    <!-- Regulatory Compliance - OpenAI Engine -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background: #065f46;">⚖️</div>
+        <div>
+          <div class="section-title">Regulatory Compliance</div>
+          <div class="section-subtitle">OpenAI GPT-5 Building Code Analysis • ${data.region?.toUpperCase() || 'Ontario'}</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="compliance-grid">
+          <div class="compliance-item">
+            <div class="compliance-label">Structural</div>
+            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.structural?.status)}">${openai.codeCompliance?.structural?.status || 'Review Required'}</div>
+          </div>
+          <div class="compliance-item">
+            <div class="compliance-label">Fire Safety</div>
+            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.fireSafety?.status)}">${openai.codeCompliance?.fireSafety?.status || 'Review Required'}</div>
+          </div>
+          <div class="compliance-item">
+            <div class="compliance-label">Accessibility</div>
+            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.accessibility?.status)}">${openai.codeCompliance?.accessibility?.status || 'Review Required'}</div>
+          </div>
+          <div class="compliance-item">
+            <div class="compliance-label">Energy</div>
+            <div class="compliance-status ${getComplianceClass(openai.codeCompliance?.energy?.status)}">${openai.codeCompliance?.energy?.status || 'Review Required'}</div>
+          </div>
+        </div>
+        <div style="margin-top: 16px;">
+          <div class="metric"><span class="metric-label">Overall Compliance Score</span><span class="metric-value ${getScoreClass(openai.complianceScore)}">${openai.complianceScore || '—'}%</span></div>
+          <div class="metric" style="margin-top: 8px;"><span class="metric-label">Risk Level</span><span class="metric-value">${openai.riskLevel || 'Unknown'}</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Identified Gaps -->
+    ${openai.identifiedGaps?.length > 0 ? `
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background: #dc2626;">⚠️</div>
+        <div>
+          <div class="section-title">Identified Gaps</div>
+          <div class="section-subtitle">Items requiring attention</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <ul class="list">
+          ${openai.identifiedGaps.slice(0, 5).map((gap: string, i: number) => `
+            <li>
+              <span class="list-icon" style="background: #dc2626;">!</span>
+              <span class="list-text">${gap}</span>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+    ` : ''}
+    ` : ''}
+  </div>
+  
+  <div class="footer">
+    <div class="footer-text">
+      Generated by M.E.S.S.A. ${data.synthesisVersion || 'v3.0'} • ${new Date(data.generatedAt).toLocaleString()} 
+      <span class="cite-badge">cite: [${data.synthesisId?.slice(0, 8) || 'MESSA'}]</span>
+    </div>
+    <div class="footer-text" style="margin-top: 8px;">
+      BuildUnion © ${new Date().getFullYear()} • Multi-Engine Synthesis & Structured Analysis
+    </div>
+  </div>
+</body>
+</html>`;
+    
+    function getScoreClass(score: number | undefined): string {
+      if (!score) return '';
+      if (score >= 80) return 'score-excellent';
+      if (score >= 60) return 'score-good';
+      if (score >= 40) return 'score-fair';
+      return 'score-needs';
+    }
+    
+    function getComplianceClass(status: string | undefined): string {
+      if (!status) return '';
+      if (status.toLowerCase().includes('compliant')) return 'status-compliant';
+      if (status.toLowerCase().includes('review')) return 'status-review';
+      return 'status-missing';
+    }
+  }, []);
+  
+  // Legacy AI Analysis handler (for backwards compatibility)
+  const handleAIAnalysis = handleMessaSynthesis;
   
   // Generate Invoice - Opens Preview Modal
   const handleGenerateInvoice = useCallback(async () => {
@@ -5476,7 +5753,7 @@ export default function Stage8FinalReview({
                         ) : (
                           <LayoutDashboard className="h-4 w-4" />
                         )}
-                        {t('stage8.activateProject', 'Activate Project')}
+                        {t('stage8.messaSynthesis', 'M.E.S.S.A. Synthesis')}
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -5950,6 +6227,108 @@ export default function Stage8FinalReview({
                 variant="ghost"
                 onClick={() => setShowSummaryPreview(false)}
               >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* M.E.S.S.A. Synthesis Preview Modal */}
+      {showMessaPreview && messaSynthesisData && (
+        <Dialog open={showMessaPreview} onOpenChange={setShowMessaPreview}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-violet-500" />
+                M.E.S.S.A. Synthesis - {messaSynthesisData.synthesisId}
+                {messaSynthesisData.dualEngineUsed && (
+                  <Badge className="bg-gradient-to-r from-blue-600 to-green-600 text-white text-[10px]">
+                    Dual Engine
+                  </Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-auto border rounded-lg bg-neutral-950">
+              <iframe
+                srcDoc={messaPreviewHtml}
+                className="w-full h-[500px] border-0"
+                title="M.E.S.S.A. Synthesis Preview"
+              />
+            </div>
+            
+            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const { downloadPDF } = await import('@/lib/pdfGenerator');
+                    await downloadPDF(messaPreviewHtml, {
+                      filename: `messa-synthesis-${messaSynthesisData.synthesisId}.pdf`,
+                      pageFormat: 'letter',
+                      margin: 10,
+                    });
+                    toast.success('M.E.S.S.A. Report downloaded!');
+                  } catch (err) {
+                    toast.error('Download failed');
+                  }
+                }}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {t('stage8.messaDownload', 'Download PDF')}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setIsSavingMessa(true);
+                  try {
+                    const html2canvas = (await import('html2canvas')).default;
+                    const jsPDF = (await import('jspdf')).jsPDF;
+                    
+                    const container = document.createElement('div');
+                    container.innerHTML = messaPreviewHtml;
+                    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:900px;';
+                    document.body.appendChild(container);
+                    
+                    const canvas = await html2canvas(container, { scale: 2, useCORS: true, logging: false });
+                    document.body.removeChild(container);
+                    
+                    const pdf = new jsPDF({ format: 'letter', unit: 'mm' });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, imgHeight);
+                    
+                    const blob = pdf.output('blob');
+                    const filePath = `${projectId}/${Date.now()}-messa-synthesis.pdf`;
+                    
+                    await supabase.storage.from('project-documents').upload(filePath, blob, { contentType: 'application/pdf' });
+                    await supabase.from('project_documents').insert({
+                      project_id: projectId,
+                      file_name: `messa-synthesis-${messaSynthesisData.synthesisId}.pdf`,
+                      file_path: filePath,
+                      file_size: blob.size,
+                    });
+                    
+                    toast.success('M.E.S.S.A. Report saved to Documents!');
+                    setShowMessaPreview(false);
+                  } catch (err) {
+                    toast.error('Save failed');
+                  } finally {
+                    setIsSavingMessa(false);
+                  }
+                }}
+                disabled={isSavingMessa}
+                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
+              >
+                {isSavingMessa ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />}
+                {t('stage8.messaSave', 'Save to Documents')}
+              </Button>
+              
+              <Button variant="ghost" onClick={() => setShowMessaPreview(false)}>
                 Close
               </Button>
             </DialogFooter>
