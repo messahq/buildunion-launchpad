@@ -5159,57 +5159,73 @@ export default function Stage8FinalReview({
                 )}
 
                 {/* ─── Cost Trend Mini Chart ─── */}
-                {trendData.length > 0 && (
-                  <div className="p-2.5 rounded-lg border border-cyan-500/15 bg-slate-900/40">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] text-cyan-300/80 uppercase tracking-widest font-semibold">Cost Trend</span>
-                      <span className="text-[9px] text-cyan-300/70 font-mono">${(trendData[trendData.length - 1]?.value || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="h-16 w-full">
-                      <svg viewBox="0 0 200 60" className="w-full h-full" preserveAspectRatio="none">
-                        {/* Grid lines */}
-                        {[0, 20, 40, 60].map(y => (
-                          <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(6,182,212,0.08)" strokeWidth="0.5" />
+                {trendData.length > 0 && (() => {
+                  const maxVal = Math.max(...trendData.map(d => d.value), 1);
+                  const chartPoints = trendData.map((d, i) => ({
+                    x: (i / (trendData.length - 1)) * 200,
+                    y: 55 - (d.value / maxVal) * 50,
+                    ...d,
+                  }));
+                  return (
+                    <div className="p-2.5 rounded-lg border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-orange-950/10 to-yellow-950/15">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[9px] text-amber-300/90 uppercase tracking-widest font-semibold">Cost Trend</span>
+                        <span className="text-[9px] text-amber-200/80 font-mono">${(trendData[trendData.length - 1]?.value || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="h-16 w-full relative group/trend">
+                        <svg viewBox="0 0 200 60" className="w-full h-full" preserveAspectRatio="none">
+                          {[0, 20, 40, 60].map(y => (
+                            <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(251,191,36,0.08)" strokeWidth="0.5" />
+                          ))}
+                          <path d={`M0,55 L${chartPoints.map(p => `${p.x},${p.y}`).join(' L')} L200,55 Z`} fill="url(#cardTrendGrad)" opacity="0.35" />
+                          <path d={`M${chartPoints.map(p => `${p.x},${p.y}`).join(' L')}`} fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="1.5" strokeLinecap="round" />
+                          {chartPoints.map((p, i) => (
+                            <g key={i}>
+                              <circle cx={p.x} cy={p.y} r={i === chartPoints.length - 1 ? 3 : 1.5}
+                                fill={i === chartPoints.length - 1 ? '#f59e0b' : 'rgba(251,191,36,0.5)'}
+                                className="transition-all duration-200"
+                              />
+                              {/* Invisible hover target */}
+                              <circle cx={p.x} cy={p.y} r="12" fill="transparent" className="cursor-pointer">
+                                <title>{p.label}: ${p.value.toLocaleString()}</title>
+                              </circle>
+                            </g>
+                          ))}
+                          <defs>
+                            <linearGradient id="cardTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
+                              <stop offset="100%" stopColor="rgba(251,191,36,0)" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        {/* HTML Tooltip overlays */}
+                        <div className="absolute inset-0 flex justify-between items-start pointer-events-none">
+                          {chartPoints.map((p, i) => {
+                            const leftPct = (p.x / 200) * 100;
+                            const topPct = (p.y / 60) * 100;
+                            return (
+                              <div
+                                key={i}
+                                className="absolute pointer-events-auto group/dot"
+                                style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
+                              >
+                                <div className="w-6 h-6 rounded-full cursor-pointer" />
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded-md bg-amber-900/95 border border-amber-500/40 text-[9px] font-mono text-amber-100 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-amber-900/50 pointer-events-none z-10">
+                                  {p.label}: <span className="font-bold text-amber-300">${p.value.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="flex justify-between mt-0.5">
+                        {trendData.map(d => (
+                          <span key={d.label} className="text-[7px] text-amber-300/70 font-mono">{d.label}</span>
                         ))}
-                        {/* Area fill */}
-                        {(() => {
-                          const maxVal = Math.max(...trendData.map(d => d.value), 1);
-                          const points = trendData.map((d, i) => {
-                            const x = (i / (trendData.length - 1)) * 200;
-                            const y = 55 - (d.value / maxVal) * 50;
-                            return `${x},${y}`;
-                          });
-                          const areaPath = `M0,55 L${points.join(' L')} L200,55 Z`;
-                          const linePath = `M${points.join(' L')}`;
-                          return (
-                            <>
-                              <path d={areaPath} fill="url(#trendGradient)" opacity="0.3" />
-                              <path d={linePath} fill="none" stroke="rgba(6,182,212,0.8)" strokeWidth="1.5" strokeLinecap="round" />
-                              {/* Dots */}
-                              {trendData.map((d, i) => {
-                                const x = (i / (trendData.length - 1)) * 200;
-                                const y = 55 - (d.value / maxVal) * 50;
-                                return <circle key={i} cx={x} cy={y} r={i === trendData.length - 1 ? 3 : 1.5} fill={i === trendData.length - 1 ? '#06b6d4' : 'rgba(6,182,212,0.5)'} />;
-                              })}
-                            </>
-                          );
-                        })()}
-                        <defs>
-                          <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="rgba(6,182,212,0.4)" />
-                            <stop offset="100%" stopColor="rgba(6,182,212,0)" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
+                      </div>
                     </div>
-                    {/* X-axis labels */}
-                    <div className="flex justify-between mt-0.5">
-                      {trendData.map(d => (
-                        <span key={d.label} className="text-[7px] text-cyan-300/60 font-mono">{d.label}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* ─── GFA + Contract strip ─── */}
                 <div className="flex gap-1.5">
@@ -6162,14 +6178,14 @@ export default function Stage8FinalReview({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.45 }}
-                      className="p-4 rounded-xl border border-cyan-500/20 bg-slate-900/50"
+                      className="p-4 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-950/25 via-orange-950/15 to-yellow-950/20"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-4 w-0.5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full" />
-                          <span className="text-xs font-semibold text-cyan-200 uppercase tracking-wider">Cost Trend</span>
+                          <div className="h-4 w-0.5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
+                          <span className="text-xs font-semibold text-amber-200 uppercase tracking-wider">Cost Trend</span>
                         </div>
-                        <span className="text-[10px] text-cyan-300/70 font-mono">${totalForPercentage.toLocaleString()}</span>
+                        <span className="text-[10px] text-amber-300/80 font-mono">${totalForPercentage.toLocaleString()}</span>
                       </div>
                       {(() => {
                         const mat = storedMaterialCost;
@@ -6189,35 +6205,59 @@ export default function Stage8FinalReview({
                           ...p,
                         }));
                         return (
-                          <div>
+                          <div className="relative">
                             <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
                               {[0, 25, 50, 75].map(y => (
-                                <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(6,182,212,0.06)" strokeWidth="0.5" />
+                                <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(251,191,36,0.06)" strokeWidth="0.5" />
                               ))}
                               <path
                                 d={`M0,75 L${svgPts.map(p => `${p.x},${p.y}`).join(' L')} L280,75 Z`}
-                                fill="url(#fsTrendGrad)" opacity="0.25"
+                                fill="url(#fsTrendGrad)" opacity="0.3"
                               />
                               <path
                                 d={`M${svgPts.map(p => `${p.x},${p.y}`).join(' L')}`}
-                                fill="none" stroke="rgba(6,182,212,0.8)" strokeWidth="2" strokeLinecap="round"
+                                fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="2" strokeLinecap="round"
                               />
                               {svgPts.map((p, i) => (
-                                <circle key={i} cx={p.x} cy={p.y} r={i === svgPts.length - 1 ? 4 : 2}
-                                  fill={i === svgPts.length - 1 ? '#06b6d4' : 'rgba(6,182,212,0.4)'}
-                                  stroke={i === svgPts.length - 1 ? '#0e7490' : 'none'} strokeWidth="1"
-                                />
+                                <g key={i}>
+                                  <circle cx={p.x} cy={p.y} r={i === svgPts.length - 1 ? 4 : 2}
+                                    fill={i === svgPts.length - 1 ? '#f59e0b' : 'rgba(251,191,36,0.4)'}
+                                    stroke={i === svgPts.length - 1 ? '#d97706' : 'none'} strokeWidth="1"
+                                  />
+                                  <circle cx={p.x} cy={p.y} r="16" fill="transparent" className="cursor-pointer">
+                                    <title>{p.label}: ${p.value.toLocaleString()}</title>
+                                  </circle>
+                                </g>
                               ))}
                               <defs>
                                 <linearGradient id="fsTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="rgba(6,182,212,0.4)" />
-                                  <stop offset="100%" stopColor="rgba(6,182,212,0)" />
+                                  <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
+                                  <stop offset="100%" stopColor="rgba(251,191,36,0)" />
                                 </linearGradient>
                               </defs>
                             </svg>
+                            {/* Interactive tooltip overlays */}
+                            <div className="absolute inset-0">
+                              {svgPts.map((p, i) => {
+                                const leftPct = (p.x / 280) * 100;
+                                const topPct = (p.y / 80) * 100;
+                                return (
+                                  <div
+                                    key={i}
+                                    className="absolute group/dot"
+                                    style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
+                                  >
+                                    <div className="w-8 h-8 rounded-full cursor-pointer" />
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-amber-900/95 border border-amber-500/50 text-[10px] font-mono text-amber-100 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-amber-900/60 pointer-events-none z-10">
+                                      {p.label}: <span className="font-bold text-amber-300">${p.value.toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                             <div className="flex justify-between mt-1 px-0.5">
                               {svgPts.map(p => (
-                                <span key={p.label} className="text-[9px] text-cyan-300/60 font-mono">{p.label}</span>
+                                <span key={p.label} className="text-[9px] text-amber-300/70 font-mono">{p.label}</span>
                               ))}
                             </div>
                           </div>
