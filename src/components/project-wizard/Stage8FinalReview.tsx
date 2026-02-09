@@ -3171,7 +3171,7 @@ export default function Stage8FinalReview({
         )}
         
         {panel.id === 'panel-8-financial' && canViewFinancials && (() => {
-          // ✓ FULLSCREEN FINANCIAL SUMMARY - comprehensive breakdown
+          // ✓ FUTURISTIC FINANCIAL SUMMARY - with animated charts and visualizations
           const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
           const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
           const demoPriceCitation = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
@@ -3182,200 +3182,524 @@ export default function Stage8FinalReview({
               ? gfaCitation.metadata.gfa_value
               : null;
           
-          const storedMaterialCost = financialSummary?.material_cost;
-          const storedLaborCost = financialSummary?.labor_cost;
+          const storedMaterialCost = financialSummary?.material_cost || 0;
+          const storedLaborCost = financialSummary?.labor_cost || 0;
           const storedTotalCost = financialSummary?.total_cost;
           
           const demoCost = typeof demoPriceCitation?.value === 'number' && gfaValue
             ? demoPriceCitation.value * gfaValue
-            : null;
+            : 0;
           
           const budgetTotal = storedTotalCost ?? totalContractValue;
-          const calculatedExpenses = (storedMaterialCost || 0) + (storedLaborCost || 0) + (demoCost || 0);
+          const calculatedExpenses = storedMaterialCost + storedLaborCost + demoCost;
           const profitMargin = budgetTotal && calculatedExpenses > 0 ? budgetTotal - calculatedExpenses : null;
           const profitPercent = budgetTotal && profitMargin !== null ? (profitMargin / budgetTotal) * 100 : null;
           const hasFinancialData = budgetTotal > 0 || storedMaterialCost || storedLaborCost || totalContractValue > 0;
           
+          // Data for pie chart visualization
+          const costBreakdownData = [
+            { name: 'Materials', value: storedMaterialCost, color: 'hsl(200, 80%, 50%)' },
+            { name: 'Labor', value: storedLaborCost, color: 'hsl(160, 80%, 45%)' },
+            { name: 'Demolition', value: demoCost, color: 'hsl(280, 70%, 55%)' },
+            { name: 'Profit', value: profitMargin || 0, color: 'hsl(140, 70%, 45%)' },
+          ].filter(item => item.value > 0);
+          
+          const totalForPercentage = costBreakdownData.reduce((sum, item) => sum + item.value, 0);
+          
           return (
-            <div className="space-y-6">
-              {/* Header with Owner Badge */}
-              <div className="flex items-center justify-between">
-                <h4 className="text-lg font-bold flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-emerald-500" />
-                  Financial Summary
-                </h4>
-                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 gap-1">
-                  <Unlock className="h-3 w-3" />
-                  Owner Access
-                </Badge>
-              </div>
+            <div className="space-y-8">
+              {/* Futuristic Header with Glow Effect */}
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 blur-3xl -z-10" />
+                <div className="flex items-center justify-between p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-800/90 dark:from-slate-950 dark:to-slate-900 border border-amber-500/30 shadow-2xl shadow-amber-500/10">
+                  <div className="flex items-center gap-4">
+                    <motion.div 
+                      animate={{ 
+                        boxShadow: ['0 0 20px rgba(251, 191, 36, 0.3)', '0 0 40px rgba(251, 191, 36, 0.6)', '0 0 20px rgba(251, 191, 36, 0.3)']
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
+                    >
+                      <DollarSign className="h-8 w-8 text-white" />
+                    </motion.div>
+                    <div>
+                      <h4 className="text-2xl font-bold text-white tracking-tight">Financial Command Center</h4>
+                      <p className="text-amber-400/80 text-sm">Real-time budget analytics & projections</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 px-4 py-2 text-sm gap-2 shadow-lg shadow-green-500/30">
+                    <Unlock className="h-4 w-4" />
+                    Owner Access Verified
+                  </Badge>
+                </div>
+              </motion.div>
               
               {hasFinancialData ? (
                 <>
-                  {/* Grand Total Hero Card */}
-                  <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/40 dark:to-green-950/40 border-2 border-emerald-300 dark:border-emerald-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-emerald-600 uppercase tracking-wide">Project Total</span>
-                      <Badge variant="outline" className="text-xs bg-emerald-100 text-emerald-700 gap-1">
-                        <Lock className="h-2.5 w-2.5" />
-                        Final
-                      </Badge>
+                  {/* Grand Total Hero Card - Futuristic */}
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    className="relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-green-500/5 to-teal-500/10" />
+                    <div className="relative p-8 rounded-3xl bg-gradient-to-br from-slate-900/95 to-slate-800/95 dark:from-slate-950 dark:to-slate-900 border border-emerald-500/40 shadow-2xl">
+                      {/* Animated background grid */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute inset-0" style={{
+                          backgroundImage: 'linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px)',
+                          backgroundSize: '40px 40px'
+                        }} />
+                      </div>
+                      
+                      <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="text-emerald-400 text-sm font-medium uppercase tracking-wider">Project Budget Total</span>
+                          </div>
+                          <motion.p 
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.6, delay: 0.3 }}
+                            className="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400"
+                          >
+                            ${(budgetTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </motion.p>
+                          {gfaValue && budgetTotal && (
+                            <p className="text-emerald-400/60 mt-3 flex items-center gap-2">
+                              <Ruler className="h-4 w-4" />
+                              <span className="font-mono">${(budgetTotal / gfaValue).toFixed(2)}</span>
+                              <span className="text-emerald-500/40">/ sq ft</span>
+                              <span className="text-emerald-500/40">•</span>
+                              <span className="font-mono">{gfaValue.toLocaleString()} sq ft</span>
+                            </p>
+                          )}
+                        </div>
+                        
+                        {/* Circular Progress Ring */}
+                        {profitPercent !== null && (
+                          <motion.div 
+                            initial={{ opacity: 0, rotate: -90 }}
+                            animate={{ opacity: 1, rotate: 0 }}
+                            transition={{ duration: 0.8, delay: 0.4 }}
+                            className="relative"
+                          >
+                            <svg className="w-32 h-32 transform -rotate-90">
+                              <circle
+                                cx="64"
+                                cy="64"
+                                r="56"
+                                fill="none"
+                                stroke="rgba(16, 185, 129, 0.1)"
+                                strokeWidth="8"
+                              />
+                              <motion.circle
+                                cx="64"
+                                cy="64"
+                                r="56"
+                                fill="none"
+                                stroke={profitPercent >= 20 ? 'url(#profitGradientGreen)' : profitPercent >= 10 ? 'url(#profitGradientAmber)' : 'url(#profitGradientRed)'}
+                                strokeWidth="8"
+                                strokeLinecap="round"
+                                strokeDasharray={`${2 * Math.PI * 56}`}
+                                initial={{ strokeDashoffset: 2 * Math.PI * 56 }}
+                                animate={{ strokeDashoffset: 2 * Math.PI * 56 * (1 - Math.min(profitPercent, 100) / 100) }}
+                                transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+                              />
+                              <defs>
+                                <linearGradient id="profitGradientGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#10b981" />
+                                  <stop offset="100%" stopColor="#059669" />
+                                </linearGradient>
+                                <linearGradient id="profitGradientAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#f59e0b" />
+                                  <stop offset="100%" stopColor="#d97706" />
+                                </linearGradient>
+                                <linearGradient id="profitGradientRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#ef4444" />
+                                  <stop offset="100%" stopColor="#dc2626" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <span className={cn(
+                                "text-2xl font-bold",
+                                profitPercent >= 20 ? "text-emerald-400" : profitPercent >= 10 ? "text-amber-400" : "text-red-400"
+                              )}>
+                                {profitPercent.toFixed(1)}%
+                              </span>
+                              <span className="text-[10px] text-muted-foreground uppercase">Margin</span>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-5xl font-bold text-emerald-700 dark:text-emerald-300">
-                      ${(budgetTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    {gfaValue && budgetTotal && (
-                      <p className="text-sm text-emerald-600/70 mt-2">
-                        ${(budgetTotal / gfaValue).toFixed(2)} per sq ft @ {gfaValue.toLocaleString()} sq ft
-                      </p>
-                    )}
-                  </div>
+                  </motion.div>
                   
-                  {/* Cost Breakdown Grid */}
-                  <div>
-                    <h5 className="text-sm font-semibold mb-3 text-muted-foreground">Cost Breakdown</h5>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {storedMaterialCost !== null && storedMaterialCost !== undefined && (
-                        <div className="p-5 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200/50 dark:border-blue-800/30">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                              <Hammer className="h-4 w-4 text-blue-500" />
+                  {/* Cost Breakdown - Animated Cards */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                  >
+                    <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
+                      <div className="h-6 w-1 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
+                      Cost Breakdown Analysis
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Materials Card */}
+                      <motion.div 
+                        whileHover={{ scale: 1.02, y: -4 }}
+                        className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/30 backdrop-blur-sm"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                              <Hammer className="h-6 w-6 text-white" />
                             </div>
-                            <span className="text-xs text-muted-foreground uppercase">Materials</span>
+                            <div>
+                              <span className="text-xs text-blue-400/80 uppercase tracking-wider font-medium">Materials</span>
+                              <div className="h-1.5 w-16 bg-blue-500/20 rounded-full mt-1 overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: totalForPercentage > 0 ? `${(storedMaterialCost / totalForPercentage) * 100}%` : '0%' }}
+                                  transition={{ duration: 1, delay: 0.6 }}
+                                  className="h-full bg-gradient-to-r from-blue-400 to-cyan-400"
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                            ${storedMaterialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <p className="text-3xl font-bold text-blue-400">
+                            ${storedMaterialCost.toLocaleString()}
                           </p>
+                          {totalForPercentage > 0 && (
+                            <p className="text-xs text-blue-400/60 mt-1">
+                              {((storedMaterialCost / totalForPercentage) * 100).toFixed(1)}% of total
+                            </p>
+                          )}
                         </div>
-                      )}
+                      </motion.div>
                       
-                      {storedLaborCost !== null && storedLaborCost !== undefined && (
-                        <div className="p-5 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/30 border border-teal-200/50 dark:border-teal-800/30">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center">
-                              <Users className="h-4 w-4 text-teal-500" />
+                      {/* Labor Card */}
+                      <motion.div 
+                        whileHover={{ scale: 1.02, y: -4 }}
+                        className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-500/30 backdrop-blur-sm"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                              <Users className="h-6 w-6 text-white" />
                             </div>
-                            <span className="text-xs text-muted-foreground uppercase">Labor</span>
+                            <div>
+                              <span className="text-xs text-teal-400/80 uppercase tracking-wider font-medium">Labor</span>
+                              <div className="h-1.5 w-16 bg-teal-500/20 rounded-full mt-1 overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: totalForPercentage > 0 ? `${(storedLaborCost / totalForPercentage) * 100}%` : '0%' }}
+                                  transition={{ duration: 1, delay: 0.7 }}
+                                  className="h-full bg-gradient-to-r from-teal-400 to-emerald-400"
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">
-                            ${storedLaborCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <p className="text-3xl font-bold text-teal-400">
+                            ${storedLaborCost.toLocaleString()}
                           </p>
+                          {totalForPercentage > 0 && (
+                            <p className="text-xs text-teal-400/60 mt-1">
+                              {((storedLaborCost / totalForPercentage) * 100).toFixed(1)}% of total
+                            </p>
+                          )}
                         </div>
-                      )}
+                      </motion.div>
                       
-                      {demoCost !== null && (
-                        <div className="p-5 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200/50 dark:border-purple-800/30">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                              <AlertTriangle className="h-4 w-4 text-purple-500" />
+                      {/* Demolition Card */}
+                      <motion.div 
+                        whileHover={{ scale: 1.02, y: -4 }}
+                        className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/5 border border-purple-500/30 backdrop-blur-sm"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                              <AlertTriangle className="h-6 w-6 text-white" />
                             </div>
-                            <span className="text-xs text-muted-foreground uppercase">Demolition</span>
+                            <div>
+                              <span className="text-xs text-purple-400/80 uppercase tracking-wider font-medium">Demolition</span>
+                              <div className="h-1.5 w-16 bg-purple-500/20 rounded-full mt-1 overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: totalForPercentage > 0 ? `${(demoCost / totalForPercentage) * 100}%` : '0%' }}
+                                  transition={{ duration: 1, delay: 0.8 }}
+                                  className="h-full bg-gradient-to-r from-purple-400 to-violet-400"
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                            ${demoCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <p className="text-3xl font-bold text-purple-400">
+                            ${demoCost.toLocaleString()}
                           </p>
                           {demoPriceCitation && typeof demoPriceCitation.value === 'number' && (
-                            <p className="text-[10px] text-purple-500 mt-1">
+                            <p className="text-xs text-purple-400/60 mt-1">
                               @ ${demoPriceCitation.value}/sq ft
                             </p>
                           )}
                         </div>
-                      )}
+                      </motion.div>
                     </div>
-                  </div>
+                  </motion.div>
                   
-                  {/* Profit Margin Section */}
-                  {profitMargin !== null && profitPercent !== null && (
-                    <div className="p-5 rounded-xl bg-gradient-to-br from-green-50 to-lime-50 dark:from-green-950/30 dark:to-lime-950/30 border-2 border-green-300 dark:border-green-700">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-5 w-5 text-green-600" />
-                          <span className="text-sm font-medium text-green-600 uppercase tracking-wide">Profit Margin</span>
+                  {/* Visual Breakdown Chart */}
+                  {costBreakdownData.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.3 }}
+                      className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 dark:from-slate-950/90 dark:to-slate-900/90 border border-slate-700/50"
+                    >
+                      <h5 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                        <div className="h-6 w-1 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
+                        Budget Allocation
+                      </h5>
+                      <div className="flex flex-col md:flex-row items-center gap-8">
+                        {/* Animated Donut Chart */}
+                        <div className="relative w-48 h-48 flex-shrink-0">
+                          <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                            {costBreakdownData.map((item, index) => {
+                              const previousTotal = costBreakdownData.slice(0, index).reduce((sum, i) => sum + i.value, 0);
+                              const startAngle = (previousTotal / totalForPercentage) * 360;
+                              const endAngle = ((previousTotal + item.value) / totalForPercentage) * 360;
+                              const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+                              
+                              const startRad = (startAngle - 90) * Math.PI / 180;
+                              const endRad = (endAngle - 90) * Math.PI / 180;
+                              
+                              const x1 = 50 + 40 * Math.cos(startRad);
+                              const y1 = 50 + 40 * Math.sin(startRad);
+                              const x2 = 50 + 40 * Math.cos(endRad);
+                              const y2 = 50 + 40 * Math.sin(endRad);
+                              
+                              return (
+                                <motion.path
+                                  key={item.name}
+                                  d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                                  fill={item.color}
+                                  initial={{ opacity: 0, scale: 0 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                                  className="hover:opacity-80 transition-opacity cursor-pointer"
+                                  style={{ transformOrigin: 'center' }}
+                                />
+                              );
+                            })}
+                            <circle cx="50" cy="50" r="25" fill="hsl(var(--background))" />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-2xl font-bold">${(totalForPercentage / 1000).toFixed(0)}K</p>
+                              <p className="text-[10px] text-muted-foreground">TOTAL</p>
+                            </div>
+                          </div>
                         </div>
-                        <Badge variant="outline" className="text-xs bg-green-100 text-green-700 gap-1">
-                          <Lock className="h-2.5 w-2.5" />
-                          Owner Only
-                        </Badge>
+                        
+                        {/* Legend */}
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                          {costBreakdownData.map((item, index) => (
+                            <motion.div 
+                              key={item.name}
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                              className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                            >
+                              <div 
+                                className="h-4 w-4 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: item.color }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{item.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {((item.value / totalForPercentage) * 100).toFixed(1)}%
+                                </p>
+                              </div>
+                              <p className="text-sm font-bold">${item.value.toLocaleString()}</p>
+                            </motion.div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex items-baseline gap-4">
-                        <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                          ${profitMargin.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </p>
-                        <Badge className={cn(
-                          "text-sm px-3 py-1",
-                          profitPercent >= 20 ? "bg-green-500" : profitPercent >= 10 ? "bg-amber-500" : "bg-red-500"
-                        )}>
-                          {profitPercent.toFixed(1)}%
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Total Expenses: ${calculatedExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
+                    </motion.div>
                   )}
                   
-                  {/* Contracts Summary */}
+                  {/* Profit Margin - Futuristic */}
+                  {profitMargin !== null && profitPercent !== null && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                      className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-2 border-green-500/40"
+                    >
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.15),transparent_50%)]" />
+                      <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div>
+                          <div className="flex items-center gap-3 mb-3">
+                            <motion.div 
+                              animate={{ rotate: [0, 5, -5, 0] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            >
+                              <Shield className="h-6 w-6 text-emerald-400" />
+                            </motion.div>
+                            <span className="text-emerald-400 text-sm font-medium uppercase tracking-wider">Net Profit Margin</span>
+                            <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 gap-1">
+                              <Lock className="h-2.5 w-2.5" />
+                              Owner Only
+                            </Badge>
+                          </div>
+                          <div className="flex items-baseline gap-4">
+                            <motion.p 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.5, delay: 0.6 }}
+                              className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-400"
+                            >
+                              ${profitMargin.toLocaleString()}
+                            </motion.p>
+                            <Badge className={cn(
+                              "text-lg px-4 py-2 font-bold",
+                              profitPercent >= 20 
+                                ? "bg-gradient-to-r from-green-500 to-emerald-600 border-0" 
+                                : profitPercent >= 10 
+                                  ? "bg-gradient-to-r from-amber-500 to-orange-600 border-0" 
+                                  : "bg-gradient-to-r from-red-500 to-rose-600 border-0"
+                            )}>
+                              {profitPercent >= 20 ? '↑' : profitPercent >= 10 ? '→' : '↓'} {profitPercent.toFixed(1)}%
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-3">
+                            Total Expenses: <span className="font-mono text-foreground">${calculatedExpenses.toLocaleString()}</span>
+                          </p>
+                        </div>
+                        
+                        {/* Status Indicator */}
+                        <div className={cn(
+                          "p-4 rounded-xl text-center",
+                          profitPercent >= 20 
+                            ? "bg-green-500/20 border border-green-500/30" 
+                            : profitPercent >= 10 
+                              ? "bg-amber-500/20 border border-amber-500/30" 
+                              : "bg-red-500/20 border border-red-500/30"
+                        )}>
+                          <p className={cn(
+                            "text-lg font-bold",
+                            profitPercent >= 20 ? "text-green-400" : profitPercent >= 10 ? "text-amber-400" : "text-red-400"
+                          )}>
+                            {profitPercent >= 20 ? 'Excellent' : profitPercent >= 10 ? 'Good' : 'Review Needed'}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {profitPercent >= 20 ? 'Above 20% target' : profitPercent >= 10 ? 'Within acceptable range' : 'Below 10% threshold'}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  {/* Contracts Summary - Modern Style */}
                   {contracts.length > 0 && (
-                    <div>
-                      <h5 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
-                        <FileCheck className="h-4 w-4" />
-                        Contracts ({contracts.length})
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.5 }}
+                    >
+                      <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
+                        <div className="h-6 w-1 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
+                        Active Contracts ({contracts.length})
                       </h5>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {contracts.map(contract => (
-                          <div 
-                            key={contract.id} 
-                            className="p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-all"
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {contracts.map((contract, index) => (
+                          <motion.div 
+                            key={contract.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                            whileHover={{ scale: 1.02 }}
+                            className="p-5 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-700/30 border border-slate-600/50 hover:border-pink-500/50 transition-all"
                           >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium text-sm">#{contract.contract_number}</span>
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <FileCheck className="h-5 w-5 text-pink-400" />
+                                <span className="font-mono font-medium">#{contract.contract_number}</span>
+                              </div>
                               <Badge 
                                 variant={contract.status === 'signed' ? 'default' : 'outline'}
                                 className={cn(
                                   "text-xs",
-                                  contract.status === 'signed' && 'bg-green-500'
+                                  contract.status === 'signed' && 'bg-gradient-to-r from-green-500 to-emerald-600 border-0'
                                 )}
                               >
                                 {contract.status}
                               </Badge>
                             </div>
                             {contract.total_amount !== null && contract.total_amount !== undefined && (
-                              <p className="text-xl font-bold text-foreground">
-                                ${contract.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">
+                                ${contract.total_amount.toLocaleString()}
                               </p>
                             )}
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                   
-                  {/* GFA Reference */}
+                  {/* GFA Reference - Compact Footer */}
                   {gfaCitation && gfaValue && (
-                    <div className="p-4 rounded-lg bg-muted/30 border">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.7 }}
+                      className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Ruler className="h-5 w-5 text-amber-500" />
+                          <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                            <Ruler className="h-5 w-5 text-amber-400" />
+                          </div>
                           <div>
-                            <p className="text-xs text-muted-foreground uppercase">Project Area (GFA)</p>
-                            <p className="text-lg font-bold">{gfaValue.toLocaleString()} sq ft</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">Project Area (GFA)</p>
+                            <p className="text-xl font-bold">{gfaValue.toLocaleString()} sq ft</p>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-[10px] text-amber-600">
+                        <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30 font-mono">
                           cite: [{gfaCitation.id.slice(0, 8)}]
                         </Badge>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                 </>
               ) : (
-                <div className="p-12 rounded-xl border-2 border-dashed text-center">
-                  <DollarSign className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium text-muted-foreground">No Financial Data Recorded</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Add budget, materials, or contracts to see financial summary
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-16 rounded-2xl border-2 border-dashed border-slate-700 text-center bg-slate-900/50"
+                >
+                  <motion.div
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <DollarSign className="h-20 w-20 text-slate-600 mx-auto mb-6" />
+                  </motion.div>
+                  <p className="text-xl font-medium text-slate-400">No Financial Data Recorded</p>
+                  <p className="text-sm text-slate-500 mt-3 max-w-md mx-auto">
+                    Add budget information, materials costs, or create contracts to unlock the Financial Command Center
                   </p>
-                </div>
+                </motion.div>
               )}
             </div>
           );
