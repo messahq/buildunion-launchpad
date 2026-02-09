@@ -1382,76 +1382,219 @@ export default function Stage8FinalReview({
                       {phase.tasks.length === 0 ? (
                         <p className="text-xs text-muted-foreground italic py-2">No tasks in this phase</p>
                       ) : (
-                        phase.tasks.map(task => (
-                          <div key={task.id} className="bg-background rounded-lg border p-3 space-y-2">
-                            {/* Task Header */}
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium truncate flex-1">{task.title}</span>
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant={task.status === 'completed' ? 'default' : 'secondary'}
-                                  className={cn("text-[10px]", task.status === 'completed' && 'bg-green-500')}
-                                >
-                                  {task.status}
-                                </Badge>
+                        phase.tasks.map(task => {
+                          // Create ref for file input per task
+                          const taskFileInputId = `task-photo-${task.id}`;
+                          
+                          return (
+                            <div key={task.id} className="bg-background rounded-lg border p-3 space-y-2">
+                              {/* Task Header with Status Toggle */}
+                              <div className="flex items-center justify-between gap-2">
+                                {/* Owner can toggle task status */}
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Checkbox
+                                    checked={task.status === 'completed'}
+                                    onCheckedChange={(checked) => {
+                                      const newStatus = checked ? 'completed' : 'pending';
+                                      // Update task status in DB
+                                      supabase
+                                        .from('project_tasks')
+                                        .update({ status: newStatus })
+                                        .eq('id', task.id)
+                                        .then(({ error }) => {
+                                          if (error) {
+                                            toast.error('Failed to update task status');
+                                          } else {
+                                            setTasks(prev => prev.map(t => 
+                                              t.id === task.id ? { ...t, status: newStatus } : t
+                                            ));
+                                            toast.success(checked ? 'Task completed' : 'Task reopened');
+                                          }
+                                        });
+                                    }}
+                                    disabled={!canEdit}
+                                    className="h-5 w-5"
+                                  />
+                                  <span className={cn(
+                                    "text-sm font-medium truncate flex-1",
+                                    task.status === 'completed' && "line-through text-muted-foreground"
+                                  )}>{task.title}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {/* Photo Upload Button */}
+                                  {canEdit && (
+                                    <>
+                                      <input
+                                        id={taskFileInputId}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                          const files = e.target.files;
+                                          if (!files || files.length === 0) return;
+                                          
+                                          // Upload image to Visuals
+                                          setIsUploading(true);
+                                          try {
+                                            const file = files[0];
+                                            const fileName = `${Date.now()}-${file.name}`;
+                                            const filePath = `${projectId}/${fileName}`;
+                                            
+                                            // Upload to storage
+                                            const { error: uploadError } = await supabase.storage
+                                              .from('project-documents')
+                                              .upload(filePath, file);
+                                            
+                                            if (uploadError) throw uploadError;
+                                            
+                                            // Create document record
+                                            const { data: docRecord, error: insertError } = await supabase
+                                              .from('project_documents')
+                                              .insert({
+                                                project_id: projectId,
+                                                file_name: file.name,
+                                                file_path: filePath,
+                                                file_size: file.size,
+                                              })
+                                              .select()
+                                              .single();
+                                            
+                                            if (insertError) throw insertError;
+                                            
+                                            // Create citation for cross-panel sync
+                                            const newCitation: Citation = {
+                                              id: `doc-${docRecord.id}`,
+                                              cite_type: 'SITE_PHOTO' as any,
+                                              question_key: 'task_photo_upload',
+                                              answer: `Task Photo: ${task.title}`,
+                                              value: filePath,
+                                              timestamp: new Date().toISOString(),
+                                              metadata: {
+                                                category: 'visual',
+                                                fileName: file.name,
+                                                fileSize: file.size,
+                                                taskId: task.id,
+                                                taskTitle: task.title,
+                                              },
+                                            };
+                                            
+                                            // Add to documents state
+                                            const newDoc: DocumentWithCategory = {
+                                              id: docRecord.id,
+                                              file_name: file.name,
+                                              file_path: filePath,
+                                              category: 'visual',
+                                              citationId: newCitation.id,
+                                              uploadedAt: new Date().toISOString(),
+                                            };
+                                            
+                                            setDocuments(prev => [...prev, newDoc]);
+                                            
+                                            // Update citations
+                                            setCitations(prev => {
+                                              const updated = [...prev, newCitation];
+                                              
+                                              // Persist to Supabase
+                                              supabase
+                                                .from('project_summaries')
+                                                .update({ verified_facts: updated as any })
+                                                .eq('project_id', projectId)
+                                                .then(({ error }) => {
+                                                  if (error) console.error('[Stage8] Failed to persist citation:', error);
+                                                });
+                                              
+                                              return updated;
+                                            });
+                                            
+                                            toast.success(`Photo uploaded for "${task.title}"`, { 
+                                              description: 'Added to Visuals in Documents' 
+                                            });
+                                          } catch (err) {
+                                            console.error('[Stage8] Task photo upload failed:', err);
+                                            toast.error('Failed to upload photo');
+                                          } finally {
+                                            setIsUploading(false);
+                                            // Reset input
+                                            e.target.value = '';
+                                          }
+                                        }}
+                                      />
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => document.getElementById(taskFileInputId)?.click()}
+                                        disabled={isUploading}
+                                      >
+                                        <Plus className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Badge 
+                                    variant={task.status === 'completed' ? 'default' : 'secondary'}
+                                    className={cn("text-[10px]", task.status === 'completed' && 'bg-green-500')}
+                                  >
+                                    {task.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                              
+                              {/* Assignee Selector */}
+                               <div className="flex items-center gap-2">
+                                 <User className="h-3.5 w-3.5 text-muted-foreground" />
+                                 <Select
+                                   value={task.assigned_to}
+                                   onValueChange={(value) => updateTaskAssignee(task.id, value)}
+                                   disabled={!canEdit}
+                                 >
+                                   <SelectTrigger className="h-7 text-xs w-40">
+                                     <SelectValue 
+                                       placeholder="Assign to..." 
+                                       defaultValue={
+                                         teamMembers.find(m => m.userId === task.assigned_to)?.name 
+                                         || 'Assign to...'
+                                       }
+                                     />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     {teamMembers.map(member => (
+                                       <SelectItem key={member.userId} value={member.userId} className="text-xs">
+                                         {member.name} ({member.role})
+                                       </SelectItem>
+                                     ))}
+                                   </SelectContent>
+                                 </Select>
+                               </div>
+                              
+                              {/* Checklist */}
+                              <div className="pl-2 space-y-1.5 border-l-2 border-muted">
+                                {task.checklist.map(item => (
+                                  <div key={item.id} className="flex items-center gap-2">
+                                    <Checkbox
+                                      id={item.id}
+                                      checked={item.done}
+                                      onCheckedChange={(checked) => updateChecklistItem(task.id, item.id, !!checked)}
+                                      disabled={!canEdit}
+                                      className="h-4 w-4"
+                                    />
+                                    <label
+                                      htmlFor={item.id}
+                                      className={cn(
+                                        "text-xs cursor-pointer",
+                                        item.done && "line-through text-muted-foreground"
+                                      )}
+                                    >
+                                      {item.text}
+                                    </label>
+                                    {item.id.includes('-verify') && item.done && (
+                                      <Camera className="h-3 w-3 text-purple-500" />
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                            
-                            {/* Assignee Selector */}
-                             <div className="flex items-center gap-2">
-                               <User className="h-3.5 w-3.5 text-muted-foreground" />
-                               <Select
-                                 value={task.assigned_to}
-                                 onValueChange={(value) => updateTaskAssignee(task.id, value)}
-                                 disabled={!canEdit}
-                               >
-                                 <SelectTrigger className="h-7 text-xs w-40">
-                                   <SelectValue 
-                                     placeholder="Assign to..." 
-                                     defaultValue={
-                                       teamMembers.find(m => m.userId === task.assigned_to)?.name 
-                                       || 'Assign to...'
-                                     }
-                                   />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                   {teamMembers.map(member => (
-                                     <SelectItem key={member.userId} value={member.userId} className="text-xs">
-                                       {member.name} ({member.role})
-                                     </SelectItem>
-                                   ))}
-                                 </SelectContent>
-                               </Select>
-                             </div>
-                            
-                            {/* Checklist */}
-                            <div className="pl-2 space-y-1.5 border-l-2 border-muted">
-                              {task.checklist.map(item => (
-                                <div key={item.id} className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={item.id}
-                                    checked={item.done}
-                                    onCheckedChange={(checked) => updateChecklistItem(task.id, item.id, !!checked)}
-                                    disabled={!canEdit}
-                                    className="h-4 w-4"
-                                  />
-                                  <label
-                                    htmlFor={item.id}
-                                    className={cn(
-                                      "text-xs cursor-pointer",
-                                      item.done && "line-through text-muted-foreground"
-                                    )}
-                                  >
-                                    {item.text}
-                                  </label>
-                                  {item.id.includes('-verify') && item.done && (
-                                    <Camera className="h-3 w-3 text-purple-500" />
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </motion.div>
@@ -1464,7 +1607,7 @@ export default function Stage8FinalReview({
     );
   }, [
     getCitationsForPanel,
-    citations, // ✓ Added for SITE_CONDITION check
+    citations,
     tasks,
     userId,
     expandedPhases,
@@ -1474,6 +1617,8 @@ export default function Stage8FinalReview({
     updateTaskAssignee,
     updateChecklistItem,
     renderCitationValue,
+    projectId,
+    isUploading,
   ]);
   
   // Render Panel 6 - Documents with Upload and Contract Generator
