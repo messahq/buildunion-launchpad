@@ -114,17 +114,23 @@ async function callAI(model: string, messages: Array<{role: string; content: str
 
   logStep(`Calling ${model}`, { tokens: maxTokens });
 
+  // OpenAI models use max_completion_tokens, Gemini uses max_tokens
+  const isOpenAI = model.includes('openai');
+  const tokenParam = isOpenAI ? 'max_completion_tokens' : 'max_tokens';
+
+  const requestBody: Record<string, any> = {
+    model,
+    messages,
+  };
+  requestBody[tokenParam] = maxTokens;
+
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: maxTokens,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
