@@ -3175,6 +3175,7 @@ export default function Stage8FinalReview({
           const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
           const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
           const demoPriceCitation = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+          const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
           
           const gfaValue = typeof gfaCitation?.value === 'number' 
             ? gfaCitation.value 
@@ -3195,6 +3196,38 @@ export default function Stage8FinalReview({
           const profitMargin = budgetTotal && calculatedExpenses > 0 ? budgetTotal - calculatedExpenses : null;
           const profitPercent = budgetTotal && profitMargin !== null ? (profitMargin / budgetTotal) * 100 : null;
           const hasFinancialData = budgetTotal > 0 || storedMaterialCost || storedLaborCost || totalContractValue > 0;
+          
+          // ✓ REGIONAL TAX CALCULATION (Canadian Provinces)
+          const locationAddress = typeof locationCitation?.answer === 'string' 
+            ? locationCitation.answer 
+            : typeof locationCitation?.metadata?.formatted_address === 'string'
+              ? locationCitation.metadata.formatted_address
+              : '';
+          const getTaxRateByRegion = (address: string): { rate: number; name: string; province: string } => {
+            const addressLower = address.toLowerCase();
+            // Canadian Province Tax Rates (HST/GST+PST)
+            if (addressLower.includes('ontario') || addressLower.includes(', on')) return { rate: 0.13, name: 'HST', province: 'Ontario' };
+            if (addressLower.includes('quebec') || addressLower.includes(', qc')) return { rate: 0.14975, name: 'GST+QST', province: 'Quebec' };
+            if (addressLower.includes('british columbia') || addressLower.includes(', bc')) return { rate: 0.12, name: 'GST+PST', province: 'British Columbia' };
+            if (addressLower.includes('alberta') || addressLower.includes(', ab')) return { rate: 0.05, name: 'GST', province: 'Alberta' };
+            if (addressLower.includes('manitoba') || addressLower.includes(', mb')) return { rate: 0.12, name: 'GST+PST', province: 'Manitoba' };
+            if (addressLower.includes('saskatchewan') || addressLower.includes(', sk')) return { rate: 0.11, name: 'GST+PST', province: 'Saskatchewan' };
+            if (addressLower.includes('nova scotia') || addressLower.includes(', ns')) return { rate: 0.15, name: 'HST', province: 'Nova Scotia' };
+            if (addressLower.includes('new brunswick') || addressLower.includes(', nb')) return { rate: 0.15, name: 'HST', province: 'New Brunswick' };
+            if (addressLower.includes('newfoundland') || addressLower.includes(', nl')) return { rate: 0.15, name: 'HST', province: 'Newfoundland' };
+            if (addressLower.includes('prince edward') || addressLower.includes(', pe')) return { rate: 0.15, name: 'HST', province: 'PEI' };
+            if (addressLower.includes('toronto')) return { rate: 0.13, name: 'HST', province: 'Ontario' };
+            if (addressLower.includes('vancouver')) return { rate: 0.12, name: 'GST+PST', province: 'British Columbia' };
+            if (addressLower.includes('montreal')) return { rate: 0.14975, name: 'GST+QST', province: 'Quebec' };
+            if (addressLower.includes('calgary') || addressLower.includes('edmonton')) return { rate: 0.05, name: 'GST', province: 'Alberta' };
+            // Default to Ontario HST
+            return { rate: 0.13, name: 'HST', province: 'Ontario' };
+          };
+          
+          const taxInfo = getTaxRateByRegion(locationAddress);
+          const netTotal = budgetTotal || 0;
+          const taxAmount = netTotal * taxInfo.rate;
+          const grossTotal = netTotal + taxAmount;
           
           // Data for pie chart visualization
           const costBreakdownData = [
@@ -3241,7 +3274,7 @@ export default function Stage8FinalReview({
               
               {hasFinancialData ? (
                 <>
-                  {/* Grand Total Hero Card - Futuristic */}
+                  {/* Grand Total Hero Card - Futuristic with Net/Gross */}
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -3249,7 +3282,7 @@ export default function Stage8FinalReview({
                     className="relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-green-500/5 to-teal-500/10" />
-                    <div className="relative p-8 rounded-3xl bg-gradient-to-br from-slate-900/95 to-slate-800/95 dark:from-slate-950 dark:to-slate-900 border border-emerald-500/40 shadow-2xl">
+                    <div className="relative p-8 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 border border-emerald-500/40 shadow-2xl">
                       {/* Animated background grid */}
                       <div className="absolute inset-0 opacity-10">
                         <div className="absolute inset-0" style={{
@@ -3259,26 +3292,68 @@ export default function Stage8FinalReview({
                       </div>
                       
                       <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                        <div>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="text-emerald-400 text-sm font-medium uppercase tracking-wider">Project Budget Total</span>
+                        <div className="flex-1">
+                          {/* Region & Tax Badge */}
+                          <div className="flex items-center gap-3 mb-4 flex-wrap">
+                            <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {taxInfo.province}
+                            </Badge>
+                            <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-3 py-1">
+                              {taxInfo.name} @ {(taxInfo.rate * 100).toFixed(2)}%
+                            </Badge>
                           </div>
-                          <motion.p 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.6, delay: 0.3 }}
-                            className="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400"
-                          >
-                            ${(budgetTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                          </motion.p>
+                          
+                          {/* Net Amount */}
+                          <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="h-2 w-2 rounded-full bg-white/60" />
+                              <span className="text-white/70 text-sm font-medium uppercase tracking-wider">Net (Before Tax)</span>
+                            </div>
+                            <motion.p 
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.6, delay: 0.2 }}
+                              className="text-4xl md:text-5xl font-bold text-white"
+                            >
+                              ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </motion.p>
+                          </div>
+                          
+                          {/* Tax Amount */}
+                          <div className="mb-4 pl-4 border-l-2 border-amber-500/50">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-amber-300/80 text-xs font-medium uppercase tracking-wider">+ {taxInfo.name} Tax</span>
+                            </div>
+                            <p className="text-2xl font-semibold text-amber-300">
+                              ${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          
+                          {/* Gross Amount - Hero */}
+                          <div className="pt-4 border-t border-emerald-500/30">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
+                              <span className="text-emerald-300 text-sm font-bold uppercase tracking-wider">Gross Total (With Tax)</span>
+                            </div>
+                            <motion.p 
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.6, delay: 0.4 }}
+                              className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400"
+                            >
+                              ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </motion.p>
+                          </div>
+                          
                           {gfaValue && budgetTotal && (
-                            <p className="text-emerald-400/60 mt-3 flex items-center gap-2">
+                            <p className="text-emerald-300/80 mt-4 flex items-center gap-2 text-sm">
                               <Ruler className="h-4 w-4" />
-                              <span className="font-mono">${(budgetTotal / gfaValue).toFixed(2)}</span>
-                              <span className="text-emerald-500/40">/ sq ft</span>
-                              <span className="text-emerald-500/40">•</span>
-                              <span className="font-mono">{gfaValue.toLocaleString()} sq ft</span>
+                              <span className="font-mono text-white">${(budgetTotal / gfaValue).toFixed(2)}</span>
+                              <span className="text-emerald-400/60">/ sq ft</span>
+                              <span className="text-emerald-400/40">•</span>
+                              <span className="font-mono text-white">{gfaValue.toLocaleString()}</span>
+                              <span className="text-emerald-400/60">sq ft</span>
                             </p>
                           )}
                         </div>
@@ -3291,26 +3366,26 @@ export default function Stage8FinalReview({
                             transition={{ duration: 0.8, delay: 0.4 }}
                             className="relative"
                           >
-                            <svg className="w-32 h-32 transform -rotate-90">
+                            <svg className="w-36 h-36 transform -rotate-90">
                               <circle
-                                cx="64"
-                                cy="64"
-                                r="56"
+                                cx="72"
+                                cy="72"
+                                r="60"
                                 fill="none"
-                                stroke="rgba(16, 185, 129, 0.1)"
-                                strokeWidth="8"
+                                stroke="rgba(16, 185, 129, 0.15)"
+                                strokeWidth="10"
                               />
                               <motion.circle
-                                cx="64"
-                                cy="64"
-                                r="56"
+                                cx="72"
+                                cy="72"
+                                r="60"
                                 fill="none"
                                 stroke={profitPercent >= 20 ? 'url(#profitGradientGreen)' : profitPercent >= 10 ? 'url(#profitGradientAmber)' : 'url(#profitGradientRed)'}
-                                strokeWidth="8"
+                                strokeWidth="10"
                                 strokeLinecap="round"
-                                strokeDasharray={`${2 * Math.PI * 56}`}
-                                initial={{ strokeDashoffset: 2 * Math.PI * 56 }}
-                                animate={{ strokeDashoffset: 2 * Math.PI * 56 * (1 - Math.min(profitPercent, 100) / 100) }}
+                                strokeDasharray={`${2 * Math.PI * 60}`}
+                                initial={{ strokeDashoffset: 2 * Math.PI * 60 }}
+                                animate={{ strokeDashoffset: 2 * Math.PI * 60 * (1 - Math.min(profitPercent, 100) / 100) }}
                                 transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
                               />
                               <defs>
@@ -3330,12 +3405,12 @@ export default function Stage8FinalReview({
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                               <span className={cn(
-                                "text-2xl font-bold",
+                                "text-3xl font-bold",
                                 profitPercent >= 20 ? "text-emerald-400" : profitPercent >= 10 ? "text-amber-400" : "text-red-400"
                               )}>
                                 {profitPercent.toFixed(1)}%
                               </span>
-                              <span className="text-[10px] text-muted-foreground uppercase">Margin</span>
+                              <span className="text-xs text-white/60 uppercase font-medium">Margin</span>
                             </div>
                           </motion.div>
                         )}
@@ -3349,7 +3424,7 @@ export default function Stage8FinalReview({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
                   >
-                    <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
+                    <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
                       <div className="h-6 w-1 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
                       Cost Breakdown Analysis
                     </h5>
@@ -3366,8 +3441,8 @@ export default function Stage8FinalReview({
                               <Hammer className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                              <span className="text-xs text-blue-400/80 uppercase tracking-wider font-medium">Materials</span>
-                              <div className="h-1.5 w-16 bg-blue-500/20 rounded-full mt-1 overflow-hidden">
+                              <span className="text-xs text-blue-300 uppercase tracking-wider font-medium">Materials</span>
+                              <div className="h-1.5 w-16 bg-blue-500/30 rounded-full mt-1 overflow-hidden">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: totalForPercentage > 0 ? `${(storedMaterialCost / totalForPercentage) * 100}%` : '0%' }}
@@ -3377,11 +3452,11 @@ export default function Stage8FinalReview({
                               </div>
                             </div>
                           </div>
-                          <p className="text-3xl font-bold text-blue-400">
+                          <p className="text-3xl font-bold text-blue-300">
                             ${storedMaterialCost.toLocaleString()}
                           </p>
                           {totalForPercentage > 0 && (
-                            <p className="text-xs text-blue-400/60 mt-1">
+                            <p className="text-xs text-blue-300/70 mt-1">
                               {((storedMaterialCost / totalForPercentage) * 100).toFixed(1)}% of total
                             </p>
                           )}
@@ -3400,8 +3475,8 @@ export default function Stage8FinalReview({
                               <Users className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                              <span className="text-xs text-teal-400/80 uppercase tracking-wider font-medium">Labor</span>
-                              <div className="h-1.5 w-16 bg-teal-500/20 rounded-full mt-1 overflow-hidden">
+                              <span className="text-xs text-teal-300 uppercase tracking-wider font-medium">Labor</span>
+                              <div className="h-1.5 w-16 bg-teal-500/30 rounded-full mt-1 overflow-hidden">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: totalForPercentage > 0 ? `${(storedLaborCost / totalForPercentage) * 100}%` : '0%' }}
@@ -3411,11 +3486,11 @@ export default function Stage8FinalReview({
                               </div>
                             </div>
                           </div>
-                          <p className="text-3xl font-bold text-teal-400">
+                          <p className="text-3xl font-bold text-teal-300">
                             ${storedLaborCost.toLocaleString()}
                           </p>
                           {totalForPercentage > 0 && (
-                            <p className="text-xs text-teal-400/60 mt-1">
+                            <p className="text-xs text-teal-300/70 mt-1">
                               {((storedLaborCost / totalForPercentage) * 100).toFixed(1)}% of total
                             </p>
                           )}
@@ -3434,8 +3509,8 @@ export default function Stage8FinalReview({
                               <AlertTriangle className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                              <span className="text-xs text-purple-400/80 uppercase tracking-wider font-medium">Demolition</span>
-                              <div className="h-1.5 w-16 bg-purple-500/20 rounded-full mt-1 overflow-hidden">
+                              <span className="text-xs text-purple-300 uppercase tracking-wider font-medium">Demolition</span>
+                              <div className="h-1.5 w-16 bg-purple-500/30 rounded-full mt-1 overflow-hidden">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: totalForPercentage > 0 ? `${(demoCost / totalForPercentage) * 100}%` : '0%' }}
@@ -3445,11 +3520,11 @@ export default function Stage8FinalReview({
                               </div>
                             </div>
                           </div>
-                          <p className="text-3xl font-bold text-purple-400">
+                          <p className="text-3xl font-bold text-purple-300">
                             ${demoCost.toLocaleString()}
                           </p>
                           {demoPriceCitation && typeof demoPriceCitation.value === 'number' && (
-                            <p className="text-xs text-purple-400/60 mt-1">
+                            <p className="text-xs text-purple-300/70 mt-1">
                               @ ${demoPriceCitation.value}/sq ft
                             </p>
                           )}
@@ -3464,9 +3539,9 @@ export default function Stage8FinalReview({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: 0.3 }}
-                      className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-800/80 dark:from-slate-950/90 dark:to-slate-900/90 border border-slate-700/50"
+                      className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 border border-slate-600/50"
                     >
-                      <h5 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                      <h5 className="text-lg font-semibold mb-6 flex items-center gap-2 text-white">
                         <div className="h-6 w-1 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
                         Budget Allocation
                       </h5>
@@ -3501,12 +3576,12 @@ export default function Stage8FinalReview({
                                 />
                               );
                             })}
-                            <circle cx="50" cy="50" r="25" fill="hsl(var(--background))" />
+                            <circle cx="50" cy="50" r="25" fill="#1e293b" />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center">
-                              <p className="text-2xl font-bold">${(totalForPercentage / 1000).toFixed(0)}K</p>
-                              <p className="text-[10px] text-muted-foreground">TOTAL</p>
+                              <p className="text-2xl font-bold text-white">${(totalForPercentage / 1000).toFixed(0)}K</p>
+                              <p className="text-[10px] text-slate-400 uppercase">Total</p>
                             </div>
                           </div>
                         </div>
@@ -3519,19 +3594,19 @@ export default function Stage8FinalReview({
                               initial={{ opacity: 0, x: 20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
-                              className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                              className="flex items-center gap-3 p-3 rounded-xl bg-slate-700/60 hover:bg-slate-600/60 transition-colors border border-slate-600/30"
                             >
                               <div 
                                 className="h-4 w-4 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: item.color }}
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{item.name}</p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-sm font-medium truncate text-white">{item.name}</p>
+                                <p className="text-xs text-slate-400">
                                   {((item.value / totalForPercentage) * 100).toFixed(1)}%
                                 </p>
                               </div>
-                              <p className="text-sm font-bold">${item.value.toLocaleString()}</p>
+                              <p className="text-sm font-bold text-white">${item.value.toLocaleString()}</p>
                             </motion.div>
                           ))}
                         </div>
