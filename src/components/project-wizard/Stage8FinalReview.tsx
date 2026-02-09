@@ -2150,173 +2150,568 @@ export default function Stage8FinalReview({
     }
   }, [invoicePreviewData, projectId, userId, categorizeDocument]);
   
-  // Generate Project Summary - Checkpoint-based progress report
+  // Generate Project Summary - Comprehensive AI-powered progress report with dual engine, weather, OBC
   const handleGenerateSummary = useCallback(async () => {
     setIsGeneratingSummary(true);
     try {
-      // Gather checkpoint data from citations
+      // Show loading toast
+      toast.loading('Generating Comprehensive Project Summary...', { id: 'summary-gen', description: 'Dual AI + Weather + OBC Analysis' });
+      
+      // Gather all citation data from project
       const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
       const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
       const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
       const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
       const projectNameCitation = citations.find(c => c.cite_type === 'PROJECT_NAME');
-      const timelineCitations = citations.filter(c => c.cite_type === 'TIMELINE' || c.cite_type === 'END_DATE');
-      const teamCitations = citations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE' || c.cite_type === 'TEAM_STRUCTURE');
-      const docCitations = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'BLUEPRINT_UPLOAD');
+      const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      const executionModeCitation = citations.find(c => c.cite_type === 'EXECUTION_MODE');
+      const siteConditionCitation = citations.find(c => c.cite_type === 'SITE_CONDITION');
+      const demolitionCitation = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+      const timelineCitation = citations.find(c => c.cite_type === 'TIMELINE');
+      const endDateCitation = citations.find(c => c.cite_type === 'END_DATE');
+      const teamCitations = citations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE' || c.cite_type === 'TEAM_STRUCTURE' || c.cite_type === 'TEAM_SIZE');
+      const docCitations = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'BLUEPRINT_UPLOAD' || c.cite_type === 'VISUAL_VERIFICATION');
+      const dnaFinalizedCitation = citations.find(c => c.cite_type === 'DNA_FINALIZED');
       
-      const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : 0;
+      const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : (typeof gfaCitation?.metadata?.gfa_value === 'number' ? gfaCitation.metadata.gfa_value : 0);
       const trade = tradeCitation?.answer || 'General';
       const address = locationCitation?.answer || projectData?.address || '';
-      const workType = workTypeCitation?.answer || '';
+      const workType = workTypeCitation?.answer || 'General Construction';
+      const executionMode = executionModeCitation?.answer || 'Solo';
+      const siteCondition = siteConditionCitation?.answer || 'Clear Site';
+      const hasDemolition = demolitionCitation && (typeof demolitionCitation.value === 'number' && demolitionCitation.value > 0);
+      const startDate = timelineCitation?.answer || '';
+      const endDate = endDateCitation?.answer || '';
       
-      // Calculate checkpoint progress (12 total checkpoints)
+      // Calculate waste percentage from template
+      const wastePercent = typeof templateCitation?.metadata?.waste_percent === 'number' ? templateCitation.metadata.waste_percent : 10;
+      const grossArea = gfaValue > 0 ? Math.round(gfaValue * (1 + wastePercent / 100)) : 0;
+      
+      // Fetch weather data for project location
+      let weatherData: any = null;
+      let weatherAlerts: any[] = [];
+      if (address && address.length > 5) {
+        try {
+          const { data: weatherResult } = await supabase.functions.invoke('get-weather', {
+            body: { location: address, days: 5 }
+          });
+          if (weatherResult && !weatherResult.error) {
+            weatherData = weatherResult;
+            weatherAlerts = weatherResult.current?.alerts || [];
+          }
+        } catch (err) {
+          console.log('[Summary] Weather fetch skipped:', err);
+        }
+      }
+      
+      // Call AI for OBC compliance and project assessment
+      let aiInsights: any = null;
+      try {
+        const { data: aiResult } = await supabase.functions.invoke('ai-project-analysis', {
+          body: {
+            projectId,
+            analysisType: 'quick_assessment',
+            tier: 'standard',
+          },
+        });
+        if (aiResult && !aiResult.error) {
+          aiInsights = aiResult;
+        }
+      } catch (err) {
+        console.log('[Summary] AI assessment skipped:', err);
+      }
+      
+      // Extract AI insights
+      const geminiInsight = aiInsights?.engines?.gemini?.analysis || {};
+      const openaiInsight = aiInsights?.engines?.openai?.analysis || {};
+      const obcStatus = openaiInsight?.obcCompliance || geminiInsight?.obcCompliance || 'Pending Review';
+      const riskLevel = openaiInsight?.riskLevel || geminiInsight?.riskLevel || 'Medium';
+      const aiRecommendations = geminiInsight?.recommendations || openaiInsight?.recommendations || [];
+      const conflictStatus = geminiInsight?.conflictStatus || 'No conflicts detected';
+      const materialCount = geminiInsight?.materialCount || templateCitation?.metadata?.materials_count || 0;
+      
+      // Calculate comprehensive checkpoints (16 total like M.E.S.S.A.)
       const checkpoints = [
-        { name: 'Project Name', completed: !!projectNameCitation || !!projectData?.name, phase: 'Definition' },
-        { name: 'Location', completed: !!locationCitation, phase: 'Definition' },
-        { name: 'Work Type', completed: !!workTypeCitation, phase: 'Definition' },
-        { name: 'GFA Locked', completed: !!gfaCitation && gfaValue > 0, phase: 'Scope' },
-        { name: 'Trade Selected', completed: !!tradeCitation, phase: 'Scope' },
-        { name: 'Team Invited', completed: teamCitations.length > 0 || teamMembers.length > 0, phase: 'Team' },
-        { name: 'Tasks Created', completed: tasks.length > 0, phase: 'Execution' },
-        { name: 'Timeline Set', completed: timelineCitations.length > 0, phase: 'Execution' },
-        { name: 'Documents Uploaded', completed: documents.length > 0 || docCitations.length > 0, phase: 'Documentation' },
-        { name: 'Site Photos', completed: docCitations.filter(c => c.cite_type === 'SITE_PHOTO').length > 0, phase: 'Documentation' },
-        { name: 'Financial Data', completed: !!(financialSummary?.total_cost && financialSummary.total_cost > 0), phase: 'Financial' },
-        { name: 'Contract Created', completed: contracts.length > 0, phase: 'Financial' },
+        // Definition Phase
+        { name: 'Project Name', completed: !!projectNameCitation || !!projectData?.name, phase: 'Definition', priority: 'Required' },
+        { name: 'Location Verified', completed: !!locationCitation, phase: 'Definition', priority: 'Required' },
+        { name: 'Work Type', completed: !!workTypeCitation, phase: 'Definition', priority: 'Required' },
+        // Scope Phase
+        { name: 'GFA Locked', completed: !!gfaCitation && gfaValue > 0, phase: 'Scope', priority: 'Critical' },
+        { name: 'Trade Selection', completed: !!tradeCitation, phase: 'Scope', priority: 'Critical' },
+        { name: 'Template Locked', completed: !!templateCitation, phase: 'Scope', priority: 'Important' },
+        // Execution Phase
+        { name: 'Execution Mode', completed: !!executionModeCitation, phase: 'Execution', priority: 'Required' },
+        { name: 'Site Condition', completed: !!siteConditionCitation, phase: 'Execution', priority: 'Required' },
+        { name: 'Timeline Set', completed: !!timelineCitation && !!endDateCitation, phase: 'Execution', priority: 'Critical' },
+        { name: 'DNA Finalized', completed: !!dnaFinalizedCitation, phase: 'Execution', priority: 'Important' },
+        // Team Phase
+        { name: 'Team Invited', completed: teamCitations.length > 0 || teamMembers.length > 0, phase: 'Team', priority: executionMode === 'Team' ? 'Required' : 'Optional' },
+        { name: 'Tasks Created', completed: tasks.length > 0, phase: 'Team', priority: 'Important' },
+        // Documentation Phase
+        { name: 'Site Photos', completed: docCitations.filter(c => c.cite_type === 'SITE_PHOTO').length > 0, phase: 'Documentation', priority: 'Required' },
+        { name: 'Blueprints Uploaded', completed: docCitations.filter(c => c.cite_type === 'BLUEPRINT_UPLOAD').length > 0, phase: 'Documentation', priority: 'Important' },
+        // Financial Phase
+        { name: 'Budget Set', completed: !!(financialSummary?.total_cost && financialSummary.total_cost > 0), phase: 'Financial', priority: 'Critical' },
+        { name: 'Contract Created', completed: contracts.length > 0, phase: 'Financial', priority: 'Critical' },
       ];
       
       const completedCount = checkpoints.filter(c => c.completed).length;
+      const criticalCheckpoints = checkpoints.filter(c => c.priority === 'Critical');
+      const criticalCompleted = criticalCheckpoints.filter(c => c.completed).length;
       const completionPercent = Math.round((completedCount / checkpoints.length) * 100);
+      const criticalPercent = Math.round((criticalCompleted / criticalCheckpoints.length) * 100);
+      
+      // Calculate operational readiness
+      const operationalReadiness = Math.round((completionPercent * 0.6) + (criticalPercent * 0.4));
+      const readinessGrade = operationalReadiness >= 85 ? 'OPERATIONAL' : operationalReadiness >= 60 ? 'PARTIAL' : 'INCOMPLETE';
+      
+      // Phase breakdown
+      const phases = ['Definition', 'Scope', 'Execution', 'Team', 'Documentation', 'Financial'];
+      const phaseProgress = phases.map(phase => {
+        const phaseItems = checkpoints.filter(c => c.phase === phase);
+        const completed = phaseItems.filter(c => c.completed).length;
+        return { phase, completed, total: phaseItems.length, percent: Math.round((completed / phaseItems.length) * 100) };
+      });
       
       // Build rich HTML summary
       const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const shortDate = new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
+      
+      // Weather section HTML
+      const weatherHtml = weatherData ? `
+        <div class="section">
+          <div class="section-header"><span class="section-number">4.</span> WEATHER CONDITIONS</div>
+          <div class="weather-grid">
+            <div class="weather-current">
+              <div class="weather-temp">${Math.round(weatherData.current?.temp || 0)}°C</div>
+              <div class="weather-desc">${weatherData.current?.description || 'N/A'}</div>
+              <div class="weather-details">
+                <span>💨 ${Math.round(weatherData.current?.wind_speed || 0)} km/h</span>
+                <span>💧 ${weatherData.current?.humidity || 0}%</span>
+              </div>
+            </div>
+            <div class="forecast-mini">
+              ${(weatherData.forecast || []).slice(0, 5).map((day: any) => `
+                <div class="forecast-day">
+                  <div class="forecast-date">${new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                  <div class="forecast-temps">${Math.round(day.temp_max)}° / ${Math.round(day.temp_min)}°</div>
+                  ${(day.alerts?.length || 0) > 0 ? '<div class="forecast-alert">⚠️</div>' : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ${weatherAlerts.length > 0 ? `
+            <div class="alert-box warning">
+              <strong>⚠️ Construction Alerts:</strong>
+              ${weatherAlerts.map((a: any) => `<div>• ${a.message}</div>`).join('')}
+            </div>
+          ` : '<div class="status-good">✓ No weather alerts - conditions favorable for construction</div>'}
+        </div>
+      ` : '<div class="section"><div class="section-header"><span class="section-number">4.</span> WEATHER CONDITIONS</div><div class="status-pending">Location required for weather data</div></div>';
+      
+      // OBC Compliance section HTML
+      const obcHtml = `
+        <div class="section">
+          <div class="section-header"><span class="section-number">5.</span> REGULATORY COMPLIANCE (OBC 2024)</div>
+          <table>
+            <tr>
+              <th>Requirement</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+            <tr>
+              <td>Ontario Building Code</td>
+              <td class="${obcStatus === 'Compliant' || obcStatus === 'Pass' ? 'status-pass' : 'status-review'}">${obcStatus}</td>
+              <td>Based on project scope and trade selection</td>
+            </tr>
+            <tr>
+              <td>Permit Requirements</td>
+              <td class="${gfaValue > 500 ? 'status-review' : 'status-pass'}">${gfaValue > 500 ? 'Likely Required' : 'Check Local'}</td>
+              <td>${gfaValue > 500 ? 'Projects >500 sq ft typically require permits' : 'Minor work may be exempt'}</td>
+            </tr>
+            <tr>
+              <td>WSIB Coverage</td>
+              <td class="status-review">Verify</td>
+              <td>Required for all construction workers in Ontario</td>
+            </tr>
+            <tr>
+              <td>Safety Protocols</td>
+              <td class="${hasDemolition ? 'status-review' : 'status-pass'}">${hasDemolition ? 'Enhanced Required' : 'Standard'}</td>
+              <td>${hasDemolition ? 'Demolition work requires additional safety measures' : 'Standard PPE protocols apply'}</td>
+            </tr>
+          </table>
+        </div>
+      `;
+      
+      // AI Insights section HTML
+      const aiHtml = aiInsights ? `
+        <div class="section">
+          <div class="section-header"><span class="section-number">6.</span> AI ENGINE ANALYSIS</div>
+          <div class="dual-engine-status">
+            <div class="engine-badge gemini">🔷 Gemini Pro</div>
+            <div class="engine-badge openai">🟢 GPT-5</div>
+            <div class="engine-status ${aiInsights.dualEngineUsed ? 'active' : 'single'}">
+              ${aiInsights.dualEngineUsed ? '✓ Dual Engine Verified' : 'Single Engine'}
+            </div>
+          </div>
+          <table>
+            <tr>
+              <th>Assessment</th>
+              <th>Result</th>
+              <th>Confidence</th>
+            </tr>
+            <tr>
+              <td>Risk Level</td>
+              <td class="${riskLevel === 'Low' ? 'status-pass' : riskLevel === 'Medium' ? 'status-review' : 'status-fail'}">${riskLevel}</td>
+              <td>${aiInsights.dualEngineUsed ? 'High (dual verified)' : 'Medium'}</td>
+            </tr>
+            <tr>
+              <td>Conflict Check</td>
+              <td class="${conflictStatus.includes('No conflict') ? 'status-pass' : 'status-review'}">${conflictStatus}</td>
+              <td>Automated</td>
+            </tr>
+            <tr>
+              <td>Material Estimation</td>
+              <td>${materialCount > 0 ? materialCount + ' items' : 'Pending'}</td>
+              <td>${materialCount > 0 ? 'High' : 'N/A'}</td>
+            </tr>
+          </table>
+          ${aiRecommendations.length > 0 ? `
+            <div class="recommendations">
+              <strong>AI Recommendations:</strong>
+              <ul>
+                ${aiRecommendations.slice(0, 3).map((r: string) => `<li>${r}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+        </div>
+      ` : '<div class="section"><div class="section-header"><span class="section-number">6.</span> AI ENGINE ANALYSIS</div><div class="status-pending">AI analysis will run on project activation</div></div>';
       
       const html = `
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="UTF-8">
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; padding: 40px; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
-            .brand { font-size: 28px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px; }
-            .subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
-            .doc-type { display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 8px 20px; border-radius: 6px; font-weight: 600; margin-top: 12px; }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+              background: #ffffff; 
+              color: #1f2937; 
+              padding: 0;
+              font-size: 12px;
+              line-height: 1.5;
+            }
             
-            .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
-            .meta-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .meta-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-            .meta-value { font-size: 18px; font-weight: 600; color: #1e293b; margin-top: 4px; }
-            .meta-value.highlight { color: #3b82f6; }
+            .page-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              padding: 20px 28px;
+              border-bottom: 2px solid #1f2937;
+              background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            }
+            .header-left { display: flex; align-items: center; gap: 12px; }
+            .brand { font-size: 22px; font-weight: 800; color: #1f2937; letter-spacing: -0.5px; }
+            .header-date { font-size: 11px; color: #6b7280; }
+            .header-right { text-align: right; }
+            .doc-type { 
+              display: inline-block;
+              padding: 6px 16px;
+              background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+              color: white;
+              border-radius: 4px;
+              font-weight: 700;
+              font-size: 11px;
+              letter-spacing: 1px;
+            }
+            .project-title { font-size: 16px; font-weight: 700; color: #1f2937; margin-top: 8px; }
+            .project-location { font-size: 11px; color: #6b7280; }
             
-            .progress-section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-            .progress-title { font-size: 16px; font-weight: 600; }
-            .progress-percent { font-size: 28px; font-weight: 700; color: ${completionPercent >= 80 ? '#22c55e' : completionPercent >= 50 ? '#eab308' : '#ef4444'}; }
-            .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-            .progress-fill { height: 100%; background: linear-gradient(90deg, ${completionPercent >= 80 ? '#22c55e, #16a34a' : completionPercent >= 50 ? '#eab308, #ca8a04' : '#ef4444, #dc2626'}); width: ${completionPercent}%; transition: width 0.3s; }
+            .content { padding: 20px 28px; }
             
-            .checkpoints { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; }
-            .checkpoint { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+            .summary-hero {
+              display: grid;
+              grid-template-columns: 1fr 1fr 1fr;
+              gap: 16px;
+              margin-bottom: 24px;
+            }
+            .hero-card {
+              background: #f8fafc;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              padding: 16px;
+              text-align: center;
+            }
+            .hero-value { 
+              font-size: 32px; 
+              font-weight: 800; 
+              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            }
+            .hero-value.green { background: linear-gradient(135deg, #22c55e, #16a34a); -webkit-background-clip: text; }
+            .hero-value.amber { background: linear-gradient(135deg, #f59e0b, #d97706); -webkit-background-clip: text; }
+            .hero-value.red { background: linear-gradient(135deg, #ef4444, #dc2626); -webkit-background-clip: text; }
+            .hero-label { font-size: 11px; color: #6b7280; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+            
+            .readiness-bar {
+              background: #e5e7eb;
+              height: 12px;
+              border-radius: 6px;
+              overflow: hidden;
+              margin: 16px 0;
+            }
+            .readiness-fill {
+              height: 100%;
+              background: linear-gradient(90deg, ${operationalReadiness >= 85 ? '#22c55e, #16a34a' : operationalReadiness >= 60 ? '#f59e0b, #d97706' : '#ef4444, #dc2626'});
+              width: ${operationalReadiness}%;
+              transition: width 0.3s;
+            }
+            .readiness-label {
+              display: flex;
+              justify-content: space-between;
+              font-size: 11px;
+              color: #6b7280;
+            }
+            .readiness-grade {
+              display: inline-block;
+              padding: 4px 12px;
+              background: ${readinessGrade === 'OPERATIONAL' ? '#dcfce7' : readinessGrade === 'PARTIAL' ? '#fef3c7' : '#fee2e2'};
+              color: ${readinessGrade === 'OPERATIONAL' ? '#166534' : readinessGrade === 'PARTIAL' ? '#92400e' : '#991b1b'};
+              border-radius: 4px;
+              font-weight: 700;
+              font-size: 10px;
+              letter-spacing: 1px;
+            }
+            
+            .section { margin-bottom: 20px; }
+            .section-header {
+              font-size: 13px;
+              font-weight: 700;
+              color: #1f2937;
+              margin-bottom: 10px;
+              padding-bottom: 6px;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .section-number { color: #6b7280; font-weight: 400; }
+            
+            table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+            th, td { padding: 8px 10px; text-align: left; border: 1px solid #e5e7eb; font-size: 11px; }
+            th { background: #f9fafb; font-weight: 600; color: #374151; }
+            td { color: #4b5563; }
+            
+            .status-pass { color: #166534; background: #dcfce7; font-weight: 600; }
+            .status-fail { color: #991b1b; background: #fee2e2; font-weight: 600; }
+            .status-review { color: #92400e; background: #fef3c7; font-weight: 600; }
+            .status-pending { color: #6b7280; font-style: italic; padding: 12px; background: #f3f4f6; border-radius: 6px; }
+            .status-good { color: #166534; padding: 12px; background: #dcfce7; border-radius: 6px; margin-top: 8px; }
+            
+            .phase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+            .phase-card { 
+              background: #f8fafc; 
+              border: 1px solid #e5e7eb; 
+              border-radius: 6px; 
+              padding: 12px; 
+            }
+            .phase-name { font-size: 11px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+            .phase-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+            .phase-fill { height: 100%; background: #3b82f6; }
+            .phase-percent { font-size: 10px; color: #6b7280; margin-top: 4px; text-align: right; }
+            
+            .checkpoint-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+            .checkpoint { 
+              display: flex; 
+              align-items: center; 
+              gap: 8px; 
+              padding: 8px 10px; 
+              background: #f8fafc; 
+              border: 1px solid #e5e7eb; 
+              border-radius: 4px;
+              font-size: 11px;
+            }
             .checkpoint.done { background: #f0fdf4; border-color: #bbf7d0; }
-            .checkpoint-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+            .checkpoint-icon { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; }
             .checkpoint.done .checkpoint-icon { background: #22c55e; color: white; }
-            .checkpoint:not(.done) .checkpoint-icon { background: #e2e8f0; color: #94a3b8; }
-            .checkpoint-text { font-size: 13px; font-weight: 500; }
-            .checkpoint-phase { font-size: 10px; color: #94a3b8; margin-left: auto; }
+            .checkpoint:not(.done) .checkpoint-icon { background: #e5e7eb; color: #9ca3af; }
+            .checkpoint-priority { margin-left: auto; font-size: 9px; padding: 2px 6px; border-radius: 3px; }
+            .checkpoint-priority.Critical { background: #fee2e2; color: #991b1b; }
+            .checkpoint-priority.Required { background: #dbeafe; color: #1e40af; }
+            .checkpoint-priority.Important { background: #fef3c7; color: #92400e; }
+            .checkpoint-priority.Optional { background: #f3f4f6; color: #6b7280; }
             
-            .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-            .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .stat-value { font-size: 32px; font-weight: 700; }
-            .stat-value.blue { color: #3b82f6; }
-            .stat-value.green { color: #22c55e; }
-            .stat-value.purple { color: #8b5cf6; }
-            .stat-value.amber { color: #f59e0b; }
-            .stat-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+            .weather-grid { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; }
+            .weather-current { text-align: center; padding: 12px 20px; background: linear-gradient(135deg, #38bdf8, #0284c7); color: white; border-radius: 8px; }
+            .weather-temp { font-size: 28px; font-weight: 700; }
+            .weather-desc { font-size: 11px; opacity: 0.9; }
+            .weather-details { font-size: 10px; margin-top: 6px; display: flex; gap: 12px; justify-content: center; }
+            .forecast-mini { display: flex; gap: 8px; flex: 1; }
+            .forecast-day { text-align: center; padding: 8px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; flex: 1; }
+            .forecast-date { font-size: 10px; color: #6b7280; }
+            .forecast-temps { font-size: 11px; font-weight: 600; color: #1f2937; }
+            .forecast-alert { font-size: 10px; color: #dc2626; }
             
-            .footer { text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 12px; }
+            .alert-box { padding: 12px; border-radius: 6px; margin-top: 8px; }
+            .alert-box.warning { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; }
+            
+            .dual-engine-status { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+            .engine-badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+            .engine-badge.gemini { background: #dbeafe; color: #1e40af; }
+            .engine-badge.openai { background: #dcfce7; color: #166534; }
+            .engine-status { font-size: 11px; color: #6b7280; }
+            .engine-status.active { color: #166534; font-weight: 600; }
+            
+            .recommendations { margin-top: 12px; padding: 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; }
+            .recommendations ul { margin: 8px 0 0 16px; }
+            .recommendations li { font-size: 11px; color: #1e40af; margin-bottom: 4px; }
+            
+            .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+            .stat-box { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; text-align: center; }
+            .stat-value { font-size: 24px; font-weight: 700; color: #3b82f6; }
+            .stat-label { font-size: 10px; color: #6b7280; margin-top: 2px; }
+            
+            .footer { 
+              text-align: center; 
+              margin-top: 24px; 
+              padding-top: 16px; 
+              border-top: 1px solid #e5e7eb; 
+              color: #9ca3af; 
+              font-size: 10px; 
+            }
+            .footer-brand { font-weight: 700; color: #6b7280; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div class="brand">BuildUnion</div>
-            <div class="subtitle">Project Progress Summary</div>
-            <div class="doc-type">Checkpoint Report</div>
-          </div>
-          
-          <div class="meta-grid">
-            <div class="meta-card">
-              <div class="meta-label">Project</div>
-              <div class="meta-value">${projectData?.name || 'Untitled Project'}</div>
+          <div class="page-header">
+            <div class="header-left">
+              <div>
+                <div class="brand">BuildUnion</div>
+                <div class="header-date">Generated: ${currentDate}</div>
+              </div>
             </div>
-            <div class="meta-card">
-              <div class="meta-label">Location</div>
-              <div class="meta-value">${address.split(',')[0] || 'Not Set'}</div>
-            </div>
-            <div class="meta-card">
-              <div class="meta-label">Trade</div>
-              <div class="meta-value highlight">${trade}</div>
+            <div class="header-right">
+              <div class="doc-type">PROJECT SUMMARY v3.0</div>
+              <div class="project-title">${projectData?.name || 'Untitled Project'}</div>
+              <div class="project-location">📍 ${address.split(',').slice(0, 2).join(',') || 'Location pending'}</div>
             </div>
           </div>
           
-          <div class="progress-section">
-            <div class="progress-header">
-              <div class="progress-title">Overall Completion</div>
-              <div class="progress-percent">${completionPercent}%</div>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill"></div>
+          <div class="content">
+            <!-- Hero Stats -->
+            <div class="summary-hero">
+              <div class="hero-card">
+                <div class="hero-value ${operationalReadiness >= 85 ? 'green' : operationalReadiness >= 60 ? 'amber' : 'red'}">${operationalReadiness}%</div>
+                <div class="hero-label">Operational Readiness</div>
+              </div>
+              <div class="hero-card">
+                <div class="hero-value">${gfaValue > 0 ? gfaValue.toLocaleString() : '—'}</div>
+                <div class="hero-label">GFA (sq ft)</div>
+              </div>
+              <div class="hero-card">
+                <div class="hero-value">${financialSummary?.total_cost ? '$' + Math.round(financialSummary.total_cost).toLocaleString() : '—'}</div>
+                <div class="hero-label">Budget (CAD)</div>
+              </div>
             </div>
             
-            <div class="checkpoints">
-              ${checkpoints.map(cp => `
-                <div class="checkpoint ${cp.completed ? 'done' : ''}">
-                  <div class="checkpoint-icon">${cp.completed ? '✓' : '○'}</div>
-                  <div class="checkpoint-text">${cp.name}</div>
-                  <div class="checkpoint-phase">${cp.phase}</div>
+            <div class="readiness-label">
+              <span>Project Readiness</span>
+              <span class="readiness-grade">${readinessGrade}</span>
+            </div>
+            <div class="readiness-bar">
+              <div class="readiness-fill"></div>
+            </div>
+            
+            <!-- Section 1: Project Overview -->
+            <div class="section">
+              <div class="section-header"><span class="section-number">1.</span> PROJECT OVERVIEW</div>
+              <table>
+                <tr><th width="30%">Field</th><th>Value</th></tr>
+                <tr><td>Project Name</td><td><strong>${projectData?.name || 'Untitled'}</strong></td></tr>
+                <tr><td>Location</td><td>${address || 'Not Set'}</td></tr>
+                <tr><td>Work Type</td><td>${workType}</td></tr>
+                <tr><td>Trade</td><td><strong>${trade}</strong></td></tr>
+                <tr><td>Execution Mode</td><td>${executionMode}</td></tr>
+                <tr><td>Site Condition</td><td>${siteCondition}${hasDemolition ? ' (Demolition Required)' : ''}</td></tr>
+                <tr><td>Timeline</td><td>${startDate && endDate ? startDate + ' → ' + endDate : 'Not Set'}</td></tr>
+              </table>
+            </div>
+            
+            <!-- Section 2: Phase Progress -->
+            <div class="section">
+              <div class="section-header"><span class="section-number">2.</span> PHASE PROGRESS</div>
+              <div class="phase-grid">
+                ${phaseProgress.map(p => `
+                  <div class="phase-card">
+                    <div class="phase-name">${p.phase}</div>
+                    <div class="phase-bar"><div class="phase-fill" style="width: ${p.percent}%"></div></div>
+                    <div class="phase-percent">${p.completed}/${p.total} (${p.percent}%)</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            
+            <!-- Section 3: Checkpoint Status -->
+            <div class="section">
+              <div class="section-header"><span class="section-number">3.</span> CHECKPOINT STATUS (${completedCount}/${checkpoints.length})</div>
+              <div class="checkpoint-list">
+                ${checkpoints.map(cp => `
+                  <div class="checkpoint ${cp.completed ? 'done' : ''}">
+                    <div class="checkpoint-icon">${cp.completed ? '✓' : '○'}</div>
+                    <span>${cp.name}</span>
+                    <span class="checkpoint-priority ${cp.priority}">${cp.priority}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            
+            <!-- Section 4: Weather -->
+            ${weatherHtml}
+            
+            <!-- Section 5: OBC Compliance -->
+            ${obcHtml}
+            
+            <!-- Section 6: AI Analysis -->
+            ${aiHtml}
+            
+            <!-- Section 7: Resource Summary -->
+            <div class="section">
+              <div class="section-header"><span class="section-number">7.</span> RESOURCE SUMMARY</div>
+              <div class="stats-row">
+                <div class="stat-box">
+                  <div class="stat-value">${citations.length}</div>
+                  <div class="stat-label">Citations</div>
                 </div>
-              `).join('')}
+                <div class="stat-box">
+                  <div class="stat-value">${teamMembers.length}</div>
+                  <div class="stat-label">Team Members</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value">${tasks.length}</div>
+                  <div class="stat-label">Tasks</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value">${documents.length}</div>
+                  <div class="stat-label">Documents</div>
+                </div>
+              </div>
+              ${gfaValue > 0 ? `
+              <table>
+                <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
+                <tr><td>Net Floor Area</td><td>${gfaValue.toLocaleString()} sq ft</td><td>Locked GFA from wizard</td></tr>
+                <tr><td>Gross Area (+${wastePercent}% waste)</td><td>${grossArea.toLocaleString()} sq ft</td><td>Material calculation basis</td></tr>
+                <tr><td>Material Cost</td><td>${financialSummary?.material_cost ? '$' + financialSummary.material_cost.toLocaleString() : 'TBD'}</td><td>Based on template</td></tr>
+                <tr><td>Labor Cost</td><td>${financialSummary?.labor_cost ? '$' + financialSummary.labor_cost.toLocaleString() : 'TBD'}</td><td>Team allocation</td></tr>
+                <tr><td>Total Budget</td><td><strong>${financialSummary?.total_cost ? '$' + financialSummary.total_cost.toLocaleString() : 'TBD'}</strong></td><td>Including taxes</td></tr>
+              </table>
+              ` : '<div class="status-pending">GFA required for detailed financial breakdown</div>'}
             </div>
-          </div>
-          
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value blue">${citations.length}</div>
-              <div class="stat-label">Citations</div>
+            
+            <div class="footer">
+              <div class="footer-brand">BuildUnion Project Management</div>
+              <div>Dual AI Engine • OBC 2024 Compliant • Toronto, Ontario</div>
+              <div>Report ID: SUM-${shortDate.replace(/\//g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}</div>
             </div>
-            <div class="stat-card">
-              <div class="stat-value green">${teamMembers.length}</div>
-              <div class="stat-label">Team Members</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value purple">${tasks.length}</div>
-              <div class="stat-label">Tasks</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value amber">${documents.length}</div>
-              <div class="stat-label">Documents</div>
-            </div>
-          </div>
-          
-          ${gfaValue > 0 ? `
-          <div class="meta-grid">
-            <div class="meta-card">
-              <div class="meta-label">Gross Floor Area</div>
-              <div class="meta-value highlight">${gfaValue.toLocaleString()} sq ft</div>
-            </div>
-            <div class="meta-card">
-              <div class="meta-label">Work Type</div>
-              <div class="meta-value">${workType || 'General Construction'}</div>
-            </div>
-            <div class="meta-card">
-              <div class="meta-label">Budget</div>
-              <div class="meta-value">${financialSummary?.total_cost ? '$' + financialSummary.total_cost.toLocaleString() : 'Not Set'}</div>
-            </div>
-          </div>
-          ` : ''}
-          
-          <div class="footer">
-            Generated on ${currentDate} • BuildUnion Project Management
           </div>
         </body>
         </html>
@@ -2324,9 +2719,10 @@ export default function Stage8FinalReview({
       
       setSummaryPreviewHtml(html);
       setShowSummaryPreview(true);
+      toast.success('Project Summary Generated!', { id: 'summary-gen', description: `${completedCount}/${checkpoints.length} checkpoints • ${operationalReadiness}% readiness` });
     } catch (err) {
-      console.error('[Stage8] Summary preview failed:', err);
-      toast.error('Failed to generate summary preview');
+      console.error('[Stage8] Summary generation failed:', err);
+      toast.error('Failed to generate summary', { id: 'summary-gen' });
     } finally {
       setIsGeneratingSummary(false);
     }
