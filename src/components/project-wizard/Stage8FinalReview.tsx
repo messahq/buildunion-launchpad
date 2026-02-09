@@ -1512,6 +1512,7 @@ export default function Stage8FinalReview({
       const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
       const blueprintCitation = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
       const siteConditionCitation = citations.find(c => c.cite_type === 'SITE_CONDITION');
+      const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
       
       // ✓ NO FALLBACK: Only use actual citation data
       const hasGfaData = gfaCitation && (
@@ -1524,6 +1525,13 @@ export default function Stage8FinalReview({
           ? gfaCitation.metadata.gfa_value
           : null; // ✓ NULL means not set - no hardcoded fallback
       const gfaUnit = gfaCitation?.metadata?.gfa_unit || 'sq ft';
+      
+      // ✓ WASTE FACTOR from TEMPLATE_LOCK citation metadata
+      const wastePercent = typeof templateCitation?.metadata?.waste_percent === 'number'
+        ? templateCitation.metadata.waste_percent
+        : (templateCitation?.metadata?.items as any[])?.find?.((item: any) => item.applyWaste)
+          ? 10 // default if template has waste items but no explicit waste_percent
+          : null;
       
       return (
         <div className="space-y-4">
@@ -1563,18 +1571,44 @@ export default function Stage8FinalReview({
               )}>{gfaUnit}</span>
             </div>
             {gfaCitation && (
-              <p className="text-[10px] text-blue-500 mt-1">
-                Cited: [{gfaCitation.id.slice(0, 8)}]
+              <p className="text-[10px] text-blue-500 mt-1 font-mono">
+                cite: [{gfaCitation.id.slice(0, 12)}]
               </p>
             )}
           </div>
           
+          {/* ✓ WASTE FACTOR Display - If template is locked */}
+          {wastePercent !== null && gfaValue !== null && (
+            <div className="p-3 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/50 dark:border-orange-800/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Ruler className="h-4 w-4 text-orange-500" />
+                  <span className="text-xs font-medium text-orange-700 dark:text-orange-300">Waste Factor Applied</span>
+                </div>
+                <Badge variant="outline" className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                  +{wastePercent}%
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Gross: {Math.ceil(gfaValue * (1 + wastePercent / 100)).toLocaleString()} {gfaUnit}
+              </p>
+              {templateCitation && (
+                <p className="text-[10px] text-orange-500 mt-1 font-mono">
+                  cite: [{templateCitation.id.slice(0, 12)}]
+                </p>
+              )}
+            </div>
+          )}
+          
           {/* Blueprint Info */}
           {blueprintCitation && (
             <div className="p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2 mb-1">
-                <FileImage className="h-4 w-4 text-blue-500" />
-                <span className="text-xs font-medium">Blueprint</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <FileImage className="h-4 w-4 text-blue-500" />
+                  <span className="text-xs font-medium">Blueprint</span>
+                </div>
+                <span className="text-[10px] text-blue-500 font-mono">cite: [{blueprintCitation.id.slice(0, 8)}]</span>
               </div>
               <p className="text-sm text-muted-foreground truncate">
                 {String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}
@@ -1585,9 +1619,12 @@ export default function Stage8FinalReview({
           {/* Site Condition */}
           {siteConditionCitation && (
             <div className="p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2 mb-1">
-                <Hammer className="h-4 w-4 text-orange-500" />
-                <span className="text-xs font-medium">Site Condition</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <Hammer className="h-4 w-4 text-orange-500" />
+                  <span className="text-xs font-medium">Site Condition</span>
+                </div>
+                <span className="text-[10px] text-orange-500 font-mono">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
               </div>
               <p className="text-sm font-medium capitalize">
                 {siteConditionCitation.answer}
@@ -1602,7 +1639,10 @@ export default function Stage8FinalReview({
               {panelCitations.map(c => (
                 <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
                   <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
-                  <span className="font-medium">{renderCitationValue(c)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{renderCitationValue(c)}</span>
+                    <span className="text-[10px] text-blue-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1711,9 +1751,30 @@ export default function Stage8FinalReview({
           ? templateGfaCitation.metadata.gfa_value
           : null; // ✓ NO HARDCODED FALLBACK
       
+      // ✓ WASTE FACTOR from TEMPLATE_LOCK citation metadata
+      const panelWastePercent = typeof templateCitation?.metadata?.waste_percent === 'number'
+        ? templateCitation.metadata.waste_percent
+        : (templateCitation?.metadata?.items as any[])?.some?.((item: any) => item.applyWaste)
+          ? 10 // default if template has waste items but no explicit waste_percent
+          : 0;
+      
       const tradeTemplate = tradeKey 
         ? getTemplateForTrade(tradeKey, templateGfaValue)
         : { materials: [], tasks: [], hasData: false };
+      
+      // ✓ APPLY WASTE TO MATERIALS
+      const materialsWithWaste = tradeTemplate.materials.map(mat => {
+        // Apply waste to area-based materials
+        const applyWaste = mat.unit === 'sq ft' || mat.unit === 'ln ft' || mat.unit === 'sheets' || mat.unit === 'rolls';
+        if (applyWaste && panelWastePercent > 0) {
+          return {
+            ...mat,
+            qty: Math.ceil(mat.qty * (1 + panelWastePercent / 100)),
+            hasWaste: true,
+          };
+        }
+        return { ...mat, hasWaste: false };
+      });
       
       return (
         <div className="space-y-4">
@@ -1754,19 +1815,49 @@ export default function Stage8FinalReview({
                 @ {templateGfaValue.toLocaleString()} sq ft
               </p>
             )}
+            {tradeCitation && (
+              <p className="text-[10px] text-orange-500 mt-1 font-mono">
+                cite: [{tradeCitation.id.slice(0, 12)}]
+              </p>
+            )}
           </div>
           
-          {/* ✓ MATERIAL REQUIREMENTS - Only show if we have actual data */}
-          {tradeTemplate.hasData && tradeTemplate.materials.length > 0 && (
+          {/* ✓ WASTE FACTOR Badge */}
+          {panelWastePercent > 0 && (
+            <div className="p-2 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/50 dark:border-orange-800/30 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ruler className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-medium text-orange-700 dark:text-orange-300">Waste Factor</span>
+              </div>
+              <Badge variant="outline" className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                +{panelWastePercent}%
+              </Badge>
+            </div>
+          )}
+          
+          {/* ✓ MATERIAL REQUIREMENTS - WITH WASTE APPLIED */}
+          {tradeTemplate.hasData && materialsWithWaste.length > 0 && (
             <div className="p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2 mb-2">
-                <ClipboardList className="h-4 w-4 text-orange-500" />
-                <span className="text-xs font-medium">Material Requirements</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-orange-500" />
+                  <span className="text-xs font-medium">Material Requirements</span>
+                </div>
+                {templateCitation && (
+                  <span className="text-[10px] text-orange-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                )}
               </div>
               <div className="space-y-1.5">
-                {tradeTemplate.materials.map((mat, idx) => (
+                {materialsWithWaste.map((mat, idx) => (
                   <div key={idx} className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{mat.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">{mat.name}</span>
+                      {mat.hasWaste && (
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 bg-orange-50 text-orange-600 border-orange-200">
+                          +{panelWastePercent}%
+                        </Badge>
+                      )}
+                    </div>
                     <span className="font-medium">{mat.qty.toLocaleString()} {mat.unit}</span>
                   </div>
                 ))}
@@ -1806,9 +1897,12 @@ export default function Stage8FinalReview({
           {/* Template Info */}
           {templateCitation && (
             <div className="p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2 mb-1">
-                <Lock className="h-4 w-4 text-amber-500" />
-                <span className="text-xs font-medium">Template Locked</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-amber-500" />
+                  <span className="text-xs font-medium">Template Locked</span>
+                </div>
+                <span className="text-[10px] text-amber-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
               </div>
               <p className="text-sm font-medium">{templateCitation.answer}</p>
             </div>
@@ -1817,9 +1911,12 @@ export default function Stage8FinalReview({
           {/* Execution Mode */}
           {executionCitation && (
             <div className="p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2 mb-1">
-                <Settings className="h-4 w-4 text-amber-500" />
-                <span className="text-xs font-medium">Execution Mode</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-amber-500" />
+                  <span className="text-xs font-medium">Execution Mode</span>
+                </div>
+                <span className="text-[10px] text-amber-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
               </div>
               <p className="text-sm font-medium capitalize">{executionCitation.answer}</p>
             </div>
@@ -1832,7 +1929,10 @@ export default function Stage8FinalReview({
               {panelCitations.map(c => (
                 <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
                   <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
-                  <span className="font-medium">{renderCitationValue(c)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{renderCitationValue(c)}</span>
+                    <span className="text-[10px] text-orange-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                  </div>
                 </div>
               ))}
             </div>
