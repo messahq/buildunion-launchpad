@@ -4797,83 +4797,136 @@ export default function Stage8FinalReview({
         return renderPanel6Content();
       
       case 'panel-7-weather':
-        // ✓ Weather widget - Read from LOCATION citation, NO hardcoded fallback
+        // ✓ Weather widget + Map - Read from LOCATION citation, NO hardcoded fallback
         const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
         const siteCondCitationWeather = citations.find(c => c.cite_type === 'SITE_CONDITION');
         const hasLocationData = locationCitation?.answer || projectData?.address;
         const weatherAddress = locationCitation?.answer || projectData?.address || null;
+        const mapLat = (locationCitation?.metadata?.coordinates as any)?.lat;
+        const mapLon = (locationCitation?.metadata?.coordinates as any)?.lng;
         
         return (
-          <div className="space-y-3">
-            {/* Address Display with Citation Badge */}
-            <div className={cn(
-              "p-2 rounded-lg border",
-              hasLocationData 
-                ? "bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/50 dark:border-sky-800/30"
-                : "bg-gray-50 dark:bg-gray-950/20 border-gray-200/50"
-            )}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MapPin className={cn("h-3.5 w-3.5", hasLocationData ? "text-sky-600" : "text-gray-400")} />
+          <div className="space-y-4">
+            {/* ─── Futuristic Header Bar ─── */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl border border-sky-500/20 bg-gradient-to-r from-sky-950/40 via-slate-900/60 to-cyan-950/40">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-sky-500/20 flex items-center justify-center">
+                  <MapPin className="h-4 w-4 text-sky-400" />
+                </div>
+                <div>
                   <span className={cn(
-                    "text-xs font-medium truncate",
-                    hasLocationData ? "text-sky-700 dark:text-sky-300" : "text-gray-400"
+                    "text-xs font-semibold block",
+                    hasLocationData ? "text-sky-200" : "text-gray-500"
                   )}>
                     {weatherAddress || 'No location set'}
                   </span>
+                  {mapLat && mapLon && (
+                    <span className="text-[10px] text-sky-500/70 font-mono">
+                      {Number(mapLat).toFixed(4)}°N, {Number(mapLon).toFixed(4)}°W
+                    </span>
+                  )}
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
                 {locationCitation && (
-                  <span className="text-[10px] text-sky-500 font-mono">cite: [{locationCitation.id.slice(0, 8)}]</span>
+                  <span className="text-[10px] text-sky-500/60 font-mono bg-sky-500/10 px-1.5 py-0.5 rounded">cite:[{locationCitation.id.slice(0, 6)}]</span>
+                )}
+                {siteCondCitationWeather && (
+                  <span className="text-[10px] text-amber-400/80 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Hammer className="h-2.5 w-2.5" /> {siteCondCitationWeather.answer}
+                  </span>
                 )}
               </div>
             </div>
-            
-            {/* Site Condition with Citation Badge */}
-            {siteCondCitationWeather && (
-              <div className="p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Hammer className="h-3.5 w-3.5 text-amber-600" />
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                      Site: {siteCondCitationWeather.answer}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-amber-500 font-mono">cite: [{siteCondCitationWeather.id.slice(0, 8)}]</span>
-                </div>
-              </div>
-            )}
-            
-            {/* Integrated Weather Widget - only if we have an address */}
+
+            {/* ─── Split View: Weather + Map ─── */}
             {weatherAddress ? (
-              <button
-                onClick={() => setWeatherModalOpen(true)}
-                className="w-full cursor-pointer text-left hover:opacity-90 transition-opacity"
-              >
-                <WeatherWidget 
-                  location={weatherAddress}
-                  showForecast={true}
-                  className="border-0 shadow-none"
-                />
-              </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Left: Weather Data */}
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="rounded-xl border border-sky-500/20 bg-gradient-to-b from-slate-900/50 to-sky-950/30 overflow-hidden"
+                >
+                  <div className="px-3 py-2 border-b border-sky-500/15 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Thermometer className="h-3.5 w-3.5 text-sky-400" />
+                      <span className="text-[11px] font-semibold text-sky-300 uppercase tracking-wider">Live Weather</span>
+                    </div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                  </div>
+                  <div className="p-2">
+                    <WeatherWidget
+                      location={weatherAddress}
+                      showForecast={true}
+                      className="border-0 shadow-none bg-transparent"
+                    />
+                  </div>
+                </motion.div>
+
+                {/* Right: Map */}
+                <motion.div
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="rounded-xl border border-sky-500/20 bg-gradient-to-b from-slate-900/50 to-sky-950/30 overflow-hidden"
+                >
+                  <div className="px-3 py-2 border-b border-sky-500/15 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-cyan-400" />
+                      <span className="text-[11px] font-semibold text-cyan-300 uppercase tracking-wider">Site Location</span>
+                    </div>
+                    <button
+                      onClick={() => setWeatherModalOpen(true)}
+                      className="text-[10px] text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1"
+                    >
+                      <Maximize2 className="h-3 w-3" /> Expand
+                    </button>
+                  </div>
+                  {mapLat && mapLon ? (
+                    <div className="relative h-[280px]">
+                      <iframe
+                        title="Project Location Map"
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        allowFullScreen
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://www.google.com/maps?q=${mapLat},${mapLon}&z=16&output=embed`}
+                      />
+                      {/* Scan-line overlay for futuristic feel */}
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-500/5 via-transparent to-cyan-500/5" />
+                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900/80 to-transparent pointer-events-none" />
+                    </div>
+                  ) : (
+                    <div className="h-[280px] flex items-center justify-center">
+                      <div className="text-center text-sky-500/50">
+                        <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-xs">Coordinates not available</p>
+                        <p className="text-[10px] mt-1 opacity-60">Map requires lat/lon from geocoding</p>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
             ) : (
-              <div className="p-4 rounded-lg bg-muted/30 border border-dashed text-center">
-                <Cloud className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground italic">
-                  Set a project address to enable weather forecasts
-                </p>
+              <div className="p-8 rounded-xl bg-slate-900/40 border border-dashed border-sky-500/20 text-center">
+                <Cloud className="h-10 w-10 text-sky-500/30 mx-auto mb-3" />
+                <p className="text-sm text-sky-400/60 font-medium">No Location Data</p>
+                <p className="text-xs text-sky-500/40 mt-1">Set a project address to enable weather & map</p>
               </div>
             )}
             
-            {/* All Weather/Condition Citations with badges */}
+            {/* ─── Citations Footer ─── */}
             {panelCitations.length > 0 && (
-              <div className="pt-3 border-t space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">All Citations</p>
+              <div className="pt-3 border-t border-sky-500/10 space-y-1.5">
+                <p className="text-[10px] font-semibold text-sky-500/50 uppercase tracking-widest">Data Sources</p>
                 {panelCitations.map(c => (
-                  <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
-                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-sky-500/5 text-xs">
+                    <span className="text-sky-400/60">{c.cite_type.replace(/_/g, ' ')}</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{renderCitationValue(c)}</span>
-                      <span className="text-[10px] text-sky-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                      <span className="font-medium text-sky-300/80">{renderCitationValue(c)}</span>
+                      <span className="text-[9px] text-sky-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
                     </div>
                   </div>
                 ))}
