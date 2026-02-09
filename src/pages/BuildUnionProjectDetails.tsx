@@ -91,7 +91,7 @@ const BuildUnionProjectDetails = () => {
     return null;
   }, []);
 
-  // Load project data
+  // Load project data and check user role
   useEffect(() => {
     if (authLoading || !projectId) return;
     if (!user) {
@@ -112,6 +112,27 @@ const BuildUnionProjectDetails = () => {
         toast.error("Project not found");
         navigate("/buildunion/workspace");
         return;
+      }
+
+      // Check if user is owner or team member
+      const isOwner = projectData.user_id === user.id;
+      
+      if (!isOwner) {
+        // Check if user is a team member
+        const { data: memberData } = await supabase
+          .from("project_members")
+          .select("role")
+          .eq("project_id", projectId)
+          .eq("user_id", user.id)
+          .single();
+        
+        if (memberData) {
+          // Team members (foreman, worker, subcontractor, etc.) should see Stage 8 dashboard
+          // Redirect them to the new-project page with the project ID to show Stage 8
+          console.log("[ProjectDetails] Team member detected, redirecting to Stage 8 dashboard");
+          navigate(`/buildunion/new-project?projectId=${projectId}&stage=8&role=${memberData.role}`);
+          return;
+        }
       }
 
       setProject(projectData);
