@@ -1131,11 +1131,17 @@ export default function Stage8FinalReview({
   }, [projectId, userId]);
   
   // Reset unread count when Team panel becomes active
+  // Also scroll canvas to top when switching panels
+  const canvasContentRef = useRef<HTMLDivElement>(null);
+  const mobileContentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (activeOrbitalPanel === 'panel-4-team') {
       setUnreadChatCount(0);
       lastSeenChatRef.current = new Date().toISOString();
     }
+    // Scroll canvas content to top
+    canvasContentRef.current?.scrollTo({ top: 0 });
+    mobileContentRef.current?.scrollTo({ top: 0 });
   }, [activeOrbitalPanel]);
   
   // Fetch weather data
@@ -7072,6 +7078,7 @@ export default function Stage8FinalReview({
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
                 className="flex-1 p-4 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground"
+                ref={canvasContentRef}
                 style={{ colorScheme: 'light' }}
               >
                 <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
@@ -7348,7 +7355,7 @@ export default function Stage8FinalReview({
             })}
           </div>
           {/* Content area */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4" ref={mobileContentRef}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeOrbitalPanel}
