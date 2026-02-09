@@ -107,6 +107,9 @@ import {
   buildContractHTML,
   type ContractTemplateData 
 } from "@/lib/pdfGenerator";
+import { usePendingBudgetChanges } from "@/hooks/usePendingBudgetChanges";
+import { PendingApprovalModal } from "@/components/projects/PendingApprovalModal";
+import { PendingChangeBadge } from "@/components/projects/PendingChangeBadge";
 
 // ============================================
 // VISIBILITY TIERS
@@ -463,8 +466,24 @@ export default function Stage8FinalReview({
   const [messaPreviewHtml, setMessaPreviewHtml] = useState<string>('');
   const [isSavingMessa, setIsSavingMessa] = useState(false);
   const [isSendingMessa, setIsSendingMessa] = useState(false);
+  
+  // ✓ Pending Budget Changes - Foreman Modification Loop
+  const [showPendingApprovalModal, setShowPendingApprovalModal] = useState(false);
 
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
+  
+  // ✓ Foreman Modification Loop - Pending Budget Changes Hook
+  const {
+    pendingChanges,
+    pendingCount,
+    hasPending,
+    myPendingChanges,
+    createPendingChange,
+    approveChange,
+    rejectChange,
+    cancelChange,
+    loading: pendingChangesLoading,
+  } = usePendingBudgetChanges({ projectId, enabled: true });
   
   // ✓ Team member document sharing state (in-app messages)
   const [selectedTeamRecipients, setSelectedTeamRecipients] = useState<string[]>([]);
@@ -4109,19 +4128,62 @@ export default function Stage8FinalReview({
                 )}
               </div>
               <div className="space-y-1.5">
-                {materialsWithWaste.map((mat, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-muted-foreground">{mat.name}</span>
-                      {mat.hasWaste && (
-                        <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 bg-orange-50 text-orange-600 border-orange-200">
-                          +{panelWastePercent}%
-                        </Badge>
+                {materialsWithWaste.map((mat, idx) => {
+                  // Check if this material has a pending modification
+                  const materialPending = pendingChanges.find(
+                    pc => pc.item_id === `material_${idx}` && pc.status === 'pending'
+                  );
+                  const isForeman = userRole === 'foreman' || userRole === 'subcontractor';
+                  
+                  return (
+                    <div 
+                      key={idx} 
+                      className={cn(
+                        "flex items-center justify-between text-xs group",
+                        materialPending && "bg-amber-50 dark:bg-amber-950/20 p-1.5 rounded border-l-2 border-amber-400"
                       )}
+                    >
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <span className="text-muted-foreground">{mat.name}</span>
+                        {mat.hasWaste && (
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 bg-orange-50 text-orange-600 border-orange-200">
+                            +{panelWastePercent}%
+                          </Badge>
+                        )}
+                        {materialPending && (
+                          <PendingChangeBadge status="pending" compact />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{mat.qty.toLocaleString()} {mat.unit}</span>
+                        {/* Foreman can request modification on materials */}
+                        {isForeman && !materialPending && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              // Quick prompt for modification
+                              const newQty = prompt(`Request modification for ${mat.name}\nCurrent: ${mat.qty} ${mat.unit}\nEnter new quantity:`);
+                              if (newQty && !isNaN(Number(newQty))) {
+                                createPendingChange({
+                                  itemType: 'material',
+                                  itemId: `material_${idx}`,
+                                  itemName: mat.name,
+                                  originalQuantity: mat.qty,
+                                  newQuantity: Number(newQty),
+                                  changeReason: 'Field adjustment by Foreman',
+                                });
+                              }
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <span className="font-medium">{mat.qty.toLocaleString()} {mat.unit}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -4416,6 +4478,9 @@ export default function Stage8FinalReview({
       case 'panel-8-financial':
         // CRITICAL: Strictly Owner-only - Foreman/Subcontractor see lock
         if (!canViewFinancials) {
+          // Foreman/Subcontractor lock screen with pending changes info
+          const canRequestModification = userRole === 'foreman' || userRole === 'subcontractor';
+          
           return (
             <div className="text-center py-6">
               <div className="h-16 w-16 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center mx-auto mb-3">
@@ -4426,6 +4491,26 @@ export default function Stage8FinalReview({
               <p className="text-[10px] text-muted-foreground mt-2">
                 Your role: <span className="font-medium capitalize">{userRole}</span>
               </p>
+              
+              {/* Show pending changes for Foreman */}
+              {canRequestModification && myPendingChanges.length > 0 && (
+                <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-2">
+                    Your Pending Modifications
+                  </p>
+                  <div className="space-y-1">
+                    {myPendingChanges.slice(0, 3).map(change => (
+                      <div key={change.id} className="flex items-center justify-between text-xs">
+                        <span className="truncate max-w-[150px]">{change.item_name}</span>
+                        <PendingChangeBadge status={change.status} compact />
+                      </div>
+                    ))}
+                    {myPendingChanges.length > 3 && (
+                      <p className="text-[10px] text-muted-foreground">+{myPendingChanges.length - 3} more</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         }
@@ -4481,17 +4566,31 @@ export default function Stage8FinalReview({
         
         return (
           <div className="space-y-3">
-            {/* Owner Unlocked Badge */}
-            <div className="flex items-center justify-between">
+            {/* Owner Unlocked Badge + Pending Approvals */}
+            <div className="flex items-center justify-between gap-2">
               <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 gap-1">
                 <Unlock className="h-3 w-3" />
                 Owner Access
               </Badge>
-              {dataSource !== 'supabase' && (
-                <Badge variant="outline" className="text-[10px] text-amber-600">
-                  ⚠ Local Data
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {/* Pending Approvals Button - Only show if there are pending changes */}
+                {hasPending && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPendingApprovalModal(true)}
+                    className="gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 animate-pulse"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {pendingCount} Pending
+                  </Button>
+                )}
+                {dataSource !== 'supabase' && (
+                  <Badge variant="outline" className="text-[10px] text-amber-600">
+                    ⚠ Local Data
+                  </Badge>
+                )}
+              </div>
             </div>
             
             {/* ✓ Gross Total - From actual data, not hardcoded */}
@@ -7141,6 +7240,16 @@ export default function Stage8FinalReview({
           </DialogContent>
         </Dialog>
       )}
+      
+      {/* Pending Approval Modal - Owner approves Foreman modifications */}
+      <PendingApprovalModal
+        open={showPendingApprovalModal}
+        onOpenChange={setShowPendingApprovalModal}
+        pendingChanges={pendingChanges}
+        onApprove={approveChange}
+        onReject={rejectChange}
+        loading={pendingChangesLoading}
+      />
     </div>
   );
 }

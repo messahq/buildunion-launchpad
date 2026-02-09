@@ -544,6 +544,100 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_budget_changes: {
+        Row: {
+          change_reason: string | null
+          created_at: string
+          id: string
+          item_id: string
+          item_name: string
+          item_type: string
+          new_quantity: number | null
+          new_total: number | null
+          new_unit_price: number | null
+          original_quantity: number | null
+          original_total: number | null
+          original_unit_price: number | null
+          project_id: string
+          requested_at: string
+          requested_by: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          summary_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          change_reason?: string | null
+          created_at?: string
+          id?: string
+          item_id: string
+          item_name: string
+          item_type?: string
+          new_quantity?: number | null
+          new_total?: number | null
+          new_unit_price?: number | null
+          original_quantity?: number | null
+          original_total?: number | null
+          original_unit_price?: number | null
+          project_id: string
+          requested_at?: string
+          requested_by: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          summary_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          change_reason?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_name?: string
+          item_type?: string
+          new_quantity?: number | null
+          new_total?: number | null
+          new_unit_price?: number | null
+          original_quantity?: number | null
+          original_total?: number | null
+          original_unit_price?: number | null
+          project_id?: string
+          requested_at?: string
+          requested_by?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          summary_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_budget_changes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_budget_changes_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "project_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_budget_changes_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "project_summaries_team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
