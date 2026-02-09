@@ -5958,7 +5958,7 @@ export default function Stage8FinalReview({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-3 rounded-xl border border-amber-500/20 bg-gradient-to-r from-slate-900/80 via-amber-950/20 to-slate-900/80"
+                className="flex items-center justify-between p-3 rounded-xl border border-amber-500/25 bg-gradient-to-r from-amber-950/30 via-orange-950/20 to-amber-950/30"
               >
                 <div className="flex items-center gap-3">
                   <motion.div
@@ -5993,12 +5993,12 @@ export default function Stage8FinalReview({
                     className="grid grid-cols-3 gap-2"
                   >
                     {/* Net */}
-                    <div className="p-3 rounded-xl border border-slate-600/30 bg-slate-900/60 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
-                      <div className="relative">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <div className="h-1.5 w-1.5 rounded-full bg-white/60" />
-                          <span className="text-[9px] text-white/70 uppercase tracking-widest font-semibold">Net</span>
+                     <div className="p-3 rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-950/25 to-orange-950/15 relative overflow-hidden">
+                       <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent" />
+                       <div className="relative">
+                         <div className="flex items-center gap-1.5 mb-1">
+                           <div className="h-1.5 w-1.5 rounded-full bg-amber-300/70" />
+                           <span className="text-[9px] text-amber-200/80 uppercase tracking-widest font-semibold">Net</span>
                         </div>
                         <p className="text-lg font-bold text-white font-mono leading-tight">
                           ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
@@ -6042,7 +6042,7 @@ export default function Stage8FinalReview({
                       className="space-y-2"
                     >
                       {/* Stacked bar */}
-                      <div className="h-2.5 rounded-full overflow-hidden flex bg-slate-800/60 border border-slate-700/30">
+                      <div className="h-2.5 rounded-full overflow-hidden flex bg-amber-900/25 border border-amber-500/15">
                         {costBreakdownData.map((item, i) => (
                           <motion.div
                             key={item.name}
@@ -6066,7 +6066,7 @@ export default function Stage8FinalReview({
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.3 + i * 0.08 }}
-                              className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-700/30 bg-slate-900/40 hover:bg-slate-800/40 transition-colors group"
+                              className="flex items-center gap-3 p-2.5 rounded-lg border border-amber-500/15 bg-gradient-to-r from-amber-950/20 to-orange-950/10 hover:from-amber-950/30 hover:to-orange-950/20 transition-colors group"
                             >
                               <div
                                 className="h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0"
@@ -6080,7 +6080,7 @@ export default function Stage8FinalReview({
                                   <span className="text-sm font-bold text-white font-mono">${item.value.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <div className="flex-1 h-1 rounded-full bg-slate-700/50 overflow-hidden">
+                                  <div className="flex-1 h-1 rounded-full bg-amber-900/30 overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
@@ -6108,7 +6108,7 @@ export default function Stage8FinalReview({
                   >
                     {/* Mini Donut */}
                     {costBreakdownData.length > 0 && (
-                      <div className="p-3 rounded-xl border border-slate-700/30 bg-slate-900/40 flex items-center gap-3">
+                      <div className="p-3 rounded-xl border border-amber-500/15 bg-gradient-to-br from-amber-950/20 to-orange-950/10 flex items-center gap-3">
                         <div className="relative w-16 h-16 flex-shrink-0">
                           <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                             {costBreakdownData.map((item, index) => {
@@ -6134,7 +6134,7 @@ export default function Stage8FinalReview({
                                 />
                               );
                             })}
-                            <circle cx="50" cy="50" r="22" fill="#0f172a" />
+                            <circle cx="50" cy="50" r="22" fill="#1c1208" />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-[9px] font-bold text-white/90">${(totalForPercentage / 1000).toFixed(0)}K</span>
@@ -6165,10 +6165,10 @@ export default function Stage8FinalReview({
                           )}
                         </div>
                       </div>
-                    ) : costBreakdownData.length === 0 ? null : (
-                      <div className="p-3 rounded-xl border border-slate-700/20 bg-slate-900/30 flex items-center justify-center">
-                        <span className="text-[10px] text-slate-500">No GFA data</span>
-                      </div>
+                     ) : costBreakdownData.length === 0 ? null : (
+                       <div className="p-3 rounded-xl border border-amber-500/10 bg-amber-950/10 flex items-center justify-center">
+                         <span className="text-[10px] text-amber-400/50">No GFA data</span>
+                       </div>
                     )}
                   </motion.div>
 
@@ -6284,7 +6284,7 @@ export default function Stage8FinalReview({
                           initial={{ opacity: 0, x: -8 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.55 + i * 0.05 }}
-                          className="flex items-center justify-between p-2.5 rounded-lg border border-slate-700/25 bg-slate-900/30 hover:border-pink-500/30 transition-colors"
+                          className="flex items-center justify-between p-2.5 rounded-lg border border-amber-500/15 bg-gradient-to-r from-amber-950/15 to-orange-950/10 hover:border-pink-500/30 transition-colors"
                         >
                           <div className="flex items-center gap-2">
                             <FileCheck className="h-3.5 w-3.5 text-pink-400/70" />
@@ -6344,16 +6344,16 @@ export default function Stage8FinalReview({
                   )}
                 </>
               ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="p-10 rounded-xl border border-dashed border-slate-700/40 text-center bg-slate-900/30"
-                >
-                  <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
-                    <DollarSign className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-                  </motion.div>
-                   <p className="text-sm font-medium text-slate-300">No Financial Data</p>
-                  <p className="text-xs text-slate-400 mt-1.5 max-w-xs mx-auto">
+                 <motion.div
+                   initial={{ opacity: 0, scale: 0.97 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   className="p-10 rounded-xl border border-dashed border-amber-500/20 text-center bg-gradient-to-br from-amber-950/15 to-orange-950/10"
+                 >
+                   <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
+                     <DollarSign className="h-12 w-12 text-amber-500/40 mx-auto mb-4" />
+                   </motion.div>
+                    <p className="text-sm font-medium text-amber-200/80">No Financial Data</p>
+                   <p className="text-xs text-amber-300/50 mt-1.5 max-w-xs mx-auto">
                     Add budget, materials, or contracts to activate
                   </p>
                 </motion.div>
