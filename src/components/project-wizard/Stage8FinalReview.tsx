@@ -6156,17 +6156,6 @@ export default function Stage8FinalReview({
     return PANELS.find(p => p.id === fullscreenPanel);
   }, [fullscreenPanel]);
   
-  if (isLoading) {
-    return (
-      <div className={cn("h-full flex items-center justify-center", className)}>
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
-          <p className="text-sm text-muted-foreground">Loading project summary...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Get the active panel config
   const activePanelConfig = useMemo(() => {
     return PANELS.find(p => p.id === activeOrbitalPanel) || PANELS[0];
@@ -6178,6 +6167,17 @@ export default function Stage8FinalReview({
     const rad = (angle * Math.PI) / 180;
     return { angle, rad };
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className={cn("h-full flex items-center justify-center", className)}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+          <p className="text-sm text-muted-foreground">Loading project summary...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("h-full flex flex-col overflow-hidden bg-[#0a0e1a]", className)}>
