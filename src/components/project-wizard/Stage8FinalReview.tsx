@@ -369,6 +369,13 @@ export default function Stage8FinalReview({
   const [tasks, setTasks] = useState<TaskWithChecklist[]>([]);
   const [documents, setDocuments] = useState<DocumentWithCategory[]>([]);
   const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null}[]>([]);
+  
+  // Financial summary data from project_summaries
+  const [financialSummary, setFinancialSummary] = useState<{
+    material_cost: number | null;
+    labor_cost: number | null;
+    total_cost: number | null;
+  } | null>(null);
   const [weatherData, setWeatherData] = useState<{temp?: number; condition?: string; alerts?: string[]} | null>(null);
   
   // UI state
@@ -504,12 +511,21 @@ export default function Stage8FinalReview({
           }
         }
         
-        // 2. Load citations from project_summaries
+        // 2. Load citations AND financial data from project_summaries
         const { data: summary } = await supabase
           .from('project_summaries')
-          .select('verified_facts')
+          .select('verified_facts, material_cost, labor_cost, total_cost')
           .eq('project_id', projectId)
           .maybeSingle();
+        
+        // Store financial summary for Owner view
+        if (summary) {
+          setFinancialSummary({
+            material_cost: summary.material_cost,
+            labor_cost: summary.labor_cost,
+            total_cost: summary.total_cost,
+          });
+        }
         
         let loadedCitations: Citation[] = [];
         
@@ -2239,7 +2255,7 @@ export default function Stage8FinalReview({
           );
         }
         
-        // ✓ Owner view - Read from citations and contracts, NO hardcoded fallbacks
+        // ✓ Owner view - Read from citations, contracts, AND project_summaries
         const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
         const budgetCitation = panelCitations.find(c => c.cite_type === 'BUDGET');
         const materialCitation = panelCitations.find(c => c.cite_type === 'MATERIAL');
@@ -2253,24 +2269,43 @@ export default function Stage8FinalReview({
             ? financialGfaCitation.metadata.gfa_value
             : null;
         
-        // ✓ Calculate totals from actual citations, NOT hardcoded values
-        const materialCost = typeof materialCitation?.value === 'number' 
-          ? materialCitation.value 
-          : typeof materialCitation?.metadata?.total === 'number'
-            ? materialCitation.metadata.total
-            : null;
+        // ✓ Calculate totals from project_summaries OR citations
+        const storedMaterialCost = financialSummary?.material_cost;
+        const storedLaborCost = financialSummary?.labor_cost;
+        const storedTotalCost = financialSummary?.total_cost;
+        
+        const materialCost = storedMaterialCost ?? (
+          typeof materialCitation?.value === 'number' 
+            ? materialCitation.value 
+            : typeof materialCitation?.metadata?.total === 'number'
+              ? materialCitation.metadata.total
+              : null
+        );
+        
+        const laborCost = storedLaborCost ?? null;
         
         const demoCost = typeof demoPriceCitation?.value === 'number' && financialGfaValue
           ? demoPriceCitation.value * financialGfaValue
           : null;
         
-        const budgetTotal = typeof budgetCitation?.value === 'number'
-          ? budgetCitation.value
-          : totalContractValue > 0 
-            ? totalContractValue 
-            : null;
+        const budgetTotal = storedTotalCost ?? (
+          typeof budgetCitation?.value === 'number'
+            ? budgetCitation.value
+            : totalContractValue > 0 
+              ? totalContractValue 
+              : null
+        );
         
-        const hasFinancialData = budgetTotal !== null || materialCost !== null || totalContractValue > 0;
+        // ✓ Profit calculation (if both total and material+labor are known)
+        const calculatedExpenses = (materialCost || 0) + (laborCost || 0) + (demoCost || 0);
+        const profitMargin = budgetTotal && calculatedExpenses > 0 
+          ? budgetTotal - calculatedExpenses 
+          : null;
+        const profitPercent = budgetTotal && profitMargin !== null
+          ? (profitMargin / budgetTotal) * 100
+          : null;
+        
+        const hasFinancialData = budgetTotal !== null || materialCost !== null || laborCost !== null || totalContractValue > 0;
         
         return (
           <div className="space-y-3">
@@ -2303,13 +2338,21 @@ export default function Stage8FinalReview({
                   </p>
                 </div>
                 
-                {/* Cost Breakdown - only show if we have actual data */}
+                {/* Cost Breakdown - Materials, Labor, Demolition */}
                 <div className="grid grid-cols-2 gap-3">
                   {materialCost !== null && (
                     <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200/50 dark:border-blue-800/30">
                       <p className="text-xs text-muted-foreground">Materials</p>
                       <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
                         ${materialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                  {laborCost !== null && (
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/30 border border-teal-200/50 dark:border-teal-800/30">
+                      <p className="text-xs text-muted-foreground">Labor</p>
+                      <p className="text-lg font-bold text-teal-700 dark:text-teal-300">
+                        ${laborCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                   )}
@@ -2322,6 +2365,30 @@ export default function Stage8FinalReview({
                     </div>
                   )}
                 </div>
+                
+                {/* Profit Margin (Owner Only) */}
+                {profitMargin !== null && profitPercent !== null && (
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-green-50 to-lime-50 dark:from-green-950/30 dark:to-lime-950/30 border-2 border-green-300 dark:border-green-700">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-green-600 uppercase tracking-wide">Profit Margin</span>
+                      <Badge variant="outline" className="text-[10px] bg-green-100 text-green-700 gap-1">
+                        <Shield className="h-2.5 w-2.5" />
+                        Owner Only
+                      </Badge>
+                    </div>
+                    <div className="flex items-baseline gap-3">
+                      <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                        ${profitMargin.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                      <Badge className={cn(
+                        "text-xs",
+                        profitPercent >= 20 ? "bg-green-500" : profitPercent >= 10 ? "bg-amber-500" : "bg-red-500"
+                      )}>
+                        {profitPercent.toFixed(1)}%
+                      </Badge>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Contract & GFA Info with Citation Badges */}
                 <div className="grid grid-cols-2 gap-3">
@@ -2415,6 +2482,7 @@ export default function Stage8FinalReview({
     renderCitationValue,
     renderPanel5Content,
     renderPanel6Content,
+    financialSummary,
   ]);
   
   // Render fullscreen panel content
