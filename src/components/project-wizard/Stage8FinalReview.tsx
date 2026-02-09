@@ -335,6 +335,8 @@ interface TaskWithChecklist {
   priority: string;
   phase: string;
   assigned_to: string;
+  due_date: string | null;
+  created_at: string | null;
   checklist: { id: string; text: string; done: boolean; photoUrl?: string }[];
 }
 
@@ -827,7 +829,7 @@ export default function Stage8FinalReview({
         // 4. Load tasks and transform to checklist format
         const { data: tasksData } = await supabase
           .from('project_tasks')
-          .select('id, title, status, priority, description, assigned_to')
+          .select('id, title, status, priority, description, assigned_to, due_date, created_at')
           .eq('project_id', projectId)
           .is('archived_at', null);
         
@@ -861,6 +863,8 @@ export default function Stage8FinalReview({
               priority: task.priority,
               phase,
               assigned_to: task.assigned_to,
+              due_date: (task as any).due_date || null,
+              created_at: (task as any).created_at || null,
               checklist: [
                 { id: `${task.id}-start`, text: 'Task started', done: task.status !== 'pending' },
                 { id: `${task.id}-complete`, text: 'Task completed', done: task.status === 'completed' || task.status === 'done' },
@@ -1061,6 +1065,8 @@ export default function Stage8FinalReview({
               priority: newTask.priority,
               phase,
               assigned_to: newTask.assigned_to,
+              due_date: (newTask as any).due_date || null,
+              created_at: (newTask as any).created_at || null,
               checklist: [
                 { id: `${newTask.id}-start`, text: 'Task started', done: newTask.status !== 'pending' },
                 { id: `${newTask.id}-complete`, text: 'Task completed', done: newTask.status === 'completed' },
@@ -3139,14 +3145,41 @@ export default function Stage8FinalReview({
        return name.charAt(0).toUpperCase();
      };
 
-     // Gantt bar width based on checklist completion
-     const getTaskProgress = (task: TaskWithChecklist) => {
-       if (task.status === 'completed' || task.status === 'done') return 100;
-       if (!task.checklist || task.checklist.length === 0) return task.status === 'in_progress' ? 50 : 0;
-       const done = task.checklist.filter(c => c.done).length;
-       return Math.round((done / task.checklist.length) * 100);
-     };
-    
+      // Gantt bar width based on checklist completion
+      const getTaskProgress = (task: TaskWithChecklist) => {
+        if (task.status === 'completed' || task.status === 'done') return 100;
+        if (!task.checklist || task.checklist.length === 0) return task.status === 'in_progress' ? 50 : 0;
+        const done = task.checklist.filter(c => c.done).length;
+        return Math.round((done / task.checklist.length) * 100);
+      };
+
+      // Project timeline boundaries from citations
+      const timelineCitation = citations.find(c => c.cite_type === 'TIMELINE');
+      const endDateCitation = citations.find(c => c.cite_type === 'END_DATE');
+      const projectStart = timelineCitation?.answer ? new Date(timelineCitation.answer).getTime() : null;
+      const projectEnd = endDateCitation?.answer ? new Date(endDateCitation.answer).getTime() : null;
+      const totalDuration = projectStart && projectEnd ? projectEnd - projectStart : null;
+
+      // Calculate proportional left offset and width for a task
+      const getGanttBarStyle = (task: TaskWithChecklist) => {
+        if (!totalDuration || !projectStart || !projectEnd || totalDuration <= 0) {
+          return { left: '0%', width: '100%' }; // Fallback: full width
+        }
+        const taskStart = task.created_at ? new Date(task.created_at).getTime() : projectStart;
+        const taskEnd = task.due_date ? new Date(task.due_date).getTime() : projectEnd;
+        const clampedStart = Math.max(taskStart, projectStart);
+        const clampedEnd = Math.min(taskEnd, projectEnd);
+        const left = ((clampedStart - projectStart) / totalDuration) * 100;
+        const width = Math.max(((clampedEnd - clampedStart) / totalDuration) * 100, 5); // min 5%
+        return { left: `${Math.round(left)}%`, width: `${Math.round(width)}%` };
+      };
+      
+      // Format date for tooltip
+      const formatTaskDate = (dateStr: string | null) => {
+        if (!dateStr) return null;
+        try { return format(parseISO(dateStr), 'MMM d'); } catch { return null; }
+      };
+     
     return (
       <div className="space-y-4">
         {/* Timeline header with dates & progress */}
@@ -3263,53 +3296,74 @@ export default function Stage8FinalReview({
                                   className="h-4 w-4 shrink-0"
                                 />
 
-                                {/* Gantt bar container */}
-                                <div className="flex-1 relative">
-                                  <div className={cn(
-                                    "relative h-8 rounded-md border overflow-hidden cursor-pointer transition-all",
-                                    colors.border,
-                                    isCompleted ? "bg-emerald-500/10 border-emerald-500/30" : colors.bg,
-                                    "hover:brightness-125"
-                                  )}
-                                    onClick={() => togglePhaseExpansion(`task-${task.id}`)}
-                                  >
-                                    {/* Progress fill */}
-                                    <motion.div
-                                      className={cn(
-                                        "absolute inset-y-0 left-0 rounded-md",
-                                        isCompleted 
-                                          ? "bg-emerald-500/30" 
-                                          : task.priority === 'high' ? "bg-red-500/20" 
-                                          : task.priority === 'medium' ? "bg-amber-500/20"
-                                          : "bg-blue-500/20"
-                                      )}
-                                      initial={{ width: 0 }}
-                                      animate={{ width: `${taskProgress}%` }}
-                                      transition={{ duration: 0.5, delay: taskIdx * 0.05 }}
-                                    />
-                                    {/* Task name & info */}
-                                    <div className="relative h-full flex items-center justify-between px-2 gap-1">
-                                      <span className={cn(
-                                        "text-[11px] font-medium truncate",
-                                        isCompleted ? "line-through text-slate-500" : "text-slate-200"
-                                      )}>
-                                        {task.title}
-                                      </span>
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        {/* Priority badge */}
-                                        <span className={cn(
-                                          "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
-                                          task.priority === 'high' ? "bg-red-500/20 text-red-400"
-                                          : task.priority === 'medium' ? "bg-amber-500/20 text-amber-400"
-                                          : "bg-emerald-500/20 text-emerald-400"
-                                        )}>
-                                          {task.priority[0]?.toUpperCase()}
-                                        </span>
-                                        {/* Progress % */}
-                                        <span className="text-[9px] font-mono text-slate-500">{taskProgress}%</span>
-                                      </div>
-                                    </div>
-                                  </div>
+                                {/* Gantt bar container - proportional timeline */}
+                                <div className="flex-1 relative h-8 bg-slate-800/30 rounded-md overflow-hidden">
+                                  {(() => {
+                                    const barStyle = getGanttBarStyle(task);
+                                    const startLabel = formatTaskDate(task.created_at);
+                                    const endLabel = formatTaskDate(task.due_date);
+                                    return (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div
+                                              className={cn(
+                                                "absolute inset-y-0 rounded-md border overflow-hidden cursor-pointer transition-all",
+                                                colors.border,
+                                                isCompleted ? "bg-emerald-500/10 border-emerald-500/30" : colors.bg,
+                                                "hover:brightness-125"
+                                              )}
+                                              style={{ left: barStyle.left, width: barStyle.width }}
+                                              onClick={() => togglePhaseExpansion(`task-${task.id}`)}
+                                            >
+                                              {/* Progress fill inside the bar */}
+                                              <motion.div
+                                                className={cn(
+                                                  "absolute inset-y-0 left-0 rounded-md",
+                                                  isCompleted 
+                                                    ? "bg-emerald-500/30" 
+                                                    : task.priority === 'high' ? "bg-red-500/20" 
+                                                    : task.priority === 'medium' ? "bg-amber-500/20"
+                                                    : "bg-blue-500/20"
+                                                )}
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${taskProgress}%` }}
+                                                transition={{ duration: 0.5, delay: taskIdx * 0.05 }}
+                                              />
+                                              {/* Task name & info */}
+                                              <div className="relative h-full flex items-center justify-between px-1.5 gap-1">
+                                                <span className={cn(
+                                                  "text-[10px] font-medium truncate",
+                                                  isCompleted ? "line-through text-slate-500" : "text-slate-200"
+                                                )}>
+                                                  {task.title}
+                                                </span>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                  <span className={cn(
+                                                    "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
+                                                    task.priority === 'high' ? "bg-red-500/20 text-red-400"
+                                                    : task.priority === 'medium' ? "bg-amber-500/20 text-amber-400"
+                                                    : "bg-emerald-500/20 text-emerald-400"
+                                                  )}>
+                                                    {task.priority[0]?.toUpperCase()}
+                                                  </span>
+                                                  <span className="text-[9px] font-mono text-slate-500">{taskProgress}%</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="text-xs">
+                                            <div className="flex flex-col gap-0.5">
+                                              <span className="font-semibold">{task.title}</span>
+                                              {startLabel && <span className="text-muted-foreground">Start: {startLabel}</span>}
+                                              {endLabel && <span className="text-muted-foreground">Due: {endLabel}</span>}
+                                              {!startLabel && !endLabel && <span className="text-muted-foreground">No dates set</span>}
+                                            </div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    );
+                                  })()}
                                 </div>
 
                                 {/* Assignee avatar */}
