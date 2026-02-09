@@ -421,6 +421,10 @@ export default function Stage8FinalReview({
   ]);
   const [isSendingToMultiple, setIsSendingToMultiple] = useState(false);
   
+  // ✓ Team member document sharing state (in-app messages)
+  const [selectedTeamRecipients, setSelectedTeamRecipients] = useState<string[]>([]);
+  const [documentMessageNote, setDocumentMessageNote] = useState('');
+  
   // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   
@@ -5190,178 +5194,127 @@ export default function Stage8FinalReview({
               )}
             </div>
             
-            {/* Send via Email Section - Team Members + Manual Recipients */}
-            {canEdit && (
+            {/* Send to Team Members via In-App Messages */}
+            {canEdit && teamMembers.length > 0 && (
               <div className="pt-4 border-t space-y-4">
                 <p className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Send via Email
+                  <MessageSquare className="h-4 w-4" />
+                  Send to Team Members
                 </p>
                 
-                {/* Team Members Quick Select */}
-                {teamMembers.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">Send to Team Members</p>
-                    <div className="flex flex-wrap gap-2">
-                      {teamMembers.map(member => {
-                        // Check if this member is already in recipients list
-                        const isSelected = contractRecipients.some(r => 
-                          r.email && r.name === member.name
-                        );
-                        return (
-                          <button
-                            key={member.id}
-                            onClick={() => {
-                              if (isSelected) {
-                                // Remove from recipients
-                                setContractRecipients(prev => prev.filter(r => r.name !== member.name));
-                              } else {
-                                // We need to fetch email for team member - for now just add with placeholder
-                                // Add to recipients with member name
-                                setContractRecipients(prev => {
-                                  const hasEmpty = prev.some(r => !r.email && !r.name);
-                                  if (hasEmpty) {
-                                    return prev.map(r => (!r.email && !r.name) ? { name: member.name, email: '' } : r);
-                                  }
-                                  return [...prev, { name: member.name, email: '' }];
-                                });
-                                toast.info(`Add email for ${member.name} below`);
-                              }
-                            }}
-                            className={cn(
-                              "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border transition-all",
-                              isSelected 
-                                ? "bg-teal-100 border-teal-400 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300" 
-                                : "bg-muted/50 border-muted-foreground/20 hover:border-teal-400"
-                            )}
-                          >
-                            <div className="h-4 w-4 rounded-full bg-teal-500 flex items-center justify-center text-white text-[8px] font-bold">
-                              {member.name.charAt(0).toUpperCase()}
-                            </div>
-                            {member.name}
-                            <Badge variant="outline" className="text-[8px] h-4 px-1">{member.role}</Badge>
-                            {isSelected && <Check className="h-3 w-3 text-teal-600" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Recipients List */}
+                {/* Team Members Selection */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">Recipients</p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setContractRecipients(prev => [...prev, { email: '', name: '' }])}
-                      className="h-6 gap-1 text-[10px]"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {contractRecipients.map((recipient, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <Input
-                          type="text"
-                          placeholder="Name"
-                          value={recipient.name}
-                          onChange={(e) => {
-                            const newRecipients = [...contractRecipients];
-                            newRecipients[idx].name = e.target.value;
-                            setContractRecipients(newRecipients);
+                  <p className="text-xs text-muted-foreground">Select recipients to send via in-app messages</p>
+                  <div className="flex flex-wrap gap-2">
+                    {teamMembers.filter(m => m.userId !== userId).map(member => {
+                      // Track selected team members by userId
+                      const isSelected = selectedTeamRecipients.includes(member.userId);
+                      return (
+                        <button
+                          key={member.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedTeamRecipients(prev => prev.filter(id => id !== member.userId));
+                            } else {
+                              setSelectedTeamRecipients(prev => [...prev, member.userId]);
+                            }
                           }}
-                          className="w-28 h-8 text-sm"
-                        />
-                        <Input
-                          type="email"
-                          placeholder="Email address"
-                          value={recipient.email}
-                          onChange={(e) => {
-                            const newRecipients = [...contractRecipients];
-                            newRecipients[idx].email = e.target.value;
-                            setContractRecipients(newRecipients);
-                          }}
-                          className="flex-1 h-8 text-sm"
-                        />
-                        {contractRecipients.length > 1 && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-muted-foreground hover:text-red-500"
-                            onClick={() => {
-                              setContractRecipients(prev => prev.filter((_, i) => i !== idx));
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
+                          className={cn(
+                            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs border transition-all",
+                            isSelected 
+                              ? "bg-teal-100 border-teal-400 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300" 
+                              : "bg-muted/50 border-muted-foreground/20 hover:border-teal-400"
+                          )}
+                        >
+                          <div className="h-5 w-5 rounded-full bg-teal-500 flex items-center justify-center text-white text-[9px] font-bold">
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-medium">{member.name}</span>
+                          <Badge variant="outline" className="text-[8px] h-4 px-1">{member.role}</Badge>
+                          {isSelected && <Check className="h-3.5 w-3.5 text-teal-600" />}
+                        </button>
+                      );
+                    })}
                   </div>
+                  {selectedTeamRecipients.length > 0 && (
+                    <p className="text-[10px] text-teal-600">
+                      {selectedTeamRecipients.length} team member{selectedTeamRecipients.length !== 1 ? 's' : ''} selected
+                    </p>
+                  )}
+                </div>
+                
+                {/* Optional message */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Message (optional)</label>
+                  <Input
+                    type="text"
+                    placeholder="Add a note about this file..."
+                    value={documentMessageNote}
+                    onChange={(e) => setDocumentMessageNote(e.target.value)}
+                    className="h-9 text-sm"
+                  />
                 </div>
                 
                 {/* Send Button */}
                 <Button
                   onClick={async () => {
-                    const validRecipients = contractRecipients.filter(r => r.email && r.email.includes('@'));
-                    if (validRecipients.length === 0) {
-                      toast.error('Please add at least one valid email recipient');
+                    if (selectedTeamRecipients.length === 0) {
+                      toast.error('Please select at least one team member');
                       return;
                     }
                     
                     setIsSendingDocument(true);
                     try {
                       const publicUrl = getDocumentPreviewUrl(previewDocument.file_path);
+                      const messageText = documentMessageNote 
+                        ? `${documentMessageNote}\n\n📎 ${previewDocument.file_name}`
+                        : `📎 Shared file: ${previewDocument.file_name}`;
                       
+                      // Send message to each selected team member via team_messages
                       const results = await Promise.allSettled(
-                        validRecipients.map(recipient =>
-                          supabase.functions.invoke('send-contract-email', {
-                            body: {
-                              recipientEmail: recipient.email,
-                              recipientName: recipient.name || 'Recipient',
-                              subject: `Document: ${previewDocument.file_name}`,
-                              projectName: projectData?.name || 'Project',
-                              documentUrl: publicUrl,
-                              documentName: previewDocument.file_name,
-                            }
+                        selectedTeamRecipients.map(recipientId =>
+                          supabase.from('team_messages').insert({
+                            sender_id: userId,
+                            recipient_id: recipientId,
+                            message: messageText,
+                            attachment_url: publicUrl,
+                            attachment_name: previewDocument.file_name,
                           })
                         )
                       );
                       
-                      const successCount = results.filter(r => r.status === 'fulfilled').length;
-                      const failCount = results.filter(r => r.status === 'rejected').length;
+                      const successCount = results.filter(r => r.status === 'fulfilled' && !(r.value as any).error).length;
+                      const failCount = selectedTeamRecipients.length - successCount;
                       
                       if (failCount === 0) {
-                        toast.success(`Document sent to ${successCount} recipient${successCount > 1 ? 's' : ''}`);
+                        toast.success(`File sent to ${successCount} team member${successCount > 1 ? 's' : ''}`, {
+                          description: 'They will see it in their Messages',
+                        });
                       } else if (successCount > 0) {
                         toast.warning(`Sent to ${successCount}, failed for ${failCount}`);
                       } else {
-                        toast.error('Failed to send document');
+                        toast.error('Failed to send file');
                       }
                       
                       setPreviewDocument(null);
-                      setContractRecipients([{ email: '', name: '' }]);
+                      setSelectedTeamRecipients([]);
+                      setDocumentMessageNote('');
                     } catch (err) {
-                      console.error('[Stage8] Send document failed:', err);
+                      console.error('[Stage8] Send document to team failed:', err);
                       toast.error('Failed to send document');
                     } finally {
                       setIsSendingDocument(false);
                     }
                   }}
-                  disabled={contractRecipients.every(r => !r.email) || isSendingDocument}
+                  disabled={selectedTeamRecipients.length === 0 || isSendingDocument}
                   className="w-full gap-2"
                 >
                   {isSendingDocument ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <MessageSquare className="h-4 w-4" />
                   )}
-                  Send to {contractRecipients.filter(r => r.email).length} Recipient{contractRecipients.filter(r => r.email).length !== 1 ? 's' : ''}
+                  Send to {selectedTeamRecipients.length} Team Member{selectedTeamRecipients.length !== 1 ? 's' : ''}
                 </Button>
               </div>
             )}
