@@ -480,6 +480,10 @@ export default function Stage8FinalReview({
   
   // ✓ Conflict Map Modal
   const [showConflictMap, setShowConflictMap] = useState(false);
+  
+  // ✓ Unread chat messages indicator for Team panel
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const lastSeenChatRef = useRef<string | null>(null);
 
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
@@ -1088,6 +1092,51 @@ export default function Stage8FinalReview({
       supabase.removeChannel(channel);
     };
   }, [projectId, teamMembers]);
+  
+  // ✓ REALTIME: Unread chat message counter for Team panel badge
+  useEffect(() => {
+    if (!projectId) return;
+    
+    // Fetch initial count of recent messages (last seen = now on mount)
+    lastSeenChatRef.current = new Date().toISOString();
+    
+    const chatChannel = supabase
+      .channel(`chat-unread-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'project_chat_messages',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          const msg = payload.new as { user_id: string };
+          // Only count messages from OTHER users
+          if (msg.user_id !== userId) {
+            // If the team panel is currently active, don't increment
+            if (activeOrbitalPanel === 'panel-4-team') {
+              lastSeenChatRef.current = new Date().toISOString();
+            } else {
+              setUnreadChatCount(prev => prev + 1);
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(chatChannel);
+    };
+  }, [projectId, userId]);
+  
+  // Reset unread count when Team panel becomes active
+  useEffect(() => {
+    if (activeOrbitalPanel === 'panel-4-team') {
+      setUnreadChatCount(0);
+      lastSeenChatRef.current = new Date().toISOString();
+    }
+  }, [activeOrbitalPanel]);
   
   // Fetch weather data
   const fetchWeather = async (address: string) => {
@@ -6950,6 +6999,16 @@ export default function Stage8FinalReview({
                         {dataCount}
                       </span>
                     )}
+                    {/* Unread chat badge for Team panel */}
+                    {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[9px] font-bold shadow-[0_0_8px_rgba(245,158,11,0.5)] z-10"
+                      >
+                        {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                      </motion.span>
+                    )}
                   </div>
                   <p className={cn(
                     "text-[11px] leading-tight line-clamp-1 mb-1",
@@ -7260,7 +7319,7 @@ export default function Stage8FinalReview({
                 <button
                   key={panel.id}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[60px]",
+                    "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[60px]",
                     isActive 
                       ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                       : "text-cyan-700 hover:text-cyan-400 hover:bg-cyan-950/30",
@@ -7274,6 +7333,16 @@ export default function Stage8FinalReview({
                     <span className="text-[10px]">{panel.title.split(' ')[0]}</span>
                   </div>
                   {getMobileMetric()}
+                  {/* Unread chat badge */}
+                  {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 h-4 min-w-[16px] px-0.5 flex items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[8px] font-bold shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                    >
+                      {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                    </motion.span>
+                  )}
                 </button>
               );
             })}
