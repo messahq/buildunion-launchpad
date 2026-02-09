@@ -1609,6 +1609,17 @@ export default function Stage8FinalReview({
       line-height: 1.5;
     }
     
+    /* ✓ PAGINATION CONTROL: Prevent mid-block page breaks */
+    .section, .pillar-section, table, .summary-table, .pillars-grid, 
+    .rec-list, .conclusion-box, .audit-header {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    @media print {
+      .section { break-inside: avoid; page-break-inside: avoid; }
+      table { break-inside: avoid; page-break-inside: avoid; }
+    }
+    
     /* Header */
     .page-header {
       display: flex;
@@ -2423,6 +2434,18 @@ export default function Stage8FinalReview({
               line-height: 1.5;
             }
             
+            /* ✓ PAGINATION CONTROL: Prevent content breaks mid-block */
+            .section, .hero-card, .phase-card, .checkpoint-list, table, .weather-grid, 
+            .alert-box, .recommendations, .stats-row, .stat-box, .conclusion-box {
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+            @media print {
+              .section { break-inside: avoid; page-break-inside: avoid; }
+              table { break-inside: avoid; page-break-inside: avoid; }
+              .summary-hero { break-inside: avoid; }
+            }
+            
             .page-header {
               display: flex;
               justify-content: space-between;
@@ -2455,25 +2478,27 @@ export default function Stage8FinalReview({
               grid-template-columns: 1fr 1fr 1fr;
               gap: 16px;
               margin-bottom: 24px;
+              break-inside: avoid;
             }
             .hero-card {
-              background: #f8fafc;
-              border: 1px solid #e5e7eb;
-              border-radius: 8px;
-              padding: 16px;
+              background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+              border: 1px solid #e2e8f0;
+              border-radius: 10px;
+              padding: 16px 12px;
               text-align: center;
+              break-inside: avoid;
             }
+            /* ✓ REFINED TYPOGRAPHY: Elegant, not overwhelming */
             .hero-value { 
-              font-size: 32px; 
-              font-weight: 800; 
-              background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
+              font-size: 24px; 
+              font-weight: 600; 
+              color: #3b82f6;
+              letter-spacing: -0.5px;
             }
-            .hero-value.green { background: linear-gradient(135deg, #22c55e, #16a34a); -webkit-background-clip: text; }
-            .hero-value.amber { background: linear-gradient(135deg, #f59e0b, #d97706); -webkit-background-clip: text; }
-            .hero-value.red { background: linear-gradient(135deg, #ef4444, #dc2626); -webkit-background-clip: text; }
-            .hero-label { font-size: 11px; color: #6b7280; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .hero-value.green { color: #059669; }
+            .hero-value.amber { color: #d97706; }
+            .hero-value.red { color: #dc2626; }
+            .hero-label { font-size: 10px; color: #64748b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.75px; font-weight: 500; }
             
             .readiness-bar {
               background: #e5e7eb;
@@ -2539,26 +2564,28 @@ export default function Stage8FinalReview({
             .phase-fill { height: 100%; background: #3b82f6; }
             .phase-percent { font-size: 10px; color: #6b7280; margin-top: 4px; text-align: right; }
             
-            .checkpoint-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+            /* ✓ CHECKPOINTS: Refined grid with break-inside: avoid */
+            .checkpoint-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; break-inside: avoid; }
             .checkpoint { 
               display: flex; 
               align-items: center; 
               gap: 8px; 
-              padding: 8px 10px; 
-              background: #f8fafc; 
-              border: 1px solid #e5e7eb; 
-              border-radius: 4px;
+              padding: 10px 12px; 
+              background: linear-gradient(135deg, #fafafa, #f4f4f5); 
+              border: 1px solid #e4e4e7; 
+              border-radius: 6px;
               font-size: 11px;
+              break-inside: avoid;
             }
-            .checkpoint.done { background: #f0fdf4; border-color: #bbf7d0; }
-            .checkpoint-icon { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+            .checkpoint.done { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #86efac; }
+            .checkpoint-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
             .checkpoint.done .checkpoint-icon { background: #22c55e; color: white; }
-            .checkpoint:not(.done) .checkpoint-icon { background: #e5e7eb; color: #9ca3af; }
-            .checkpoint-priority { margin-left: auto; font-size: 9px; padding: 2px 6px; border-radius: 3px; }
-            .checkpoint-priority.Critical { background: #fee2e2; color: #991b1b; }
-            .checkpoint-priority.Required { background: #dbeafe; color: #1e40af; }
-            .checkpoint-priority.Important { background: #fef3c7; color: #92400e; }
-            .checkpoint-priority.Optional { background: #f3f4f6; color: #6b7280; }
+            .checkpoint:not(.done) .checkpoint-icon { background: #d4d4d8; color: #a1a1aa; }
+            .checkpoint-priority { margin-left: auto; font-size: 9px; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
+            .checkpoint-priority.Critical { background: #fecaca; color: #b91c1c; }
+            .checkpoint-priority.Required { background: #bfdbfe; color: #1e40af; }
+            .checkpoint-priority.Important { background: #fde68a; color: #92400e; }
+            .checkpoint-priority.Optional { background: #e4e4e7; color: #52525b; }
             
             .weather-grid { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; }
             .weather-current { text-align: center; padding: 12px 20px; background: linear-gradient(135deg, #38bdf8, #0284c7); color: white; border-radius: 8px; }
@@ -2571,8 +2598,17 @@ export default function Stage8FinalReview({
             .forecast-temps { font-size: 11px; font-weight: 600; color: #1f2937; }
             .forecast-alert { font-size: 10px; color: #dc2626; }
             
-            .alert-box { padding: 12px; border-radius: 6px; margin-top: 8px; }
-            .alert-box.warning { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; }
+            /* ✓ WEATHER ALERTS: Discrete but visible highlighting */
+            .alert-box { padding: 14px 16px; border-radius: 8px; margin-top: 12px; break-inside: avoid; }
+            .alert-box.warning { 
+              background: linear-gradient(135deg, #fffbeb, #fef3c7); 
+              border: 1px solid #fcd34d; 
+              border-left: 4px solid #f59e0b;
+              color: #92400e; 
+            }
+            .alert-box.warning strong { color: #b45309; }
+            .alert-box.warning div { margin-top: 6px; padding-left: 20px; position: relative; }
+            .alert-box.warning div::before { content: '⚠'; position: absolute; left: 0; }
             
             .dual-engine-status { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
             .engine-badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600; }
