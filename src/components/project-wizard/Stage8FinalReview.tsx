@@ -382,6 +382,14 @@ export default function Stage8FinalReview({
   } | null>(null);
   const [weatherData, setWeatherData] = useState<{temp?: number; condition?: string; alerts?: string[]} | null>(null);
   
+  // User profile data for contractor fields in contracts
+  const [userProfile, setUserProfile] = useState<{
+    company_name: string | null;
+    phone: string | null;
+    email: string | null;
+    service_area: string | null;
+  } | null>(null);
+  
   // UI state
   const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set());
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
@@ -911,6 +919,24 @@ export default function Stage8FinalReview({
           setIsFinancialLocked(true);
         }
         
+        // 7. Load user profile for contractor fields in contracts
+        const { data: profile } = await supabase
+          .from('bu_profiles')
+          .select('company_name, phone, service_area')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (profile) {
+          // Fetch user email from auth
+          const { data: { user } } = await supabase.auth.getUser();
+          setUserProfile({
+            company_name: profile.company_name,
+            phone: profile.phone,
+            email: user?.email || null,
+            service_area: profile.service_area,
+          });
+        }
+        
       } catch (err) {
         console.error('[Stage8] Failed to load data:', err);
         logCriticalError('[Stage8] Data load failed', err);
@@ -1427,7 +1453,7 @@ export default function Stage8FinalReview({
     handleFileUpload(e.dataTransfer.files);
   }, [handleFileUpload]);
   
-  // Generate contract preview data
+  // Generate contract preview data - includes bu_profiles data for contractor fields
   const generateContractPreviewData = useMemo(() => {
     const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
     const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
@@ -1456,8 +1482,13 @@ export default function Stage8FinalReview({
       endDate: endDateCitation?.value || 'Not set',
       teamSize: teamMembers.length,
       taskCount: tasks.length,
+      // Contractor fields - will be populated from bu_profiles
+      contractorName: userProfile?.company_name || '',
+      contractorPhone: userProfile?.phone || '',
+      contractorEmail: userProfile?.email || '',
+      contractorAddress: userProfile?.service_area || '',
     };
-  }, [citations, projectData, teamMembers.length, tasks.length, projectId]);
+  }, [citations, projectData, teamMembers.length, tasks.length, projectId, userProfile]);
   
   // ============================================
   // M.E.S.S.A. SYNTHESIS - Grand Dual Engine Analysis
@@ -5913,6 +5944,10 @@ export default function Stage8FinalReview({
                     endDate: String(generateContractPreviewData.endDate),
                     teamSize: generateContractPreviewData.teamSize,
                     taskCount: generateContractPreviewData.taskCount,
+                    contractorName: generateContractPreviewData.contractorName,
+                    contractorPhone: generateContractPreviewData.contractorPhone,
+                    contractorEmail: generateContractPreviewData.contractorEmail,
+                    contractorAddress: generateContractPreviewData.contractorAddress,
                   };
                   await downloadContractPDF(contractData);
                   toast.success('Contract PDF downloaded!');
@@ -5967,38 +6002,40 @@ export default function Stage8FinalReview({
                   const baseUrl = window.location.origin;
                   const contractUrl = `${baseUrl}/contract/sign?token=${newContract.share_token}`;
                   
-                  // 3. Get current user's profile for contractor name
-                  const { data: userProfile } = await supabase
-                    .from('bu_profiles')
-                    .select('company_name')
-                    .eq('user_id', userId)
-                    .single();
-                  
-                  // 4. Send email via edge function
-                  const { data: session } = await supabase.auth.getSession();
-                  const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-contract-email', {
-                    body: {
-                      clientEmail: clientEmail,
-                      clientName: clientName,
-                      contractorName: userProfile?.company_name || 'Your Contractor',
-                      projectName: generateContractPreviewData.projectName,
-                      contractUrl: contractUrl,
-                      contractId: newContract.id,
-                    },
-                  });
-                  
-                  if (emailError) {
-                    console.error('Email send failed:', emailError);
-                    // Contract created but email failed - still show partial success
-                    toast.warning('Contract created but email failed to send. Share the link manually.');
-                  } else {
-                    // Update contract with sent timestamp
-                    await supabase.from('contracts').update({
-                      sent_to_client_at: new Date().toISOString(),
-                    }).eq('id', newContract.id);
-                    
-                    toast.success(`Contract sent to ${clientName}!`);
-                  }
+                   // 3. Get current user's profile for contractor name
+                   // Use already loaded userProfile from state
+                   const contractorName = userProfile?.company_name || 'Your Contractor';
+                   const contractorPhone = userProfile?.phone || '';
+                   const contractorEmail = userProfile?.email || '';
+                   
+                   // 4. Send email via edge function
+                   const { data: session } = await supabase.auth.getSession();
+                   const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-contract-email', {
+                     body: {
+                       clientEmail: clientEmail,
+                       clientName: clientName,
+                       contractorName: contractorName,
+                       projectName: generateContractPreviewData.projectName,
+                       contractUrl: contractUrl,
+                       contractId: newContract.id,
+                     },
+                   });
+                   
+                   if (emailError) {
+                     console.error('Email send failed:', emailError);
+                     // Contract created but email failed - still show partial success
+                     toast.warning('Contract created but email failed to send. Share the link manually.');
+                   } else {
+                     // Update contract with sent timestamp and contractor data from bu_profiles
+                     await supabase.from('contracts').update({
+                       sent_to_client_at: new Date().toISOString(),
+                       contractor_name: contractorName,
+                       contractor_phone: contractorPhone,
+                       contractor_email: contractorEmail,
+                     }).eq('id', newContract.id);
+                     
+                     toast.success(`Contract sent to ${clientName}!`);
+                   }
                   
                   setShowContractPreview(false);
                   setClientEmail('');
