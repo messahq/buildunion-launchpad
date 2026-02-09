@@ -6242,13 +6242,13 @@ export default function Stage8FinalReview({
       {/* Orbital Command Center Layout */}
       <div className="flex-1 relative overflow-hidden">
         {/* Background grid effect */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
           backgroundImage: 'linear-gradient(rgba(56,189,248,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.3) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }} />
 
         {/* Desktop: Bento Grid Orbital Layout */}
-        <div className="hidden lg:grid absolute inset-4 z-10"
+        <div className="hidden lg:grid h-full p-4 relative z-10"
           style={{
             gridTemplateColumns: '1fr 1fr 2.2fr 1fr 1fr',
             gridTemplateRows: '1fr 1fr 1fr',
@@ -6258,14 +6258,14 @@ export default function Stage8FinalReview({
           {/* 8 Bento Grid Panels */}
           {PANELS.map((panel, index) => {
             const panelPositions = [
-              { col: '1 / 2', row: '1 / 2' },
-              { col: '2 / 3', row: '1 / 2' },
-              { col: '4 / 5', row: '1 / 2' },
-              { col: '5 / 6', row: '1 / 2' },
-              { col: '1 / 2', row: '3 / 4' },
-              { col: '2 / 3', row: '3 / 4' },
-              { col: '4 / 5', row: '3 / 4' },
-              { col: '5 / 6', row: '3 / 4' },
+              { col: '1 / 2', row: '1 / 2' },   // Panel 1 - top left
+              { col: '2 / 3', row: '1 / 2' },   // Panel 2 - top left-center
+              { col: '4 / 5', row: '1 / 2' },   // Panel 3 - top right-center
+              { col: '5 / 6', row: '1 / 2' },   // Panel 4 - top right
+              { col: '1 / 3', row: '2 / 3' },   // Panel 5 - mid left (span 2 cols)
+              { col: '4 / 6', row: '2 / 3' },   // Panel 6 - mid right (span 2 cols)
+              { col: '1 / 3', row: '3 / 4' },   // Panel 7 - bottom left (span 2 cols)
+              { col: '4 / 6', row: '3 / 4' },   // Panel 8 - bottom right (span 2 cols)
             ];
             const pos = panelPositions[index];
             const isActive = activeOrbitalPanel === panel.id;
@@ -6411,8 +6411,8 @@ export default function Stage8FinalReview({
             <div className="absolute inset-0 rounded-2xl bg-cyan-500/[0.03] opacity-0 group-hover/canvas:opacity-100 transition-opacity pointer-events-none z-20" />
           </motion.div>
 
-          {/* Neon connection lines - SVG overlay spanning full grid */}
-          <svg className="pointer-events-none z-0" style={{ gridColumn: '1 / -1', gridRow: '1 / -1' }}>
+          {/* Neon connection lines - absolute overlay */}
+          <svg className="pointer-events-none absolute inset-0 w-full h-full" style={{ gridColumn: '1 / -1', gridRow: '1 / -1', position: 'absolute' }}>
             {PANELS.map((panel, index) => {
               const isActive = activeOrbitalPanel === panel.id;
               if (!isActive) return null;
