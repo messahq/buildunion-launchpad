@@ -1086,6 +1086,30 @@ export default function Stage8FinalReview({
     return data.publicUrl;
   }, []);
   
+  // ✓ Get signed URL for document sharing (long expiry for message attachments)
+  const getDocumentSignedUrl = useCallback(async (filePath: string): Promise<string | null> => {
+    try {
+      // Create signed URL with 1 year expiry for shared documents
+      const { data, error } = await supabase.storage
+        .from('project-documents')
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 365 days
+      
+      if (error || !data?.signedUrl) {
+        console.error('[Stage8] Failed to create signed URL:', error);
+        // Fallback to public URL
+        const { data: publicData } = supabase.storage
+          .from('project-documents')
+          .getPublicUrl(filePath);
+        return publicData.publicUrl;
+      }
+      
+      return data.signedUrl;
+    } catch (err) {
+      console.error('[Stage8] Signed URL error:', err);
+      return null;
+    }
+  }, []);
+  
   // ✓ Send document via email
   const handleSendDocument = useCallback(async (doc: { file_name: string; file_path: string }) => {
     if (!clientEmail) {
@@ -5265,7 +5289,14 @@ export default function Stage8FinalReview({
                     
                     setIsSendingDocument(true);
                     try {
-                      const publicUrl = getDocumentPreviewUrl(previewDocument.file_path);
+                      // Get signed URL for better access control (1 year expiry)
+                      const attachmentUrl = await getDocumentSignedUrl(previewDocument.file_path);
+                      if (!attachmentUrl) {
+                        toast.error('Failed to generate document link');
+                        setIsSendingDocument(false);
+                        return;
+                      }
+                      
                       const messageText = documentMessageNote 
                         ? `${documentMessageNote}\n\n📎 ${previewDocument.file_name}`
                         : `📎 Shared file: ${previewDocument.file_name}`;
@@ -5277,7 +5308,7 @@ export default function Stage8FinalReview({
                             sender_id: userId,
                             recipient_id: recipientId,
                             message: messageText,
-                            attachment_url: publicUrl,
+                            attachment_url: attachmentUrl,
                             attachment_name: previewDocument.file_name,
                           })
                         )
