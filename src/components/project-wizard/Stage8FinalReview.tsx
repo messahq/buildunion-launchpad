@@ -6713,17 +6713,50 @@ export default function Stage8FinalReview({
 
         {/* Mobile/Tablet: Tab-based layout */}
         <div className="lg:hidden flex flex-col h-full">
-          {/* Tab strip */}
-          <div className="flex overflow-x-auto gap-1 px-3 py-2 border-b border-cyan-900/30 bg-[#0c1120]/80 shrink-0">
+          {/* Tab strip with mini visuals */}
+          <div className="flex overflow-x-auto gap-1.5 px-3 py-2 border-b border-cyan-900/30 bg-[#0c1120]/80 shrink-0">
             {PANELS.map((panel) => {
               const isActive = activeOrbitalPanel === panel.id;
               const hasAccess = hasAccessToTier(panel.visibilityTier);
               const Icon = panel.icon;
+              const panelCitations = getCitationsForPanel(panel.dataKeys);
+
+              // Mini metric for mobile tab
+              const getMobileMetric = () => {
+                if (!hasAccess) return null;
+                if (panel.id === 'panel-1-basics') {
+                  const filled = ['PROJECT_NAME', 'LOCATION', 'WORK_TYPE'].filter(k => panelCitations.some(c => c.cite_type === k)).length;
+                  return <span className="text-[8px] font-mono opacity-70">{filled}/3</span>;
+                }
+                if (panel.id === 'panel-2-gfa') {
+                  const gfa = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
+                  return gfa ? <span className="text-[8px] font-mono opacity-70">{parseFloat(gfa.answer).toLocaleString()}</span> : null;
+                }
+                if (panel.id === 'panel-4-team') {
+                  return <span className="text-[8px] font-mono opacity-70">{teamMembers.length}</span>;
+                }
+                if (panel.id === 'panel-5-timeline') {
+                  const done = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+                  return <span className="text-[8px] font-mono opacity-70">{done}/{tasks.length}</span>;
+                }
+                if (panel.id === 'panel-6-documents') {
+                  return <span className="text-[8px] font-mono opacity-70">{documents.length + contracts.length}</span>;
+                }
+                if (panel.id === 'panel-7-weather') {
+                  return weatherData?.temp != null ? <span className="text-[8px] font-mono opacity-70">{weatherData.temp}°</span> : null;
+                }
+                if (panel.id === 'panel-8-financial') {
+                  const total = financialSummary?.total_cost;
+                  return total ? <span className="text-[8px] font-mono opacity-70">${(total / 1000).toFixed(0)}k</span> : null;
+                }
+                return null;
+              };
+
               return (
                 <button
                   key={panel.id}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0",
+                    "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[60px]",
                     isActive 
                       ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                       : "text-cyan-700 hover:text-cyan-400 hover:bg-cyan-950/30",
@@ -6732,8 +6765,11 @@ export default function Stage8FinalReview({
                   onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                   disabled={!hasAccess}
                 >
-                  {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                  {panel.title}
+                  <div className="flex items-center gap-1">
+                    {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                    <span className="text-[10px]">{panel.title.split(' ')[0]}</span>
+                  </div>
+                  {getMobileMetric()}
                 </button>
               );
             })}
