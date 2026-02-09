@@ -1754,9 +1754,62 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setDemolitionUnitPrice(newPrice);
     }, []);
     
-    // Handle trade selection
-    const handleTradeSelect = (trade: string) => {
+    // Handle trade selection - IMMEDIATELY SAVE TO DB!
+    const handleTradeSelect = async (trade: string) => {
       setSelectedTrade(trade);
+      
+      // ✓ CRITICAL: Save TRADE_SELECTION citation IMMEDIATELY on selection
+      const tradeCitation = createCitation({
+        cite_type: CITATION_TYPES.TRADE_SELECTION,
+        question_key: 'trade_selection',
+        answer: TRADE_OPTIONS.find(t => t.key === trade)?.label || trade,
+        value: trade,
+        metadata: { trade_key: trade },
+      });
+      
+      try {
+        const { data: currentData } = await supabase
+          .from("project_summaries")
+          .select("id, verified_facts")
+          .eq("project_id", projectId)
+          .maybeSingle();
+        
+        const currentFacts = Array.isArray(currentData?.verified_facts) ? currentData.verified_facts : [];
+        // Remove any existing TRADE_SELECTION to avoid duplicates
+        const filteredFacts = currentFacts.filter((f: any) => f.cite_type !== 'TRADE_SELECTION');
+        const updatedFacts = [...filteredFacts, tradeCitation as unknown as Record<string, unknown>];
+        
+        if (currentData?.id) {
+          await supabase
+            .from("project_summaries")
+            .update({
+              verified_facts: updatedFacts as unknown as null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("project_id", projectId);
+        } else {
+          await supabase
+            .from("project_summaries")
+            .insert({
+              project_id: projectId,
+              user_id: userId,
+              verified_facts: updatedFacts as unknown as null,
+            });
+        }
+        
+        // Also update projects.trade immediately
+        await supabase
+          .from("projects")
+          .update({ 
+            trade: trade,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", projectId);
+        
+        console.log("[DefinitionFlow] TRADE_SELECTION saved immediately:", trade);
+      } catch (err) {
+        console.error("[DefinitionFlow] Failed to save trade selection:", err);
+      }
     };
     
     // Template item editing
