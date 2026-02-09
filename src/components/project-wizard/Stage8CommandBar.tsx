@@ -198,21 +198,7 @@ export function Stage8CommandBar({
             <span className="sm:hidden">Send</span>
           </Button>
 
-          {/* Conflict Map - Purple Outline */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onConflictMap}
-            className={cn(
-              "font-medium",
-              "border-purple-400 text-purple-700 hover:bg-purple-50",
-              "dark:border-purple-600 dark:text-purple-400 dark:hover:bg-purple-950/30"
-            )}
-          >
-            <Map className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Conflict Map</span>
-            <span className="sm:hidden">Map</span>
-          </Button>
+
 
           {/* M.E.S.S.A. Synthesis - Green Filled */}
           <Button
