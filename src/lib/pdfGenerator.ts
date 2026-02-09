@@ -192,3 +192,290 @@ export const buildProjectSummaryHTML = (data: {
     </html>
   `;
 };
+
+// ============================================
+// CONTRACT TEMPLATE PDF BUILDER
+// ============================================
+export interface ContractTemplateData {
+  contractNumber: string;
+  contractType: 'residential' | 'commercial' | 'industrial' | 'renovation';
+  projectName: string;
+  projectAddress: string;
+  gfa: number;
+  gfaUnit: string;
+  trade: string;
+  startDate: string;
+  endDate: string;
+  teamSize: number;
+  taskCount: number;
+  contractorName?: string;
+  contractorAddress?: string;
+  contractorPhone?: string;
+  contractorEmail?: string;
+  clientName?: string;
+  clientAddress?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  scopeOfWork?: string;
+  totalAmount?: number;
+  depositPercentage?: number;
+  warrantyPeriod?: string;
+  paymentSchedule?: string;
+}
+
+const CONTRACT_TYPE_CONFIG: Record<string, {
+  title: string;
+  color: string;
+  icon: string;
+  defaultWarranty: string;
+  defaultPayment: string;
+}> = {
+  residential: {
+    title: 'Residential Construction Contract',
+    color: '#059669',
+    icon: '🏠',
+    defaultWarranty: '1 year',
+    defaultPayment: '50% deposit, 50% on completion',
+  },
+  commercial: {
+    title: 'Commercial Construction Contract',
+    color: '#0284c7',
+    icon: '🏢',
+    defaultWarranty: '2 years',
+    defaultPayment: '30% deposit, 40% midpoint, 30% completion',
+  },
+  industrial: {
+    title: 'Industrial Construction Contract',
+    color: '#7c3aed',
+    icon: '🏭',
+    defaultWarranty: '3 years',
+    defaultPayment: '25% deposit, 25% phase 1, 25% phase 2, 25% completion',
+  },
+  renovation: {
+    title: 'Renovation Contract',
+    color: '#ea580c',
+    icon: '🔨',
+    defaultWarranty: '6 months',
+    defaultPayment: '50% deposit, 50% on completion',
+  },
+};
+
+export const buildContractHTML = (data: ContractTemplateData): string => {
+  const config = CONTRACT_TYPE_CONFIG[data.contractType] || CONTRACT_TYPE_CONFIG.residential;
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', month: 'long', day: 'numeric' 
+  });
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { 
+          font-family: system-ui, -apple-system, sans-serif; 
+          color: #1e293b; 
+          line-height: 1.6; 
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 40px;
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 32px; 
+          padding-bottom: 24px;
+          border-bottom: 3px solid ${config.color};
+        }
+        .contract-badge {
+          display: inline-block;
+          background: ${config.color};
+          color: white;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          margin-bottom: 8px;
+        }
+        .section { 
+          margin-bottom: 24px; 
+          padding: 16px;
+          background: #f8fafc;
+          border-radius: 8px;
+        }
+        .section-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: ${config.color};
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 12px;
+        }
+        .grid-2 {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        .field { margin-bottom: 8px; }
+        .field-label {
+          font-size: 11px;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .field-value { font-size: 14px; font-weight: 500; }
+        .terms { font-size: 12px; color: #475569; }
+        .terms p { margin: 8px 0; }
+        .signature-section { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+        .signature-box { border: 1px dashed #cbd5e1; padding: 24px; text-align: center; border-radius: 8px; margin-bottom: 16px; }
+        .signature-line { border-bottom: 1px solid #1e293b; width: 200px; margin: 24px auto 8px; }
+        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="contract-badge">${config.icon} ${escapeHtml(data.contractType.toUpperCase())}</div>
+        <h1 style="margin: 8px 0; font-size: 24px; color: ${config.color};">${config.title}</h1>
+        <p style="color: #64748b; margin: 0;">Contract #${escapeHtml(data.contractNumber)} • ${currentDate}</p>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Project Details</div>
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">Project Name</div>
+            <div class="field-value">${escapeHtml(data.projectName)}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Trade / Service</div>
+            <div class="field-value">${escapeHtml(data.trade)}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Project Address</div>
+            <div class="field-value">${escapeHtml(data.projectAddress)}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Gross Floor Area</div>
+            <div class="field-value">${data.gfa.toLocaleString()} ${escapeHtml(data.gfaUnit)}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Timeline & Resources</div>
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">Start Date</div>
+            <div class="field-value">${escapeHtml(data.startDate)}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Expected Completion</div>
+            <div class="field-value">${escapeHtml(data.endDate)}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Team Size</div>
+            <div class="field-value">${data.teamSize} member${data.teamSize !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Scheduled Tasks</div>
+            <div class="field-value">${data.taskCount} task${data.taskCount !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid-2">
+        <div class="section">
+          <div class="section-title">Contractor</div>
+          <div class="field"><div class="field-label">Name</div><div class="field-value">${escapeHtml(data.contractorName || 'To be specified')}</div></div>
+          <div class="field"><div class="field-label">Address</div><div class="field-value">${escapeHtml(data.contractorAddress || '—')}</div></div>
+          <div class="field"><div class="field-label">Phone</div><div class="field-value">${escapeHtml(data.contractorPhone || '—')}</div></div>
+          <div class="field"><div class="field-label">Email</div><div class="field-value">${escapeHtml(data.contractorEmail || '—')}</div></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Client</div>
+          <div class="field"><div class="field-label">Name</div><div class="field-value">${escapeHtml(data.clientName || 'To be specified')}</div></div>
+          <div class="field"><div class="field-label">Address</div><div class="field-value">${escapeHtml(data.clientAddress || '—')}</div></div>
+          <div class="field"><div class="field-label">Phone</div><div class="field-value">${escapeHtml(data.clientPhone || '—')}</div></div>
+          <div class="field"><div class="field-label">Email</div><div class="field-value">${escapeHtml(data.clientEmail || '—')}</div></div>
+        </div>
+      </div>
+      
+      ${data.totalAmount ? `
+        <div class="section" style="background: linear-gradient(135deg, ${config.color}10, ${config.color}05);">
+          <div class="section-title">Financial Terms</div>
+          <div class="grid-2">
+            <div class="field">
+              <div class="field-label">Total Contract Value</div>
+              <div class="field-value" style="font-size: 20px; color: ${config.color};">$${data.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Deposit Required</div>
+              <div class="field-value">${data.depositPercentage || 50}% ($${((data.totalAmount * (data.depositPercentage || 50)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })})</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top: 12px;"><div class="field-label">Payment Schedule</div><div class="field-value">${escapeHtml(data.paymentSchedule || config.defaultPayment)}</div></div>
+        </div>
+      ` : ''}
+      
+      <div class="section">
+        <div class="section-title">Scope of Work</div>
+        <div class="terms">
+          ${data.scopeOfWork ? `<p>${escapeHtml(data.scopeOfWork)}</p>` : `
+            <p>The Contractor agrees to perform the following work:</p>
+            <p>• Complete ${escapeHtml(data.trade)} work at the specified project address</p>
+            <p>• Provide all necessary materials, labor, and equipment</p>
+            <p>• Complete work within the specified timeline</p>
+            <p>• Ensure all work meets applicable building codes and standards</p>
+          `}
+        </div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Terms & Conditions</div>
+        <div class="terms">
+          <p><strong>Warranty:</strong> ${escapeHtml(data.warrantyPeriod || config.defaultWarranty)} from completion date</p>
+          <p><strong>Changes:</strong> Any modifications must be agreed in writing by both parties</p>
+          <p><strong>Delays:</strong> Contractor will notify Client of any delays beyond their control</p>
+          <p><strong>Insurance:</strong> Contractor maintains liability insurance and WSIB coverage</p>
+        </div>
+      </div>
+      
+      <div class="signature-section">
+        <div class="grid-2">
+          <div class="signature-box">
+            <p style="font-weight: 600; margin: 0;">Contractor Signature</p>
+            <div class="signature-line"></div>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">Date: _______________</p>
+          </div>
+          <div class="signature-box">
+            <p style="font-weight: 600; margin: 0;">Client Signature</p>
+            <div class="signature-line"></div>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">Date: _______________</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <p>Generated by BuildUnion • ${currentDate}</p>
+        <p>This contract is legally binding upon signature by both parties.</p>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+export const generateContractPDF = async (data: ContractTemplateData): Promise<Blob> => {
+  const html = buildContractHTML(data);
+  return generatePDFBlob(html, {
+    filename: `contract-${data.contractNumber}.pdf`,
+    pageFormat: 'letter',
+    margin: 15,
+  });
+};
+
+export const downloadContractPDF = async (data: ContractTemplateData): Promise<void> => {
+  const html = buildContractHTML(data);
+  await downloadPDF(html, {
+    filename: `contract-${data.contractNumber}.pdf`,
+    pageFormat: 'letter',
+    margin: 15,
+  });
+};
