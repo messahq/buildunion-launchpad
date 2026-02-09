@@ -2728,14 +2728,11 @@ export default function Stage8FinalReview({
               : null
         );
         
-        // ✓ Profit calculation (if both total and material+labor are known)
+        // ✗ Profit calculation DISABLED - must be manually set, never auto-calculated
         const calculatedExpenses = (materialCost || 0) + (laborCost || 0) + (demoCost || 0);
-        const profitMargin = budgetTotal && calculatedExpenses > 0 
-          ? budgetTotal - calculatedExpenses 
-          : null;
-        const profitPercent = budgetTotal && profitMargin !== null
-          ? (profitMargin / budgetTotal) * 100
-          : null;
+        // Profit is always null - no automatic calculation from team data
+        const profitMargin: number | null = null;
+        const profitPercent: number | null = null;
         
         const hasFinancialData = budgetTotal !== null || materialCost !== null || laborCost !== null || totalContractValue > 0;
         
@@ -3379,8 +3376,9 @@ export default function Stage8FinalReview({
           
           const budgetTotal = storedTotalCost ?? totalContractValue;
           const calculatedExpenses = storedMaterialCost + storedLaborCost + demoCost;
-          const profitMargin = budgetTotal && calculatedExpenses > 0 ? budgetTotal - calculatedExpenses : null;
-          const profitPercent = budgetTotal && profitMargin !== null ? (profitMargin / budgetTotal) * 100 : null;
+          // ✗ Profit calculation DISABLED - must be manually set, never auto-calculated
+          const profitMargin: number | null = null;
+          const profitPercent: number | null = null;
           const hasFinancialData = budgetTotal > 0 || storedMaterialCost || storedLaborCost || totalContractValue > 0;
           
           // ✓ REGIONAL TAX CALCULATION (Canadian Provinces)
@@ -3415,12 +3413,11 @@ export default function Stage8FinalReview({
           const taxAmount = netTotal * taxInfo.rate;
           const grossTotal = netTotal + taxAmount;
           
-          // Data for pie chart visualization
+          // Data for pie chart visualization - Profit excluded (never auto-calculated)
           const costBreakdownData = [
             { name: 'Materials', value: storedMaterialCost, color: 'hsl(200, 80%, 50%)' },
             { name: 'Labor', value: storedLaborCost, color: 'hsl(160, 80%, 45%)' },
             { name: 'Demolition', value: demoCost, color: 'hsl(280, 70%, 55%)' },
-            { name: 'Profit', value: profitMargin || 0, color: 'hsl(140, 70%, 45%)' },
           ].filter(item => item.value > 0);
           
           const totalForPercentage = costBreakdownData.reduce((sum, item) => sum + item.value, 0);
