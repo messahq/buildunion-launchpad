@@ -409,6 +409,28 @@ export default function Stage8FinalReview({
     return hasPermission && (userRole === 'foreman' || isEditModeEnabled);
   }, [userRole, isEditModeEnabled]);
   
+  // ✓ NEW: Allow all team members to upload task photos (visual verification)
+  // Workers, inspectors, subcontractors can upload photos for tasks assigned to them
+  const canUploadTaskPhotos = useMemo(() => {
+    // Owner and foreman can always upload
+    if (userRole === 'owner' || userRole === 'foreman') return true;
+    // All team members can upload photos for verification
+    return ['worker', 'inspector', 'subcontractor', 'member'].includes(userRole);
+  }, [userRole]);
+  
+  // ✓ NEW: Task status toggle - owner always, assigned workers for their own tasks
+  const canToggleTaskStatus = useCallback((taskAssignedTo: string) => {
+    // Owner can toggle any task (if edit mode enabled)
+    if (userRole === 'owner' && isEditModeEnabled) return true;
+    // Foreman can toggle any task
+    if (userRole === 'foreman') return true;
+    // Workers can toggle tasks assigned to them
+    if (['worker', 'inspector', 'subcontractor'].includes(userRole)) {
+      return taskAssignedTo === userId;
+    }
+    return false;
+  }, [userRole, isEditModeEnabled, userId]);
+  
   // CRITICAL: Only Owner can view financial data - Foreman/Subcontractor are blocked
   const canViewFinancials = useMemo(() => {
     // Strictly Owner only - no exceptions
@@ -1390,7 +1412,7 @@ export default function Stage8FinalReview({
                             <div key={task.id} className="bg-background rounded-lg border p-3 space-y-2">
                               {/* Task Header with Status Toggle */}
                               <div className="flex items-center justify-between gap-2">
-                                {/* Owner can toggle task status */}
+                                {/* Task status toggle - owner/foreman always, workers for assigned tasks */}
                                 <div className="flex items-center gap-2 flex-1">
                                   <Checkbox
                                     checked={task.status === 'completed'}
@@ -1412,8 +1434,11 @@ export default function Stage8FinalReview({
                                           }
                                         });
                                     }}
-                                    disabled={!canEdit}
-                                    className="h-5 w-5"
+                                    disabled={!canToggleTaskStatus(task.assigned_to)}
+                                    className={cn(
+                                      "h-5 w-5",
+                                      canToggleTaskStatus(task.assigned_to) && "cursor-pointer"
+                                    )}
                                   />
                                   <span className={cn(
                                     "text-sm font-medium truncate flex-1",
@@ -1421,8 +1446,8 @@ export default function Stage8FinalReview({
                                   )}>{task.title}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {/* Photo Upload Button */}
-                                  {canEdit && (
+                                  {/* Photo Upload Button - ALL TEAM can upload */}
+                                  {canUploadTaskPhotos && (
                                     <>
                                       <input
                                         id={taskFileInputId}
@@ -1614,6 +1639,8 @@ export default function Stage8FinalReview({
     togglePhaseExpansion,
     teamMembers,
     canEdit,
+    canUploadTaskPhotos,
+    canToggleTaskStatus,
     updateTaskAssignee,
     updateChecklistItem,
     renderCitationValue,
