@@ -6287,6 +6287,123 @@ export default function Stage8FinalReview({
               return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
             };
 
+            // Rich visual data for left panels
+            const renderPanelVisual = () => {
+              if (!hasAccess) return null;
+              if (panel.id === 'panel-1-basics') {
+                const nameCit = panelCitations.find(c => c.cite_type === 'PROJECT_NAME');
+                const locCit = panelCitations.find(c => c.cite_type === 'LOCATION');
+                const workCit = panelCitations.find(c => c.cite_type === 'WORK_TYPE');
+                const filled = [nameCit, locCit, workCit].filter(Boolean).length;
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1 h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(filled / 3) * 100}%` }}
+                          transition={{ duration: 0.6, delay: 0.2 }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-mono text-emerald-400">{filled}/3</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[
+                        { label: 'Name', done: !!nameCit },
+                        { label: 'Loc', done: !!locCit },
+                        { label: 'Type', done: !!workCit },
+                      ].map(item => (
+                        <span key={item.label} className={cn(
+                          "text-[8px] px-1.5 py-0.5 rounded-full border",
+                          item.done
+                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                            : "border-cyan-900/30 bg-cyan-950/30 text-cyan-700"
+                        )}>
+                          {item.done && <span className="mr-0.5">✓</span>}{item.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              if (panel.id === 'panel-2-gfa') {
+                const gfaCit = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
+                const gfaVal = gfaCit ? parseFloat(gfaCit.answer) : 0;
+                const maxGfa = 10000;
+                const pct = Math.min((gfaVal / maxGfa) * 100, 100);
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-end gap-1">
+                      <span className="text-lg font-bold text-blue-300 leading-none">{gfaVal > 0 ? gfaVal.toLocaleString() : '—'}</span>
+                      <span className="text-[9px] text-blue-500 mb-0.5">sq ft</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+              if (panel.id === 'panel-3-trade') {
+                const templateCit = panelCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+                const wastePct = templateCit?.metadata?.waste_percentage ? Number(templateCit.metadata.waste_percentage) : 0;
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <Hammer className="h-3 w-3 text-orange-400" />
+                        <span className="text-[9px] text-orange-400">{templateCit ? 'Locked' : 'Pending'}</span>
+                      </div>
+                      {wastePct > 0 && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-300">
+                          +{wastePct}% waste
+                        </span>
+                      )}
+                    </div>
+                    {templateCit && (
+                      <div className="h-1 rounded-full bg-cyan-950/50 overflow-hidden">
+                        <motion.div className="h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full" initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 0.5 }} />
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              if (panel.id === 'panel-4-team') {
+                const roles = teamMembers.reduce((acc, m) => { acc[m.role] = (acc[m.role] || 0) + 1; return acc; }, {} as Record<string, number>);
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-end gap-1">
+                      <span className="text-lg font-bold text-teal-300 leading-none">{teamMembers.length}</span>
+                      <span className="text-[9px] text-teal-500 mb-0.5">members</span>
+                    </div>
+                    <div className="flex gap-0.5 items-end h-4">
+                      {Object.entries(roles).slice(0, 5).map(([role, count]) => (
+                        <TooltipProvider key={role}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <motion.div
+                                className="w-3 bg-gradient-to-t from-teal-500 to-teal-300 rounded-t-sm"
+                                initial={{ height: 0 }}
+                                animate={{ height: `${Math.max((count / teamMembers.length) * 16, 4)}px` }}
+                                transition={{ duration: 0.5, delay: 0.1 }}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[10px]">{role}: {count}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            };
+
             return (
               <motion.button
                 key={panel.id}
@@ -6331,11 +6448,13 @@ export default function Stage8FinalReview({
                     )}
                   </div>
                   <p className={cn(
-                    "text-[11px] leading-tight line-clamp-2",
+                    "text-[11px] leading-tight line-clamp-1 mb-1",
                     isActive ? "text-cyan-300/80" : "text-cyan-700/60"
                   )}>
                     {getSummaryText()}
                   </p>
+                  {/* Rich visual metrics */}
+                  {renderPanelVisual()}
                   {/* Tier badge */}
                   <div className="mt-1">
                     {getTierBadge(panel.visibilityTier)}
@@ -6434,6 +6553,97 @@ export default function Stage8FinalReview({
               return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
             };
 
+            // Rich visual data for right panels
+            const renderRightPanelVisual = () => {
+              if (!hasAccess) return null;
+              if (panel.id === 'panel-5-timeline') {
+                const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+                const totalTasks = tasks.length;
+                const pct = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-end gap-1">
+                        <span className="text-lg font-bold text-indigo-300 leading-none">{completedTasks}</span>
+                        <span className="text-[9px] text-indigo-500 mb-0.5">/{totalTasks}</span>
+                      </div>
+                      <span className="text-[9px] font-mono text-indigo-400">{Math.round(pct)}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-indigo-400 to-violet-500 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+              if (panel.id === 'panel-6-documents') {
+                const docCount = documents.length;
+                const conCount = contracts.length;
+                return (
+                  <div className="flex gap-2 mt-0.5">
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20">
+                      <FileText className="h-2.5 w-2.5 text-pink-400" />
+                      <span className="text-[9px] font-mono text-pink-300">{docCount}</span>
+                    </div>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20">
+                      <FileCheck className="h-2.5 w-2.5 text-pink-400" />
+                      <span className="text-[9px] font-mono text-pink-300">{conCount}</span>
+                    </div>
+                  </div>
+                );
+              }
+              if (panel.id === 'panel-7-weather') {
+                const temp = weatherData?.temp;
+                if (temp == null) return null;
+                const tempColor = temp > 30 ? 'from-red-400 to-orange-400' : temp > 15 ? 'from-amber-400 to-yellow-400' : temp > 0 ? 'from-sky-400 to-blue-400' : 'from-blue-400 to-indigo-400';
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-end gap-1">
+                      <span className="text-lg font-bold text-sky-300 leading-none">{temp}°</span>
+                      <span className="text-[9px] text-sky-500 mb-0.5">{weatherData?.condition || ''}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
+                      <motion.div
+                        className={cn("h-full rounded-full bg-gradient-to-r", tempColor)}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(Math.max(((temp + 10) / 50) * 100, 5), 100)}%` }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+              if (panel.id === 'panel-8-financial') {
+                if (!canViewFinancials) return null;
+                const mat = financialSummary?.material_cost || 0;
+                const lab = financialSummary?.labor_cost || 0;
+                const total = financialSummary?.total_cost || 0;
+                if (total <= 0) return null;
+                const matPct = (mat / total) * 100;
+                const labPct = (lab / total) * 100;
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-end gap-1">
+                      <span className="text-lg font-bold text-red-300 leading-none">${total > 0 ? total.toLocaleString() : '—'}</span>
+                    </div>
+                    <div className="flex h-1.5 rounded-full overflow-hidden bg-cyan-950/50">
+                      <motion.div className="h-full bg-gradient-to-r from-amber-400 to-amber-500" initial={{ width: 0 }} animate={{ width: `${matPct}%` }} transition={{ duration: 0.6 }} />
+                      <motion.div className="h-full bg-gradient-to-r from-red-400 to-red-500" initial={{ width: 0 }} animate={{ width: `${labPct}%` }} transition={{ duration: 0.6, delay: 0.1 }} />
+                    </div>
+                    <div className="flex gap-2 text-[8px]">
+                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Mat</span>
+                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-red-400" />Lab</span>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            };
+
             return (
               <motion.button
                 key={panel.id}
@@ -6478,11 +6688,13 @@ export default function Stage8FinalReview({
                     )}
                   </div>
                   <p className={cn(
-                    "text-[11px] leading-tight line-clamp-2",
+                    "text-[11px] leading-tight line-clamp-1 mb-1",
                     isActive ? "text-cyan-300/80" : "text-cyan-700/60"
                   )}>
                     {getSummaryText()}
                   </p>
+                  {/* Rich visual metrics */}
+                  {renderRightPanelVisual()}
                   <div className="mt-1">
                     {getTierBadge(panel.visibilityTier)}
                   </div>
