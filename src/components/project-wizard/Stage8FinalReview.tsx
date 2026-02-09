@@ -369,7 +369,7 @@ export default function Stage8FinalReview({
   const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string; userId: string}[]>([]);
   const [tasks, setTasks] = useState<TaskWithChecklist[]>([]);
   const [documents, setDocuments] = useState<DocumentWithCategory[]>([]);
-  const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null}[]>([]);
+  const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null; share_token?: string | null}[]>([]);
   
   // Financial summary data from project_summaries
   const [financialSummary, setFinancialSummary] = useState<{
@@ -850,7 +850,7 @@ export default function Stage8FinalReview({
         // 6. Load contracts
         const { data: contractsData } = await supabase
           .from('contracts')
-          .select('id, contract_number, status, total_amount')
+          .select('id, contract_number, status, total_amount, share_token')
           .eq('project_id', projectId)
           .is('archived_at', null);
         
@@ -3689,11 +3689,43 @@ export default function Stage8FinalReview({
                   {contracts.map(contract => (
                     <div 
                       key={contract.id} 
-                      className="group p-4 rounded-xl border-2 border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20"
+                      className="group p-4 rounded-xl border-2 border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20 cursor-pointer hover:border-pink-400 transition-all"
+                      onClick={() => {
+                        // Open contract view page in new tab
+                        if (contract.share_token) {
+                          window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
+                        } else {
+                          toast.info('Contract preview not available - no share token');
+                        }
+                      }}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">#{contract.contract_number}</span>
                         <div className="flex items-center gap-2">
+                          <FileCheck className="h-4 w-4 text-pink-500" />
+                          <span className="font-medium">#{contract.contract_number}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {/* View contract button */}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (contract.share_token) {
+                                      window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
+                                    }
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>View contract</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           {/* Send to recipients button - Only for non-signed contracts */}
                           {contract.status !== 'signed' && canEdit && (
                             <TooltipProvider>
@@ -3703,12 +3735,14 @@ export default function Stage8FinalReview({
                                     size="icon"
                                     variant="ghost"
                                     className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       setSelectedContractForEmail({
                                         id: contract.id,
                                         contract_number: contract.contract_number,
                                         total_amount: contract.total_amount,
                                         status: contract.status,
+                                        share_token: contract.share_token,
                                       });
                                       setContractRecipients([{ email: '', name: '' }]);
                                       setShowContractEmailDialog(true);
@@ -3734,6 +3768,9 @@ export default function Stage8FinalReview({
                           ${contract.total_amount.toLocaleString()}
                         </p>
                       )}
+                      <p className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Click to view contract
+                      </p>
                     </div>
                   ))}
                 </div>
