@@ -3304,38 +3304,38 @@ export default function Stage8FinalReview({
                             </Badge>
                           </div>
                           
-                          {/* Net Amount */}
-                          <div className="mb-4">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="h-2 w-2 rounded-full bg-white/60" />
-                              <span className="text-white/70 text-sm font-medium uppercase tracking-wider">Net (Before Tax)</span>
-                            </div>
-                            <motion.p 
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.6, delay: 0.2 }}
-                              className="text-4xl md:text-5xl font-bold text-white"
-                            >
-                              ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </motion.p>
-                          </div>
-                          
-                          {/* Tax Amount */}
-                          <div className="mb-4 pl-4 border-l-2 border-amber-500/50">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-amber-300/80 text-xs font-medium uppercase tracking-wider">+ {taxInfo.name} Tax</span>
-                            </div>
-                            <p className="text-2xl font-semibold text-amber-300">
-                              ${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                          
-                          {/* Gross Amount - Hero */}
-                          <div className="pt-4 border-t border-emerald-500/30">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
-                              <span className="text-emerald-300 text-sm font-bold uppercase tracking-wider">Gross Total (With Tax)</span>
-                            </div>
+                           {/* Net Amount */}
+                           <div className="mb-4">
+                             <div className="flex items-center gap-2 mb-1">
+                               <div className="h-2 w-2 rounded-full bg-white" />
+                               <span className="text-white text-sm font-semibold uppercase tracking-wider">Net (Before Tax)</span>
+                             </div>
+                             <motion.p 
+                               initial={{ opacity: 0, x: -20 }}
+                               animate={{ opacity: 1, x: 0 }}
+                               transition={{ duration: 0.6, delay: 0.2 }}
+                               className="text-4xl md:text-5xl font-bold text-white"
+                             >
+                               ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                             </motion.p>
+                           </div>
+                           
+                           {/* Tax Amount */}
+                           <div className="mb-4 pl-4 border-l-2 border-amber-400">
+                             <div className="flex items-center gap-2 mb-1">
+                               <span className="text-amber-200 text-xs font-semibold uppercase tracking-wider">+ {taxInfo.name} Tax</span>
+                             </div>
+                             <p className="text-2xl font-bold text-amber-200">
+                               ${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                             </p>
+                           </div>
+                           
+                           {/* Gross Amount - Hero */}
+                           <div className="pt-4 border-t border-emerald-400">
+                             <div className="flex items-center gap-3 mb-2">
+                               <div className="h-3 w-3 rounded-full bg-emerald-300 animate-pulse" />
+                               <span className="text-emerald-200 text-sm font-bold uppercase tracking-wider">Gross Total (With Tax)</span>
+                             </div>
                             <motion.p 
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
@@ -3435,32 +3435,32 @@ export default function Stage8FinalReview({
                         className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/30 backdrop-blur-sm"
                       >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="relative">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                              <Hammer className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                              <span className="text-xs text-blue-300 uppercase tracking-wider font-medium">Materials</span>
-                              <div className="h-1.5 w-16 bg-blue-500/30 rounded-full mt-1 overflow-hidden">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: totalForPercentage > 0 ? `${(storedMaterialCost / totalForPercentage) * 100}%` : '0%' }}
-                                  transition={{ duration: 1, delay: 0.6 }}
-                                  className="h-full bg-gradient-to-r from-blue-400 to-cyan-400"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-3xl font-bold text-blue-300">
-                            ${storedMaterialCost.toLocaleString()}
-                          </p>
-                          {totalForPercentage > 0 && (
-                            <p className="text-xs text-blue-300/70 mt-1">
-                              {((storedMaterialCost / totalForPercentage) * 100).toFixed(1)}% of total
-                            </p>
-                          )}
-                        </div>
+                         <div className="relative">
+                           <div className="flex items-center gap-3 mb-4">
+                             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                               <Hammer className="h-6 w-6 text-white" />
+                             </div>
+                             <div>
+                               <span className="text-xs text-blue-200 uppercase tracking-wider font-semibold">Materials</span>
+                               <div className="h-1.5 w-16 bg-blue-500/40 rounded-full mt-1 overflow-hidden">
+                                 <motion.div 
+                                   initial={{ width: 0 }}
+                                   animate={{ width: totalForPercentage > 0 ? `${(storedMaterialCost / totalForPercentage) * 100}%` : '0%' }}
+                                   transition={{ duration: 1, delay: 0.6 }}
+                                   className="h-full bg-gradient-to-r from-blue-300 to-cyan-300"
+                                 />
+                               </div>
+                             </div>
+                           </div>
+                           <p className="text-3xl font-bold text-blue-200">
+                             ${storedMaterialCost.toLocaleString()}
+                           </p>
+                           {totalForPercentage > 0 && (
+                             <p className="text-xs text-blue-200/80 mt-1">
+                               {((storedMaterialCost / totalForPercentage) * 100).toFixed(1)}% of total
+                             </p>
+                           )}
+                         </div>
                       </motion.div>
                       
                       {/* Labor Card */}
@@ -3470,30 +3470,30 @@ export default function Stage8FinalReview({
                       >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                         <div className="relative">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                              <Users className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                              <span className="text-xs text-teal-300 uppercase tracking-wider font-medium">Labor</span>
-                              <div className="h-1.5 w-16 bg-teal-500/30 rounded-full mt-1 overflow-hidden">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: totalForPercentage > 0 ? `${(storedLaborCost / totalForPercentage) * 100}%` : '0%' }}
-                                  transition={{ duration: 1, delay: 0.7 }}
-                                  className="h-full bg-gradient-to-r from-teal-400 to-emerald-400"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-3xl font-bold text-teal-300">
-                            ${storedLaborCost.toLocaleString()}
-                          </p>
-                          {totalForPercentage > 0 && (
-                            <p className="text-xs text-teal-300/70 mt-1">
-                              {((storedLaborCost / totalForPercentage) * 100).toFixed(1)}% of total
-                            </p>
-                          )}
+                           <div className="flex items-center gap-3 mb-4">
+                             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                               <Users className="h-6 w-6 text-white" />
+                             </div>
+                             <div>
+                               <span className="text-xs text-teal-200 uppercase tracking-wider font-semibold">Labor</span>
+                               <div className="h-1.5 w-16 bg-teal-500/40 rounded-full mt-1 overflow-hidden">
+                                 <motion.div 
+                                   initial={{ width: 0 }}
+                                   animate={{ width: totalForPercentage > 0 ? `${(storedLaborCost / totalForPercentage) * 100}%` : '0%' }}
+                                   transition={{ duration: 1, delay: 0.7 }}
+                                   className="h-full bg-gradient-to-r from-teal-300 to-emerald-300"
+                                 />
+                               </div>
+                             </div>
+                           </div>
+                           <p className="text-3xl font-bold text-teal-200">
+                             ${storedLaborCost.toLocaleString()}
+                           </p>
+                           {totalForPercentage > 0 && (
+                             <p className="text-xs text-teal-200/80 mt-1">
+                               {((storedLaborCost / totalForPercentage) * 100).toFixed(1)}% of total
+                             </p>
+                           )}
                         </div>
                       </motion.div>
                       
@@ -3504,30 +3504,30 @@ export default function Stage8FinalReview({
                       >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                         <div className="relative">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                              <AlertTriangle className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                              <span className="text-xs text-purple-300 uppercase tracking-wider font-medium">Demolition</span>
-                              <div className="h-1.5 w-16 bg-purple-500/30 rounded-full mt-1 overflow-hidden">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: totalForPercentage > 0 ? `${(demoCost / totalForPercentage) * 100}%` : '0%' }}
-                                  transition={{ duration: 1, delay: 0.8 }}
-                                  className="h-full bg-gradient-to-r from-purple-400 to-violet-400"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-3xl font-bold text-purple-300">
-                            ${demoCost.toLocaleString()}
-                          </p>
-                          {demoPriceCitation && typeof demoPriceCitation.value === 'number' && (
-                            <p className="text-xs text-purple-300/70 mt-1">
-                              @ ${demoPriceCitation.value}/sq ft
-                            </p>
-                          )}
+                           <div className="flex items-center gap-3 mb-4">
+                             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                               <AlertTriangle className="h-6 w-6 text-white" />
+                             </div>
+                             <div>
+                               <span className="text-xs text-purple-200 uppercase tracking-wider font-semibold">Demolition</span>
+                               <div className="h-1.5 w-16 bg-purple-500/40 rounded-full mt-1 overflow-hidden">
+                                 <motion.div 
+                                   initial={{ width: 0 }}
+                                   animate={{ width: totalForPercentage > 0 ? `${(demoCost / totalForPercentage) * 100}%` : '0%' }}
+                                   transition={{ duration: 1, delay: 0.8 }}
+                                   className="h-full bg-gradient-to-r from-purple-300 to-violet-300"
+                                 />
+                               </div>
+                             </div>
+                           </div>
+                           <p className="text-3xl font-bold text-purple-200">
+                             ${demoCost.toLocaleString()}
+                           </p>
+                           {demoPriceCitation && typeof demoPriceCitation.value === 'number' && (
+                             <p className="text-xs text-purple-200/80 mt-1">
+                               @ ${demoPriceCitation.value}/sq ft
+                             </p>
+                           )}
                         </div>
                       </motion.div>
                     </div>
@@ -3600,13 +3600,13 @@ export default function Stage8FinalReview({
                                 className="h-4 w-4 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: item.color }}
                               />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate text-white">{item.name}</p>
-                                <p className="text-xs text-slate-400">
-                                  {((item.value / totalForPercentage) * 100).toFixed(1)}%
-                                </p>
-                              </div>
-                              <p className="text-sm font-bold text-white">${item.value.toLocaleString()}</p>
+                               <div className="flex-1 min-w-0">
+                                 <p className="text-sm font-semibold truncate text-white">{item.name}</p>
+                                 <p className="text-xs text-slate-300">
+                                   {((item.value / totalForPercentage) * 100).toFixed(1)}%
+                                 </p>
+                               </div>
+                               <p className="text-sm font-bold text-white">${item.value.toLocaleString()}</p>
                             </motion.div>
                           ))}
                         </div>
@@ -3658,30 +3658,30 @@ export default function Stage8FinalReview({
                               {profitPercent >= 20 ? '↑' : profitPercent >= 10 ? '→' : '↓'} {profitPercent.toFixed(1)}%
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-3">
-                            Total Expenses: <span className="font-mono text-foreground">${calculatedExpenses.toLocaleString()}</span>
-                          </p>
-                        </div>
-                        
-                        {/* Status Indicator */}
-                        <div className={cn(
-                          "p-4 rounded-xl text-center",
-                          profitPercent >= 20 
-                            ? "bg-green-500/20 border border-green-500/30" 
-                            : profitPercent >= 10 
-                              ? "bg-amber-500/20 border border-amber-500/30" 
-                              : "bg-red-500/20 border border-red-500/30"
-                        )}>
-                          <p className={cn(
-                            "text-lg font-bold",
-                            profitPercent >= 20 ? "text-green-400" : profitPercent >= 10 ? "text-amber-400" : "text-red-400"
-                          )}>
-                            {profitPercent >= 20 ? 'Excellent' : profitPercent >= 10 ? 'Good' : 'Review Needed'}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            {profitPercent >= 20 ? 'Above 20% target' : profitPercent >= 10 ? 'Within acceptable range' : 'Below 10% threshold'}
-                          </p>
-                        </div>
+                           <p className="text-sm text-slate-300 mt-3">
+                             Total Expenses: <span className="font-mono text-white">${calculatedExpenses.toLocaleString()}</span>
+                           </p>
+                         </div>
+                         
+                         {/* Status Indicator */}
+                         <div className={cn(
+                           "p-4 rounded-xl text-center",
+                           profitPercent >= 20 
+                             ? "bg-green-500/20 border border-green-500/30" 
+                             : profitPercent >= 10 
+                               ? "bg-amber-500/20 border border-amber-500/30" 
+                               : "bg-red-500/20 border border-red-500/30"
+                         )}>
+                           <p className={cn(
+                             "text-lg font-bold",
+                             profitPercent >= 20 ? "text-green-300" : profitPercent >= 10 ? "text-amber-300" : "text-red-300"
+                           )}>
+                             {profitPercent >= 20 ? 'Excellent' : profitPercent >= 10 ? 'Good' : 'Review Needed'}
+                           </p>
+                           <p className="text-[10px] text-slate-300 mt-1">
+                             {profitPercent >= 20 ? 'Above 20% target' : profitPercent >= 10 ? 'Within acceptable range' : 'Below 10% threshold'}
+                           </p>
+                         </div>
                       </div>
                     </motion.div>
                   )}
@@ -3692,26 +3692,26 @@ export default function Stage8FinalReview({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: 0.5 }}
-                    >
-                      <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-muted-foreground">
-                        <div className="h-6 w-1 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
-                        Active Contracts ({contracts.length})
-                      </h5>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {contracts.map((contract, index) => (
-                          <motion.div 
-                            key={contract.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
-                            whileHover={{ scale: 1.02 }}
-                            className="p-5 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-700/30 border border-slate-600/50 hover:border-pink-500/50 transition-all"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <FileCheck className="h-5 w-5 text-pink-400" />
-                                <span className="font-mono font-medium">#{contract.contract_number}</span>
-                              </div>
+                     >
+                       <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                         <div className="h-6 w-1 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
+                         Active Contracts ({contracts.length})
+                       </h5>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         {contracts.map((contract, index) => (
+                           <motion.div 
+                             key={contract.id}
+                             initial={{ opacity: 0, x: -20 }}
+                             animate={{ opacity: 1, x: 0 }}
+                             transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                             whileHover={{ scale: 1.02 }}
+                             className="p-5 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-700/30 border border-slate-600/50 hover:border-pink-500/50 transition-all"
+                           >
+                             <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                 <FileCheck className="h-5 w-5 text-pink-400" />
+                                 <span className="font-mono font-medium text-white">#{contract.contract_number}</span>
+                               </div>
                               <Badge 
                                 variant={contract.status === 'signed' ? 'default' : 'outline'}
                                 className={cn(
