@@ -1619,30 +1619,32 @@ export default function Stage8FinalReview({
       const executionCitation = citations.find(c => c.cite_type === 'EXECUTION_MODE');
       const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
       
+      // Debug log to trace citation data
+      console.log('[Stage8] Panel 3 - Trade citations:', {
+        tradeCitation: tradeCitation ? { answer: tradeCitation.answer, value: tradeCitation.value, metadata: tradeCitation.metadata } : null,
+        templateCitation: templateCitation ? { answer: templateCitation.answer } : null,
+        workTypeCitation: workTypeCitation ? { answer: workTypeCitation.answer, metadata: workTypeCitation.metadata } : null,
+      });
+      
       // ✓ NO DEFAULT FALLBACK: Only use actual citation data
       const hasTradeCitation = tradeCitation || workTypeCitation;
       
-      // ✓ Priority: TRADE_SELECTION > WORK_TYPE metadata.work_type_key > WORK_TYPE answer
-      const selectedTrade = tradeCitation?.answer 
-        || (workTypeCitation?.metadata?.work_type_key as string)
-        || workTypeCitation?.answer 
-        || null;
+      // ✓ FIXED PRIORITY: TRADE_SELECTION answer contains specific trade like "Flooring", "Painting"
+      // The value field has the key (flooring), answer field has the label (Flooring)
+      const selectedTradeLabel = tradeCitation?.answer || null;  // "Flooring", "Painting", "Drywall"
+      const selectedTradeKey = (tradeCitation?.value as string) 
+        || (tradeCitation?.metadata?.trade_key as string)
+        || null;  // "flooring", "painting", "drywall"
       
-      const normalizedTrade = selectedTrade?.toLowerCase().trim().replace(/_/g, ' ') || null;
+      // Fallback to WORK_TYPE if no TRADE_SELECTION
+      const workTypeAnswer = workTypeCitation?.answer || null;
+      const workTypeKey = (workTypeCitation?.metadata?.work_type_key as string) || null;
       
-      // ✓ DYNAMIC PANEL TITLE: Use Sub-worktype from citation chain
-      // Check for subworktype in multiple places: metadata fields, or infer from trade selection
-      const subWorktype = tradeCitation?.metadata?.subworktype as string | undefined
-        || tradeCitation?.metadata?.sub_worktype as string | undefined
-        || templateCitation?.metadata?.subworktype as string | undefined
-        || workTypeCitation?.metadata?.subworktype as string | undefined
-        // If the trade is specific (not a broad category), use it as subworktype
-        || (normalizedTrade && !['interior finishing', 'exterior', 'renovation'].includes(normalizedTrade) 
-            ? normalizedTrade.charAt(0).toUpperCase() + normalizedTrade.slice(1) 
-            : null);
+      // Get the best available trade value - prefer TRADE_SELECTION
+      const displayLabel = selectedTradeLabel || workTypeAnswer || null;
+      const tradeKey = selectedTradeKey || workTypeKey || displayLabel?.toLowerCase().replace(/ /g, '_') || null;
       
-      // ✓ Display trade - prioritize subworktype if available
-      const displayTrade = subWorktype || normalizedTrade || null;
+      console.log('[Stage8] Panel 3 - Resolved trade:', { displayLabel, tradeKey });
       
       // ✓ UNIVERSAL TEMPLATE GENERATOR: Trade-specifikus anyagszükséglet és task lista
       // Only calculate if we have actual GFA data - NO FALLBACK
@@ -1709,8 +1711,8 @@ export default function Stage8FinalReview({
           ? templateGfaCitation.metadata.gfa_value
           : null; // ✓ NO HARDCODED FALLBACK
       
-      const tradeTemplate = normalizedTrade 
-        ? getTemplateForTrade(normalizedTrade, templateGfaValue)
+      const tradeTemplate = tradeKey 
+        ? getTemplateForTrade(tradeKey, templateGfaValue)
         : { materials: [], tasks: [], hasData: false };
       
       return (
@@ -1727,8 +1729,8 @@ export default function Stage8FinalReview({
                 "text-xs font-medium uppercase tracking-wide",
                 hasTradeCitation ? "text-orange-600 dark:text-orange-400" : "text-gray-500"
               )}>
-                {/* ✓ Show Sub-worktype in header if available */}
-                {subWorktype ? 'Sub-Worktype' : 'Selected Trade'}
+                {/* ✓ Show specific trade in header */}
+                {displayLabel ? 'Selected Trade' : 'Trade'}
               </span>
               {hasTradeCitation ? (
                 <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
@@ -1744,8 +1746,8 @@ export default function Stage8FinalReview({
               "text-xl font-bold capitalize",
               hasTradeCitation ? "text-orange-700 dark:text-orange-300" : "text-gray-400"
             )}>
-              {/* ✓ DYNAMIC: Display Sub-worktype prominently, or "Not Set" */}
-              {displayTrade || '—'}
+              {/* ✓ DYNAMIC: Display trade label prominently (Flooring, Painting, etc.) */}
+              {displayLabel || '—'}
             </p>
             {templateGfaValue !== null && (
               <p className="text-[10px] text-muted-foreground mt-1">
