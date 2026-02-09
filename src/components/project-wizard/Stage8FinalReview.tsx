@@ -6365,13 +6365,27 @@ export default function Stage8FinalReview({
 
                 {/* CENTRAL CANVAS - Active panel content display */}
                 <motion.div
-                  className="relative rounded-2xl overflow-hidden flex flex-col"
+                  className="relative rounded-2xl overflow-hidden flex flex-col cursor-pointer group/canvas"
                   style={{ gridColumn: '3 / 4', gridRow: '1 / 4' }}
                   layout
+                  onClick={() => setFullscreenPanel(activePanelConfig.id)}
                 >
+                  {/* Radar sweep ambient glow */}
+                  <div className="absolute inset-[-2px] rounded-2xl pointer-events-none z-30 overflow-hidden">
+                    <motion.div
+                      className="absolute w-full h-full"
+                      style={{
+                        background: 'conic-gradient(from 0deg, transparent 0deg, transparent 340deg, rgba(245,158,11,0.25) 355deg, rgba(34,211,238,0.35) 360deg)',
+                      }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+                    />
+                    {/* Inner mask to keep only the border glow */}
+                    <div className="absolute inset-[2px] rounded-[14px] bg-[#0c1120]" />
+                  </div>
+
                   {/* Neon border ring */}
-                  <div className="absolute inset-0 rounded-2xl border border-cyan-700/30 pointer-events-none z-20" />
-                  <div className="absolute inset-[1px] rounded-2xl border border-cyan-500/10 pointer-events-none z-20" />
+                  <div className="absolute inset-0 rounded-2xl border border-cyan-700/30 pointer-events-none z-30" />
 
                   {/* Canvas background */}
                   <div className="absolute inset-0 bg-[#0c1120]/95 backdrop-blur-sm rounded-2xl" />
@@ -6388,18 +6402,13 @@ export default function Stage8FinalReview({
                       </span>
                       {getTierBadge(activePanelConfig.visibilityTier)}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
-                      onClick={() => setFullscreenPanel(activePanelConfig.id)}
-                    >
-                      <Maximize2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Maximize2 className="h-3.5 w-3.5 text-cyan-700 group-hover/canvas:text-cyan-400 transition-colors" />
+                    </div>
                   </div>
 
                   {/* Canvas content - renders active panel */}
-                  <div className="relative z-10 flex-1 overflow-y-auto">
+                  <div className="relative z-10 flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={activeOrbitalPanel}
@@ -6416,6 +6425,9 @@ export default function Stage8FinalReview({
                       </motion.div>
                     </AnimatePresence>
                   </div>
+
+                  {/* Fullscreen hint on hover */}
+                  <div className="absolute inset-0 rounded-2xl bg-cyan-500/[0.03] opacity-0 group-hover/canvas:opacity-100 transition-opacity pointer-events-none z-20" />
                 </motion.div>
 
                 {/* SVG Connection lines - from panels to central canvas edges */}
