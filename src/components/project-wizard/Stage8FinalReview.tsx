@@ -1167,15 +1167,36 @@ export default function Stage8FinalReview({
     
     return (
       <div className="space-y-4">
-        {/* Date citations */}
+        {/* Date citations with Citation Badges */}
         {panelCitations.length > 0 && (
           <div className="grid grid-cols-2 gap-2 mb-4">
             {panelCitations.map(c => (
               <div key={c.id} className="p-2 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20">
-                <p className="text-[10px] text-muted-foreground uppercase">{c.cite_type.replace(/_/g, ' ')}</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] text-muted-foreground uppercase">{c.cite_type.replace(/_/g, ' ')}</p>
+                  <span className="text-[9px] text-indigo-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                </div>
                 <span className="text-sm font-medium">{renderCitationValue(c)}</span>
               </div>
             ))}
+          </div>
+        )}
+        
+        {/* Site Condition Citation Badge */}
+        {siteConditionCitation && (
+          <div className="p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 mb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Hammer className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                  {siteConditionCitation.answer}
+                </span>
+                {hasDemolition && (
+                  <Badge variant="outline" className="text-[9px] bg-red-100 text-red-600">Demolition</Badge>
+                )}
+              </div>
+              <span className="text-[9px] text-amber-500 font-mono">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
+            </div>
           </div>
         )}
         
@@ -1401,7 +1422,7 @@ export default function Stage8FinalReview({
           Contract Generator Preview
         </Button>
         
-        {/* Documents by Category */}
+        {/* Documents by Category with Citation Badges */}
         <div className="space-y-3">
           {docsByCategory.map(cat => (
             <div key={cat.key}>
@@ -1418,8 +1439,10 @@ export default function Stage8FinalReview({
                     <div key={doc.id} className="flex items-center gap-2 p-2 rounded bg-muted/30 hover:bg-muted/50">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs truncate flex-1">{doc.file_name}</span>
-                      {doc.citationId && (
-                        <Badge variant="outline" className="text-[8px]">cited</Badge>
+                      {doc.citationId ? (
+                        <span className="text-[9px] text-pink-500 font-mono">cite: [{doc.citationId.slice(0, 6)}]</span>
+                      ) : (
+                        <Badge variant="outline" className="text-[8px]">uploaded</Badge>
                       )}
                     </div>
                   ))}
@@ -2001,6 +2024,11 @@ export default function Stage8FinalReview({
           window.location.href = `/buildunion/messages?user=${memberId}&project=${projectId}`;
         };
         
+        // Get team-related citations
+        const teamStructureCitation = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+        const teamSizeCitation = citations.find(c => c.cite_type === 'TEAM_SIZE');
+        const teamInviteCitation = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+        
         return (
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-2">
@@ -2021,11 +2049,22 @@ export default function Stage8FinalReview({
               )}
             </div>
             
+            {/* Team Size Citation Badge */}
+            {teamSizeCitation && (
+              <div className="p-2 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-teal-700 dark:text-teal-300">Team Size</span>
+                  <span className="text-[10px] text-teal-500 font-mono">cite: [{teamSizeCitation.id.slice(0, 8)}]</span>
+                </div>
+                <p className="text-sm font-medium">{renderCitationValue(teamSizeCitation)}</p>
+              </div>
+            )}
+            
             {teamMembers.length === 0 ? (
               <p className="text-xs text-muted-foreground italic">No team members added</p>
             ) : (
               <div className="space-y-2">
-                {teamMembers.map(member => (
+                {teamMembers.map((member, idx) => (
                   <div key={member.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-xs font-bold">
@@ -2033,7 +2072,12 @@ export default function Stage8FinalReview({
                       </div>
                       <div>
                         <p className="text-sm font-medium">{member.name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                          {teamInviteCitation && idx === 0 && (
+                            <span className="text-[9px] text-teal-500 font-mono">cite: [{teamInviteCitation.id.slice(0, 6)}]</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {/* Individual message button with persistence guard */}
@@ -2060,12 +2104,17 @@ export default function Stage8FinalReview({
               </div>
             )}
             
+            {/* All Team Citations with badges */}
             {panelCitations.length > 0 && (
               <div className="pt-3 border-t space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">All Citations</p>
                 {panelCitations.map(c => (
-                  <div key={c.id} className="group text-xs">
-                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}: </span>
-                    {renderCitationValue(c)}
+                  <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
+                    <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{renderCitationValue(c)}</span>
+                      <span className="text-[10px] text-teal-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2082,28 +2131,49 @@ export default function Stage8FinalReview({
       case 'panel-7-weather':
         // ✓ Weather widget - Read from LOCATION citation, NO hardcoded fallback
         const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
+        const siteCondCitationWeather = citations.find(c => c.cite_type === 'SITE_CONDITION');
         const hasLocationData = locationCitation?.answer || projectData?.address;
         const weatherAddress = locationCitation?.answer || projectData?.address || null;
         
         return (
           <div className="space-y-3">
-            {/* Address Display */}
+            {/* Address Display with Citation Badge */}
             <div className={cn(
               "p-2 rounded-lg border",
               hasLocationData 
                 ? "bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/50 dark:border-sky-800/30"
                 : "bg-gray-50 dark:bg-gray-950/20 border-gray-200/50"
             )}>
-              <div className="flex items-center gap-2">
-                <MapPin className={cn("h-3.5 w-3.5", hasLocationData ? "text-sky-600" : "text-gray-400")} />
-                <span className={cn(
-                  "text-xs font-medium truncate",
-                  hasLocationData ? "text-sky-700 dark:text-sky-300" : "text-gray-400"
-                )}>
-                  {weatherAddress || 'No location set'}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className={cn("h-3.5 w-3.5", hasLocationData ? "text-sky-600" : "text-gray-400")} />
+                  <span className={cn(
+                    "text-xs font-medium truncate",
+                    hasLocationData ? "text-sky-700 dark:text-sky-300" : "text-gray-400"
+                  )}>
+                    {weatherAddress || 'No location set'}
+                  </span>
+                </div>
+                {locationCitation && (
+                  <span className="text-[10px] text-sky-500 font-mono">cite: [{locationCitation.id.slice(0, 8)}]</span>
+                )}
               </div>
             </div>
+            
+            {/* Site Condition with Citation Badge */}
+            {siteCondCitationWeather && (
+              <div className="p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Hammer className="h-3.5 w-3.5 text-amber-600" />
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      Site: {siteCondCitationWeather.answer}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-amber-500 font-mono">cite: [{siteCondCitationWeather.id.slice(0, 8)}]</span>
+                </div>
+              </div>
+            )}
             
             {/* Integrated Weather Widget - only if we have an address */}
             {weatherAddress ? (
@@ -2121,14 +2191,17 @@ export default function Stage8FinalReview({
               </div>
             )}
             
-            {/* Site Condition Citations */}
+            {/* All Weather/Condition Citations with badges */}
             {panelCitations.length > 0 && (
               <div className="pt-3 border-t space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Site Conditions</p>
+                <p className="text-xs font-medium text-muted-foreground">All Citations</p>
                 {panelCitations.map(c => (
                   <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
                     <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
-                    <span className="font-medium">{renderCitationValue(c)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{renderCitationValue(c)}</span>
+                      <span className="text-[10px] text-sky-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2237,7 +2310,7 @@ export default function Stage8FinalReview({
                   )}
                 </div>
                 
-                {/* Contract & GFA Info */}
+                {/* Contract & GFA Info with Citation Badges */}
                 <div className="grid grid-cols-2 gap-3">
                   {totalContractValue > 0 && (
                     <div className="p-3 rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200/50 dark:border-red-800/30">
@@ -2249,7 +2322,12 @@ export default function Stage8FinalReview({
                   )}
                   {financialGfaValue !== null && budgetTotal !== null && (
                     <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200/50 dark:border-amber-800/30">
-                      <p className="text-xs text-muted-foreground">Cost per sq ft</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">Cost per sq ft</p>
+                        {financialGfaCitation && (
+                          <span className="text-[9px] text-amber-500 font-mono">cite: [{financialGfaCitation.id.slice(0, 6)}]</span>
+                        )}
+                      </div>
                       <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
                         ${(budgetTotal / financialGfaValue).toFixed(2)}
                       </p>
