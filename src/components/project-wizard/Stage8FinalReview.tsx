@@ -6247,109 +6247,119 @@ export default function Stage8FinalReview({
           backgroundSize: '40px 40px',
         }} />
 
-        {/* Orbital Ring - Desktop */}
-        <div className="hidden lg:flex absolute inset-0 items-center justify-center">
-          {/* Orbital ring glow */}
-          <div className="absolute w-[680px] h-[680px] rounded-full border border-cyan-800/20" />
-          <div className="absolute w-[682px] h-[682px] rounded-full border border-cyan-600/5" />
-
-          {/* 8 Orbital Nodes */}
-          {PANELS.map((panel, index) => {
-            const { rad } = getOrbitalPosition(index, PANELS.length);
-            const radius = 310; // Distance from center
-            const x = Math.cos(rad) * radius;
-            const y = Math.sin(rad) * radius;
-            const isActive = activeOrbitalPanel === panel.id;
+        {/* Desktop: Panels around central canvas */}
+        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr] gap-2 p-3">
+          
+          {/* Left column - 4 panels */}
+          {PANELS.slice(0, 4).map((panel) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
+            const isActive = activeOrbitalPanel === panel.id;
             const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
               : panel.id === 'panel-5-timeline' ? tasks.length
               : panel.id === 'panel-6-documents' ? documents.length + contracts.length
               : panelCitations.length;
 
-            // Dynamic title for panel 3
             let displayTitle = panel.title;
             if (panel.id === 'panel-3-trade') {
               const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
               if (tradeCitation?.answer) displayTitle = `${tradeCitation.answer} Template`;
             }
 
+            // Get summary text for the panel
+            const getSummaryText = () => {
+              if (!hasAccess) return 'Restricted';
+              if (panel.id === 'panel-1-basics') {
+                return projectData?.name || 'No name set';
+              }
+              if (panel.id === 'panel-2-gfa') {
+                const gfaCitation = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
+                return gfaCitation ? `${gfaCitation.answer}` : 'Not set';
+              }
+              if (panel.id === 'panel-3-trade') {
+                const tradeCitation = panelCitations.find(c => c.cite_type === 'TRADE_SELECTION');
+                return tradeCitation?.answer || 'No trade selected';
+              }
+              if (panel.id === 'panel-4-team') {
+                return `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`;
+              }
+              return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
+            };
+
             return (
               <motion.button
                 key={panel.id}
                 className={cn(
-                  "absolute flex flex-col items-center gap-1 group cursor-pointer z-10",
-                  !hasAccess && "opacity-30 cursor-not-allowed"
+                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
+                  isActive
+                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
+                  !hasAccess && "opacity-40 cursor-not-allowed"
                 )}
-                style={{ 
-                  left: `calc(50% + ${x}px - 44px)`,
-                  top: `calc(50% + ${y}px - 44px)`,
-                }}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.15 } : undefined}
-                whileTap={hasAccess ? { scale: 0.95 } : undefined}
-                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                whileHover={hasAccess ? { scale: 1.02 } : undefined}
+                whileTap={hasAccess ? { scale: 0.98 } : undefined}
               >
-                {/* Node circle */}
-                <motion.div
-                  className={cn(
-                    "w-[88px] h-[88px] rounded-2xl flex flex-col items-center justify-center relative transition-all duration-300",
-                    isActive 
-                      ? "bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border-2 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
-                      : "bg-[#111827]/80 border border-cyan-900/30 hover:border-cyan-600/50 hover:shadow-[0_0_15px_rgba(34,211,238,0.15)]",
-                    !hasAccess && "border-gray-800/30"
-                  )}
-                  animate={isActive ? {
-                    boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.35)', '0 0 20px rgba(34,211,238,0.2)'],
-                  } : {}}
-                  transition={isActive ? { duration: 2, repeat: Infinity } : {}}
-                >
-                  {!hasAccess ? (
-                    <Lock className="h-5 w-5 text-gray-600" />
-                  ) : (
-                    <>
-                      <Icon className={cn("h-5 w-5 mb-1", isActive ? "text-cyan-300" : "text-cyan-600")} />
-                      {dataCount > 0 && (
-                        <span className={cn(
-                          "text-[9px] font-mono",
-                          isActive ? "text-cyan-200" : "text-cyan-700"
-                        )}>
-                          {dataCount}
-                        </span>
-                      )}
-                    </>
-                  )}
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <motion.div
-                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyan-400"
-                      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                  )}
-                </motion.div>
-                {/* Label */}
-                <span className={cn(
-                  "text-[10px] font-medium text-center max-w-[90px] leading-tight",
-                  isActive ? "text-cyan-200" : "text-cyan-700",
-                  !hasAccess && "text-gray-700"
-                )}>
-                  {displayTitle}
-                </span>
+                <div className="p-3 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "h-7 w-7 rounded-lg flex items-center justify-center",
+                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
+                      )}>
+                        {hasAccess ? (
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
+                        ) : (
+                          <Lock className="h-3.5 w-3.5 text-gray-600" />
+                        )}
+                      </div>
+                      <span className={cn(
+                        "text-xs font-semibold",
+                        isActive ? "text-cyan-200" : "text-cyan-500"
+                      )}>
+                        {displayTitle}
+                      </span>
+                    </div>
+                    {dataCount > 0 && hasAccess && (
+                      <span className={cn(
+                        "text-[10px] font-mono px-1.5 py-0.5 rounded",
+                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
+                      )}>
+                        {dataCount}
+                      </span>
+                    )}
+                  </div>
+                  <p className={cn(
+                    "text-[11px] leading-tight line-clamp-2",
+                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
+                  )}>
+                    {getSummaryText()}
+                  </p>
+                  {/* Tier badge */}
+                  <div className="mt-1">
+                    {getTierBadge(panel.visibilityTier)}
+                  </div>
+                </div>
+                {/* Active glow bar */}
+                {isActive && (
+                  <motion.div
+                    className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
+                    layoutId="activePanelIndicator"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
               </motion.button>
             );
           })}
 
-          {/* Central Canvas */}
+          {/* Central Canvas - spans middle column, all 4 rows */}
           <motion.div
-            className="relative w-[480px] h-[420px] rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden"
+            className="row-span-4 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
             layout
-            key={activeOrbitalPanel}
           >
             {/* Canvas header */}
-            <div className="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40">
+            <div className="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40 shrink-0">
               <div className="flex items-center gap-2">
                 <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
                 <span className="text-sm font-semibold text-cyan-200">
@@ -6379,7 +6389,7 @@ export default function Stage8FinalReview({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="p-4 overflow-y-auto h-[calc(100%-52px)] [&_*]:text-foreground dark:[&_*]:text-foreground"
+                className="flex-1 p-4 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground"
                 style={{ colorScheme: 'light' }}
               >
                 <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
@@ -6389,30 +6399,104 @@ export default function Stage8FinalReview({
             </AnimatePresence>
           </motion.div>
 
-          {/* Connection lines from active node to center */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-            {PANELS.map((panel, index) => {
-              const { rad } = getOrbitalPosition(index, PANELS.length);
-              const radius = 310;
-              const x = Math.cos(rad) * radius;
-              const y = Math.sin(rad) * radius;
-              const isActive = activeOrbitalPanel === panel.id;
-              
-              return isActive ? (
-                <motion.line
-                  key={panel.id}
-                  x1="50%" y1="50%"
-                  x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`}
-                  stroke="rgba(34,211,238,0.3)"
-                  strokeWidth="1.5"
-                  strokeDasharray="6 4"
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                />
-              ) : null;
-            })}
-          </svg>
+          {/* Right column - 4 panels */}
+          {PANELS.slice(4, 8).map((panel) => {
+            const hasAccess = hasAccessToTier(panel.visibilityTier);
+            const Icon = panel.icon;
+            const panelCitations = getCitationsForPanel(panel.dataKeys);
+            const isActive = activeOrbitalPanel === panel.id;
+            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
+              : panel.id === 'panel-5-timeline' ? tasks.length
+              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
+              : panelCitations.length;
+
+            const getSummaryText = () => {
+              if (!hasAccess) return 'Restricted';
+              if (panel.id === 'panel-5-timeline') {
+                const startCitation = panelCitations.find(c => c.cite_type === 'TIMELINE');
+                const endCitation = panelCitations.find(c => c.cite_type === 'END_DATE');
+                if (startCitation && endCitation) return `${startCitation.answer} → ${endCitation.answer}`;
+                return `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
+              }
+              if (panel.id === 'panel-6-documents') {
+                return `${documents.length} doc${documents.length !== 1 ? 's' : ''}, ${contracts.length} contract${contracts.length !== 1 ? 's' : ''}`;
+              }
+              if (panel.id === 'panel-7-weather') {
+                if (weatherData?.temp != null) return `${weatherData.temp}° — ${weatherData.condition || 'Clear'}`;
+                return 'Loading weather...';
+              }
+              if (panel.id === 'panel-8-financial') {
+                if (!canViewFinancials) return 'Owner only';
+                const total = financialSummary?.total_cost;
+                if (total != null) return `$${total.toLocaleString()}`;
+                return 'No data yet';
+              }
+              return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
+            };
+
+            return (
+              <motion.button
+                key={panel.id}
+                className={cn(
+                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
+                  isActive
+                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
+                  !hasAccess && "opacity-40 cursor-not-allowed"
+                )}
+                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                whileHover={hasAccess ? { scale: 1.02 } : undefined}
+                whileTap={hasAccess ? { scale: 0.98 } : undefined}
+              >
+                <div className="p-3 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "h-7 w-7 rounded-lg flex items-center justify-center",
+                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
+                      )}>
+                        {hasAccess ? (
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
+                        ) : (
+                          <Lock className="h-3.5 w-3.5 text-gray-600" />
+                        )}
+                      </div>
+                      <span className={cn(
+                        "text-xs font-semibold",
+                        isActive ? "text-cyan-200" : "text-cyan-500"
+                      )}>
+                        {panel.title}
+                      </span>
+                    </div>
+                    {dataCount > 0 && hasAccess && (
+                      <span className={cn(
+                        "text-[10px] font-mono px-1.5 py-0.5 rounded",
+                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
+                      )}>
+                        {dataCount}
+                      </span>
+                    )}
+                  </div>
+                  <p className={cn(
+                    "text-[11px] leading-tight line-clamp-2",
+                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
+                  )}>
+                    {getSummaryText()}
+                  </p>
+                  <div className="mt-1">
+                    {getTierBadge(panel.visibilityTier)}
+                  </div>
+                </div>
+                {isActive && (
+                  <motion.div
+                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
+                    layoutId="activePanelIndicatorRight"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Mobile/Tablet: Tab-based layout */}
@@ -6473,39 +6557,6 @@ export default function Stage8FinalReview({
               </motion.div>
             </AnimatePresence>
           </div>
-        </div>
-
-        {/* Navigation arrows - Desktop */}
-        <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 items-center gap-3 z-20">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
-            onClick={() => {
-              const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
-              const prevIdx = (currentIdx - 1 + PANELS.length) % PANELS.length;
-              setActiveOrbitalPanel(PANELS[prevIdx].id);
-            }}
-          >
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Previous
-          </Button>
-          <span className="text-[10px] text-cyan-700 font-mono">
-            {PANELS.findIndex(p => p.id === activeOrbitalPanel) + 1} / {PANELS.length}
-          </span>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
-            onClick={() => {
-              const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
-              const nextIdx = (currentIdx + 1) % PANELS.length;
-              setActiveOrbitalPanel(PANELS[nextIdx].id);
-            }}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
       </div>
       
