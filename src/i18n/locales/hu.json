@@ -1,4 +1,21 @@
 {
+  "stage8": {
+    "title": "Végső Áttekintés Dashboard",
+    "subtitle": "8. fázis • 8-Paneles Összefoglaló • Ellenőrzés és szerkesztés aktiválás előtt",
+    "panel1": "Projekt Alapok",
+    "panel2": "Terület és Méretek",
+    "panel3": "Szakma és Sablon",
+    "panel4": "Csapat Felépítés",
+    "panel5": "Végrehajtási Ütemterv",
+    "panel6": "Dokumentumok és Szerződések",
+    "panel7": "Időjárás és Feltételek",
+    "panel8": "Pénzügyi Összefoglaló",
+    "projectSummary": "Projekt Összefoglaló",
+    "messaSynthesis": "M.E.S.S.A. Szintézis",
+    "activateProject": "Projekt Aktiválása",
+    "messaDownload": "PDF Letöltés",
+    "messaSave": "Mentés Dokumentumokba"
+  },
   "offline": {
     "syncComplete": "{{count}} változás szinkronizálva",
     "syncFailed": "{{count}} változás szinkronizálása sikertelen",

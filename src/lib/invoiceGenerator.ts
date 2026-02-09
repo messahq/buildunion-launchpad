@@ -88,11 +88,11 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     </tr>
   `).join('');
 
-  // Build logo section - use provided logo or BuildUnion default
-  const logoUrl = data.contractor.logo || '/images/buildunion-logo-lightmode.png';
+  // Build logo section - use provided logo or BuildUnion default with actual image
+  const defaultLogoUrl = '/images/buildunion-logo-lightmode.png';
   const logoSection = data.contractor.logo 
     ? `<img src="${escapeHtml(data.contractor.logo)}" alt="Company Logo" style="max-height: 60px; max-width: 200px; object-fit: contain;" />`
-    : `<div style="font-size: 24px; font-weight: 700; color: #f59e0b;">🏗️ BuildUnion</div>`;
+    : `<img src="${defaultLogoUrl}" alt="BuildUnion" style="max-height: 60px; max-width: 180px; object-fit: contain;" onerror="this.style.display='none';this.nextSibling.style.display='flex';" /><div style="display:none;font-size:24px;font-weight:700;color:#f59e0b;align-items:center;gap:8px;">🏗️ BuildUnion</div>`;
 
   return `
     <!DOCTYPE html>
