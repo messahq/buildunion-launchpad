@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PendingInvitationsPanel } from "@/components/PendingInvitationsPanel";
 
 interface SavedProject {
   id: string;
@@ -261,8 +262,11 @@ const BuildUnionWorkspace = () => {
             >
               <Plus className="h-4 w-4" />
               {t("workspace.newProject", "New Project")}
-            </Button>
+          </Button>
           </div>
+
+          {/* Pending Invitations Panel */}
+          <PendingInvitationsPanel />
 
           {/* Tabs for My Projects vs Shared with me */}
           {hasSharedProjects ? (
