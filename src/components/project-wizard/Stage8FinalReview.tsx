@@ -832,6 +832,14 @@ export default function Stage8FinalReview({
           .is('archived_at', null);
         
         if (tasksData) {
+          // ✓ Check which tasks have verification photos via loaded citations
+          const taskPhotoIds = new Set<string>();
+          loadedCitations.forEach((c: Citation) => {
+            if (c?.metadata?.taskId && (c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION')) {
+              taskPhotoIds.add(c.metadata.taskId as string);
+            }
+          });
+          
           const tasksWithChecklist: TaskWithChecklist[] = tasksData.map(task => {
             // Infer phase from priority/title
             let phase = 'installation';
@@ -844,6 +852,8 @@ export default function Stage8FinalReview({
               phase = 'finishing';
             }
             
+            const hasVerificationPhoto = taskPhotoIds.has(task.id);
+            
             return {
               id: task.id,
               title: task.title,
@@ -853,8 +863,8 @@ export default function Stage8FinalReview({
               assigned_to: task.assigned_to,
               checklist: [
                 { id: `${task.id}-start`, text: 'Task started', done: task.status !== 'pending' },
-                { id: `${task.id}-complete`, text: 'Task completed', done: task.status === 'completed' },
-                { id: `${task.id}-verify`, text: 'Verification photo', done: false },
+                { id: `${task.id}-complete`, text: 'Task completed', done: task.status === 'completed' || task.status === 'done' },
+                { id: `${task.id}-verify`, text: 'Verification photo', done: hasVerificationPhoto },
               ],
             };
           });
@@ -1308,12 +1318,39 @@ export default function Stage8FinalReview({
     }
   }, [selectedContractForEmail, contractRecipients, projectData]);
   
-  // Update task checklist item
+  // Update task checklist item — persists status changes to DB
   const updateChecklistItem = useCallback(async (taskId: string, checklistItemId: string, done: boolean) => {
+    // For verification photo: don't allow manual check — must upload a photo
+    if (checklistItemId.includes('-verify')) {
+      if (done) {
+        toast.info('Upload a verification photo using the 📷 button to verify this task');
+        return;
+      }
+      // Allow unchecking — but verification stays based on citations
+      return;
+    }
+    
+    // For start/complete items, persist to DB
+    const isStartItem = checklistItemId.includes('-start');
+    const isCompleteItem = checklistItemId.includes('-complete');
+    
+    let newStatus: string | null = null;
+    if (isCompleteItem && done) {
+      newStatus = 'completed';
+    } else if (isCompleteItem && !done) {
+      newStatus = 'in_progress';
+    } else if (isStartItem && done) {
+      newStatus = 'in_progress';
+    } else if (isStartItem && !done) {
+      newStatus = 'pending';
+    }
+    
+    // Update local state
     setTasks(prev => prev.map(task => {
       if (task.id === taskId) {
         return {
           ...task,
+          status: newStatus || task.status,
           checklist: task.checklist.map(item => 
             item.id === checklistItemId ? { ...item, done } : item
           ),
@@ -1322,9 +1359,19 @@ export default function Stage8FinalReview({
       return task;
     }));
     
-    // If this is a verification photo and it's being checked, show upload prompt
-    if (checklistItemId.includes('-verify') && done) {
-      toast.info('Verification photo required - please upload via Documents panel');
+    // Persist to DB
+    if (newStatus) {
+      try {
+        const { error } = await supabase
+          .from('project_tasks')
+          .update({ status: newStatus })
+          .eq('id', taskId);
+        if (error) throw error;
+        console.log(`[Stage8] ✓ Task ${taskId} status → ${newStatus}`);
+      } catch (err) {
+        console.error('[Stage8] Failed to update task status:', err);
+        toast.error('Failed to save task status');
+      }
     }
   }, []);
   
@@ -3353,7 +3400,19 @@ export default function Stage8FinalReview({
                                               });
                                             return updated;
                                           });
-                                          toast.success(`Photo uploaded for "${task.title}"`, { description: 'Added to Visuals' });
+                                          // ✓ Auto-mark verification checklist item as done
+                                          setTasks(prev => prev.map(t => {
+                                            if (t.id === task.id) {
+                                              return {
+                                                ...t,
+                                                checklist: t.checklist.map(item =>
+                                                  item.id === `${task.id}-verify` ? { ...item, done: true } : item
+                                                ),
+                                              };
+                                            }
+                                            return t;
+                                          }));
+                                          toast.success(`Photo uploaded for "${task.title}"`, { description: '✓ Verified' });
                                         } catch (err) {
                                           console.error('[Stage8] Task photo upload failed:', err);
                                           toast.error('Failed to upload photo');
