@@ -1946,15 +1946,38 @@ export default function Stage8FinalReview({
       
       // ✓ UNIVERSAL TEMPLATE GENERATOR: Trade-specifikus anyagszükséglet és task lista
       // Only calculate if we have actual TRADE_SELECTION data - NO FALLBACK from WORK_TYPE
-      const getTemplateForTrade = (trade: string, gfa: number | null) => {
+      // ✓ GANTT-BASED PHASES: Demolition → Preparation → Installation → Finishing & QC (Stage 7 struktúra)
+      
+      interface PhaseTask {
+        id: string;
+        name: string;
+        phaseName: string;
+        phaseColor: string;
+        phaseBgColor: string;
+        verificationLabel?: string;
+      }
+      
+      const getTemplateForTrade = (trade: string, gfa: number | null, hasDemolition: boolean = false) => {
         if (gfa === null || gfa === 0) {
-          return { materials: [], tasks: [], hasData: false };
+          return { materials: [], phases: [], tasks: [], hasData: false };
         }
         
         const tradeLower = trade.toLowerCase().replace(/ /g, '_');
         
+        // ✓ PHASE DEFINITIONS (aligned with Stage 7 Gantt)
+        const PHASE_META = {
+          demolition: { name: 'Demolition', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950/30', borderColor: 'border-red-200 dark:border-red-800' },
+          preparation: { name: 'Preparation', color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
+          installation: { name: 'Installation', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
+          finishing: { name: 'Finishing & QC', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950/30', borderColor: 'border-green-200 dark:border-green-800' },
+        };
+        
         // ✓ Templates are NEUTRAL - they show what the user selected as TRADE_SELECTION
-        const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
+        // Each template now has 4 phases with specific tasks
+        const templates: Record<string, { 
+          materials: {name: string; qty: number; unit: string}[]; 
+          phases: { phaseId: string; tasks: string[]; verificationLabel: string }[];
+        }> = {
           painting: {
             materials: [
               { name: 'Interior Paint (Premium)', qty: Math.ceil(gfa / 350), unit: 'gal' },
@@ -1963,7 +1986,12 @@ export default function Stage8FinalReview({
               { name: 'Drop Cloths', qty: Math.ceil(gfa / 500), unit: 'pcs' },
               { name: 'Caulking', qty: Math.ceil(gfa / 300), unit: 'tubes' },
             ],
-            tasks: ['Surface prep & cleaning', 'Priming', 'First coat', 'Second coat', 'Touch-ups & cleanup'],
+            phases: [
+              { phaseId: 'demolition', tasks: ['Remove old wallpaper', 'Strip existing paint if needed'], verificationLabel: 'Site Clear Photo' },
+              { phaseId: 'preparation', tasks: ['Surface cleaning', 'Patch holes & cracks', 'Sand surfaces', 'Mask & tape edges'], verificationLabel: 'Prep Complete Checklist' },
+              { phaseId: 'installation', tasks: ['Apply primer coat', 'First paint coat', 'Second paint coat'], verificationLabel: 'Progress Photos' },
+              { phaseId: 'finishing', tasks: ['Touch-ups', 'Edge refinement', 'Cleanup & remove covers'], verificationLabel: 'Final Inspection (OBC)' },
+            ],
           },
           flooring: {
             materials: [
@@ -1972,7 +2000,12 @@ export default function Stage8FinalReview({
               { name: 'Transition Strips', qty: Math.ceil(gfa / 200), unit: 'pcs' },
               { name: 'Baseboards', qty: Math.round(4 * Math.sqrt(gfa) * 0.85), unit: 'ln ft' },
             ],
-            tasks: ['Remove old flooring', 'Subfloor prep', 'Install underlayment', 'Install flooring', 'Install baseboards'],
+            phases: [
+              { phaseId: 'demolition', tasks: ['Remove existing flooring', 'Remove old baseboards', 'Dispose debris'], verificationLabel: 'Site Clear Photo' },
+              { phaseId: 'preparation', tasks: ['Inspect subfloor', 'Level & repair subfloor', 'Acclimate flooring materials', 'Install moisture barrier'], verificationLabel: 'Prep Complete Checklist' },
+              { phaseId: 'installation', tasks: ['Install underlayment', 'Install flooring planks', 'Install transition strips'], verificationLabel: 'Progress Photos' },
+              { phaseId: 'finishing', tasks: ['Install baseboards', 'Apply finishing touches', 'Final cleanup', 'Quality inspection'], verificationLabel: 'Final Inspection (OBC)' },
+            ],
           },
           drywall: {
             materials: [
@@ -1981,9 +2014,13 @@ export default function Stage8FinalReview({
               { name: 'Drywall Tape', qty: Math.ceil(gfa / 100), unit: 'rolls' },
               { name: 'Screws', qty: Math.ceil(gfa / 50), unit: 'boxes' },
             ],
-            tasks: ['Demolition', 'Framing check', 'Hang drywall', 'Tape & mud', 'Sand & finish'],
+            phases: [
+              { phaseId: 'demolition', tasks: ['Remove old drywall', 'Clear debris', 'Inspect framing'], verificationLabel: 'Site Clear Photo' },
+              { phaseId: 'preparation', tasks: ['Repair framing if needed', 'Install insulation', 'Mark stud locations', 'Prepare sheets'], verificationLabel: 'Prep Complete Checklist' },
+              { phaseId: 'installation', tasks: ['Hang drywall sheets', 'Apply tape & first mud coat', 'Second mud coat', 'Third mud coat (finish)'], verificationLabel: 'Progress Photos' },
+              { phaseId: 'finishing', tasks: ['Sand surfaces smooth', 'Prime drywall', 'Final inspection', 'Cleanup'], verificationLabel: 'Final Inspection (OBC)' },
+            ],
           },
-          // ✓ NO interior_finishing fallback - parent categories don't have specific materials
         };
         
         // Try exact match, then partial match
@@ -1991,8 +2028,50 @@ export default function Stage8FinalReview({
           || templates[tradeLower.replace(/_/g, '')] 
           || Object.entries(templates).find(([key]) => tradeLower.includes(key))?.[1]
           || null;
+        
+        if (!result) {
+          return { materials: [], phases: [], tasks: [], hasData: false };
+        }
+        
+        // Filter out demolition phase if not needed, then build flat task list with phase info
+        const activePhases = hasDemolition 
+          ? result.phases 
+          : result.phases.filter(p => p.phaseId !== 'demolition');
+        
+        // Build task list with phase metadata for UI rendering
+        const allTasks: PhaseTask[] = [];
+        activePhases.forEach(phase => {
+          const meta = PHASE_META[phase.phaseId as keyof typeof PHASE_META];
+          phase.tasks.forEach((taskName, idx) => {
+            allTasks.push({
+              id: `${phase.phaseId}_${idx}`,
+              name: taskName,
+              phaseName: meta.name,
+              phaseColor: meta.color,
+              phaseBgColor: meta.bgColor,
+            });
+          });
+          // Add verification node at end of phase
+          allTasks.push({
+            id: `${phase.phaseId}_verify`,
+            name: phase.verificationLabel,
+            phaseName: meta.name,
+            phaseColor: meta.color,
+            phaseBgColor: meta.bgColor,
+            verificationLabel: phase.verificationLabel,
+          });
+        });
+        
+        // Legacy flat tasks array for backward compatibility
+        const flatTasks = allTasks.map(t => t.name);
           
-        return result ? { ...result, hasData: true } : { materials: [], tasks: [], hasData: false };
+        return { 
+          materials: result.materials, 
+          phases: activePhases.map(p => ({ ...p, meta: PHASE_META[p.phaseId as keyof typeof PHASE_META] })),
+          tasks: flatTasks, // Legacy compatibility
+          phaseTasks: allTasks, // New structured format
+          hasData: true,
+        };
       };
       
       // Get GFA for template calculation - NO FALLBACK
@@ -2741,13 +2820,38 @@ export default function Stage8FinalReview({
             : 10;
           
           // ✓ UNIVERSAL TEMPLATE GENERATOR - Dynamically generates materials based on user's TRADE_SELECTION
-          const getTemplateForTrade = (trade: string, gfa: number | null) => {
-            if (gfa === null || gfa === 0) return { materials: [], tasks: [], hasData: false };
+          // ✓ GANTT-BASED PHASES: Demolition → Preparation → Installation → Finishing & QC (Stage 7 struktúra)
+          
+          interface FullscreenPhaseTask {
+            id: string;
+            name: string;
+            phaseName: string;
+            phaseColor: string;
+            phaseBgColor: string;
+            verificationLabel?: string;
+          }
+          
+          const PHASE_META_FULLSCREEN = {
+            demolition: { name: 'Demolition', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950/30', borderColor: 'border-red-200 dark:border-red-800' },
+            preparation: { name: 'Preparation', color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
+            installation: { name: 'Installation', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
+            finishing: { name: 'Finishing & QC', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950/30', borderColor: 'border-green-200 dark:border-green-800' },
+          };
+          
+          // Check if demolition is needed from SITE_CONDITION citation
+          const siteConditionCite = citations.find(c => c.cite_type === 'SITE_CONDITION');
+          const hasDemolitionPhase = siteConditionCite?.value === 'demolition';
+          
+          const getTemplateForTradeFullscreen = (trade: string, gfa: number | null, hasDemolition: boolean = false) => {
+            if (gfa === null || gfa === 0) return { materials: [], phases: [], tasks: [], phaseTasks: [], hasData: false };
             
             const tradeLower = trade.toLowerCase().replace(/ /g, '_');
             
-            // ✓ Template definitions - NEUTRAL, based on user selection
-            const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
+            // ✓ Template definitions with 4-phase Gantt structure
+            const templates: Record<string, { 
+              materials: {name: string; qty: number; unit: string}[]; 
+              phases: { phaseId: string; tasks: string[]; verificationLabel: string }[];
+            }> = {
               painting: {
                 materials: [
                   { name: 'Interior Paint (Premium)', qty: Math.ceil(gfa / 350), unit: 'gal' },
@@ -2756,7 +2860,12 @@ export default function Stage8FinalReview({
                   { name: 'Drop Cloths', qty: Math.ceil(gfa / 500), unit: 'pcs' },
                   { name: 'Caulking', qty: Math.ceil(gfa / 300), unit: 'tubes' },
                 ],
-                tasks: ['Surface prep & cleaning', 'Priming', 'First coat', 'Second coat', 'Touch-ups & cleanup'],
+                phases: [
+                  { phaseId: 'demolition', tasks: ['Remove old wallpaper', 'Strip existing paint if needed'], verificationLabel: 'Site Clear Photo' },
+                  { phaseId: 'preparation', tasks: ['Surface cleaning', 'Patch holes & cracks', 'Sand surfaces', 'Mask & tape edges'], verificationLabel: 'Prep Complete Checklist' },
+                  { phaseId: 'installation', tasks: ['Apply primer coat', 'First paint coat', 'Second paint coat'], verificationLabel: 'Progress Photos' },
+                  { phaseId: 'finishing', tasks: ['Touch-ups', 'Edge refinement', 'Cleanup & remove covers'], verificationLabel: 'Final Inspection (OBC)' },
+                ],
               },
               flooring: {
                 materials: [
@@ -2765,7 +2874,12 @@ export default function Stage8FinalReview({
                   { name: 'Transition Strips', qty: Math.ceil(gfa / 200), unit: 'pcs' },
                   { name: 'Baseboards', qty: Math.round(4 * Math.sqrt(gfa) * 0.85), unit: 'ln ft' },
                 ],
-                tasks: ['Remove old flooring', 'Subfloor prep', 'Install underlayment', 'Install flooring', 'Install baseboards'],
+                phases: [
+                  { phaseId: 'demolition', tasks: ['Remove existing flooring', 'Remove old baseboards', 'Dispose debris'], verificationLabel: 'Site Clear Photo' },
+                  { phaseId: 'preparation', tasks: ['Inspect subfloor', 'Level & repair subfloor', 'Acclimate flooring materials', 'Install moisture barrier'], verificationLabel: 'Prep Complete Checklist' },
+                  { phaseId: 'installation', tasks: ['Install underlayment', 'Install flooring planks', 'Install transition strips'], verificationLabel: 'Progress Photos' },
+                  { phaseId: 'finishing', tasks: ['Install baseboards', 'Apply finishing touches', 'Final cleanup', 'Quality inspection'], verificationLabel: 'Final Inspection (OBC)' },
+                ],
               },
               drywall: {
                 materials: [
@@ -2774,18 +2888,62 @@ export default function Stage8FinalReview({
                   { name: 'Drywall Tape', qty: Math.ceil(gfa / 100), unit: 'rolls' },
                   { name: 'Screws', qty: Math.ceil(gfa / 50), unit: 'boxes' },
                 ],
-                tasks: ['Demolition', 'Framing check', 'Hang drywall', 'Tape & mud', 'Sand & finish'],
+                phases: [
+                  { phaseId: 'demolition', tasks: ['Remove old drywall', 'Clear debris', 'Inspect framing'], verificationLabel: 'Site Clear Photo' },
+                  { phaseId: 'preparation', tasks: ['Repair framing if needed', 'Install insulation', 'Mark stud locations', 'Prepare sheets'], verificationLabel: 'Prep Complete Checklist' },
+                  { phaseId: 'installation', tasks: ['Hang drywall sheets', 'Apply tape & first mud coat', 'Second mud coat', 'Third mud coat (finish)'], verificationLabel: 'Progress Photos' },
+                  { phaseId: 'finishing', tasks: ['Sand surfaces smooth', 'Prime drywall', 'Final inspection', 'Cleanup'], verificationLabel: 'Final Inspection (OBC)' },
+                ],
               },
             };
             
-            // ✓ Try exact match first, then partial match
             const result = templates[tradeLower] 
               || Object.entries(templates).find(([key]) => tradeLower.includes(key))?.[1]
               || null;
-            return result ? { ...result, hasData: true } : { materials: [], tasks: [], hasData: false };
+            
+            if (!result) return { materials: [], phases: [], tasks: [], phaseTasks: [], hasData: false };
+            
+            // Filter out demolition phase if not needed
+            const activePhases = hasDemolition 
+              ? result.phases 
+              : result.phases.filter(p => p.phaseId !== 'demolition');
+            
+            // Build task list with phase metadata
+            const allTasks: FullscreenPhaseTask[] = [];
+            activePhases.forEach(phase => {
+              const meta = PHASE_META_FULLSCREEN[phase.phaseId as keyof typeof PHASE_META_FULLSCREEN];
+              phase.tasks.forEach((taskName, idx) => {
+                allTasks.push({
+                  id: `${phase.phaseId}_${idx}`,
+                  name: taskName,
+                  phaseName: meta.name,
+                  phaseColor: meta.color,
+                  phaseBgColor: meta.bgColor,
+                });
+              });
+              // Verification node
+              allTasks.push({
+                id: `${phase.phaseId}_verify`,
+                name: phase.verificationLabel,
+                phaseName: meta.name,
+                phaseColor: meta.color,
+                phaseBgColor: meta.bgColor,
+                verificationLabel: phase.verificationLabel,
+              });
+            });
+            
+            return { 
+              materials: result.materials, 
+              phases: activePhases.map(p => ({ ...p, meta: PHASE_META_FULLSCREEN[p.phaseId as keyof typeof PHASE_META_FULLSCREEN] })),
+              tasks: allTasks.map(t => t.name),
+              phaseTasks: allTasks,
+              hasData: true,
+            };
           };
           
-          const template = tradeKey ? getTemplateForTrade(tradeKey, gfaValue) : { materials: [], tasks: [], hasData: false };
+          const template = tradeKey 
+            ? getTemplateForTradeFullscreen(tradeKey, gfaValue, hasDemolitionPhase) 
+            : { materials: [], phases: [], tasks: [], phaseTasks: [], hasData: false };
           
           // Apply waste to materials
           const materialsWithWaste = template.materials.map(mat => {
@@ -2866,23 +3024,82 @@ export default function Stage8FinalReview({
                 </div>
               )}
               
-              {/* Task Phases */}
-              {template.hasData && template.tasks.length > 0 && (
+              {/* ✓ GANTT-STYLE WORK PHASES - Grouped by Phase */}
+              {template.hasData && template.phases && template.phases.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    Work Phases ({template.tasks.length})
+                    <Calendar className="h-4 w-4 text-indigo-500" />
+                    Work Phases (Gantt Structure)
+                    {hasDemolitionPhase && (
+                      <Badge variant="outline" className="text-[10px] bg-red-50 text-red-600 ml-2">
+                        Demolition Included
+                      </Badge>
+                    )}
                   </h4>
-                  <div className="grid gap-2">
-                    {template.tasks.map((task, idx) => (
+                  <div className="space-y-4">
+                    {template.phases.map((phase: { phaseId: string; tasks: string[]; verificationLabel: string; meta: { name: string; color: string; bgColor: string; borderColor: string } }) => (
                       <div 
-                        key={idx} 
-                        className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30"
+                        key={phase.phaseId}
+                        className={cn(
+                          "rounded-xl border-2 overflow-hidden",
+                          phase.meta.borderColor
+                        )}
                       >
-                        <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 font-bold text-sm">
-                          {idx + 1}
+                        {/* Phase Header */}
+                        <div className={cn(
+                          "px-4 py-3 flex items-center justify-between",
+                          phase.meta.bgColor
+                        )}>
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                              phase.phaseId === 'demolition' ? 'bg-red-500' :
+                              phase.phaseId === 'preparation' ? 'bg-amber-500' :
+                              phase.phaseId === 'installation' ? 'bg-blue-500' : 'bg-green-500'
+                            )}>
+                              {phase.phaseId === 'demolition' ? 'D' :
+                               phase.phaseId === 'preparation' ? 'P' :
+                               phase.phaseId === 'installation' ? 'I' : 'F'}
+                            </div>
+                            <span className={cn("font-semibold", phase.meta.color)}>
+                              {phase.meta.name}
+                            </span>
+                          </div>
+                          <Badge variant="outline" className="text-[10px]">
+                            {phase.tasks.length} tasks
+                          </Badge>
                         </div>
-                        <span className="font-medium">{task}</span>
+                        
+                        {/* Phase Tasks */}
+                        <div className="p-4 space-y-2 bg-background/50">
+                          {phase.tasks.map((taskName, idx) => (
+                            <div 
+                              key={idx}
+                              className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                            >
+                              <div className={cn(
+                                "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold",
+                                phase.meta.bgColor, phase.meta.color
+                              )}>
+                                {idx + 1}
+                              </div>
+                              <span className="text-sm">{taskName}</span>
+                            </div>
+                          ))}
+                          
+                          {/* Verification Node */}
+                          <div className="flex items-center gap-3 p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 mt-3">
+                            <div className="h-6 w-6 rounded-full bg-purple-500 flex items-center justify-center">
+                              <Camera className="h-3 w-3 text-white" />
+                            </div>
+                            <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                              {phase.verificationLabel}
+                            </span>
+                            <Badge className="ml-auto text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600">
+                              Required
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
