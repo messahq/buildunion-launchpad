@@ -513,7 +513,7 @@ const BuildUnionNewProject = () => {
                 projectId={projectId}
                 userId={user.id}
                 userRole="owner"
-                onComplete={() => navigate(`/buildunion/project/${projectId}`)}
+                onComplete={() => navigate('/buildunion/workspace')}
               />
             </motion.div>
           )}
