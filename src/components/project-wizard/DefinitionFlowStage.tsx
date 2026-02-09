@@ -1794,7 +1794,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     };
     
     // Lock template and proceed to Stage 4 (from the card button)
-    const handleLockTemplate = () => {
+    // ✓ CRITICAL: Also save trade citation to DB immediately!
+    const handleLockTemplate = async () => {
       if (templateItems.length === 0) {
         toast.error("Add at least one item to the template");
         return;
@@ -1820,6 +1821,56 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           markup_percent: markupPercent,
         },
       });
+      
+      // ✓ IMMEDIATE DB SAVE: Don't wait until DNA Finalize - save now!
+      try {
+        const { data: currentData } = await supabase
+          .from("project_summaries")
+          .select("id, verified_facts")
+          .eq("project_id", projectId)
+          .maybeSingle();
+        
+        const currentFacts = Array.isArray(currentData?.verified_facts) ? currentData.verified_facts : [];
+        const updatedFacts = [...currentFacts, tradeCitation as unknown as Record<string, unknown>, templateCitation as unknown as Record<string, unknown>];
+        
+        if (currentData?.id) {
+          await supabase
+            .from("project_summaries")
+            .update({
+              verified_facts: updatedFacts as unknown as null,
+              total_cost: grandTotal,
+              material_cost: materialTotal,
+              labor_cost: laborTotal,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("project_id", projectId);
+        } else {
+          await supabase
+            .from("project_summaries")
+            .insert({
+              project_id: projectId,
+              user_id: userId,
+              verified_facts: updatedFacts as unknown as null,
+              total_cost: grandTotal,
+              material_cost: materialTotal,
+              labor_cost: laborTotal,
+            });
+        }
+        
+        // ✓ Also update projects table with trade
+        await supabase
+          .from("projects")
+          .update({ 
+            trade: selectedTrade || '',
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", projectId);
+        
+        console.log("[DefinitionFlow] Trade & Template saved to DB immediately:", selectedTrade);
+      } catch (err) {
+        console.error("[DefinitionFlow] Failed to save trade immediately:", err);
+        // Continue anyway - will try again at DNA Finalize
+      }
       
       setFlowCitations([tradeCitation, templateCitation]);
       setTemplateLocked(true);
@@ -2126,6 +2177,24 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         }
         
         if (error) throw error;
+        
+        // ✓ CRITICAL: Also update the projects table with trade information
+        const tradeCitation = allCitations.find(c => c.cite_type === CITATION_TYPES.TRADE_SELECTION);
+        if (tradeCitation) {
+          const { error: tradeError } = await supabase
+            .from("projects")
+            .update({ 
+              trade: tradeCitation.value as string,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", projectId);
+          
+          if (tradeError) {
+            console.error("[DefinitionFlow] Failed to update project trade:", tradeError);
+          } else {
+            console.log("[DefinitionFlow] Project trade updated to:", tradeCitation.value);
+          }
+        }
         
         toast.success("Project DNA Finalized!");
         onFlowComplete(allCitations);

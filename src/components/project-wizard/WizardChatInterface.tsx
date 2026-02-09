@@ -130,6 +130,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
 
     /**
      * CORE FUNCTION: Save citation to DB FIRST, then update UI as EFFECT
+     * Also updates project table with project_name and address
      */
     const saveCitationToDb = useCallback(async (citation: Citation): Promise<boolean> => {
       try {
@@ -147,7 +148,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
         // Append new citation
         const updatedFacts = [...currentFacts, citation as unknown as Record<string, unknown>];
 
-        // Save to database
+        // Save to project_summaries
         let error;
         if (currentData?.id) {
           const result = await supabase
@@ -170,6 +171,57 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
         }
 
         if (error) throw error;
+
+        // ✓ CRITICAL: Also update the projects table with real data
+        if (citation.cite_type === CITATION_TYPES.PROJECT_NAME) {
+          const { error: projectError } = await supabase
+            .from("projects")
+            .update({ 
+              name: citation.answer,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", projectId);
+          
+          if (projectError) {
+            console.error("[WizardChat] Failed to update project name:", projectError);
+          } else {
+            console.log("[WizardChat] Project name updated to:", citation.answer);
+          }
+        }
+
+        // ✓ Update address and trade on projects table too
+        if (citation.cite_type === CITATION_TYPES.LOCATION) {
+          const { error: addressError } = await supabase
+            .from("projects")
+            .update({ 
+              address: citation.answer,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", projectId);
+          
+          if (addressError) {
+            console.error("[WizardChat] Failed to update project address:", addressError);
+          } else {
+            console.log("[WizardChat] Project address updated to:", citation.answer);
+          }
+        }
+
+        if (citation.cite_type === CITATION_TYPES.WORK_TYPE) {
+          const { error: tradeError } = await supabase
+            .from("projects")
+            .update({ 
+              trade: citation.value as string,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", projectId);
+          
+          if (tradeError) {
+            console.error("[WizardChat] Failed to update project trade:", tradeError);
+          } else {
+            console.log("[WizardChat] Project trade updated to:", citation.value);
+          }
+        }
+
         return true;
 
       } catch (err) {
