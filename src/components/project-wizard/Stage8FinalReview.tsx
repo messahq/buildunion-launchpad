@@ -473,20 +473,23 @@ export default function Stage8FinalReview({
     });
   }, []);
   
-  // Categorize document based on file name
+  // Categorize document based on file name - images ALWAYS go to visual
   const categorizeDocument = useCallback((fileName: string): DocumentCategory => {
     const lowerName = fileName.toLowerCase();
+    
+    // ✓ IMAGES ALWAYS GO TO VISUAL - prioritize this check
+    if (lowerName.match(/\.(jpg|jpeg|png|gif|webp|heic|bmp|tiff|svg)$/i)) {
+      return 'visual';
+    }
+    
     if (lowerName.includes('contract') || lowerName.includes('legal') || lowerName.includes('agreement')) {
       return 'legal';
     }
-    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.includes('pdf')) {
+    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.match(/\.pdf$/i)) {
       return 'technical';
     }
     if (lowerName.includes('verification') || lowerName.includes('inspect') || lowerName.includes('qc')) {
       return 'verification';
-    }
-    if (lowerName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) {
-      return 'visual';
     }
     return 'technical';
   }, []);
@@ -693,28 +696,53 @@ export default function Stage8FinalReview({
           .eq('project_id', projectId);
         
         let docsWithCategory: DocumentWithCategory[] = [];
-        if (docsData) {
-          docsWithCategory = docsData.map(doc => ({
-            id: doc.id,
-            file_name: doc.file_name,
-            file_path: doc.file_path,
-            category: categorizeDocument(doc.file_name),
-            uploadedAt: doc.uploaded_at,
-          }));
-        }
         
-        // Add documents from citations (BLUEPRINT_UPLOAD, SITE_PHOTO)
+        // First, process document citations to build a map
         const docCitations = loadedCitations.filter(c => 
           ['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION'].includes(c.cite_type)
         );
+        
+        const citationMap = new Map<string, { citation: Citation; category: DocumentCategory }>();
         docCitations.forEach(c => {
-          if (c.metadata?.fileName && !docsWithCategory.some(d => d.file_name === c.metadata?.fileName)) {
+          const fileName = c.metadata?.fileName as string;
+          if (fileName) {
+            // Get category from citation metadata or derive from cite_type
+            const category: DocumentCategory = 
+              (c.metadata?.category as DocumentCategory) ||
+              (c.cite_type === 'BLUEPRINT_UPLOAD' ? 'technical' : 
+               c.cite_type === 'VISUAL_VERIFICATION' ? 'verification' : 'visual');
+            citationMap.set(fileName.toLowerCase(), { citation: c, category });
+          }
+        });
+        
+        if (docsData) {
+          docsWithCategory = docsData.map(doc => {
+            // ✓ PRIORITY: Check citation for category first, then fall back to auto-detect
+            const citationMatch = citationMap.get(doc.file_name.toLowerCase());
+            return {
+              id: doc.id,
+              file_name: doc.file_name,
+              file_path: doc.file_path,
+              category: citationMatch?.category || categorizeDocument(doc.file_name),
+              citationId: citationMatch?.citation.id,
+              uploadedAt: doc.uploaded_at,
+            };
+          });
+        }
+        
+        // Add documents from citations that aren't in project_documents table
+        docCitations.forEach(c => {
+          const fileName = c.metadata?.fileName as string;
+          if (fileName && !docsWithCategory.some(d => d.file_name.toLowerCase() === fileName.toLowerCase())) {
+            const category: DocumentCategory = 
+              (c.metadata?.category as DocumentCategory) ||
+              (c.cite_type === 'BLUEPRINT_UPLOAD' ? 'technical' : 
+               c.cite_type === 'VISUAL_VERIFICATION' ? 'verification' : 'visual');
             docsWithCategory.push({
               id: c.id,
-              file_name: c.metadata.fileName as string,
+              file_name: fileName,
               file_path: typeof c.value === 'string' ? c.value : '',
-              category: c.cite_type === 'BLUEPRINT_UPLOAD' ? 'technical' : 
-                        c.cite_type === 'VISUAL_VERIFICATION' ? 'verification' : 'visual',
+              category,
               citationId: c.id,
               uploadedAt: c.timestamp,
             });
@@ -895,16 +923,21 @@ export default function Stage8FinalReview({
     }
   }, []);
   
-  // Handle file upload
+  // Handle file upload - auto-categorize images to Visual
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0 || !canEdit) return;
     
     setIsUploading(true);
     try {
+      const newCitations: Citation[] = [];
+      
       for (const file of Array.from(files)) {
-        const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}-${file.name}`;
         const filePath = `${projectId}/${fileName}`;
+        
+        // ✓ AUTO-CATEGORIZE: Images always go to Visual
+        const isImage = file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|bmp|tiff|svg)$/i);
+        const finalCategory: DocumentCategory = isImage ? 'visual' : selectedUploadCategory;
         
         // Upload to storage
         const { error: uploadError } = await supabase.storage
@@ -927,36 +960,67 @@ export default function Stage8FinalReview({
         
         if (insertError) throw insertError;
         
-        // Add to local state with category
-        const newDoc: DocumentWithCategory = {
-          id: docRecord.id,
-          file_name: file.name,
-          file_path: filePath,
-          category: selectedUploadCategory,
-          uploadedAt: new Date().toISOString(),
+        // ✓ Determine citation type based on category
+        const getCiteType = (cat: DocumentCategory): string => {
+          switch (cat) {
+            case 'visual': return 'SITE_PHOTO';
+            case 'verification': return 'VISUAL_VERIFICATION';
+            case 'technical': return 'BLUEPRINT_UPLOAD';
+            case 'legal': return 'BLUEPRINT_UPLOAD'; // legal docs as technical for now
+            default: return 'SITE_PHOTO';
+          }
         };
-        
-        setDocuments(prev => [...prev, newDoc]);
         
         // Create citation for cross-panel sync
         const newCitation: Citation = {
           id: `doc-${docRecord.id}`,
-          cite_type: selectedUploadCategory === 'verification' ? 'VISUAL_VERIFICATION' : 'SITE_PHOTO',
+          cite_type: getCiteType(finalCategory) as any,
           question_key: 'document_upload',
           answer: `Uploaded: ${file.name}`,
           value: filePath,
           timestamp: new Date().toISOString(),
           metadata: {
-            category: selectedUploadCategory,
+            category: finalCategory,
             fileName: file.name,
             fileSize: file.size,
           },
         };
         
-        setCitations(prev => [...prev, newCitation]);
+        newCitations.push(newCitation);
+        
+        // Add to local state with auto-determined category
+        const newDoc: DocumentWithCategory = {
+          id: docRecord.id,
+          file_name: file.name,
+          file_path: filePath,
+          category: finalCategory,
+          citationId: newCitation.id,
+          uploadedAt: new Date().toISOString(),
+        };
+        
+        setDocuments(prev => [...prev, newDoc]);
       }
       
-      toast.success(`Uploaded ${files.length} file(s)`);
+      // Update citations state and persist to Supabase
+      if (newCitations.length > 0) {
+        setCitations(prev => {
+          const updated = [...prev, ...newCitations];
+          
+          // ✓ PERSIST: Save citations to project_summaries
+          supabase
+            .from('project_summaries')
+            .update({ verified_facts: updated as any })
+            .eq('project_id', projectId)
+            .then(({ error }) => {
+              if (error) console.error('[Stage8] Failed to persist citations:', error);
+              else console.log('[Stage8] ✓ Citations persisted to Supabase');
+            });
+          
+          return updated;
+        });
+      }
+      
+      toast.success(`Uploaded ${files.length} file(s) - ${newCitations.filter(c => c.metadata?.category === 'visual').length} images added to Visual`);
     } catch (err) {
       console.error('[Stage8] Upload failed:', err);
       toast.error('Failed to upload file');
