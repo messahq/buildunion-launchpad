@@ -93,6 +93,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
+import { RequestModificationDialog } from "@/components/projects/RequestModificationDialog";
 import { Citation, CITATION_TYPES } from "@/types/citation";
 import { useTranslation } from "react-i18next";
 import {
@@ -398,6 +399,7 @@ export default function Stage8FinalReview({
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [modificationDialog, setModificationDialog] = useState<{ open: boolean; material?: any } | null>(null);
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['demolition', 'preparation', 'installation', 'finishing']));
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
