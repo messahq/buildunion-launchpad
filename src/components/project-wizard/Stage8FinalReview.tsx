@@ -3542,12 +3542,26 @@ export default function Stage8FinalReview({
                             return (
                               <div 
                                 key={doc.id} 
-                                className="flex items-center gap-3 p-3 rounded-lg bg-background border hover:border-pink-300 transition-all group"
+                                className="flex items-center gap-3 p-3 rounded-lg bg-background border hover:border-pink-300 transition-all group cursor-pointer"
+                                onClick={() => setPreviewDocument({
+                                  file_name: doc.file_name,
+                                  file_path: doc.file_path,
+                                  category: doc.category,
+                                  citationId: doc.citationId || matchingCitation?.id,
+                                })}
                               >
-                                {/* File Preview/Icon */}
-                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                {/* File Preview/Thumbnail */}
+                                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden border">
                                   {doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                    <FileImage className="h-5 w-5 text-green-500" />
+                                    <img 
+                                      src={getDocumentPreviewUrl(doc.file_path)} 
+                                      alt={doc.file_name}
+                                      className="h-full w-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.parentElement!.innerHTML = '<div class="h-5 w-5 text-green-500"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
+                                      }}
+                                    />
                                   ) : doc.file_name.match(/\.pdf$/i) ? (
                                     <FileText className="h-5 w-5 text-red-500" />
                                   ) : (
@@ -3557,7 +3571,7 @@ export default function Stage8FinalReview({
                                 
                                 {/* File Info */}
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                                  <p className="text-sm font-medium truncate group-hover:text-pink-600 transition-colors">{doc.file_name}</p>
                                   <div className="flex items-center gap-2">
                                     {doc.uploadedAt && (
                                       <span className="text-[10px] text-muted-foreground">{doc.uploadedAt}</span>
@@ -3569,6 +3583,9 @@ export default function Stage8FinalReview({
                                     )}
                                   </div>
                                 </div>
+                                
+                                {/* Preview indicator */}
+                                <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                                 
                                 {/* Citation Badge */}
                                 {(doc.citationId || matchingCitation) && (
