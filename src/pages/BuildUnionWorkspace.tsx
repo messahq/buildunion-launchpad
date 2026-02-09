@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2 } from "lucide-react";
+import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2, Crown, Zap, CheckCircle2, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PendingInvitationsPanel } from "@/components/PendingInvitationsPanel";
+import { Progress } from "@/components/ui/progress";
 
 interface SavedProject {
   id: string;
@@ -32,6 +34,9 @@ interface SavedProject {
   status: string;
   description: string | null;
   created_at: string;
+  team_count?: number;
+  task_count?: number;
+  completed_tasks?: number;
 }
 
 interface SharedProject {
@@ -65,16 +70,31 @@ const ROLE_COLORS: Record<string, string> = {
   member: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
 };
 
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
+  active: { label: 'Active', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', icon: CheckCircle2 },
+  draft: { label: 'Draft', color: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300', icon: Clock },
+  completed: { label: 'Completed', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', icon: CheckCircle2 },
+};
+
 const BuildUnionWorkspace = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
+  const { subscription } = useSubscription();
   const [projects, setProjects] = useState<SavedProject[]>([]);
   const [sharedProjects, setSharedProjects] = useState<SharedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<SavedProject | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Compute stats for quick overview
+  const stats = useMemo(() => {
+    const activeCount = projects.filter(p => p.status === 'active').length;
+    const draftCount = projects.filter(p => p.status === 'draft').length;
+    const totalTeamMembers = sharedProjects.length;
+    return { activeCount, draftCount, totalTeamMembers };
+  }, [projects, sharedProjects]);
 
   // Load projects from database
   useEffect(() => {
@@ -247,22 +267,86 @@ const BuildUnionWorkspace = () => {
       <main className="flex-1 container mx-auto px-4 py-8 pb-28">
         <div className="max-w-4xl mx-auto">
           {/* Header with Amber accent */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-                Projects 3.0
-              </h1>
-              <p className="text-amber-700/70 dark:text-amber-400/70">
-                Smart workflow based on AI analysis
-              </p>
+          <div className="flex flex-col gap-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+                  Projects 3.0
+                </h1>
+                <p className="text-amber-700/70 dark:text-amber-400/70">
+                  Smart workflow based on AI analysis
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Subscription Badge */}
+                {subscription.subscribed && (
+                  <Badge 
+                    variant="outline" 
+                    className="gap-1 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                  >
+                    {subscription.tier === 'premium' ? <Crown className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+                    {subscription.tier?.charAt(0).toUpperCase() + subscription.tier?.slice(1)}
+                    {subscription.isTrialing && subscription.trialDaysRemaining && (
+                      <span className="text-[10px] ml-1">({subscription.trialDaysRemaining}d trial)</span>
+                    )}
+                  </Badge>
+                )}
+                <Button 
+                  onClick={handleNewProject} 
+                  className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
+                >
+                  <Plus className="h-4 w-4" />
+                  {t("workspace.newProject", "New Project")}
+                </Button>
+              </div>
             </div>
-            <Button 
-              onClick={handleNewProject} 
-              className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
-            >
-              <Plus className="h-4 w-4" />
-              {t("workspace.newProject", "New Project")}
-          </Button>
+            
+            {/* Quick Stats Bar */}
+            {(projects.length > 0 || sharedProjects.length > 0) && (
+              <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/30">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Active</p>
+                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{stats.activeCount}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-900/30 flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Drafts</p>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">{stats.draftCount}</p>
+                  </div>
+                </div>
+                {stats.totalTeamMembers > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                      <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Shared</p>
+                      <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{stats.totalTeamMembers}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex-1" />
+                {!subscription.subscribed && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/buildunion/pricing')}
+                    className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                  >
+                    <Zap className="h-3 w-3" />
+                    Upgrade
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Pending Invitations Panel */}
@@ -410,9 +494,16 @@ const BuildUnionWorkspace = () => {
                   {project.trade && (
                     <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
                   )}
-                  <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
-                    {project.status}
-                  </span>
+                  {(() => {
+                    const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.draft;
+                    const StatusIcon = statusConfig.icon;
+                    return (
+                      <Badge variant="outline" className={`gap-1 ${statusConfig.color}`}>
+                        <StatusIcon className="h-3 w-3" />
+                        {statusConfig.label}
+                      </Badge>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
