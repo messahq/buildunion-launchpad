@@ -359,6 +359,7 @@ export default function Stage8FinalReview({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
   // Project data
@@ -2118,50 +2119,187 @@ export default function Stage8FinalReview({
     }
   }, [invoicePreviewData, projectId, userId, categorizeDocument]);
   
-  // Generate Project Summary - Opens Preview Modal
+  // Generate Project Summary - Checkpoint-based progress report
   const handleGenerateSummary = useCallback(async () => {
+    setIsGeneratingSummary(true);
     try {
-      const { buildProjectSummaryHTML } = await import('@/lib/pdfGenerator');
-      
-      // Gather data from citations
+      // Gather checkpoint data from citations
       const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
       const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
       const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
+      const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
+      const projectNameCitation = citations.find(c => c.cite_type === 'PROJECT_NAME');
+      const timelineCitations = citations.filter(c => c.cite_type === 'TIMELINE' || c.cite_type === 'END_DATE');
+      const teamCitations = citations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE' || c.cite_type === 'TEAM_STRUCTURE');
+      const docCitations = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'BLUEPRINT_UPLOAD');
       
       const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : 0;
       const trade = tradeCitation?.answer || 'General';
       const address = locationCitation?.answer || projectData?.address || '';
+      const workType = workTypeCitation?.answer || '';
       
-      // Build line items from financial summary
-      const lineItems = [
-        { name: `${trade} Materials`, quantity: gfaValue || 1, unit: gfaValue ? 'sq ft' : 'lot', unit_price: financialSummary?.material_cost ? (financialSummary.material_cost / (gfaValue || 1)) : 0 },
-        { name: `${trade} Labor`, quantity: gfaValue || 1, unit: gfaValue ? 'sq ft' : 'lot', unit_price: financialSummary?.labor_cost ? (financialSummary.labor_cost / (gfaValue || 1)) : 0 },
-      ].filter(item => item.unit_price > 0);
+      // Calculate checkpoint progress (12 total checkpoints)
+      const checkpoints = [
+        { name: 'Project Name', completed: !!projectNameCitation || !!projectData?.name, phase: 'Definition' },
+        { name: 'Location', completed: !!locationCitation, phase: 'Definition' },
+        { name: 'Work Type', completed: !!workTypeCitation, phase: 'Definition' },
+        { name: 'GFA Locked', completed: !!gfaCitation && gfaValue > 0, phase: 'Scope' },
+        { name: 'Trade Selected', completed: !!tradeCitation, phase: 'Scope' },
+        { name: 'Team Invited', completed: teamCitations.length > 0 || teamMembers.length > 0, phase: 'Team' },
+        { name: 'Tasks Created', completed: tasks.length > 0, phase: 'Execution' },
+        { name: 'Timeline Set', completed: timelineCitations.length > 0, phase: 'Execution' },
+        { name: 'Documents Uploaded', completed: documents.length > 0 || docCitations.length > 0, phase: 'Documentation' },
+        { name: 'Site Photos', completed: docCitations.filter(c => c.cite_type === 'SITE_PHOTO').length > 0, phase: 'Documentation' },
+        { name: 'Financial Data', completed: !!(financialSummary?.total_cost && financialSummary.total_cost > 0), phase: 'Financial' },
+        { name: 'Contract Created', completed: contracts.length > 0, phase: 'Financial' },
+      ];
       
-      const html = buildProjectSummaryHTML({
-        quoteNumber: `QT-${projectId.slice(0, 8).toUpperCase()}`,
-        currentDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-        clientInfo: {
-          name: 'Client',
-          email: '',
-          phone: '',
-          address: address,
-        },
-        editedItems: lineItems,
-        materialTotal: financialSummary?.material_cost || 0,
-        grandTotal: financialSummary?.total_cost || 0,
-        notes: `Project: ${projectData?.name || 'Untitled'}`,
-        formatCurrency: (amount: number) => `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        companyName: 'BuildUnion',
-      });
+      const completedCount = checkpoints.filter(c => c.completed).length;
+      const completionPercent = Math.round((completedCount / checkpoints.length) * 100);
+      
+      // Build rich HTML summary
+      const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; padding: 40px; line-height: 1.6; }
+            .header { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0; }
+            .brand { font-size: 28px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px; }
+            .subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+            .doc-type { display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 8px 20px; border-radius: 6px; font-weight: 600; margin-top: 12px; }
+            
+            .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+            .meta-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            .meta-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+            .meta-value { font-size: 18px; font-weight: 600; color: #1e293b; margin-top: 4px; }
+            .meta-value.highlight { color: #3b82f6; }
+            
+            .progress-section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+            .progress-title { font-size: 16px; font-weight: 600; }
+            .progress-percent { font-size: 28px; font-weight: 700; color: ${completionPercent >= 80 ? '#22c55e' : completionPercent >= 50 ? '#eab308' : '#ef4444'}; }
+            .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+            .progress-fill { height: 100%; background: linear-gradient(90deg, ${completionPercent >= 80 ? '#22c55e, #16a34a' : completionPercent >= 50 ? '#eab308, #ca8a04' : '#ef4444, #dc2626'}); width: ${completionPercent}%; transition: width 0.3s; }
+            
+            .checkpoints { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; }
+            .checkpoint { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+            .checkpoint.done { background: #f0fdf4; border-color: #bbf7d0; }
+            .checkpoint-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+            .checkpoint.done .checkpoint-icon { background: #22c55e; color: white; }
+            .checkpoint:not(.done) .checkpoint-icon { background: #e2e8f0; color: #94a3b8; }
+            .checkpoint-text { font-size: 13px; font-weight: 500; }
+            .checkpoint-phase { font-size: 10px; color: #94a3b8; margin-left: auto; }
+            
+            .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+            .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            .stat-value { font-size: 32px; font-weight: 700; }
+            .stat-value.blue { color: #3b82f6; }
+            .stat-value.green { color: #22c55e; }
+            .stat-value.purple { color: #8b5cf6; }
+            .stat-value.amber { color: #f59e0b; }
+            .stat-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+            
+            .footer { text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="brand">BuildUnion</div>
+            <div class="subtitle">Project Progress Summary</div>
+            <div class="doc-type">Checkpoint Report</div>
+          </div>
+          
+          <div class="meta-grid">
+            <div class="meta-card">
+              <div class="meta-label">Project</div>
+              <div class="meta-value">${projectData?.name || 'Untitled Project'}</div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-label">Location</div>
+              <div class="meta-value">${address.split(',')[0] || 'Not Set'}</div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-label">Trade</div>
+              <div class="meta-value highlight">${trade}</div>
+            </div>
+          </div>
+          
+          <div class="progress-section">
+            <div class="progress-header">
+              <div class="progress-title">Overall Completion</div>
+              <div class="progress-percent">${completionPercent}%</div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill"></div>
+            </div>
+            
+            <div class="checkpoints">
+              ${checkpoints.map(cp => `
+                <div class="checkpoint ${cp.completed ? 'done' : ''}">
+                  <div class="checkpoint-icon">${cp.completed ? '✓' : '○'}</div>
+                  <div class="checkpoint-text">${cp.name}</div>
+                  <div class="checkpoint-phase">${cp.phase}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value blue">${citations.length}</div>
+              <div class="stat-label">Citations</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value green">${teamMembers.length}</div>
+              <div class="stat-label">Team Members</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value purple">${tasks.length}</div>
+              <div class="stat-label">Tasks</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value amber">${documents.length}</div>
+              <div class="stat-label">Documents</div>
+            </div>
+          </div>
+          
+          ${gfaValue > 0 ? `
+          <div class="meta-grid">
+            <div class="meta-card">
+              <div class="meta-label">Gross Floor Area</div>
+              <div class="meta-value highlight">${gfaValue.toLocaleString()} sq ft</div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-label">Work Type</div>
+              <div class="meta-value">${workType || 'General Construction'}</div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-label">Budget</div>
+              <div class="meta-value">${financialSummary?.total_cost ? '$' + financialSummary.total_cost.toLocaleString() : 'Not Set'}</div>
+            </div>
+          </div>
+          ` : ''}
+          
+          <div class="footer">
+            Generated on ${currentDate} • BuildUnion Project Management
+          </div>
+        </body>
+        </html>
+      `;
       
       setSummaryPreviewHtml(html);
       setShowSummaryPreview(true);
     } catch (err) {
       console.error('[Stage8] Summary preview failed:', err);
       toast.error('Failed to generate summary preview');
+    } finally {
+      setIsGeneratingSummary(false);
     }
-  }, [projectId, citations, projectData, financialSummary]);
+  }, [projectId, citations, projectData, financialSummary, teamMembers, tasks, documents, contracts]);
   
   // Download summary PDF
   const handleDownloadSummary = useCallback(async () => {
@@ -5912,9 +6050,9 @@ export default function Stage8FinalReview({
               </span>
             </div>
             
-            {/* Right - Actions */}
-            <div className="flex items-center gap-3">
-              {/* Invoice Generation - Owner only */}
+            {/* Right - Actions: 4-Button Layout */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              {/* 1. Generate Invoice - Amber */}
               {canViewFinancials && (
                 <Button
                   variant="outline"
@@ -5928,29 +6066,33 @@ export default function Stage8FinalReview({
                   ) : (
                     <FileText className="h-4 w-4" />
                   )}
-                  {isGeneratingInvoice ? 'Generating...' : 'Generate Invoice'}
+                  {isGeneratingInvoice ? 'Generating...' : t('stage8.generateInvoice', 'Generate Invoice')}
                 </Button>
               )}
               
-              {/* Project Summary */}
+              {/* 2. Project Summary - Blue */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateSummary}
+                disabled={isGeneratingSummary}
                 className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300"
               >
-                <ClipboardList className="h-4 w-4" />
+                {isGeneratingSummary ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ClipboardList className="h-4 w-4" />
+                )}
                 {t('stage8.projectSummary', 'Project Summary')}
               </Button>
               
-              {/* M.E.S.S.A. Synthesis - Dual Engine AI Analysis - Owner/Foreman */}
+              {/* 3. M.E.S.S.A. Synthesis - GREEN (Owner/Foreman only) */}
               {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={handleMessaSynthesis}
                   disabled={isGeneratingAI}
-                  className="gap-2 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:hover:bg-violet-950/50"
+                  className="gap-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md"
                 >
                   {isGeneratingAI ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -5961,19 +6103,20 @@ export default function Stage8FinalReview({
                 </Button>
               )}
               
-              {/* Activate Project Button - Requires Financial Unlock for Owner */}
+              {/* 4. Finish Project - PURPLE (was "Activate Project") */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span>
                       <Button
+                        size="sm"
                         onClick={handleComplete}
                         disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
                         className={cn(
-                          "gap-2",
+                          "gap-2 shadow-md",
                           userRole === 'owner' && !isFinancialSummaryUnlocked
                             ? "bg-muted text-muted-foreground cursor-not-allowed"
-                            : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                            : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
                         )}
                       >
                         {isSaving ? (
@@ -5983,7 +6126,7 @@ export default function Stage8FinalReview({
                         ) : (
                           <CheckCircle2 className="h-4 w-4" />
                         )}
-                        {t('stage8.activateProject', 'Activate Project')}
+                        {t('stage8.finishProject', 'Finish Project')}
                       </Button>
                     </span>
                   </TooltipTrigger>
