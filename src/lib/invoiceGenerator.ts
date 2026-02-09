@@ -88,6 +88,12 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     </tr>
   `).join('');
 
+  // Build logo section - use provided logo or BuildUnion default
+  const logoUrl = data.contractor.logo || '/images/buildunion-logo-lightmode.png';
+  const logoSection = data.contractor.logo 
+    ? `<img src="${escapeHtml(data.contractor.logo)}" alt="Company Logo" style="max-height: 60px; max-width: 200px; object-fit: contain;" />`
+    : `<div style="font-size: 24px; font-weight: 700; color: #f59e0b;">🏗️ BuildUnion</div>`;
+
   return `
     <!DOCTYPE html>
     <html>
@@ -107,9 +113,30 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 40px;
+          margin-bottom: 32px;
           padding-bottom: 24px;
           border-bottom: 3px solid #f59e0b;
+        }
+        .company-header {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .company-logo {
+          margin-bottom: 12px;
+        }
+        .company-info {
+          font-size: 13px;
+          color: #475569;
+          line-height: 1.6;
+        }
+        .company-info div {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .invoice-meta {
+          text-align: right;
         }
         .invoice-badge {
           display: inline-block;
@@ -274,16 +301,27 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     </head>
     <body>
       <div class="header">
-        <div>
+        <div class="company-header">
+          <div class="company-logo">
+            ${logoSection}
+          </div>
+          <div class="company-info">
+            <div><strong>${escapeHtml(data.contractor.name)}</strong></div>
+            ${data.contractor.phone ? `<div>📞 ${escapeHtml(data.contractor.phone)}</div>` : ''}
+            ${data.contractor.email ? `<div>✉️ ${escapeHtml(data.contractor.email)}</div>` : ''}
+            ${data.contractor.address ? `<div>📍 ${escapeHtml(data.contractor.address)}</div>` : ''}
+          </div>
+        </div>
+        <div class="invoice-meta">
           <div class="invoice-badge">INVOICE</div>
           <div class="invoice-number">#${escapeHtml(data.invoiceNumber)}</div>
           <div class="dates">
             <div>Date: <strong>${currentDate}</strong></div>
             <div>Due: <strong>${dueDate}</strong></div>
           </div>
-        </div>
-        <div style="text-align: right;">
-          <span class="payment-badge">${data.status === 'paid' ? '✓ PAID' : 'PENDING'}</span>
+          <div style="margin-top: 8px;">
+            <span class="payment-badge">${data.status === 'paid' ? '✓ PAID' : 'PENDING'}</span>
+          </div>
         </div>
       </div>
       

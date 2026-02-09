@@ -424,6 +424,18 @@ export default function Stage8FinalReview({
   const [isSendingToMultiple, setIsSendingToMultiple] = useState(false);
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [isRunningAIAnalysis, setIsRunningAIAnalysis] = useState(false);
+  
+  // ✓ Invoice Preview Modal State
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [invoicePreviewData, setInvoicePreviewData] = useState<InvoiceData | null>(null);
+  const [invoicePreviewHtml, setInvoicePreviewHtml] = useState<string>('');
+  const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
+  
+  // ✓ Project Summary Preview Modal State
+  const [showSummaryPreview, setShowSummaryPreview] = useState(false);
+  const [summaryPreviewHtml, setSummaryPreviewHtml] = useState<string>('');
+  const [isSavingSummary, setIsSavingSummary] = useState(false);
 
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
@@ -1480,10 +1492,129 @@ export default function Stage8FinalReview({
     }
   }, [projectId]);
   
-  // Generate PDF Summary
-  const handleGeneratePDF = useCallback(async () => {
+  // Generate Invoice - Opens Preview Modal
+  const handleGenerateInvoice = useCallback(async () => {
     try {
-      const { buildProjectSummaryHTML, downloadPDF } = await import('@/lib/pdfGenerator');
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) {
+        toast.error('Please sign in to generate invoices');
+        return;
+      }
+      
+      setIsGeneratingInvoice(true);
+      toast.loading('Preparing invoice preview...', { id: 'invoice-gen' });
+      
+      const { data, error } = await supabase.functions.invoke('generate-invoice', {
+        body: {
+          projectId,
+          notes: `Invoice for ${projectData?.name || 'Project'}`,
+        },
+      });
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Build HTML for preview
+        const { buildInvoiceHTML } = await import('@/lib/invoiceGenerator');
+        const html = buildInvoiceHTML(data);
+        
+        setInvoicePreviewData(data);
+        setInvoicePreviewHtml(html);
+        setShowInvoicePreview(true);
+        
+        toast.success('Invoice ready for preview', { id: 'invoice-gen' });
+      }
+    } catch (err) {
+      console.error('[Stage8] Invoice generation failed:', err);
+      toast.error('Failed to generate invoice', { id: 'invoice-gen' });
+    } finally {
+      setIsGeneratingInvoice(false);
+    }
+  }, [projectId, projectData]);
+  
+  // Download invoice PDF
+  const handleDownloadInvoice = useCallback(async () => {
+    if (!invoicePreviewData) return;
+    
+    try {
+      const { generateInvoicePDF } = await import('@/lib/invoiceGenerator');
+      const blob = await generateInvoicePDF(invoicePreviewData);
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoicePreviewData.invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Invoice downloaded!');
+    } catch (err) {
+      console.error('[Stage8] Invoice download failed:', err);
+      toast.error('Failed to download invoice');
+    }
+  }, [invoicePreviewData]);
+  
+  // Save invoice to project documents
+  const handleSaveInvoiceToDocuments = useCallback(async () => {
+    if (!invoicePreviewData || !projectId || !userId) return;
+    
+    setIsSavingInvoice(true);
+    try {
+      const { generateInvoicePDF } = await import('@/lib/invoiceGenerator');
+      const blob = await generateInvoicePDF(invoicePreviewData);
+      
+      const fileName = `invoice-${invoicePreviewData.invoiceNumber}.pdf`;
+      const filePath = `${projectId}/${Date.now()}-${fileName}`;
+      
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('project-documents')
+        .upload(filePath, blob, { contentType: 'application/pdf' });
+      
+      if (uploadError) throw uploadError;
+      
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('project_documents')
+        .insert({
+          project_id: projectId,
+          file_name: fileName,
+          file_path: filePath,
+          file_size: blob.size,
+        });
+      
+      if (dbError) throw dbError;
+      
+      // Reload documents
+      const { data: newDocs } = await supabase
+        .from('project_documents')
+        .select('id, file_name, file_path, file_size, uploaded_at')
+        .eq('project_id', projectId)
+        .order('uploaded_at', { ascending: false });
+      
+      if (newDocs) {
+        setDocuments(newDocs.map(doc => ({
+          ...doc,
+          category: categorizeDocument(doc.file_name),
+        })));
+      }
+      
+      toast.success('Invoice saved to Documents!', { description: 'Find it in Panel 6' });
+      setShowInvoicePreview(false);
+    } catch (err) {
+      console.error('[Stage8] Save invoice failed:', err);
+      toast.error('Failed to save invoice');
+    } finally {
+      setIsSavingInvoice(false);
+    }
+  }, [invoicePreviewData, projectId, userId, categorizeDocument]);
+  
+  // Generate Project Summary - Opens Preview Modal
+  const handleGenerateSummary = useCallback(async () => {
+    try {
+      const { buildProjectSummaryHTML } = await import('@/lib/pdfGenerator');
       
       // Gather data from citations
       const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
@@ -1494,7 +1625,7 @@ export default function Stage8FinalReview({
       const trade = tradeCitation?.answer || 'General';
       const address = locationCitation?.answer || projectData?.address || '';
       
-      // Build line items from financial summary or tasks
+      // Build line items from financial summary
       const lineItems = [
         { name: `${trade} Materials`, quantity: gfaValue || 1, unit: gfaValue ? 'sq ft' : 'lot', unit_price: financialSummary?.material_cost ? (financialSummary.material_cost / (gfaValue || 1)) : 0 },
         { name: `${trade} Labor`, quantity: gfaValue || 1, unit: gfaValue ? 'sq ft' : 'lot', unit_price: financialSummary?.labor_cost ? (financialSummary.labor_cost / (gfaValue || 1)) : 0 },
@@ -1517,60 +1648,112 @@ export default function Stage8FinalReview({
         companyName: 'BuildUnion',
       });
       
-      await downloadPDF(html, {
+      setSummaryPreviewHtml(html);
+      setShowSummaryPreview(true);
+    } catch (err) {
+      console.error('[Stage8] Summary preview failed:', err);
+      toast.error('Failed to generate summary preview');
+    }
+  }, [projectId, citations, projectData, financialSummary]);
+  
+  // Download summary PDF
+  const handleDownloadSummary = useCallback(async () => {
+    if (!summaryPreviewHtml) return;
+    
+    try {
+      const { downloadPDF } = await import('@/lib/pdfGenerator');
+      
+      await downloadPDF(summaryPreviewHtml, {
         filename: `project-summary-${projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export'}.pdf`,
         pageFormat: 'letter',
         margin: 15,
       });
       
-      toast.success('PDF downloaded successfully!');
+      toast.success('Summary PDF downloaded!');
     } catch (err) {
-      console.error('[Stage8] PDF generation failed:', err);
-      toast.error('Failed to generate PDF');
+      console.error('[Stage8] Summary download failed:', err);
+      toast.error('Failed to download summary');
     }
-  }, [projectId, citations, projectData, financialSummary]);
+  }, [summaryPreviewHtml, projectData]);
   
-  // Generate Invoice
-  const handleGenerateInvoice = useCallback(async () => {
+  // Save summary to project documents
+  const handleSaveSummaryToDocuments = useCallback(async () => {
+    if (!summaryPreviewHtml || !projectId || !userId) return;
+    
+    setIsSavingSummary(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.access_token) {
-        toast.error('Please sign in to generate invoices');
-        return;
+      const { downloadPDF } = await import('@/lib/pdfGenerator');
+      
+      // Generate blob using html2canvas + jspdf
+      const container = document.createElement('div');
+      container.innerHTML = summaryPreviewHtml;
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '800px';
+      document.body.appendChild(container);
+      
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).jsPDF;
+      
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, logging: false });
+      document.body.removeChild(container);
+      
+      const imgWidth = 210;
+      const margin = 15;
+      const usableWidth = imgWidth - (margin * 2);
+      const imgHeight = (canvas.height * usableWidth) / canvas.width;
+      
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      pdf.addImage(imgData, 'JPEG', margin, margin, usableWidth, imgHeight);
+      
+      const blob = pdf.output('blob');
+      const fileName = `project-summary-${projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export'}.pdf`;
+      const filePath = `${projectId}/${Date.now()}-${fileName}`;
+      
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('project-documents')
+        .upload(filePath, blob, { contentType: 'application/pdf' });
+      
+      if (uploadError) throw uploadError;
+      
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('project_documents')
+        .insert({
+          project_id: projectId,
+          file_name: fileName,
+          file_path: filePath,
+          file_size: blob.size,
+        });
+      
+      if (dbError) throw dbError;
+      
+      // Reload documents
+      const { data: newDocs } = await supabase
+        .from('project_documents')
+        .select('id, file_name, file_path, file_size, uploaded_at')
+        .eq('project_id', projectId)
+        .order('uploaded_at', { ascending: false });
+      
+      if (newDocs) {
+        setDocuments(newDocs.map(doc => ({
+          ...doc,
+          category: categorizeDocument(doc.file_name),
+        })));
       }
       
-      toast.loading('Generating invoice...', { id: 'invoice-gen' });
-      
-      const { data, error } = await supabase.functions.invoke('generate-invoice', {
-        body: {
-          projectId,
-          notes: `Invoice for ${projectData?.name || 'Project'}`,
-        },
-      });
-      
-      if (error) throw error;
-      
-      if (data) {
-        // Download the invoice as PDF
-        const { buildInvoiceHTML, generateInvoicePDF } = await import('@/lib/invoiceGenerator');
-        const invoiceBlob = await generateInvoicePDF(data);
-        
-        const url = URL.createObjectURL(invoiceBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `invoice-${data.invoiceNumber}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast.success(`Invoice ${data.invoiceNumber} generated!`, { id: 'invoice-gen' });
-      }
+      toast.success('Summary saved to Documents!', { description: 'Find it in Panel 6' });
+      setShowSummaryPreview(false);
     } catch (err) {
-      console.error('[Stage8] Invoice generation failed:', err);
-      toast.error('Failed to generate invoice', { id: 'invoice-gen' });
+      console.error('[Stage8] Save summary failed:', err);
+      toast.error('Failed to save summary');
+    } finally {
+      setIsSavingSummary(false);
     }
-  }, [projectId, projectData]);
+  }, [summaryPreviewHtml, projectId, userId, projectData, categorizeDocument]);
   
   // Complete and go to dashboard
   const handleComplete = useCallback(async () => {
@@ -5242,15 +5425,15 @@ export default function Stage8FinalReview({
                 </Button>
               )}
               
-              {/* PDF Export */}
+              {/* Project Summary */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleGeneratePDF}
-                className="gap-2"
+                onClick={handleGenerateSummary}
+                className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300"
               >
-                <Download className="h-4 w-4" />
-                {t('stage8.exportPDF', 'Export PDF')}
+                <ClipboardList className="h-4 w-4" />
+                {t('stage8.projectSummary', 'Project Summary')}
               </Button>
               
               {/* AI Analysis - Owner/Foreman only */}
@@ -5661,6 +5844,118 @@ export default function Stage8FinalReview({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Invoice Preview Modal */}
+      {showInvoicePreview && invoicePreviewData && (
+        <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-amber-500" />
+                Invoice Preview - #{invoicePreviewData.invoiceNumber}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {/* Invoice Preview Content */}
+            <div className="flex-1 overflow-auto border rounded-lg bg-white">
+              <iframe
+                srcDoc={invoicePreviewHtml}
+                className="w-full h-[500px] border-0"
+                title="Invoice Preview"
+              />
+            </div>
+            
+            {/* Action Buttons */}
+            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleDownloadInvoice}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleSaveInvoiceToDocuments}
+                disabled={isSavingInvoice}
+                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
+              >
+                {isSavingInvoice ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FolderOpen className="h-4 w-4" />
+                )}
+                Save to Documents
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => setShowInvoicePreview(false)}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Project Summary Preview Modal */}
+      {showSummaryPreview && summaryPreviewHtml && (
+        <Dialog open={showSummaryPreview} onOpenChange={setShowSummaryPreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-blue-500" />
+                Project Summary Preview
+              </DialogTitle>
+            </DialogHeader>
+            
+            {/* Summary Preview Content */}
+            <div className="flex-1 overflow-auto border rounded-lg bg-white">
+              <iframe
+                srcDoc={summaryPreviewHtml}
+                className="w-full h-[500px] border-0"
+                title="Summary Preview"
+              />
+            </div>
+            
+            {/* Action Buttons */}
+            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleDownloadSummary}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleSaveSummaryToDocuments}
+                disabled={isSavingSummary}
+                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
+              >
+                {isSavingSummary ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FolderOpen className="h-4 w-4" />
+                )}
+                Save to Documents
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => setShowSummaryPreview(false)}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
