@@ -5713,12 +5713,12 @@ export default function Stage8FinalReview({
                 {t('stage8.projectSummary', 'Project Summary')}
               </Button>
               
-              {/* AI Analysis - Owner/Foreman only */}
-              {canEdit && (
+              {/* M.E.S.S.A. Synthesis - Dual Engine AI Analysis - Owner/Foreman */}
+              {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleAIAnalysis}
+                  onClick={handleMessaSynthesis}
                   disabled={isGeneratingAI}
                   className="gap-2 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:hover:bg-violet-950/50"
                 >
@@ -5727,11 +5727,11 @@ export default function Stage8FinalReview({
                   ) : (
                     <Sparkles className="h-4 w-4" />
                   )}
-                  {t('stage8.aiAnalysis', 'AI Analysis')}
+                  {t('stage8.messaSynthesis', 'M.E.S.S.A. Synthesis')}
                 </Button>
               )}
               
-              {/* Complete Button - Requires Financial Unlock for Owner */}
+              {/* Activate Project Button - Requires Financial Unlock for Owner */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -5743,7 +5743,7 @@ export default function Stage8FinalReview({
                           "gap-2",
                           userRole === 'owner' && !isFinancialSummaryUnlocked
                             ? "bg-muted text-muted-foreground cursor-not-allowed"
-                            : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                            : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                         )}
                       >
                         {isSaving ? (
@@ -5751,9 +5751,9 @@ export default function Stage8FinalReview({
                         ) : userRole === 'owner' && !isFinancialSummaryUnlocked ? (
                           <LockKeyhole className="h-4 w-4" />
                         ) : (
-                          <LayoutDashboard className="h-4 w-4" />
+                          <CheckCircle2 className="h-4 w-4" />
                         )}
-                        {t('stage8.messaSynthesis', 'M.E.S.S.A. Synthesis')}
+                        {t('stage8.activateProject', 'Activate Project')}
                       </Button>
                     </span>
                   </TooltipTrigger>

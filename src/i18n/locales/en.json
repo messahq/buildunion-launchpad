@@ -1,4 +1,21 @@
 {
+  "stage8": {
+    "title": "Final Review Dashboard",
+    "subtitle": "Stage 8 • 8-Panel Summary • Review & Edit before activation",
+    "panel1": "Project Basics",
+    "panel2": "Area & Dimensions",
+    "panel3": "Trade & Template",
+    "panel4": "Team Architecture",
+    "panel5": "Execution Timeline",
+    "panel6": "Documents & Contracts",
+    "panel7": "Weather & Conditions",
+    "panel8": "Financial Summary",
+    "projectSummary": "Project Summary",
+    "messaSynthesis": "M.E.S.S.A. Synthesis",
+    "activateProject": "Activate Project",
+    "messaDownload": "Download PDF",
+    "messaSave": "Save to Documents"
+  },
   "offline": {
     "syncComplete": "{{count}} changes synced",
     "syncFailed": "{{count}} changes failed to sync",
