@@ -2935,6 +2935,20 @@ export default function Stage8FinalReview({
       (panel.id === 'panel-5-timeline' ? tasks.length : 0) +
       (panel.id === 'panel-6-documents' ? documents.length + contracts.length : 0);
     
+    // ✓ DYNAMIC TITLE: Panel 3 shows the selected subwork type (Flooring, Painting, etc.)
+    const getDynamicTitle = () => {
+      if (panel.id === 'panel-3-trade') {
+        const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+        const tradeLabel = tradeCitation?.answer; // "Flooring", "Painting", "Drywall"
+        if (tradeLabel) {
+          return `${tradeLabel} Template`;
+        }
+      }
+      return t(panel.titleKey, panel.title);
+    };
+    
+    const dynamicTitle = getDynamicTitle();
+    
     if (!hasAccess) {
       return (
         <motion.div
@@ -3003,7 +3017,7 @@ export default function Stage8FinalReview({
               </div>
               <div>
                 <h3 className={cn("text-sm font-semibold", panel.color)}>
-                  {t(panel.titleKey, panel.title)}
+                  {dynamicTitle}
                 </h3>
                 <p className="text-[10px] text-muted-foreground">
                   {dataCount > 0 ? `${dataCount} items` : panel.description}
@@ -3043,6 +3057,7 @@ export default function Stage8FinalReview({
     hasAccessToTier,
     collapsedPanels,
     getCitationsForPanel,
+    citations, // ✓ Added for dynamic Panel 3 title
     teamMembers,
     tasks,
     documents,
@@ -3210,27 +3225,41 @@ export default function Stage8FinalReview({
       {/* Fullscreen Panel Dialog */}
       <Dialog open={!!fullscreenPanel} onOpenChange={(open) => !open && setFullscreenPanel(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          {fullscreenPanelConfig && (
-            <>
-              <DialogHeader className={cn("pb-4 border-b", fullscreenPanelConfig.bgColor)}>
-                <div className="flex items-center gap-3">
-                  <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", fullscreenPanelConfig.bgColor)}>
-                    <fullscreenPanelConfig.icon className={cn("h-5 w-5", fullscreenPanelConfig.color)} />
+          {fullscreenPanelConfig && (() => {
+            // ✓ DYNAMIC TITLE for fullscreen Panel 3
+            const getFullscreenTitle = () => {
+              if (fullscreenPanelConfig.id === 'panel-3-trade') {
+                const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+                const tradeLabel = tradeCitation?.answer;
+                if (tradeLabel) {
+                  return `${tradeLabel} Template`;
+                }
+              }
+              return t(fullscreenPanelConfig.titleKey, fullscreenPanelConfig.title);
+            };
+            
+            return (
+              <>
+                <DialogHeader className={cn("pb-4 border-b", fullscreenPanelConfig.bgColor)}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", fullscreenPanelConfig.bgColor)}>
+                      <fullscreenPanelConfig.icon className={cn("h-5 w-5", fullscreenPanelConfig.color)} />
+                    </div>
+                    <div className="flex-1">
+                      <DialogTitle className={cn("text-lg", fullscreenPanelConfig.color)}>
+                        {getFullscreenTitle()}
+                      </DialogTitle>
+                      <p className="text-sm text-muted-foreground">{fullscreenPanelConfig.description}</p>
+                    </div>
+                    {getTierBadge(fullscreenPanelConfig.visibilityTier)}
                   </div>
-                  <div className="flex-1">
-                    <DialogTitle className={cn("text-lg", fullscreenPanelConfig.color)}>
-                      {t(fullscreenPanelConfig.titleKey, fullscreenPanelConfig.title)}
-                    </DialogTitle>
-                    <p className="text-sm text-muted-foreground">{fullscreenPanelConfig.description}</p>
-                  </div>
-                  {getTierBadge(fullscreenPanelConfig.visibilityTier)}
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto py-4">
+                  {renderFullscreenContent(fullscreenPanelConfig)}
                 </div>
-              </DialogHeader>
-              <div className="flex-1 overflow-y-auto py-4">
-                {renderFullscreenContent(fullscreenPanelConfig)}
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
       
