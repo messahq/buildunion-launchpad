@@ -5804,7 +5804,7 @@ export default function Stage8FinalReview({
         )}
         
         {panel.id === 'panel-8-financial' && canViewFinancials && (() => {
-          // ✓ FUTURISTIC FINANCIAL SUMMARY - with animated charts and visualizations
+          // ✓ FUTURISTIC FINANCIAL SUMMARY - compact elegant command center
           const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
           const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
           const demoPriceCitation = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
@@ -5839,7 +5839,6 @@ export default function Stage8FinalReview({
               : '';
           const getTaxRateByRegion = (address: string): { rate: number; name: string; province: string } => {
             const addressLower = address.toLowerCase();
-            // Canadian Province Tax Rates (HST/GST+PST)
             if (addressLower.includes('ontario') || addressLower.includes(', on')) return { rate: 0.13, name: 'HST', province: 'Ontario' };
             if (addressLower.includes('quebec') || addressLower.includes(', qc')) return { rate: 0.14975, name: 'GST+QST', province: 'Quebec' };
             if (addressLower.includes('british columbia') || addressLower.includes(', bc')) return { rate: 0.12, name: 'GST+PST', province: 'British Columbia' };
@@ -5854,7 +5853,6 @@ export default function Stage8FinalReview({
             if (addressLower.includes('vancouver')) return { rate: 0.12, name: 'GST+PST', province: 'British Columbia' };
             if (addressLower.includes('montreal')) return { rate: 0.14975, name: 'GST+QST', province: 'Quebec' };
             if (addressLower.includes('calgary') || addressLower.includes('edmonton')) return { rate: 0.05, name: 'GST', province: 'Alberta' };
-            // Default to Ontario HST
             return { rate: 0.13, name: 'HST', province: 'Ontario' };
           };
           
@@ -5863,339 +5861,184 @@ export default function Stage8FinalReview({
           const taxAmount = netTotal * taxInfo.rate;
           const grossTotal = netTotal + taxAmount;
           
-          // Data for pie chart visualization - Profit excluded (never auto-calculated)
           const costBreakdownData = [
-            { name: 'Materials', value: storedMaterialCost, color: 'hsl(200, 80%, 50%)' },
-            { name: 'Labor', value: storedLaborCost, color: 'hsl(160, 80%, 45%)' },
-            { name: 'Demolition', value: demoCost, color: 'hsl(280, 70%, 55%)' },
+            { name: 'Materials', value: storedMaterialCost, color: 'hsl(200, 80%, 50%)', icon: Hammer },
+            { name: 'Labor', value: storedLaborCost, color: 'hsl(160, 80%, 45%)', icon: Users },
+            { name: 'Demolition', value: demoCost, color: 'hsl(280, 70%, 55%)', icon: AlertTriangle },
           ].filter(item => item.value > 0);
           
           const totalForPercentage = costBreakdownData.reduce((sum, item) => sum + item.value, 0);
           
           return (
-            <div className="space-y-8">
-              {/* Futuristic Header with Glow Effect */}
-              <motion.div 
-                initial={{ opacity: 0, y: -20 }}
+            <div className="space-y-4">
+              {/* ─── Compact Header ─── */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="relative"
+                className="flex items-center justify-between p-3 rounded-xl border border-amber-500/20 bg-gradient-to-r from-slate-900/80 via-amber-950/20 to-slate-900/80"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 blur-3xl -z-10" />
-                <div className="flex items-center justify-between p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-800/90 dark:from-slate-950 dark:to-slate-900 border border-amber-500/30 shadow-2xl shadow-amber-500/10">
-                  <div className="flex items-center gap-4">
-                    <motion.div 
-                      animate={{ 
-                        boxShadow: ['0 0 20px rgba(251, 191, 36, 0.3)', '0 0 40px rgba(251, 191, 36, 0.6)', '0 0 20px rgba(251, 191, 36, 0.3)']
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
-                    >
-                      <DollarSign className="h-8 w-8 text-white" />
-                    </motion.div>
-                    <div>
-                      <h4 className="text-2xl font-bold text-white tracking-tight">Financial Command Center</h4>
-                      <p className="text-amber-400/80 text-sm">Real-time budget analytics & projections</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{ boxShadow: ['0 0 12px rgba(251,191,36,0.2)', '0 0 24px rgba(251,191,36,0.5)', '0 0 12px rgba(251,191,36,0.2)'] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
+                  >
+                    <DollarSign className="h-5 w-5 text-white" />
+                  </motion.div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white tracking-tight">Financial Command Center</h4>
+                    <p className="text-[10px] text-amber-400/60">Real-time budget analytics</p>
                   </div>
-                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 px-4 py-2 text-sm gap-2 shadow-lg shadow-green-500/30">
-                    <Unlock className="h-4 w-4" />
-                    Owner Access Verified
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-amber-400/50 bg-amber-500/10 px-2 py-0.5 rounded font-mono flex items-center gap-1">
+                    <MapPin className="h-2.5 w-2.5" /> {taxInfo.province}
+                  </span>
+                  <Badge className="bg-green-500/20 text-green-300 border border-green-500/30 text-[10px] px-2 py-0.5 gap-1">
+                    <Unlock className="h-2.5 w-2.5" /> Owner
                   </Badge>
                 </div>
               </motion.div>
-              
+
               {hasFinancialData ? (
                 <>
-                  {/* Grand Total Hero Card - Futuristic with Net/Gross */}
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                    className="relative overflow-hidden"
+                  {/* ─── Totals Row: Net → Tax → Gross ─── */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="grid grid-cols-3 gap-2"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-green-500/5 to-teal-500/10" />
-                    <div className="relative p-8 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 border border-emerald-500/40 shadow-2xl">
-                      {/* Animated background grid */}
-                      <div className="absolute inset-0 opacity-10">
-                        <div className="absolute inset-0" style={{
-                          backgroundImage: 'linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px)',
-                          backgroundSize: '40px 40px'
-                        }} />
-                      </div>
-                      
-                      <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                        <div className="flex-1">
-                          {/* Region & Tax Badge */}
-                          <div className="flex items-center gap-3 mb-4 flex-wrap">
-                            <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {taxInfo.province}
-                            </Badge>
-                            <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-3 py-1">
-                              {taxInfo.name} @ {(taxInfo.rate * 100).toFixed(2)}%
-                            </Badge>
-                          </div>
-                          
-                           {/* Net Amount */}
-                           <div className="mb-4">
-                             <div className="flex items-center gap-2 mb-1">
-                               <div className="h-2 w-2 rounded-full bg-white" />
-                               <span className="text-white text-sm font-semibold uppercase tracking-wider">Net (Before Tax)</span>
-                             </div>
-                             <motion.p 
-                               initial={{ opacity: 0, x: -20 }}
-                               animate={{ opacity: 1, x: 0 }}
-                               transition={{ duration: 0.6, delay: 0.2 }}
-                               className="text-4xl md:text-5xl font-bold text-white"
-                             >
-                               ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                             </motion.p>
-                           </div>
-                           
-                           {/* Tax Amount */}
-                           <div className="mb-4 pl-4 border-l-2 border-amber-400">
-                             <div className="flex items-center gap-2 mb-1">
-                               <span className="text-amber-200 text-xs font-semibold uppercase tracking-wider">+ {taxInfo.name} Tax</span>
-                             </div>
-                             <p className="text-2xl font-bold text-amber-200">
-                               ${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                             </p>
-                           </div>
-                           
-                           {/* Gross Amount - Hero */}
-                           <div className="pt-4 border-t border-emerald-400">
-                             <div className="flex items-center gap-3 mb-2">
-                               <div className="h-3 w-3 rounded-full bg-emerald-300 animate-pulse" />
-                               <span className="text-emerald-200 text-sm font-bold uppercase tracking-wider">Gross Total (With Tax)</span>
-                             </div>
-                            <motion.p 
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.6, delay: 0.4 }}
-                              className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400"
-                            >
-                              ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </motion.p>
-                          </div>
-                          
-                          {gfaValue && budgetTotal && (
-                            <p className="text-emerald-300/80 mt-4 flex items-center gap-2 text-sm">
-                              <Ruler className="h-4 w-4" />
-                              <span className="font-mono text-white">${(budgetTotal / gfaValue).toFixed(2)}</span>
-                              <span className="text-emerald-400/60">/ sq ft</span>
-                              <span className="text-emerald-400/40">•</span>
-                              <span className="font-mono text-white">{gfaValue.toLocaleString()}</span>
-                              <span className="text-emerald-400/60">sq ft</span>
-                            </p>
-                          )}
+                    {/* Net */}
+                    <div className="p-3 rounded-xl border border-slate-600/30 bg-slate-900/60 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+                      <div className="relative">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className="h-1.5 w-1.5 rounded-full bg-white/60" />
+                          <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Net</span>
                         </div>
-                        
-                        {/* Circular Progress Ring */}
-                        {profitPercent !== null && (
-                          <motion.div 
-                            initial={{ opacity: 0, rotate: -90 }}
-                            animate={{ opacity: 1, rotate: 0 }}
-                            transition={{ duration: 0.8, delay: 0.4 }}
-                            className="relative"
-                          >
-                            <svg className="w-36 h-36 transform -rotate-90">
-                              <circle
-                                cx="72"
-                                cy="72"
-                                r="60"
-                                fill="none"
-                                stroke="rgba(16, 185, 129, 0.15)"
-                                strokeWidth="10"
-                              />
-                              <motion.circle
-                                cx="72"
-                                cy="72"
-                                r="60"
-                                fill="none"
-                                stroke={profitPercent >= 20 ? 'url(#profitGradientGreen)' : profitPercent >= 10 ? 'url(#profitGradientAmber)' : 'url(#profitGradientRed)'}
-                                strokeWidth="10"
-                                strokeLinecap="round"
-                                strokeDasharray={`${2 * Math.PI * 60}`}
-                                initial={{ strokeDashoffset: 2 * Math.PI * 60 }}
-                                animate={{ strokeDashoffset: 2 * Math.PI * 60 * (1 - Math.min(profitPercent, 100) / 100) }}
-                                transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
-                              />
-                              <defs>
-                                <linearGradient id="profitGradientGreen" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#10b981" />
-                                  <stop offset="100%" stopColor="#059669" />
-                                </linearGradient>
-                                <linearGradient id="profitGradientAmber" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#f59e0b" />
-                                  <stop offset="100%" stopColor="#d97706" />
-                                </linearGradient>
-                                <linearGradient id="profitGradientRed" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#ef4444" />
-                                  <stop offset="100%" stopColor="#dc2626" />
-                                </linearGradient>
-                              </defs>
-                            </svg>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <span className={cn(
-                                "text-3xl font-bold",
-                                profitPercent >= 20 ? "text-emerald-400" : profitPercent >= 10 ? "text-amber-400" : "text-red-400"
-                              )}>
-                                {profitPercent.toFixed(1)}%
-                              </span>
-                              <span className="text-xs text-white/60 uppercase font-medium">Margin</span>
-                            </div>
-                          </motion.div>
-                        )}
+                        <p className="text-lg font-bold text-white font-mono leading-tight">
+                          ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Tax */}
+                    <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-950/20 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent" />
+                      <div className="relative">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className="h-1.5 w-1.5 rounded-full bg-amber-400/60" />
+                          <span className="text-[9px] text-amber-300/60 uppercase tracking-widest font-semibold">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%</span>
+                        </div>
+                        <p className="text-lg font-bold text-amber-200 font-mono leading-tight">
+                          +${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Gross */}
+                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.05] to-transparent" />
+                      <div className="relative">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="text-[9px] text-emerald-300/70 uppercase tracking-widest font-semibold">Gross</span>
+                        </div>
+                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-300 font-mono leading-tight">
+                          ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                        </p>
                       </div>
                     </div>
                   </motion.div>
-                  
-                  {/* Cost Breakdown - Animated Cards */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                  >
-                    <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-                      <div className="h-6 w-1 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
-                      Cost Breakdown Analysis
-                    </h5>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Materials Card */}
-                      <motion.div 
-                        whileHover={{ scale: 1.02, y: -4 }}
-                        className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/30 backdrop-blur-sm"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                         <div className="relative">
-                           <div className="flex items-center gap-3 mb-4">
-                             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                               <Hammer className="h-6 w-6 text-white" />
-                             </div>
-                             <div>
-                               <span className="text-xs text-blue-200 uppercase tracking-wider font-semibold">Materials</span>
-                               <div className="h-1.5 w-16 bg-blue-500/40 rounded-full mt-1 overflow-hidden">
-                                 <motion.div 
-                                   initial={{ width: 0 }}
-                                   animate={{ width: totalForPercentage > 0 ? `${(storedMaterialCost / totalForPercentage) * 100}%` : '0%' }}
-                                   transition={{ duration: 1, delay: 0.6 }}
-                                   className="h-full bg-gradient-to-r from-blue-300 to-cyan-300"
-                                 />
-                               </div>
-                             </div>
-                           </div>
-                           <p className="text-3xl font-bold text-blue-200">
-                             ${storedMaterialCost.toLocaleString()}
-                           </p>
-                           {totalForPercentage > 0 && (
-                             <p className="text-xs text-blue-200/80 mt-1">
-                               {((storedMaterialCost / totalForPercentage) * 100).toFixed(1)}% of total
-                             </p>
-                           )}
-                         </div>
-                      </motion.div>
-                      
-                      {/* Labor Card */}
-                      <motion.div 
-                        whileHover={{ scale: 1.02, y: -4 }}
-                        className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-500/30 backdrop-blur-sm"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="relative">
-                           <div className="flex items-center gap-3 mb-4">
-                             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                               <Users className="h-6 w-6 text-white" />
-                             </div>
-                             <div>
-                               <span className="text-xs text-teal-200 uppercase tracking-wider font-semibold">Labor</span>
-                               <div className="h-1.5 w-16 bg-teal-500/40 rounded-full mt-1 overflow-hidden">
-                                 <motion.div 
-                                   initial={{ width: 0 }}
-                                   animate={{ width: totalForPercentage > 0 ? `${(storedLaborCost / totalForPercentage) * 100}%` : '0%' }}
-                                   transition={{ duration: 1, delay: 0.7 }}
-                                   className="h-full bg-gradient-to-r from-teal-300 to-emerald-300"
-                                 />
-                               </div>
-                             </div>
-                           </div>
-                           <p className="text-3xl font-bold text-teal-200">
-                             ${storedLaborCost.toLocaleString()}
-                           </p>
-                           {totalForPercentage > 0 && (
-                             <p className="text-xs text-teal-200/80 mt-1">
-                               {((storedLaborCost / totalForPercentage) * 100).toFixed(1)}% of total
-                             </p>
-                           )}
-                        </div>
-                      </motion.div>
-                      
-                      {/* Demolition Card */}
-                      <motion.div 
-                        whileHover={{ scale: 1.02, y: -4 }}
-                        className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/5 border border-purple-500/30 backdrop-blur-sm"
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="relative">
-                           <div className="flex items-center gap-3 mb-4">
-                             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                               <AlertTriangle className="h-6 w-6 text-white" />
-                             </div>
-                             <div>
-                               <span className="text-xs text-purple-200 uppercase tracking-wider font-semibold">Demolition</span>
-                               <div className="h-1.5 w-16 bg-purple-500/40 rounded-full mt-1 overflow-hidden">
-                                 <motion.div 
-                                   initial={{ width: 0 }}
-                                   animate={{ width: totalForPercentage > 0 ? `${(demoCost / totalForPercentage) * 100}%` : '0%' }}
-                                   transition={{ duration: 1, delay: 0.8 }}
-                                   className="h-full bg-gradient-to-r from-purple-300 to-violet-300"
-                                 />
-                               </div>
-                             </div>
-                           </div>
-                           <p className="text-3xl font-bold text-purple-200">
-                             ${demoCost.toLocaleString()}
-                           </p>
-                           {demoPriceCitation && typeof demoPriceCitation.value === 'number' && (
-                             <p className="text-xs text-purple-200/80 mt-1">
-                               @ ${demoPriceCitation.value}/sq ft
-                             </p>
-                           )}
-                        </div>
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                  
-                  {/* Visual Breakdown Chart */}
+
+                  {/* ─── Cost Breakdown: Horizontal Compact Cards + Inline Bar ─── */}
                   {costBreakdownData.length > 0 && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.3 }}
-                      className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 border border-slate-600/50"
+                      transition={{ delay: 0.2 }}
+                      className="space-y-2"
                     >
-                      <h5 className="text-lg font-semibold mb-6 flex items-center gap-2 text-white">
-                        <div className="h-6 w-1 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
-                        Budget Allocation
-                      </h5>
-                      <div className="flex flex-col md:flex-row items-center gap-8">
-                        {/* Animated Donut Chart */}
-                        <div className="relative w-48 h-48 flex-shrink-0">
+                      {/* Stacked bar */}
+                      <div className="h-2.5 rounded-full overflow-hidden flex bg-slate-800/60 border border-slate-700/30">
+                        {costBreakdownData.map((item, i) => (
+                          <motion.div
+                            key={item.name}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(item.value / totalForPercentage) * 100}%` }}
+                            transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
+                            style={{ backgroundColor: item.color }}
+                            className="h-full first:rounded-l-full last:rounded-r-full"
+                          />
+                        ))}
+                      </div>
+
+                      {/* Compact cost items */}
+                      <div className="grid grid-cols-1 gap-1.5">
+                        {costBreakdownData.map((item, i) => {
+                          const ItemIcon = item.icon;
+                          const pct = ((item.value / totalForPercentage) * 100).toFixed(1);
+                          return (
+                            <motion.div
+                              key={item.name}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.3 + i * 0.08 }}
+                              className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-700/30 bg-slate-900/40 hover:bg-slate-800/40 transition-colors group"
+                            >
+                              <div
+                                className="h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: `${item.color}22`, borderColor: `${item.color}44`, borderWidth: 1 }}
+                              >
+                                <ItemIcon className="h-3.5 w-3.5" style={{ color: item.color }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-semibold text-white/80">{item.name}</span>
+                                  <span className="text-sm font-bold text-white font-mono">${item.value.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <div className="flex-1 h-1 rounded-full bg-slate-700/50 overflow-hidden">
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${pct}%` }}
+                                      transition={{ duration: 0.8, delay: 0.5 + i * 0.1 }}
+                                      className="h-full rounded-full"
+                                      style={{ backgroundColor: item.color }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] text-white/40 font-mono w-10 text-right">{pct}%</span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ─── Donut Chart + GFA in compact row ─── */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    {/* Mini Donut */}
+                    {costBreakdownData.length > 0 && (
+                      <div className="p-3 rounded-xl border border-slate-700/30 bg-slate-900/40 flex items-center gap-3">
+                        <div className="relative w-16 h-16 flex-shrink-0">
                           <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                             {costBreakdownData.map((item, index) => {
                               const previousTotal = costBreakdownData.slice(0, index).reduce((sum, i) => sum + i.value, 0);
                               const startAngle = (previousTotal / totalForPercentage) * 360;
                               const endAngle = ((previousTotal + item.value) / totalForPercentage) * 360;
                               const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-                              
                               const startRad = (startAngle - 90) * Math.PI / 180;
                               const endRad = (endAngle - 90) * Math.PI / 180;
-                              
                               const x1 = 50 + 40 * Math.cos(startRad);
                               const y1 = 50 + 40 * Math.sin(startRad);
                               const x2 = 50 + 40 * Math.cos(endRad);
                               const y2 = 50 + 40 * Math.sin(endRad);
-                              
                               return (
                                 <motion.path
                                   key={item.name}
@@ -6204,208 +6047,137 @@ export default function Stage8FinalReview({
                                   initial={{ opacity: 0, scale: 0 }}
                                   animate={{ opacity: 1, scale: 1 }}
                                   transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                                  className="hover:opacity-80 transition-opacity cursor-pointer"
                                   style={{ transformOrigin: 'center' }}
                                 />
                               );
                             })}
-                            <circle cx="50" cy="50" r="25" fill="#1e293b" />
+                            <circle cx="50" cy="50" r="22" fill="#0f172a" />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-center">
-                              <p className="text-2xl font-bold text-white">${(totalForPercentage / 1000).toFixed(0)}K</p>
-                              <p className="text-[10px] text-slate-400 uppercase">Total</p>
-                            </div>
+                            <span className="text-[9px] font-bold text-white/70">${(totalForPercentage / 1000).toFixed(0)}K</span>
                           </div>
                         </div>
-                        
-                        {/* Legend */}
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                          {costBreakdownData.map((item, index) => (
-                            <motion.div 
-                              key={item.name}
-                              initial={{ opacity: 0, x: 20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
-                              className="flex items-center gap-3 p-3 rounded-xl bg-slate-700/60 hover:bg-slate-600/60 transition-colors border border-slate-600/30"
-                            >
-                              <div 
-                                className="h-4 w-4 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: item.color }}
-                              />
-                               <div className="flex-1 min-w-0">
-                                 <p className="text-sm font-semibold truncate text-white">{item.name}</p>
-                                 <p className="text-xs text-slate-300">
-                                   {((item.value / totalForPercentage) * 100).toFixed(1)}%
-                                 </p>
-                               </div>
-                               <p className="text-sm font-bold text-white">${item.value.toLocaleString()}</p>
-                            </motion.div>
+                        <div className="space-y-1">
+                          {costBreakdownData.map(item => (
+                            <div key={item.name} className="flex items-center gap-1.5">
+                              <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                              <span className="text-[10px] text-white/50">{item.name}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-                  
-                  {/* Profit Margin - Futuristic */}
-                  {profitMargin !== null && profitPercent !== null && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.4 }}
-                      className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-2 border-green-500/40"
-                    >
-                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.15),transparent_50%)]" />
-                      <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    )}
+
+                    {/* GFA Reference */}
+                    {gfaCitation && gfaValue ? (
+                      <div className="p-3 rounded-xl border border-amber-500/15 bg-amber-950/10 flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                          <Ruler className="h-4 w-4 text-amber-400" />
+                        </div>
                         <div>
-                          <div className="flex items-center gap-3 mb-3">
-                            <motion.div 
-                              animate={{ rotate: [0, 5, -5, 0] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                            >
-                              <Shield className="h-6 w-6 text-emerald-400" />
-                            </motion.div>
-                            <span className="text-emerald-400 text-sm font-medium uppercase tracking-wider">Net Profit Margin</span>
-                            <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 gap-1">
-                              <Lock className="h-2.5 w-2.5" />
-                              Owner Only
-                            </Badge>
-                          </div>
-                          <div className="flex items-baseline gap-4">
-                            <motion.p 
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0.5, delay: 0.6 }}
-                              className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-400"
-                            >
-                              ${profitMargin.toLocaleString()}
-                            </motion.p>
-                            <Badge className={cn(
-                              "text-lg px-4 py-2 font-bold",
-                              profitPercent >= 20 
-                                ? "bg-gradient-to-r from-green-500 to-emerald-600 border-0" 
-                                : profitPercent >= 10 
-                                  ? "bg-gradient-to-r from-amber-500 to-orange-600 border-0" 
-                                  : "bg-gradient-to-r from-red-500 to-rose-600 border-0"
-                            )}>
-                              {profitPercent >= 20 ? '↑' : profitPercent >= 10 ? '→' : '↓'} {profitPercent.toFixed(1)}%
-                            </Badge>
-                          </div>
-                           <p className="text-sm text-slate-300 mt-3">
-                             Total Expenses: <span className="font-mono text-white">${calculatedExpenses.toLocaleString()}</span>
-                           </p>
-                         </div>
-                         
-                         {/* Status Indicator */}
-                         <div className={cn(
-                           "p-4 rounded-xl text-center",
-                           profitPercent >= 20 
-                             ? "bg-green-500/20 border border-green-500/30" 
-                             : profitPercent >= 10 
-                               ? "bg-amber-500/20 border border-amber-500/30" 
-                               : "bg-red-500/20 border border-red-500/30"
-                         )}>
-                           <p className={cn(
-                             "text-lg font-bold",
-                             profitPercent >= 20 ? "text-green-300" : profitPercent >= 10 ? "text-amber-300" : "text-red-300"
-                           )}>
-                             {profitPercent >= 20 ? 'Excellent' : profitPercent >= 10 ? 'Good' : 'Review Needed'}
-                           </p>
-                           <p className="text-[10px] text-slate-300 mt-1">
-                             {profitPercent >= 20 ? 'Above 20% target' : profitPercent >= 10 ? 'Within acceptable range' : 'Below 10% threshold'}
-                           </p>
-                         </div>
+                          <p className="text-[9px] text-amber-300/50 uppercase tracking-widest">GFA</p>
+                          <p className="text-sm font-bold text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-amber-300/50">sq ft</span></p>
+                          {budgetTotal > 0 && (
+                            <p className="text-[10px] text-amber-300/40 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
+                          )}
+                        </div>
                       </div>
-                    </motion.div>
-                  )}
-                  
-                  {/* Contracts Summary - Modern Style */}
+                    ) : costBreakdownData.length === 0 ? null : (
+                      <div className="p-3 rounded-xl border border-slate-700/20 bg-slate-900/30 flex items-center justify-center">
+                        <span className="text-[10px] text-slate-500">No GFA data</span>
+                      </div>
+                    )}
+                  </motion.div>
+
+                  {/* ─── Contracts Strip ─── */}
                   {contracts.length > 0 && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.5 }}
-                     >
-                       <h5 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-                         <div className="h-6 w-1 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
-                         Active Contracts ({contracts.length})
-                       </h5>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         {contracts.map((contract, index) => (
-                           <motion.div 
-                             key={contract.id}
-                             initial={{ opacity: 0, x: -20 }}
-                             animate={{ opacity: 1, x: 0 }}
-                             transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
-                             whileHover={{ scale: 1.02 }}
-                             className="p-5 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-700/30 border border-slate-600/50 hover:border-pink-500/50 transition-all"
-                           >
-                             <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                 <FileCheck className="h-5 w-5 text-pink-400" />
-                                 <span className="font-mono font-medium text-white">#{contract.contract_number}</span>
-                               </div>
-                              <Badge 
-                                variant={contract.status === 'signed' ? 'default' : 'outline'}
-                                className={cn(
-                                  "text-xs",
-                                  contract.status === 'signed' && 'bg-gradient-to-r from-green-500 to-emerald-600 border-0'
-                                )}
-                              >
-                                {contract.status}
-                              </Badge>
-                            </div>
-                            {contract.total_amount !== null && contract.total_amount !== undefined && (
-                              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">
-                                ${contract.total_amount.toLocaleString()}
-                              </p>
-                            )}
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                  
-                  {/* GFA Reference - Compact Footer */}
-                  {gfaCitation && gfaValue && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, delay: 0.7 }}
-                      className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/50"
+                      transition={{ delay: 0.5 }}
+                      className="space-y-1.5"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                            <Ruler className="h-5 w-5 text-amber-400" />
+                      <div className="flex items-center gap-2 px-1">
+                        <div className="h-3 w-0.5 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
+                        <span className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Contracts ({contracts.length})</span>
+                      </div>
+                      {contracts.map((contract, i) => (
+                        <motion.div
+                          key={contract.id}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.55 + i * 0.05 }}
+                          className="flex items-center justify-between p-2.5 rounded-lg border border-slate-700/25 bg-slate-900/30 hover:border-pink-500/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileCheck className="h-3.5 w-3.5 text-pink-400/70" />
+                            <span className="font-mono text-xs text-white/70">#{contract.contract_number}</span>
+                            <Badge
+                              variant={contract.status === 'signed' ? 'default' : 'outline'}
+                              className={cn(
+                                "text-[9px] px-1.5 py-0",
+                                contract.status === 'signed' && 'bg-green-500/20 text-green-300 border-green-500/30'
+                              )}
+                            >
+                              {contract.status}
+                            </Badge>
                           </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider">Project Area (GFA)</p>
-                            <p className="text-xl font-bold">{gfaValue.toLocaleString()} sq ft</p>
-                          </div>
+                          {contract.total_amount != null && (
+                            <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-rose-300 font-mono">
+                              ${contract.total_amount.toLocaleString()}
+                            </span>
+                          )}
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+
+                  {/* ─── Profit Section (only if set) ─── */}
+                  {profitMargin !== null && profitPercent !== null && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="flex items-center justify-between p-3 rounded-xl border-2 border-emerald-500/30 bg-emerald-950/15"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Shield className="h-5 w-5 text-emerald-400" />
+                        <div>
+                          <span className="text-[10px] text-emerald-300/60 uppercase tracking-wider font-semibold block">Profit Margin</span>
+                          <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-green-300 font-mono">
+                            ${profitMargin.toLocaleString()}
+                          </span>
                         </div>
-                        <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30 font-mono">
-                          cite: [{gfaCitation.id.slice(0, 8)}]
-                        </Badge>
+                      </div>
+                      <div className={cn(
+                        "px-3 py-1.5 rounded-lg text-center",
+                        profitPercent >= 20 ? "bg-green-500/20 border border-green-500/30" : profitPercent >= 10 ? "bg-amber-500/20 border border-amber-500/30" : "bg-red-500/20 border border-red-500/30"
+                      )}>
+                        <span className={cn(
+                          "text-sm font-bold",
+                          profitPercent >= 20 ? "text-green-300" : profitPercent >= 10 ? "text-amber-300" : "text-red-300"
+                        )}>
+                          {profitPercent.toFixed(1)}%
+                        </span>
+                        <span className="text-[9px] text-white/40 block">
+                          {profitPercent >= 20 ? 'Excellent' : profitPercent >= 10 ? 'Good' : 'Review'}
+                        </span>
                       </div>
                     </motion.div>
                   )}
                 </>
               ) : (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="p-16 rounded-2xl border-2 border-dashed border-slate-700 text-center bg-slate-900/50"
+                  className="p-10 rounded-xl border border-dashed border-slate-700/40 text-center bg-slate-900/30"
                 >
-                  <motion.div
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <DollarSign className="h-20 w-20 text-slate-600 mx-auto mb-6" />
+                  <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
+                    <DollarSign className="h-12 w-12 text-slate-600 mx-auto mb-4" />
                   </motion.div>
-                  <p className="text-xl font-medium text-slate-400">No Financial Data Recorded</p>
-                  <p className="text-sm text-slate-500 mt-3 max-w-md mx-auto">
-                    Add budget information, materials costs, or create contracts to unlock the Financial Command Center
+                  <p className="text-sm font-medium text-slate-400">No Financial Data</p>
+                  <p className="text-xs text-slate-500 mt-1.5 max-w-xs mx-auto">
+                    Add budget, materials, or contracts to activate
                   </p>
                 </motion.div>
               )}
