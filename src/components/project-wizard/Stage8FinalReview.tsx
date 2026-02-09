@@ -3031,8 +3031,9 @@ export default function Stage8FinalReview({
   }, [teamMembers]);
   
    // Render Panel 5 - Timeline with Granular Tasklist
+   // ✓ GANTT-STYLE EXECUTION TIMELINE
    // ✓ REAL DB TASKS: Display actual project_tasks with assignee names
-   // ✓ DEMOLITION: Only show demolition phase if SITE_CONDITION includes demolition
+   // ✓ VISIBILITY: Worker/subcontractor/inspector only see assigned tasks
    const renderPanel5Content = useCallback(() => {
      const panelCitations = getCitationsForPanel(['TIMELINE', 'END_DATE', 'DNA_FINALIZED']);
      
@@ -3042,318 +3043,422 @@ export default function Stage8FinalReview({
        || siteConditionCitation?.metadata?.demolition_needed === true
        || (typeof siteConditionCitation?.value === 'string' && siteConditionCitation.value.toLowerCase().includes('demolition'));
      
-     // ✓ Use REAL DB tasks - no fallback to default phases
-     // ✓ VISIBILITY: Worker/subcontractor/inspector only see tasks assigned to them
-     // Owner and foreman see all tasks
+     // ✓ Role-based task filtering
      const baseTasks: TaskWithChecklist[] = (userRole === 'owner' || userRole === 'foreman')
        ? tasks
        : tasks.filter(t => t.assigned_to === userId);
      
-     // ✓ Filter phases - only show demolition if hasDemolition
+     // Filter phases
      const activePhasesConfig = hasDemolition 
        ? TASK_PHASES 
        : TASK_PHASES.filter(p => p.key !== 'demolition');
      
-     // Group tasks by phase
+     // Priority order
+     const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+     
+     // Group & sort tasks by phase, then priority
      const tasksByPhase = activePhasesConfig.map(phase => ({
        ...phase,
-       tasks: baseTasks.filter(t => t.phase === phase.key),
+       tasks: baseTasks
+         .filter(t => t.phase === phase.key)
+         .sort((a, b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2)),
      }));
+
+     // Phase color map for Gantt bars
+     const phaseBarColors: Record<string, { bg: string; border: string; text: string }> = {
+       demolition: { bg: 'bg-red-500/20', border: 'border-red-500/40', text: 'text-red-400' },
+       preparation: { bg: 'bg-amber-500/20', border: 'border-amber-500/40', text: 'text-amber-400' },
+       installation: { bg: 'bg-blue-500/20', border: 'border-blue-500/40', text: 'text-blue-400' },
+       finishing: { bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', text: 'text-emerald-400' },
+     };
+
+     const priorityColors: Record<string, string> = {
+       high: 'bg-red-500',
+       medium: 'bg-amber-500',
+       low: 'bg-emerald-500',
+     };
+
+     const totalTasks = baseTasks.length;
+     const completedTasks = baseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+     const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+     // Get assignee name
+     const getAssigneeName = (assigneeId: string) => {
+       const member = teamMembers.find(m => m.userId === assigneeId);
+       return member?.name || 'Unassigned';
+     };
+     const getAssigneeInitial = (assigneeId: string) => {
+       const name = getAssigneeName(assigneeId);
+       return name.charAt(0).toUpperCase();
+     };
+
+     // Gantt bar width based on checklist completion
+     const getTaskProgress = (task: TaskWithChecklist) => {
+       if (task.status === 'completed' || task.status === 'done') return 100;
+       if (!task.checklist || task.checklist.length === 0) return task.status === 'in_progress' ? 50 : 0;
+       const done = task.checklist.filter(c => c.done).length;
+       return Math.round((done / task.checklist.length) * 100);
+     };
     
     return (
       <div className="space-y-4">
-        {/* Date citations with Citation Badges */}
-        {panelCitations.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 mb-4">
+        {/* Timeline header with dates & progress */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
             {panelCitations.map(c => (
-              <div key={c.id} className="p-2 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] text-muted-foreground uppercase">{c.cite_type.replace(/_/g, ' ')}</p>
-                  <span className="text-[9px] text-indigo-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
-                </div>
-                <span className="text-sm font-medium">{renderCitationValue(c)}</span>
+              <div key={c.id} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20">
+                <span className="text-[9px] text-indigo-400 uppercase font-mono">{c.cite_type === 'TIMELINE' ? 'Start' : c.cite_type === 'END_DATE' ? 'End' : c.cite_type.replace(/_/g, ' ')}</span>
+                <span className="text-xs font-semibold text-indigo-300">{renderCitationValue(c)}</span>
               </div>
             ))}
           </div>
-        )}
-        
-        {/* Site Condition Citation Badge */}
-        {siteConditionCitation && (
-          <div className="p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 mb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Hammer className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                  {siteConditionCitation.answer}
-                </span>
-                {hasDemolition && (
-                  <Badge variant="outline" className="text-[9px] bg-red-100 text-red-600">Demolition</Badge>
-                )}
-              </div>
-              <span className="text-[9px] text-amber-500 font-mono">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
+          {/* Overall progress */}
+          <div className="flex items-center gap-2">
+            <div className="w-32 h-2 rounded-full bg-slate-700/50 overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-indigo-400 to-violet-500 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.8 }}
+              />
             </div>
+            <span className="text-xs font-mono text-indigo-300">{completedTasks}/{totalTasks}</span>
+          </div>
+        </div>
+
+        {/* Site Condition Badge */}
+        {siteConditionCitation && (
+          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 mb-2">
+            <Hammer className="h-3 w-3 text-amber-400" />
+            <span className="text-[10px] font-medium text-amber-300">{siteConditionCitation.answer}</span>
+            {hasDemolition && (
+              <Badge variant="outline" className="text-[8px] bg-red-500/10 text-red-400 border-red-500/30">Demolition</Badge>
+            )}
           </div>
         )}
-        
-        {/* Task Phases with Checklists */}
-        <div className="space-y-3">
-          {tasksByPhase.map(phase => (
-            <div key={phase.key} className={cn("rounded-lg border overflow-hidden", phase.bgColor)}>
-              {/* Phase Header */}
-              <button
-                onClick={() => togglePhaseExpansion(phase.key)}
-                className="w-full flex items-center justify-between p-3 hover:bg-black/5 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <div className={cn("h-6 w-6 rounded flex items-center justify-center", phase.bgColor)}>
-                    <ClipboardList className={cn("h-3.5 w-3.5", phase.color)} />
-                  </div>
-                  <span className={cn("font-medium text-sm", phase.color)}>{phase.label}</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {phase.tasks.length} tasks
-                  </Badge>
-                </div>
-                {expandedPhases.has(phase.key) ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                )}
-              </button>
-              
-              {/* Phase Tasks */}
-              <AnimatePresence>
-                {expandedPhases.has(phase.key) && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-3 pt-0 space-y-2">
+
+        {/* Gantt Chart */}
+        <div className="space-y-1">
+          {/* Phase header row */}
+          {tasksByPhase.map(phase => {
+            if (phase.tasks.length === 0 && !expandedPhases.has(phase.key)) return null;
+            const colors = phaseBarColors[phase.key] || phaseBarColors.preparation;
+            const phaseComplete = phase.tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+            
+            return (
+              <div key={phase.key} className="space-y-0.5">
+                {/* Phase divider */}
+                <button
+                  onClick={() => togglePhaseExpansion(phase.key)}
+                  className="w-full flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-white/5 transition-colors group"
+                >
+                  <div className={cn("h-2.5 w-2.5 rounded-sm", colors.bg, colors.border, "border")} />
+                  <span className={cn("text-[11px] font-semibold uppercase tracking-wider", colors.text)}>{phase.label}</span>
+                  <span className="text-[9px] text-slate-500 font-mono">{phaseComplete}/{phase.tasks.length}</span>
+                  <div className="flex-1" />
+                  {expandedPhases.has(phase.key) ? (
+                    <ChevronUp className="h-3 w-3 text-slate-600 group-hover:text-slate-400" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 text-slate-600 group-hover:text-slate-400" />
+                  )}
+                </button>
+
+                {/* Task Gantt bars */}
+                <AnimatePresence>
+                  {expandedPhases.has(phase.key) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden space-y-1 pl-2"
+                    >
                       {phase.tasks.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic py-2">No tasks in this phase</p>
+                        <p className="text-[10px] text-slate-600 italic py-1 pl-4">No tasks</p>
                       ) : (
-                        phase.tasks.map(task => {
-                          // Create ref for file input per task
+                        phase.tasks.map((task, taskIdx) => {
+                          const taskProgress = getTaskProgress(task);
+                          const isCompleted = task.status === 'completed' || task.status === 'done';
                           const taskFileInputId = `task-photo-${task.id}`;
                           
                           return (
-                            <div key={task.id} className="bg-background rounded-lg border p-3 space-y-2">
-                              {/* Task Header with Status Toggle */}
-                              <div className="flex items-center justify-between gap-2">
-                                {/* Task status toggle - owner/foreman always, workers for assigned tasks */}
-                                <div className="flex items-center gap-2 flex-1">
-                                  <Checkbox
-                                    checked={task.status === 'completed'}
-                                    onCheckedChange={(checked) => {
-                                      const newStatus = checked ? 'completed' : 'pending';
-                                      // Update task status in DB
-                                      supabase
-                                        .from('project_tasks')
-                                        .update({ status: newStatus })
-                                        .eq('id', task.id)
-                                        .then(({ error }) => {
-                                          if (error) {
-                                            toast.error('Failed to update task status');
-                                          } else {
-                                            setTasks(prev => prev.map(t => 
-                                              t.id === task.id ? { ...t, status: newStatus } : t
-                                            ));
-                                            toast.success(checked ? 'Task completed' : 'Task reopened');
-                                          }
-                                        });
-                                    }}
-                                    disabled={!canToggleTaskStatus(task.assigned_to)}
-                                    className={cn(
-                                      "h-5 w-5",
-                                      canToggleTaskStatus(task.assigned_to) && "cursor-pointer"
-                                    )}
-                                  />
-                                  <span className={cn(
-                                    "text-sm font-medium truncate flex-1",
-                                    task.status === 'completed' && "line-through text-muted-foreground"
-                                  )}>{task.title}</span>
+                            <motion.div
+                              key={task.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: taskIdx * 0.05 }}
+                              className="group"
+                            >
+                              {/* Gantt row */}
+                              <div className="flex items-center gap-2 py-1">
+                                {/* Priority dot */}
+                                <div className={cn("h-2 w-2 rounded-full shrink-0", priorityColors[task.priority] || 'bg-slate-500')} />
+                                
+                                {/* Task completion toggle */}
+                                <Checkbox
+                                  checked={isCompleted}
+                                  onCheckedChange={(checked) => {
+                                    const newStatus = checked ? 'completed' : 'pending';
+                                    supabase
+                                      .from('project_tasks')
+                                      .update({ status: newStatus })
+                                      .eq('id', task.id)
+                                      .then(({ error }) => {
+                                        if (error) {
+                                          toast.error('Failed to update task');
+                                        } else {
+                                          setTasks(prev => prev.map(t => 
+                                            t.id === task.id ? { ...t, status: newStatus } : t
+                                          ));
+                                        }
+                                      });
+                                  }}
+                                  disabled={!canToggleTaskStatus(task.assigned_to)}
+                                  className="h-4 w-4 shrink-0"
+                                />
+
+                                {/* Gantt bar container */}
+                                <div className="flex-1 relative">
+                                  <div className={cn(
+                                    "relative h-8 rounded-md border overflow-hidden cursor-pointer transition-all",
+                                    colors.border,
+                                    isCompleted ? "bg-emerald-500/10 border-emerald-500/30" : colors.bg,
+                                    "hover:brightness-125"
+                                  )}
+                                    onClick={() => togglePhaseExpansion(`task-${task.id}`)}
+                                  >
+                                    {/* Progress fill */}
+                                    <motion.div
+                                      className={cn(
+                                        "absolute inset-y-0 left-0 rounded-md",
+                                        isCompleted 
+                                          ? "bg-emerald-500/30" 
+                                          : task.priority === 'high' ? "bg-red-500/20" 
+                                          : task.priority === 'medium' ? "bg-amber-500/20"
+                                          : "bg-blue-500/20"
+                                      )}
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${taskProgress}%` }}
+                                      transition={{ duration: 0.5, delay: taskIdx * 0.05 }}
+                                    />
+                                    {/* Task name & info */}
+                                    <div className="relative h-full flex items-center justify-between px-2 gap-1">
+                                      <span className={cn(
+                                        "text-[11px] font-medium truncate",
+                                        isCompleted ? "line-through text-slate-500" : "text-slate-200"
+                                      )}>
+                                        {task.title}
+                                      </span>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        {/* Priority badge */}
+                                        <span className={cn(
+                                          "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
+                                          task.priority === 'high' ? "bg-red-500/20 text-red-400"
+                                          : task.priority === 'medium' ? "bg-amber-500/20 text-amber-400"
+                                          : "bg-emerald-500/20 text-emerald-400"
+                                        )}>
+                                          {task.priority[0]?.toUpperCase()}
+                                        </span>
+                                        {/* Progress % */}
+                                        <span className="text-[9px] font-mono text-slate-500">{taskProgress}%</span>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  {/* Photo Upload Button - ALL TEAM can upload */}
-                                  {canUploadTaskPhotos && (
-                                    <>
-                                      <input
-                                        id={taskFileInputId}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={async (e) => {
-                                          const files = e.target.files;
-                                          if (!files || files.length === 0) return;
-                                          
-                                          // Upload image to Visuals
-                                          setIsUploading(true);
-                                          try {
-                                            const file = files[0];
-                                            const fileName = `${Date.now()}-${file.name}`;
-                                            const filePath = `${projectId}/${fileName}`;
-                                            
-                                            // Upload to storage
-                                            const { error: uploadError } = await supabase.storage
-                                              .from('project-documents')
-                                              .upload(filePath, file);
-                                            
-                                            if (uploadError) throw uploadError;
-                                            
-                                            // Create document record
-                                            const { data: docRecord, error: insertError } = await supabase
-                                              .from('project_documents')
-                                              .insert({
-                                                project_id: projectId,
-                                                file_name: file.name,
-                                                file_path: filePath,
-                                                file_size: file.size,
-                                              })
-                                              .select()
-                                              .single();
-                                            
-                                            if (insertError) throw insertError;
-                                            
-                                            // Create citation for cross-panel sync with PHASE info
-                                            const phaseInfo = TASK_PHASES.find(p => p.key === task.phase);
-                                            const newCitation: Citation = {
-                                              id: `doc-${docRecord.id}`,
-                                              cite_type: 'SITE_PHOTO' as any,
-                                              question_key: 'task_photo_upload',
-                                              answer: `Task Photo: ${task.title}`,
-                                              value: filePath,
-                                              timestamp: new Date().toISOString(),
-                                              metadata: {
-                                                category: 'visual',
-                                                fileName: file.name,
-                                                fileSize: file.size,
-                                                taskId: task.id,
-                                                taskTitle: task.title,
-                                                // ✓ NEW: Include phase information
-                                                phase: task.phase,
-                                                phaseLabel: phaseInfo?.label || task.phase,
-                                              },
-                                            };
-                                            
-                                            // Add to documents state
-                                            const newDoc: DocumentWithCategory = {
-                                              id: docRecord.id,
+
+                                {/* Assignee avatar */}
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className={cn(
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
+                                        isCompleted 
+                                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                          : "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                                      )}>
+                                        {getAssigneeInitial(task.assigned_to)}
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" className="text-xs">
+                                      {getAssigneeName(task.assigned_to)}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+
+                                {/* Photo upload - ALL TEAM */}
+                                {canUploadTaskPhotos && (
+                                  <>
+                                    <input
+                                      id={taskFileInputId}
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={async (e) => {
+                                        const files = e.target.files;
+                                        if (!files || files.length === 0) return;
+                                        setIsUploading(true);
+                                        try {
+                                          const file = files[0];
+                                          const fileName = `${Date.now()}-${file.name}`;
+                                          const filePath = `${projectId}/${fileName}`;
+                                          const { error: uploadError } = await supabase.storage
+                                            .from('project-documents')
+                                            .upload(filePath, file);
+                                          if (uploadError) throw uploadError;
+                                          const { data: docRecord, error: insertError } = await supabase
+                                            .from('project_documents')
+                                            .insert({
+                                              project_id: projectId,
                                               file_name: file.name,
                                               file_path: filePath,
+                                              file_size: file.size,
+                                            })
+                                            .select()
+                                            .single();
+                                          if (insertError) throw insertError;
+                                          const phaseInfo = TASK_PHASES.find(p => p.key === task.phase);
+                                          const newCitation: Citation = {
+                                            id: `doc-${docRecord.id}`,
+                                            cite_type: 'SITE_PHOTO' as any,
+                                            question_key: 'task_photo_upload',
+                                            answer: `Task Photo: ${task.title}`,
+                                            value: filePath,
+                                            timestamp: new Date().toISOString(),
+                                            metadata: {
                                               category: 'visual',
-                                              citationId: newCitation.id,
-                                              uploadedAt: new Date().toISOString(),
-                                            };
-                                            
-                                            setDocuments(prev => [...prev, newDoc]);
-                                            
-                                            // Update citations
-                                            setCitations(prev => {
-                                              const updated = [...prev, newCitation];
-                                              
-                                              // Persist to Supabase
-                                              supabase
-                                                .from('project_summaries')
-                                                .update({ verified_facts: updated as any })
-                                                .eq('project_id', projectId)
-                                                .then(({ error }) => {
-                                                  if (error) console.error('[Stage8] Failed to persist citation:', error);
-                                                });
-                                              
-                                              return updated;
-                                            });
-                                            
-                                            toast.success(`Photo uploaded for "${task.title}"`, { 
-                                              description: 'Added to Visuals in Documents' 
-                                            });
-                                          } catch (err) {
-                                            console.error('[Stage8] Task photo upload failed:', err);
-                                            toast.error('Failed to upload photo');
-                                          } finally {
-                                            setIsUploading(false);
-                                            // Reset input
-                                            e.target.value = '';
-                                          }
-                                        }}
-                                      />
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-7 w-7 p-0"
-                                        onClick={() => document.getElementById(taskFileInputId)?.click()}
-                                        disabled={isUploading}
-                                      >
-                                        <Plus className="h-4 w-4 text-green-600" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  <Badge 
-                                    variant={task.status === 'completed' ? 'default' : 'secondary'}
-                                    className={cn("text-[10px]", task.status === 'completed' && 'bg-green-500')}
-                                  >
-                                    {task.status}
-                                  </Badge>
-                                </div>
-                              </div>
-                              
-                              {/* Assignee Selector */}
-                               <div className="flex items-center gap-2">
-                                 <User className="h-3.5 w-3.5 text-muted-foreground" />
-                                 <Select
-                                   value={task.assigned_to}
-                                   onValueChange={(value) => updateTaskAssignee(task.id, value)}
-                                   disabled={!canEdit}
-                                 >
-                                   <SelectTrigger className="h-7 text-xs w-40">
-                                      <SelectValue placeholder="Assign to..." />
-                                    </SelectTrigger>
-                                   <SelectContent>
-                                     {teamMembers.map(member => (
-                                       <SelectItem key={member.userId} value={member.userId} className="text-xs">
-                                         {member.name} ({member.role})
-                                       </SelectItem>
-                                     ))}
-                                   </SelectContent>
-                                 </Select>
-                               </div>
-                              
-                              {/* Checklist */}
-                              <div className="pl-2 space-y-1.5 border-l-2 border-muted">
-                                {task.checklist.map(item => (
-                                  <div key={item.id} className="flex items-center gap-2">
-                                    <Checkbox
-                                      id={item.id}
-                                      checked={item.done}
-                                      onCheckedChange={(checked) => updateChecklistItem(task.id, item.id, !!checked)}
-                                      disabled={!canEdit}
-                                      className="h-4 w-4"
+                                              fileName: file.name,
+                                              fileSize: file.size,
+                                              taskId: task.id,
+                                              taskTitle: task.title,
+                                              phase: task.phase,
+                                              phaseLabel: phaseInfo?.label || task.phase,
+                                            },
+                                          };
+                                          const newDoc: DocumentWithCategory = {
+                                            id: docRecord.id,
+                                            file_name: file.name,
+                                            file_path: filePath,
+                                            category: 'visual',
+                                            citationId: newCitation.id,
+                                            uploadedAt: new Date().toISOString(),
+                                          };
+                                          setDocuments(prev => [...prev, newDoc]);
+                                          setCitations(prev => {
+                                            const updated = [...prev, newCitation];
+                                            supabase
+                                              .from('project_summaries')
+                                              .update({ verified_facts: updated as any })
+                                              .eq('project_id', projectId)
+                                              .then(({ error }) => {
+                                                if (error) console.error('[Stage8] Failed to persist citation:', error);
+                                              });
+                                            return updated;
+                                          });
+                                          toast.success(`Photo uploaded for "${task.title}"`, { description: 'Added to Visuals' });
+                                        } catch (err) {
+                                          console.error('[Stage8] Task photo upload failed:', err);
+                                          toast.error('Failed to upload photo');
+                                        } finally {
+                                          setIsUploading(false);
+                                          e.target.value = '';
+                                        }
+                                      }}
                                     />
-                                    <label
-                                      htmlFor={item.id}
-                                      className={cn(
-                                        "text-xs cursor-pointer",
-                                        item.done && "line-through text-muted-foreground"
-                                      )}
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => document.getElementById(taskFileInputId)?.click()}
+                                      disabled={isUploading}
                                     >
-                                      {item.text}
-                                    </label>
-                                    {item.id.includes('-verify') && item.done && (
-                                      <Camera className="h-3 w-3 text-purple-500" />
-                                    )}
-                                  </div>
-                                ))}
+                                      <Camera className="h-3 w-3 text-slate-500" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
-                            </div>
+
+                              {/* Expanded checklist & assignee selector */}
+                              <AnimatePresence>
+                                {expandedPhases.has(`task-${task.id}`) && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden ml-8 mt-1 mb-2 pl-3 border-l-2 border-slate-700/50 space-y-2"
+                                  >
+                                    {/* Assignee Selector */}
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-3 w-3 text-slate-500" />
+                                      <Select
+                                        value={task.assigned_to}
+                                        onValueChange={(value) => updateTaskAssignee(task.id, value)}
+                                        disabled={!canEdit}
+                                      >
+                                        <SelectTrigger className="h-6 text-[10px] w-36 bg-slate-800/50 border-slate-700">
+                                          <SelectValue placeholder="Assign..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-800 border-slate-700">
+                                          {teamMembers.map(member => (
+                                            <SelectItem key={member.userId} value={member.userId} className="text-[10px] text-slate-200">
+                                              {member.name} ({member.role})
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    {/* Checklist */}
+                                    {task.checklist.map(item => (
+                                      <div key={item.id} className="flex items-center gap-2">
+                                        <Checkbox
+                                          id={item.id}
+                                          checked={item.done}
+                                          onCheckedChange={(checked) => updateChecklistItem(task.id, item.id, !!checked)}
+                                          disabled={!canEdit}
+                                          className="h-3.5 w-3.5"
+                                        />
+                                        <label
+                                          htmlFor={item.id}
+                                          className={cn(
+                                            "text-[10px] cursor-pointer",
+                                            item.done && "line-through text-slate-600"
+                                          )}
+                                        >
+                                          {item.text}
+                                        </label>
+                                        {item.id.includes('-verify') && item.done && (
+                                          <Camera className="h-2.5 w-2.5 text-purple-400" />
+                                        )}
+                                      </div>
+                                    ))}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </motion.div>
                           );
                         })
                       )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Priority Legend */}
+        <div className="flex items-center gap-3 pt-2 border-t border-slate-700/30">
+          <span className="text-[9px] text-slate-600 uppercase tracking-wider">Priority:</span>
+          {[
+            { key: 'high', label: 'High', color: 'bg-red-500' },
+            { key: 'medium', label: 'Medium', color: 'bg-amber-500' },
+            { key: 'low', label: 'Low', color: 'bg-emerald-500' },
+          ].map(p => (
+            <div key={p.key} className="flex items-center gap-1">
+              <div className={cn("h-1.5 w-1.5 rounded-full", p.color)} />
+              <span className="text-[9px] text-slate-500">{p.label}</span>
             </div>
           ))}
+          <div className="flex-1" />
+          <span className="text-[9px] text-slate-600">Click bar to expand</span>
         </div>
       </div>
     );
@@ -3362,6 +3467,7 @@ export default function Stage8FinalReview({
     citations,
     tasks,
     userId,
+    userRole,
     expandedPhases,
     togglePhaseExpansion,
     teamMembers,
