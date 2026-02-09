@@ -111,6 +111,7 @@ import {
 import { usePendingBudgetChanges } from "@/hooks/usePendingBudgetChanges";
 import { PendingApprovalModal } from "@/components/projects/PendingApprovalModal";
 import { PendingChangeBadge } from "@/components/projects/PendingChangeBadge";
+import { Stage8CommandBar } from "@/components/project-wizard/Stage8CommandBar";
 
 // ============================================
 // VISIBILITY TIERS
@@ -7286,8 +7287,35 @@ export default function Stage8FinalReview({
         pendingChanges={pendingChanges}
         onApprove={approveChange}
         onReject={rejectChange}
-        loading={pendingChangesLoading}
+        loading={false}
       />
-    </div>
+      
+      {/* Command Bar - Fixed Bottom Actions */}
+      <Stage8CommandBar
+        projectId={projectId}
+        isOwner={isOwner}
+        pendingCount={pendingCount}
+        onPendingClick={() => setShowPendingApprovalModal(true)}
+        onGenerateInvoice={() => {
+          // Trigger invoice generation
+          const invoiceBtn = document.querySelector('[data-action="generate-invoice"]') as HTMLButtonElement;
+          if (invoiceBtn) invoiceBtn.click();
+        }}
+        onSendToClient={() => {
+          // Trigger send to client - will use existing email modal
+          const sendBtn = document.querySelector('[data-action="send-to-client"]') as HTMLButtonElement;
+          if (sendBtn) sendBtn.click();
+        }}
+        onConflictMap={() => {
+          // Future: Open conflict map modal
+          toast.info('Conflict Map', { description: 'Coming soon - visual citation conflict analysis' });
+        }}
+        onMessaSynthesis={() => setShowMessaModal(true)}
+        isGeneratingMessa={isGeneratingAI}
+      />
+      
+      {/* Bottom padding for command bar */}
+      <div className="h-20" />
+    </>
   );
 }
