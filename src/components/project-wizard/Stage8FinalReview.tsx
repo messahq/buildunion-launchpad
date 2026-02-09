@@ -5070,7 +5070,7 @@ export default function Stage8FinalReview({
         return (
           <div className="space-y-3">
             {/* ─── Header ─── */}
-            <div className="flex items-center justify-between p-2 rounded-lg border border-amber-500/20 bg-gradient-to-r from-slate-900/80 via-amber-950/15 to-slate-900/80">
+            <div className="flex items-center justify-between p-2 rounded-lg border border-amber-500/25 bg-gradient-to-r from-amber-950/30 via-orange-950/20 to-amber-950/30">
               <div className="flex items-center gap-2">
                 <motion.div
                   animate={{ boxShadow: ['0 0 8px rgba(251,191,36,0.2)', '0 0 16px rgba(251,191,36,0.4)', '0 0 8px rgba(251,191,36,0.2)'] }}
@@ -5103,9 +5103,9 @@ export default function Stage8FinalReview({
               <>
                 {/* ─── Net / Tax / Gross Row ─── */}
                 <div className="grid grid-cols-3 gap-1.5">
-                  <div className="p-2 rounded-lg border border-slate-600/25 bg-slate-900/50">
-                    <span className="text-[8px] text-white/70 uppercase tracking-widest font-semibold flex items-center gap-1">
-                      <div className="h-1 w-1 rounded-full bg-white/50" /> Net
+                  <div className="p-2 rounded-lg border border-amber-500/15 bg-gradient-to-br from-amber-950/20 to-orange-950/10">
+                    <span className="text-[8px] text-amber-200/80 uppercase tracking-widest font-semibold flex items-center gap-1">
+                      <div className="h-1 w-1 rounded-full bg-amber-300/60" /> Net
                     </span>
                     <p className="text-sm font-bold text-white font-mono mt-0.5">
                       ${cardNet.toLocaleString(undefined, { minimumFractionDigits: 0 })}
@@ -5132,7 +5132,7 @@ export default function Stage8FinalReview({
                 {/* ─── Cost Breakdown Bars ─── */}
                 {costItems.length > 0 && (
                   <div className="space-y-1">
-                    <div className="h-1.5 rounded-full overflow-hidden flex bg-slate-800/50">
+                    <div className="h-1.5 rounded-full overflow-hidden flex bg-amber-900/20">
                       {costItems.map((item) => (
                         <div
                           key={item.name}
@@ -5144,7 +5144,7 @@ export default function Stage8FinalReview({
                     {costItems.map((item) => {
                       const Icon = item.icon;
                       return (
-                        <div key={item.name} className="flex items-center justify-between p-1.5 rounded-md bg-slate-900/30 border border-slate-700/20">
+                        <div key={item.name} className="flex items-center justify-between p-1.5 rounded-md bg-gradient-to-r from-amber-950/15 to-orange-950/10 border border-amber-500/10">
                           <div className="flex items-center gap-2">
                             <div className="h-5 w-5 rounded flex items-center justify-center" style={{ backgroundColor: `${item.color}22` }}>
                               <Icon className="h-2.5 w-2.5" style={{ color: item.color }} />
