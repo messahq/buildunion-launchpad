@@ -20,27 +20,29 @@ export interface DataSourcePillar {
   weight: number;
 }
 
-// All 16 pillars - some are N/A in Solo mode
+// All 16 pillars based on Citation 16-Data Source Architecture
+// Solo Mode: 8 Core pillars (requiredInSoloMode: true)
+// Team Mode: All 16 pillars (8 Core + 8 Team-specific)
 export const DATA_SOURCE_PILLARS: DataSourcePillar[] = [
-  // Core pillars (always required)
-  { id: 'project_name', label: 'Project Name', citationType: 'PROJECT_NAME', requiredInSoloMode: true, weight: 1 },
-  { id: 'location', label: 'Location', citationType: 'LOCATION', requiredInSoloMode: true, weight: 1 },
+  // ===== 8 CORE PILLARS (Solo Mode) =====
   { id: 'work_type', label: 'Work Type', citationType: 'WORK_TYPE', requiredInSoloMode: true, weight: 1 },
-  { id: 'gfa_lock', label: 'Area (GFA)', citationType: 'GFA_LOCK', requiredInSoloMode: true, weight: 1.5 },
-  { id: 'trade_selection', label: 'Trade Selection', citationType: 'TRADE_SELECTION', requiredInSoloMode: true, weight: 1 },
-  { id: 'template_lock', label: 'Template', citationType: 'TEMPLATE_LOCK', requiredInSoloMode: true, weight: 1.5 },
-  { id: 'site_condition', label: 'Site Condition', citationType: 'SITE_CONDITION', requiredInSoloMode: true, weight: 1 },
-  { id: 'timeline', label: 'Start Date', citationType: 'TIMELINE', requiredInSoloMode: true, weight: 1 },
-  { id: 'end_date', label: 'End Date', citationType: 'END_DATE', requiredInSoloMode: true, weight: 1 },
-  { id: 'dna_finalized', label: 'Project DNA', citationType: 'DNA_FINALIZED', requiredInSoloMode: true, weight: 1 },
-  { id: 'budget', label: 'Budget', citationType: 'BUDGET', requiredInSoloMode: true, weight: 1.5 },
-  { id: 'material', label: 'Materials', citationType: 'MATERIAL', requiredInSoloMode: true, weight: 1 },
-  { id: 'demolition_price', label: 'Demolition', citationType: 'DEMOLITION_PRICE', requiredInSoloMode: true, weight: 0.5 },
+  { id: 'photos', label: 'Site Photos', citationType: 'SITE_PHOTO', requiredInSoloMode: true, weight: 1 },
+  { id: 'documents_core', label: 'Documents (Initial)', citationType: 'BLUEPRINT_UPLOAD', requiredInSoloMode: true, weight: 1 },
+  { id: 'description', label: 'Description', citationType: 'PROJECT_NAME', requiredInSoloMode: true, weight: 1 },
+  { id: 'data_source', label: 'Data Source', citationType: 'GFA_LOCK', requiredInSoloMode: true, weight: 1.5 },
+  { id: 'timeline', label: 'Timeline', citationType: 'TIMELINE', requiredInSoloMode: true, weight: 1 },
+  { id: 'mode', label: 'Mode Selection', citationType: 'DNA_FINALIZED', requiredInSoloMode: true, weight: 1 },
+  { id: 'ai_analysis', label: 'AI Analysis', citationType: 'TEMPLATE_LOCK', requiredInSoloMode: true, weight: 1.5 },
   
-  // Team-only pillars (N/A in Solo mode)
-  { id: 'documents', label: 'Documents', citationType: 'BLUEPRINT_UPLOAD', requiredInSoloMode: false, weight: 1 },
+  // ===== 8 TEAM PILLARS (Team Mode Only) =====
+  { id: 'trades', label: 'Trades', citationType: 'TRADE_SELECTION', requiredInSoloMode: false, weight: 1 },
+  { id: 'team_members', label: 'Team Members', citationType: 'TEAM_STRUCTURE', requiredInSoloMode: false, weight: 1 },
+  { id: 'tasks', label: 'Tasks', citationType: 'TASK', requiredInSoloMode: false, weight: 1 },
   { id: 'contracts', label: 'Contracts', citationType: 'CONTRACT', requiredInSoloMode: false, weight: 1 },
-  { id: 'team', label: 'Team', citationType: 'TEAM_STRUCTURE', requiredInSoloMode: false, weight: 1 },
+  { id: 'client_info', label: 'Client Info', citationType: 'CLIENT', requiredInSoloMode: false, weight: 1 },
+  { id: 'site_map', label: 'Site Map', citationType: 'LOCATION', requiredInSoloMode: false, weight: 1 },
+  { id: 'documents_team', label: 'Documents (Post)', citationType: 'DOCUMENT', requiredInSoloMode: false, weight: 1 },
+  { id: 'weather', label: 'Weather', citationType: 'WEATHER', requiredInSoloMode: false, weight: 0.5 },
 ];
 
 export interface HealthScoreResult {
