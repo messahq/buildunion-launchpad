@@ -7305,27 +7305,6 @@ export default function Stage8FinalReview({
         loading={false}
       />
       
-      {/* Command Bar - Fixed Bottom Actions */}
-      <Stage8CommandBar
-        projectId={projectId}
-        isOwner={userRole === 'owner'}
-        pendingCount={pendingCount}
-        onPendingClick={() => setShowPendingApprovalModal(true)}
-        onGenerateInvoice={() => {
-          // Trigger invoice generation
-          const invoiceBtn = document.querySelector('[data-action="generate-invoice"]') as HTMLButtonElement;
-          if (invoiceBtn) invoiceBtn.click();
-        }}
-        onSendToClient={() => {
-          // Trigger send to client - will use existing email modal
-          const sendBtn = document.querySelector('[data-action="send-to-client"]') as HTMLButtonElement;
-          if (sendBtn) sendBtn.click();
-        }}
-        onConflictMap={() => setShowConflictMap(true)}
-        onMessaSynthesis={() => setShowMessaPreview(true)}
-        isGeneratingMessa={isGeneratingAI}
-      />
-      
       {/* Conflict Map Modal */}
       <ConflictMapModal
         open={showConflictMap}
@@ -7333,9 +7312,6 @@ export default function Stage8FinalReview({
         citations={citations}
         projectData={projectData}
       />
-      
-      {/* Bottom padding for command bar */}
-      <div className="h-20" />
     </div>
   );
 }
