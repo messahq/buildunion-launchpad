@@ -789,7 +789,7 @@ export default function Stage8FinalReview({
   const fetchWeather = async (address: string) => {
     try {
       const response = await supabase.functions.invoke('get-weather', {
-        body: { address }
+        body: { location: address, days: 5 }
       });
       
       if (response.data?.current) {
