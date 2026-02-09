@@ -63,6 +63,198 @@ interface InvoiceRequest {
   customLineItems?: InvoiceLineItem[];
 }
 
+// Helper: Generate trade-specific material breakdown
+function getTradeSpecificBreakdown(trade: string, materialCost: number, gfa: number): InvoiceLineItem[] {
+  const tradeLower = trade.toLowerCase();
+  const items: InvoiceLineItem[] = [];
+  
+  if (tradeLower.includes('flooring') || tradeLower.includes('floor')) {
+    // Flooring breakdown: primary flooring (70%), underlayment (15%), transition strips (10%), adhesive (5%)
+    const primaryCost = materialCost * 0.70;
+    const underlaymentCost = materialCost * 0.15;
+    const transitionCost = materialCost * 0.10;
+    const adhesiveCost = materialCost * 0.05;
+    
+    const sqftCoverage = gfa || 1000;
+    const wasteMultiplier = 1.10; // 10% waste
+    const grossSqft = Math.ceil(sqftCoverage * wasteMultiplier);
+    
+    items.push({
+      description: 'Flooring Material (Engineered Hardwood / LVP)',
+      quantity: grossSqft,
+      unit: 'sq ft',
+      unitPrice: primaryCost / grossSqft,
+      total: primaryCost,
+    });
+    items.push({
+      description: 'Underlayment / Moisture Barrier',
+      quantity: grossSqft,
+      unit: 'sq ft',
+      unitPrice: underlaymentCost / grossSqft,
+      total: underlaymentCost,
+    });
+    items.push({
+      description: 'Transition Strips & Moldings',
+      quantity: Math.ceil(sqftCoverage / 200), // ~1 per 200 sqft zone
+      unit: 'pcs',
+      unitPrice: transitionCost / Math.ceil(sqftCoverage / 200),
+      total: transitionCost,
+    });
+    items.push({
+      description: 'Adhesive / Fasteners',
+      quantity: 1,
+      unit: 'lot',
+      unitPrice: adhesiveCost,
+      total: adhesiveCost,
+    });
+  } else if (tradeLower.includes('paint')) {
+    // Painting breakdown
+    const paintCost = materialCost * 0.65;
+    const primerCost = materialCost * 0.20;
+    const suppliesCost = materialCost * 0.15;
+    
+    const gallons = Math.ceil((gfa || 1000) / 350); // ~350 sqft per gallon
+    
+    items.push({
+      description: 'Premium Interior Paint (2 coats)',
+      quantity: gallons * 2,
+      unit: 'gallons',
+      unitPrice: paintCost / (gallons * 2),
+      total: paintCost,
+    });
+    items.push({
+      description: 'Primer & Sealer',
+      quantity: gallons,
+      unit: 'gallons',
+      unitPrice: primerCost / gallons,
+      total: primerCost,
+    });
+    items.push({
+      description: 'Tape, Drop Cloths & Supplies',
+      quantity: 1,
+      unit: 'kit',
+      unitPrice: suppliesCost,
+      total: suppliesCost,
+    });
+  } else if (tradeLower.includes('drywall')) {
+    // Drywall breakdown
+    const sheetsCost = materialCost * 0.55;
+    const mudTapeCost = materialCost * 0.25;
+    const fastenersCost = materialCost * 0.10;
+    const cornerBeadCost = materialCost * 0.10;
+    
+    const sheets = Math.ceil((gfa || 1000) / 32); // 4x8 sheet = 32 sqft
+    
+    items.push({
+      description: 'Drywall Sheets (4x8 Standard)',
+      quantity: sheets,
+      unit: 'sheets',
+      unitPrice: sheetsCost / sheets,
+      total: sheetsCost,
+    });
+    items.push({
+      description: 'Joint Compound & Tape',
+      quantity: Math.ceil(sheets / 8), // 1 bucket per 8 sheets
+      unit: 'buckets',
+      unitPrice: mudTapeCost / Math.ceil(sheets / 8),
+      total: mudTapeCost,
+    });
+    items.push({
+      description: 'Screws & Fasteners',
+      quantity: Math.ceil(sheets / 50), // 1 box per 50 sheets
+      unit: 'boxes',
+      unitPrice: fastenersCost / Math.ceil(sheets / 50) || fastenersCost,
+      total: fastenersCost,
+    });
+    items.push({
+      description: 'Corner Bead & Accessories',
+      quantity: 1,
+      unit: 'lot',
+      unitPrice: cornerBeadCost,
+      total: cornerBeadCost,
+    });
+  } else {
+    // Generic breakdown for other trades
+    const mainMaterialCost = materialCost * 0.75;
+    const suppliesCost = materialCost * 0.25;
+    
+    items.push({
+      description: `${trade} - Primary Materials`,
+      quantity: gfa || 1,
+      unit: gfa ? 'sq ft' : 'lot',
+      unitPrice: gfa ? mainMaterialCost / gfa : mainMaterialCost,
+      total: mainMaterialCost,
+    });
+    items.push({
+      description: `${trade} - Supplies & Accessories`,
+      quantity: 1,
+      unit: 'lot',
+      unitPrice: suppliesCost,
+      total: suppliesCost,
+    });
+  }
+  
+  return items;
+}
+
+// Helper: Generate labor breakdown
+function getLaborBreakdown(trade: string, laborCost: number, gfa: number): InvoiceLineItem[] {
+  const items: InvoiceLineItem[] = [];
+  const tradeLower = trade.toLowerCase();
+  
+  // Estimate hours based on trade and area
+  let hoursPerSqft = 0.02; // Default: 50 sqft per hour
+  let phases: { name: string; percent: number }[] = [];
+  
+  if (tradeLower.includes('flooring') || tradeLower.includes('floor')) {
+    hoursPerSqft = 0.025; // 40 sqft per hour
+    phases = [
+      { name: 'Subfloor Preparation & Leveling', percent: 0.20 },
+      { name: 'Flooring Installation', percent: 0.60 },
+      { name: 'Trim & Transition Installation', percent: 0.15 },
+      { name: 'Cleanup & Final Inspection', percent: 0.05 },
+    ];
+  } else if (tradeLower.includes('paint')) {
+    hoursPerSqft = 0.015; // ~65 sqft per hour
+    phases = [
+      { name: 'Surface Preparation & Repairs', percent: 0.25 },
+      { name: 'Priming', percent: 0.15 },
+      { name: 'Paint Application (2 coats)', percent: 0.50 },
+      { name: 'Cleanup & Touch-ups', percent: 0.10 },
+    ];
+  } else if (tradeLower.includes('drywall')) {
+    hoursPerSqft = 0.03; // ~33 sqft per hour
+    phases = [
+      { name: 'Framing & Preparation', percent: 0.15 },
+      { name: 'Drywall Hanging', percent: 0.35 },
+      { name: 'Taping & Mudding (3 coats)', percent: 0.40 },
+      { name: 'Sanding & Finishing', percent: 0.10 },
+    ];
+  } else {
+    phases = [
+      { name: `${trade} - Preparation`, percent: 0.20 },
+      { name: `${trade} - Installation/Execution`, percent: 0.65 },
+      { name: `${trade} - Finishing & Cleanup`, percent: 0.15 },
+    ];
+  }
+  
+  const totalHours = Math.ceil((gfa || 1000) * hoursPerSqft);
+  const hourlyRate = laborCost / totalHours;
+  
+  for (const phase of phases) {
+    const phaseHours = Math.ceil(totalHours * phase.percent);
+    items.push({
+      description: phase.name,
+      quantity: phaseHours,
+      unit: 'hours',
+      unitPrice: hourlyRate,
+      total: laborCost * phase.percent,
+    });
+  }
+  
+  return items;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -167,11 +359,14 @@ serve(async (req) => {
     if (customLineItems && customLineItems.length > 0) {
       lineItems = customLineItems;
     } else {
-      // Generate default line items from template_items or summary
+      // Priority 1: Use template_items from summary
       const templateItems = summary?.template_items as any[] || [];
       const lineItemsFromSummary = summary?.line_items as any[] || [];
       
-      // Use template_items if available
+      // Priority 2: Look for TEMPLATE_LOCK citation with detailed materials
+      const templateLockCitation = verifiedFacts.find((f: any) => f.cite_type === 'TEMPLATE_LOCK');
+      const templateMaterials = templateLockCitation?.metadata?.materials as any[] || [];
+      
       if (templateItems.length > 0) {
         lineItems = templateItems.map((item: any) => ({
           description: item.name || item.description || 'Item',
@@ -188,25 +383,38 @@ serve(async (req) => {
           unitPrice: item.unit_price || item.unitPrice || 0,
           total: (item.quantity || 1) * (item.unit_price || item.unitPrice || 0),
         }));
-      } else {
-        // Fallback: use summary costs
-        if (summary?.material_cost && summary.material_cost > 0) {
-          lineItems.push({
-            description: `${trade} Materials`,
-            quantity: gfaValue || 1,
-            unit: gfaValue ? 'sq ft' : 'lot',
-            unitPrice: gfaValue ? summary.material_cost / gfaValue : summary.material_cost,
-            total: summary.material_cost,
-          });
-        }
+      } else if (templateMaterials.length > 0) {
+        // Use materials from TEMPLATE_LOCK citation
+        lineItems = templateMaterials.map((mat: any) => ({
+          description: mat.name || mat.material_name || 'Material',
+          quantity: mat.quantity || mat.grossQuantity || 1,
+          unit: mat.unit || 'unit',
+          unitPrice: mat.unit_price || mat.unitPrice || mat.price || 0,
+          total: mat.total_cost || mat.totalCost || ((mat.quantity || 1) * (mat.unit_price || mat.unitPrice || mat.price || 0)),
+        }));
+        
+        // Add labor as separate line item if we have labor cost
         if (summary?.labor_cost && summary.labor_cost > 0) {
+          const laborHours = gfaValue ? Math.ceil(gfaValue / 100) : 20; // Estimate 100 sqft per hour
           lineItems.push({
-            description: `${trade} Labor`,
-            quantity: gfaValue || 1,
-            unit: gfaValue ? 'sq ft' : 'lot',
-            unitPrice: gfaValue ? summary.labor_cost / gfaValue : summary.labor_cost,
+            description: `${trade} Installation Labor`,
+            quantity: laborHours,
+            unit: 'hours',
+            unitPrice: summary.labor_cost / laborHours,
             total: summary.labor_cost,
           });
+        }
+      } else {
+        // Fallback: Create detailed breakdown from summary costs
+        if (summary?.material_cost && summary.material_cost > 0) {
+          // Break down material cost into sub-items based on trade
+          const materialBreakdown = getTradeSpecificBreakdown(trade, summary.material_cost, gfaValue);
+          lineItems.push(...materialBreakdown);
+        }
+        if (summary?.labor_cost && summary.labor_cost > 0) {
+          // Break down labor cost
+          const laborBreakdown = getLaborBreakdown(trade, summary.labor_cost, gfaValue);
+          lineItems.push(...laborBreakdown);
         }
       }
     }
