@@ -6661,7 +6661,18 @@ export default function Stage8FinalReview({
                 {t('stage8.projectSummary', 'Project Summary')}
               </Button>
               
-              {/* 3. M.E.S.S.A. Synthesis - GREEN (Owner/Foreman only) */}
+              {/* 3. Conflict Map - Purple Outline */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowConflictMap(true)}
+                className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300"
+              >
+                <MapPin className="h-4 w-4" />
+                {t('stage8.conflictMap', 'Conflict Map')}
+              </Button>
+
+              {/* 4. M.E.S.S.A. Synthesis - GREEN (Owner/Foreman only) */}
               {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
                   size="sm"
