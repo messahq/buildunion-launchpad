@@ -3335,6 +3335,58 @@ export default function Stage8FinalReview({
                   )}
                 </button>
 
+                {/* ── Phase-level aggregated duration bar ── */}
+                {phase.tasks.length > 0 && projectStart && projectEnd && totalDuration && totalDuration > 0 && (() => {
+                  // Find earliest start and latest end across all tasks in this phase
+                  const phaseTaskStarts = phase.tasks.map(t => 
+                    t.created_at ? new Date(t.created_at).getTime() : projectStart
+                  );
+                  const phaseTaskEnds = phase.tasks.map(t => 
+                    t.due_date ? new Date(t.due_date).getTime() : projectEnd
+                  );
+                  const phaseStart = Math.max(Math.min(...phaseTaskStarts), projectStart);
+                  const phaseEnd = Math.min(Math.max(...phaseTaskEnds), projectEnd);
+                  const leftPct = ((phaseStart - projectStart) / totalDuration) * 100;
+                  const widthPct = Math.max(((phaseEnd - phaseStart) / totalDuration) * 100, 3);
+                  const phaseDays = Math.ceil((phaseEnd - phaseStart) / (1000 * 60 * 60 * 24));
+                  const phaseProgressPct = phase.tasks.length > 0
+                    ? Math.round((phaseComplete / phase.tasks.length) * 100) : 0;
+
+                  return (
+                    <div className="relative h-5 mx-2 mb-0.5 rounded bg-slate-800/20 overflow-hidden">
+                      {/* Aggregated phase span */}
+                      <motion.div
+                        className={cn(
+                          "absolute inset-y-0 rounded border",
+                          colors.bg, colors.border
+                        )}
+                        style={{ left: `${Math.round(leftPct)}%`, width: `${Math.round(widthPct)}%` }}
+                        initial={{ scaleX: 0, originX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                      >
+                        {/* Phase progress fill */}
+                        <div
+                          className={cn(
+                            "absolute inset-y-0 left-0 rounded-l opacity-40",
+                            colors.bg.replace('/20', '/50')
+                          )}
+                          style={{ width: `${phaseProgressPct}%` }}
+                        />
+                        {/* Label inside bar */}
+                        <div className="absolute inset-0 flex items-center justify-center gap-1 px-1">
+                          <span className={cn("text-[8px] font-bold uppercase tracking-wider truncate", colors.text)}>
+                            {phaseDays}d
+                          </span>
+                          <span className="text-[7px] text-slate-500 font-mono">
+                            {phaseProgressPct}%
+                          </span>
+                        </div>
+                      </motion.div>
+                    </div>
+                  );
+                })()}
+
                 {/* Task Gantt bars */}
                 <AnimatePresence>
                   {expandedPhases.has(phase.key) && (
