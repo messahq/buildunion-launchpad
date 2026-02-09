@@ -399,6 +399,7 @@ export default function Stage8FinalReview({
   // UI state
   const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set());
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
+  const [activeOrbitalPanel, setActiveOrbitalPanel] = useState<string>('panel-1-basics');
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [modificationDialog, setModificationDialog] = useState<{ open: boolean; material?: any } | null>(null);
@@ -6166,141 +6167,345 @@ export default function Stage8FinalReview({
     );
   }
 
+  // Get the active panel config
+  const activePanelConfig = useMemo(() => {
+    return PANELS.find(p => p.id === activeOrbitalPanel) || PANELS[0];
+  }, [activeOrbitalPanel]);
+
+  // Orbital positions for 8 panels around center (angles in degrees)
+  const getOrbitalPosition = useCallback((index: number, total: number) => {
+    const angle = (index * 360) / total - 90; // Start from top
+    const rad = (angle * Math.PI) / 180;
+    return { angle, rad };
+  }, []);
+
   return (
-    <div className={cn("h-full flex flex-col overflow-hidden", className)}>
-      {/* Header */}
-      <div className="p-4 border-b border-violet-200/50 dark:border-violet-800/30 bg-gradient-to-r from-violet-50/80 via-background to-purple-50/80 dark:from-violet-950/50 dark:via-background dark:to-purple-950/50 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-            <LayoutDashboard className="h-6 w-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <h2 className="font-semibold text-violet-700 dark:text-violet-300">
-              {t('stage8.title', 'Final Review Dashboard')}
-            </h2>
-            <p className="text-xs text-violet-600/70 dark:text-violet-400/70">
-              {t('stage8.subtitle', 'Stage 8 • 8-Panel Summary • Review & Edit before activation')}
-            </p>
+    <div className={cn("h-full flex flex-col overflow-hidden bg-[#0a0e1a]", className)}>
+      {/* Compact Header */}
+      <div className="px-4 py-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+              <LayoutDashboard className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-cyan-300">
+                {t('stage8.title', 'Command Center')}
+              </h2>
+              <p className="text-[10px] text-cyan-500/60">
+                {projectData?.name || 'Project'} • Stage 8
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Data Source Indicator */}
             {dataSource !== 'supabase' && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 gap-1 text-[10px]">
-                      <AlertTriangle className="h-2.5 w-2.5" />
-                      {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">Data loaded from local backup</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[10px]">
+                <AlertTriangle className="h-2.5 w-2.5" />
+                {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
+              </Badge>
             )}
-            
-            {/* Financial Lock Status */}
             {canViewFinancials && (
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "gap-1 text-[10px]",
-                  isFinancialSummaryUnlocked 
-                    ? "bg-green-50 dark:bg-green-900/30 text-green-600" 
-                    : "bg-red-50 dark:bg-red-900/30 text-red-600"
-                )}
-              >
+              <Badge variant="outline" className={cn(
+                "gap-1 text-[10px] border-cyan-800/50",
+                isFinancialSummaryUnlocked 
+                  ? "bg-emerald-950/30 text-emerald-400" 
+                  : "bg-red-950/30 text-red-400"
+              )}>
                 {isFinancialSummaryUnlocked ? <Unlock className="h-2.5 w-2.5" /> : <LockKeyhole className="h-2.5 w-2.5" />}
                 {isFinancialSummaryUnlocked ? 'Unlocked' : 'Locked'}
               </Badge>
             )}
-            
-            <Badge variant="outline" className="bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
-              {projectData?.name || 'Project'}
-            </Badge>
-            <Badge 
-              variant={projectData?.status === 'active' ? 'default' : 'secondary'}
-              className={projectData?.status === 'active' ? 'bg-green-500' : ''}
-            >
+            <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[10px]">
               {projectData?.status || 'draft'}
             </Badge>
+            {/* Edit Mode Toggle */}
+            {userRole === 'owner' && (
+              <Button
+                variant={isEditModeEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsEditModeEnabled(!isEditModeEnabled)}
+                className={cn(
+                  "h-7 gap-1.5 text-[10px]",
+                  isEditModeEnabled 
+                    ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-500" 
+                    : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30"
+                )}
+              >
+                {isEditModeEnabled ? <Edit2 className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                {isEditModeEnabled ? 'Editing' : 'View'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
-      
-      {/* Visibility Legend & Edit Mode Toggle */}
-      <div className="px-4 py-2 border-b bg-muted/30 shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground mr-2">Visibility:</span>
-            {VISIBILITY_TIERS.map((tier) => (
-              <TooltipProvider key={tier.key}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className={cn("text-[10px] gap-1 cursor-help", tier.color, tier.bgColor)}>
-                      <tier.icon className="h-2.5 w-2.5" />
-                      {tier.label}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs max-w-[200px]">{tier.description}</p>
-                    {tier.canEdit && <p className="text-xs text-green-500 mt-1">✓ Can edit</p>}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
-          </div>
-          
-          {/* ✓ UNIVERSAL READ-ONLY DEFAULT: Owner Edit Mode Toggle */}
-          {userRole === 'owner' && (
-            <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={isEditModeEnabled ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setIsEditModeEnabled(!isEditModeEnabled)}
-                      className={cn(
-                        "h-7 gap-1.5 text-xs",
-                        isEditModeEnabled 
-                          ? "bg-amber-500 hover:bg-amber-600 text-white" 
-                          : "border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+
+      {/* Orbital Command Center Layout */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* Background grid effect */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(56,189,248,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.3) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }} />
+
+        {/* Orbital Ring - Desktop */}
+        <div className="hidden lg:flex absolute inset-0 items-center justify-center">
+          {/* Orbital ring glow */}
+          <div className="absolute w-[680px] h-[680px] rounded-full border border-cyan-800/20" />
+          <div className="absolute w-[682px] h-[682px] rounded-full border border-cyan-600/5" />
+
+          {/* 8 Orbital Nodes */}
+          {PANELS.map((panel, index) => {
+            const { rad } = getOrbitalPosition(index, PANELS.length);
+            const radius = 310; // Distance from center
+            const x = Math.cos(rad) * radius;
+            const y = Math.sin(rad) * radius;
+            const isActive = activeOrbitalPanel === panel.id;
+            const hasAccess = hasAccessToTier(panel.visibilityTier);
+            const Icon = panel.icon;
+            const panelCitations = getCitationsForPanel(panel.dataKeys);
+            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
+              : panel.id === 'panel-5-timeline' ? tasks.length
+              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
+              : panelCitations.length;
+
+            // Dynamic title for panel 3
+            let displayTitle = panel.title;
+            if (panel.id === 'panel-3-trade') {
+              const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+              if (tradeCitation?.answer) displayTitle = `${tradeCitation.answer} Template`;
+            }
+
+            return (
+              <motion.button
+                key={panel.id}
+                className={cn(
+                  "absolute flex flex-col items-center gap-1 group cursor-pointer z-10",
+                  !hasAccess && "opacity-30 cursor-not-allowed"
+                )}
+                style={{ 
+                  left: `calc(50% + ${x}px - 44px)`,
+                  top: `calc(50% + ${y}px - 44px)`,
+                }}
+                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                whileHover={hasAccess ? { scale: 1.15 } : undefined}
+                whileTap={hasAccess ? { scale: 0.95 } : undefined}
+                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                {/* Node circle */}
+                <motion.div
+                  className={cn(
+                    "w-[88px] h-[88px] rounded-2xl flex flex-col items-center justify-center relative transition-all duration-300",
+                    isActive 
+                      ? "bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border-2 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+                      : "bg-[#111827]/80 border border-cyan-900/30 hover:border-cyan-600/50 hover:shadow-[0_0_15px_rgba(34,211,238,0.15)]",
+                    !hasAccess && "border-gray-800/30"
+                  )}
+                  animate={isActive ? {
+                    boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.35)', '0 0 20px rgba(34,211,238,0.2)'],
+                  } : {}}
+                  transition={isActive ? { duration: 2, repeat: Infinity } : {}}
+                >
+                  {!hasAccess ? (
+                    <Lock className="h-5 w-5 text-gray-600" />
+                  ) : (
+                    <>
+                      <Icon className={cn("h-5 w-5 mb-1", isActive ? "text-cyan-300" : "text-cyan-600")} />
+                      {dataCount > 0 && (
+                        <span className={cn(
+                          "text-[9px] font-mono",
+                          isActive ? "text-cyan-200" : "text-cyan-700"
+                        )}>
+                          {dataCount}
+                        </span>
                       )}
-                    >
-                      {isEditModeEnabled ? (
-                        <>
-                          <Edit2 className="h-3 w-3" />
-                          Edit Mode ON
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-3 w-3" />
-                          Read-Only
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">
-                      {isEditModeEnabled 
-                        ? "Click to disable editing and return to read-only view" 
-                        : "Click to enable editing of project data"
-                      }
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    </>
+                  )}
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyan-400"
+                      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                  )}
+                </motion.div>
+                {/* Label */}
+                <span className={cn(
+                  "text-[10px] font-medium text-center max-w-[90px] leading-tight",
+                  isActive ? "text-cyan-200" : "text-cyan-700",
+                  !hasAccess && "text-gray-700"
+                )}>
+                  {displayTitle}
+                </span>
+              </motion.button>
+            );
+          })}
+
+          {/* Central Canvas */}
+          <motion.div
+            className="relative w-[480px] h-[420px] rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden"
+            layout
+            key={activeOrbitalPanel}
+          >
+            {/* Canvas header */}
+            <div className="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40">
+              <div className="flex items-center gap-2">
+                <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
+                <span className="text-sm font-semibold text-cyan-200">
+                  {activePanelConfig.id === 'panel-3-trade' 
+                    ? (() => { const tc = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return tc?.answer ? `${tc.answer} Template` : activePanelConfig.title; })()
+                    : t(activePanelConfig.titleKey, activePanelConfig.title)
+                  }
+                </span>
+                {getTierBadge(activePanelConfig.visibilityTier)}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
+                  onClick={() => setFullscreenPanel(activePanelConfig.id)}
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-          )}
+            {/* Canvas content */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeOrbitalPanel}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="p-4 overflow-y-auto h-[calc(100%-52px)] [&_*]:text-foreground dark:[&_*]:text-foreground"
+                style={{ colorScheme: 'light' }}
+              >
+                <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
+                  {renderPanelContent(activePanelConfig)}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Connection lines from active node to center */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+            {PANELS.map((panel, index) => {
+              const { rad } = getOrbitalPosition(index, PANELS.length);
+              const radius = 310;
+              const x = Math.cos(rad) * radius;
+              const y = Math.sin(rad) * radius;
+              const isActive = activeOrbitalPanel === panel.id;
+              
+              return isActive ? (
+                <motion.line
+                  key={panel.id}
+                  x1="50%" y1="50%"
+                  x2={`calc(50% + ${x}px)`} y2={`calc(50% + ${y}px)`}
+                  stroke="rgba(34,211,238,0.3)"
+                  strokeWidth="1.5"
+                  strokeDasharray="6 4"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                />
+              ) : null;
+            })}
+          </svg>
         </div>
-      </div>
-      
-      {/* Main Content - 8 Panel Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
-          {PANELS.map(renderPanel)}
+
+        {/* Mobile/Tablet: Tab-based layout */}
+        <div className="lg:hidden flex flex-col h-full">
+          {/* Tab strip */}
+          <div className="flex overflow-x-auto gap-1 px-3 py-2 border-b border-cyan-900/30 bg-[#0c1120]/80 shrink-0">
+            {PANELS.map((panel) => {
+              const isActive = activeOrbitalPanel === panel.id;
+              const hasAccess = hasAccessToTier(panel.visibilityTier);
+              const Icon = panel.icon;
+              return (
+                <button
+                  key={panel.id}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0",
+                    isActive 
+                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                      : "text-cyan-700 hover:text-cyan-400 hover:bg-cyan-950/30",
+                    !hasAccess && "opacity-30 cursor-not-allowed"
+                  )}
+                  onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                  disabled={!hasAccess}
+                >
+                  {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                  {panel.title}
+                </button>
+              );
+            })}
+          </div>
+          {/* Content area */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeOrbitalPanel}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="bg-background rounded-xl p-4 border border-cyan-900/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <activePanelConfig.icon className="h-5 w-5 text-cyan-600" />
+                      <h3 className="text-sm font-semibold">{t(activePanelConfig.titleKey, activePanelConfig.title)}</h3>
+                      {getTierBadge(activePanelConfig.visibilityTier)}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setFullscreenPanel(activePanelConfig.id)}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {renderPanelContent(activePanelConfig)}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Navigation arrows - Desktop */}
+        <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 items-center gap-3 z-20">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
+            onClick={() => {
+              const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
+              const prevIdx = (currentIdx - 1 + PANELS.length) % PANELS.length;
+              setActiveOrbitalPanel(PANELS[prevIdx].id);
+            }}
+          >
+            <ChevronRight className="h-4 w-4 rotate-180" />
+            Previous
+          </Button>
+          <span className="text-[10px] text-cyan-700 font-mono">
+            {PANELS.findIndex(p => p.id === activeOrbitalPanel) + 1} / {PANELS.length}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1"
+            onClick={() => {
+              const currentIdx = PANELS.findIndex(p => p.id === activeOrbitalPanel);
+              const nextIdx = (currentIdx + 1) % PANELS.length;
+              setActiveOrbitalPanel(PANELS[nextIdx].id);
+            }}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
@@ -6605,91 +6810,66 @@ export default function Stage8FinalReview({
         </DialogContent>
       </Dialog>
       
-      {/* Bottom Action Bar */}
-      <div className="border-t border-violet-200/50 dark:border-violet-800/30 bg-gradient-to-r from-violet-50/80 via-background to-purple-50/80 dark:from-violet-950/50 dark:via-background dark:to-purple-950/50 p-4 shrink-0">
+      {/* Bottom Action Bar - Command Center Theme */}
+      <div className="border-t border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-sm p-3 shrink-0">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             {/* Left - Stats */}
-            <div className="text-sm text-muted-foreground flex flex-wrap gap-4">
-              <span>
-                <span className="font-medium text-violet-600 dark:text-violet-400">{citations.length}</span> citations
-              </span>
-              <span>
-                <span className="font-medium text-teal-600 dark:text-teal-400">{teamMembers.length}</span> team
-              </span>
-              <span>
-                <span className="font-medium text-indigo-600 dark:text-indigo-400">{tasks.length}</span> tasks
-              </span>
-              <span>
-                <span className="font-medium text-pink-600 dark:text-pink-400">{documents.length}</span> docs
-              </span>
+            <div className="text-xs text-cyan-700 flex flex-wrap gap-3 font-mono">
+              <span><span className="text-cyan-400 font-medium">{citations.length}</span> citations</span>
+              <span><span className="text-teal-400 font-medium">{teamMembers.length}</span> team</span>
+              <span><span className="text-blue-400 font-medium">{tasks.length}</span> tasks</span>
+              <span><span className="text-pink-400 font-medium">{documents.length}</span> docs</span>
             </div>
             
-            {/* Right - Actions: 4-Button Layout */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              {/* 1. Generate Invoice - Amber */}
+            {/* Right - Actions */}
+            <div className="flex items-center gap-2 flex-wrap">
               {canViewFinancials && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateInvoice}
                   disabled={isGeneratingInvoice}
-                  className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 disabled:opacity-50"
+                  className="gap-1.5 text-xs border-amber-800/50 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 bg-transparent"
                 >
-                  {isGeneratingInvoice ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileText className="h-4 w-4" />
-                  )}
-                  {isGeneratingInvoice ? 'Generating...' : t('stage8.generateInvoice', 'Generate Invoice')}
+                  {isGeneratingInvoice ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+                  Invoice
                 </Button>
               )}
               
-              {/* 2. Project Summary - Blue */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateSummary}
                 disabled={isGeneratingSummary}
-                className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300"
+                className="gap-1.5 text-xs border-blue-800/50 text-blue-400 hover:bg-blue-950/30 hover:text-blue-300 bg-transparent"
               >
-                {isGeneratingSummary ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ClipboardList className="h-4 w-4" />
-                )}
-                {t('stage8.projectSummary', 'Project Summary')}
+                {isGeneratingSummary ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardList className="h-3.5 w-3.5" />}
+                Summary
               </Button>
               
-              {/* 3. Conflict Map - Purple Outline */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowConflictMap(true)}
-                className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300"
+                className="gap-1.5 text-xs border-purple-800/50 text-purple-400 hover:bg-purple-950/30 hover:text-purple-300 bg-transparent"
               >
-                <MapPin className="h-4 w-4" />
-                {t('stage8.conflictMap', 'Conflict Map')}
+                <MapPin className="h-3.5 w-3.5" />
+                Map
               </Button>
 
-              {/* 4. M.E.S.S.A. Synthesis - GREEN (Owner/Foreman only) */}
               {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
                   size="sm"
                   onClick={handleMessaSynthesis}
                   disabled={isGeneratingAI}
-                  className="gap-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md"
+                  className="gap-1.5 text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30"
                 >
-                  {isGeneratingAI ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  {t('stage8.messaSynthesis', 'M.E.S.S.A. Synthesis')}
+                  {isGeneratingAI ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  M.E.S.S.A.
                 </Button>
               )}
               
-              {/* 4. Finish Project - PURPLE (was "Activate Project") */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -6699,26 +6879,26 @@ export default function Stage8FinalReview({
                         onClick={handleComplete}
                         disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
                         className={cn(
-                          "gap-2 shadow-md",
+                          "gap-1.5 text-xs shadow-md",
                           userRole === 'owner' && !isFinancialSummaryUnlocked
-                            ? "bg-muted text-muted-foreground cursor-not-allowed"
-                            : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+                            ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                            : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-cyan-900/30"
                         )}
                       >
                         {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : userRole === 'owner' && !isFinancialSummaryUnlocked ? (
-                          <LockKeyhole className="h-4 w-4" />
+                          <LockKeyhole className="h-3.5 w-3.5" />
                         ) : (
-                          <CheckCircle2 className="h-4 w-4" />
+                          <CheckCircle2 className="h-3.5 w-3.5" />
                         )}
-                        {t('stage8.finishProject', 'Finish Project')}
+                        Finish
                       </Button>
                     </span>
                   </TooltipTrigger>
                   {userRole === 'owner' && !isFinancialSummaryUnlocked && (
                     <TooltipContent side="top">
-                      <p className="text-xs">Add financial data (budget/contracts) to unlock</p>
+                      <p className="text-xs">Add financial data to unlock</p>
                     </TooltipContent>
                   )}
                 </Tooltip>
