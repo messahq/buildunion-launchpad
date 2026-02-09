@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -43,17 +43,29 @@ const STAGES = {
 
 const BuildUnionNewProject = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   
+  // Check for team member access via query params
+  const queryProjectId = searchParams.get('projectId');
+  const queryStage = parseInt(searchParams.get('stage') || '0');
+  const queryRole = searchParams.get('role') || 'owner';
+  
   // Project state - created FIRST before any citations
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [projectId, setProjectId] = useState<string | null>(queryProjectId);
+  const [isInitializing, setIsInitializing] = useState(!queryProjectId);
+  
+  // User role state - determines visibility
+  type UserRoleType = 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'member';
+  const validRoles: UserRoleType[] = ['owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'member'];
+  const initialRole: UserRoleType = validRoles.includes(queryRole as UserRoleType) ? queryRole as UserRoleType : 'owner';
+  const [userRole, setUserRole] = useState<UserRoleType>(initialRole);
   
   // Citation-driven state
   const [citations, setCitations] = useState<Citation[]>([]);
   const [currentStep, setCurrentStep] = useState(0); // Steps within Stage 1
-  const [currentStage, setCurrentStage] = useState<number>(STAGES.STAGE_1);
+  const [currentStage, setCurrentStage] = useState<number>(queryStage === 8 ? STAGES.STAGE_8 : STAGES.STAGE_1);
   
   // GFA value for Stage 3
   const [gfaValue, setGfaValue] = useState<number>(0);
@@ -64,9 +76,44 @@ const BuildUnionNewProject = () => {
   // Stage 1 has 3 questions (name, address, work_type)
   const STAGE_1_STEPS = 3;
   
-  // Create draft project on mount
+  // Load citations for team member access
   useEffect(() => {
-    if (!user || projectId) return;
+    if (!user || !queryProjectId || !queryStage) return;
+    
+    const loadTeamMemberData = async () => {
+      console.log('[NewProject] Loading team member data for project:', queryProjectId);
+      
+      // Load citations from existing project
+      const { data: summary } = await supabase
+        .from('project_summaries')
+        .select('verified_facts')
+        .eq('project_id', queryProjectId)
+        .single();
+      
+      if (summary?.verified_facts) {
+        const facts = Array.isArray(summary.verified_facts) ? (summary.verified_facts as unknown as Citation[]) : [];
+        setCitations(facts);
+        
+        // Extract GFA value
+        const gfaCitation = facts.find(f => f.cite_type === CITATION_TYPES.GFA_LOCK);
+        if (gfaCitation?.metadata?.gfa_value) {
+          setGfaValue(gfaCitation.metadata.gfa_value as number);
+        }
+      }
+      
+      setUserRole(validRoles.includes(queryRole as UserRoleType) ? queryRole as UserRoleType : 'member');
+      setIsInitializing(false);
+    };
+    
+    loadTeamMemberData().catch(error => {
+      console.error('[NewProject] Failed to load team member data:', error);
+      setIsInitializing(false);
+    });
+  }, [user, queryProjectId, queryStage, queryRole]);
+  
+  // Create draft project on mount (ONLY if not accessing via query params)
+  useEffect(() => {
+    if (!user || projectId || queryProjectId) return;
     
     // Check if continuing from existing project
     const continueProjectId = sessionStorage.getItem('continueFromProjectId');
@@ -512,7 +559,7 @@ const BuildUnionNewProject = () => {
               <Stage8FinalReview
                 projectId={projectId}
                 userId={user.id}
-                userRole="owner"
+                userRole={userRole}
                 onComplete={() => navigate('/buildunion/workspace')}
               />
             </motion.div>
