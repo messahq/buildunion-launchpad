@@ -4839,6 +4839,7 @@ export default function Stage8FinalReview({
                 userId={userId}
                 teamMembers={teamMembers}
                 compact={true}
+                defaultCollapsed={true}
                 onDocumentAdded={async () => {
                   // Refresh documents from DB
                   const { data: newDocs } = await supabase
