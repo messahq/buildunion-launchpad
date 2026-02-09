@@ -3273,7 +3273,6 @@ export default function Stage8FinalReview({
           </div>
         </div>
       </div>
-      </div>
 
       {/* Weather & Location Modal */}
       <WeatherMapModal
@@ -3288,7 +3287,7 @@ export default function Stage8FinalReview({
         lon={
           (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lng || undefined
         }
-        projectName={projectData?.name || projectName}
+        projectName={projectData?.name || 'Project'}
       />
     </div>
   );
