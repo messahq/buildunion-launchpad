@@ -3170,28 +3170,216 @@ export default function Stage8FinalReview({
           </div>
         )}
         
-        {panel.id === 'panel-8-financial' && canViewFinancials && (
-          <div>
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Financial Overview
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-6 rounded-xl bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30">
-                <p className="text-sm text-muted-foreground mb-1">Total Contract Value</p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300">
-                  ${contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0).toLocaleString()}
-                </p>
+        {panel.id === 'panel-8-financial' && canViewFinancials && (() => {
+          // ✓ FULLSCREEN FINANCIAL SUMMARY - comprehensive breakdown
+          const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
+          const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+          const demoPriceCitation = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+          
+          const gfaValue = typeof gfaCitation?.value === 'number' 
+            ? gfaCitation.value 
+            : typeof gfaCitation?.metadata?.gfa_value === 'number'
+              ? gfaCitation.metadata.gfa_value
+              : null;
+          
+          const storedMaterialCost = financialSummary?.material_cost;
+          const storedLaborCost = financialSummary?.labor_cost;
+          const storedTotalCost = financialSummary?.total_cost;
+          
+          const demoCost = typeof demoPriceCitation?.value === 'number' && gfaValue
+            ? demoPriceCitation.value * gfaValue
+            : null;
+          
+          const budgetTotal = storedTotalCost ?? totalContractValue;
+          const calculatedExpenses = (storedMaterialCost || 0) + (storedLaborCost || 0) + (demoCost || 0);
+          const profitMargin = budgetTotal && calculatedExpenses > 0 ? budgetTotal - calculatedExpenses : null;
+          const profitPercent = budgetTotal && profitMargin !== null ? (profitMargin / budgetTotal) * 100 : null;
+          const hasFinancialData = budgetTotal > 0 || storedMaterialCost || storedLaborCost || totalContractValue > 0;
+          
+          return (
+            <div className="space-y-6">
+              {/* Header with Owner Badge */}
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-bold flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-emerald-500" />
+                  Financial Summary
+                </h4>
+                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 gap-1">
+                  <Unlock className="h-3 w-3" />
+                  Owner Access
+                </Badge>
               </div>
-              <div className="p-6 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30">
-                <p className="text-sm text-muted-foreground mb-1">Active Contracts</p>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                  {contracts.filter(c => c.status !== 'archived').length}
-                </p>
-              </div>
+              
+              {hasFinancialData ? (
+                <>
+                  {/* Grand Total Hero Card */}
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/40 dark:to-green-950/40 border-2 border-emerald-300 dark:border-emerald-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-emerald-600 uppercase tracking-wide">Project Total</span>
+                      <Badge variant="outline" className="text-xs bg-emerald-100 text-emerald-700 gap-1">
+                        <Lock className="h-2.5 w-2.5" />
+                        Final
+                      </Badge>
+                    </div>
+                    <p className="text-5xl font-bold text-emerald-700 dark:text-emerald-300">
+                      ${(budgetTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    {gfaValue && budgetTotal && (
+                      <p className="text-sm text-emerald-600/70 mt-2">
+                        ${(budgetTotal / gfaValue).toFixed(2)} per sq ft @ {gfaValue.toLocaleString()} sq ft
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Cost Breakdown Grid */}
+                  <div>
+                    <h5 className="text-sm font-semibold mb-3 text-muted-foreground">Cost Breakdown</h5>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {storedMaterialCost !== null && storedMaterialCost !== undefined && (
+                        <div className="p-5 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border border-blue-200/50 dark:border-blue-800/30">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                              <Hammer className="h-4 w-4 text-blue-500" />
+                            </div>
+                            <span className="text-xs text-muted-foreground uppercase">Materials</span>
+                          </div>
+                          <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                            ${storedMaterialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {storedLaborCost !== null && storedLaborCost !== undefined && (
+                        <div className="p-5 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/30 border border-teal-200/50 dark:border-teal-800/30">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-8 w-8 rounded-lg bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center">
+                              <Users className="h-4 w-4 text-teal-500" />
+                            </div>
+                            <span className="text-xs text-muted-foreground uppercase">Labor</span>
+                          </div>
+                          <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">
+                            ${storedLaborCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {demoCost !== null && (
+                        <div className="p-5 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border border-purple-200/50 dark:border-purple-800/30">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                              <AlertTriangle className="h-4 w-4 text-purple-500" />
+                            </div>
+                            <span className="text-xs text-muted-foreground uppercase">Demolition</span>
+                          </div>
+                          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                            ${demoCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </p>
+                          {demoPriceCitation && typeof demoPriceCitation.value === 'number' && (
+                            <p className="text-[10px] text-purple-500 mt-1">
+                              @ ${demoPriceCitation.value}/sq ft
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Profit Margin Section */}
+                  {profitMargin !== null && profitPercent !== null && (
+                    <div className="p-5 rounded-xl bg-gradient-to-br from-green-50 to-lime-50 dark:from-green-950/30 dark:to-lime-950/30 border-2 border-green-300 dark:border-green-700">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-green-600" />
+                          <span className="text-sm font-medium text-green-600 uppercase tracking-wide">Profit Margin</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-green-100 text-green-700 gap-1">
+                          <Lock className="h-2.5 w-2.5" />
+                          Owner Only
+                        </Badge>
+                      </div>
+                      <div className="flex items-baseline gap-4">
+                        <p className="text-3xl font-bold text-green-700 dark:text-green-300">
+                          ${profitMargin.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                        <Badge className={cn(
+                          "text-sm px-3 py-1",
+                          profitPercent >= 20 ? "bg-green-500" : profitPercent >= 10 ? "bg-amber-500" : "bg-red-500"
+                        )}>
+                          {profitPercent.toFixed(1)}%
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Total Expenses: ${calculatedExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Contracts Summary */}
+                  {contracts.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+                        <FileCheck className="h-4 w-4" />
+                        Contracts ({contracts.length})
+                      </h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {contracts.map(contract => (
+                          <div 
+                            key={contract.id} 
+                            className="p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-all"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-sm">#{contract.contract_number}</span>
+                              <Badge 
+                                variant={contract.status === 'signed' ? 'default' : 'outline'}
+                                className={cn(
+                                  "text-xs",
+                                  contract.status === 'signed' && 'bg-green-500'
+                                )}
+                              >
+                                {contract.status}
+                              </Badge>
+                            </div>
+                            {contract.total_amount !== null && contract.total_amount !== undefined && (
+                              <p className="text-xl font-bold text-foreground">
+                                ${contract.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* GFA Reference */}
+                  {gfaCitation && gfaValue && (
+                    <div className="p-4 rounded-lg bg-muted/30 border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Ruler className="h-5 w-5 text-amber-500" />
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase">Project Area (GFA)</p>
+                            <p className="text-lg font-bold">{gfaValue.toLocaleString()} sq ft</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] text-amber-600">
+                          cite: [{gfaCitation.id.slice(0, 8)}]
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-12 rounded-xl border-2 border-dashed text-center">
+                  <DollarSign className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground">No Financial Data Recorded</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Add budget, materials, or contracts to see financial summary
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
         
         {panelCitations.length === 0 && !['panel-4-team', 'panel-5-timeline', 'panel-6-documents', 'panel-7-weather', 'panel-8-financial'].includes(panel.id) && (
           <div className="text-center py-8">
