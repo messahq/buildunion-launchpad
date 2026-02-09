@@ -7073,10 +7073,10 @@ export default function Stage8FinalReview({
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeOrbitalPanel}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, scale: 0.97, x: 30 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.97, x: -30 }}
+                transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="flex-1 p-4 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground"
                 ref={canvasContentRef}
                 style={{ colorScheme: 'light' }}
@@ -7359,10 +7359,10 @@ export default function Stage8FinalReview({
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeOrbitalPanel}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, scale: 0.97, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: -15 }}
+                transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
                 <div className="bg-background rounded-xl p-4 border border-cyan-900/20">
                   <div className="flex items-center justify-between mb-3">

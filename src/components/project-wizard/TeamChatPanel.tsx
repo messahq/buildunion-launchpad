@@ -13,6 +13,9 @@ import {
   ArrowDown,
   Loader2,
   X,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +46,7 @@ interface TeamChatPanelProps {
   teamMembers: TeamMember[];
   compact?: boolean;
   onDocumentAdded?: () => void;
+  defaultCollapsed?: boolean;
 }
 
 const roleGradients: Record<string, string> = {
@@ -60,7 +64,9 @@ export function TeamChatPanel({
   teamMembers,
   compact = false,
   onDocumentAdded,
+  defaultCollapsed = false,
 }: TeamChatPanelProps) {
+  const [isChatCollapsed, setIsChatCollapsed] = useState(defaultCollapsed);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -228,183 +234,209 @@ export function TeamChatPanel({
 
   return (
     <div className="flex flex-col rounded-xl border border-amber-400/25 bg-gradient-to-br from-amber-50/90 via-orange-50/70 to-yellow-50/80 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-yellow-950/25 overflow-hidden shadow-sm">
-      {/* Chat Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-amber-300/30 dark:border-amber-500/15 bg-gradient-to-r from-amber-100/80 to-orange-100/60 dark:from-amber-950/40 dark:to-orange-950/30">
+      {/* Chat Header - clickable to collapse/expand */}
+      <button
+        type="button"
+        onClick={() => setIsChatCollapsed(!isChatCollapsed)}
+        className="flex items-center justify-between px-3 py-2 border-b border-amber-300/30 dark:border-amber-500/15 bg-gradient-to-r from-amber-100/80 to-orange-100/60 dark:from-amber-950/40 dark:to-orange-950/30 w-full text-left hover:from-amber-200/80 hover:to-orange-200/60 dark:hover:from-amber-900/40 dark:hover:to-orange-900/30 transition-colors"
+      >
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.5)]" />
+          <MessageSquare className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />
           <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">
             Project Chat
           </span>
         </div>
-        <span className="text-[9px] text-amber-700/70 dark:text-amber-400/60">
-          {messages.length} message{messages.length !== 1 ? "s" : ""}
-        </span>
-      </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] text-amber-700/70 dark:text-amber-400/60">
+            {messages.length} message{messages.length !== 1 ? "s" : ""}
+          </span>
+          <motion.div
+            animate={{ rotate: isChatCollapsed ? 0 : 180 }}
+            transition={{ duration: 0.25 }}
+          >
+            <ChevronDown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+          </motion.div>
+        </div>
+      </button>
 
-      {/* Messages Area */}
-      <div className={cn("overflow-y-auto px-3 py-2 space-y-2", chatHeight)} ref={scrollRef}>
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-5 w-5 animate-spin text-amber-500/50" />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Send className="h-6 w-6 text-amber-400/40 mb-2" />
-            <p className="text-[11px] text-amber-800/60 dark:text-amber-400/50">
-              No messages yet. Start the conversation!
-            </p>
-          </div>
-        ) : (
-          <>
-            {messages.map((msg, idx) => {
-              const isOwn = msg.user_id === userId;
-              const gradient = roleGradients[msg.sender_role || "member"] || roleGradients.member;
-              const showAvatar =
-                idx === 0 || messages[idx - 1]?.user_id !== msg.user_id;
+      {/* Collapsible Chat Body */}
+      <AnimatePresence initial={false}>
+        {!isChatCollapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="overflow-hidden"
+          >
+            {/* Messages Area */}
+            <div className={cn("overflow-y-auto px-3 py-2 space-y-2", chatHeight)} ref={scrollRef}>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-5 w-5 animate-spin text-amber-500/50" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <Send className="h-6 w-6 text-amber-400/40 mb-2" />
+                  <p className="text-[11px] text-amber-800/60 dark:text-amber-400/50">
+                    No messages yet. Start the conversation!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {messages.map((msg, idx) => {
+                    const isOwn = msg.user_id === userId;
+                    const gradient = roleGradients[msg.sender_role || "member"] || roleGradients.member;
+                    const showAvatar =
+                      idx === 0 || messages[idx - 1]?.user_id !== msg.user_id;
 
-              return (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className={cn("flex gap-2", isOwn ? "flex-row-reverse" : "flex-row")}
-                >
-                  {/* Avatar */}
-                  {showAvatar ? (
-                    <div
-                      className={cn(
-                        "h-7 w-7 rounded-md bg-gradient-to-br flex items-center justify-center text-white text-[10px] font-bold shadow-sm flex-shrink-0 mt-0.5",
-                        gradient
-                      )}
-                    >
-                      {(msg.sender_name || "?").charAt(0).toUpperCase()}
-                    </div>
-                  ) : (
-                    <div className="w-7 flex-shrink-0" />
-                  )}
-
-                  {/* Message Bubble */}
-                  <div
-                    className={cn(
-                      "max-w-[75%] rounded-xl px-3 py-2 space-y-1",
-                      isOwn
-                        ? "bg-gradient-to-br from-amber-200/60 to-orange-200/50 dark:from-amber-500/20 dark:to-orange-500/15 border border-amber-300/40 dark:border-amber-500/20"
-                        : "bg-gradient-to-br from-amber-100/50 to-yellow-100/40 dark:from-amber-950/25 dark:to-yellow-950/20 border border-amber-200/30 dark:border-amber-500/10"
-                    )}
-                  >
-                    {/* Sender name */}
-                    {showAvatar && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-amber-900 dark:text-amber-200">
-                          {msg.sender_name}
-                        </span>
-                        <span className="text-[8px] text-amber-600/70 dark:text-amber-400/50 capitalize">
-                          {msg.sender_role}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Attachment preview */}
-                    {msg.attachment_url && (
-                      <a
-                        href={msg.attachment_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block"
+                    return (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className={cn("flex gap-2", isOwn ? "flex-row-reverse" : "flex-row")}
                       >
-                        {isImage(msg.attachment_name) ? (
-                          <div className="rounded-lg overflow-hidden border border-amber-300/25 dark:border-amber-500/15 mt-1">
-                            <img
-                              src={msg.attachment_url}
-                              alt={msg.attachment_name || "attachment"}
-                              className="max-h-40 w-auto object-cover"
-                            />
+                        {/* Avatar */}
+                        {showAvatar ? (
+                          <div
+                            className={cn(
+                              "h-7 w-7 rounded-md bg-gradient-to-br flex items-center justify-center text-white text-[10px] font-bold shadow-sm flex-shrink-0 mt-0.5",
+                              gradient
+                            )}
+                          >
+                            {(msg.sender_name || "?").charAt(0).toUpperCase()}
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-200/40 dark:bg-amber-500/10 border border-amber-300/30 dark:border-amber-500/15 mt-1">
-                            <FileText className="h-4 w-4 text-amber-700 dark:text-amber-300" />
-                            <span className="text-[10px] text-amber-900 dark:text-amber-200 truncate">
-                              {msg.attachment_name}
-                            </span>
-                          </div>
+                          <div className="w-7 flex-shrink-0" />
                         )}
-                      </a>
-                    )}
 
-                    {/* Message text */}
-                    {msg.message && !msg.message.startsWith("📎") && (
-                      <p className="text-[11px] text-amber-950 dark:text-white/85 leading-relaxed">
-                        {msg.message}
-                      </p>
-                    )}
+                        {/* Message Bubble */}
+                        <div
+                          className={cn(
+                            "max-w-[75%] rounded-xl px-3 py-2 space-y-1",
+                            isOwn
+                              ? "bg-gradient-to-br from-amber-200/60 to-orange-200/50 dark:from-amber-500/20 dark:to-orange-500/15 border border-amber-300/40 dark:border-amber-500/20"
+                              : "bg-gradient-to-br from-amber-100/50 to-yellow-100/40 dark:from-amber-950/25 dark:to-yellow-950/20 border border-amber-200/30 dark:border-amber-500/10"
+                          )}
+                        >
+                          {/* Sender name */}
+                          {showAvatar && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-semibold text-amber-900 dark:text-amber-200">
+                                {msg.sender_name}
+                              </span>
+                              <span className="text-[8px] text-amber-600/70 dark:text-amber-400/50 capitalize">
+                                {msg.sender_role}
+                              </span>
+                            </div>
+                          )}
 
-                    {/* Timestamp */}
-                    <p className="text-[8px] text-amber-600/60 dark:text-amber-500/50 text-right">
-                      {format(new Date(msg.created_at), "HH:mm")}
-                    </p>
-                  </div>
-                </motion.div>
-              );
-            })}
-            <div ref={bottomRef} />
-          </>
+                          {/* Attachment preview */}
+                          {msg.attachment_url && (
+                            <a
+                              href={msg.attachment_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              {isImage(msg.attachment_name) ? (
+                                <div className="rounded-lg overflow-hidden border border-amber-300/25 dark:border-amber-500/15 mt-1">
+                                  <img
+                                    src={msg.attachment_url}
+                                    alt={msg.attachment_name || "attachment"}
+                                    className="max-h-40 w-auto object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-200/40 dark:bg-amber-500/10 border border-amber-300/30 dark:border-amber-500/15 mt-1">
+                                  <FileText className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                                  <span className="text-[10px] text-amber-900 dark:text-amber-200 truncate">
+                                    {msg.attachment_name}
+                                  </span>
+                                </div>
+                              )}
+                            </a>
+                          )}
+
+                          {/* Message text */}
+                          {msg.message && !msg.message.startsWith("📎") && (
+                            <p className="text-[11px] text-amber-950 dark:text-white/85 leading-relaxed">
+                              {msg.message}
+                            </p>
+                          )}
+
+                          {/* Timestamp */}
+                          <p className="text-[8px] text-amber-600/60 dark:text-amber-500/50 text-right">
+                            {format(new Date(msg.created_at), "HH:mm")}
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                  <div ref={bottomRef} />
+                </>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div className="border-t border-amber-300/30 dark:border-amber-500/15 p-2 bg-gradient-to-r from-amber-100/70 to-orange-100/50 dark:from-amber-950/35 dark:to-orange-950/25">
+              <div className="flex items-center gap-1.5">
+                {/* File upload button */}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="h-8 w-8 p-0 text-amber-700 dark:text-amber-400/70 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-200/40 dark:hover:bg-amber-500/10"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-4 w-4" />
+                  )}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+
+                {/* Message input */}
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Type a message..."
+                  className="flex-1 h-8 text-[11px] bg-white/60 dark:bg-amber-950/20 border-amber-300/30 dark:border-amber-500/15 placeholder:text-amber-500/50 text-amber-950 dark:text-white/90 focus-visible:ring-amber-400/30"
+                  disabled={isSending}
+                />
+
+                {/* Send button */}
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSend}
+                  disabled={isSending || (!newMessage.trim() && !isUploading)}
+                  className="h-8 w-8 p-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white shadow-md disabled:opacity-30"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
         )}
-      </div>
-
-      {/* Input Area */}
-      <div className="border-t border-amber-300/30 dark:border-amber-500/15 p-2 bg-gradient-to-r from-amber-100/70 to-orange-100/50 dark:from-amber-950/35 dark:to-orange-950/25">
-        <div className="flex items-center gap-1.5">
-          {/* File upload button */}
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="h-8 w-8 p-0 text-amber-700 dark:text-amber-400/70 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-200/40 dark:hover:bg-amber-500/10"
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Paperclip className="h-4 w-4" />
-            )}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-            className="hidden"
-            onChange={handleFileUpload}
-          />
-
-          {/* Message input */}
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Type a message..."
-            className="flex-1 h-8 text-[11px] bg-white/60 dark:bg-amber-950/20 border-amber-300/30 dark:border-amber-500/15 placeholder:text-amber-500/50 text-amber-950 dark:text-white/90 focus-visible:ring-amber-400/30"
-            disabled={isSending}
-          />
-
-          {/* Send button */}
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSend}
-            disabled={isSending || (!newMessage.trim() && !isUploading)}
-            className="h-8 w-8 p-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white shadow-md disabled:opacity-30"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
