@@ -1776,6 +1776,9 @@ export default function Stage8FinalReview({
         return { ...mat, hasWaste: false };
       });
       
+      // ✓ Get the BEST citation source for the cite badge
+      const bestCitationSource = tradeCitation || workTypeCitation;
+      
       return (
         <div className="space-y-4">
           {/* ✓ DYNAMIC LABEL: Show Sub-worktype, not main category */}
@@ -1815,9 +1818,10 @@ export default function Stage8FinalReview({
                 @ {templateGfaValue.toLocaleString()} sq ft
               </p>
             )}
-            {tradeCitation && (
+            {/* ✓ ALWAYS show cite badge if ANY citation source exists */}
+            {bestCitationSource && (
               <p className="text-[10px] text-orange-500 mt-1 font-mono">
-                cite: [{tradeCitation.id.slice(0, 12)}]
+                cite: [{bestCitationSource.id.slice(0, 12)}]
               </p>
             )}
           </div>
