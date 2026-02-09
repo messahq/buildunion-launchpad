@@ -5293,7 +5293,7 @@ export default function Stage8FinalReview({
                         ) : (
                           <LayoutDashboard className="h-4 w-4" />
                         )}
-                        {t('stage8.generateDashboard', 'Generate Project Dashboard (8 Panels)')}
+                        {t('stage8.activateProject', 'Activate Project')}
                       </Button>
                     </span>
                   </TooltipTrigger>
