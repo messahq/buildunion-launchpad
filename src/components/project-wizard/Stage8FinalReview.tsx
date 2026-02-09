@@ -378,10 +378,16 @@ export default function Stage8FinalReview({
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   
+  // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
+  const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
+  
   // Check user permissions - Owner sees everything, others are blocked from financials
+  // ✓ CRITICAL: canEdit is now gated by isEditModeEnabled for Owner
   const canEdit = useMemo(() => {
-    return userRole === 'owner' || userRole === 'foreman';
-  }, [userRole]);
+    const hasPermission = userRole === 'owner' || userRole === 'foreman';
+    // Owner must explicitly enable edit mode; Foreman can always edit
+    return hasPermission && (userRole === 'foreman' || isEditModeEnabled);
+  }, [userRole, isEditModeEnabled]);
   
   // CRITICAL: Only Owner can view financial data - Foreman/Subcontractor are blocked
   const canViewFinancials = useMemo(() => {
@@ -1126,12 +1132,21 @@ export default function Stage8FinalReview({
   
   // Render Panel 5 - Timeline with Granular Tasklist
   // ✓ KÉNYSZERÍTETT ADAT-BEHÚZÁS: Ha nincs DB task, default fázisok megjelenítése
+  // ✓ DEMOLITION: Only show demolition phase if SITE_CONDITION includes demolition
   const renderPanel5Content = useCallback(() => {
     const panelCitations = getCitationsForPanel(['TIMELINE', 'END_DATE', 'DNA_FINALIZED']);
     
-    // ✓ Default feladatok ha a tasks üres
-    const defaultTasks: TaskWithChecklist[] = tasks.length > 0 ? tasks : [
-      { id: 'default-demo-1', title: 'Site demolition & debris removal', status: 'pending', priority: 'high', phase: 'demolition', assigned_to: userId, checklist: [{ id: 'demo-1-start', text: 'Task started', done: false }, { id: 'demo-1-complete', text: 'Task completed', done: false }, { id: 'demo-1-verify', text: 'Verification photo', done: false }] },
+    // ✓ Check SITE_CONDITION citation for demolition
+    const siteConditionCitation = citations.find(c => c.cite_type === 'SITE_CONDITION');
+    const hasDemolition = siteConditionCitation?.answer?.toLowerCase().includes('demolition') 
+      || siteConditionCitation?.metadata?.demolition_needed === true
+      || (typeof siteConditionCitation?.value === 'string' && siteConditionCitation.value.toLowerCase().includes('demolition'));
+    
+    // ✓ Default feladatok ha a tasks üres - CONDITIONALLY include demolition
+    const baseTasks: TaskWithChecklist[] = tasks.length > 0 ? tasks : [
+      ...(hasDemolition ? [
+        { id: 'default-demo-1', title: 'Site demolition & debris removal', status: 'pending', priority: 'high', phase: 'demolition', assigned_to: userId, checklist: [{ id: 'demo-1-start', text: 'Task started', done: false }, { id: 'demo-1-complete', text: 'Task completed', done: false }, { id: 'demo-1-verify', text: 'Verification photo', done: false }] },
+      ] : []),
       { id: 'default-prep-1', title: 'Site measurements & material staging', status: 'pending', priority: 'medium', phase: 'preparation', assigned_to: userId, checklist: [{ id: 'prep-1-start', text: 'Task started', done: false }, { id: 'prep-1-complete', text: 'Task completed', done: false }, { id: 'prep-1-verify', text: 'Verification photo', done: false }] },
       { id: 'default-prep-2', title: 'Equipment setup & safety check', status: 'pending', priority: 'medium', phase: 'preparation', assigned_to: userId, checklist: [{ id: 'prep-2-start', text: 'Task started', done: false }, { id: 'prep-2-complete', text: 'Task completed', done: false }, { id: 'prep-2-verify', text: 'Verification photo', done: false }] },
       { id: 'default-install-1', title: 'Core installation work', status: 'pending', priority: 'high', phase: 'installation', assigned_to: userId, checklist: [{ id: 'install-1-start', text: 'Task started', done: false }, { id: 'install-1-complete', text: 'Task completed', done: false }, { id: 'install-1-verify', text: 'Verification photo', done: false }] },
@@ -1139,10 +1154,15 @@ export default function Stage8FinalReview({
       { id: 'default-finish-1', title: 'Final QC inspection & cleanup', status: 'pending', priority: 'high', phase: 'finishing', assigned_to: userId, checklist: [{ id: 'finish-1-start', text: 'Task started', done: false }, { id: 'finish-1-complete', text: 'Task completed', done: false }, { id: 'finish-1-verify', text: 'Verification photo', done: false }] },
     ];
     
+    // ✓ Filter phases - only show demolition if hasDemolition
+    const activePhasesConfig = hasDemolition 
+      ? TASK_PHASES 
+      : TASK_PHASES.filter(p => p.key !== 'demolition');
+    
     // Group tasks by phase
-    const tasksByPhase = TASK_PHASES.map(phase => ({
+    const tasksByPhase = activePhasesConfig.map(phase => ({
       ...phase,
-      tasks: defaultTasks.filter(t => t.phase === phase.key),
+      tasks: baseTasks.filter(t => t.phase === phase.key),
     }));
     
     return (
@@ -1273,6 +1293,7 @@ export default function Stage8FinalReview({
     );
   }, [
     getCitationsForPanel,
+    citations, // ✓ Added for SITE_CONDITION check
     tasks,
     userId,
     expandedPhases,
@@ -2642,26 +2663,71 @@ export default function Stage8FinalReview({
         </div>
       </div>
       
-      {/* Visibility Legend */}
+      {/* Visibility Legend & Edit Mode Toggle */}
       <div className="px-4 py-2 border-b bg-muted/30 shrink-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground mr-2">Visibility:</span>
-          {VISIBILITY_TIERS.map((tier) => (
-            <TooltipProvider key={tier.key}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="outline" className={cn("text-[10px] gap-1 cursor-help", tier.color, tier.bgColor)}>
-                    <tier.icon className="h-2.5 w-2.5" />
-                    {tier.label}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs max-w-[200px]">{tier.description}</p>
-                  {tier.canEdit && <p className="text-xs text-green-500 mt-1">✓ Can edit</p>}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground mr-2">Visibility:</span>
+            {VISIBILITY_TIERS.map((tier) => (
+              <TooltipProvider key={tier.key}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className={cn("text-[10px] gap-1 cursor-help", tier.color, tier.bgColor)}>
+                      <tier.icon className="h-2.5 w-2.5" />
+                      {tier.label}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">{tier.description}</p>
+                    {tier.canEdit && <p className="text-xs text-green-500 mt-1">✓ Can edit</p>}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
+          </div>
+          
+          {/* ✓ UNIVERSAL READ-ONLY DEFAULT: Owner Edit Mode Toggle */}
+          {userRole === 'owner' && (
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={isEditModeEnabled ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsEditModeEnabled(!isEditModeEnabled)}
+                      className={cn(
+                        "h-7 gap-1.5 text-xs",
+                        isEditModeEnabled 
+                          ? "bg-amber-500 hover:bg-amber-600 text-white" 
+                          : "border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                      )}
+                    >
+                      {isEditModeEnabled ? (
+                        <>
+                          <Edit2 className="h-3 w-3" />
+                          Edit Mode ON
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-3 w-3" />
+                          Read-Only
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      {isEditModeEnabled 
+                        ? "Click to disable editing and return to read-only view" 
+                        : "Click to enable editing of project data"
+                      }
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
         </div>
       </div>
       
