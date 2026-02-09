@@ -650,7 +650,7 @@ export default function Stage7GanttSetup({
             ) : (
               <>
                 <LayoutDashboard className="h-4 w-4 mr-2" />
-                Generate Project Dashboard (8 Panels)
+                Activate Project
               </>
             )}
           </Button>

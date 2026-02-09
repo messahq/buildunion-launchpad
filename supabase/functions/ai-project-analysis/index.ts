@@ -17,49 +17,64 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[AI-PROJECT-ANALYSIS] ${step}`, details ? JSON.stringify(details) : '');
 };
 
-// Model selection based on tier
+// ============================================
+// GRAND DUAL ENGINE ARCHITECTURE
+// Gemini = Visual Analysis (Site Photos, Blueprints)
+// OpenAI = OBC Validation (Ontario Building Code Compliance)
+// ============================================
+
 const AI_MODELS = {
+  // Gemini - Visual/Multimodal Analysis
   GEMINI_PRO: "google/gemini-2.5-pro",
   GEMINI_FLASH: "google/gemini-2.5-flash",
   GEMINI_FLASH_LITE: "google/gemini-2.5-flash-lite",
+  // OpenAI - OBC/Building Code Validation
+  GPT5: "openai/gpt-5",
   GPT5_MINI: "openai/gpt-5-mini",
+  GPT5_NANO: "openai/gpt-5-nano",
 } as const;
 
-interface ModelConfig {
-  primaryModel: string;
-  validationModel: string | null;
-  maxTokens: number;
+interface DualEngineConfig {
+  visualModel: string;      // Gemini for visual analysis
+  obcModel: string | null;  // OpenAI for building code validation
+  visualTokens: number;
+  obcTokens: number;
   runDualEngine: boolean;
 }
 
-function getModelConfig(tier: 'free' | 'pro' | 'premium'): ModelConfig {
+function getDualEngineConfig(tier: 'free' | 'pro' | 'premium'): DualEngineConfig {
   if (tier === 'premium') {
     return {
-      primaryModel: AI_MODELS.GEMINI_FLASH,
-      validationModel: AI_MODELS.GPT5_MINI,
-      maxTokens: 2000,
+      visualModel: AI_MODELS.GEMINI_FLASH,
+      obcModel: AI_MODELS.GPT5_MINI,
+      visualTokens: 2000,
+      obcTokens: 1500,
       runDualEngine: true,
     };
   } else if (tier === 'pro') {
     return {
-      primaryModel: AI_MODELS.GEMINI_FLASH_LITE,
-      validationModel: null,
-      maxTokens: 1200,
-      runDualEngine: false,
+      visualModel: AI_MODELS.GEMINI_FLASH_LITE,
+      obcModel: AI_MODELS.GPT5_NANO,
+      visualTokens: 1200,
+      obcTokens: 800,
+      runDualEngine: true,
     };
   }
+  // Free tier - single engine only
   return {
-    primaryModel: AI_MODELS.GEMINI_FLASH_LITE,
-    validationModel: null,
-    maxTokens: 600,
+    visualModel: AI_MODELS.GEMINI_FLASH_LITE,
+    obcModel: null,
+    visualTokens: 600,
+    obcTokens: 0,
     runDualEngine: false,
   };
 }
 
 interface AnalysisRequest {
   projectId: string;
-  analysisType: 'full' | 'quick' | 'financial' | 'timeline' | 'risk';
+  analysisType: 'full' | 'quick' | 'financial' | 'timeline' | 'risk' | 'obc' | 'visual';
   tier: 'free' | 'pro' | 'premium';
+  region?: string; // For OBC regional codes (Ontario, Quebec, etc.)
 }
 
 interface ProjectData {
@@ -77,6 +92,9 @@ interface ProjectData {
   totalBudget: number;
   hasContracts: boolean;
   documentCount: number;
+  sitePhotos: string[];
+  blueprints: string[];
+  region: string;
 }
 
 async function callAI(model: string, prompt: string, maxTokens: number): Promise<string> {
@@ -114,7 +132,117 @@ async function callAI(model: string, prompt: string, maxTokens: number): Promise
   return result.choices?.[0]?.message?.content || "";
 }
 
-function buildAnalysisPrompt(projectData: ProjectData, analysisType: string): string {
+// ============================================
+// GEMINI - VISUAL ANALYSIS PROMPT
+// ============================================
+function buildVisualAnalysisPrompt(projectData: ProjectData): string {
+  return `
+VISUAL SITE ANALYSIS - Construction Project Assessment
+
+PROJECT: ${projectData.name}
+LOCATION: ${projectData.address}
+TRADE: ${projectData.trade}
+GFA: ${projectData.gfa.toLocaleString()} sq ft
+
+SITE PHOTOS: ${projectData.sitePhotos.length} available
+BLUEPRINTS: ${projectData.blueprints.length} available
+
+Analyze the visual elements of this construction project:
+
+1. SITE CONDITION ASSESSMENT
+   - Current state of the work area
+   - Visible progress indicators
+   - Safety concerns visible in photos
+
+2. MATERIAL VERIFICATION
+   - Materials visible on-site
+   - Storage conditions
+   - Quantity estimation from visuals
+
+3. WORK QUALITY INDICATORS
+   - Craftsmanship quality visible
+   - Alignment and finishing details
+   - Potential defects or concerns
+
+4. PROGRESS TRACKING
+   - Completed phases visible
+   - Work in progress areas
+   - Areas not yet started
+
+5. SAFETY OBSERVATIONS
+   - PPE compliance visible
+   - Hazard identification
+   - Site organization
+
+Format as JSON with keys: siteCondition, materialStatus, qualityScore (0-100), progressPercent, safetyFlags (array), recommendations (array).`;
+}
+
+// ============================================
+// OPENAI - OBC BUILDING CODE VALIDATION
+// ============================================
+function buildOBCValidationPrompt(projectData: ProjectData): string {
+  const regionCodes: Record<string, string> = {
+    'ontario': 'Ontario Building Code (OBC) 2024',
+    'quebec': 'Quebec Construction Code (CCQ)',
+    'bc': 'BC Building Code 2024',
+    'alberta': 'Alberta Building Code 2019',
+    'default': 'National Building Code of Canada 2020',
+  };
+  
+  const applicableCode = regionCodes[projectData.region.toLowerCase()] || regionCodes.default;
+  
+  return `
+BUILDING CODE COMPLIANCE VALIDATION
+
+PROJECT: ${projectData.name}
+LOCATION: ${projectData.address}
+REGION: ${projectData.region}
+APPLICABLE CODE: ${applicableCode}
+TRADE: ${projectData.trade}
+GFA: ${projectData.gfa.toLocaleString()} sq ft
+
+TEAM SIZE: ${projectData.teamSize} workers
+TIMELINE: ${projectData.startDate || 'Not set'} to ${projectData.endDate || 'Not set'}
+
+Validate this construction project against ${applicableCode}:
+
+1. PERMIT REQUIREMENTS
+   - Required permits for ${projectData.trade} work
+   - Inspection milestones
+   - Documentation requirements
+
+2. STRUCTURAL COMPLIANCE
+   - Load-bearing considerations for ${projectData.gfa} sq ft
+   - Fire separation requirements
+   - Egress requirements
+
+3. TRADE-SPECIFIC CODES
+   - ${projectData.trade}-specific code sections
+   - Material specifications required
+   - Installation standards
+
+4. SAFETY REQUIREMENTS
+   - Worker safety regulations (OHSA for Ontario)
+   - Fall protection requirements
+   - PPE mandates
+
+5. INSPECTION CHECKPOINTS
+   - Pre-construction inspections
+   - Rough-in inspections
+   - Final inspection requirements
+
+6. DOCUMENTATION GAPS
+   - Missing permits or approvals
+   - Required certifications
+   - Record-keeping requirements
+
+Format as JSON with keys: permitStatus (compliant/pending/missing), structuralFlags (array), tradeCompliance (object), safetyRequirements (array), inspectionSchedule (array), documentationGaps (array), overallCompliance (percentage 0-100), criticalIssues (array).`;
+}
+
+// ============================================
+// FULL ANALYSIS PROMPT
+// ============================================
+function buildFullAnalysisPrompt(projectData: ProjectData): string {
   const progressPercent = projectData.taskCount > 0 
     ? Math.round((projectData.completedTasks / projectData.taskCount) * 100) 
     : 0;
@@ -127,7 +255,9 @@ function buildAnalysisPrompt(projectData: ProjectData, analysisType: string): st
     ? Math.ceil((Date.now() - new Date(projectData.startDate).getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
-  const baseContext = `
+  return `
+COMPREHENSIVE PROJECT ANALYSIS
+
 PROJECT: ${projectData.name}
 LOCATION: ${projectData.address}
 TRADE: ${projectData.trade}
@@ -147,51 +277,8 @@ BUDGET:
 
 DOCUMENTS: ${projectData.documentCount} files
 CONTRACTS: ${projectData.hasContracts ? 'Yes' : 'None'}
-`;
 
-  if (analysisType === 'financial') {
-    return `${baseContext}
-
-Analyze the financial health of this construction project. Provide:
-1. Budget assessment (is the cost per sq ft reasonable for ${projectData.trade}?)
-2. Cost breakdown analysis
-3. Potential cost overrun risks
-4. Recommendations for budget optimization
-5. Cash flow considerations
-
-Format as JSON with keys: healthScore (0-100), assessment, risks (array), recommendations (array).`;
-  }
-
-  if (analysisType === 'timeline') {
-    return `${baseContext}
-
-Analyze the project timeline and progress. Provide:
-1. Schedule health assessment
-2. Task completion rate analysis
-3. Predicted completion date based on current pace
-4. Bottleneck identification
-5. Timeline optimization suggestions
-
-Format as JSON with keys: scheduleHealth (on_track/at_risk/delayed), progressAnalysis, predictedCompletion, bottlenecks (array), recommendations (array).`;
-  }
-
-  if (analysisType === 'risk') {
-    return `${baseContext}
-
-Perform a risk assessment for this construction project. Identify:
-1. High-priority risks
-2. Medium-priority risks
-3. Low-priority risks
-4. Mitigation strategies
-5. Overall risk score
-
-Format as JSON with keys: overallRisk (low/medium/high), riskScore (0-100), highRisks (array), mediumRisks (array), lowRisks (array), mitigations (array).`;
-  }
-
-  // Full analysis
-  return `${baseContext}
-
-Provide a comprehensive project analysis including:
+Provide a comprehensive project analysis:
 
 1. EXECUTIVE SUMMARY (2-3 sentences)
 2. PROJECT HEALTH SCORE (0-100)
@@ -234,7 +321,7 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id });
 
     const body: AnalysisRequest = await req.json();
-    const { projectId, analysisType = 'full', tier = 'free' } = body;
+    const { projectId, analysisType = 'full', tier = 'free', region = 'ontario' } = body;
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID required" }), {
@@ -273,12 +360,12 @@ serve(async (req) => {
       });
     }
 
-    // Fetch related data
+    // Fetch related data including documents for visual analysis
     const [summaryRes, membersRes, tasksRes, documentsRes, contractsRes] = await Promise.all([
       supabaseClient.from("project_summaries").select("*").eq("project_id", projectId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabaseClient.from("project_members").select("id").eq("project_id", projectId),
       supabaseClient.from("project_tasks").select("id, status").eq("project_id", projectId).is("archived_at", null),
-      supabaseClient.from("project_documents").select("id").eq("project_id", projectId),
+      supabaseClient.from("project_documents").select("id, file_name, file_path").eq("project_id", projectId),
       supabaseClient.from("contracts").select("id").eq("project_id", projectId).is("archived_at", null),
     ]);
 
@@ -288,6 +375,23 @@ serve(async (req) => {
     const gfaCitation = verifiedFacts.find((f: any) => f.cite_type === 'GFA_LOCK');
     const gfa = gfaCitation?.metadata?.gfa_value || gfaCitation?.value || 0;
 
+    // Extract site photos and blueprints from documents
+    const documents = documentsRes.data || [];
+    const sitePhotos = documents
+      .filter((d: any) => d.file_name.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i))
+      .map((d: any) => d.file_path);
+    const blueprints = documents
+      .filter((d: any) => d.file_name.match(/\.(pdf|dwg|dxf)$/i) || d.file_name.toLowerCase().includes('blueprint'))
+      .map((d: any) => d.file_path);
+
+    // Detect region from address
+    const addressLower = (project.address || '').toLowerCase();
+    let detectedRegion = region;
+    if (addressLower.includes('ontario') || addressLower.includes(', on')) detectedRegion = 'ontario';
+    else if (addressLower.includes('quebec') || addressLower.includes(', qc')) detectedRegion = 'quebec';
+    else if (addressLower.includes('british columbia') || addressLower.includes(', bc')) detectedRegion = 'bc';
+    else if (addressLower.includes('alberta') || addressLower.includes(', ab')) detectedRegion = 'alberta';
+
     const tasks = tasksRes.data || [];
     const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
 
@@ -296,7 +400,7 @@ serve(async (req) => {
       address: project.address || '',
       trade: project.trade || 'General',
       gfa: typeof gfa === 'number' ? gfa : 0,
-      teamSize: (membersRes.data?.length || 0) + 1, // +1 for owner
+      teamSize: (membersRes.data?.length || 0) + 1,
       taskCount: tasks.length,
       completedTasks,
       startDate: summary?.project_start_date || null,
@@ -305,83 +409,112 @@ serve(async (req) => {
       laborCost: summary?.labor_cost || 0,
       totalBudget: summary?.total_cost || 0,
       hasContracts: (contractsRes.data?.length || 0) > 0,
-      documentCount: documentsRes.data?.length || 0,
+      documentCount: documents.length,
+      sitePhotos,
+      blueprints,
+      region: detectedRegion,
     };
 
     logStep("Project data gathered", { 
       gfa: projectData.gfa, 
       tasks: projectData.taskCount,
-      budget: projectData.totalBudget 
+      budget: projectData.totalBudget,
+      sitePhotos: sitePhotos.length,
+      blueprints: blueprints.length,
+      region: detectedRegion,
     });
 
-    // Get model config based on tier
-    const modelConfig = getModelConfig(tier);
-    logStep("Model config", { tier, model: modelConfig.primaryModel, dualEngine: modelConfig.runDualEngine });
+    // ============================================
+    // GRAND DUAL ENGINE EXECUTION
+    // ============================================
+    const engineConfig = getDualEngineConfig(tier);
+    logStep("Dual Engine config", { 
+      tier, 
+      visualModel: engineConfig.visualModel, 
+      obcModel: engineConfig.obcModel,
+      runDualEngine: engineConfig.runDualEngine,
+    });
 
-    // Generate analysis prompt
-    const prompt = buildAnalysisPrompt(projectData, analysisType);
+    let visualAnalysis: Record<string, unknown> | null = null;
+    let obcValidation: Record<string, unknown> | null = null;
 
-    // Call primary AI model
-    const primaryResult = await callAI(modelConfig.primaryModel, prompt, modelConfig.maxTokens);
-    logStep("Primary AI response received", { length: primaryResult.length });
+    // STEP 1: Gemini Visual Analysis (always runs)
+    const visualPrompt = analysisType === 'visual' 
+      ? buildVisualAnalysisPrompt(projectData)
+      : buildFullAnalysisPrompt(projectData);
+    
+    const visualResult = await callAI(engineConfig.visualModel, visualPrompt, engineConfig.visualTokens);
+    logStep("Gemini Visual Analysis complete", { length: visualResult.length });
 
-    let validationResult = null;
-    if (modelConfig.runDualEngine && modelConfig.validationModel) {
-      try {
-        const validationPrompt = `Review and validate this construction project analysis. Flag any concerns or discrepancies:
-
-ORIGINAL ANALYSIS:
-${primaryResult}
-
-PROJECT DATA:
-${JSON.stringify(projectData, null, 2)}
-
-Provide validation as JSON with keys: validated (boolean), confidence (0-100), concerns (array), corrections (array).`;
-
-        validationResult = await callAI(modelConfig.validationModel, validationPrompt, 600);
-        logStep("Validation response received");
-      } catch (validationError) {
-        logStep("Validation failed, continuing with primary result", { error: String(validationError) });
-      }
-    }
-
-    // Parse and structure the response
-    let analysis: Record<string, unknown>;
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = primaryResult.match(/\{[\s\S]*\}/);
+      const jsonMatch = visualResult.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        analysis = JSON.parse(jsonMatch[0]);
+        visualAnalysis = JSON.parse(jsonMatch[0]);
       } else {
-        analysis = { rawAnalysis: primaryResult };
+        visualAnalysis = { rawAnalysis: visualResult };
       }
     } catch {
-      analysis = { rawAnalysis: primaryResult };
+      visualAnalysis = { rawAnalysis: visualResult };
     }
 
-    // Add metadata
+    // STEP 2: OpenAI OBC Validation (Pro/Premium only)
+    if (engineConfig.runDualEngine && engineConfig.obcModel) {
+      try {
+        const obcPrompt = buildOBCValidationPrompt(projectData);
+        const obcResult = await callAI(engineConfig.obcModel, obcPrompt, engineConfig.obcTokens);
+        logStep("OpenAI OBC Validation complete", { length: obcResult.length });
+
+        try {
+          const jsonMatch = obcResult.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            obcValidation = JSON.parse(jsonMatch[0]);
+          } else {
+            obcValidation = { rawValidation: obcResult };
+          }
+        } catch {
+          obcValidation = { rawValidation: obcResult };
+        }
+      } catch (obcError) {
+        logStep("OBC Validation failed, continuing without", { error: String(obcError) });
+      }
+    }
+
+    // ============================================
+    // BUILD UNIFIED RESPONSE
+    // ============================================
     const response = {
       projectId,
       analysisType,
       tier,
       generatedAt: new Date().toISOString(),
-      model: modelConfig.primaryModel,
-      dualEngineUsed: modelConfig.runDualEngine && validationResult !== null,
-      analysis,
-      validation: validationResult ? (() => {
-        try {
-          const jsonMatch = validationResult.match(/\{[\s\S]*\}/);
-          return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-        } catch {
-          return null;
-        }
-      })() : null,
+      dualEngineUsed: engineConfig.runDualEngine && obcValidation !== null,
+      engines: {
+        visual: {
+          model: engineConfig.visualModel,
+          provider: 'gemini',
+          analysis: visualAnalysis,
+        },
+        obc: engineConfig.runDualEngine ? {
+          model: engineConfig.obcModel,
+          provider: 'openai',
+          region: detectedRegion,
+          validation: obcValidation,
+        } : null,
+      },
       projectSnapshot: {
         name: projectData.name,
         gfa: projectData.gfa,
         teamSize: projectData.teamSize,
         progress: projectData.taskCount > 0 ? Math.round((projectData.completedTasks / projectData.taskCount) * 100) : 0,
         budget: projectData.totalBudget,
+        sitePhotos: sitePhotos.length,
+        blueprints: blueprints.length,
+        region: detectedRegion,
+      },
+      // Merged analysis for backward compatibility
+      analysis: {
+        ...visualAnalysis,
+        obcCompliance: obcValidation,
       },
     };
 
