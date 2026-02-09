@@ -407,6 +407,19 @@ export default function Stage8FinalReview({
   } | null>(null);
   const [isSendingDocument, setIsSendingDocument] = useState(false);
   
+  // ✓ Multi-recipient contract email dialog state
+  const [showContractEmailDialog, setShowContractEmailDialog] = useState(false);
+  const [selectedContractForEmail, setSelectedContractForEmail] = useState<{
+    id: string;
+    contract_number: string;
+    share_token?: string;
+    total_amount?: number | null;
+  } | null>(null);
+  const [contractRecipients, setContractRecipients] = useState<{email: string; name: string}[]>([
+    { email: '', name: '' }
+  ]);
+  const [isSendingToMultiple, setIsSendingToMultiple] = useState(false);
+  
   // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   
@@ -1100,6 +1113,80 @@ export default function Stage8FinalReview({
       setIsSendingDocument(false);
     }
   }, [clientEmail, clientName, projectData, getDocumentPreviewUrl]);
+  
+  // ✓ Send contract to multiple recipients
+  const handleSendContractToMultiple = useCallback(async () => {
+    if (!selectedContractForEmail) {
+      toast.error('No contract selected');
+      return;
+    }
+    
+    const validRecipients = contractRecipients.filter(r => r.email && r.email.includes('@'));
+    if (validRecipients.length === 0) {
+      toast.error('Please add at least one valid email recipient');
+      return;
+    }
+    
+    setIsSendingToMultiple(true);
+    try {
+      // Get the contract's share token
+      const { data: contract } = await supabase
+        .from('contracts')
+        .select('share_token, contractor_name')
+        .eq('id', selectedContractForEmail.id)
+        .single();
+      
+      if (!contract?.share_token) {
+        toast.error('Contract share link not found');
+        return;
+      }
+      
+      const contractUrl = `${window.location.origin}/contract/sign?token=${contract.share_token}`;
+      
+      // Send to each recipient
+      const results = await Promise.allSettled(
+        validRecipients.map(recipient => 
+          supabase.functions.invoke('send-contract-email', {
+            body: {
+              clientEmail: recipient.email,
+              clientName: recipient.name || 'Client',
+              contractorName: contract.contractor_name || 'Contractor',
+              projectName: projectData?.name || 'Project',
+              contractUrl,
+              totalAmount: selectedContractForEmail.total_amount,
+              contractId: selectedContractForEmail.id,
+            }
+          })
+        )
+      );
+      
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
+      const failCount = results.filter(r => r.status === 'rejected').length;
+      
+      if (failCount === 0) {
+        toast.success(`Contract sent to ${successCount} recipient${successCount > 1 ? 's' : ''}`);
+      } else if (successCount > 0) {
+        toast.warning(`Sent to ${successCount}, failed for ${failCount}`);
+      } else {
+        toast.error('Failed to send contract');
+      }
+      
+      // Update sent_to_client_at timestamp
+      await supabase
+        .from('contracts')
+        .update({ sent_to_client_at: new Date().toISOString() })
+        .eq('id', selectedContractForEmail.id);
+      
+      setShowContractEmailDialog(false);
+      setSelectedContractForEmail(null);
+      setContractRecipients([{ email: '', name: '' }]);
+    } catch (err) {
+      console.error('[Stage8] Send to multiple failed:', err);
+      toast.error('Failed to send contract');
+    } finally {
+      setIsSendingToMultiple(false);
+    }
+  }, [selectedContractForEmail, contractRecipients, projectData]);
   
   // Update task checklist item
   const updateChecklistItem = useCallback(async (taskId: string, checklistItemId: string, done: boolean) => {
@@ -2081,15 +2168,49 @@ export default function Stage8FinalReview({
           </div>
           
           {contracts.length > 0 ? (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {contracts.map(contract => (
-                <div key={contract.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
-                  <span className="text-xs">#{contract.contract_number}</span>
+                <div key={contract.id} className="group flex items-center justify-between p-2 rounded bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium">#{contract.contract_number}</span>
                     {canViewFinancials && contract.total_amount && (
                       <span className="text-xs text-muted-foreground">${contract.total_amount.toLocaleString()}</span>
                     )}
-                    <Badge variant="outline" className="text-[10px]">{contract.status}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Send to multiple recipients button */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              setSelectedContractForEmail({
+                                id: contract.id,
+                                contract_number: contract.contract_number,
+                                total_amount: contract.total_amount,
+                              });
+                              setContractRecipients([{ email: '', name: '' }]);
+                              setShowContractEmailDialog(true);
+                            }}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Send to multiple recipients</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Badge 
+                      variant={contract.status === 'signed' ? 'default' : 'outline'} 
+                      className={cn(
+                        "text-[10px]",
+                        contract.status === 'signed' && 'bg-green-500 text-white'
+                      )}
+                    >
+                      {contract.status}
+                    </Badge>
                   </div>
                 </div>
               ))}
@@ -4999,6 +5120,103 @@ export default function Stage8FinalReview({
           </DialogContent>
         </Dialog>
       )}
+      
+      {/* Multi-recipient Contract Email Dialog */}
+      <Dialog open={showContractEmailDialog} onOpenChange={setShowContractEmailDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-pink-500" />
+              Send Contract to Multiple Recipients
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedContractForEmail && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-sm font-medium">#{selectedContractForEmail.contract_number}</p>
+                {selectedContractForEmail.total_amount && (
+                  <p className="text-lg font-bold text-pink-600">
+                    ${selectedContractForEmail.total_amount.toLocaleString()}
+                  </p>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Recipients</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setContractRecipients(prev => [...prev, { email: '', name: '' }])}
+                    className="h-7 gap-1 text-xs"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add
+                  </Button>
+                </div>
+                
+                {contractRecipients.map((recipient, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Name"
+                      value={recipient.name}
+                      onChange={(e) => {
+                        const newRecipients = [...contractRecipients];
+                        newRecipients[idx].name = e.target.value;
+                        setContractRecipients(newRecipients);
+                      }}
+                      className="w-28 h-9 text-sm"
+                    />
+                    <Input
+                      type="email"
+                      placeholder="Email address"
+                      value={recipient.email}
+                      onChange={(e) => {
+                        const newRecipients = [...contractRecipients];
+                        newRecipients[idx].email = e.target.value;
+                        setContractRecipients(newRecipients);
+                      }}
+                      className="flex-1 h-9 text-sm"
+                    />
+                    {contractRecipients.length > 1 && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                        onClick={() => {
+                          setContractRecipients(prev => prev.filter((_, i) => i !== idx));
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowContractEmailDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendContractToMultiple}
+              disabled={isSendingToMultiple || contractRecipients.every(r => !r.email)}
+              className="gap-2 bg-pink-600 hover:bg-pink-700"
+            >
+              {isSendingToMultiple ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Send to {contractRecipients.filter(r => r.email).length} Recipient{contractRecipients.filter(r => r.email).length !== 1 ? 's' : ''}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

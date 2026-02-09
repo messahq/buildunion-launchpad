@@ -102,12 +102,14 @@ Deno.serve(async (req) => {
       }
 
       // Update contract with client signature
+      // ✓ FIXED: After client signs, set status to "signed" (not "pending_contractor")
+      // The client is the one signing the contract - this is the final step
       const { error: signError } = await supabase
         .from("contracts")
         .update({
           client_signature: signature,
           client_signed_at: new Date().toISOString(),
-          status: contract.contractor_signature ? "signed" : "pending_contractor",
+          status: "signed", // ✓ Contract is fully signed when client signs
         })
         .eq("id", contract.id);
 
