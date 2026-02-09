@@ -1819,6 +1819,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           material_total: materialTotal,
           labor_total: laborTotal,
           markup_percent: markupPercent,
+          waste_percent: wastePercent, // ✓ CRITICAL: Store waste factor for Stage 8 display
         },
       });
       
