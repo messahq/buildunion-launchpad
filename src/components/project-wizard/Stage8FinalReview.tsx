@@ -112,6 +112,7 @@ import { usePendingBudgetChanges } from "@/hooks/usePendingBudgetChanges";
 import { PendingApprovalModal } from "@/components/projects/PendingApprovalModal";
 import { PendingChangeBadge } from "@/components/projects/PendingChangeBadge";
 import { Stage8CommandBar } from "@/components/project-wizard/Stage8CommandBar";
+import { ConflictMapModal } from "@/components/project-wizard/ConflictMapModal";
 
 // ============================================
 // VISIBILITY TIERS
@@ -472,6 +473,9 @@ export default function Stage8FinalReview({
   
   // ✓ Pending Budget Changes - Foreman Modification Loop
   const [showPendingApprovalModal, setShowPendingApprovalModal] = useState(false);
+  
+  // ✓ Conflict Map Modal
+  const [showConflictMap, setShowConflictMap] = useState(false);
 
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
@@ -7306,12 +7310,17 @@ export default function Stage8FinalReview({
           const sendBtn = document.querySelector('[data-action="send-to-client"]') as HTMLButtonElement;
           if (sendBtn) sendBtn.click();
         }}
-        onConflictMap={() => {
-          // Future: Open conflict map modal
-          toast.info('Conflict Map', { description: 'Coming soon - visual citation conflict analysis' });
-        }}
+        onConflictMap={() => setShowConflictMap(true)}
         onMessaSynthesis={() => setShowMessaPreview(true)}
         isGeneratingMessa={isGeneratingAI}
+      />
+      
+      {/* Conflict Map Modal */}
+      <ConflictMapModal
+        open={showConflictMap}
+        onOpenChange={setShowConflictMap}
+        citations={citations}
+        projectData={projectData}
       />
       
       {/* Bottom padding for command bar */}
