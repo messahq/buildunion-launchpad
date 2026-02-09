@@ -99,7 +99,8 @@ import {
   logCriticalError,
 } from "@/lib/projectPersistence";
 import { WeatherWidget } from "@/components/WeatherWidget";
-import { 
+import { WeatherMapModal } from "@/components/WeatherMapModal";
+import {
   downloadContractPDF, 
   buildContractHTML,
   type ContractTemplateData 
@@ -392,6 +393,7 @@ export default function Stage8FinalReview({
   
   const [isFinancialLocked, setIsFinancialLocked] = useState(true);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
+  const [weatherModalOpen, setWeatherModalOpen] = useState(false);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   const [clientEmail, setClientEmail] = useState('');
   const [clientName, setClientName] = useState('');
@@ -2206,11 +2208,16 @@ export default function Stage8FinalReview({
             
             {/* Integrated Weather Widget - only if we have an address */}
             {weatherAddress ? (
-              <WeatherWidget 
-                location={weatherAddress}
-                showForecast={true}
-                className="border-0 shadow-none"
-              />
+              <button
+                onClick={() => setWeatherModalOpen(true)}
+                className="w-full cursor-pointer text-left hover:opacity-90 transition-opacity"
+              >
+                <WeatherWidget 
+                  location={weatherAddress}
+                  showForecast={true}
+                  className="border-0 shadow-none"
+                />
+              </button>
             ) : (
               <div className="p-4 rounded-lg bg-muted/30 border border-dashed text-center">
                 <Cloud className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -3266,6 +3273,23 @@ export default function Stage8FinalReview({
           </div>
         </div>
       </div>
+      </div>
+
+      {/* Weather & Location Modal */}
+      <WeatherMapModal
+        open={weatherModalOpen}
+        onOpenChange={setWeatherModalOpen}
+        location={
+          citations.find(c => c.cite_type === 'LOCATION')?.answer || undefined
+        }
+        lat={
+          (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lat || undefined
+        }
+        lon={
+          (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lng || undefined
+        }
+        projectName={projectData?.name || projectName}
+      />
     </div>
   );
 }
