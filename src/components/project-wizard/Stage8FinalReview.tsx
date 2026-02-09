@@ -414,6 +414,7 @@ export default function Stage8FinalReview({
     contract_number: string;
     share_token?: string;
     total_amount?: number | null;
+    status?: string;
   } | null>(null);
   const [contractRecipients, setContractRecipients] = useState<{email: string; name: string}[]>([
     { email: '', name: '' }
@@ -2186,12 +2187,21 @@ export default function Stage8FinalReview({
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className={cn(
+                              "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity",
+                              contract.status === 'signed' && "text-muted-foreground"
+                            )}
+                            disabled={contract.status === 'signed'}
                             onClick={() => {
+                              if (contract.status === 'signed') {
+                                toast.info('This contract is already signed. Create a new contract for additional parties.');
+                                return;
+                              }
                               setSelectedContractForEmail({
                                 id: contract.id,
                                 contract_number: contract.contract_number,
                                 total_amount: contract.total_amount,
+                                status: contract.status,
                               });
                               setContractRecipients([{ email: '', name: '' }]);
                               setShowContractEmailDialog(true);
@@ -2200,7 +2210,11 @@ export default function Stage8FinalReview({
                             <Plus className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Send to multiple recipients</TooltipContent>
+                        <TooltipContent>
+                          {contract.status === 'signed' 
+                            ? 'Contract already signed - create new for additional parties' 
+                            : 'Send to multiple recipients'}
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                     <Badge 
