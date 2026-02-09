@@ -1880,18 +1880,23 @@ export default function Stage8FinalReview({
         || (tradeCitation?.metadata?.trade_key as string)
         || null;  // "flooring", "painting", "drywall"
       
-      // Fallback to WORK_TYPE if no TRADE_SELECTION
+      // ✓ CRITICAL FIX: Do NOT use WORK_TYPE for template lookup
+      // WORK_TYPE = parent category (e.g. "Interior Finishing")
+      // TRADE_SELECTION = specific subwork type (e.g. "Flooring", "Painting")
+      // Only TRADE_SELECTION determines which materials to show
       const workTypeAnswer = workTypeCitation?.answer || null;
-      const workTypeKey = (workTypeCitation?.metadata?.work_type_key as string) || null;
       
-      // Get the best available trade value - prefer TRADE_SELECTION
+      // ✓ Display label uses TRADE_SELECTION if available, falls back to WORK_TYPE for display only
       const displayLabel = selectedTradeLabel || workTypeAnswer || null;
-      const tradeKey = selectedTradeKey || workTypeKey || displayLabel?.toLowerCase().replace(/ /g, '_') || null;
       
-      console.log('[Stage8] Panel 3 - Resolved trade:', { displayLabel, tradeKey });
+      // ✓ CRITICAL: tradeKey for template lookup ONLY comes from TRADE_SELECTION, NOT WORK_TYPE
+      // This ensures we don't show painting materials when user selected flooring
+      const tradeKey = selectedTradeKey || null;
+      
+      console.log('[Stage8] Panel 3 - Resolved trade:', { displayLabel, tradeKey, hasTradeSelection: !!tradeCitation });
       
       // ✓ UNIVERSAL TEMPLATE GENERATOR: Trade-specifikus anyagszükséglet és task lista
-      // Only calculate if we have actual GFA data - NO FALLBACK
+      // Only calculate if we have actual TRADE_SELECTION data - NO FALLBACK from WORK_TYPE
       const getTemplateForTrade = (trade: string, gfa: number | null) => {
         if (gfa === null || gfa === 0) {
           return { materials: [], tasks: [], hasData: false };
@@ -1899,6 +1904,7 @@ export default function Stage8FinalReview({
         
         const tradeLower = trade.toLowerCase().replace(/ /g, '_');
         
+        // ✓ Templates are NEUTRAL - they show what the user selected as TRADE_SELECTION
         const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
           painting: {
             materials: [
@@ -1928,14 +1934,7 @@ export default function Stage8FinalReview({
             ],
             tasks: ['Demolition', 'Framing check', 'Hang drywall', 'Tape & mud', 'Sand & finish'],
           },
-          interior_finishing: {
-            materials: [
-              { name: 'Interior Paint', qty: Math.ceil(gfa / 350), unit: 'gal' },
-              { name: 'Primer', qty: Math.ceil(gfa / 400), unit: 'gal' },
-              { name: 'Supplies', qty: 1, unit: 'kit' },
-            ],
-            tasks: ['Surface prep', 'Priming', 'Finish coat', 'Touch-ups'],
-          },
+          // ✓ NO interior_finishing fallback - parent categories don't have specific materials
         };
         
         // Try exact match, then partial match
@@ -2095,9 +2094,13 @@ export default function Stage8FinalReview({
           {!tradeTemplate.hasData && (
             <div className="p-3 rounded-lg bg-muted/30 border border-dashed text-center">
               <p className="text-xs text-muted-foreground italic">
-                {!hasTradeCitation 
-                  ? 'No trade selected in wizard' 
-                  : 'GFA required to calculate materials'}
+                {!tradeCitation && workTypeCitation
+                  ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage' 
+                  : !hasTradeCitation 
+                    ? 'No trade selected in wizard' 
+                    : templateGfaValue === null
+                      ? 'GFA required to calculate materials'
+                      : 'Template will appear after trade selection'}
               </p>
             </div>
           )}
@@ -2666,8 +2669,17 @@ export default function Stage8FinalReview({
           const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
           const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
           
-          const tradeLabel = tradeCitation?.answer || workTypeCitation?.answer || null;
-          const tradeKey = (tradeCitation?.value as string) || (tradeCitation?.metadata?.trade_key as string) || tradeLabel?.toLowerCase().replace(/ /g, '_') || null;
+          // ✓ FIXED: Prioritize TRADE_SELECTION (subwork type like "Flooring") over WORK_TYPE (parent like "Interior Finishing")
+          // TRADE_SELECTION.answer = "Flooring", TRADE_SELECTION.value = "flooring"
+          const tradeLabel = tradeCitation?.answer || null;
+          const tradeKey = (tradeCitation?.value as string) 
+            || (tradeCitation?.metadata?.trade_key as string) 
+            || (templateCitation?.metadata?.trade_key as string)
+            || tradeLabel?.toLowerCase().replace(/ /g, '_') 
+            || null;
+          
+          // ✓ ONLY use WORK_TYPE as display fallback, NOT for template lookup
+          const displayLabel = tradeLabel || workTypeCitation?.answer || null;
           
           const gfaValue = typeof gfaCitation?.value === 'number' 
             ? gfaCitation.value 
@@ -2679,11 +2691,13 @@ export default function Stage8FinalReview({
             ? templateCitation.metadata.waste_percent
             : 10;
           
-          // Template generator
+          // ✓ UNIVERSAL TEMPLATE GENERATOR - Dynamically generates materials based on user's TRADE_SELECTION
           const getTemplateForTrade = (trade: string, gfa: number | null) => {
             if (gfa === null || gfa === 0) return { materials: [], tasks: [], hasData: false };
             
             const tradeLower = trade.toLowerCase().replace(/ /g, '_');
+            
+            // ✓ Template definitions - NEUTRAL, based on user selection
             const templates: Record<string, { materials: {name: string; qty: number; unit: string}[]; tasks: string[] }> = {
               painting: {
                 materials: [
@@ -2715,6 +2729,7 @@ export default function Stage8FinalReview({
               },
             };
             
+            // ✓ Try exact match first, then partial match
             const result = templates[tradeLower] 
               || Object.entries(templates).find(([key]) => tradeLower.includes(key))?.[1]
               || null;
@@ -2830,7 +2845,13 @@ export default function Stage8FinalReview({
                 <div className="p-8 rounded-xl border-2 border-dashed text-center">
                   <Hammer className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">
-                    {!tradeLabel ? 'No trade selected in wizard' : 'GFA required to calculate materials'}
+                    {!tradeCitation && workTypeCitation
+                      ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage'
+                      : !tradeLabel 
+                        ? 'No trade selected in wizard' 
+                        : gfaValue === null
+                          ? 'GFA required to calculate materials'
+                          : 'Template will appear after trade selection'}
                   </p>
                 </div>
               )}
