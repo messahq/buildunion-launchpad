@@ -46,6 +46,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { CitationBadge, InlineCiteBadge } from "./CitationBadge";
 
 interface TemplateItem {
   id: string;
@@ -64,6 +65,7 @@ interface DefinitionFlowStageProps {
   userId: string;
   gfaValue: number;
   onFlowComplete: (citations: Citation[]) => void;
+  onCitationClick?: (citationId: string) => void;
   className?: string;
 }
 
@@ -177,6 +179,12 @@ interface ChatPanelProps {
   stage5Active: boolean;
   uploadedFiles: UploadedFile[];
   isUploading: boolean;
+  // Citation references for clickable badges
+  tradeCitationId?: string;
+  teamCitationId?: string;
+  siteCitationId?: string;
+  timelineCitationId?: string;
+  onCitationClick?: (citationId: string) => void;
   onTradeSelect: (trade: string) => void;
   onLockTemplate: () => void;
   onTeamSizeSelect: (size: string) => void;
@@ -208,6 +216,11 @@ const ChatPanel = ({
   stage5Active,
   uploadedFiles,
   isUploading,
+  tradeCitationId,
+  teamCitationId,
+  siteCitationId,
+  timelineCitationId,
+  onCitationClick,
   onTradeSelect,
   onLockTemplate,
   onTeamSizeSelect,
@@ -394,10 +407,15 @@ const ChatPanel = ({
                 >
                   <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
                     <p className="font-medium">{TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
-                      <FileText className="h-3 w-3" />
-                      <span>cite_trade...</span>
-                    </div>
+                    {tradeCitationId && (
+                      <button
+                        onClick={() => onCitationClick?.(tradeCitationId)}
+                        className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <FileText className="h-3 w-3" />
+                        <span className="font-mono">cite: [{tradeCitationId.slice(0, 8)}]</span>
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -592,10 +610,15 @@ const ChatPanel = ({
                         ).join(', ')}
                       </p>
                     )}
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
-                      <FileText className="h-3 w-3" />
-                      <span>cite_execution...</span>
-                    </div>
+                    {teamCitationId && (
+                      <button
+                        onClick={() => onCitationClick?.(teamCitationId)}
+                        className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <FileText className="h-3 w-3" />
+                        <span className="font-mono">cite: [{teamCitationId.slice(0, 8)}]</span>
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -669,6 +692,15 @@ const ChatPanel = ({
                   <p className="font-medium">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
                   {siteCondition === 'demolition' && (
                     <p className="text-xs text-white/80">+${demolitionCost.toLocaleString()} added</p>
+                  )}
+                  {siteCitationId && (
+                    <button
+                      onClick={() => onCitationClick?.(siteCitationId)}
+                      className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <FileText className="h-3 w-3" />
+                      <span className="font-mono">cite: [{siteCitationId.slice(0, 8)}]</span>
+                    </button>
                   )}
                 </div>
               </motion.div>
@@ -1673,7 +1705,7 @@ const CanvasPanel = ({
 // MAIN COMPONENT
 // ============================================
 const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>(
-  ({ projectId, userId, gfaValue, onFlowComplete, className }, ref) => {
+  ({ projectId, userId, gfaValue, onFlowComplete, onCitationClick, className }, ref) => {
     // Flow step state
     const [currentSubStep, setCurrentSubStep] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
@@ -2297,6 +2329,11 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             stage5Active={stage5Active}
             uploadedFiles={uploadedFiles}
             isUploading={isUploading}
+            tradeCitationId={flowCitations.find(c => c.cite_type === CITATION_TYPES.TRADE_SELECTION)?.id}
+            teamCitationId={flowCitations.find(c => c.cite_type === CITATION_TYPES.TEAM_SIZE)?.id}
+            siteCitationId={flowCitations.find(c => c.cite_type === CITATION_TYPES.SITE_CONDITION)?.id}
+            timelineCitationId={flowCitations.find(c => c.cite_type === CITATION_TYPES.TIMELINE)?.id}
+            onCitationClick={onCitationClick}
             onTradeSelect={handleTradeSelect}
             onLockTemplate={handleLockTemplate}
             onTeamSizeSelect={handleTeamSizeSelect}

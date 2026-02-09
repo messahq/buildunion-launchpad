@@ -440,6 +440,7 @@ const BuildUnionNewProject = () => {
                   projectId={projectId}
                   userId={user.id}
                   onGFALocked={handleGFALockComplete}
+                  onCitationClick={handleCitationClick}
                   className="w-full"
                 />
               </motion.div>
@@ -460,6 +461,7 @@ const BuildUnionNewProject = () => {
                 userId={user.id}
                 gfaValue={gfaValue}
                 onFlowComplete={handleDefinitionFlowComplete}
+                onCitationClick={handleCitationClick}
                 className="h-full"
               />
             </motion.div>

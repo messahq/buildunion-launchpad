@@ -8,7 +8,7 @@ import { useState, useRef, useEffect, forwardRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, FileText, MapPin, Building2, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Send, MapPin, Building2, Loader2, Sparkles } from "lucide-react";
 import { Citation, CITATION_TYPES, getCitationType, createCitation } from "@/types/citation";
 import { WORK_TYPES, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
 import AddressAutocomplete, { type PlaceData } from "@/components/AddressAutocomplete";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CitationBadge } from "./CitationBadge";
 
 interface ChatMessage {
   id: string;
@@ -45,7 +46,7 @@ const WIZARD_QUESTIONS = [
     key: 'project_name',
     question: 'What would you like to name this project?',
     placeholder: 'e.g., Downtown Office Renovation',
-    icon: FileText,
+    icon: Sparkles,
     citeType: CITATION_TYPES.PROJECT_NAME,
   },
   {
@@ -414,32 +415,16 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 >
                   <p className="text-sm leading-relaxed">{message.content}</p>
                   
-                  {/* Citation Badge */}
+                  {/* Citation Badge - Clickable to scroll to source */}
                   {message.citation && (
-                    <button
-                      onClick={() => onCitationClick(message.citation!.id)}
-                      className={cn(
-                        "mt-2 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full transition-all",
-                        message.type === 'user'
-                          ? "bg-white/20 text-white hover:bg-white/30"
-                          : "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50"
-                      )}
-                    >
-                      {message.isSaving ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : message.saveError ? (
-                        <AlertCircle className="h-3 w-3" />
-                      ) : (
-                        <FileText className="h-3 w-3" />
-                      )}
-                      <span className="font-mono">
-                        {message.isSaving 
-                          ? "Saving..." 
-                          : message.saveError 
-                            ? "Failed" 
-                            : `${message.citation.id.slice(0, 12)}...`}
-                      </span>
-                    </button>
+                    <CitationBadge
+                      citation={message.citation}
+                      onClick={onCitationClick}
+                      variant={message.type === 'user' ? 'user' : 'system'}
+                      isSaving={message.isSaving}
+                      saveError={message.saveError}
+                      className="mt-2"
+                    />
                   )}
                 </div>
               </motion.div>
