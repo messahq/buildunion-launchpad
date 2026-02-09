@@ -3217,8 +3217,100 @@ export default function Stage8FinalReview({
           </div>
         )}
 
-        {/* Gantt Chart */}
+        {/* Gantt Chart with Time Scale */}
         <div className="space-y-1">
+          {/* ── Time Scale Header ── */}
+          {projectStart && projectEnd && totalDuration && totalDuration > 0 && (() => {
+            const startDate = new Date(projectStart);
+            const endDate = new Date(projectEnd);
+            const durationDays = totalDuration / (1000 * 60 * 60 * 24);
+            
+            // Decide granularity: weekly if <= 90 days, otherwise monthly
+            const useWeekly = durationDays <= 90;
+            
+            const ticks: { label: string; leftPct: number }[] = [];
+            
+            if (useWeekly) {
+              // Generate weekly ticks
+              const cursor = new Date(startDate);
+              // Align to next Monday
+              const dayOfWeek = cursor.getDay();
+              if (dayOfWeek !== 1) {
+                cursor.setDate(cursor.getDate() + ((8 - dayOfWeek) % 7));
+              }
+              while (cursor.getTime() <= endDate.getTime()) {
+                const pct = ((cursor.getTime() - projectStart) / totalDuration) * 100;
+                ticks.push({
+                  label: format(cursor, 'MMM d'),
+                  leftPct: Math.round(pct * 10) / 10,
+                });
+                cursor.setDate(cursor.getDate() + 7);
+              }
+            } else {
+              // Generate monthly ticks (1st of each month)
+              const cursor = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+              while (cursor.getTime() <= endDate.getTime()) {
+                const pct = ((cursor.getTime() - projectStart) / totalDuration) * 100;
+                ticks.push({
+                  label: format(cursor, 'MMM yyyy'),
+                  leftPct: Math.round(pct * 10) / 10,
+                });
+                cursor.setMonth(cursor.getMonth() + 1);
+              }
+            }
+
+            return (
+              <div className="mb-2">
+                {/* Scale type label */}
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[9px] uppercase tracking-widest text-slate-500 font-mono">
+                    {useWeekly ? '▸ Weekly' : '▸ Monthly'} Timeline
+                  </span>
+                  <span className="text-[9px] text-slate-600 font-mono">
+                    {format(startDate, 'MMM d')} → {format(endDate, 'MMM d, yyyy')}
+                  </span>
+                </div>
+                {/* Ruler bar */}
+                <div className="relative h-6 bg-slate-800/40 rounded-md border border-slate-700/30 overflow-hidden">
+                  {/* Start marker */}
+                  <div className="absolute top-0 left-0 h-full w-px bg-indigo-500/40" />
+                  {/* End marker */}
+                  <div className="absolute top-0 right-0 h-full w-px bg-indigo-500/40" />
+                  {/* Today marker */}
+                  {(() => {
+                    const now = Date.now();
+                    if (now >= projectStart && now <= projectEnd) {
+                      const todayPct = ((now - projectStart) / totalDuration) * 100;
+                      return (
+                        <div
+                          className="absolute top-0 h-full w-0.5 bg-emerald-400/70 z-10"
+                          style={{ left: `${todayPct}%` }}
+                        >
+                          <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1 py-0 rounded-b bg-emerald-500/80 text-[7px] text-white font-bold tracking-wider">
+                            NOW
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  {/* Tick marks */}
+                  {ticks.map((tick, i) => (
+                    <div
+                      key={i}
+                      className="absolute top-0 h-full flex flex-col items-center"
+                      style={{ left: `${tick.leftPct}%` }}
+                    >
+                      <div className="w-px h-2 bg-slate-500/50" />
+                      <span className="text-[7px] text-slate-500 font-mono mt-0.5 whitespace-nowrap -translate-x-1/2">
+                        {tick.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           {/* Phase header row */}
           {tasksByPhase.map(phase => {
             if (phase.tasks.length === 0 && !expandedPhases.has(phase.key)) return null;
