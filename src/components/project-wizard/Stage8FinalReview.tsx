@@ -1283,40 +1283,31 @@ export default function Stage8FinalReview({
     return member?.name || 'Unassigned';
   }, [teamMembers]);
   
-  // Render Panel 5 - Timeline with Granular Tasklist
-  // ✓ KÉNYSZERÍTETT ADAT-BEHÚZÁS: Ha nincs DB task, default fázisok megjelenítése
-  // ✓ DEMOLITION: Only show demolition phase if SITE_CONDITION includes demolition
-  const renderPanel5Content = useCallback(() => {
-    const panelCitations = getCitationsForPanel(['TIMELINE', 'END_DATE', 'DNA_FINALIZED']);
-    
-    // ✓ Check SITE_CONDITION citation for demolition
-    const siteConditionCitation = citations.find(c => c.cite_type === 'SITE_CONDITION');
-    const hasDemolition = siteConditionCitation?.answer?.toLowerCase().includes('demolition') 
-      || siteConditionCitation?.metadata?.demolition_needed === true
-      || (typeof siteConditionCitation?.value === 'string' && siteConditionCitation.value.toLowerCase().includes('demolition'));
-    
-    // ✓ Default feladatok ha a tasks üres - CONDITIONALLY include demolition
-    const baseTasks: TaskWithChecklist[] = tasks.length > 0 ? tasks : [
-      ...(hasDemolition ? [
-        { id: 'default-demo-1', title: 'Site demolition & debris removal', status: 'pending', priority: 'high', phase: 'demolition', assigned_to: userId, checklist: [{ id: 'demo-1-start', text: 'Task started', done: false }, { id: 'demo-1-complete', text: 'Task completed', done: false }, { id: 'demo-1-verify', text: 'Verification photo', done: false }] },
-      ] : []),
-      { id: 'default-prep-1', title: 'Site measurements & material staging', status: 'pending', priority: 'medium', phase: 'preparation', assigned_to: userId, checklist: [{ id: 'prep-1-start', text: 'Task started', done: false }, { id: 'prep-1-complete', text: 'Task completed', done: false }, { id: 'prep-1-verify', text: 'Verification photo', done: false }] },
-      { id: 'default-prep-2', title: 'Equipment setup & safety check', status: 'pending', priority: 'medium', phase: 'preparation', assigned_to: userId, checklist: [{ id: 'prep-2-start', text: 'Task started', done: false }, { id: 'prep-2-complete', text: 'Task completed', done: false }, { id: 'prep-2-verify', text: 'Verification photo', done: false }] },
-      { id: 'default-install-1', title: 'Core installation work', status: 'pending', priority: 'high', phase: 'installation', assigned_to: userId, checklist: [{ id: 'install-1-start', text: 'Task started', done: false }, { id: 'install-1-complete', text: 'Task completed', done: false }, { id: 'install-1-verify', text: 'Verification photo', done: false }] },
-      { id: 'default-install-2', title: 'Secondary installations', status: 'pending', priority: 'medium', phase: 'installation', assigned_to: userId, checklist: [{ id: 'install-2-start', text: 'Task started', done: false }, { id: 'install-2-complete', text: 'Task completed', done: false }, { id: 'install-2-verify', text: 'Verification photo', done: false }] },
-      { id: 'default-finish-1', title: 'Final QC inspection & cleanup', status: 'pending', priority: 'high', phase: 'finishing', assigned_to: userId, checklist: [{ id: 'finish-1-start', text: 'Task started', done: false }, { id: 'finish-1-complete', text: 'Task completed', done: false }, { id: 'finish-1-verify', text: 'Verification photo', done: false }] },
-    ];
-    
-    // ✓ Filter phases - only show demolition if hasDemolition
-    const activePhasesConfig = hasDemolition 
-      ? TASK_PHASES 
-      : TASK_PHASES.filter(p => p.key !== 'demolition');
-    
-    // Group tasks by phase
-    const tasksByPhase = activePhasesConfig.map(phase => ({
-      ...phase,
-      tasks: baseTasks.filter(t => t.phase === phase.key),
-    }));
+   // Render Panel 5 - Timeline with Granular Tasklist
+   // ✓ REAL DB TASKS: Display actual project_tasks with assignee names
+   // ✓ DEMOLITION: Only show demolition phase if SITE_CONDITION includes demolition
+   const renderPanel5Content = useCallback(() => {
+     const panelCitations = getCitationsForPanel(['TIMELINE', 'END_DATE', 'DNA_FINALIZED']);
+     
+     // ✓ Check SITE_CONDITION citation for demolition
+     const siteConditionCitation = citations.find(c => c.cite_type === 'SITE_CONDITION');
+     const hasDemolition = siteConditionCitation?.answer?.toLowerCase().includes('demolition') 
+       || siteConditionCitation?.metadata?.demolition_needed === true
+       || (typeof siteConditionCitation?.value === 'string' && siteConditionCitation.value.toLowerCase().includes('demolition'));
+     
+     // ✓ Use REAL DB tasks - no fallback to default phases
+     const baseTasks: TaskWithChecklist[] = tasks;
+     
+     // ✓ Filter phases - only show demolition if hasDemolition
+     const activePhasesConfig = hasDemolition 
+       ? TASK_PHASES 
+       : TASK_PHASES.filter(p => p.key !== 'demolition');
+     
+     // Group tasks by phase
+     const tasksByPhase = activePhasesConfig.map(phase => ({
+       ...phase,
+       tasks: baseTasks.filter(t => t.phase === phase.key),
+     }));
     
     return (
       <div className="space-y-4">
@@ -1407,25 +1398,31 @@ export default function Stage8FinalReview({
                             </div>
                             
                             {/* Assignee Selector */}
-                            <div className="flex items-center gap-2">
-                              <User className="h-3.5 w-3.5 text-muted-foreground" />
-                              <Select
-                                value={task.assigned_to}
-                                onValueChange={(value) => updateTaskAssignee(task.id, value)}
-                                disabled={!canEdit}
-                              >
-                                <SelectTrigger className="h-7 text-xs w-40">
-                                  <SelectValue placeholder="Assign to..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {teamMembers.map(member => (
-                                    <SelectItem key={member.userId} value={member.userId} className="text-xs">
-                                      {member.name} ({member.role})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                             <div className="flex items-center gap-2">
+                               <User className="h-3.5 w-3.5 text-muted-foreground" />
+                               <Select
+                                 value={task.assigned_to}
+                                 onValueChange={(value) => updateTaskAssignee(task.id, value)}
+                                 disabled={!canEdit}
+                               >
+                                 <SelectTrigger className="h-7 text-xs w-40">
+                                   <SelectValue 
+                                     placeholder="Assign to..." 
+                                     defaultValue={
+                                       teamMembers.find(m => m.userId === task.assigned_to)?.name 
+                                       || 'Assign to...'
+                                     }
+                                   />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   {teamMembers.map(member => (
+                                     <SelectItem key={member.userId} value={member.userId} className="text-xs">
+                                       {member.name} ({member.role})
+                                     </SelectItem>
+                                   ))}
+                                 </SelectContent>
+                               </Select>
+                             </div>
                             
                             {/* Checklist */}
                             <div className="pl-2 space-y-1.5 border-l-2 border-muted">
