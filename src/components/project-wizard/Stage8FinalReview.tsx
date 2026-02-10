@@ -3929,17 +3929,36 @@ export default function Stage8FinalReview({
     
     return (
       <div className="space-y-4">
-        {/* Upload Section */}
+        {/* ─── Futuristic Header ─── */}
+        <div className="flex items-center justify-between p-2.5 rounded-xl border-2 border-indigo-300 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 via-violet-50 to-purple-50 dark:from-indigo-950/30 dark:via-violet-950/30 dark:to-purple-950/30 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+              <FolderOpen className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 block">Document Vault</span>
+              <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono">
+                {documents.length} files · {contracts.length} contracts
+              </span>
+            </div>
+          </div>
+          {panelCitations.length > 0 && (
+            <span className="text-[10px] text-violet-600 dark:text-violet-400 font-mono bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 rounded">
+              {panelCitations.filter(c => c.id).length} cited
+            </span>
+          )}
+        </div>
+
+        {/* ─── Upload Zone ─── */}
         {canEdit && (
-          <div className="space-y-3">
-            {/* Category Selector */}
+          <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Upload to:</span>
+              <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono uppercase tracking-wider">Upload to:</span>
               <Select
                 value={selectedUploadCategory}
                 onValueChange={(v) => setSelectedUploadCategory(v as DocumentCategory)}
               >
-                <SelectTrigger className="h-8 w-32 text-xs">
+                <SelectTrigger className="h-7 w-28 text-[11px] border-indigo-200 dark:border-indigo-700">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -3951,17 +3970,15 @@ export default function Stage8FinalReview({
                 </SelectContent>
               </Select>
             </div>
-            
-            {/* Drag & Drop Zone */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={cn(
-                "border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer",
+                "border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer",
                 isDraggingOver 
-                  ? "border-pink-500 bg-pink-50 dark:bg-pink-950/30" 
-                  : "border-muted-foreground/30 hover:border-pink-400 hover:bg-pink-50/50 dark:hover:bg-pink-950/20"
+                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30" 
+                  : "border-indigo-300/50 dark:border-indigo-700/50 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
               )}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -3974,235 +3991,191 @@ export default function Stage8FinalReview({
               />
               {isUploading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-pink-500" />
-                  <span className="text-sm text-pink-600">Uploading...</span>
+                  <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+                  <span className="text-sm text-indigo-600 dark:text-indigo-400">Uploading...</span>
                 </div>
               ) : (
                 <>
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Drag & drop files here or <span className="text-pink-600 font-medium">click to browse</span>
+                  <Upload className="h-6 w-6 mx-auto text-indigo-400 mb-1" />
+                  <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                    Drop files or <span className="font-semibold">click to browse</span>
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    PDF, Images, Blueprints, Contracts
-                  </p>
+                  <p className="text-[10px] text-indigo-400 dark:text-indigo-500 mt-0.5">PDF · Images · Blueprints</p>
                 </>
               )}
             </div>
-            
-            {/* Upload Button */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="w-full gap-2 border-pink-300 text-pink-700 hover:bg-pink-50"
-            >
-              <FileUp className="h-4 w-4" />
-              Upload Document
-            </Button>
           </div>
         )}
         
-        {/* Documents by Category with Citation Badges */}
-        <div className="space-y-3">
-          {docsByCategory.map(cat => (
-            <div key={cat.key} className={cn(
-              "rounded-lg border p-3 transition-all",
-              cat.documents.length > 0 ? cat.color.replace('text-', 'bg-').replace('-600', '-50') + ' dark:' + cat.color.replace('text-', 'bg-').replace('-600', '-950/20') : "bg-muted/30"
-            )}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <cat.icon className={cn("h-4 w-4", cat.color)} />
-                  <span className={cn("text-xs font-medium", cat.color)}>{cat.label}</span>
+        {/* ─── Documents by Category ─── */}
+        <div className="space-y-2.5">
+          {docsByCategory.map(cat => {
+            const catColors = [
+              { border: 'border-cyan-200 dark:border-cyan-700/30', bg: 'bg-gradient-to-r from-cyan-50/80 to-sky-50/60 dark:from-cyan-950/30 dark:to-sky-950/20', text: 'text-cyan-700 dark:text-cyan-300', icon: 'text-cyan-600 dark:text-cyan-400', badge: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' },
+              { border: 'border-violet-200 dark:border-violet-700/30', bg: 'bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/30 dark:to-purple-950/20', text: 'text-violet-700 dark:text-violet-300', icon: 'text-violet-600 dark:text-violet-400', badge: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
+              { border: 'border-emerald-200 dark:border-emerald-700/30', bg: 'bg-gradient-to-r from-emerald-50/80 to-teal-50/60 dark:from-emerald-950/30 dark:to-teal-950/20', text: 'text-emerald-700 dark:text-emerald-300', icon: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
+              { border: 'border-amber-200 dark:border-amber-700/30', bg: 'bg-gradient-to-r from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20', text: 'text-amber-700 dark:text-amber-300', icon: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
+            ];
+            const catIdx = DOCUMENT_CATEGORIES.findIndex(c => c.key === cat.key);
+            const colors = catColors[catIdx % catColors.length];
+
+            return (
+              <div key={cat.key} className={cn(
+                "rounded-xl border-2 p-2.5 transition-all",
+                cat.documents.length > 0 ? `${colors.border} ${colors.bg}` : "border-dashed border-gray-200 dark:border-gray-700/30 bg-gray-50/50 dark:bg-gray-900/20"
+              )}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <cat.icon className={cn("h-3.5 w-3.5", cat.documents.length > 0 ? colors.icon : "text-gray-400")} />
+                    <span className={cn("text-[11px] font-semibold", cat.documents.length > 0 ? colors.text : "text-gray-400")}>{cat.label}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className={cn("text-[9px] px-1.5", cat.documents.length > 0 ? colors.badge : "")}>{cat.documents.length}</Badge>
+                    {cat.citationCount > 0 && (
+                      <Badge variant="outline" className="text-[9px] px-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                        {cat.citationCount} cited
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px]">{cat.documents.length} files</Badge>
-                  {cat.citationCount > 0 && (
-                    <Badge variant="outline" className="text-[10px] bg-pink-100 dark:bg-pink-900/30 text-pink-600">
-                      {cat.citationCount} cited
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              {cat.documents.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">No {cat.label.toLowerCase()} documents</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {cat.documents.slice(0, 3).map(doc => {
-                    const isImage = doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-                    const isPdf = doc.file_name.match(/\.pdf$/i);
-                    
-                    return (
-                      <div 
-                        key={doc.id} 
-                        className="group flex items-center gap-2 p-2 rounded bg-background/80 hover:bg-background border border-transparent hover:border-pink-200/50 transition-all"
-                      >
-                        {/* Clickable preview thumbnail */}
-                        <button
+                {cat.documents.length === 0 ? (
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic pl-5">No files</p>
+                ) : (
+                  <div className="space-y-1">
+                    {cat.documents.slice(0, 3).map(doc => {
+                      const isImage = doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                      const isPdf = doc.file_name.match(/\.pdf$/i);
+                      
+                      return (
+                        <div 
+                          key={doc.id} 
+                          className="group flex items-center gap-2 p-1.5 rounded-lg bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-indigo-200/50 dark:hover:border-indigo-700/30 transition-all cursor-pointer"
                           onClick={() => setPreviewDocument({ 
                             file_name: doc.file_name, 
                             file_path: doc.file_path, 
                             category: cat.key,
                             citationId: doc.citationId 
                           })}
-                          className="relative flex-shrink-0 w-10 h-10 rounded border overflow-hidden hover:ring-2 hover:ring-pink-300 transition-all"
                         >
-                          {isImage ? (
-                            <img 
-                              src={getDocumentPreviewUrl(doc.file_path)} 
-                              alt={doc.file_name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : isPdf ? (
-                            <div className="w-full h-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
-                              <FileText className="h-5 w-5 text-red-500" />
+                          {/* Thumbnail */}
+                          <div className="relative flex-shrink-0 w-9 h-9 rounded-lg border overflow-hidden">
+                            {isImage ? (
+                              <img 
+                                src={getDocumentPreviewUrl(doc.file_path)} 
+                                alt={doc.file_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : isPdf ? (
+                              <div className="w-full h-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
+                                <FileText className="h-4 w-4 text-red-500" />
+                              </div>
+                            ) : (
+                              <div className="w-full h-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                                <FileText className="h-4 w-4 text-gray-400" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                              <Eye className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                          ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center">
-                              <FileText className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                            <Eye className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                        </button>
-                        
-                        {/* File info */}
-                        <div className="flex-1 min-w-0">
-                          <span className="text-xs truncate block font-medium">{doc.file_name}</span>
-                          {doc.uploadedAt && (
-                            <span className="text-[9px] text-muted-foreground">{doc.uploadedAt}</span>
+                          
+                          {/* File info */}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[11px] truncate block font-medium text-gray-800 dark:text-gray-200">{doc.file_name}</span>
+                            {doc.uploadedAt && (
+                              <span className="text-[9px] text-gray-400">{doc.uploadedAt}</span>
+                            )}
+                          </div>
+                          
+                          {/* Actions */}
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          
+                          {doc.citationId && (
+                            <Badge variant="outline" className="text-[8px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0 px-1">
+                              [{doc.citationId.slice(0, 6)}]
+                            </Badge>
                           )}
                         </div>
-                        
-                        {/* Action buttons - visible on hover */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-7 w-7"
-                                  onClick={() => setPreviewDocument({ 
-                                    file_name: doc.file_name, 
-                                    file_path: doc.file_path, 
-                                    category: cat.key,
-                                    citationId: doc.citationId 
-                                  })}
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Preview</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-7 w-7"
-                                  onClick={() => handleDownloadDocument(doc.file_path, doc.file_name)}
-                                >
-                                  <Download className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Download</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          {canEdit && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7"
-                                    onClick={() => setPreviewDocument({ 
-                                      file_name: doc.file_name, 
-                                      file_path: doc.file_path, 
-                                      category: cat.key,
-                                      citationId: doc.citationId 
-                                    })}
-                                  >
-                                    <Send className="h-3.5 w-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Send via Email</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </div>
-                        
-                        {/* Citation badge */}
-                        {doc.citationId && (
-                          <Badge 
-                            variant="outline" 
-                            className="text-[9px] bg-pink-50 dark:bg-pink-950/30 text-pink-600 flex-shrink-0"
-                          >
-                            [{doc.citationId.slice(0, 6)}]
-                          </Badge>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {cat.documents.length > 3 && (
-                    <button 
-                      onClick={() => setFullscreenPanel('panel-6-documents')}
-                      className="text-[10px] text-pink-600 hover:text-pink-700 font-medium pl-6"
-                    >
-                      +{cat.documents.length - 3} more → View All
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                      );
+                    })}
+                    {cat.documents.length > 3 && (
+                      <button 
+                        onClick={() => setFullscreenPanel('panel-6-documents')}
+                        className={cn("text-[10px] font-medium pl-5", colors.text, "hover:underline")}
+                      >
+                        +{cat.documents.length - 3} more → View All
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         
-        {/* Contracts Section */}
-        <div className="pt-3 border-t">
+        {/* ─── Contracts Section ─── */}
+        <div className="pt-3 border-t border-indigo-200 dark:border-indigo-700/30">
           <div className="flex items-center gap-2 mb-2">
-            <FileCheck className="h-4 w-4 text-pink-600" />
-            <span className="text-xs font-medium text-pink-600">Contracts</span>
-            <Badge variant="outline" className="text-[10px]">{contracts.length}</Badge>
+            <FileCheck className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+            <span className="text-[11px] font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Contracts</span>
+            <Badge variant="outline" className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">{contracts.length}</Badge>
           </div>
           
           {contracts.length > 0 ? (
             <div className="space-y-1.5">
-              {contracts.map(contract => (
-                <div key={contract.id} className="group flex items-center justify-between p-2 rounded bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium">#{contract.contract_number}</span>
-                    {canViewFinancials && contract.total_amount && (
-                      <span className="text-xs text-muted-foreground">${contract.total_amount.toLocaleString()}</span>
-                    )}
-                  </div>
-                  <Badge 
-                    variant={contract.status === 'signed' ? 'default' : 'outline'} 
-                    className={cn(
-                      "text-[10px]",
-                      contract.status === 'signed' && 'bg-green-500 text-white'
-                    )}
+              {contracts.map(contract => {
+                const statusColor = contract.status === 'signed' 
+                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                  : contract.status === 'sent'
+                  ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700'
+                  : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700';
+                return (
+                  <div 
+                    key={contract.id} 
+                    className="group flex items-center justify-between p-2 rounded-xl border-2 border-violet-200 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/20 dark:to-purple-950/15 hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => {
+                      if (contract.share_token) {
+                        window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
+                      } else {
+                        toast.info('Contract preview not available');
+                      }
+                    }}
                   >
-                    {contract.status}
-                  </Badge>
-                </div>
-              ))}
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />
+                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">#{contract.contract_number}</span>
+                      {canViewFinancials && contract.total_amount && (
+                        <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">${contract.total_amount.toLocaleString()}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {contract.status !== 'signed' && canEdit && (
+                        <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedContractForEmail({ id: contract.id, contract_number: contract.contract_number, total_amount: contract.total_amount, status: contract.status, share_token: contract.share_token });
+                          setContractRecipients([{ email: '', name: '' }]);
+                          setShowContractEmailDialog(true);
+                        }}>
+                          <Send className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <Badge variant="outline" className={cn("text-[9px] px-1.5 border", statusColor)}>
+                        {contract.status}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">No contracts created yet</p>
-              
-              {/* Contract Type Selector */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium">Select contract type to create:</p>
-                <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 italic">No contracts yet</p>
+              {canEdit && (
+                <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { key: 'residential', label: 'Residential', icon: '🏠' },
                     { key: 'commercial', label: 'Commercial', icon: '🏢' },
@@ -4213,29 +4186,28 @@ export default function Stage8FinalReview({
                       key={type.key}
                       onClick={() => setSelectedContractType(type.key)}
                       className={cn(
-                        "flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-all",
+                        "flex items-center gap-1.5 p-2 rounded-lg border text-left text-[11px] transition-all",
                         selectedContractType === type.key
-                          ? "border-pink-500 bg-pink-50 dark:bg-pink-950/30"
-                          : "border-muted hover:border-pink-300 hover:bg-pink-50/50 dark:hover:bg-pink-950/20"
+                          ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30"
+                          : "border-gray-200 dark:border-gray-700 hover:border-violet-300 hover:bg-violet-50/50 dark:hover:bg-violet-950/20"
                       )}
                     >
-                      <span className="text-lg">{type.icon}</span>
-                      <span className="font-medium">{type.label}</span>
+                      <span>{type.icon}</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{type.label}</span>
                     </button>
                   ))}
                 </div>
-                
-                {selectedContractType && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowContractPreview(true)}
-                    className="w-full gap-2 bg-pink-600 hover:bg-pink-700 text-white"
-                  >
-                    <FileCheck className="h-4 w-4" />
-                    Create {selectedContractType.charAt(0).toUpperCase() + selectedContractType.slice(1)} Contract
-                  </Button>
-                )}
-              </div>
+              )}
+              {selectedContractType && canEdit && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowContractPreview(true)}
+                  className="w-full gap-2 bg-violet-600 hover:bg-violet-700 text-white text-xs"
+                >
+                  <FileCheck className="h-3.5 w-3.5" />
+                  Create {selectedContractType.charAt(0).toUpperCase() + selectedContractType.slice(1)} Contract
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -6491,123 +6463,160 @@ export default function Stage8FinalReview({
           </div>
         )}
         
-        {panel.id === 'panel-6-documents' && (
-          <div className="space-y-6">
-            {/* Document Categories Grid - Fullscreen View */}
-            <div>
-              <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                All Documents ({documents.length})
-              </h4>
+        {panel.id === 'panel-6-documents' && (() => {
+          const fsCatColors = [
+            { border: 'border-cyan-200 dark:border-cyan-700/30', bg: 'bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/20', text: 'text-cyan-700 dark:text-cyan-300', icon: 'bg-cyan-100 dark:bg-cyan-900/50', iconText: 'text-cyan-600 dark:text-cyan-400', badge: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' },
+            { border: 'border-violet-200 dark:border-violet-700/30', bg: 'bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20', text: 'text-violet-700 dark:text-violet-300', icon: 'bg-violet-100 dark:bg-violet-900/50', iconText: 'text-violet-600 dark:text-violet-400', badge: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
+            { border: 'border-emerald-200 dark:border-emerald-700/30', bg: 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20', text: 'text-emerald-700 dark:text-emerald-300', icon: 'bg-emerald-100 dark:bg-emerald-900/50', iconText: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
+            { border: 'border-amber-200 dark:border-amber-700/30', bg: 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20', text: 'text-amber-700 dark:text-amber-300', icon: 'bg-amber-100 dark:bg-amber-900/50', iconText: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
+          ];
+
+          return (
+            <div className="space-y-6">
+              {/* ─── Header ─── */}
+              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-indigo-300 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 via-violet-50 to-purple-50 dark:from-indigo-950/30 dark:via-violet-950/30 dark:to-purple-950/30 shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                    <FolderOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-indigo-700 dark:text-indigo-300">Document Vault</h4>
+                    <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono">{documents.length} files · {contracts.length} contracts</p>
+                  </div>
+                </div>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2 border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Upload
+                  </Button>
+                )}
+              </div>
+
+              {/* ─── Upload Zone (Fullscreen) ─── */}
+              {canEdit && (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={cn(
+                    "border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer",
+                    isDraggingOver 
+                      ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30" 
+                      : "border-indigo-300/50 dark:border-indigo-700/50 hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20"
+                  )}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isUploading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+                      <span className="text-sm text-indigo-600 dark:text-indigo-400">Uploading...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 mx-auto text-indigo-400 mb-2" />
+                      <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                        Drop files here or <span className="font-semibold">click to browse</span>
+                      </p>
+                      <p className="text-xs text-indigo-400 dark:text-indigo-500 mt-1">PDF · Images · Blueprints · Any document</p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Documents Grid ─── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {DOCUMENT_CATEGORIES.map(cat => {
+                {DOCUMENT_CATEGORIES.map((cat, catIdx) => {
                   const categoryDocs = documents.filter(d => d.category === cat.key);
-                  const panelCitations = getCitationsForPanel(['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION']);
+                  const fsColors = fsCatColors[catIdx % fsCatColors.length];
+                  const fsPanelCitations = getCitationsForPanel(['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION']);
                   
                   return (
-                    <div 
-                      key={cat.key} 
-                      className={cn(
-                        "rounded-xl border-2 p-4 transition-all",
-                        categoryDocs.length > 0 
-                          ? "border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20" 
-                          : "border-dashed border-muted-foreground/20 bg-muted/20"
-                      )}
-                    >
-                      {/* Category Header */}
+                    <div key={cat.key} className={cn(
+                      "rounded-xl border-2 p-4 transition-all",
+                      categoryDocs.length > 0 ? `${fsColors.border} ${fsColors.bg}` : "border-dashed border-gray-200 dark:border-gray-700/30 bg-gray-50/30 dark:bg-gray-900/20"
+                    )}>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "h-8 w-8 rounded-lg flex items-center justify-center",
-                            categoryDocs.length > 0 ? "bg-pink-100 dark:bg-pink-900/50" : "bg-muted"
-                          )}>
-                            <cat.icon className={cn("h-4 w-4", categoryDocs.length > 0 ? cat.color : "text-muted-foreground")} />
+                          <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", categoryDocs.length > 0 ? fsColors.icon : "bg-gray-100 dark:bg-gray-800")}>
+                            <cat.icon className={cn("h-4 w-4", categoryDocs.length > 0 ? fsColors.iconText : "text-gray-400")} />
                           </div>
                           <div>
-                            <h5 className={cn("text-sm font-medium", categoryDocs.length > 0 ? cat.color : "text-muted-foreground")}>
-                              {cat.label}
-                            </h5>
-                            <p className="text-[10px] text-muted-foreground">
-                              {categoryDocs.length} {categoryDocs.length === 1 ? 'file' : 'files'}
-                            </p>
+                            <h5 className={cn("text-sm font-semibold", categoryDocs.length > 0 ? fsColors.text : "text-gray-400")}>{cat.label}</h5>
+                            <p className="text-[10px] text-gray-400">{categoryDocs.length} {categoryDocs.length === 1 ? 'file' : 'files'}</p>
                           </div>
                         </div>
                         {categoryDocs.filter(d => d.citationId).length > 0 && (
-                          <Badge className="bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 text-[10px]">
+                          <Badge variant="outline" className={cn("text-[10px]", fsColors.badge)}>
                             {categoryDocs.filter(d => d.citationId).length} cited
                           </Badge>
                         )}
                       </div>
                       
-                      {/* Documents List */}
                       {categoryDocs.length === 0 ? (
                         <div className="py-4 text-center">
-                          <p className="text-xs text-muted-foreground italic">No documents in this category</p>
+                          <p className="text-xs text-gray-400 italic">No documents</p>
                         </div>
                       ) : (
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
                           {categoryDocs.map(doc => {
-                            // Find citation for this document
-                            const matchingCitation = panelCitations.find(c => {
-                              const citationFileName = c.metadata?.file_name || c.answer;
-                              return citationFileName && doc.file_name.toLowerCase().includes(String(citationFileName).toLowerCase().slice(0, 10));
+                            const isImage = doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                            const isPdf = doc.file_name.match(/\.pdf$/i);
+                            const matchingCit = fsPanelCitations.find(c => {
+                              const fn = c.metadata?.file_name || c.answer;
+                              return fn && doc.file_name.toLowerCase().includes(String(fn).toLowerCase().slice(0, 10));
                             });
                             
                             return (
                               <div 
                                 key={doc.id} 
-                                className="flex items-center gap-3 p-3 rounded-lg bg-background border hover:border-pink-300 transition-all group cursor-pointer"
+                                className="flex items-center gap-3 p-2.5 rounded-lg bg-white/80 dark:bg-white/5 border border-transparent hover:border-indigo-200/50 dark:hover:border-indigo-700/30 transition-all group cursor-pointer hover:shadow-sm"
                                 onClick={() => setPreviewDocument({
                                   file_name: doc.file_name,
                                   file_path: doc.file_path,
                                   category: doc.category,
-                                  citationId: doc.citationId || matchingCitation?.id,
+                                  citationId: doc.citationId || matchingCit?.id,
                                 })}
                               >
-                                {/* File Preview/Thumbnail */}
-                                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden border">
-                                  {doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                {/* Thumbnail */}
+                                <div className="h-12 w-12 rounded-lg flex-shrink-0 overflow-hidden border bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                                  {isImage ? (
                                     <img 
                                       src={getDocumentPreviewUrl(doc.file_path)} 
                                       alt={doc.file_name}
                                       className="h-full w-full object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                        e.currentTarget.parentElement!.innerHTML = '<div class="h-5 w-5 text-green-500"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
-                                      }}
                                     />
-                                  ) : doc.file_name.match(/\.pdf$/i) ? (
+                                  ) : isPdf ? (
                                     <FileText className="h-5 w-5 text-red-500" />
                                   ) : (
-                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                    <FileText className="h-5 w-5 text-gray-400" />
                                   )}
                                 </div>
                                 
-                                {/* File Info */}
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate group-hover:text-pink-600 transition-colors">{doc.file_name}</p>
+                                  <p className="text-sm font-medium truncate text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{doc.file_name}</p>
                                   <div className="flex items-center gap-2">
-                                    {doc.uploadedAt && (
-                                      <span className="text-[10px] text-muted-foreground">{doc.uploadedAt}</span>
-                                    )}
-                                    {matchingCitation && (
-                                      <span className="text-[10px] text-pink-500">
-                                        {matchingCitation.cite_type.replace(/_/g, ' ')}
-                                      </span>
-                                    )}
+                                    {doc.uploadedAt && <span className="text-[10px] text-gray-400">{doc.uploadedAt}</span>}
+                                    {matchingCit && <span className="text-[10px] text-indigo-500 dark:text-indigo-400">{matchingCit.cite_type.replace(/_/g, ' ')}</span>}
                                   </div>
                                 </div>
                                 
-                                {/* Preview indicator */}
-                                <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setPreviewDocument({ file_name: doc.file_name, file_path: doc.file_path, category: doc.category, citationId: doc.citationId || matchingCit?.id }); }}>
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
+                                    <Download className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                                 
-                                {/* Citation Badge */}
-                                {(doc.citationId || matchingCitation) && (
-                                  <Badge 
-                                    variant="outline" 
-                                    className="text-[9px] bg-pink-50 dark:bg-pink-950/30 text-pink-600 flex-shrink-0"
-                                  >
-                                    cite: [{(doc.citationId || matchingCitation?.id || '').slice(0, 8)}]
+                                {(doc.citationId || matchingCit) && (
+                                  <Badge variant="outline" className="text-[9px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0 px-1.5">
+                                    [{(doc.citationId || matchingCit?.id || '').slice(0, 6)}]
                                   </Badge>
                                 )}
                               </div>
@@ -6619,205 +6628,128 @@ export default function Stage8FinalReview({
                   );
                 })}
               </div>
-            </div>
-            
-            {/* Contracts Section - Fullscreen */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <FileCheck className="h-4 w-4" />
-                  Contracts ({contracts.length})
-                </h4>
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelectedContractType(null)}
-                    className="gap-2 border-pink-300 text-pink-600 hover:bg-pink-50 dark:border-pink-700 dark:text-pink-400"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New Contract
-                  </Button>
+              
+              {/* ─── Contracts Section ─── */}
+              <div className="pt-4 border-t-2 border-indigo-200 dark:border-indigo-700/30">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                    <h4 className="text-sm font-bold text-violet-700 dark:text-violet-300">Contracts</h4>
+                    <Badge variant="outline" className="text-[10px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">{contracts.length}</Badge>
+                  </div>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedContractType(null)}
+                      className="gap-2 border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      New Contract
+                    </Button>
+                  )}
+                </div>
+                
+                {contracts.length === 0 ? (
+                  <div className="p-8 rounded-xl border-2 border-dashed border-violet-200 dark:border-violet-700/30 text-center bg-violet-50/30 dark:bg-violet-950/10">
+                    <FileCheck className="h-10 w-10 text-violet-300 dark:text-violet-600 mx-auto mb-3" />
+                    <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">No contracts yet</p>
+                    <p className="text-xs text-violet-400 dark:text-violet-500 mt-1 mb-4">Select a template to create your first contract</p>
+                    {canEdit && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl mx-auto">
+                        {[
+                          { key: 'residential', label: 'Residential', icon: '🏠' },
+                          { key: 'commercial', label: 'Commercial', icon: '🏢' },
+                          { key: 'industrial', label: 'Industrial', icon: '🏭' },
+                          { key: 'renovation', label: 'Renovation', icon: '🔨' },
+                        ].map(type => (
+                          <button
+                            key={type.key}
+                            onClick={() => { setSelectedContractType(type.key); setShowContractPreview(true); }}
+                            className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-violet-200 dark:border-violet-700/30 text-center transition-all hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:shadow-md"
+                          >
+                            <span className="text-2xl">{type.icon}</span>
+                            <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">{type.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {contracts.map(contract => {
+                      const statusColorFs = contract.status === 'signed' 
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                        : contract.status === 'sent'
+                        ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700'
+                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700';
+                      return (
+                        <div 
+                          key={contract.id} 
+                          className="group p-4 rounded-xl border-2 border-violet-200 dark:border-violet-700/30 bg-gradient-to-br from-violet-50/80 to-purple-50/60 dark:from-violet-950/20 dark:to-purple-950/15 cursor-pointer hover:border-violet-400 hover:shadow-md transition-all"
+                          onClick={() => {
+                            if (contract.share_token) {
+                              window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
+                            } else {
+                              toast.info('Contract preview not available');
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <FileCheck className="h-4 w-4 text-violet-500 dark:text-violet-400" />
+                              <span className="font-semibold text-gray-800 dark:text-gray-200">#{contract.contract_number}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}`, '_blank'); }}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {contract.status !== 'signed' && canEdit && (
+                                <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedContractForEmail({ id: contract.id, contract_number: contract.contract_number, total_amount: contract.total_amount, status: contract.status, share_token: contract.share_token });
+                                  setContractRecipients([{ email: '', name: '' }]);
+                                  setShowContractEmailDialog(true);
+                                }}>
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Badge variant="outline" className={cn("text-[10px] border", statusColorFs)}>
+                                {contract.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          {canViewFinancials && contract.total_amount && (
+                            <p className="text-2xl font-bold text-violet-700 dark:text-violet-300">
+                              ${contract.total_amount.toLocaleString()}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Click to view contract</p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
               
-              {/* Contract Template Selector - Fullscreen */}
-              {canEdit && !selectedContractType && contracts.length > 0 && (
-                <div className="mb-6 p-4 rounded-xl border-2 border-dashed border-pink-300 dark:border-pink-700 bg-pink-50/50 dark:bg-pink-950/20">
-                  <p className="text-sm font-medium text-pink-700 dark:text-pink-300 mb-3">Select contract template:</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[
-                      { key: 'residential', label: 'Residential', icon: '🏠' },
-                      { key: 'commercial', label: 'Commercial', icon: '🏢' },
-                      { key: 'industrial', label: 'Industrial', icon: '🏭' },
-                      { key: 'renovation', label: 'Renovation', icon: '🔨' },
-                    ].map(type => (
-                      <button
-                        key={type.key}
-                        onClick={() => {
-                          setSelectedContractType(type.key);
-                          setShowContractPreview(true);
-                        }}
-                        className="flex items-center gap-2 p-3 rounded-lg border text-left transition-all hover:border-pink-500 hover:bg-pink-100/50 dark:hover:bg-pink-950/30"
-                      >
-                        <span className="text-2xl">{type.icon}</span>
-                        <span className="font-medium">{type.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {contracts.length === 0 ? (
-                <div className="p-6 rounded-xl border-2 border-dashed text-center">
-                  <FileCheck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">No contracts created yet</p>
-                  <p className="text-xs text-muted-foreground mt-1 mb-4">Select a template above to create your first contract</p>
-                  
-                  {/* Contract Template Selector for empty state */}
-                  {canEdit && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-xl mx-auto">
-                      {[
-                        { key: 'residential', label: 'Residential', icon: '🏠' },
-                        { key: 'commercial', label: 'Commercial', icon: '🏢' },
-                        { key: 'industrial', label: 'Industrial', icon: '🏭' },
-                        { key: 'renovation', label: 'Renovation', icon: '🔨' },
-                      ].map(type => (
-                        <button
-                          key={type.key}
-                          onClick={() => {
-                            setSelectedContractType(type.key);
-                            setShowContractPreview(true);
-                          }}
-                          className="flex flex-col items-center gap-2 p-4 rounded-lg border text-center transition-all hover:border-pink-500 hover:bg-pink-100/50 dark:hover:bg-pink-950/30"
-                        >
-                          <span className="text-3xl">{type.icon}</span>
-                          <span className="text-sm font-medium">{type.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {contracts.map(contract => (
-                    <div 
-                      key={contract.id} 
-                      className="group p-4 rounded-xl border-2 border-pink-200 dark:border-pink-800/50 bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-950/20 dark:to-rose-950/20 cursor-pointer hover:border-pink-400 transition-all"
-                      onClick={() => {
-                        // Open contract view page in new tab
-                        if (contract.share_token) {
-                          window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
-                        } else {
-                          toast.info('Contract preview not available - no share token');
-                        }
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <FileCheck className="h-4 w-4 text-pink-500" />
-                          <span className="font-medium">#{contract.contract_number}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {/* View contract button */}
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (contract.share_token) {
-                                      window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
-                                    }
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>View contract</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          {/* Send to recipients button - Only for non-signed contracts */}
-                          {contract.status !== 'signed' && canEdit && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedContractForEmail({
-                                        id: contract.id,
-                                        contract_number: contract.contract_number,
-                                        total_amount: contract.total_amount,
-                                        status: contract.status,
-                                        share_token: contract.share_token,
-                                      });
-                                      setContractRecipients([{ email: '', name: '' }]);
-                                      setShowContractEmailDialog(true);
-                                    }}
-                                  >
-                                    <Send className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Send to recipients</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                          <Badge 
-                            variant={contract.status === 'signed' ? 'default' : 'outline'}
-                            className={contract.status === 'signed' ? 'bg-green-500' : ''}
-                          >
-                            {contract.status}
-                          </Badge>
-                        </div>
+              {/* ─── Citations ─── */}
+              {panelCitations.length > 0 && (
+                <div className="pt-3 border-t border-indigo-200 dark:border-indigo-700/30 space-y-1.5">
+                  <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Data Sources</p>
+                  {panelCitations.map(c => (
+                    <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-700/30 text-xs">
+                      <span className="text-indigo-600 dark:text-indigo-400">{c.cite_type.replace(/_/g, ' ')}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-indigo-800 dark:text-indigo-300">{renderCitationValue(c)}</span>
+                        <span className="text-[9px] text-indigo-500 dark:text-indigo-500/60 font-mono">cite:[{c.id.slice(0, 6)}]</span>
                       </div>
-                      {canViewFinancials && contract.total_amount && (
-                        <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">
-                          ${contract.total_amount.toLocaleString()}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        Click to view contract
-                      </p>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            
-            {/* Related Citations */}
-            {panelCitations.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-pink-500" />
-                  Verified Citations ({panelCitations.length})
-                </h4>
-                <div className="grid gap-2">
-                  {panelCitations.map(citation => (
-                    <div
-                      key={citation.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="text-[10px]">
-                          {citation.cite_type.replace(/_/g, ' ')}
-                        </Badge>
-                        <span className="text-sm">{renderCitationValue(citation)}</span>
-                      </div>
-                      <span className="text-[10px] text-pink-500 font-mono">cite: [{citation.id.slice(0, 8)}]</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          );
+        })()}
         
         {panel.id === 'panel-7-weather' && (() => {
           const locationCitFs = citations.find(c => c.cite_type === 'LOCATION');
