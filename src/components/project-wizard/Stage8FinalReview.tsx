@@ -7535,8 +7535,9 @@ export default function Stage8FinalReview({
               <LayoutDashboard className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-cyan-300">
-                {t('stage8.title', 'Command Center')}
+              <h2 className="text-lg font-light tracking-wide">
+                <span className="text-white">Build</span>
+                <span className="text-amber-500 font-semibold">Union</span>
               </h2>
               <p className="text-[10px] text-cyan-500/60">
                 {projectData?.name || 'Project'} • Stage 8
