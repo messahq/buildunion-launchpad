@@ -34,6 +34,8 @@ export const CITATION_TYPES = {
   TEAM_PERMISSION_SET: 'TEAM_PERMISSION_SET',
   // Stage 7-8: Weather & Conditions
   WEATHER_ALERT: 'WEATHER_ALERT',
+  // Stage 6: Contracts
+  CONTRACT: 'CONTRACT',
 } as const;
 
 export type CitationType = typeof CITATION_TYPES[keyof typeof CITATION_TYPES];
