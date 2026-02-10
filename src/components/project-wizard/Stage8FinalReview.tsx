@@ -8021,10 +8021,10 @@ export default function Stage8FinalReview({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "h-7 w-7 rounded-lg flex items-center justify-center",
-                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
+                        isActive ? "bg-sky-500/20" : "bg-sky-950/50"
                       )}>
                         {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-sky-300" : "text-sky-500")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
@@ -8039,7 +8039,7 @@ export default function Stage8FinalReview({
                     {dataCount > 0 && hasAccess && (
                       <span className={cn(
                         "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
+                        isActive ? "bg-sky-400/20 text-sky-300" : "bg-sky-950/50 text-sky-400"
                       )}>
                         {dataCount}
                       </span>
