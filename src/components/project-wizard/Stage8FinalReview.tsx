@@ -7664,11 +7664,37 @@ export default function Stage8FinalReview({
           backgroundSize: '40px 40px',
         }} />
 
+        {/* Ambient floating particles */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={`particle-${i}`}
+              className="absolute w-1 h-1 rounded-full bg-cyan-400/20"
+              initial={{ 
+                x: `${15 + i * 15}%`, 
+                y: `${10 + (i % 3) * 30}%`,
+                opacity: 0 
+              }}
+              animate={{ 
+                y: [`${10 + (i % 3) * 30}%`, `${5 + (i % 3) * 30}%`, `${10 + (i % 3) * 30}%`],
+                opacity: [0, 0.6, 0],
+                scale: [0.5, 1.2, 0.5],
+              }}
+              transition={{
+                duration: 4 + i * 0.7,
+                repeat: Infinity,
+                delay: i * 0.8,
+                ease: 'easeInOut',
+              }}
+            />
+          ))}
+        </div>
+
         {/* Desktop: Panels around central canvas */}
         <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr] gap-2 p-3">
           
           {/* Left column - 4 panels */}
-          {PANELS.slice(0, 4).map((panel) => {
+          {PANELS.slice(0, 4).map((panel, idx) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
@@ -7825,6 +7851,9 @@ export default function Stage8FinalReview({
             return (
               <motion.button
                 key={panel.id}
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className={cn(
                   "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
                   isActive
@@ -7833,22 +7862,40 @@ export default function Stage8FinalReview({
                   !hasAccess && "opacity-40 cursor-not-allowed"
                 )}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02 } : undefined}
+                whileHover={hasAccess ? { scale: 1.02, x: 4 } : undefined}
                 whileTap={hasAccess ? { scale: 0.98 } : undefined}
               >
+                {/* Breathing glow overlay for active panel */}
+                {isActive && (
+                  <motion.div
+                    className="absolute inset-0 rounded-xl pointer-events-none"
+                    animate={{ 
+                      boxShadow: [
+                        '0 0 15px rgba(34,211,238,0.08)',
+                        '0 0 25px rgba(34,211,238,0.18)',
+                        '0 0 15px rgba(34,211,238,0.08)',
+                      ]
+                    }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                )}
                 <div className="p-3 h-full flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "h-7 w-7 rounded-lg flex items-center justify-center",
-                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
-                      )}>
+                      <motion.div 
+                        className={cn(
+                          "h-7 w-7 rounded-lg flex items-center justify-center",
+                          isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
+                        )}
+                        animate={isActive ? { rotate: [0, 5, -5, 0] } : {}}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                      >
                         {hasAccess ? (
                           <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
-                      </div>
+                      </motion.div>
                       <span className={cn(
                         "text-xs font-semibold",
                         isActive ? "text-cyan-200" : "text-cyan-500"
@@ -7857,18 +7904,23 @@ export default function Stage8FinalReview({
                       </span>
                     </div>
                     {dataCount > 0 && hasAccess && (
-                      <span className={cn(
-                        "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
-                      )}>
+                      <motion.span 
+                        className={cn(
+                          "text-[10px] font-mono px-1.5 py-0.5 rounded",
+                          isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
+                        )}
+                        animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
                         {dataCount}
-                      </span>
+                      </motion.span>
                     )}
                     {/* Unread chat badge for Team panel */}
                     {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
                       <motion.span
                         initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
+                        animate={{ scale: [1, 1.15, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
                         className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[9px] font-bold shadow-[0_0_8px_rgba(245,158,11,0.5)] z-10"
                       >
                         {unreadChatCount > 99 ? '99+' : unreadChatCount}
@@ -7888,13 +7940,26 @@ export default function Stage8FinalReview({
                     {getTierBadge(panel.visibilityTier)}
                   </div>
                 </div>
-                {/* Active glow bar */}
+                {/* Active glow bar with pulse */}
                 {isActive && (
                   <motion.div
                     className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
                     layoutId="activePanelIndicator"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
+                )}
+                {/* Pointer arrow to canvas */}
+                {isActive && (
+                  <motion.div
+                    className="absolute right-[-18px] top-1/2 -translate-y-1/2 z-20"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: [0, 4, 0] }}
+                    transition={{ x: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }, opacity: { duration: 0.3 } }}
+                  >
+                    <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
+                      <path d="M2 2L12 10L2 18" stroke="rgba(34,211,238,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </motion.div>
                 )}
               </motion.button>
             );
@@ -7904,11 +7969,20 @@ export default function Stage8FinalReview({
           <motion.div
             className="row-span-4 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
             layout
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
           >
             {/* Canvas header */}
             <div className="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40 shrink-0">
               <div className="flex items-center gap-2">
-                <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                  className="relative"
+                >
+                  <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
+                </motion.div>
                 <span className="text-sm font-semibold text-cyan-200">
                   {activePanelConfig.id === 'panel-3-trade' 
                     ? (() => { const tc = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return tc?.answer ? `${tc.answer} Template` : activePanelConfig.title; })()
@@ -7948,7 +8022,7 @@ export default function Stage8FinalReview({
           </motion.div>
 
           {/* Right column - 4 panels */}
-          {PANELS.slice(4, 8).map((panel) => {
+          {PANELS.slice(4, 8).map((panel, idx) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
@@ -8076,6 +8150,9 @@ export default function Stage8FinalReview({
             return (
               <motion.button
                 key={panel.id}
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: idx * 0.1 + 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className={cn(
                   "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
                   isActive
@@ -8084,22 +8161,40 @@ export default function Stage8FinalReview({
                   !hasAccess && "opacity-40 cursor-not-allowed"
                 )}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02 } : undefined}
+                whileHover={hasAccess ? { scale: 1.02, x: -4 } : undefined}
                 whileTap={hasAccess ? { scale: 0.98 } : undefined}
               >
+                {/* Breathing glow overlay for active panel */}
+                {isActive && (
+                  <motion.div
+                    className="absolute inset-0 rounded-xl pointer-events-none"
+                    animate={{ 
+                      boxShadow: [
+                        '0 0 15px rgba(34,211,238,0.08)',
+                        '0 0 25px rgba(34,211,238,0.18)',
+                        '0 0 15px rgba(34,211,238,0.08)',
+                      ]
+                    }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                )}
                 <div className="p-3 h-full flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "h-7 w-7 rounded-lg flex items-center justify-center",
-                        isActive ? "bg-sky-500/20" : "bg-sky-950/50"
-                      )}>
+                      <motion.div 
+                        className={cn(
+                          "h-7 w-7 rounded-lg flex items-center justify-center",
+                          isActive ? "bg-sky-500/20" : "bg-sky-950/50"
+                        )}
+                        animate={isActive ? { rotate: [0, -5, 5, 0] } : {}}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                      >
                         {hasAccess ? (
                           <Icon className={cn("h-3.5 w-3.5", isActive ? "text-sky-300" : "text-sky-500")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
-                      </div>
+                      </motion.div>
                       <span className={cn(
                         "text-xs font-display font-bold tracking-wide",
                         isActive ? "text-white" : "text-gray-300"
@@ -8110,12 +8205,16 @@ export default function Stage8FinalReview({
                       </span>
                     </div>
                     {dataCount > 0 && hasAccess && (
-                      <span className={cn(
-                        "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                        isActive ? "bg-sky-400/20 text-sky-300" : "bg-sky-950/50 text-sky-400"
-                      )}>
+                      <motion.span 
+                        className={cn(
+                          "text-[10px] font-mono px-1.5 py-0.5 rounded",
+                          isActive ? "bg-sky-400/20 text-sky-300" : "bg-sky-950/50 text-sky-400"
+                        )}
+                        animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
                         {dataCount}
-                      </span>
+                      </motion.span>
                     )}
                   </div>
                   <p className={cn(
@@ -8130,12 +8229,26 @@ export default function Stage8FinalReview({
                     {getTierBadge(panel.visibilityTier)}
                   </div>
                 </div>
+                {/* Active glow bar */}
                 {isActive && (
                   <motion.div
                     className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
                     layoutId="activePanelIndicatorRight"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
+                )}
+                {/* Pointer arrow to canvas (pointing LEFT) */}
+                {isActive && (
+                  <motion.div
+                    className="absolute left-[-18px] top-1/2 -translate-y-1/2 z-20"
+                    initial={{ opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: [0, -4, 0] }}
+                    transition={{ x: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }, opacity: { duration: 0.3 } }}
+                  >
+                    <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
+                      <path d="M12 2L2 10L12 18" stroke="rgba(34,211,238,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </motion.div>
                 )}
               </motion.button>
             );
