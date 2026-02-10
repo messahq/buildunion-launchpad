@@ -37,19 +37,34 @@ import {
   Camera,
   Crown,
   Zap,
-  ArrowLeft
+  ArrowLeft,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 const BuildUnionProfile = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading, saving, updateProfile, ensureProfile } = useBuProfile();
   const { subscription } = useSubscription();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
 
@@ -250,6 +265,30 @@ const BuildUnionProfile = () => {
     };
     
     await updateProfile(updates);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    
+    try {
+      setIsDeletingAccount(true);
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        body: { confirmation: "DELETE" }
+      });
+
+      if (error) throw error;
+
+      toast.success('Account deleted successfully');
+      await signOut();
+      navigate('/');
+    } catch (err) {
+      console.error('Error deleting account:', err);
+      toast.error('Failed to delete account. Please try again.');
+    } finally {
+      setIsDeletingAccount(false);
+      setShowDeleteDialog(false);
+      setDeleteConfirmText("");
+    }
   };
 
   const addSecondaryTrade = (trade: ConstructionTrade) => {
@@ -751,8 +790,101 @@ const BuildUnionProfile = () => {
             </Button>
           </div>
 
+          <Separator />
+
+          {/* Danger Zone - Account Deletion */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Danger Zone
+              </CardTitle>
+              <CardDescription>
+                Irreversible actions — please proceed with caution
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-foreground">Delete Account</p>
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="gap-2 shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Account
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
         </div>
       </main>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Are you sure you want to delete your account?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                This will <strong>permanently delete</strong> your account and all associated data including:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>All projects, estimates, and contracts</li>
+                <li>Team memberships and invitations</li>
+                <li>Messages and forum posts</li>
+                <li>Profile and uploaded files</li>
+              </ul>
+              <p className="font-medium text-destructive">
+                This action is irreversible!
+              </p>
+              <div className="pt-2">
+                <Label htmlFor="deleteConfirm" className="text-sm">
+                  Type <strong>DELETE</strong> to confirm:
+                </Label>
+                <Input
+                  id="deleteConfirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="mt-1"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== "DELETE" || isDeletingAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingAccount ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete My Account
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BuildUnionFooter />
     </div>
