@@ -5815,17 +5815,17 @@ export default function Stage8FinalReview({
           };
 
           const dataRows = [
-            { label: 'Project Name', cit: nameCit, fallback: projectData?.name || '—', icon: <Building2 className="h-4 w-4 text-cyan-400" /> },
-            { label: 'Location', cit: locCit, fallback: 'Not set', icon: <MapPin className="h-4 w-4 text-emerald-400" /> },
-            { label: 'Work Type', cit: workCit, fallback: 'Not set', icon: <Hammer className="h-4 w-4 text-amber-400" /> },
-            { label: 'Gross Floor Area', cit: gfaCit, fallback: 'Not set', icon: <Ruler className="h-4 w-4 text-orange-400" /> },
-            { label: 'Trade', cit: tradeCit, fallback: 'Not set', icon: <Settings className="h-4 w-4 text-cyan-400" /> },
-            { label: 'Team', cit: teamCit, fallback: `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`, icon: <Users className="h-4 w-4 text-teal-400" /> },
-            { label: 'Start Date', cit: timelineCit, fallback: 'Not set', icon: <Calendar className="h-4 w-4 text-indigo-400" /> },
-            { label: 'End Date', cit: endDateCit, fallback: 'Not set', icon: <span className="text-sm">🏁</span> },
-            { label: 'Site Condition', cit: siteCit, fallback: null, icon: <Settings className="h-4 w-4 text-amber-400" /> },
-            { label: 'Template', cit: templateCit, fallback: null, icon: <ClipboardList className="h-4 w-4 text-pink-400" /> },
-            { label: 'Demolition Cost', cit: demoCit, fallback: null, icon: <span className="text-sm">💥</span> },
+            { label: 'Project Name', cit: nameCit, fallback: projectData?.name || '—', icon: <Building2 className="h-4 w-4 text-cyan-400" />, color: { border: 'border-cyan-400/30', bg: 'bg-gradient-to-r from-cyan-950/50 to-sky-950/30', text: 'text-cyan-200', glow: 'bg-cyan-400' } },
+            { label: 'Location', cit: locCit, fallback: 'Not set', icon: <MapPin className="h-4 w-4 text-emerald-400" />, color: { border: 'border-emerald-400/30', bg: 'bg-gradient-to-r from-emerald-950/50 to-teal-950/30', text: 'text-emerald-200', glow: 'bg-emerald-400' } },
+            { label: 'Work Type', cit: workCit, fallback: 'Not set', icon: <Hammer className="h-4 w-4 text-amber-400" />, color: { border: 'border-amber-400/30', bg: 'bg-gradient-to-r from-amber-950/50 to-orange-950/30', text: 'text-amber-200', glow: 'bg-amber-400' } },
+            { label: 'Gross Floor Area', cit: gfaCit, fallback: 'Not set', icon: <Ruler className="h-4 w-4 text-blue-400" />, color: { border: 'border-blue-400/30', bg: 'bg-gradient-to-r from-blue-950/50 to-indigo-950/30', text: 'text-blue-200', glow: 'bg-blue-400' } },
+            { label: 'Trade', cit: tradeCit, fallback: 'Not set', icon: <Settings className="h-4 w-4 text-violet-400" />, color: { border: 'border-violet-400/30', bg: 'bg-gradient-to-r from-violet-950/50 to-purple-950/30', text: 'text-violet-200', glow: 'bg-violet-400' } },
+            { label: 'Team', cit: teamCit, fallback: `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`, icon: <Users className="h-4 w-4 text-teal-400" />, color: { border: 'border-teal-400/30', bg: 'bg-gradient-to-r from-teal-950/50 to-cyan-950/30', text: 'text-teal-200', glow: 'bg-teal-400' } },
+            { label: 'Start Date', cit: timelineCit, fallback: 'Not set', icon: <Calendar className="h-4 w-4 text-indigo-400" />, color: { border: 'border-indigo-400/30', bg: 'bg-gradient-to-r from-indigo-950/50 to-blue-950/30', text: 'text-indigo-200', glow: 'bg-indigo-400' } },
+            { label: 'End Date', cit: endDateCit, fallback: 'Not set', icon: <span className="text-sm">🏁</span>, color: { border: 'border-purple-400/30', bg: 'bg-gradient-to-r from-purple-950/50 to-pink-950/30', text: 'text-purple-200', glow: 'bg-purple-400' } },
+            { label: 'Site Condition', cit: siteCit, fallback: null, icon: <Settings className="h-4 w-4 text-rose-400" />, color: { border: 'border-rose-400/30', bg: 'bg-gradient-to-r from-rose-950/50 to-red-950/30', text: 'text-rose-200', glow: 'bg-rose-400' } },
+            { label: 'Template', cit: templateCit, fallback: null, icon: <ClipboardList className="h-4 w-4 text-pink-400" />, color: { border: 'border-pink-400/30', bg: 'bg-gradient-to-r from-pink-950/50 to-rose-950/30', text: 'text-pink-200', glow: 'bg-pink-400' } },
+            { label: 'Demolition Cost', cit: demoCit, fallback: null, icon: <span className="text-sm">💥</span>, color: { border: 'border-orange-400/30', bg: 'bg-gradient-to-r from-orange-950/50 to-red-950/30', text: 'text-orange-200', glow: 'bg-orange-400' } },
           ].filter(r => r.cit || r.fallback !== null);
 
           return (
@@ -5846,26 +5846,29 @@ export default function Stage8FinalReview({
                 </div>
               </div>
 
-              {/* Data Grid */}
+              {/* Data Grid — Vibrant Color-Coded Rows */}
               <div className="grid gap-3">
                 {dataRows.map(row => (
                   <div key={row.label} className={cn(
-                    "flex items-center gap-4 p-4 rounded-xl border transition-colors",
-                    row.cit ? "border-slate-600/30 bg-slate-800/40 hover:bg-slate-800/60" : "border-slate-700/20 bg-slate-900/30"
+                    "flex items-center gap-4 p-4 rounded-xl border transition-all hover:scale-[1.01]",
+                    row.cit ? `${row.color.border} ${row.color.bg}` : "border-slate-700/20 bg-slate-900/30"
                   )}>
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5">{row.icon}</div>
+                    <div className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center",
+                      row.cit ? "bg-white/10" : "bg-slate-800/50"
+                    )}>{row.icon}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">{row.label}</p>
-                      <p className={cn("text-sm font-medium", row.cit ? "text-foreground" : "text-muted-foreground italic")}>
+                      <p className={cn("text-[10px] font-mono uppercase tracking-wider", row.cit ? `${row.color.text} opacity-60` : "text-muted-foreground/60")}>{row.label}</p>
+                      <p className={cn("text-sm font-medium", row.cit ? row.color.text : "text-muted-foreground italic")}>
                         {formatCitValue(row.cit, row.fallback || 'Not set')}
                       </p>
                     </div>
                     {row.cit && (
-                      <Badge variant="outline" className="text-[9px] font-mono shrink-0">
+                      <Badge variant="outline" className={cn("text-[9px] font-mono shrink-0", row.color.border, `${row.color.text} opacity-50`)}>
                         [{row.cit.id.slice(0, 10)}]
                       </Badge>
                     )}
-                    {row.cit && <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
+                    {row.cit && <div className={cn("w-2 h-2 rounded-full", row.color.glow, "shadow-[0_0_8px_currentColor]")} />}
                   </div>
                 ))}
               </div>
