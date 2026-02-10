@@ -4912,98 +4912,121 @@ export default function Stage8FinalReview({
       // ✓ Get the BEST citation source for the cite badge
       const bestCitationSource = tradeCitation || workTypeCitation;
       
+      // ✓ Derived data for richer display
+      const materialCount = materialsWithWaste.length;
+      const totalUnitsNeeded = materialsWithWaste.reduce((sum, m) => sum + m.qty, 0);
+      const wastedMaterials = materialsWithWaste.filter(m => m.hasWaste).length;
+      const executionLabel = executionCitation?.answer || null;
+      
       return (
-        <div className="space-y-4">
-          {/* ✓ DYNAMIC LABEL: Show Sub-worktype, not main category */}
+        <div className="space-y-3">
+          {/* ✓ TRADE HEADER - Vibrant Fuchsia/Pink gradient */}
           <div className={cn(
-            "p-4 rounded-xl border",
+            "p-4 rounded-xl border-2 relative overflow-hidden",
             hasTradeCitation
-              ? "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-200/50 dark:border-orange-800/30"
-              : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200/50"
+              ? "bg-gradient-to-br from-fuchsia-50 via-pink-50 to-rose-50 dark:from-fuchsia-950/40 dark:via-pink-950/30 dark:to-rose-950/30 border-fuchsia-300 dark:border-fuchsia-500/40"
+              : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200/50 border-dashed"
           )}>
+            {hasTradeCitation && (
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-fuchsia-200/40 to-transparent dark:from-fuchsia-500/10 rounded-bl-3xl" />
+            )}
             <div className="flex items-center justify-between mb-2">
               <span className={cn(
-                "text-xs font-medium uppercase tracking-wide",
-                hasTradeCitation ? "text-orange-600 dark:text-orange-400" : "text-gray-500"
+                "text-[10px] font-bold uppercase tracking-widest",
+                hasTradeCitation ? "text-fuchsia-600 dark:text-fuchsia-400" : "text-gray-500"
               )}>
-                {/* ✓ Show specific trade in header */}
-                {displayLabel ? 'Selected Trade' : 'Trade'}
+                {displayLabel ? '⚡ Selected Trade' : 'Trade'}
               </span>
               {hasTradeCitation ? (
-                <Badge variant="outline" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                <Badge className="text-[10px] bg-gradient-to-r from-fuchsia-100 to-pink-100 dark:from-fuchsia-900/40 dark:to-pink-900/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-300/50">
                   ✓ Active
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] bg-gray-100 text-gray-500">
-                  Not Set
-                </Badge>
+                <Badge variant="outline" className="text-[10px] bg-gray-100 text-gray-500">Not Set</Badge>
               )}
             </div>
             <p className={cn(
-              "text-xl font-bold capitalize",
-              hasTradeCitation ? "text-orange-700 dark:text-orange-300" : "text-gray-400"
+              "text-2xl font-black capitalize tracking-tight",
+              hasTradeCitation ? "text-gray-900 dark:text-fuchsia-100" : "text-gray-400"
             )}>
-              {/* ✓ DYNAMIC: Display trade label prominently (Flooring, Painting, etc.) */}
               {displayLabel || '—'}
             </p>
             {templateGfaValue !== null && (
-              <p className="text-[10px] text-muted-foreground mt-1">
-                @ {templateGfaValue.toLocaleString()} sq ft
+              <p className="text-[10px] text-fuchsia-600/70 dark:text-fuchsia-400/60 mt-1 font-medium">
+                @ {templateGfaValue.toLocaleString()} sq ft coverage
               </p>
             )}
-            {/* ✓ ALWAYS show cite badge if ANY citation source exists */}
             {bestCitationSource && (
-              <p className="text-[10px] text-orange-500 mt-1 font-mono">
+              <p className="text-[10px] text-fuchsia-500 mt-1 font-mono">
                 cite: [{bestCitationSource.id.slice(0, 12)}]
               </p>
             )}
           </div>
-          
-          {/* ✓ WASTE FACTOR Badge */}
-          {panelWastePercent > 0 && (
-            <div className="p-2 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/50 dark:border-orange-800/30 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Ruler className="h-4 w-4 text-orange-500" />
-                <span className="text-xs font-medium text-orange-700 dark:text-orange-300">Waste Factor</span>
-              </div>
-              <Badge variant="outline" className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                +{panelWastePercent}%
-              </Badge>
+
+          {/* ✓ STATS ROW - Colorful metric cards */}
+          <div className="grid grid-cols-3 gap-2">
+            {/* Material Count - Lime */}
+            <div className="rounded-xl border border-lime-300 dark:border-lime-500/30 bg-gradient-to-br from-lime-50 to-green-50 dark:from-lime-950/40 dark:to-green-950/30 p-2.5 text-center">
+              <p className="text-[9px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-wide">Materials</p>
+              <p className="text-xl font-black text-gray-900 dark:text-lime-200">{materialCount}</p>
+              <p className="text-[8px] text-lime-600/60 dark:text-lime-400/50">items</p>
             </div>
-          )}
+            {/* Total Units - Sky */}
+            <div className="rounded-xl border border-sky-300 dark:border-sky-500/30 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/40 dark:to-cyan-950/30 p-2.5 text-center">
+              <p className="text-[9px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide">Total Qty</p>
+              <p className="text-xl font-black text-gray-900 dark:text-sky-200">{totalUnitsNeeded.toLocaleString()}</p>
+              <p className="text-[8px] text-sky-600/60 dark:text-sky-400/50">units</p>
+            </div>
+            {/* Waste Applied - Amber */}
+            <div className="rounded-xl border border-amber-300 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/30 p-2.5 text-center">
+              <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide">Waste</p>
+              <p className="text-xl font-black text-gray-900 dark:text-amber-200">+{panelWastePercent}%</p>
+              <p className="text-[8px] text-amber-600/60 dark:text-amber-400/50">{wastedMaterials} items</p>
+            </div>
+          </div>
           
-          {/* ✓ MATERIAL REQUIREMENTS - WITH WASTE APPLIED */}
+          {/* ✓ MATERIAL REQUIREMENTS - Vibrant list */}
           {tradeTemplate.hasData && materialsWithWaste.length > 0 && (
-            <div className="p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center justify-between mb-2">
+            <div className="rounded-xl border-2 border-violet-200 dark:border-violet-500/30 bg-gradient-to-br from-violet-50/80 to-indigo-50/80 dark:from-violet-950/30 dark:to-indigo-950/20 p-3">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-orange-500" />
-                  <span className="text-xs font-medium">Material Requirements</span>
+                  <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+                    <ClipboardList className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <span className="text-xs font-bold text-gray-800 dark:text-violet-200">Material Requirements</span>
                 </div>
                 {templateCitation && (
-                  <span className="text-[10px] text-orange-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                  <span className="text-[10px] text-violet-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
                 )}
               </div>
               <div className="space-y-1.5">
                 {materialsWithWaste.map((mat, idx) => {
-                  // Check if this material has a pending modification
                   const materialPending = pendingChanges.find(
                     pc => pc.item_id === `material_${idx}` && pc.status === 'pending'
                   );
                   const isForeman = userRole === 'foreman' || userRole === 'subcontractor';
+                  // Alternate row colors for visual interest
+                  const rowColors = [
+                    'bg-rose-50/60 dark:bg-rose-950/20 border-rose-200/50 dark:border-rose-800/30',
+                    'bg-cyan-50/60 dark:bg-cyan-950/20 border-cyan-200/50 dark:border-cyan-800/30',
+                    'bg-lime-50/60 dark:bg-lime-950/20 border-lime-200/50 dark:border-lime-800/30',
+                    'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30',
+                    'bg-fuchsia-50/60 dark:bg-fuchsia-950/20 border-fuchsia-200/50 dark:border-fuchsia-800/30',
+                  ];
+                  const rowColor = rowColors[idx % rowColors.length];
                   
                   return (
                     <div 
                       key={idx} 
                       className={cn(
-                        "flex items-center justify-between text-xs group",
-                        materialPending && "bg-amber-50 dark:bg-amber-950/20 p-1.5 rounded border-l-2 border-amber-400"
+                        "flex items-center justify-between text-xs group p-2 rounded-lg border",
+                        materialPending ? "bg-amber-50 dark:bg-amber-950/20 border-l-2 border-amber-400" : rowColor
                       )}
                     >
                       <div className="flex items-center gap-1.5 flex-1">
-                        <span className="text-muted-foreground">{mat.name}</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{mat.name}</span>
                         {mat.hasWaste && (
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 bg-orange-50 text-orange-600 border-orange-200">
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
                             +{panelWastePercent}%
                           </Badge>
                         )}
@@ -5012,15 +5035,13 @@ export default function Stage8FinalReview({
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{mat.qty.toLocaleString()} {mat.unit}</span>
-                        {/* Foreman can request modification on materials */}
+                        <span className="font-bold text-gray-900 dark:text-white">{mat.qty.toLocaleString()} {mat.unit}</span>
                         {isForeman && !materialPending && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => {
-                              // Quick prompt for modification
                               const newQty = prompt(`Request modification for ${mat.name}\nCurrent: ${mat.qty} ${mat.unit}\nEnter new quantity:`);
                               if (newQty && !isNaN(Number(newQty))) {
                                 createPendingChange({
@@ -5045,10 +5066,11 @@ export default function Stage8FinalReview({
             </div>
           )}
           
-          {/* Show message when no data */}
+          {/* No Data */}
           {!tradeTemplate.hasData && (
-            <div className="p-3 rounded-lg bg-muted/30 border border-dashed text-center">
-              <p className="text-xs text-muted-foreground italic">
+            <div className="p-4 rounded-xl border-2 border-dashed border-fuchsia-200 dark:border-fuchsia-800/30 text-center bg-gradient-to-br from-fuchsia-50/30 to-pink-50/30 dark:from-fuchsia-950/10 dark:to-pink-950/10">
+              <Hammer className="h-8 w-8 text-fuchsia-300 dark:text-fuchsia-600 mx-auto mb-2" />
+              <p className="text-xs text-fuchsia-600/80 dark:text-fuchsia-400/60 italic">
                 {!tradeCitation && workTypeCitation
                   ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage' 
                   : !hasTradeCitation 
@@ -5060,44 +5082,44 @@ export default function Stage8FinalReview({
             </div>
           )}
           
-          {/* Template Info */}
+          {/* Template Locked - Teal */}
           {templateCitation && (
-            <div className="p-3 rounded-lg bg-muted/50 border">
+            <div className="p-3 rounded-xl border-2 border-teal-200 dark:border-teal-500/30 bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/20">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-amber-500" />
-                  <span className="text-xs font-medium">Template Locked</span>
+                  <Lock className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  <span className="text-xs font-bold text-gray-800 dark:text-teal-200">Template Locked</span>
                 </div>
-                <span className="text-[10px] text-amber-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                <span className="text-[10px] text-teal-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
               </div>
-              <p className="text-sm font-medium">{templateCitation.answer}</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-teal-100">{templateCitation.answer}</p>
             </div>
           )}
           
-          {/* Execution Mode */}
+          {/* Execution Mode - Rose/Red */}
           {executionCitation && (
-            <div className="p-3 rounded-lg bg-muted/50 border">
+            <div className="p-3 rounded-xl border-2 border-rose-200 dark:border-rose-500/30 bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/20">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-amber-500" />
-                  <span className="text-xs font-medium">Execution Mode</span>
+                  <Settings className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                  <span className="text-xs font-bold text-gray-800 dark:text-rose-200">Execution Mode</span>
                 </div>
-                <span className="text-[10px] text-amber-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                <span className="text-[10px] text-rose-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
               </div>
-              <p className="text-sm font-medium capitalize">{executionCitation.answer}</p>
+              <p className="text-sm font-bold capitalize text-gray-900 dark:text-rose-100">{executionCitation.answer}</p>
             </div>
           )}
           
-          {/* All Trade Citations */}
+          {/* All Citations - Indigo */}
           {panelCitations.length > 0 && (
-            <div className="pt-3 border-t space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">All Citations</p>
+            <div className="pt-3 border-t border-indigo-200/50 dark:border-indigo-800/30 space-y-2">
+              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">All Citations</p>
               {panelCitations.map(c => (
-                <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded bg-muted/30">
-                  <span className="text-muted-foreground">{c.cite_type.replace(/_/g, ' ')}</span>
+                <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/30">
+                  <span className="text-indigo-700/70 dark:text-indigo-400/70 font-medium">{c.cite_type.replace(/_/g, ' ')}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{renderCitationValue(c)}</span>
-                    <span className="text-[10px] text-orange-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                    <span className="font-bold text-gray-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
+                    <span className="text-[10px] text-indigo-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
                   </div>
                 </div>
               ))}
@@ -6122,21 +6144,30 @@ export default function Stage8FinalReview({
             return { ...mat, hasWaste: false };
           });
           
+          // ✓ Derived stats
+          const fsMaterialCount = materialsWithWaste.length;
+          const fsTotalUnits = materialsWithWaste.reduce((sum, m) => sum + m.qty, 0);
+          const fsWastedCount = materialsWithWaste.filter(m => m.hasWaste).length;
+          const avgUnitsPerMat = fsMaterialCount > 0 ? Math.round(fsTotalUnits / fsMaterialCount) : 0;
+          
           return (
             <div className="space-y-6">
-              {/* Trade Header */}
+              {/* Trade Header - Fuchsia/Pink */}
               <div className={cn(
-                "p-6 rounded-xl border-2",
+                "p-6 rounded-2xl border-2 relative overflow-hidden",
                 tradeLabel
-                  ? "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-orange-300 dark:border-orange-700"
+                  ? "bg-gradient-to-br from-fuchsia-50 via-pink-50 to-rose-50 dark:from-fuchsia-950/40 dark:via-pink-950/30 dark:to-rose-950/30 border-fuchsia-300 dark:border-fuchsia-500/40"
                   : "bg-muted/30 border-dashed"
               )}>
+                {tradeLabel && (
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-fuchsia-200/30 to-transparent dark:from-fuchsia-500/10 rounded-bl-[3rem]" />
+                )}
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                  <h4 className="text-2xl font-black text-gray-900 dark:text-fuchsia-100 tracking-tight">
                     {tradeLabel || 'No Trade Selected'}
                   </h4>
                   {tradeCitation && (
-                    <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                    <Badge className="bg-gradient-to-r from-fuchsia-100 to-pink-100 dark:from-fuchsia-900/40 dark:to-pink-900/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-300/50">
                       cite: [{tradeCitation.id.slice(0, 8)}]
                     </Badge>
                   )}
@@ -6144,59 +6175,101 @@ export default function Stage8FinalReview({
                 {gfaValue && (
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm font-medium">{gfaValue.toLocaleString()} sq ft</span>
+                      <Ruler className="h-4 w-4 text-fuchsia-500" />
+                      <span className="text-sm font-bold text-gray-800 dark:text-fuchsia-200">{gfaValue.toLocaleString()} sq ft</span>
                     </div>
                     {wastePercent > 0 && (
-                      <Badge variant="outline" className="text-xs bg-orange-50 text-orange-600">
+                      <Badge className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300/50">
                         +{wastePercent}% waste factor
                       </Badge>
                     )}
                   </div>
                 )}
               </div>
+
+              {/* Stats Grid - 4 colorful cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-xl border-2 border-lime-300 dark:border-lime-500/30 bg-gradient-to-br from-lime-50 to-green-50 dark:from-lime-950/40 dark:to-green-950/30 p-4 text-center">
+                  <p className="text-[10px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-widest">Materials</p>
+                  <p className="text-3xl font-black text-gray-900 dark:text-lime-200">{fsMaterialCount}</p>
+                  <p className="text-[10px] text-lime-600/60">line items</p>
+                </div>
+                <div className="rounded-xl border-2 border-sky-300 dark:border-sky-500/30 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/40 dark:to-cyan-950/30 p-4 text-center">
+                  <p className="text-[10px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-widest">Total Qty</p>
+                  <p className="text-3xl font-black text-gray-900 dark:text-sky-200">{fsTotalUnits.toLocaleString()}</p>
+                  <p className="text-[10px] text-sky-600/60">all units</p>
+                </div>
+                <div className="rounded-xl border-2 border-amber-300 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/30 p-4 text-center">
+                  <p className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-widest">Waste</p>
+                  <p className="text-3xl font-black text-gray-900 dark:text-amber-200">+{wastePercent}%</p>
+                  <p className="text-[10px] text-amber-600/60">{fsWastedCount} items affected</p>
+                </div>
+                <div className="rounded-xl border-2 border-violet-300 dark:border-violet-500/30 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/30 p-4 text-center">
+                  <p className="text-[10px] font-mono uppercase text-violet-600 dark:text-violet-400 tracking-widest">Avg / Item</p>
+                  <p className="text-3xl font-black text-gray-900 dark:text-violet-200">{avgUnitsPerMat.toLocaleString()}</p>
+                  <p className="text-[10px] text-violet-600/60">units avg</p>
+                </div>
+              </div>
               
-              {/* Materials Grid */}
+              {/* Materials Grid - Colorful cards */}
               {template.hasData && materialsWithWaste.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4 text-orange-500" />
+                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-violet-200">
+                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+                      <ClipboardList className="h-4 w-4 text-white" />
+                    </div>
                     Material Requirements
                     {templateCitation && (
-                      <span className="text-[10px] text-orange-500 font-mono ml-auto">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                      <span className="text-[10px] text-violet-500 font-mono ml-auto">cite: [{templateCitation.id.slice(0, 8)}]</span>
                     )}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {materialsWithWaste.map((mat, idx) => (
-                      <div 
-                        key={idx} 
-                        className="flex items-center justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                            <Hammer className="h-5 w-5 text-orange-500" />
+                    {materialsWithWaste.map((mat, idx) => {
+                      const cardColors = [
+                        'border-rose-200 dark:border-rose-500/30 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20',
+                        'border-cyan-200 dark:border-cyan-500/30 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/20 dark:to-sky-950/20',
+                        'border-lime-200 dark:border-lime-500/30 bg-gradient-to-br from-lime-50 to-green-50 dark:from-lime-950/20 dark:to-green-950/20',
+                        'border-amber-200 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20',
+                        'border-fuchsia-200 dark:border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-50 to-purple-50 dark:from-fuchsia-950/20 dark:to-purple-950/20',
+                      ];
+                      const iconColors = [
+                        'from-rose-400 to-red-500',
+                        'from-cyan-400 to-blue-500',
+                        'from-lime-400 to-green-500',
+                        'from-amber-400 to-orange-500',
+                        'from-fuchsia-400 to-purple-500',
+                      ];
+                      return (
+                        <div 
+                          key={idx} 
+                          className={cn("flex items-center justify-between p-4 rounded-xl border-2 hover:shadow-md transition-all", cardColors[idx % cardColors.length])}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm", iconColors[idx % iconColors.length])}>
+                              <Hammer className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-800 dark:text-gray-100">{mat.name}</p>
+                              {mat.hasWaste && (
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">+{wastePercent}% waste included</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{mat.name}</p>
-                            {mat.hasWaste && (
-                              <p className="text-[10px] text-orange-500">+{wastePercent}% waste included</p>
-                            )}
-                          </div>
+                          <Badge className="text-sm font-black bg-white/80 dark:bg-gray-900/50 text-gray-900 dark:text-white border border-gray-300/50 dark:border-gray-600/50 shadow-sm">
+                            {mat.qty.toLocaleString()} {mat.unit}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="text-sm font-bold">
-                          {mat.qty.toLocaleString()} {mat.unit}
-                        </Badge>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
               
-              {/* No Data Message */}
+              {/* No Data */}
               {!template.hasData && (
-                <div className="p-8 rounded-xl border-2 border-dashed text-center">
-                  <Hammer className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">
+                <div className="p-8 rounded-2xl border-2 border-dashed border-fuchsia-200 dark:border-fuchsia-800/30 text-center bg-gradient-to-br from-fuchsia-50/30 to-pink-50/30 dark:from-fuchsia-950/10 dark:to-pink-950/10">
+                  <Hammer className="h-12 w-12 text-fuchsia-300 dark:text-fuchsia-600 mx-auto mb-3" />
+                  <p className="text-fuchsia-600/80 dark:text-fuchsia-400/60">
                     {!tradeCitation && workTypeCitation
                       ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage'
                       : !tradeLabel 
