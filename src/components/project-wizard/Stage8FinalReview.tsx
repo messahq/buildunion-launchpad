@@ -64,6 +64,7 @@ import {
   MessageSquare,
   Mail,
   Send,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -443,6 +454,10 @@ export default function Stage8FinalReview({
     { email: '', name: '' }
   ]);
   const [isSendingToMultiple, setIsSendingToMultiple] = useState(false);
+  
+  // ✓ Contract delete confirmation state
+  const [contractToDelete, setContractToDelete] = useState<{id: string; contract_number: string; status: string} | null>(null);
+  const [isDeletingContract, setIsDeletingContract] = useState(false);
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [isRunningAIAnalysis, setIsRunningAIAnalysis] = useState(false);
   
@@ -1144,6 +1159,42 @@ export default function Stage8FinalReview({
         
         if (contractsData) {
           setContracts(contractsData);
+          
+          // 6b. Generate CONTRACT citations for each contract if not present
+          const existingContractCits = loadedCitations.filter(c => c.cite_type === 'CONTRACT');
+          const existingContractIds = new Set(existingContractCits.map(c => (c.metadata as any)?.contract_id));
+          
+          contractsData.forEach((contract, idx) => {
+            if (!existingContractIds.has(contract.id)) {
+              const sigStatus = contract.client_signature && contract.contractor_signature ? 'Fully Signed' 
+                : contract.client_signature ? 'Client Signed' 
+                : contract.contractor_signature ? 'Contractor Signed' 
+                : 'Unsigned';
+              const contractCitation: Citation = {
+                id: `cite_contract_${contract.id.slice(0, 8)}`,
+                cite_type: 'CONTRACT' as any,
+                question_key: `contract_${idx + 1}`,
+                answer: `#${contract.contract_number} — ${contract.status.toUpperCase()} — ${sigStatus}${contract.total_amount ? ` — $${contract.total_amount.toLocaleString()}` : ''}`,
+                value: contract.status,
+                timestamp: new Date().toISOString(),
+                metadata: {
+                  contract_id: contract.id,
+                  contract_number: contract.contract_number,
+                  status: contract.status,
+                  total_amount: contract.total_amount,
+                  client_name: contract.client_name,
+                  contractor_name: contract.contractor_name,
+                  client_signed: !!contract.client_signature,
+                  contractor_signed: !!contract.contractor_signature,
+                  client_signed_at: contract.client_signed_at,
+                  sent_at: contract.sent_to_client_at,
+                  source: 'contract_engine',
+                },
+              };
+              loadedCitations.push(contractCitation);
+              newTeamCitations.push(contractCitation);
+            }
+          });
         }
         
         // Financial lock: Only unlocked if owner has financial data
@@ -4783,6 +4834,21 @@ export default function Stage8FinalReview({
                           <Download className="h-3 w-3" />
                           PDF
                         </Button>
+                        
+                        {/* Delete (soft) */}
+                        {canEdit && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-6 text-[10px] px-2 gap-1 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setContractToDelete({ id: contract.id, contract_number: contract.contract_number, status: contract.status });
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -10559,6 +10625,58 @@ export default function Stage8FinalReview({
         citations={citations}
         projectData={projectData}
       />
+      {/* Contract Delete Confirmation */}
+      <AlertDialog open={!!contractToDelete} onOpenChange={(open) => { if (!open) setContractToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Contract #{contractToDelete?.contract_number}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to delete this contract? This action will archive the contract and remove it from your active documents.</p>
+              {contractToDelete?.status === 'signed' && (
+                <p className="text-red-500 font-semibold">⚠️ Warning: This contract has been signed. Deleting a signed contract may have legal implications.</p>
+              )}
+              {contractToDelete?.status === 'sent' && (
+                <p className="text-amber-500 font-medium">⚠️ This contract has already been sent to clients. They will no longer be able to access it.</p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingContract}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingContract}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={async () => {
+                if (!contractToDelete) return;
+                setIsDeletingContract(true);
+                try {
+                  const { error } = await supabase
+                    .from('contracts')
+                    .update({ archived_at: new Date().toISOString() })
+                    .eq('id', contractToDelete.id);
+                  
+                  if (error) throw error;
+                  
+                  setContracts(prev => prev.filter(c => c.id !== contractToDelete.id));
+                  // Remove contract citation
+                  setCitations(prev => prev.filter(c => !(c.cite_type === 'CONTRACT' && (c.metadata as any)?.contract_id === contractToDelete.id)));
+                  toast.success(`Contract #${contractToDelete.contract_number} deleted`);
+                  setContractToDelete(null);
+                } catch (err) {
+                  toast.error('Failed to delete contract');
+                } finally {
+                  setIsDeletingContract(false);
+                }
+              }}
+            >
+              {isDeletingContract ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Yes, Delete Contract
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
     </div>
   );
