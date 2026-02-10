@@ -485,9 +485,8 @@ export default function Stage8FinalReview({
   // ✓ Unread chat messages indicator for Team panel
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const lastSeenChatRef = useRef<string | null>(null);
-  
-  // ✓ Deep Audit Modal for MESSA DNA Synthesis
-  const [showDeepAudit, setShowDeepAudit] = useState(false);
+
+
 
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
@@ -7585,6 +7584,21 @@ export default function Stage8FinalReview({
   
   // Get the active panel config
   const activePanelConfig = useMemo(() => {
+    if (activeOrbitalPanel === 'messa-deep-audit') {
+      return {
+        id: 'messa-deep-audit',
+        panelNumber: 9,
+        title: 'MESSA DNA Deep Audit',
+        titleKey: 'stage8.messaAudit',
+        icon: Sparkles,
+        color: 'text-emerald-600',
+        bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
+        borderColor: 'border-emerald-300 dark:border-emerald-700',
+        visibilityTier: 'owner' as VisibilityTier,
+        dataKeys: [],
+        description: '5-Pillar Synthesis Validation',
+      };
+    }
     return PANELS.find(p => p.id === activeOrbitalPanel) || PANELS[0];
   }, [activeOrbitalPanel]);
 
@@ -8013,13 +8027,216 @@ export default function Stage8FinalReview({
                 animate={{ opacity: 1, scale: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.97, x: -30 }}
                 transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="flex-1 p-4 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground"
+                className={cn(
+                  "flex-1 p-4 overflow-y-auto",
+                  activeOrbitalPanel === 'messa-deep-audit'
+                    ? ""
+                    : "[&_*]:text-foreground dark:[&_*]:text-foreground"
+                )}
                 ref={canvasContentRef}
-                style={{ colorScheme: 'light' }}
+                style={activeOrbitalPanel === 'messa-deep-audit' ? {} : { colorScheme: 'light' }}
               >
-                <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
-                  {renderPanelContent(activePanelConfig)}
-                </div>
+                {activeOrbitalPanel === 'messa-deep-audit' ? (
+                  <div className="space-y-4">
+                    {(() => {
+                      const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+                      const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+                      const hasTech = !!tradeCit && !!templateCit;
+                      const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
+                      const hasReg = !!dnaCit;
+                      const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
+                      const hasVis = !!photoCit && !!tradeCit;
+                      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+                      const hasFin = (financialSummary?.total_cost ?? 0) > 0 && !!locationCit;
+                      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+                      const hasGeo = !!gfaCit;
+
+                      const pillarDetails = [
+                        {
+                          key: 'technical', label: 'Technical Integrity', sub: 'PDF RAG × Materials Table',
+                          icon: '🔬', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400',
+                          status: hasTech,
+                          description: 'Verifies that PDF-extracted technical specs match the locked Materials Table entries.',
+                          sources: [
+                            { label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' },
+                            { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' },
+                          ],
+                        },
+                        {
+                          key: 'regulatory', label: 'Regulatory Compliance (OBC)', sub: 'Dual-Engine Validation',
+                          icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400',
+                          status: hasReg,
+                          description: 'Joint Gemini 2.5 Pro + OpenAI GPT-5 validation against OBC 2024.',
+                          sources: [
+                            { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' },
+                          ],
+                        },
+                        {
+                          key: 'visual', label: 'Visual Validation', sub: 'AI Vision × Trade Sync',
+                          icon: '👁️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400',
+                          status: hasVis,
+                          description: 'AI Vision cross-reference: site photo content aligns with the selected trade.',
+                          sources: [
+                            { label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
+                            { label: 'Trade (Cross-ref)', citation: tradeCit, field: 'TRADE_SELECTION' },
+                          ],
+                        },
+                        {
+                          key: 'financial', label: 'Financial Audit', sub: 'Sync + Tax (HST/GST)',
+                          icon: '💰', color: 'border-amber-500/40', headerBg: 'bg-amber-500/10', textColor: 'text-amber-400',
+                          status: hasFin,
+                          description: 'Validates Supabase Pro sync and regional tax calculation (HST 13% ON / GST 5%).',
+                          sources: [
+                            { label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' },
+                            { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
+                          ],
+                        },
+                        {
+                          key: 'geometric', label: 'Geometric Precision', sub: 'Override Authority',
+                          icon: '📐', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400',
+                          status: hasGeo,
+                          description: 'AI-estimated vs Owner manually overridden GFA — authoritative geometric source.',
+                          sources: [
+                            { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
+                          ],
+                        },
+                      ];
+
+                      const passCount = pillarDetails.filter(p => p.status).length;
+
+                      return (
+                        <>
+                          {/* Score Summary Bar */}
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/30 bg-emerald-950/20">
+                            <div className={cn(
+                              "text-2xl font-bold font-mono",
+                              passCount === 5 ? "text-emerald-400" : passCount >= 3 ? "text-amber-400" : "text-red-400"
+                            )}>
+                              {passCount}/5
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs font-medium text-emerald-300">DNA Integrity Score</div>
+                              <div className="h-2 mt-1 rounded-full bg-emerald-950/50 overflow-hidden">
+                                <motion.div
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    passCount === 5 ? "bg-gradient-to-r from-emerald-500 to-green-400"
+                                      : passCount >= 3 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                                      : "bg-gradient-to-r from-red-500 to-orange-400"
+                                  )}
+                                  initial={{ width: '0%' }}
+                                  animate={{ width: `${(passCount / 5) * 100}%` }}
+                                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                                />
+                              </div>
+                            </div>
+                            <Badge className={cn(
+                              "text-[10px] font-mono border",
+                              passCount === 5 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                : passCount >= 3 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                : "bg-red-500/20 text-red-300 border-red-500/30"
+                            )}>
+                              {passCount === 5 ? 'VERIFIED' : passCount >= 3 ? 'PARTIAL' : 'INCOMPLETE'}
+                            </Badge>
+                          </div>
+
+                          {/* Pillar Cards */}
+                          {pillarDetails.map((pillar, idx) => (
+                            <motion.div
+                              key={pillar.key}
+                              className={cn("rounded-xl border overflow-hidden", pillar.color)}
+                              initial={{ opacity: 0, y: 12 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.08 }}
+                            >
+                              <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
+                                <span className="text-lg">{pillar.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className={cn("text-sm font-semibold", pillar.textColor)}>{pillar.label}</div>
+                                  <div className="text-[10px] text-white/40">{pillar.sub}</div>
+                                </div>
+                                {pillar.status ? (
+                                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] gap-1 border">
+                                    <CheckCircle2 className="h-3 w-3" /> PASS
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] gap-1 border">
+                                    <Circle className="h-3 w-3" /> PENDING
+                                  </Badge>
+                                )}
+                              </div>
+
+                              <div className="px-4 py-3 space-y-3">
+                                <p className="text-[11px] text-white/60 leading-relaxed">{pillar.description}</p>
+                                <div className="space-y-1.5">
+                                  <div className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Source References</div>
+                                  {pillar.sources.map((src: any, si: number) => (
+                                    <div
+                                      key={si}
+                                      className={cn(
+                                        "flex items-start gap-2 px-3 py-2 rounded-lg border text-[11px]",
+                                        src.citation ? "border-emerald-800/20 bg-emerald-950/10" : "border-red-800/20 bg-red-950/10"
+                                      )}
+                                    >
+                                      <div className="mt-0.5">
+                                        {src.citation ? (
+                                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                        ) : src.customValue ? (
+                                          (financialSummary?.total_cost ?? 0) > 0
+                                            ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                            : <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                                        ) : (
+                                          <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium text-white/80">{src.label}</span>
+                                          <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-white/10 text-white/30 font-mono">
+                                            {src.field}
+                                          </Badge>
+                                        </div>
+                                        {src.citation ? (
+                                          <div className="mt-1 space-y-0.5">
+                                            <div className="text-white/60">
+                                              <span className="text-white/30">Value: </span>
+                                              <span className="text-emerald-300/80">{src.citation.answer || '—'}</span>
+                                            </div>
+                                            <div className="text-white/30 text-[9px] font-mono">
+                                              cite:{src.citation.id} · {new Date(src.citation.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                            {src.citation.metadata && Object.keys(src.citation.metadata).length > 0 && (
+                                              <div className="text-[9px] text-white/20 font-mono truncate">
+                                                meta: {JSON.stringify(src.citation.metadata).slice(0, 80)}{JSON.stringify(src.citation.metadata).length > 80 ? '…' : ''}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : src.customValue ? (
+                                          <div className="mt-1 text-white/60">
+                                            <span className="text-white/30">Value: </span>
+                                            <span className="text-amber-300/80">{src.customValue}</span>
+                                          </div>
+                                        ) : (
+                                          <div className="mt-1 text-amber-400/60 text-[10px]">
+                                            ⚠ Citation not found — complete this step in the Wizard
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
+                    {renderPanelContent(activePanelConfig)}
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           </motion.div>
@@ -8265,7 +8482,7 @@ export default function Stage8FinalReview({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.7 }}
             whileHover={{ scale: 1.02, borderColor: 'rgba(16,185,129,0.5)' }}
-            onClick={() => setShowDeepAudit(true)}
+            onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
           >
             {/* Scanning line effect */}
             <motion.div
@@ -9535,267 +9752,6 @@ export default function Stage8FinalReview({
         projectData={projectData}
       />
       
-      {/* Deep Audit Modal - MESSA DNA Synthesis 5-Pillar Detail */}
-      <Dialog open={showDeepAudit} onOpenChange={setShowDeepAudit}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col bg-gradient-to-br from-[#0a1628] to-[#0d1f2d] border-emerald-800/40 text-white">
-          <DialogHeader className="pb-4 border-b border-emerald-800/30">
-            <div className="flex items-center gap-3">
-              <motion.div
-                className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center"
-                animate={{ boxShadow: ['0 0 0px rgba(16,185,129,0)', '0 0 16px rgba(16,185,129,0.4)', '0 0 0px rgba(16,185,129,0)'] }}
-                transition={{ duration: 2.5, repeat: Infinity }}
-              >
-                <Sparkles className="h-5 w-5 text-emerald-400" />
-              </motion.div>
-              <div>
-                <DialogTitle className="text-lg font-display text-emerald-300">
-                  MESSA <span className="text-amber-400">DNA</span> Deep Audit
-                </DialogTitle>
-                <p className="text-xs text-emerald-600/80">Multi-Engine Synthesis & Structured Analysis — 5-Pillar Verification</p>
-              </div>
-            </div>
-          </DialogHeader>
-          
-          <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
-            {(() => {
-              // Pillar 1: Technical Integrity
-              const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-              const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-              const hasTech = !!tradeCit && !!templateCit;
-              
-              // Pillar 2: Regulatory Compliance
-              const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
-              const hasReg = !!dnaCit;
-              
-              // Pillar 3: Visual Validation
-              const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
-              const hasVis = !!photoCit && !!tradeCit;
-              
-              // Pillar 4: Financial Audit
-              const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-              const hasFin = (financialSummary?.total_cost ?? 0) > 0 && !!locationCit;
-              
-              // Pillar 5: Geometric Precision
-              const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-              const hasGeo = !!gfaCit;
-
-              const pillarDetails = [
-                {
-                  key: 'technical',
-                  label: 'Technical Integrity',
-                  sub: 'PDF RAG × Materials Table',
-                  icon: '🔬',
-                  color: 'border-blue-500/40',
-                  headerBg: 'bg-blue-500/10',
-                  textColor: 'text-blue-400',
-                  status: hasTech,
-                  description: 'Verifies that the PDF-extracted technical specifications (e.g., paint type, material grade) match the locked Materials Table entries.',
-                  sources: [
-                    { label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' },
-                    { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' },
-                  ],
-                },
-                {
-                  key: 'regulatory',
-                  label: 'Regulatory Compliance (OBC)',
-                  sub: 'Dual-Engine Validation',
-                  icon: '⚖️',
-                  color: 'border-purple-500/40',
-                  headerBg: 'bg-purple-500/10',
-                  textColor: 'text-purple-400',
-                  status: hasReg,
-                  description: 'Joint Gemini 2.5 Pro + OpenAI GPT-5 validation against the Ontario Building Code (OBC 2024). Both engines must confirm compliance before the DNA is finalized.',
-                  sources: [
-                    { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' },
-                  ],
-                },
-                {
-                  key: 'visual',
-                  label: 'Visual Validation',
-                  sub: 'AI Vision × Trade Sync',
-                  icon: '👁️',
-                  color: 'border-cyan-500/40',
-                  headerBg: 'bg-cyan-500/10',
-                  textColor: 'text-cyan-400',
-                  status: hasVis,
-                  description: 'AI Vision cross-reference: confirms the uploaded site photo content aligns with the selected trade (e.g., a painting photo matches the Painting trade).',
-                  sources: [
-                    { label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
-                    { label: 'Trade (Cross-ref)', citation: tradeCit, field: 'TRADE_SELECTION' },
-                  ],
-                },
-                {
-                  key: 'financial',
-                  label: 'Financial Audit',
-                  sub: 'Sync + Tax (HST/GST) Validation',
-                  icon: '💰',
-                  color: 'border-amber-500/40',
-                  headerBg: 'bg-amber-500/10',
-                  textColor: 'text-amber-400',
-                  status: hasFin,
-                  description: 'Validates the Supabase Pro sync state and dynamically calculates regional tax (HST 13% for Ontario, GST 5% for other provinces) based on the project location citation.',
-                  sources: [
-                    { label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' },
-                    { label: 'Total Budget', citation: null, field: 'FINANCIAL',
-                      customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
-                  ],
-                },
-                {
-                  key: 'geometric',
-                  label: 'Geometric Precision',
-                  sub: 'Override Authority',
-                  icon: '📐',
-                  color: 'border-emerald-500/40',
-                  headerBg: 'bg-emerald-500/10',
-                  textColor: 'text-emerald-400',
-                  status: hasGeo,
-                  description: 'Records the AI-estimated vs. Owner manually overridden GFA value. The locked GFA citation serves as the authoritative geometric source of truth.',
-                  sources: [
-                    { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
-                  ],
-                },
-              ];
-
-              const passCount = pillarDetails.filter(p => p.status).length;
-
-              return (
-                <>
-                  {/* Score Summary */}
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/30 bg-emerald-950/20">
-                    <div className={cn(
-                      "text-2xl font-bold font-mono",
-                      passCount === 5 ? "text-emerald-400" : passCount >= 3 ? "text-amber-400" : "text-red-400"
-                    )}>
-                      {passCount}/5
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-xs font-medium text-emerald-300">DNA Integrity Score</div>
-                      <div className="h-2 mt-1 rounded-full bg-emerald-950/50 overflow-hidden">
-                        <motion.div
-                          className={cn(
-                            "h-full rounded-full",
-                            passCount === 5 ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                              : passCount >= 3 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                              : "bg-gradient-to-r from-red-500 to-orange-400"
-                          )}
-                          initial={{ width: '0%' }}
-                          animate={{ width: `${(passCount / 5) * 100}%` }}
-                          transition={{ duration: 0.8, ease: 'easeOut' }}
-                        />
-                      </div>
-                    </div>
-                    <Badge className={cn(
-                      "text-[10px] font-mono",
-                      passCount === 5 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                        : passCount >= 3 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                        : "bg-red-500/20 text-red-300 border-red-500/30"
-                    )}>
-                      {passCount === 5 ? 'VERIFIED' : passCount >= 3 ? 'PARTIAL' : 'INCOMPLETE'}
-                    </Badge>
-                  </div>
-
-                  {/* Pillar Details */}
-                  {pillarDetails.map((pillar, idx) => (
-                    <motion.div
-                      key={pillar.key}
-                      className={cn("rounded-xl border overflow-hidden", pillar.color)}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.08 }}
-                    >
-                      {/* Pillar Header */}
-                      <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
-                        <span className="text-lg">{pillar.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className={cn("text-sm font-semibold", pillar.textColor)}>{pillar.label}</div>
-                          <div className="text-[10px] text-white/40">{pillar.sub}</div>
-                        </div>
-                        {pillar.status ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] gap-1">
-                            <CheckCircle2 className="h-3 w-3" /> PASS
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] gap-1">
-                            <Circle className="h-3 w-3" /> PENDING
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Pillar Body */}
-                      <div className="px-4 py-3 space-y-3">
-                        <p className="text-[11px] text-white/60 leading-relaxed">{pillar.description}</p>
-
-                        {/* Source Citations */}
-                        <div className="space-y-1.5">
-                          <div className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Source References</div>
-                          {pillar.sources.map((src, si) => (
-                            <div
-                              key={si}
-                              className={cn(
-                                "flex items-start gap-2 px-3 py-2 rounded-lg border text-[11px]",
-                                src.citation
-                                  ? "border-emerald-800/20 bg-emerald-950/10"
-                                  : "border-red-800/20 bg-red-950/10"
-                              )}
-                            >
-                              <div className="mt-0.5">
-                                {src.citation ? (
-                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                                ) : (
-                                  (src as any).customValue ? (
-                                    (financialSummary?.total_cost ?? 0) > 0 
-                                      ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                                      : <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                                  ) : (
-                                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                                  )
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-white/80">{src.label}</span>
-                                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-white/10 text-white/30 font-mono">
-                                    {src.field}
-                                  </Badge>
-                                </div>
-                                {src.citation ? (
-                                  <div className="mt-1 space-y-0.5">
-                                    <div className="text-white/60">
-                                      <span className="text-white/30">Value: </span>
-                                      <span className="text-emerald-300/80">{src.citation.answer || '—'}</span>
-                                    </div>
-                                    <div className="text-white/30 text-[9px] font-mono">
-                                      cite:{src.citation.id} · {new Date(src.citation.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                    {src.citation.metadata && Object.keys(src.citation.metadata).length > 0 && (
-                                      <div className="text-[9px] text-white/20 font-mono truncate">
-                                        meta: {JSON.stringify(src.citation.metadata).slice(0, 80)}{JSON.stringify(src.citation.metadata).length > 80 ? '…' : ''}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (src as any).customValue ? (
-                                  <div className="mt-1 text-white/60">
-                                    <span className="text-white/30">Value: </span>
-                                    <span className="text-amber-300/80">{(src as any).customValue}</span>
-                                  </div>
-                                ) : (
-                                  <div className="mt-1 text-amber-400/60 text-[10px]">
-                                    ⚠ Citation not found — complete this step in the Wizard
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </>
-              );
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
