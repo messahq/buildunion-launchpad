@@ -376,6 +376,7 @@ export default function Stage8FinalReview({
     name: string;
     address: string;
     status: string;
+    trade: string | null;
   } | null>(null);
   const [citations, setCitations] = useState<Citation[]>([]);
   const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string; userId: string}[]>([]);
@@ -546,14 +547,15 @@ export default function Stage8FinalReview({
   }, [userRole]);
   
   // Check if Financial Summary is unlocked for navigation
-  // ✓ KÉNYSZERÍTETT: Mindig unlocked ha Owner, mert van fix financial adat ($21,984.63)
+  // ✓ Unlocked for Owner when any financial data exists (dynamic, no hardcoded values)
   const isFinancialSummaryUnlocked = useMemo(() => {
-    // Unlocked when: Owner role (always has fixed financial data now)
     if (!canViewFinancials) return false;
-    
-    // ✓ ALWAYS TRUE for Owner - we have fixed financial data
-    return true;
-  }, [canViewFinancials]);
+    // Unlocked when Owner has any financial citations, contracts, or cost data
+    const hasFinancialData = citations.some(c => 
+      ['DEMOLITION_PRICE', 'TEMPLATE_LOCK'].includes(c.cite_type || '')
+    ) || contracts.length > 0;
+    return hasFinancialData;
+  }, [canViewFinancials, citations, contracts]);
   
   // Determine visibility tier access
   const hasAccessToTier = useCallback((tier: VisibilityTier): boolean => {
@@ -1699,7 +1701,7 @@ export default function Stage8FinalReview({
       projectAddress: locationCitation?.answer || projectData?.address || 'Address not set',
       gfa: gfaValue,
       gfaUnit: (gfaCitation?.metadata?.gfa_unit as string) || 'sq ft',
-      trade: tradeCitation?.answer || 'General Construction',
+      trade: tradeCitation?.answer || projectData?.trade || 'Not set',
       startDate: timelineCitation?.metadata?.start_date || 'Not set',
       endDate: endDateCitation?.value || 'Not set',
       teamSize: teamMembers.length,
@@ -2415,11 +2417,11 @@ export default function Stage8FinalReview({
       const dnaFinalizedCitation = citations.find(c => c.cite_type === 'DNA_FINALIZED');
       
       const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : (typeof gfaCitation?.metadata?.gfa_value === 'number' ? gfaCitation.metadata.gfa_value : 0);
-      const trade = tradeCitation?.answer || 'General';
+      const trade = tradeCitation?.answer || projectData?.trade || 'Not set';
       const address = locationCitation?.answer || projectData?.address || '';
-      const workType = workTypeCitation?.answer || 'General Construction';
+      const workType = workTypeCitation?.answer || projectData?.trade || 'Not set';
       const executionMode = executionModeCitation?.answer || 'Solo';
-      const siteCondition = siteConditionCitation?.answer || 'Clear Site';
+      const siteCondition = siteConditionCitation?.answer || 'Not assessed';
       const hasDemolition = demolitionCitation && (typeof demolitionCitation.value === 'number' && demolitionCitation.value > 0);
       const startDate = timelineCitation?.answer || '';
       const endDate = endDateCitation?.answer || '';

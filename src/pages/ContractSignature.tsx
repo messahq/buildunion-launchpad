@@ -176,7 +176,7 @@ export default function ContractSignature() {
         projectAddress: contract.project_address || "",
         gfa: 0,
         gfaUnit: "sq ft",
-        trade: "General Construction",
+        trade: contract.scope_of_work || "Not set",
         startDate: contract.start_date
           ? format(new Date(contract.start_date), "MMM dd, yyyy")
           : "TBD",
