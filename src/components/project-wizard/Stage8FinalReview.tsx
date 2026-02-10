@@ -7780,7 +7780,7 @@ export default function Stage8FinalReview({
                       </div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? "text-cyan-200" : "text-cyan-500"
+                        isActive ? "text-amber-400" : "text-amber-500"
                       )}>
                         {displayTitle}
                       </span>
@@ -8031,7 +8031,7 @@ export default function Stage8FinalReview({
                       </div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? "text-cyan-200" : "text-cyan-500"
+                        isActive ? "text-amber-400" : "text-amber-500"
                       )}>
                         {panel.title}
                       </span>
@@ -8125,7 +8125,7 @@ export default function Stage8FinalReview({
                 >
                   <div className="flex items-center gap-1">
                     {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                    <span className="text-[10px]">{panel.title.split(' ')[0]}</span>
+                    <span className={cn("text-[10px]", isActive ? "text-amber-400" : "text-amber-500")}>{panel.title.split(' ')[0]}</span>
                   </div>
                   {getMobileMetric()}
                   {/* Unread chat badge */}
