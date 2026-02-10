@@ -151,6 +151,9 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
           font-size: 14px;
         }
         
+        /* Page break helpers */
+        .pdf-section { break-inside: avoid; page-break-inside: avoid; }
+        
         /* Header - MESSA Style */
         .header {
           display: flex;
@@ -459,7 +462,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     </head>
     <body>
       <!-- MESSA Style Header -->
-      <div class="header">
+      <div class="header pdf-section">
         <div class="header-left">
           <div class="brand-name">${escapeHtml(data.contractor.name) || 'M.E.S.S.A.'}</div>
           <div class="doc-type">Cost Breakdown</div>
@@ -475,7 +478,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       </div>
       
       <!-- Prepared For Section -->
-      <div class="prepared-for">
+      <div class="prepared-for pdf-section">
         <div class="prepared-for-label"># Prepared For</div>
         <div class="client-info">
           <div class="name">${escapeHtml(data.client.name) || 'Client Name'}</div>
@@ -528,7 +531,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       </table>
       
       <!-- Summary + Tax Grid -->
-      <div class="summary-section">
+      <div class="summary-section pdf-section">
         <!-- Summary Box -->
         <div class="summary-box">
           <div class="summary-title"># Summary</div>
@@ -565,7 +568,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       </div>
       
       <!-- Grand Total -->
-      <div class="grand-total-section">
+      <div class="grand-total-section pdf-section">
         <div>
           <div class="grand-total-label"># Grand Total</div>
           <div class="grand-total-note">(incl. tax)</div>
@@ -574,7 +577,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       </div>
       
       <!-- Client Approval Signature Section -->
-      <div class="signature-section">
+      <div class="signature-section pdf-section">
         <div class="signature-intro">
           <strong># Client Approval</strong><br/>
           By signing below, client approves this cost breakdown for: <strong>${escapeHtml(data.projectName)}</strong>
@@ -628,16 +631,40 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<Blob> => {
   document.body.appendChild(container);
 
   try {
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const margin = 10;
+    const usableWidth = imgWidth - (margin * 2);
+
+    // Calculate pixel equivalent of usable page height for section adjustment
+    const pxPerMm = 800 / usableWidth;
+    const usablePageHeightPx = (pageHeight - margin * 2) * pxPerMm;
+
+    // Adjust sections to avoid page-break splits
+    const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer');
+    let cumulativeOffset = 0;
+    sections.forEach((section) => {
+      const el = section as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const topInContainer = rect.top - containerRect.top + cumulativeOffset;
+      const pageStart = Math.floor(topInContainer / usablePageHeightPx);
+      const bottomInContainer = topInContainer + rect.height;
+      const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
+      if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.9) {
+        const nextPageTop = (pageStart + 1) * usablePageHeightPx;
+        const spacerHeight = nextPageTop - topInContainer;
+        el.style.marginTop = `${spacerHeight + 12}px`;
+        cumulativeOffset += spacerHeight + 12;
+      }
+    });
+
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
       logging: false,
     });
 
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const margin = 10;
-    const usableWidth = imgWidth - (margin * 2);
     const imgHeight = (canvas.height * usableWidth) / canvas.width;
 
     const pdf = new jsPDF({
