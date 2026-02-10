@@ -3259,19 +3259,19 @@ export default function Stage8FinalReview({
          .sort((a, b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2)),
      }));
 
-     // Phase color map for Gantt bars
-     const phaseBarColors: Record<string, { bg: string; border: string; text: string }> = {
-       demolition: { bg: 'bg-red-500/20', border: 'border-red-500/40', text: 'text-red-400' },
-       preparation: { bg: 'bg-amber-500/20', border: 'border-amber-500/40', text: 'text-amber-400' },
-       installation: { bg: 'bg-blue-500/20', border: 'border-blue-500/40', text: 'text-blue-400' },
-       finishing: { bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', text: 'text-emerald-400' },
-     };
+      // Phase color map for Gantt bars - vibrant light mode
+      const phaseBarColors: Record<string, { bg: string; border: string; text: string; lightBg: string }> = {
+        demolition: { bg: 'bg-red-100 dark:bg-red-500/20', border: 'border-red-300 dark:border-red-500/40', text: 'text-red-600 dark:text-red-400', lightBg: 'from-red-50 to-rose-50' },
+        preparation: { bg: 'bg-amber-100 dark:bg-amber-500/20', border: 'border-amber-300 dark:border-amber-500/40', text: 'text-amber-600 dark:text-amber-400', lightBg: 'from-amber-50 to-yellow-50' },
+        installation: { bg: 'bg-blue-100 dark:bg-blue-500/20', border: 'border-blue-300 dark:border-blue-500/40', text: 'text-blue-600 dark:text-blue-400', lightBg: 'from-blue-50 to-sky-50' },
+        finishing: { bg: 'bg-emerald-100 dark:bg-emerald-500/20', border: 'border-emerald-300 dark:border-emerald-500/40', text: 'text-emerald-600 dark:text-emerald-400', lightBg: 'from-emerald-50 to-teal-50' },
+      };
 
-     const priorityColors: Record<string, string> = {
-       high: 'bg-red-500',
-       medium: 'bg-amber-500',
-       low: 'bg-emerald-500',
-     };
+      const priorityColors: Record<string, string> = {
+        high: 'bg-red-500',
+        medium: 'bg-amber-500',
+        low: 'bg-emerald-500',
+      };
 
      const totalTasks = baseTasks.length;
      const completedTasks = baseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
@@ -3324,37 +3324,59 @@ export default function Stage8FinalReview({
      
     return (
       <div className="space-y-4">
-        {/* Timeline header with dates & progress */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-3">
-            {panelCitations.map(c => (
-              <div key={c.id} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20">
-                <span className="text-[9px] text-indigo-400 uppercase font-mono">{c.cite_type === 'TIMELINE' ? 'Start' : c.cite_type === 'END_DATE' ? 'End' : c.cite_type.replace(/_/g, ' ')}</span>
-                <span className="text-xs font-semibold text-indigo-300">{renderCitationValue(c)}</span>
+        {/* ─── Vibrant Timeline Header ─── */}
+        <div className="rounded-xl border border-violet-300 dark:border-violet-500/30 bg-gradient-to-r from-violet-50 via-indigo-50 to-purple-50 dark:from-violet-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 p-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
+                <Calendar className="h-4.5 w-4.5 text-white" />
               </div>
-            ))}
-          </div>
-          {/* Overall progress */}
-          <div className="flex items-center gap-2">
-            <div className="w-32 h-2 rounded-full bg-slate-700/50 overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-indigo-400 to-violet-500 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 0.8 }}
-              />
+              {panelCitations.map(c => (
+                <div key={c.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/70 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
+                  <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">{c.cite_type === 'TIMELINE' ? '▸ Start' : c.cite_type === 'END_DATE' ? '▸ End' : c.cite_type.replace(/_/g, ' ')}</span>
+                  <span className="text-xs font-bold text-gray-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
+                </div>
+              ))}
             </div>
-            <span className="text-xs font-mono text-indigo-300">{completedTasks}/{totalTasks}</span>
+            {/* Overall progress */}
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-white/60 dark:bg-indigo-950/30 border border-violet-200 dark:border-violet-500/20">
+              <div className="w-28 h-2.5 rounded-full bg-violet-100 dark:bg-violet-900/50 overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full shadow-sm"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPct}%` }}
+                  transition={{ duration: 0.8 }}
+                />
+              </div>
+              <span className="text-xs font-bold text-gray-700 dark:text-violet-300">{completedTasks}/{totalTasks}</span>
+              <span className="text-[9px] font-mono text-violet-500 dark:text-violet-400">{progressPct}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-sky-300 dark:border-sky-500/30 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/40 dark:to-cyan-950/40 p-2.5 text-center">
+            <p className="text-[9px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide">Total Tasks</p>
+            <p className="text-xl font-black text-gray-800 dark:text-white">{totalTasks}</p>
+          </div>
+          <div className="rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/40 dark:to-green-950/40 p-2.5 text-center">
+            <p className="text-[9px] font-mono uppercase text-emerald-600 dark:text-emerald-400 tracking-wide">Completed</p>
+            <p className="text-xl font-black text-gray-800 dark:text-white">{completedTasks}</p>
+          </div>
+          <div className="rounded-xl border border-amber-300 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 p-2.5 text-center">
+            <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide">Remaining</p>
+            <p className="text-xl font-black text-gray-800 dark:text-white">{totalTasks - completedTasks}</p>
           </div>
         </div>
 
         {/* Site Condition Badge */}
         {siteConditionCitation && (
-          <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 mb-2">
-            <Hammer className="h-3 w-3 text-amber-400" />
-            <span className="text-[10px] font-medium text-amber-300">{siteConditionCitation.answer}</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-300 dark:border-amber-500/30">
+            <Hammer className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="text-[11px] font-semibold text-gray-800 dark:text-amber-200">{siteConditionCitation.answer}</span>
             {hasDemolition && (
-              <Badge variant="outline" className="text-[8px] bg-red-500/10 text-red-400 border-red-500/30">Demolition</Badge>
+              <Badge className="text-[8px] bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-500/30">Demolition</Badge>
             )}
           </div>
         )}
@@ -3405,19 +3427,19 @@ export default function Stage8FinalReview({
               <div className="mb-2">
                 {/* Scale type label */}
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] uppercase tracking-widest text-slate-500 font-mono">
+                  <span className="text-[9px] uppercase tracking-widest text-indigo-500 dark:text-indigo-400 font-mono font-bold">
                     {useWeekly ? '▸ Weekly' : '▸ Monthly'} Timeline
                   </span>
-                  <span className="text-[9px] text-slate-600 font-mono">
+                  <span className="text-[9px] text-gray-500 dark:text-slate-400 font-mono">
                     {format(startDate, 'MMM d')} → {format(endDate, 'MMM d, yyyy')}
                   </span>
                 </div>
                 {/* Ruler bar */}
-                <div className="relative h-6 bg-slate-800/40 rounded-md border border-slate-700/30 overflow-hidden">
+                <div className="relative h-7 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800/40 dark:to-indigo-950/30 rounded-lg border border-indigo-200 dark:border-indigo-700/30 overflow-hidden">
                   {/* Start marker */}
-                  <div className="absolute top-0 left-0 h-full w-px bg-indigo-500/40" />
+                  <div className="absolute top-0 left-0 h-full w-px bg-indigo-400/50" />
                   {/* End marker */}
-                  <div className="absolute top-0 right-0 h-full w-px bg-indigo-500/40" />
+                  <div className="absolute top-0 right-0 h-full w-px bg-indigo-400/50" />
                   {/* Today marker */}
                   {(() => {
                     const now = Date.now();
@@ -3425,10 +3447,10 @@ export default function Stage8FinalReview({
                       const todayPct = ((now - projectStart) / totalDuration) * 100;
                       return (
                         <div
-                          className="absolute top-0 h-full w-0.5 bg-emerald-400/70 z-10"
+                          className="absolute top-0 h-full w-0.5 bg-emerald-500 dark:bg-emerald-400/70 z-10"
                           style={{ left: `${todayPct}%` }}
                         >
-                          <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1 py-0 rounded-b bg-emerald-500/80 text-[7px] text-white font-bold tracking-wider">
+                          <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-b bg-emerald-500 text-[7px] text-white font-bold tracking-wider shadow-sm">
                             NOW
                           </div>
                         </div>
@@ -3443,8 +3465,8 @@ export default function Stage8FinalReview({
                       className="absolute top-0 h-full flex flex-col items-center"
                       style={{ left: `${tick.leftPct}%` }}
                     >
-                      <div className="w-px h-2 bg-slate-500/50" />
-                      <span className="text-[7px] text-slate-500 font-mono mt-0.5 whitespace-nowrap -translate-x-1/2">
+                      <div className="w-px h-2.5 bg-indigo-300 dark:bg-indigo-500/50" />
+                      <span className="text-[7px] text-gray-500 dark:text-slate-500 font-mono mt-0.5 whitespace-nowrap -translate-x-1/2">
                         {tick.label}
                       </span>
                     </div>
@@ -3464,16 +3486,16 @@ export default function Stage8FinalReview({
                 {/* Phase divider */}
                 <button
                   onClick={() => togglePhaseExpansion(phase.key)}
-                  className="w-full flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-white/5 transition-colors group"
+                  className={cn("w-full flex items-center gap-2 py-2 px-3 rounded-lg border transition-colors group", colors.bg, colors.border)}
                 >
-                  <div className={cn("h-2.5 w-2.5 rounded-sm", colors.bg, colors.border, "border")} />
-                  <span className={cn("text-[11px] font-semibold uppercase tracking-wider", colors.text)}>{phase.label}</span>
-                  <span className="text-[9px] text-slate-500 font-mono">{phaseComplete}/{phase.tasks.length}</span>
+                  <div className={cn("h-3 w-3 rounded", colors.bg, colors.border, "border-2 shadow-sm")} />
+                  <span className={cn("text-[11px] font-bold uppercase tracking-wider", colors.text)}>{phase.label}</span>
+                  <span className="text-[9px] text-gray-500 dark:text-slate-500 font-mono font-bold">{phaseComplete}/{phase.tasks.length}</span>
                   <div className="flex-1" />
                   {expandedPhases.has(phase.key) ? (
-                    <ChevronUp className="h-3 w-3 text-slate-600 group-hover:text-slate-400" />
+                    <ChevronUp className="h-3 w-3 text-gray-400 dark:text-slate-600 group-hover:text-gray-600 dark:group-hover:text-slate-400" />
                   ) : (
-                    <ChevronDown className="h-3 w-3 text-slate-600 group-hover:text-slate-400" />
+                    <ChevronDown className="h-3 w-3 text-gray-400 dark:text-slate-600 group-hover:text-gray-600 dark:group-hover:text-slate-400" />
                   )}
                 </button>
 
@@ -3494,39 +3516,36 @@ export default function Stage8FinalReview({
                   const phaseProgressPct = phase.tasks.length > 0
                     ? Math.round((phaseComplete / phase.tasks.length) * 100) : 0;
 
-                  return (
-                    <div className="relative h-5 mx-2 mb-0.5 rounded bg-slate-800/20 overflow-hidden">
-                      {/* Aggregated phase span */}
-                      <motion.div
-                        className={cn(
-                          "absolute inset-y-0 rounded border",
-                          colors.bg, colors.border
-                        )}
-                        style={{ left: `${Math.round(leftPct)}%`, width: `${Math.round(widthPct)}%` }}
-                        initial={{ scaleX: 0, originX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        transition={{ duration: 0.5, ease: 'easeOut' }}
-                      >
-                        {/* Phase progress fill */}
-                        <div
+                    return (
+                      <div className="relative h-6 mx-2 mb-0.5 rounded-lg bg-gray-100 dark:bg-slate-800/20 overflow-hidden border border-gray-200 dark:border-transparent">
+                        {/* Aggregated phase span */}
+                        <motion.div
                           className={cn(
-                            "absolute inset-y-0 left-0 rounded-l opacity-40",
-                            colors.bg.replace('/20', '/50')
+                            "absolute inset-y-0 rounded-lg border",
+                            colors.bg, colors.border
                           )}
-                          style={{ width: `${phaseProgressPct}%` }}
-                        />
-                        {/* Label inside bar */}
-                        <div className="absolute inset-0 flex items-center justify-center gap-1 px-1">
-                          <span className={cn("text-[8px] font-bold uppercase tracking-wider truncate", colors.text)}>
-                            {phaseDays}d
-                          </span>
-                          <span className="text-[7px] text-slate-500 font-mono">
-                            {phaseProgressPct}%
-                          </span>
-                        </div>
-                      </motion.div>
-                    </div>
-                  );
+                          style={{ left: `${Math.round(leftPct)}%`, width: `${Math.round(widthPct)}%` }}
+                          initial={{ scaleX: 0, originX: 0 }}
+                          animate={{ scaleX: 1 }}
+                          transition={{ duration: 0.5, ease: 'easeOut' }}
+                        >
+                          {/* Phase progress fill */}
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-l opacity-50 bg-current"
+                            style={{ width: `${phaseProgressPct}%` }}
+                          />
+                          {/* Label inside bar */}
+                          <div className="absolute inset-0 flex items-center justify-center gap-1.5 px-1">
+                            <span className={cn("text-[9px] font-bold uppercase tracking-wider truncate", colors.text)}>
+                              {phaseDays}d
+                            </span>
+                            <span className={cn("text-[8px] font-mono font-bold", colors.text)}>
+                              {phaseProgressPct}%
+                            </span>
+                          </div>
+                        </motion.div>
+                      </div>
+                    );
                 })()}
 
                 {/* Task Gantt bars */}
@@ -3583,7 +3602,7 @@ export default function Stage8FinalReview({
                                 />
 
                                 {/* Gantt bar container - proportional timeline */}
-                                <div className="flex-1 relative h-8 bg-slate-800/30 rounded-md overflow-hidden">
+                                <div className="flex-1 relative h-8 bg-gray-100 dark:bg-slate-800/30 rounded-lg overflow-hidden border border-gray-200 dark:border-transparent">
                                   {(() => {
                                     const barStyle = getGanttBarStyle(task);
                                     const startLabel = formatTaskDate(task.created_at);
@@ -3594,10 +3613,10 @@ export default function Stage8FinalReview({
                                           <TooltipTrigger asChild>
                                             <div
                                               className={cn(
-                                                "absolute inset-y-0 rounded-md border overflow-hidden cursor-pointer transition-all",
+                                                "absolute inset-y-0 rounded-lg border overflow-hidden cursor-pointer transition-all shadow-sm",
                                                 colors.border,
-                                                isCompleted ? "bg-emerald-500/10 border-emerald-500/30" : colors.bg,
-                                                "hover:brightness-125"
+                                                isCompleted ? "bg-emerald-100 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30" : colors.bg,
+                                                "hover:brightness-110 dark:hover:brightness-125"
                                               )}
                                               style={{ left: barStyle.left, width: barStyle.width }}
                                               onClick={() => togglePhaseExpansion(`task-${task.id}`)}
@@ -3619,8 +3638,8 @@ export default function Stage8FinalReview({
                                               {/* Task name & info */}
                                               <div className="relative h-full flex items-center justify-between px-1.5 gap-1">
                                                 <span className={cn(
-                                                  "text-[10px] font-medium truncate",
-                                                  isCompleted ? "line-through text-slate-500" : "text-slate-200"
+                                                  "text-[10px] font-semibold truncate",
+                                                  isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
                                                 )}>
                                                   {task.title}
                                                 </span>
@@ -3633,7 +3652,7 @@ export default function Stage8FinalReview({
                                                   )}>
                                                     {task.priority[0]?.toUpperCase()}
                                                   </span>
-                                                  <span className="text-[9px] font-mono text-slate-500">{taskProgress}%</span>
+                                                  <span className="text-[9px] font-mono font-bold text-gray-500 dark:text-slate-500">{taskProgress}%</span>
                                                 </div>
                                               </div>
                                             </div>
@@ -3657,10 +3676,10 @@ export default function Stage8FinalReview({
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <div className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border",
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border shadow-sm",
                                         isCompleted 
-                                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                                          : "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                                          ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30"
+                                          : "bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-300 dark:border-cyan-500/30"
                                       )}>
                                         {getAssigneeInitial(task.assigned_to)}
                                       </div>
@@ -3782,7 +3801,7 @@ export default function Stage8FinalReview({
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden ml-8 mt-1 mb-2 pl-3 border-l-2 border-slate-700/50 space-y-2"
+                                    className="overflow-hidden ml-8 mt-1 mb-2 pl-3 border-l-2 border-indigo-200 dark:border-slate-700/50 space-y-2"
                                   >
                                     {/* Assignee Selector */}
                                     <div className="flex items-center gap-2">
@@ -3844,20 +3863,20 @@ export default function Stage8FinalReview({
         </div>
 
         {/* Priority Legend */}
-        <div className="flex items-center gap-3 pt-2 border-t border-slate-700/30">
-          <span className="text-[9px] text-slate-600 uppercase tracking-wider">Priority:</span>
+        <div className="flex items-center gap-3 pt-3 border-t border-indigo-100 dark:border-slate-700/30">
+          <span className="text-[9px] text-gray-500 dark:text-slate-600 uppercase tracking-wider font-bold">Priority:</span>
           {[
-            { key: 'high', label: 'High', color: 'bg-red-500' },
-            { key: 'medium', label: 'Medium', color: 'bg-amber-500' },
-            { key: 'low', label: 'Low', color: 'bg-emerald-500' },
+            { key: 'high', label: 'High', color: 'bg-red-500', bgLight: 'bg-red-50 border-red-200' },
+            { key: 'medium', label: 'Medium', color: 'bg-amber-500', bgLight: 'bg-amber-50 border-amber-200' },
+            { key: 'low', label: 'Low', color: 'bg-emerald-500', bgLight: 'bg-emerald-50 border-emerald-200' },
           ].map(p => (
-            <div key={p.key} className="flex items-center gap-1">
-              <div className={cn("h-1.5 w-1.5 rounded-full", p.color)} />
-              <span className="text-[9px] text-slate-500">{p.label}</span>
+            <div key={p.key} className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-md border", p.bgLight)}>
+              <div className={cn("h-2 w-2 rounded-full", p.color)} />
+              <span className="text-[9px] text-gray-600 dark:text-slate-400 font-medium">{p.label}</span>
             </div>
           ))}
           <div className="flex-1" />
-          <span className="text-[9px] text-slate-600">Click bar to expand</span>
+          <span className="text-[9px] text-gray-400 dark:text-slate-600 italic">Click bar to expand</span>
         </div>
       </div>
     );
@@ -7878,14 +7897,14 @@ export default function Stage8FinalReview({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-end gap-1">
-                        <span className="text-lg font-bold text-indigo-300 leading-none">{completedTasks}</span>
-                        <span className="text-[9px] text-indigo-500 mb-0.5">/{totalTasks}</span>
+                        <span className="text-lg font-bold text-violet-600 dark:text-indigo-300 leading-none">{completedTasks}</span>
+                        <span className="text-[9px] text-violet-400 dark:text-indigo-500 mb-0.5">/{totalTasks}</span>
                       </div>
-                      <span className="text-[9px] font-mono text-indigo-400">{Math.round(pct)}%</span>
+                      <span className="text-[9px] font-mono font-bold text-violet-500 dark:text-indigo-400">{Math.round(pct)}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-violet-100 dark:bg-cyan-950/50 overflow-hidden">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-indigo-400 to-violet-500 rounded-full"
+                        className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
                         transition={{ duration: 0.8, delay: 0.2 }}
