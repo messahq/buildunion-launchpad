@@ -4172,8 +4172,27 @@ export default function Stage8FinalReview({
       const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
       const locCit = citations.find(c => c.cite_type === 'LOCATION');
       const workCit = citations.find(c => c.cite_type === 'WORK_TYPE');
-      const filled = [nameCit, locCit, workCit].filter(Boolean).length;
-      const completionPct = Math.round((filled / 3) * 100);
+      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+      const teamCit = citations.find(c => c.cite_type === 'TEAM_SIZE') || citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+      const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+      const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
+      const siteCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
+      const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      const demoCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+
+      const allItems = [
+        { key: 'Name', cit: nameCit, icon: '📋' },
+        { key: 'Location', cit: locCit, icon: '📍' },
+        { key: 'Work Type', cit: workCit, icon: '🔨' },
+        { key: 'GFA', cit: gfaCit, icon: '📐' },
+        { key: 'Trade', cit: tradeCit, icon: '🔧' },
+        { key: 'Team', cit: teamCit, icon: '👥' },
+        { key: 'Timeline', cit: timelineCit, icon: '📅' },
+        { key: 'End Date', cit: endDateCit, icon: '🏁' },
+      ];
+      const filled = allItems.filter(i => !!i.cit).length;
+      const completionPct = Math.round((filled / allItems.length) * 100);
 
       // Derive work type icon
       const workTypeValue = (workCit?.value as string) || workCit?.answer || '';
@@ -4192,8 +4211,56 @@ export default function Stage8FinalReview({
         return '📐';
       };
 
+      // Helper to render a data card
+      const renderDataCard = (
+        label: string,
+        cit: Citation | undefined,
+        fallback: string,
+        icon: React.ReactNode,
+        colorScheme: { border: string; bg: string; text: string; label: string; cite: string; glow: string },
+        delay: number,
+        badge?: React.ReactNode,
+      ) => (
+        <motion.div
+          key={label}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay }}
+          className={cn(
+            "rounded-xl border p-3.5 transition-all",
+            cit
+              ? `${colorScheme.border} ${colorScheme.bg}`
+              : "border-slate-600/20 bg-slate-800/30"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-9 h-9 rounded-lg flex items-center justify-center text-lg",
+              cit ? "bg-white/5" : "bg-slate-800/50"
+            )}>
+              {icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={cn("text-[10px] font-mono uppercase tracking-wider mb-0.5", cit ? colorScheme.label : "text-slate-500/50")}>{label}</p>
+              <p className={cn("text-sm font-medium truncate", cit ? colorScheme.text : "text-slate-500 italic")}>
+                {cit?.answer || fallback}
+              </p>
+              {cit && <p className={cn("text-[9px] font-mono mt-0.5", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
+            </div>
+            {badge}
+            {cit && !badge && (
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className={cn("w-2 h-2 rounded-full", colorScheme.glow)}
+              />
+            )}
+          </div>
+        </motion.div>
+      );
+
       return (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Hero Project Identity Card */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -4201,12 +4268,10 @@ export default function Stage8FinalReview({
             transition={{ duration: 0.5 }}
             className="relative overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-900/40 via-cyan-800/25 to-sky-900/20 p-5"
           >
-            {/* Ambient glow */}
             <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-sky-400/8 blur-2xl pointer-events-none" />
             
             <div className="relative z-10">
-              {/* Project Name */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-300/70 mb-1">Project Identity</p>
@@ -4226,9 +4291,8 @@ export default function Stage8FinalReview({
                 </motion.div>
               </div>
 
-              {/* Completion Ring + Stats */}
+              {/* Completion Ring + All Data Integrity Badges */}
               <div className="flex items-center gap-4">
-                {/* SVG Ring */}
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
                     <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(34,211,238,0.1)" strokeWidth="4" />
@@ -4256,29 +4320,22 @@ export default function Stage8FinalReview({
                 </div>
 
                 <div className="flex-1 space-y-1.5">
-                  <p className="text-[10px] font-mono text-cyan-400/50 uppercase tracking-wider">Data Integrity</p>
-                  <div className="flex gap-1.5">
-                    {[
-                      { label: 'Name', done: !!nameCit, icon: '📋' },
-                      { label: 'Location', done: !!locCit, icon: '📍' },
-                      { label: 'Work Type', done: !!workCit, icon: getWorkTypeIcon() },
-                    ].map(item => (
-                      <motion.div
-                        key={item.label}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3, delay: 0.4 }}
+                  <p className="text-[10px] font-mono text-cyan-400/50 uppercase tracking-wider">Data Integrity ({filled}/{allItems.length})</p>
+                  <div className="flex flex-wrap gap-1">
+                    {allItems.map(item => (
+                      <span
+                        key={item.key}
                         className={cn(
-                          "flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-medium transition-all",
-                          item.done
-                            ? "border-cyan-400/30 bg-cyan-500/10 text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.15)]"
-                            : "border-slate-600/30 bg-slate-800/30 text-slate-400"
+                          "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] font-medium transition-all",
+                          item.cit
+                            ? "border-cyan-400/30 bg-cyan-500/10 text-cyan-300"
+                            : "border-slate-600/30 bg-slate-800/30 text-slate-500"
                         )}
                       >
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
-                        {item.done && <CheckCircle2 className="h-2.5 w-2.5 text-cyan-400" />}
-                      </motion.div>
+                        <span className="text-[8px]">{item.icon}</span>
+                        {item.key}
+                        {item.cit && <CheckCircle2 className="h-2 w-2 text-cyan-400 ml-0.5" />}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -4287,98 +4344,100 @@ export default function Stage8FinalReview({
           </motion.div>
 
           {/* Location Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
-            className={cn(
-              "rounded-xl border p-4 transition-all",
-              locCit
-                ? "border-cyan-400/25 bg-gradient-to-br from-cyan-900/30 via-slate-800/40 to-blue-900/20"
-                : "border-slate-600/20 bg-slate-800/30"
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center",
-                locCit ? "bg-cyan-500/10" : "bg-slate-800/50"
-              )}>
-                <MapPin className={cn("h-5 w-5", locCit ? "text-cyan-400" : "text-slate-600")} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400/50 mb-0.5">Project Location</p>
-                <p className={cn(
-                  "text-sm font-medium truncate",
-                  locCit ? "text-cyan-200" : "text-slate-500 italic"
-                )}>
-                  {locCit?.answer || projectData?.address || 'Not set'}
-                </p>
-                {locCit && (
-                  <p className="text-[9px] text-cyan-500/40 font-mono mt-0.5">cite: [{locCit.id.slice(0, 12)}]</p>
-                )}
-              </div>
-              {locCit && (
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
-                />
-              )}
-            </div>
-          </motion.div>
+          {renderDataCard(
+            'Project Location', locCit, projectData?.address || 'Not set',
+            <MapPin className={cn("h-5 w-5", locCit ? "text-cyan-400" : "text-slate-600")} />,
+            { border: 'border-cyan-400/25', bg: 'bg-gradient-to-br from-cyan-900/30 via-slate-800/40 to-blue-900/20', text: 'text-cyan-200', label: 'text-cyan-400/50', cite: 'text-cyan-500/40', glow: 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]' },
+            0.1
+          )}
 
           {/* Work Type Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-            className={cn(
-              "rounded-xl border p-4 transition-all",
-              workCit
-                ? "border-emerald-400/25 bg-gradient-to-br from-emerald-900/30 via-slate-800/40 to-teal-900/20"
-                : "border-slate-600/20 bg-slate-800/30"
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center text-xl",
-                workCit ? "bg-emerald-500/10" : "bg-slate-800/50"
-              )}>
-                {workCit ? getWorkTypeIcon() : <Hammer className="h-5 w-5 text-slate-600" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400/50 mb-0.5">Work Type</p>
-                <p className={cn(
-                  "text-sm font-medium",
-                  workCit ? "text-emerald-200" : "text-slate-500 italic"
-                )}>
-                  {workCit?.answer || 'Not selected'}
-                </p>
-                {workCit && (
-                  <p className="text-[9px] text-emerald-500/40 font-mono mt-0.5">cite: [{workCit.id.slice(0, 12)}]</p>
-                )}
-              </div>
-              {workCit && (
-                <Badge className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_6px_rgba(52,211,153,0.15)]">
-                  Verified
-                </Badge>
-              )}
-            </div>
-          </motion.div>
+          {renderDataCard(
+            'Work Type', workCit, 'Not selected',
+            workCit ? <span className="text-xl">{getWorkTypeIcon()}</span> : <Hammer className="h-5 w-5 text-slate-600" />,
+            { border: 'border-emerald-400/25', bg: 'bg-gradient-to-br from-emerald-900/30 via-slate-800/40 to-teal-900/20', text: 'text-emerald-200', label: 'text-emerald-400/50', cite: 'text-emerald-500/40', glow: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' },
+            0.15,
+            workCit ? <Badge className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Verified</Badge> : undefined
+          )}
+
+          {/* GFA Card */}
+          {renderDataCard(
+            'Gross Floor Area', gfaCit, 'Not locked',
+            <Ruler className={cn("h-5 w-5", gfaCit ? "text-blue-400" : "text-slate-600")} />,
+            { border: 'border-blue-400/25', bg: 'bg-gradient-to-br from-blue-900/30 via-slate-800/40 to-indigo-900/20', text: 'text-blue-200', label: 'text-blue-400/50', cite: 'text-blue-500/40', glow: 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.5)]' },
+            0.2,
+            gfaCit ? <Badge className="text-[9px] bg-amber-500/10 text-amber-400 border-amber-500/20 gap-1 animate-pulse"><Lock className="h-2.5 w-2.5" />LOCKED</Badge> : undefined
+          )}
+
+          {/* Trade Selection Card */}
+          {renderDataCard(
+            'Trade Selection', tradeCit, 'Not selected',
+            <Hammer className={cn("h-5 w-5", tradeCit ? "text-orange-400" : "text-slate-600")} />,
+            { border: 'border-orange-400/25', bg: 'bg-gradient-to-br from-orange-900/30 via-slate-800/40 to-amber-900/20', text: 'text-orange-200', label: 'text-orange-400/50', cite: 'text-orange-500/40', glow: 'bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.5)]' },
+            0.25
+          )}
+
+          {/* Team Size Card */}
+          {renderDataCard(
+            'Team', teamCit, `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`,
+            <Users className={cn("h-5 w-5", teamCit ? "text-teal-400" : "text-slate-600")} />,
+            { border: 'border-teal-400/25', bg: 'bg-gradient-to-br from-teal-900/30 via-slate-800/40 to-emerald-900/20', text: 'text-teal-200', label: 'text-teal-400/50', cite: 'text-teal-500/40', glow: 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.5)]' },
+            0.3
+          )}
+
+          {/* Timeline Card */}
+          {renderDataCard(
+            'Start Date', timelineCit, 'Not set',
+            <Calendar className={cn("h-5 w-5", timelineCit ? "text-indigo-400" : "text-slate-600")} />,
+            { border: 'border-indigo-400/25', bg: 'bg-gradient-to-br from-indigo-900/30 via-slate-800/40 to-purple-900/20', text: 'text-indigo-200', label: 'text-indigo-400/50', cite: 'text-indigo-500/40', glow: 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.5)]' },
+            0.35
+          )}
+
+          {/* End Date Card */}
+          {renderDataCard(
+            'End Date', endDateCit, 'Not set',
+            <span className="text-lg">🏁</span>,
+            { border: 'border-purple-400/25', bg: 'bg-gradient-to-br from-purple-900/30 via-slate-800/40 to-pink-900/20', text: 'text-purple-200', label: 'text-purple-400/50', cite: 'text-purple-500/40', glow: 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.5)]' },
+            0.4
+          )}
+
+          {/* Site Condition Card (if exists) */}
+          {siteCit && renderDataCard(
+            'Site Condition', siteCit, '',
+            <Settings className="h-5 w-5 text-amber-400" />,
+            { border: 'border-amber-400/25', bg: 'bg-gradient-to-br from-amber-900/30 via-slate-800/40 to-yellow-900/20', text: 'text-amber-200', label: 'text-amber-400/50', cite: 'text-amber-500/40', glow: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' },
+            0.45
+          )}
+
+          {/* Template Lock Card (if exists) */}
+          {templateCit && renderDataCard(
+            'Template', templateCit, '',
+            <ClipboardList className="h-5 w-5 text-pink-400" />,
+            { border: 'border-pink-400/25', bg: 'bg-gradient-to-br from-pink-900/30 via-slate-800/40 to-rose-900/20', text: 'text-pink-200', label: 'text-pink-400/50', cite: 'text-pink-500/40', glow: 'bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.5)]' },
+            0.5
+          )}
+
+          {/* Demolition Price Card (if exists) */}
+          {demoCit && renderDataCard(
+            'Demolition Price', demoCit, '',
+            <DollarSign className="h-5 w-5 text-red-400" />,
+            { border: 'border-red-400/25', bg: 'bg-gradient-to-br from-red-900/30 via-slate-800/40 to-rose-900/20', text: 'text-red-200', label: 'text-red-400/50', cite: 'text-red-500/40', glow: 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]' },
+            0.55
+          )}
 
           {/* All Citations Footer */}
           {panelCitations.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.6 }}
               className="pt-3 border-t border-cyan-500/10"
             >
               <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400/50 mb-2">
-                Source Citations ({panelCitations.length})
+                All Source Citations ({citations.length})
               </p>
-              <div className="space-y-1">
-                {panelCitations.map(c => (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {citations.filter(c => c.cite_type && c.answer).map(c => (
                   <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-cyan-500/5 border border-cyan-500/10 text-[10px]">
                     <span className="text-cyan-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
                     <div className="flex items-center gap-2">
@@ -7058,7 +7117,8 @@ export default function Stage8FinalReview({
             const getSummaryText = () => {
               if (!hasAccess) return 'Restricted';
               if (panel.id === 'panel-1-basics') {
-                return projectData?.name || 'No name set';
+                const citCount = citations.filter(c => c.cite_type && c.answer).length;
+                return `${projectData?.name || 'No name'} · ${citCount} citations`;
               }
               if (panel.id === 'panel-2-gfa') {
                 const gfaCitation = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
@@ -7523,8 +7583,8 @@ export default function Stage8FinalReview({
               const getMobileMetric = () => {
                 if (!hasAccess) return null;
                 if (panel.id === 'panel-1-basics') {
-                  const filled = ['PROJECT_NAME', 'LOCATION', 'WORK_TYPE'].filter(k => panelCitations.some(c => c.cite_type === k)).length;
-                  return <span className="text-[8px] font-mono opacity-70">{filled}/3</span>;
+                  const citCount = citations.filter(c => c.cite_type && c.answer).length;
+                  return <span className="text-[8px] font-mono opacity-70">{citCount} cit</span>;
                 }
                 if (panel.id === 'panel-2-gfa') {
                   const gfa = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
