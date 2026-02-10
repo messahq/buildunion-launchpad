@@ -4243,7 +4243,19 @@ export default function Stage8FinalReview({
             <div className="flex-1 min-w-0">
               <p className={cn("text-[10px] font-mono uppercase tracking-wider mb-0.5", cit ? colorScheme.label : "text-slate-500/50")}>{label}</p>
               <p className={cn("text-sm font-medium truncate", cit ? colorScheme.text : "text-slate-500 italic")}>
-                {cit?.answer || fallback}
+                {(() => {
+                  if (!cit) return fallback;
+                  if (cit.cite_type === 'TIMELINE' && cit.metadata?.start_date) {
+                    try { return format(parseISO(cit.metadata.start_date as string), 'MMM dd, yyyy'); } catch { return cit.answer || fallback; }
+                  }
+                  if (cit.cite_type === 'END_DATE' && typeof cit.value === 'string') {
+                    try { return format(parseISO(cit.value), 'MMM dd, yyyy'); } catch { return cit.answer || fallback; }
+                  }
+                  if (cit.cite_type === 'GFA_LOCK' && typeof cit.value === 'number') {
+                    return `${cit.value.toLocaleString()} ${cit.metadata?.gfa_unit || 'sq ft'}`;
+                  }
+                  return cit.answer || fallback;
+                })()}
               </p>
               {cit && <p className={cn("text-[9px] font-mono mt-0.5", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
             </div>
@@ -5679,7 +5691,104 @@ export default function Stage8FinalReview({
     
     return (
       <div className="space-y-6">
-        {panelCitations.length > 0 && (
+        {/* ✓ PANEL 1: Project Basics — Fullscreen Command Center */}
+        {panel.id === 'panel-1-basics' && (() => {
+          const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
+          const locCit = citations.find(c => c.cite_type === 'LOCATION');
+          const workCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+          const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+          const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+          const teamCit = citations.find(c => c.cite_type === 'TEAM_SIZE') || citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+          const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+          const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
+          const siteCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
+          const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+          const demoCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+
+          const allItems = [
+            { key: 'Name', cit: nameCit }, { key: 'Location', cit: locCit },
+            { key: 'Work Type', cit: workCit }, { key: 'GFA', cit: gfaCit },
+            { key: 'Trade', cit: tradeCit }, { key: 'Team', cit: teamCit },
+            { key: 'Timeline', cit: timelineCit }, { key: 'End Date', cit: endDateCit },
+          ];
+          const filled = allItems.filter(i => !!i.cit).length;
+          const completionPct = Math.round((filled / allItems.length) * 100);
+
+          const formatCitValue = (cit: Citation | undefined, fallback: string) => {
+            if (!cit) return fallback;
+            if (cit.cite_type === 'TIMELINE' && cit.metadata?.start_date) {
+              try { return format(parseISO(cit.metadata.start_date as string), 'MMM dd, yyyy'); } catch { return cit.answer || fallback; }
+            }
+            if (cit.cite_type === 'END_DATE' && typeof cit.value === 'string') {
+              try { return format(parseISO(cit.value), 'MMM dd, yyyy'); } catch { return cit.answer || fallback; }
+            }
+            if (cit.cite_type === 'GFA_LOCK' && typeof cit.value === 'number') {
+              return `${cit.value.toLocaleString()} ${cit.metadata?.gfa_unit || 'sq ft'}`;
+            }
+            return cit.answer || fallback;
+          };
+
+          const dataRows = [
+            { label: 'Project Name', cit: nameCit, fallback: projectData?.name || '—', icon: <Building2 className="h-4 w-4 text-cyan-400" /> },
+            { label: 'Location', cit: locCit, fallback: 'Not set', icon: <MapPin className="h-4 w-4 text-emerald-400" /> },
+            { label: 'Work Type', cit: workCit, fallback: 'Not set', icon: <Hammer className="h-4 w-4 text-amber-400" /> },
+            { label: 'Gross Floor Area', cit: gfaCit, fallback: 'Not set', icon: <Ruler className="h-4 w-4 text-orange-400" /> },
+            { label: 'Trade', cit: tradeCit, fallback: 'Not set', icon: <Settings className="h-4 w-4 text-cyan-400" /> },
+            { label: 'Team', cit: teamCit, fallback: `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`, icon: <Users className="h-4 w-4 text-teal-400" /> },
+            { label: 'Start Date', cit: timelineCit, fallback: 'Not set', icon: <Calendar className="h-4 w-4 text-indigo-400" /> },
+            { label: 'End Date', cit: endDateCit, fallback: 'Not set', icon: <span className="text-sm">🏁</span> },
+            { label: 'Site Condition', cit: siteCit, fallback: null, icon: <Settings className="h-4 w-4 text-amber-400" /> },
+            { label: 'Template', cit: templateCit, fallback: null, icon: <ClipboardList className="h-4 w-4 text-pink-400" /> },
+            { label: 'Demolition Cost', cit: demoCit, fallback: null, icon: <span className="text-sm">💥</span> },
+          ].filter(r => r.cit || r.fallback !== null);
+
+          return (
+            <div className="space-y-6">
+              {/* Completion Header */}
+              <div className="flex items-center justify-between p-4 rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-950/40 to-sky-950/30">
+                <div>
+                  <p className="text-xs font-mono uppercase tracking-wider text-cyan-400/60">Data Integrity</p>
+                  <p className="text-2xl font-bold text-white">{completionPct}%</p>
+                  <p className="text-xs text-cyan-300/50">{filled} of {allItems.length} fields verified</p>
+                </div>
+                <div className="relative w-16 h-16">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2" className="stroke-slate-700/50" />
+                    <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5" className="stroke-cyan-400" strokeDasharray={`${completionPct} ${100 - completionPct}`} strokeLinecap="round" />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-cyan-300">{completionPct}%</span>
+                </div>
+              </div>
+
+              {/* Data Grid */}
+              <div className="grid gap-3">
+                {dataRows.map(row => (
+                  <div key={row.label} className={cn(
+                    "flex items-center gap-4 p-4 rounded-xl border transition-colors",
+                    row.cit ? "border-slate-600/30 bg-slate-800/40 hover:bg-slate-800/60" : "border-slate-700/20 bg-slate-900/30"
+                  )}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5">{row.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">{row.label}</p>
+                      <p className={cn("text-sm font-medium", row.cit ? "text-foreground" : "text-muted-foreground italic")}>
+                        {formatCitValue(row.cit, row.fallback || 'Not set')}
+                      </p>
+                    </div>
+                    {row.cit && (
+                      <Badge variant="outline" className="text-[9px] font-mono shrink-0">
+                        [{row.cit.id.slice(0, 10)}]
+                      </Badge>
+                    )}
+                    {row.cit && <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Generic citations for non-basics panels */}
+        {panel.id !== 'panel-1-basics' && panelCitations.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <FileText className="h-4 w-4" />
