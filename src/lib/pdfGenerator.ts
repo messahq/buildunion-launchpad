@@ -23,6 +23,33 @@ const escapeHtml = (text: string | number | null | undefined): string => {
   return str.replace(/[&<>"']/g, (m) => map[m]);
 };
 
+// Helper: adjust sections so none are split across page boundaries
+const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usablePageHeightPx: number) => {
+  const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer, .terms, .grid-2');
+  let cumulativeOffset = 0;
+
+  sections.forEach((section) => {
+    const el = section as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const topInContainer = rect.top - containerRect.top + cumulativeOffset;
+
+    // Which page does this section start on?
+    const pageStart = Math.floor(topInContainer / usablePageHeightPx);
+    // Where would it end?
+    const bottomInContainer = topInContainer + rect.height;
+    const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
+
+    // If the section spans two pages and it's small enough to fit on one page
+    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.9) {
+      const nextPageTop = (pageStart + 1) * usablePageHeightPx;
+      const spacerHeight = nextPageTop - topInContainer;
+      el.style.marginTop = `${spacerHeight + 12}px`;
+      cumulativeOffset += spacerHeight + 12;
+    }
+  });
+};
+
 export const generatePDFBlob = async (
   htmlContent: string,
   options: PDFOptions
@@ -42,6 +69,13 @@ export const generatePDFBlob = async (
     const margin = options.margin || 10;
     const usablePageHeight = pageHeight - (margin * 2);
     const usableWidth = imgWidth - (margin * 2);
+
+    // Scale factor: 800px container width maps to usableWidth mm
+    const pxPerMm = 800 / usableWidth;
+    const usablePageHeightPx = usablePageHeight * pxPerMm;
+
+    // Adjust sections to avoid page-break splits
+    adjustForPageBreaks(container, 800, usablePageHeightPx);
 
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -280,6 +314,7 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
           margin: 0 auto;
           padding: 40px;
         }
+        .pdf-section { break-inside: avoid; page-break-inside: avoid; }
         .header { 
           text-align: center; 
           margin-bottom: 32px; 
