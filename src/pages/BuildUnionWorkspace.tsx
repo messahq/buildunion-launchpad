@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2, Crown, Zap, CheckCircle2, Clock } from "lucide-react";
+import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2, Crown, Zap, CheckCircle2, Clock, Eye, EyeOff, ClipboardList, DollarSign, FileText, Cloud, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PendingInvitationsPanel } from "@/components/PendingInvitationsPanel";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SavedProject {
   id: string;
@@ -68,6 +74,18 @@ const ROLE_COLORS: Record<string, string> = {
   client: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300",
   worker: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
   member: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+};
+
+// Role-based permission matrix
+const ROLE_PERMISSIONS: Record<string, { financials: boolean; documents: string; tasks: string; team: boolean; weather: boolean; timeline: boolean }> = {
+  owner: { financials: true, documents: 'full', tasks: 'all', team: true, weather: true, timeline: true },
+  foreman: { financials: false, documents: 'upload', tasks: 'all', team: true, weather: true, timeline: true },
+  worker: { financials: false, documents: 'view', tasks: 'assigned', team: false, weather: true, timeline: true },
+  inspector: { financials: false, documents: 'view', tasks: 'assigned', team: false, weather: true, timeline: true },
+  subcontractor: { financials: false, documents: 'view', tasks: 'assigned', team: false, weather: true, timeline: true },
+  supplier: { financials: false, documents: 'view', tasks: 'assigned', team: false, weather: true, timeline: true },
+  client: { financials: false, documents: 'view', tasks: 'view', team: false, weather: true, timeline: true },
+  member: { financials: false, documents: 'view', tasks: 'assigned', team: false, weather: true, timeline: true },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
@@ -516,55 +534,129 @@ const BuildUnionWorkspace = () => {
   function renderSharedProjects() {
     return (
       <div className="grid gap-4">
-        {sharedProjects.map((project) => (
-          <motion.div
-            key={project.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-          >
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-all border-indigo-200/50 dark:border-indigo-800/30 hover:border-indigo-300 dark:hover:border-indigo-600 bg-gradient-to-r from-background via-indigo-50/10 to-background dark:from-background dark:via-indigo-950/10 dark:to-background group"
-              onClick={() => navigate(`/buildunion/project/${project.id}`)}
+        {sharedProjects.map((project) => {
+          const perms = ROLE_PERMISSIONS[project.role] || ROLE_PERMISSIONS.member;
+          return (
+            <motion.div
+              key={project.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      {project.name}
-                    </CardTitle>
-                    {project.owner_name && (
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        Owner: {project.owner_name}
-                      </p>
-                    )}
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all border-indigo-200/50 dark:border-indigo-800/30 hover:border-indigo-300 dark:hover:border-indigo-600 bg-gradient-to-r from-background via-indigo-50/10 to-background dark:from-background dark:via-indigo-950/10 dark:to-background group"
+                onClick={() => navigate(`/buildunion/project/${project.id}`)}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {project.name}
+                      </CardTitle>
+                      {project.owner_name && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Owner: {project.owner_name}
+                        </p>
+                      )}
+                    </div>
+                    <Badge className={ROLE_COLORS[project.role] || ROLE_COLORS.member}>
+                      {ROLE_LABELS[project.role] || project.role}
+                    </Badge>
                   </div>
-                  <Badge className={ROLE_COLORS[project.role] || ROLE_COLORS.member}>
-                    {ROLE_LABELS[project.role] || project.role}
-                  </Badge>
-                </div>
-                {project.address && (
-                  <CardDescription className="flex items-center gap-1 mt-2">
-                    <MapPin className="h-3 w-3" />
-                    {project.address}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {project.trade && (
-                    <span className="text-indigo-600 dark:text-indigo-400">{project.trade}</span>
+                  {project.address && (
+                    <CardDescription className="flex items-center gap-1 mt-2">
+                      <MapPin className="h-3 w-3" />
+                      {project.address}
+                    </CardDescription>
                   )}
-                  <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs">
-                    {project.status}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                    {project.trade && (
+                      <span className="text-indigo-600 dark:text-indigo-400">{project.trade}</span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs">
+                      {project.status}
+                    </span>
+                  </div>
+                  
+                  {/* Permission Summary Icons */}
+                  <TooltipProvider>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            perms.financials 
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' 
+                              : 'bg-red-100/50 text-red-400 dark:bg-red-900/20 dark:text-red-500'
+                          }`}>
+                            <DollarSign className="h-2.5 w-2.5" />
+                            {perms.financials ? 'Prices' : 'Hidden'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">{perms.financials ? 'Financial data visible' : 'Financial data hidden for your role'}</p></TooltipContent>
+                      </Tooltip>
+                      
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            perms.documents === 'full' || perms.documents === 'upload'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' 
+                              : 'bg-slate-100 text-slate-500 dark:bg-slate-900/30 dark:text-slate-400'
+                          }`}>
+                            <FileText className="h-2.5 w-2.5" />
+                            {perms.documents === 'full' ? 'Full' : perms.documents === 'upload' ? 'Upload' : 'View'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">Documents: {perms.documents} access</p></TooltipContent>
+                      </Tooltip>
+                      
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            perms.tasks === 'all'
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' 
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                          }`}>
+                            <ClipboardList className="h-2.5 w-2.5" />
+                            {perms.tasks === 'all' ? 'All Tasks' : 'My Tasks'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">{perms.tasks === 'all' ? 'Can see all project tasks' : 'Only assigned tasks visible'}</p></TooltipContent>
+                      </Tooltip>
+                      
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                            perms.team
+                              ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' 
+                              : 'bg-slate-100 text-slate-400 dark:bg-slate-900/20 dark:text-slate-500'
+                          }`}>
+                            <Users className="h-2.5 w-2.5" />
+                            {perms.team ? 'Team' : 'No Team'}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">{perms.team ? 'Team panel visible' : 'Team panel hidden'}</p></TooltipContent>
+                      </Tooltip>
+                      
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
+                            <Cloud className="h-2.5 w-2.5" />
+                            Weather
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">Weather data always available</p></TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
       </div>
     );
   }

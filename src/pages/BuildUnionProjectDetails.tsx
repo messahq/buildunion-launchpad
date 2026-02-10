@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
+import RoleDashboard from "@/components/projects/RoleDashboard";
 import { WizardCitation, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
 import { Citation, CITATION_TYPES, createCitation } from "@/types/citation";
 import WireframeVisualizer from "@/components/project-wizard/WireframeVisualizer";
@@ -62,6 +63,8 @@ const BuildUnionProjectDetails = () => {
   const [highlightedCitation, setHighlightedCitation] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isTeamMember, setIsTeamMember] = useState(false);
+  const [teamMemberRole, setTeamMemberRole] = useState<string>('member');
   
   // Stage 4 Execution Flow state
   const [stage4Step, setStage4Step] = useState(0); // 0=not started, 1=team, 2=site, 3=date
@@ -144,9 +147,11 @@ const BuildUnionProjectDetails = () => {
           .single();
         
         if (memberData) {
-          // Team members should see Stage 8 dashboard
-          console.log("[ProjectDetails] Team member detected, redirecting to Stage 8 dashboard");
-          navigate(`/buildunion/new-project?projectId=${projectId}&stage=8&role=${memberData.role}`, { replace: true });
+          // Team members see the simplified role-based dashboard first
+          console.log("[ProjectDetails] Team member detected, showing role dashboard");
+          setTeamMemberRole(memberData.role);
+          setIsTeamMember(true);
+          setLoading(false);
           return;
         }
       } else if (hasReachedStage8) {
@@ -320,6 +325,11 @@ const BuildUnionProjectDetails = () => {
         <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     );
+  }
+
+  // Team member simplified dashboard
+  if (isTeamMember && user && projectId) {
+    return <RoleDashboard projectId={projectId} role={teamMemberRole} userId={user.id} />;
   }
 
   if (!project) {
