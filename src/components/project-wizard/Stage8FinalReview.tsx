@@ -482,6 +482,9 @@ export default function Stage8FinalReview({
   // ✓ Conflict Map Modal
   const [showConflictMap, setShowConflictMap] = useState(false);
   
+  // ✓ DNA Report PDF
+  const [isGeneratingDnaReport, setIsGeneratingDnaReport] = useState(false);
+  
   // ✓ Unread chat messages indicator for Team panel
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const lastSeenChatRef = useRef<string | null>(null);
@@ -2267,6 +2270,171 @@ export default function Stage8FinalReview({
   
   // Legacy AI Analysis handler (for backwards compatibility)
   const handleAIAnalysis = handleMessaSynthesis;
+  
+  // ============================================
+  // MESSA DNA REPORT PDF GENERATION
+  // ============================================
+  const handleDnaReportPdf = useCallback(async () => {
+    setIsGeneratingDnaReport(true);
+    try {
+      const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
+      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+      const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+      const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
+      const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+      const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
+      const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+      const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+      const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
+      const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
+      const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+      const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
+      const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
+      const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
+      const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
+      const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+
+      interface DnaPillar {
+        label: string; sub: string; icon: string; color: string; status: boolean;
+        sources: { label: string; cit: Citation | undefined; field: string }[];
+      }
+
+      const pillars: DnaPillar[] = [
+        { label: '1 — Project Basics', sub: 'Name × Location × Work Type', icon: '🏗️', color: '#10b981', status: !!nameCit && !!locationCit && !!workTypeCit, sources: [
+          { label: 'Project Name', cit: nameCit, field: 'PROJECT_NAME' },
+          { label: 'Location', cit: locationCit, field: 'LOCATION' },
+          { label: 'Work Type', cit: workTypeCit, field: 'WORK_TYPE' },
+        ]},
+        { label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site', icon: '📐', color: '#3b82f6', status: !!gfaCit, sources: [
+          { label: 'GFA Lock', cit: gfaCit, field: 'GFA_LOCK' },
+          { label: 'Blueprint Upload', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
+          { label: 'Site Condition', cit: siteCondCit, field: 'SITE_CONDITION' },
+        ]},
+        { label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table', icon: '🔬', color: '#f97316', status: !!tradeCit && !!templateCit, sources: [
+          { label: 'Trade Selection', cit: tradeCit, field: 'TRADE_SELECTION' },
+          { label: 'Template Lock', cit: templateCit, field: 'TEMPLATE_LOCK' },
+          { label: 'Execution Mode', cit: execModeCit, field: 'EXECUTION_MODE' },
+        ]},
+        { label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions', icon: '👥', color: '#14b8a6', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sources: [
+          { label: 'Team Structure', cit: teamStructCit, field: 'TEAM_STRUCTURE' },
+          { label: 'Team Size', cit: teamSizeCit, field: 'TEAM_SIZE' },
+          { label: 'Member Invites', cit: teamInviteCit, field: 'TEAM_MEMBER_INVITE' },
+          { label: 'Permission Set', cit: teamPermCit, field: 'TEAM_PERMISSION_SET' },
+        ]},
+        { label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized', icon: '📅', color: '#6366f1', status: !!timelineCit && !!endDateCit, sources: [
+          { label: 'Timeline (Start)', cit: timelineCit, field: 'TIMELINE' },
+          { label: 'End Date', cit: endDateCit, field: 'END_DATE' },
+          { label: 'DNA Finalized', cit: dnaCit, field: 'DNA_FINALIZED' },
+        ]},
+        { label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync', icon: '👁️', color: '#0ea5e9', status: !!photoCit || !!blueprintCit, sources: [
+          { label: 'Site Photo / Visual', cit: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
+          { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
+        ]},
+        { label: '7 — Weather & Conditions', sub: 'Alerts × Site Readiness', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit, sources: [
+          { label: 'Weather Alert', cit: weatherCit, field: 'WEATHER_ALERT' },
+          { label: 'Site Condition', cit: siteCondCit, field: 'SITE_CONDITION' },
+        ]},
+        { label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)', icon: '💰', color: '#ef4444', status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit, sources: [
+          { label: 'Location (Tax Region)', cit: locationCit, field: 'LOCATION' },
+          { label: 'Demolition Price', cit: demoPriceCit, field: 'DEMOLITION_PRICE' },
+          { label: 'Total Budget', cit: undefined, field: 'FINANCIAL' },
+        ]},
+      ];
+
+      const passCount = pillars.filter(p => p.status).length;
+      const pct = Math.round((passCount / 8) * 100);
+      const scoreColor = passCount === 8 ? '#10b981' : passCount >= 5 ? '#f59e0b' : '#ef4444';
+      const nowStr = new Date().toISOString();
+      const projName = projectData?.name || 'Project';
+      const projAddr = projectData?.address || '';
+      const scoreLabel = passCount === 8 ? 'PERFECT' : passCount >= 5 ? 'PARTIAL' : 'CRITICAL';
+
+      const buildSourceRow = (s: { label: string; cit: Citation | undefined; field: string }) => {
+        const val = s.cit?.answer || (s.cit?.metadata as any)?.value || '—';
+        const ts = s.cit?.timestamp ? new Date(s.cit.timestamp).toLocaleDateString() : '—';
+        const citeId = s.cit?.id?.slice(0, 8) || '—';
+        const statusColor = s.cit ? '#059669' : '#dc2626';
+        const statusText = s.cit ? '✓ cite:' + citeId : '✗ Missing';
+        const displayVal = typeof val === 'string' ? val.slice(0, 60) : JSON.stringify(val).slice(0, 60);
+        return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+          '<td style="padding:5px 8px;color:#6b7280;">' + s.label + '</td>' +
+          '<td style="padding:5px 8px;font-family:monospace;font-size:10px;color:' + statusColor + ';">' + statusText + '</td>' +
+          '<td style="padding:5px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + displayVal + '</td>' +
+          '<td style="padding:5px 8px;color:#9ca3af;font-size:10px;">' + ts + '</td>' +
+          '</tr>';
+      };
+
+      const pillarRows = pillars.map(p => {
+        const sourcesHtml = p.sources.map(buildSourceRow).join('');
+        const bgHex = p.color + '15';
+        const borderHex = p.color + '30';
+        const statusBg = p.status ? '#dcfce7' : '#fef2f2';
+        const statusTxt = p.status ? '#166534' : '#991b1b';
+        const statusLabel = p.status ? '✓ PASS' : '✗ FAIL';
+        return '<div class="pdf-section" style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:16px;overflow:hidden;break-inside:avoid;">' +
+          '<div style="background:' + bgHex + ';padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid ' + borderHex + ';">' +
+            '<span style="font-size:20px;">' + p.icon + '</span>' +
+            '<div style="flex:1;">' +
+              '<div style="font-weight:600;font-size:14px;color:#1f2937;">' + p.label + '</div>' +
+              '<div style="font-size:11px;color:#6b7280;">' + p.sub + '</div>' +
+            '</div>' +
+            '<span style="background:' + statusBg + ';color:' + statusTxt + ';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">' + statusLabel + '</span>' +
+          '</div>' +
+          '<table style="width:100%;border-collapse:collapse;">' +
+            '<thead><tr style="background:#f9fafb;font-size:10px;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;">' +
+              '<th style="padding:6px 8px;text-align:left;">Source</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Citation</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Value</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Date</th>' +
+            '</tr></thead>' +
+            '<tbody>' + sourcesHtml + '</tbody>' +
+          '</table>' +
+        '</div>';
+      }).join('');
+
+      const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+        '* { margin: 0; padding: 0; box-sizing: border-box; }' +
+        'body { font-family: "Segoe UI", system-ui, sans-serif; color: #1f2937; padding: 40px; max-width: 800px; margin: 0 auto; }' +
+        '.pdf-section { break-inside: avoid; }' +
+        '</style></head><body>' +
+        '<div style="text-align:center;margin-bottom:32px;">' +
+          '<div style="font-size:12px;text-transform:uppercase;letter-spacing:0.15em;color:#6b7280;margin-bottom:6px;">M.E.S.S.A. DNA Deep Audit</div>' +
+          '<div style="font-size:22px;font-weight:700;color:#064e3b;">' + projName + '</div>' +
+          '<div style="font-size:12px;color:#9ca3af;margin-top:4px;">Generated: ' + new Date().toLocaleString() + ' · ' + projAddr + '</div>' +
+        '</div>' +
+        '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">' +
+          '<div style="font-size:36px;font-weight:800;font-family:monospace;">' + passCount + '/8</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">DNA Integrity Score — ' + pct + '%</div>' +
+            '<div style="height:10px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;">' +
+              '<div style="height:100%;width:' + pct + '%;background:' + scoreColor + ';border-radius:999px;"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">' + scoreLabel + '</div>' +
+        '</div>' +
+        pillarRows +
+        '<div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;">' +
+          'BuildUnion · M.E.S.S.A. DNA Deep Audit Report v1.0 · ' + nowStr +
+        '</div>' +
+      '</body></html>';
+
+      const { downloadPDF } = await import('@/lib/pdfGenerator');
+      await downloadPDF(html, {
+        filename: 'dna-audit-' + (projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export') + '.pdf',
+        pageFormat: 'letter',
+      });
+
+      toast.success('DNA Audit Report downloaded');
+    } catch (err) {
+      console.error('[DNA Report] Error:', err);
+      toast.error('Failed to generate DNA report');
+    } finally {
+      setIsGeneratingDnaReport(false);
+    }
+  }, [citations, projectData, financialSummary, teamMembers]);
   
   // Generate Invoice - Opens Preview Modal
   const handleGenerateInvoice = useCallback(async () => {
@@ -9423,11 +9591,12 @@ export default function Stage8FinalReview({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowConflictMap(true)}
-                className="gap-1.5 text-xs border-purple-800/50 text-purple-400 hover:bg-purple-950/30 hover:text-purple-300 bg-transparent"
+                onClick={handleDnaReportPdf}
+                disabled={isGeneratingDnaReport}
+                className="gap-1.5 text-xs border-emerald-800/50 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300 bg-transparent"
               >
-                <MapPin className="h-3.5 w-3.5" />
-                Map
+                {isGeneratingDnaReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shield className="h-3.5 w-3.5" />}
+                DNA Report
               </Button>
 
               {(userRole === 'owner' || userRole === 'foreman') && (
