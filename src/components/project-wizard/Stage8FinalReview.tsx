@@ -7529,22 +7529,15 @@ export default function Stage8FinalReview({
     <div className={cn("h-full flex flex-col overflow-hidden bg-[#0a0e1a]", className)}>
       {/* Compact Header */}
       <div className="px-4 py-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-              <LayoutDashboard className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-light tracking-wide">
-                <span className="text-white">Build</span>
-                <span className="text-amber-500 font-semibold">Union</span>
-              </h2>
-              <p className="text-[10px] text-cyan-500/60">
-                {projectData?.name || 'Project'} • Stage 8
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-1">
+          <h2 className="text-xl font-light tracking-wide">
+            <span className="text-white">Build</span>
+            <span className="text-amber-500 font-semibold">Union</span>
+          </h2>
+          <p className="text-[10px] text-cyan-500/60">
+            {projectData?.name || 'Project'} • Stage 8
+          </p>
+          <div className="flex items-center gap-2 mt-1">
             {dataSource !== 'supabase' && (
               <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[10px]">
                 <AlertTriangle className="h-2.5 w-2.5" />
@@ -7565,7 +7558,6 @@ export default function Stage8FinalReview({
             <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[10px]">
               {projectData?.status || 'draft'}
             </Badge>
-            {/* Edit Mode Toggle */}
             {userRole === 'owner' && (
               <Button
                 variant={isEditModeEnabled ? "default" : "outline"}
