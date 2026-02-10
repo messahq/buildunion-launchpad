@@ -1989,7 +1989,19 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         },
       });
       
-      setFlowCitations(prev => [...prev, teamCitation]);
+      // ✓ Also create EXECUTION_MODE citation (Solo/Team)
+      const execModeCitation = createCitation({
+        cite_type: CITATION_TYPES.EXECUTION_MODE,
+        question_key: 'execution_mode',
+        answer: size === 'solo' ? 'Solo' : 'Team',
+        value: size === 'solo' ? 'solo' : 'team',
+        metadata: {
+          mode: size === 'solo' ? 'solo' : 'team',
+          team_count: size === 'team_confirmed' ? teamMembers.reduce((sum, m) => sum + m.count, 0) : 1,
+        },
+      });
+      
+      setFlowCitations(prev => [...prev, teamCitation, execModeCitation]);
       setCurrentSubStep(2); // Move to Stage 4 Step 2 (Site Condition)
     };
     
