@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useTierFeatures } from "@/hooks/useTierFeatures";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,6 +100,7 @@ const BuildUnionWorkspace = () => {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const { subscription } = useSubscription();
+  const { features, canCreateProject } = useTierFeatures();
   const [projects, setProjects] = useState<SavedProject[]>([]);
   const [sharedProjects, setSharedProjects] = useState<SharedProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,8 +205,21 @@ const BuildUnionWorkspace = () => {
     loadProjects();
   }, [user, authLoading]);
 
-  // Navigate to new project wizard
+  // Navigate to new project wizard (with tier check)
   const handleNewProject = () => {
+    const activeCount = projects.filter(p => p.status === 'active').length;
+    if (!canCreateProject(activeCount)) {
+      toast.error(
+        `You've reached the limit of ${features.maxActiveProjects} active project${features.maxActiveProjects === 1 ? '' : 's'} on your plan. Upgrade to create more.`,
+        {
+          action: {
+            label: 'Upgrade',
+            onClick: () => navigate('/buildunion/pricing'),
+          },
+        }
+      );
+      return;
+    }
     navigate("/buildunion/new-project");
   };
 
