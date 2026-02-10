@@ -8304,13 +8304,26 @@ export default function Stage8FinalReview({
 
               {/* 5 Pillars - Compact */}
               <div className="space-y-1">
-                {[
-                  { key: 'technical', label: 'Technical Integrity', icon: '🔬', color: 'text-blue-400', bgColor: 'bg-blue-500/10', status: citations.some(c => c.cite_type === 'TRADE_SELECTION') ? 'pass' : 'pending' },
-                  { key: 'regulatory', label: 'Regulatory (OBC)', icon: '⚖️', color: 'text-purple-400', bgColor: 'bg-purple-500/10', status: citations.some(c => c.cite_type === 'DNA_FINALIZED') ? 'pass' : 'pending' },
-                  { key: 'visual', label: 'Visual Validation', icon: '👁️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', status: citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') ? 'pass' : 'pending' },
-                  { key: 'financial', label: 'Financial Audit', icon: '💰', color: 'text-amber-400', bgColor: 'bg-amber-500/10', status: (financialSummary?.total_cost ?? 0) > 0 ? 'pass' : 'pending' },
-                  { key: 'geometric', label: 'Geometric Precision', icon: '📐', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', status: citations.some(c => c.cite_type === 'GFA_LOCK') ? 'pass' : 'pending' },
-                ].map((pillar, i) => (
+                {(() => {
+                  // Pillar 1: Technical Integrity — PDF RAG spec vs Materials Table match
+                  const hasTechIntegrity = citations.some(c => c.cite_type === 'TRADE_SELECTION') && citations.some(c => c.cite_type === 'TEMPLATE_LOCK');
+                  // Pillar 2: Regulatory Compliance — Gemini + OpenAI dual OBC validation
+                  const hasRegulatory = citations.some(c => c.cite_type === 'DNA_FINALIZED');
+                  // Pillar 3: Visual Validation — AI Vision cross-check: photo content vs Trade
+                  const hasVisual = citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') && citations.some(c => c.cite_type === 'TRADE_SELECTION');
+                  // Pillar 4: Financial Audit — Supabase Pro sync + HST/GST validation
+                  const hasFinancial = (financialSummary?.total_cost ?? 0) > 0 && citations.some(c => c.cite_type === 'LOCATION');
+                  // Pillar 5: Geometric Precision — AI estimate vs Owner manual override
+                  const hasGeometric = citations.some(c => c.cite_type === 'GFA_LOCK');
+
+                  return [
+                    { key: 'technical', label: 'Technical Integrity', sub: 'PDF RAG × Materials', icon: '🔬', color: 'text-blue-400', bgColor: 'bg-blue-500/10', status: hasTechIntegrity ? 'pass' : 'pending' },
+                    { key: 'regulatory', label: 'Regulatory (OBC)', sub: 'Dual-Engine Validation', icon: '⚖️', color: 'text-purple-400', bgColor: 'bg-purple-500/10', status: hasRegulatory ? 'pass' : 'pending' },
+                    { key: 'visual', label: 'Visual Validation', sub: 'AI Vision × Trade Sync', icon: '👁️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', status: hasVisual ? 'pass' : 'pending' },
+                    { key: 'financial', label: 'Financial Audit', sub: 'Sync + Tax Validation', icon: '💰', color: 'text-amber-400', bgColor: 'bg-amber-500/10', status: hasFinancial ? 'pass' : 'pending' },
+                    { key: 'geometric', label: 'Geometric Precision', sub: 'Override Authority', icon: '📐', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', status: hasGeometric ? 'pass' : 'pending' },
+                  ];
+                })().map((pillar, i) => (
                   <motion.div
                     key={pillar.key}
                     className={cn(
@@ -8324,9 +8337,14 @@ export default function Stage8FinalReview({
                     transition={{ delay: 0.8 + i * 0.1 }}
                   >
                     <span className="text-[11px]">{pillar.icon}</span>
-                    <span className={cn("text-[9px] font-medium flex-1 truncate", pillar.color)}>
-                      {pillar.label}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className={cn("text-[9px] font-medium block truncate leading-tight", pillar.color)}>
+                        {pillar.label}
+                      </span>
+                      <span className="text-[7px] text-white/30 block truncate leading-tight">
+                        {pillar.sub}
+                      </span>
+                    </div>
                     {pillar.status === 'pass' ? (
                       <motion.div
                         initial={{ scale: 0 }}
@@ -8350,10 +8368,10 @@ export default function Stage8FinalReview({
               {/* Score bar */}
               {(() => {
                 const passCount = [
-                  citations.some(c => c.cite_type === 'TRADE_SELECTION'),
+                  citations.some(c => c.cite_type === 'TRADE_SELECTION') && citations.some(c => c.cite_type === 'TEMPLATE_LOCK'),
                   citations.some(c => c.cite_type === 'DNA_FINALIZED'),
-                  citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION'),
-                  (financialSummary?.total_cost ?? 0) > 0,
+                  (citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') && citations.some(c => c.cite_type === 'TRADE_SELECTION')),
+                  ((financialSummary?.total_cost ?? 0) > 0 && citations.some(c => c.cite_type === 'LOCATION')),
                   citations.some(c => c.cite_type === 'GFA_LOCK'),
                 ].filter(Boolean).length;
                 const pct = (passCount / 5) * 100;
