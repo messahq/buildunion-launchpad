@@ -1002,6 +1002,27 @@ export default function Stage8FinalReview({
             console.error('[Stage8] Failed to persist team citations:', persistErr);
           }
         }
+        
+        // 3d. Generate BUDGET citation from financial data if not present
+        const hasBudgetCit = loadedCitations.some(c => c.cite_type === 'BUDGET');
+        if (!hasBudgetCit && summary && (summary.total_cost ?? 0) > 0) {
+          const budgetCitation: Citation = {
+            id: `cite_budget_${Date.now()}`,
+            cite_type: 'BUDGET' as any,
+            question_key: 'total_budget',
+            answer: `$${Number(summary.total_cost).toLocaleString()}`,
+            value: Number(summary.total_cost),
+            timestamp: new Date().toISOString(),
+            metadata: {
+              material_cost: Number(summary.material_cost || 0),
+              labor_cost: Number(summary.labor_cost || 0),
+              total_cost: Number(summary.total_cost),
+              source: 'project_summaries',
+            },
+          };
+          loadedCitations.push(budgetCitation);
+          newTeamCitations.push(budgetCitation); // piggyback on persist block
+        }
 
         // 4. Load tasks and transform to checklist format
         const { data: tasksData } = await supabase
@@ -1316,7 +1337,7 @@ export default function Stage8FinalReview({
     mobileContentRef.current?.scrollTo({ top: 0 });
   }, [activeOrbitalPanel]);
   
-  // Fetch weather data
+  // Fetch weather data + generate WEATHER_ALERT citation
   const fetchWeather = async (address: string) => {
     try {
       const response = await supabase.functions.invoke('get-weather', {
@@ -1324,11 +1345,58 @@ export default function Stage8FinalReview({
       });
       
       if (response.data?.current) {
-        setWeatherData({
+        const weatherInfo = {
           temp: response.data.current.temp,
           condition: response.data.current.description,
           alerts: response.data.alerts || [],
-        });
+        };
+        setWeatherData(weatherInfo);
+        
+        // ✓ Generate WEATHER_ALERT citation from live data
+        const hasWeatherCit = citations.some(c => c.cite_type === 'WEATHER_ALERT');
+        if (!hasWeatherCit) {
+          const alertText = weatherInfo.alerts.length > 0 
+            ? `${weatherInfo.alerts.length} alert(s): ${weatherInfo.alerts.join(', ')}`
+            : `${weatherInfo.temp}°C — ${weatherInfo.condition}`;
+          const weatherCitation: Citation = {
+            id: `cite_weather_${Date.now()}`,
+            cite_type: 'WEATHER_ALERT' as any,
+            question_key: 'weather_alert',
+            answer: alertText,
+            value: weatherInfo,
+            timestamp: new Date().toISOString(),
+            metadata: {
+              temp: weatherInfo.temp,
+              condition: weatherInfo.condition,
+              alerts: weatherInfo.alerts,
+              source: 'openweathermap',
+              checked_at: new Date().toISOString(),
+            },
+          };
+          setCitations(prev => {
+            // Don't add if already present (race condition guard)
+            if (prev.some(c => c.cite_type === 'WEATHER_ALERT')) return prev;
+            const updated = [...prev, weatherCitation];
+            // Persist to DB
+            supabase.from('project_summaries')
+              .select('id, verified_facts')
+              .eq('project_id', projectId)
+              .maybeSingle()
+              .then(({ data: sumData }) => {
+                if (sumData?.id) {
+                  const currentFacts = Array.isArray(sumData.verified_facts) ? sumData.verified_facts : [];
+                  // Only add if not already there
+                  if (!currentFacts.some((f: any) => f.cite_type === 'WEATHER_ALERT')) {
+                    supabase.from('project_summaries')
+                      .update({ verified_facts: [...currentFacts, weatherCitation as unknown as Record<string, unknown>] as unknown as null })
+                      .eq('id', sumData.id)
+                      .then(() => console.log('[Stage8] ✓ WEATHER_ALERT citation persisted'));
+                  }
+                }
+              });
+            return updated;
+          });
+        }
       }
     } catch (err) {
       console.error('[Stage8] Weather fetch failed:', err);
@@ -2375,6 +2443,8 @@ export default function Stage8FinalReview({
       const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
       const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
       const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+      const budgetCit = citations.find(c => c.cite_type === 'BUDGET');
+      const allTeamInviteCits = citations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE');
 
       interface DnaPillar {
         label: string; sub: string; icon: string; color: string; status: boolean;
@@ -2400,7 +2470,8 @@ export default function Stage8FinalReview({
         { label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions', icon: '👥', color: '#14b8a6', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sources: [
           { label: 'Team Structure', cit: teamStructCit, field: 'TEAM_STRUCTURE' },
           { label: 'Team Size', cit: teamSizeCit, field: 'TEAM_SIZE' },
-          { label: 'Member Invites', cit: teamInviteCit, field: 'TEAM_MEMBER_INVITE' },
+          ...allTeamInviteCits.map((tc, i) => ({ label: `Member: ${tc.answer?.split('—')[0]?.trim() || `#${i+1}`}`, cit: tc, field: 'TEAM_MEMBER_INVITE' })),
+          ...(allTeamInviteCits.length === 0 ? [{ label: 'Member Invites', cit: teamInviteCit, field: 'TEAM_MEMBER_INVITE' }] : []),
           { label: 'Permission Set', cit: teamPermCit, field: 'TEAM_PERMISSION_SET' },
         ]},
         { label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized', icon: '📅', color: '#6366f1', status: !!timelineCit && !!endDateCit, sources: [
@@ -2419,7 +2490,7 @@ export default function Stage8FinalReview({
         { label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)', icon: '💰', color: '#ef4444', status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit, sources: [
           { label: 'Location (Tax Region)', cit: locationCit, field: 'LOCATION' },
           { label: 'Demolition Price', cit: demoPriceCit, field: 'DEMOLITION_PRICE' },
-          { label: 'Total Budget', cit: undefined, field: 'FINANCIAL' },
+          { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
       ];
 

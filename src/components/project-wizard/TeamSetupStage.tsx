@@ -410,6 +410,31 @@ export default function TeamSetupStage({
       });
       citations.push(structureCitation);
       
+      // ✓ Create TEAM_PERMISSION_SET citation summarizing all access levels
+      const permissionSummary = teamMembers.map(m => {
+        const level = ACCESS_LEVELS.find(l => l.key === m.accessLevel);
+        return {
+          name: m.type === 'email' ? m.email : m.userName,
+          role: m.accessLevel,
+          canSeePrices: level?.canSeePrices || false,
+          canSeeTasks: level?.canSeeTasks || false,
+          canUpdateTasks: level?.canUpdateTasks || false,
+          canManageTeam: level?.canManageTeam || false,
+        };
+      });
+      
+      const permissionCitation = createCitation({
+        cite_type: CITATION_TYPES.TEAM_PERMISSION_SET,
+        question_key: 'team_permissions',
+        answer: `${teamMembers.length} permission set(s) configured`,
+        value: { permissions: permissionSummary } as Record<string, unknown>,
+        metadata: {
+          configured_at: new Date().toISOString(),
+          roles_used: [...new Set(teamMembers.map(m => m.accessLevel))],
+        },
+      });
+      citations.push(permissionCitation);
+      
       toast.success('Team structure saved!');
       onComplete(citations);
       
