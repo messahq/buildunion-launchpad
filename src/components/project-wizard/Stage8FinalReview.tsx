@@ -7691,7 +7691,7 @@ export default function Stage8FinalReview({
         </div>
 
         {/* Desktop: Panels around central canvas */}
-        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr] gap-2 p-3">
+        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_auto] gap-2 p-3">
           
           {/* Left column - 4 panels */}
           {PANELS.slice(0, 4).map((panel, idx) => {
@@ -7967,7 +7967,7 @@ export default function Stage8FinalReview({
 
           {/* Central Canvas - spans middle column, all 4 rows */}
           <motion.div
-            className="row-span-4 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
+            className="row-span-5 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
             layout
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -8253,6 +8253,139 @@ export default function Stage8FinalReview({
               </motion.button>
             );
           })}
+
+          {/* MESSA DNA Synthesis Panel - Bottom left empty cell */}
+          <motion.div
+            className="col-start-1 row-start-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+          />
+
+          {/* MESSA DNA Synthesis Panel - Bottom right */}
+          <motion.div
+            className="col-start-3 row-start-5 relative rounded-2xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+            whileHover={{ scale: 1.02, borderColor: 'rgba(16,185,129,0.5)' }}
+          >
+            {/* Scanning line effect */}
+            <motion.div
+              className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent pointer-events-none"
+              animate={{ top: ['0%', '100%', '0%'] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+            />
+
+            <div className="p-3 space-y-2">
+              {/* Header */}
+              <div className="flex items-center gap-2">
+                <motion.div
+                  className="h-7 w-7 rounded-lg bg-emerald-500/20 flex items-center justify-center"
+                  animate={{ boxShadow: ['0 0 0px rgba(16,185,129,0)', '0 0 12px rgba(16,185,129,0.4)', '0 0 0px rgba(16,185,129,0)'] }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                </motion.div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] font-display font-bold tracking-wide text-emerald-300">
+                    MESSA <span className="text-amber-400">DNA</span>
+                  </span>
+                  <p className="text-[9px] text-emerald-600/80 leading-tight">Synthesis Validation</p>
+                </div>
+                <motion.div
+                  className="h-5 w-5 rounded-full border border-emerald-500/40 flex items-center justify-center"
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+                >
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                </motion.div>
+              </div>
+
+              {/* 5 Pillars - Compact */}
+              <div className="space-y-1">
+                {[
+                  { key: 'technical', label: 'Technical Integrity', icon: '🔬', color: 'text-blue-400', bgColor: 'bg-blue-500/10', status: citations.some(c => c.cite_type === 'TRADE_SELECTION') ? 'pass' : 'pending' },
+                  { key: 'regulatory', label: 'Regulatory (OBC)', icon: '⚖️', color: 'text-purple-400', bgColor: 'bg-purple-500/10', status: citations.some(c => c.cite_type === 'DNA_FINALIZED') ? 'pass' : 'pending' },
+                  { key: 'visual', label: 'Visual Validation', icon: '👁️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', status: citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') ? 'pass' : 'pending' },
+                  { key: 'financial', label: 'Financial Audit', icon: '💰', color: 'text-amber-400', bgColor: 'bg-amber-500/10', status: (financialSummary?.total_cost ?? 0) > 0 ? 'pass' : 'pending' },
+                  { key: 'geometric', label: 'Geometric Precision', icon: '📐', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', status: citations.some(c => c.cite_type === 'GFA_LOCK') ? 'pass' : 'pending' },
+                ].map((pillar, i) => (
+                  <motion.div
+                    key={pillar.key}
+                    className={cn(
+                      "flex items-center gap-2 px-2 py-1 rounded-lg border transition-all",
+                      pillar.status === 'pass' 
+                        ? "border-emerald-800/30 bg-emerald-950/20" 
+                        : "border-amber-800/30 bg-amber-950/10"
+                    )}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.8 + i * 0.1 }}
+                  >
+                    <span className="text-[11px]">{pillar.icon}</span>
+                    <span className={cn("text-[9px] font-medium flex-1 truncate", pillar.color)}>
+                      {pillar.label}
+                    </span>
+                    {pillar.status === 'pass' ? (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 1 + i * 0.1, type: 'spring' }}
+                      >
+                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        animate={{ opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Circle className="h-3 w-3 text-amber-500/60" />
+                      </motion.div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Score bar */}
+              {(() => {
+                const passCount = [
+                  citations.some(c => c.cite_type === 'TRADE_SELECTION'),
+                  citations.some(c => c.cite_type === 'DNA_FINALIZED'),
+                  citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION'),
+                  (financialSummary?.total_cost ?? 0) > 0,
+                  citations.some(c => c.cite_type === 'GFA_LOCK'),
+                ].filter(Boolean).length;
+                const pct = (passCount / 5) * 100;
+                return (
+                  <div className="pt-1">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[8px] font-mono text-emerald-500/70 uppercase tracking-widest">DNA Score</span>
+                      <span className={cn(
+                        "text-[10px] font-bold font-mono",
+                        pct === 100 ? "text-emerald-400" : pct >= 60 ? "text-amber-400" : "text-red-400"
+                      )}>
+                        {passCount}/5
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
+                      <motion.div
+                        className={cn(
+                          "h-full rounded-full",
+                          pct === 100 ? "bg-gradient-to-r from-emerald-500 to-green-400" 
+                            : pct >= 60 ? "bg-gradient-to-r from-amber-500 to-yellow-400" 
+                            : "bg-gradient-to-r from-red-500 to-orange-400"
+                        )}
+                        initial={{ width: '0%' }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, delay: 1.2, ease: 'easeOut' }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </motion.div>
         </div>
 
         {/* Mobile/Tablet: Tab-based layout */}
