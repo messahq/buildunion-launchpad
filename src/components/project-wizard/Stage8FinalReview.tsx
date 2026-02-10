@@ -786,7 +786,7 @@ export default function Stage8FinalReview({
           }
         }
         
-        // ✓ SYNTHETIC RECOVERY: TIMELINE & END_DATE from project tasks if missing
+        // ✓ TIMELINE & END_DATE: Keep synthetic recovery as initial fallback only if no user-set citations exist
         const hasTimeline = loadedCitations.some(c => c.cite_type === 'TIMELINE');
         const hasEndDate = loadedCitations.some(c => c.cite_type === 'END_DATE');
         
@@ -804,23 +804,20 @@ export default function Stage8FinalReview({
               const earliest = validDates[0];
               const latest = validDates[validDates.length - 1];
               
-              const syntheticCitations: Citation[] = [];
-              
               if (!hasTimeline && earliest) {
                 const syntheticTimeline: Citation = {
                   id: `synthetic_timeline_${Date.now()}`,
                   cite_type: 'TIMELINE',
                   question_key: 'timeline',
-                  answer: earliest.toISOString(),
+                  answer: earliest.toISOString().split('T')[0],
                   value: 'scheduled',
                   timestamp: new Date().toISOString(),
                   metadata: {
-                    start_date: earliest.toISOString(),
+                    start_date: earliest.toISOString().split('T')[0],
                     source: 'tasks_fallback',
                   },
                 };
                 loadedCitations.push(syntheticTimeline);
-                syntheticCitations.push(syntheticTimeline);
                 console.log('[Stage8] ✓ Created synthetic TIMELINE from tasks:', earliest.toISOString());
               }
               
@@ -829,42 +826,16 @@ export default function Stage8FinalReview({
                   id: `synthetic_end_date_${Date.now()}`,
                   cite_type: 'END_DATE',
                   question_key: 'end_date',
-                  answer: latest.toISOString(),
-                  value: latest.toISOString(),
+                  answer: latest.toISOString().split('T')[0],
+                  value: latest.toISOString().split('T')[0],
                   timestamp: new Date().toISOString(),
                   metadata: {
-                    end_date: latest.toISOString(),
+                    end_date: latest.toISOString().split('T')[0],
                     source: 'tasks_fallback',
                   },
                 };
                 loadedCitations.push(syntheticEndDate);
-                syntheticCitations.push(syntheticEndDate);
                 console.log('[Stage8] ✓ Created synthetic END_DATE from tasks:', latest.toISOString());
-              }
-              
-              // Persist synthetic citations
-              if (syntheticCitations.length > 0) {
-                try {
-                  const { data: currentSummary2 } = await supabase
-                    .from('project_summaries')
-                    .select('id, verified_facts')
-                    .eq('project_id', projectId)
-                    .maybeSingle();
-                  
-                  if (currentSummary2?.id) {
-                    const currentFacts2 = Array.isArray(currentSummary2.verified_facts) ? currentSummary2.verified_facts : [];
-                    const updatedFacts2 = [...currentFacts2, ...syntheticCitations.map(c => c as unknown as Record<string, unknown>)];
-                    
-                    await supabase
-                      .from('project_summaries')
-                      .update({ verified_facts: updatedFacts2 as unknown as null })
-                      .eq('id', currentSummary2.id);
-                    
-                    console.log('[Stage8] ✓ Persisted synthetic TIMELINE/END_DATE to verified_facts');
-                  }
-                } catch (persistErr) {
-                  console.error('[Stage8] Failed to persist synthetic timeline citations:', persistErr);
-                }
               }
             }
           } catch (err) {
@@ -922,8 +893,116 @@ export default function Stage8FinalReview({
             teamData = [...teamData, ...memberData];
           }
         }
+        
+        // 3b. Load pending email invitations
+        const { data: pendingInvites } = await supabase
+          .from('team_invitations')
+          .select('id, email, role, status')
+          .eq('project_id', projectId);
+        
+        if (pendingInvites && pendingInvites.length > 0) {
+          pendingInvites.forEach(invite => {
+            // Only add if not already in teamData (already accepted = in project_members)
+            const alreadyJoined = teamData.some(m => m.userId === invite.id);
+            if (!alreadyJoined && invite.status === 'pending') {
+              const emailName = invite.email.split('@')[0];
+              const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+              teamData.push({
+                id: `invite-${invite.id}`,
+                userId: invite.id,
+                role: invite.role || 'member',
+                name: `${displayName} (Pending)`,
+              });
+            }
+          });
+        }
+        
         setTeamMembers(teamData);
         
+        // 3c. Generate TEAM_MEMBER_INVITE citations for each team member if not already present
+        const existingTeamInviteCits = loadedCitations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+        const existingTeamMemberIds = new Set(existingTeamInviteCits.map(c => (c.metadata as any)?.member_id || (c.metadata as any)?.userId));
+        
+        const newTeamCitations: Citation[] = [];
+        teamData.forEach(member => {
+          if (member.role === 'owner') return; // Skip owner
+          const memberId = member.userId || member.id;
+          if (existingTeamMemberIds.has(memberId)) return; // Already cited
+          
+          const cit: Citation = {
+            id: `cite_team_member_${memberId.slice(0, 8)}_${Date.now()}`,
+            cite_type: 'TEAM_MEMBER_INVITE',
+            question_key: 'team_member',
+            answer: `${member.name} — ${member.role}`,
+            value: member.name,
+            timestamp: new Date().toISOString(),
+            metadata: {
+              member_id: memberId,
+              role: member.role,
+              name: member.name,
+              source: member.id.startsWith('invite-') ? 'email_invitation' : 'platform_member',
+            },
+          };
+          newTeamCitations.push(cit);
+        });
+        
+        // Also add pending invitations as citations
+        if (pendingInvites) {
+          pendingInvites.forEach(invite => {
+            if (invite.status !== 'pending') return;
+            const inviteId = invite.id;
+            if (existingTeamMemberIds.has(inviteId)) return;
+            // Check if already added in teamData loop
+            if (newTeamCitations.some(c => (c.metadata as any)?.member_id === inviteId)) return;
+            
+            const emailName = invite.email.split('@')[0];
+            const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+            const cit: Citation = {
+              id: `cite_team_invite_${inviteId.slice(0, 8)}_${Date.now()}`,
+              cite_type: 'TEAM_MEMBER_INVITE',
+              question_key: 'team_member',
+              answer: `${displayName} (${invite.email}) — ${invite.role || 'member'} [Pending]`,
+              value: invite.email,
+              timestamp: new Date().toISOString(),
+              metadata: {
+                member_id: inviteId,
+                email: invite.email,
+                role: invite.role || 'member',
+                name: displayName,
+                status: 'pending',
+                source: 'email_invitation',
+              },
+            };
+            newTeamCitations.push(cit);
+          });
+        }
+        
+        if (newTeamCitations.length > 0) {
+          loadedCitations.push(...newTeamCitations);
+          setCitations([...loadedCitations]);
+          
+          // Persist new team citations to DB
+          try {
+            const { data: sumData } = await supabase
+              .from('project_summaries')
+              .select('id, verified_facts')
+              .eq('project_id', projectId)
+              .maybeSingle();
+            
+            if (sumData?.id) {
+              const currentFacts = Array.isArray(sumData.verified_facts) ? sumData.verified_facts : [];
+              const updatedFacts = [...currentFacts, ...newTeamCitations.map(c => c as unknown as Record<string, unknown>)];
+              await supabase
+                .from('project_summaries')
+                .update({ verified_facts: updatedFacts as unknown as null })
+                .eq('id', sumData.id);
+              console.log('[Stage8] ✓ Persisted', newTeamCitations.length, 'team member citations');
+            }
+          } catch (persistErr) {
+            console.error('[Stage8] Failed to persist team citations:', persistErr);
+          }
+        }
+
         // 4. Load tasks and transform to checklist format
         const { data: tasksData } = await supabase
           .from('project_tasks')
@@ -3572,19 +3651,99 @@ export default function Stage8FinalReview({
      
     return (
       <div className="space-y-4">
-        {/* ─── Vibrant Timeline Header ─── */}
+        {/* ─── Vibrant Timeline Header with Editable Dates ─── */}
         <div className="rounded-xl border border-violet-300 dark:border-violet-500/30 bg-gradient-to-r from-violet-50 via-indigo-50 to-purple-50 dark:from-violet-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 p-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-wrap">
               <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
                 <Calendar className="h-4.5 w-4.5 text-white" />
               </div>
-              {panelCitations.map(c => (
-                <div key={c.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/70 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
-                  <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">{c.cite_type === 'TIMELINE' ? '▸ Start' : c.cite_type === 'END_DATE' ? '▸ End' : c.cite_type.replace(/_/g, ' ')}</span>
-                  <span className="text-xs font-bold text-gray-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
-                </div>
-              ))}
+              {/* Editable Start Date */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/70 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
+                <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">▸ Start</span>
+                <input
+                  type="date"
+                  className="text-xs font-bold text-gray-800 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[120px]"
+                  value={(() => {
+                    const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
+                    if (!tc) return '';
+                    try { return tc.answer.split('T')[0]; } catch { return tc.answer; }
+                  })()}
+                  onChange={async (e) => {
+                    const newDate = e.target.value;
+                    if (!newDate) return;
+                    const existingIdx = citations.findIndex(c => c.cite_type === 'TIMELINE');
+                    let updatedCitations: Citation[];
+                    if (existingIdx >= 0) {
+                      updatedCitations = citations.map((c, i) => i === existingIdx ? {
+                        ...c, answer: newDate, value: 'scheduled',
+                        metadata: { ...c.metadata, start_date: newDate, source: 'user_input' },
+                        timestamp: new Date().toISOString(),
+                      } : c);
+                    } else {
+                      const newCit: Citation = {
+                        id: `cite_timeline_${Date.now()}`, cite_type: 'TIMELINE', question_key: 'timeline',
+                        answer: newDate, value: 'scheduled', timestamp: new Date().toISOString(),
+                        metadata: { start_date: newDate, source: 'user_input' },
+                      };
+                      updatedCitations = [...citations, newCit];
+                    }
+                    setCitations(updatedCitations);
+                    try {
+                      await supabase.from('project_summaries')
+                        .update({ verified_facts: updatedCitations as any, project_start_date: newDate })
+                        .eq('project_id', projectId);
+                      toast.success('Start date saved');
+                    } catch { toast.error('Failed to save start date'); }
+                  }}
+                />
+                {panelCitations.find(c => c.cite_type === 'TIMELINE') && (
+                  <span className="text-[7px] text-indigo-400 font-mono">cite:[{panelCitations.find(c => c.cite_type === 'TIMELINE')!.id.slice(0, 6)}]</span>
+                )}
+              </div>
+              {/* Editable End Date */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/70 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
+                <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">▸ End</span>
+                <input
+                  type="date"
+                  className="text-xs font-bold text-gray-800 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[120px]"
+                  value={(() => {
+                    const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
+                    if (!ec) return '';
+                    try { return ec.answer.split('T')[0]; } catch { return ec.answer; }
+                  })()}
+                  onChange={async (e) => {
+                    const newDate = e.target.value;
+                    if (!newDate) return;
+                    const existingIdx = citations.findIndex(c => c.cite_type === 'END_DATE');
+                    let updatedCitations: Citation[];
+                    if (existingIdx >= 0) {
+                      updatedCitations = citations.map((c, i) => i === existingIdx ? {
+                        ...c, answer: newDate, value: newDate,
+                        metadata: { ...c.metadata, end_date: newDate, source: 'user_input' },
+                        timestamp: new Date().toISOString(),
+                      } : c);
+                    } else {
+                      const newCit: Citation = {
+                        id: `cite_end_date_${Date.now()}`, cite_type: 'END_DATE', question_key: 'end_date',
+                        answer: newDate, value: newDate, timestamp: new Date().toISOString(),
+                        metadata: { end_date: newDate, source: 'user_input' },
+                      };
+                      updatedCitations = [...citations, newCit];
+                    }
+                    setCitations(updatedCitations);
+                    try {
+                      await supabase.from('project_summaries')
+                        .update({ verified_facts: updatedCitations as any, project_end_date: newDate })
+                        .eq('project_id', projectId);
+                      toast.success('End date saved');
+                    } catch { toast.error('Failed to save end date'); }
+                  }}
+                />
+                {panelCitations.find(c => c.cite_type === 'END_DATE') && (
+                  <span className="text-[7px] text-indigo-400 font-mono">cite:[{panelCitations.find(c => c.cite_type === 'END_DATE')!.id.slice(0, 6)}]</span>
+                )}
+              </div>
             </div>
             {/* Overall progress */}
             <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-white/60 dark:bg-indigo-950/30 border border-violet-200 dark:border-violet-500/20">
