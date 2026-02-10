@@ -382,7 +382,7 @@ export default function Stage8FinalReview({
   const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string; userId: string}[]>([]);
   const [tasks, setTasks] = useState<TaskWithChecklist[]>([]);
   const [documents, setDocuments] = useState<DocumentWithCategory[]>([]);
-  const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null; share_token?: string | null}[]>([]);
+  const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null; share_token?: string | null; project_name?: string | null; client_name?: string | null; client_email?: string | null; contractor_name?: string | null; contractor_email?: string | null; start_date?: string | null; estimated_end_date?: string | null; contractor_signature?: unknown; client_signature?: unknown; client_signed_at?: string | null; sent_to_client_at?: string | null; client_viewed_at?: string | null}[]>([]);
   
   // Financial summary data from project_summaries
   const [financialSummary, setFinancialSummary] = useState<{
@@ -1138,7 +1138,7 @@ export default function Stage8FinalReview({
         // 6. Load contracts
         const { data: contractsData } = await supabase
           .from('contracts')
-          .select('id, contract_number, status, total_amount, share_token')
+          .select('id, contract_number, status, total_amount, share_token, project_name, client_name, client_email, contractor_name, contractor_email, start_date, estimated_end_date, contractor_signature, client_signature, client_signed_at, sent_to_client_at, client_viewed_at')
           .eq('project_id', projectId)
           .is('archived_at', null);
         
@@ -4604,46 +4604,186 @@ export default function Stage8FinalReview({
           </div>
           
           {contracts.length > 0 ? (
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               {contracts.map(contract => {
-                const statusColor = contract.status === 'signed' 
+                const isSigned = contract.status === 'signed';
+                const isSent = contract.status === 'sent';
+                const isDraft = contract.status === 'draft';
+                const statusColor = isSigned 
                   ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                  : contract.status === 'sent'
+                  : isSent
                   ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700'
                   : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700';
+                
+                const statusIcon = isSigned ? '✅' : isSent ? '📨' : '📝';
+                
                 return (
                   <div 
                     key={contract.id} 
-                    className="group flex items-center justify-between p-2 rounded-xl border-2 border-violet-200 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/20 dark:to-purple-950/15 hover:shadow-md transition-all cursor-pointer"
-                    onClick={() => {
-                      if (contract.share_token) {
-                        window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
-                      } else {
-                        toast.info('Contract preview not available');
-                      }
-                    }}
+                    className="rounded-xl border-2 border-violet-200 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/20 dark:to-purple-950/15 overflow-hidden transition-all hover:shadow-md"
                   >
-                    <div className="flex items-center gap-2">
-                      <FileCheck className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />
-                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">#{contract.contract_number}</span>
-                      {canViewFinancials && contract.total_amount && (
-                        <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">${contract.total_amount.toLocaleString()}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {contract.status !== 'signed' && canEdit && (
-                        <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedContractForEmail({ id: contract.id, contract_number: contract.contract_number, total_amount: contract.total_amount, status: contract.status, share_token: contract.share_token });
-                          setContractRecipients([{ email: '', name: '' }]);
-                          setShowContractEmailDialog(true);
-                        }}>
-                          <Send className="h-3 w-3" />
-                        </Button>
-                      )}
-                      <Badge variant="outline" className={cn("text-[9px] px-1.5 border", statusColor)}>
-                        {contract.status}
+                    {/* Contract Header */}
+                    <div 
+                      className="flex items-center justify-between p-2.5 cursor-pointer"
+                      onClick={() => {
+                        if (contract.share_token) {
+                          window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
+                        } else {
+                          toast.info('Contract preview not available');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{statusIcon}</span>
+                        <div>
+                          <span className="text-xs font-bold text-gray-800 dark:text-gray-200">#{contract.contract_number}</span>
+                          {contract.project_name && (
+                            <span className="text-[10px] text-violet-500 dark:text-violet-400 ml-1.5">{contract.project_name}</span>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className={cn("text-[9px] px-1.5 border font-semibold", statusColor)}>
+                        {contract.status.toUpperCase()}
                       </Badge>
+                    </div>
+
+                    {/* Contract Details Grid */}
+                    <div className="px-2.5 pb-2 space-y-1.5">
+                      {/* Client & Contractor Row */}
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5">
+                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Client</p>
+                          <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 truncate">
+                            {contract.client_name || <span className="italic text-gray-400">Not set</span>}
+                          </p>
+                          {contract.client_email && (
+                            <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate">{contract.client_email}</p>
+                          )}
+                        </div>
+                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5">
+                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Contractor</p>
+                          <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 truncate">
+                            {contract.contractor_name || <span className="italic text-gray-400">Not set</span>}
+                          </p>
+                          {contract.contractor_email && (
+                            <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate">{contract.contractor_email}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Financial & Timeline Row */}
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {canViewFinancials && (
+                          <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5 text-center">
+                            <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Total</p>
+                            <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                              {contract.total_amount ? `$${contract.total_amount.toLocaleString()}` : '—'}
+                            </p>
+                          </div>
+                        )}
+                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5 text-center">
+                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Start</p>
+                          <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                            {contract.start_date ? format(parseISO(String(contract.start_date)), 'MMM dd') : '—'}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5 text-center">
+                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">End</p>
+                          <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                            {contract.estimated_end_date ? format(parseISO(String(contract.estimated_end_date)), 'MMM dd') : '—'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Signature Status */}
+                      <div className="rounded-lg border border-violet-200 dark:border-violet-700/40 bg-violet-50/50 dark:bg-violet-950/20 p-1.5">
+                        <p className="text-[9px] text-violet-600 dark:text-violet-400 font-mono uppercase mb-1">Signatures</p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            {contract.contractor_signature ? (
+                              <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                            ) : (
+                              <Circle className="h-3 w-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                            )}
+                            <span className={cn("text-[10px]", contract.contractor_signature ? "text-emerald-700 dark:text-emerald-400 font-medium" : "text-gray-400 dark:text-gray-500")}>
+                              Contractor {contract.contractor_signature ? '✓ Signed' : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {contract.client_signature ? (
+                              <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                            ) : (
+                              <Circle className="h-3 w-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                            )}
+                            <span className={cn("text-[10px]", contract.client_signature ? "text-emerald-700 dark:text-emerald-400 font-medium" : "text-gray-400 dark:text-gray-500")}>
+                              Client {contract.client_signature ? '✓ Signed' : 'Pending'}
+                            </span>
+                          </div>
+                        </div>
+                        {contract.client_signed_at && (
+                          <p className="text-[9px] text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
+                            Client signed: {format(new Date(contract.client_signed_at), 'MMM dd, yyyy HH:mm')}
+                          </p>
+                        )}
+                        {contract.sent_to_client_at && !contract.client_signed_at && (
+                          <p className="text-[9px] text-sky-600 dark:text-sky-400 mt-1 font-mono">
+                            Sent: {format(new Date(contract.sent_to_client_at), 'MMM dd, yyyy HH:mm')}
+                            {contract.client_viewed_at && ` · Viewed: ${format(new Date(contract.client_viewed_at), 'MMM dd HH:mm')}`}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-1.5 pt-1">
+                        {/* Preview */}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-6 text-[10px] px-2 gap-1 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/30 flex-1"
+                          onClick={() => {
+                            if (contract.share_token) {
+                              window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
+                            }
+                          }}
+                        >
+                          <Eye className="h-3 w-3" />
+                          Preview
+                        </Button>
+                        
+                        {/* Send / Resend */}
+                        {!isSigned && canEdit && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-6 text-[10px] px-2 gap-1 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/30 flex-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedContractForEmail({ id: contract.id, contract_number: contract.contract_number, total_amount: contract.total_amount, status: contract.status, share_token: contract.share_token });
+                              setContractRecipients([{ email: '', name: '' }]);
+                              setShowContractEmailDialog(true);
+                            }}
+                          >
+                            <Send className="h-3 w-3" />
+                            {isSent ? 'Resend' : 'Send'}
+                          </Button>
+                        )}
+                        
+                        {/* Download */}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-6 text-[10px] px-2 gap-1 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (contract.share_token) {
+                              window.open(`/contract/sign?token=${contract.share_token}&download=true`, '_blank');
+                            }
+                          }}
+                        >
+                          <Download className="h-3 w-3" />
+                          PDF
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
