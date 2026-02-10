@@ -5359,20 +5359,20 @@ export default function Stage8FinalReview({
         return (
           <div className="space-y-4">
             {/* ─── Futuristic Header Bar ─── */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl border border-sky-500/20 bg-gradient-to-r from-sky-950/40 via-slate-900/60 to-cyan-950/40">
+            <div className="flex items-center justify-between p-2.5 rounded-xl border-2 border-sky-300 dark:border-sky-700 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 dark:from-sky-950/30 dark:via-blue-950/30 dark:to-cyan-950/30 shadow-md">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-sky-500/20 flex items-center justify-center">
-                  <MapPin className="h-4 w-4 text-sky-400" />
+                <div className="h-8 w-8 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+                  <MapPin className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                 </div>
                 <div>
                   <span className={cn(
                     "text-xs font-semibold block",
-                    hasLocationData ? "text-sky-200" : "text-gray-500"
+                    hasLocationData ? "text-sky-700 dark:text-sky-300" : "text-gray-500"
                   )}>
                     {weatherAddress || 'No location set'}
                   </span>
                   {mapLat && mapLon && (
-                    <span className="text-[10px] text-sky-500/70 font-mono">
+                    <span className="text-[10px] text-sky-500 dark:text-sky-400 font-mono">
                       {Number(mapLat).toFixed(4)}°N, {Number(mapLon).toFixed(4)}°W
                     </span>
                   )}
@@ -5380,10 +5380,10 @@ export default function Stage8FinalReview({
               </div>
               <div className="flex items-center gap-2">
                 {locationCitation && (
-                  <span className="text-[10px] text-sky-500/60 font-mono bg-sky-500/10 px-1.5 py-0.5 rounded">cite:[{locationCitation.id.slice(0, 6)}]</span>
+                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono bg-sky-100 dark:bg-sky-900/30 px-1.5 py-0.5 rounded">cite:[{locationCitation.id.slice(0, 6)}]</span>
                 )}
                 {siteCondCitationWeather && (
-                  <span className="text-[10px] text-amber-400/80 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded flex items-center gap-1">
                     <Hammer className="h-2.5 w-2.5" /> {siteCondCitationWeather.answer}
                   </span>
                 )}
@@ -5397,12 +5397,12 @@ export default function Stage8FinalReview({
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="rounded-xl border border-sky-500/20 bg-gradient-to-b from-slate-900/50 to-sky-950/30 overflow-hidden"
+                  className="rounded-xl border-2 border-sky-200 dark:border-sky-700 bg-gradient-to-b from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/30 overflow-hidden"
                 >
-                  <div className="px-3 py-2 border-b border-sky-500/15 flex items-center justify-between">
+                  <div className="px-3 py-2 border-b border-sky-200 dark:border-sky-700/30 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Thermometer className="h-3.5 w-3.5 text-sky-400" />
-                      <span className="text-[11px] font-semibold text-sky-300 uppercase tracking-wider">Live Weather</span>
+                      <Thermometer className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                      <span className="text-[11px] font-semibold text-sky-700 dark:text-sky-300 uppercase tracking-wider">Live Weather</span>
                     </div>
                     <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
                   </div>
@@ -5419,16 +5419,16 @@ export default function Stage8FinalReview({
                 <motion.div
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="rounded-xl border border-sky-500/20 bg-gradient-to-b from-slate-900/50 to-sky-950/30 overflow-hidden"
+                  className="rounded-xl border-2 border-sky-200 dark:border-sky-700 bg-gradient-to-b from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/30 overflow-hidden"
                 >
-                  <div className="px-3 py-2 border-b border-sky-500/15 flex items-center justify-between">
+                  <div className="px-3 py-2 border-b border-sky-200 dark:border-sky-700/30 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5 text-cyan-400" />
-                      <span className="text-[11px] font-semibold text-cyan-300 uppercase tracking-wider">Site Location</span>
+                      <MapPin className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+                      <span className="text-[11px] font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wider">Site Location</span>
                     </div>
                     <button
                       onClick={() => setWeatherModalOpen(true)}
-                      className="text-[10px] text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1"
+                      className="text-[10px] text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors flex items-center gap-1"
                     >
                       <Maximize2 className="h-3 w-3" /> Expand
                     </button>
@@ -5445,13 +5445,12 @@ export default function Stage8FinalReview({
                         referrerPolicy="no-referrer-when-downgrade"
                         src={`https://www.google.com/maps?q=${mapLat},${mapLon}&z=16&output=embed`}
                       />
-                      {/* Scan-line overlay for futuristic feel */}
-                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-500/5 via-transparent to-cyan-500/5" />
-                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900/80 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-200/10 via-transparent to-cyan-200/10" />
+                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/60 dark:from-slate-900/80 to-transparent pointer-events-none" />
                     </div>
                   ) : (
-                    <div className="h-[280px] flex items-center justify-center">
-                      <div className="text-center text-sky-500/50">
+                    <div className="h-[280px] flex items-center justify-center bg-sky-50/50 dark:bg-sky-950/20">
+                      <div className="text-center text-sky-500 dark:text-sky-400">
                         <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p className="text-xs">Coordinates not available</p>
                         <p className="text-[10px] mt-1 opacity-60">Map requires lat/lon from geocoding</p>
@@ -5461,23 +5460,23 @@ export default function Stage8FinalReview({
                 </motion.div>
               </div>
             ) : (
-              <div className="p-8 rounded-xl bg-slate-900/40 border border-dashed border-sky-500/20 text-center">
-                <Cloud className="h-10 w-10 text-sky-500/30 mx-auto mb-3" />
-                <p className="text-sm text-sky-400/60 font-medium">No Location Data</p>
-                <p className="text-xs text-sky-500/40 mt-1">Set a project address to enable weather & map</p>
+              <div className="p-8 rounded-xl bg-sky-50/50 dark:bg-sky-950/20 border-2 border-dashed border-sky-300 dark:border-sky-700 text-center">
+                <Cloud className="h-10 w-10 text-sky-400 mx-auto mb-3" />
+                <p className="text-sm text-sky-600 dark:text-sky-400 font-medium">No Location Data</p>
+                <p className="text-xs text-sky-500 dark:text-sky-500/60 mt-1">Set a project address to enable weather & map</p>
               </div>
             )}
             
             {/* ─── Citations Footer ─── */}
             {panelCitations.length > 0 && (
-              <div className="pt-3 border-t border-sky-500/10 space-y-1.5">
-                <p className="text-[10px] font-semibold text-sky-500/50 uppercase tracking-widest">Data Sources</p>
+              <div className="pt-3 border-t border-sky-200 dark:border-sky-700/30 space-y-1.5">
+                <p className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-widest">Data Sources</p>
                 {panelCitations.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-sky-500/5 text-xs">
-                    <span className="text-sky-400/60">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-700/30 text-xs">
+                    <span className="text-sky-600 dark:text-sky-400">{c.cite_type.replace(/_/g, ' ')}</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sky-300/80">{renderCitationValue(c)}</span>
-                      <span className="text-[9px] text-sky-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
+                      <span className="font-medium text-sky-800 dark:text-sky-300">{renderCitationValue(c)}</span>
+                      <span className="text-[9px] text-sky-500 dark:text-sky-500/60 font-mono">cite:[{c.id.slice(0, 6)}]</span>
                     </div>
                   </div>
                 ))}
