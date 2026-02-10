@@ -8707,9 +8707,9 @@ export default function Stage8FinalReview({
           })}
 
 
-          {/* MESSA DNA Synthesis Panel - Floating bottom right */}
-          <motion.div
-            className="absolute bottom-3 right-3 w-[268px] z-30 rounded-2xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group shadow-xl"
+           {/* MESSA DNA Synthesis Panel - Floating inside central canvas bottom */}
+           <motion.div
+            className="absolute bottom-3 left-[292px] w-[260px] z-30 rounded-2xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group shadow-xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.7 }}
