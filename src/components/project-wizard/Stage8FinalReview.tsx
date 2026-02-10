@@ -308,90 +308,6 @@ const PANELS: PanelConfig[] = [
 // ============================================
 // TASK PHASES FOR PANEL 5
 // ============================================
-// Per-panel vibrant color palette
-const PANEL_VIBRANT_COLORS: Record<string, {
-  border: string; borderActive: string;
-  bg: string; bgActive: string;
-  icon: string; iconActive: string; iconBg: string; iconBgActive: string;
-  text: string; textActive: string;
-  summary: string; summaryActive: string;
-  glow: string; glowShadow: string;
-  tabBg: string; tabText: string; tabBorder: string;
-}> = {
-  'panel-1-basics': {
-    border: 'border-emerald-800/30', borderActive: 'border-emerald-400/60',
-    bg: 'bg-gradient-to-br from-[#0a1a14]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-emerald-950/50 to-teal-950/40',
-    icon: 'text-emerald-600', iconActive: 'text-emerald-300', iconBg: 'bg-emerald-950/50', iconBgActive: 'bg-emerald-500/20',
-    text: 'text-emerald-500', textActive: 'text-emerald-200',
-    summary: 'text-emerald-700/60', summaryActive: 'text-emerald-300/80',
-    glow: 'from-emerald-400 to-teal-500', glowShadow: 'shadow-[0_0_20px_rgba(52,211,153,0.2)]',
-    tabBg: 'bg-emerald-500/20', tabText: 'text-emerald-300', tabBorder: 'border-emerald-500/40',
-  },
-  'panel-2-gfa': {
-    border: 'border-blue-800/30', borderActive: 'border-blue-400/60',
-    bg: 'bg-gradient-to-br from-[#0c1428]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-blue-950/50 to-indigo-950/40',
-    icon: 'text-blue-600', iconActive: 'text-blue-300', iconBg: 'bg-blue-950/50', iconBgActive: 'bg-blue-500/20',
-    text: 'text-blue-500', textActive: 'text-blue-200',
-    summary: 'text-blue-700/60', summaryActive: 'text-blue-300/80',
-    glow: 'from-blue-400 to-sky-500', glowShadow: 'shadow-[0_0_20px_rgba(96,165,250,0.2)]',
-    tabBg: 'bg-blue-500/20', tabText: 'text-blue-300', tabBorder: 'border-blue-500/40',
-  },
-  'panel-3-trade': {
-    border: 'border-amber-800/30', borderActive: 'border-amber-400/60',
-    bg: 'bg-gradient-to-br from-[#1a1408]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-amber-950/50 to-orange-950/40',
-    icon: 'text-amber-600', iconActive: 'text-amber-300', iconBg: 'bg-amber-950/50', iconBgActive: 'bg-amber-500/20',
-    text: 'text-amber-500', textActive: 'text-amber-200',
-    summary: 'text-amber-700/60', summaryActive: 'text-amber-300/80',
-    glow: 'from-amber-400 to-yellow-500', glowShadow: 'shadow-[0_0_20px_rgba(251,191,36,0.2)]',
-    tabBg: 'bg-amber-500/20', tabText: 'text-amber-300', tabBorder: 'border-amber-500/40',
-  },
-  'panel-4-team': {
-    border: 'border-teal-800/30', borderActive: 'border-teal-400/60',
-    bg: 'bg-gradient-to-br from-[#0a1a1a]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-teal-950/50 to-cyan-950/40',
-    icon: 'text-teal-600', iconActive: 'text-teal-300', iconBg: 'bg-teal-950/50', iconBgActive: 'bg-teal-500/20',
-    text: 'text-teal-500', textActive: 'text-teal-200',
-    summary: 'text-teal-700/60', summaryActive: 'text-teal-300/80',
-    glow: 'from-teal-400 to-emerald-500', glowShadow: 'shadow-[0_0_20px_rgba(45,212,191,0.2)]',
-    tabBg: 'bg-teal-500/20', tabText: 'text-teal-300', tabBorder: 'border-teal-500/40',
-  },
-  'panel-5-timeline': {
-    border: 'border-violet-800/30', borderActive: 'border-violet-400/60',
-    bg: 'bg-gradient-to-br from-[#14102a]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-violet-950/50 to-indigo-950/40',
-    icon: 'text-violet-600', iconActive: 'text-violet-300', iconBg: 'bg-violet-950/50', iconBgActive: 'bg-violet-500/20',
-    text: 'text-violet-500', textActive: 'text-violet-200',
-    summary: 'text-violet-700/60', summaryActive: 'text-violet-300/80',
-    glow: 'from-violet-400 to-purple-500', glowShadow: 'shadow-[0_0_20px_rgba(167,139,250,0.2)]',
-    tabBg: 'bg-violet-500/20', tabText: 'text-violet-300', tabBorder: 'border-violet-500/40',
-  },
-  'panel-6-documents': {
-    border: 'border-pink-800/30', borderActive: 'border-pink-400/60',
-    bg: 'bg-gradient-to-br from-[#1a0c18]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-pink-950/50 to-rose-950/40',
-    icon: 'text-pink-600', iconActive: 'text-pink-300', iconBg: 'bg-pink-950/50', iconBgActive: 'bg-pink-500/20',
-    text: 'text-pink-500', textActive: 'text-pink-200',
-    summary: 'text-pink-700/60', summaryActive: 'text-pink-300/80',
-    glow: 'from-pink-400 to-rose-500', glowShadow: 'shadow-[0_0_20px_rgba(244,114,182,0.2)]',
-    tabBg: 'bg-pink-500/20', tabText: 'text-pink-300', tabBorder: 'border-pink-500/40',
-  },
-  'panel-7-weather': {
-    border: 'border-sky-800/30', borderActive: 'border-sky-400/60',
-    bg: 'bg-gradient-to-br from-[#0c1620]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-sky-950/50 to-cyan-950/40',
-    icon: 'text-sky-600', iconActive: 'text-sky-300', iconBg: 'bg-sky-950/50', iconBgActive: 'bg-sky-500/20',
-    text: 'text-sky-500', textActive: 'text-sky-200',
-    summary: 'text-sky-700/60', summaryActive: 'text-sky-300/80',
-    glow: 'from-sky-400 to-cyan-500', glowShadow: 'shadow-[0_0_20px_rgba(56,189,248,0.2)]',
-    tabBg: 'bg-sky-500/20', tabText: 'text-sky-300', tabBorder: 'border-sky-500/40',
-  },
-  'panel-8-financial': {
-    border: 'border-yellow-800/30', borderActive: 'border-yellow-400/60',
-    bg: 'bg-gradient-to-br from-[#1a1a08]/80 to-[#0c1120]/70', bgActive: 'bg-gradient-to-br from-yellow-950/50 to-amber-950/40',
-    icon: 'text-yellow-600', iconActive: 'text-yellow-300', iconBg: 'bg-yellow-950/50', iconBgActive: 'bg-yellow-500/20',
-    text: 'text-yellow-500', textActive: 'text-yellow-200',
-    summary: 'text-yellow-700/60', summaryActive: 'text-yellow-300/80',
-    glow: 'from-yellow-400 to-amber-500', glowShadow: 'shadow-[0_0_20px_rgba(250,204,21,0.2)]',
-    tabBg: 'bg-yellow-500/20', tabText: 'text-yellow-300', tabBorder: 'border-yellow-500/40',
-  },
-};
-
 const TASK_PHASES = [
   { key: 'demolition', label: 'Demolition', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950/30' },
   { key: 'preparation', label: 'Preparation', color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-950/30' },
@@ -7533,15 +7449,14 @@ export default function Stage8FinalReview({
               return null;
             };
 
-            const vc = PANEL_VIBRANT_COLORS[panel.id] || PANEL_VIBRANT_COLORS['panel-1-basics'];
             return (
               <motion.button
                 key={panel.id}
                 className={cn(
                   "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
                   isActive
-                    ? cn(vc.borderActive, vc.bgActive, vc.glowShadow)
-                    : cn(vc.border, vc.bg, "hover:brightness-125"),
+                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
                   !hasAccess && "opacity-40 cursor-not-allowed"
                 )}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
@@ -7553,17 +7468,17 @@ export default function Stage8FinalReview({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "h-7 w-7 rounded-lg flex items-center justify-center",
-                        isActive ? vc.iconBgActive : vc.iconBg
+                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
                       )}>
                         {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? vc.iconActive : vc.icon)} />
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
                       </div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? vc.textActive : vc.text
+                        isActive ? "text-cyan-200" : "text-cyan-500"
                       )}>
                         {displayTitle}
                       </span>
@@ -7571,11 +7486,12 @@ export default function Stage8FinalReview({
                     {dataCount > 0 && hasAccess && (
                       <span className={cn(
                         "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                        isActive ? cn(vc.tabBg, vc.tabText) : "bg-white/5 text-white/40"
+                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
                       )}>
                         {dataCount}
                       </span>
                     )}
+                    {/* Unread chat badge for Team panel */}
                     {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
                       <motion.span
                         initial={{ scale: 0 }}
@@ -7588,18 +7504,21 @@ export default function Stage8FinalReview({
                   </div>
                   <p className={cn(
                     "text-[11px] leading-tight line-clamp-1 mb-1",
-                    isActive ? vc.summaryActive : vc.summary
+                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
                   )}>
                     {getSummaryText()}
                   </p>
+                  {/* Rich visual metrics */}
                   {renderPanelVisual()}
+                  {/* Tier badge */}
                   <div className="mt-1">
                     {getTierBadge(panel.visibilityTier)}
                   </div>
                 </div>
+                {/* Active glow bar */}
                 {isActive && (
                   <motion.div
-                    className={cn("absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b", vc.glow)}
+                    className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
                     layoutId="activePanelIndicator"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
@@ -7781,15 +7700,14 @@ export default function Stage8FinalReview({
               return null;
             };
 
-            const vc = PANEL_VIBRANT_COLORS[panel.id] || PANEL_VIBRANT_COLORS['panel-5-timeline'];
             return (
               <motion.button
                 key={panel.id}
                 className={cn(
                   "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
                   isActive
-                    ? cn(vc.borderActive, vc.bgActive, vc.glowShadow)
-                    : cn(vc.border, vc.bg, "hover:brightness-125"),
+                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
                   !hasAccess && "opacity-40 cursor-not-allowed"
                 )}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
@@ -7801,17 +7719,17 @@ export default function Stage8FinalReview({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "h-7 w-7 rounded-lg flex items-center justify-center",
-                        isActive ? vc.iconBgActive : vc.iconBg
+                        isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
                       )}>
                         {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? vc.iconActive : vc.icon)} />
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
                       </div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? vc.textActive : vc.text
+                        isActive ? "text-cyan-200" : "text-cyan-500"
                       )}>
                         {panel.title}
                       </span>
@@ -7819,7 +7737,7 @@ export default function Stage8FinalReview({
                     {dataCount > 0 && hasAccess && (
                       <span className={cn(
                         "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                        isActive ? cn(vc.tabBg, vc.tabText) : "bg-white/5 text-white/40"
+                        isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
                       )}>
                         {dataCount}
                       </span>
@@ -7827,10 +7745,11 @@ export default function Stage8FinalReview({
                   </div>
                   <p className={cn(
                     "text-[11px] leading-tight line-clamp-1 mb-1",
-                    isActive ? vc.summaryActive : vc.summary
+                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
                   )}>
                     {getSummaryText()}
                   </p>
+                  {/* Rich visual metrics */}
                   {renderRightPanelVisual()}
                   <div className="mt-1">
                     {getTierBadge(panel.visibilityTier)}
@@ -7838,7 +7757,7 @@ export default function Stage8FinalReview({
                 </div>
                 {isActive && (
                   <motion.div
-                    className={cn("absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b", vc.glow)}
+                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
                     layoutId="activePanelIndicatorRight"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
@@ -7889,15 +7808,14 @@ export default function Stage8FinalReview({
                 return null;
               };
 
-              const vc = PANEL_VIBRANT_COLORS[panel.id] || PANEL_VIBRANT_COLORS['panel-1-basics'];
               return (
                 <button
                   key={panel.id}
                   className={cn(
                     "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[60px]",
                     isActive 
-                      ? cn(vc.tabBg, vc.tabText, "border", vc.tabBorder)
-                      : cn(vc.text, "hover:brightness-150 hover:bg-white/5"),
+                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                      : "text-cyan-700 hover:text-cyan-400 hover:bg-cyan-950/30",
                     !hasAccess && "opacity-30 cursor-not-allowed"
                   )}
                   onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
@@ -7908,6 +7826,7 @@ export default function Stage8FinalReview({
                     <span className="text-[10px]">{panel.title.split(' ')[0]}</span>
                   </div>
                   {getMobileMetric()}
+                  {/* Unread chat badge */}
                   {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
                     <motion.span
                       initial={{ scale: 0 }}
