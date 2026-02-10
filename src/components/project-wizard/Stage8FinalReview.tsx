@@ -779,6 +779,92 @@ export default function Stage8FinalReview({
           }
         }
         
+        // ✓ SYNTHETIC RECOVERY: TIMELINE & END_DATE from project tasks if missing
+        const hasTimeline = loadedCitations.some(c => c.cite_type === 'TIMELINE');
+        const hasEndDate = loadedCitations.some(c => c.cite_type === 'END_DATE');
+        
+        if (!hasTimeline || !hasEndDate) {
+          try {
+            const { data: taskDates } = await supabase
+              .from('project_tasks')
+              .select('due_date')
+              .eq('project_id', projectId)
+              .is('archived_at', null)
+              .order('due_date', { ascending: true });
+            
+            if (taskDates && taskDates.length > 0) {
+              const validDates = taskDates.filter(t => t.due_date).map(t => new Date(t.due_date!));
+              const earliest = validDates[0];
+              const latest = validDates[validDates.length - 1];
+              
+              const syntheticCitations: Citation[] = [];
+              
+              if (!hasTimeline && earliest) {
+                const syntheticTimeline: Citation = {
+                  id: `synthetic_timeline_${Date.now()}`,
+                  cite_type: 'TIMELINE',
+                  question_key: 'timeline',
+                  answer: earliest.toISOString(),
+                  value: 'scheduled',
+                  timestamp: new Date().toISOString(),
+                  metadata: {
+                    start_date: earliest.toISOString(),
+                    source: 'tasks_fallback',
+                  },
+                };
+                loadedCitations.push(syntheticTimeline);
+                syntheticCitations.push(syntheticTimeline);
+                console.log('[Stage8] ✓ Created synthetic TIMELINE from tasks:', earliest.toISOString());
+              }
+              
+              if (!hasEndDate && latest) {
+                const syntheticEndDate: Citation = {
+                  id: `synthetic_end_date_${Date.now()}`,
+                  cite_type: 'END_DATE',
+                  question_key: 'end_date',
+                  answer: latest.toISOString(),
+                  value: latest.toISOString(),
+                  timestamp: new Date().toISOString(),
+                  metadata: {
+                    end_date: latest.toISOString(),
+                    source: 'tasks_fallback',
+                  },
+                };
+                loadedCitations.push(syntheticEndDate);
+                syntheticCitations.push(syntheticEndDate);
+                console.log('[Stage8] ✓ Created synthetic END_DATE from tasks:', latest.toISOString());
+              }
+              
+              // Persist synthetic citations
+              if (syntheticCitations.length > 0) {
+                try {
+                  const { data: currentSummary2 } = await supabase
+                    .from('project_summaries')
+                    .select('id, verified_facts')
+                    .eq('project_id', projectId)
+                    .maybeSingle();
+                  
+                  if (currentSummary2?.id) {
+                    const currentFacts2 = Array.isArray(currentSummary2.verified_facts) ? currentSummary2.verified_facts : [];
+                    const updatedFacts2 = [...currentFacts2, ...syntheticCitations.map(c => c as unknown as Record<string, unknown>)];
+                    
+                    await supabase
+                      .from('project_summaries')
+                      .update({ verified_facts: updatedFacts2 as unknown as null })
+                      .eq('id', currentSummary2.id);
+                    
+                    console.log('[Stage8] ✓ Persisted synthetic TIMELINE/END_DATE to verified_facts');
+                  }
+                } catch (persistErr) {
+                  console.error('[Stage8] Failed to persist synthetic timeline citations:', persistErr);
+                }
+              }
+            }
+          } catch (err) {
+            console.error('[Stage8] Failed to recover timeline from tasks:', err);
+          }
+        }
+        
         setCitations(loadedCitations);
         setDataSource(usedLocalStorage ? 'localStorage' : 'supabase');
         
