@@ -7618,7 +7618,7 @@ export default function Stage8FinalReview({
       
       {/* Fullscreen Panel Dialog */}
       <Dialog open={!!fullscreenPanel} onOpenChange={(open) => !open && setFullscreenPanel(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-950 border-cyan-500/20 shadow-[0_0_40px_rgba(34,211,238,0.08)]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           {fullscreenPanelConfig && (() => {
             // ✓ DYNAMIC TITLE for fullscreen Panel 3
             const getFullscreenTitle = () => {
@@ -7634,16 +7634,16 @@ export default function Stage8FinalReview({
             
             return (
               <>
-                <DialogHeader className="pb-4 border-b border-cyan-500/15 bg-gradient-to-r from-cyan-950/30 via-slate-900/50 to-transparent rounded-t-lg">
+                <DialogHeader className={cn("pb-4 border-b", fullscreenPanelConfig.bgColor)}>
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20">
-                      <fullscreenPanelConfig.icon className="h-5 w-5 text-cyan-400" />
+                    <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", fullscreenPanelConfig.bgColor)}>
+                      <fullscreenPanelConfig.icon className={cn("h-5 w-5", fullscreenPanelConfig.color)} />
                     </div>
                     <div className="flex-1">
-                      <DialogTitle className="text-lg text-cyan-100">
+                      <DialogTitle className={cn("text-lg", fullscreenPanelConfig.color)}>
                         {getFullscreenTitle()}
                       </DialogTitle>
-                      <p className="text-sm text-slate-400">{fullscreenPanelConfig.description}</p>
+                      <p className="text-sm text-muted-foreground">{fullscreenPanelConfig.description}</p>
                     </div>
                     {getTierBadge(fullscreenPanelConfig.visibilityTier)}
                   </div>
