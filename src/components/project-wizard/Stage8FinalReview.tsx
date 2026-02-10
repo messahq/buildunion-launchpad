@@ -2463,28 +2463,101 @@ export default function Stage8FinalReview({
       const conflictStatus = geminiInsight?.conflictStatus || 'No conflicts detected';
       const materialCount = geminiInsight?.materialCount || templateCitation?.metadata?.materials_count || 0;
       
-      // Calculate comprehensive checkpoints (16 total like M.E.S.S.A.)
+      // Calculate 8-PILLAR STATUS (mirrors M.E.S.S.A. 8 orbital panels)
+      const pillars = [
+        {
+          id: 1, name: 'Project Basics', icon: '🏗️', color: '#059669',
+          status: (!!projectNameCitation && !!locationCitation && !!workTypeCitation) ? 'COMPLETE' : (!!projectNameCitation || !!locationCitation) ? 'PARTIAL' : 'MISSING',
+          items: [
+            { label: 'Project Name', value: projectData?.name || '—', ok: !!projectNameCitation || !!projectData?.name },
+            { label: 'Location', value: address ? address.split(',').slice(0, 2).join(',') : '—', ok: !!locationCitation },
+            { label: 'Work Type', value: workType, ok: !!workTypeCitation },
+          ],
+        },
+        {
+          id: 2, name: 'Area & Dimensions', icon: '📐', color: '#2563eb',
+          status: (!!gfaCitation && gfaValue > 0) ? 'COMPLETE' : 'MISSING',
+          items: [
+            { label: 'GFA Locked', value: gfaValue > 0 ? `${gfaValue.toLocaleString()} sq ft` : '—', ok: !!gfaCitation && gfaValue > 0 },
+            { label: 'Gross Area (+' + wastePercent + '% waste)', value: grossArea > 0 ? `${grossArea.toLocaleString()} sq ft` : '—', ok: grossArea > 0 },
+            { label: 'Site Condition', value: siteCondition, ok: !!siteConditionCitation },
+          ],
+        },
+        {
+          id: 3, name: 'Trade & Template', icon: '🔨', color: '#ea580c',
+          status: (!!tradeCitation && !!templateCitation) ? 'COMPLETE' : (!!tradeCitation || !!templateCitation) ? 'PARTIAL' : 'MISSING',
+          items: [
+            { label: 'Trade', value: trade, ok: !!tradeCitation },
+            { label: 'Template', value: templateCitation ? 'Locked' : '—', ok: !!templateCitation },
+            { label: 'Execution Mode', value: executionMode, ok: !!executionModeCitation },
+          ],
+        },
+        {
+          id: 4, name: 'Team Architecture', icon: '👥', color: '#0d9488',
+          status: (teamMembers.length > 0 || teamCitations.length > 0) ? 'COMPLETE' : executionMode === 'Solo' ? 'N/A' : 'MISSING',
+          items: [
+            { label: 'Team Size', value: `${teamMembers.length} member(s)`, ok: teamMembers.length > 0 || executionMode === 'Solo' },
+            { label: 'Invitations', value: `${teamCitations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE').length} sent`, ok: true },
+            { label: 'Mode', value: executionMode, ok: true },
+          ],
+        },
+        {
+          id: 5, name: 'Execution Timeline', icon: '📅', color: '#6366f1',
+          status: (!!timelineCitation && !!endDateCitation && tasks.length > 0) ? 'COMPLETE' : (!!timelineCitation || tasks.length > 0) ? 'PARTIAL' : 'MISSING',
+          items: [
+            { label: 'Start Date', value: startDate || '—', ok: !!timelineCitation },
+            { label: 'End Date', value: endDate || '—', ok: !!endDateCitation },
+            { label: 'Tasks', value: `${tasks.filter(t => t.status === 'completed' || t.status === 'done').length}/${tasks.length} complete`, ok: tasks.length > 0 },
+          ],
+        },
+        {
+          id: 6, name: 'Documents & Contracts', icon: '📁', color: '#0284c7',
+          status: (documents.length > 0 && contracts.length > 0) ? 'COMPLETE' : (documents.length > 0 || contracts.length > 0) ? 'PARTIAL' : 'MISSING',
+          items: [
+            { label: 'Documents', value: `${documents.length} file(s)`, ok: documents.length > 0 },
+            { label: 'Contracts', value: `${contracts.length} created`, ok: contracts.length > 0 },
+            { label: 'Site Photos', value: `${docCitations.filter(c => c.cite_type === 'SITE_PHOTO').length} uploaded`, ok: docCitations.filter(c => c.cite_type === 'SITE_PHOTO').length > 0 },
+          ],
+        },
+        {
+          id: 7, name: 'Weather & Conditions', icon: '🌤️', color: '#0ea5e9',
+          status: address ? 'ACTIVE' : 'MISSING',
+          items: [
+            { label: 'Location Set', value: address ? 'Yes' : 'No', ok: !!address },
+            { label: 'Demolition', value: hasDemolition ? 'Required' : 'None', ok: true },
+            { label: 'Site Hazards', value: siteCondition === 'Clear Site' ? 'None' : siteCondition, ok: true },
+          ],
+        },
+        {
+          id: 8, name: 'Financial Summary', icon: '💰', color: '#dc2626',
+          status: (financialSummary?.total_cost && financialSummary.total_cost > 0) ? 'COMPLETE' : 'MISSING',
+          items: [
+            { label: 'Material Cost', value: financialSummary?.material_cost ? '$' + financialSummary.material_cost.toLocaleString() : '—', ok: !!(financialSummary?.material_cost && financialSummary.material_cost > 0) },
+            { label: 'Labor Cost', value: financialSummary?.labor_cost ? '$' + financialSummary.labor_cost.toLocaleString() : '—', ok: !!(financialSummary?.labor_cost && financialSummary.labor_cost > 0) },
+            { label: 'Total Budget', value: financialSummary?.total_cost ? '$' + financialSummary.total_cost.toLocaleString() : '—', ok: !!(financialSummary?.total_cost && financialSummary.total_cost > 0) },
+          ],
+        },
+      ];
+
+      const pillarComplete = pillars.filter(p => p.status === 'COMPLETE' || p.status === 'ACTIVE' || p.status === 'N/A').length;
+      const pillarTotal = pillars.filter(p => p.status !== 'N/A').length;
+      
+      // Legacy checkpoint calculation (kept for readiness metric)
       const checkpoints = [
-        // Definition Phase
         { name: 'Project Name', completed: !!projectNameCitation || !!projectData?.name, phase: 'Definition', priority: 'Required' },
         { name: 'Location Verified', completed: !!locationCitation, phase: 'Definition', priority: 'Required' },
         { name: 'Work Type', completed: !!workTypeCitation, phase: 'Definition', priority: 'Required' },
-        // Scope Phase
         { name: 'GFA Locked', completed: !!gfaCitation && gfaValue > 0, phase: 'Scope', priority: 'Critical' },
         { name: 'Trade Selection', completed: !!tradeCitation, phase: 'Scope', priority: 'Critical' },
         { name: 'Template Locked', completed: !!templateCitation, phase: 'Scope', priority: 'Important' },
-        // Execution Phase
         { name: 'Execution Mode', completed: !!executionModeCitation, phase: 'Execution', priority: 'Required' },
         { name: 'Site Condition', completed: !!siteConditionCitation, phase: 'Execution', priority: 'Required' },
         { name: 'Timeline Set', completed: !!timelineCitation && !!endDateCitation, phase: 'Execution', priority: 'Critical' },
         { name: 'DNA Finalized', completed: !!dnaFinalizedCitation, phase: 'Execution', priority: 'Important' },
-        // Team Phase
         { name: 'Team Invited', completed: teamCitations.length > 0 || teamMembers.length > 0, phase: 'Team', priority: executionMode === 'Team' ? 'Required' : 'Optional' },
         { name: 'Tasks Created', completed: tasks.length > 0, phase: 'Team', priority: 'Important' },
-        // Documentation Phase
         { name: 'Site Photos', completed: docCitations.filter(c => c.cite_type === 'SITE_PHOTO').length > 0, phase: 'Documentation', priority: 'Required' },
         { name: 'Blueprints Uploaded', completed: docCitations.filter(c => c.cite_type === 'BLUEPRINT_UPLOAD').length > 0, phase: 'Documentation', priority: 'Important' },
-        // Financial Phase
         { name: 'Budget Set', completed: !!(financialSummary?.total_cost && financialSummary.total_cost > 0), phase: 'Financial', priority: 'Critical' },
         { name: 'Contract Created', completed: contracts.length > 0, phase: 'Financial', priority: 'Critical' },
       ];
@@ -2494,18 +2567,8 @@ export default function Stage8FinalReview({
       const criticalCompleted = criticalCheckpoints.filter(c => c.completed).length;
       const completionPercent = Math.round((completedCount / checkpoints.length) * 100);
       const criticalPercent = Math.round((criticalCompleted / criticalCheckpoints.length) * 100);
-      
-      // Calculate operational readiness
       const operationalReadiness = Math.round((completionPercent * 0.6) + (criticalPercent * 0.4));
       const readinessGrade = operationalReadiness >= 85 ? 'OPERATIONAL' : operationalReadiness >= 60 ? 'PARTIAL' : 'INCOMPLETE';
-      
-      // Phase breakdown
-      const phases = ['Definition', 'Scope', 'Execution', 'Team', 'Documentation', 'Financial'];
-      const phaseProgress = phases.map(phase => {
-        const phaseItems = checkpoints.filter(c => c.phase === phase);
-        const completed = phaseItems.filter(c => c.completed).length;
-        return { phase, completed, total: phaseItems.length, percent: Math.round((completed / phaseItems.length) * 100) };
-      });
       
       // Build rich HTML summary
       const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -2514,7 +2577,7 @@ export default function Stage8FinalReview({
       // Weather section HTML
       const weatherHtml = weatherData ? `
         <div class="section">
-          <div class="section-header"><span class="section-number">4.</span> WEATHER CONDITIONS</div>
+           <div class="section-header"><span class="section-number">3.</span> WEATHER CONDITIONS</div>
           <div class="weather-grid">
             <div class="weather-current">
               <div class="weather-temp">${Math.round(weatherData.current?.temp || 0)}°C</div>
@@ -2541,12 +2604,12 @@ export default function Stage8FinalReview({
             </div>
           ` : '<div class="status-good">✓ No weather alerts - conditions favorable for construction</div>'}
         </div>
-      ` : '<div class="section"><div class="section-header"><span class="section-number">4.</span> WEATHER CONDITIONS</div><div class="status-pending">Location required for weather data</div></div>';
+      ` : '<div class="section"><div class="section-header"><span class="section-number">3.</span> WEATHER CONDITIONS</div><div class="status-pending">Location required for weather data</div></div>';
       
       // OBC Compliance section HTML
       const obcHtml = `
         <div class="section">
-          <div class="section-header"><span class="section-number">5.</span> REGULATORY COMPLIANCE (OBC 2024)</div>
+          <div class="section-header"><span class="section-number">4.</span> REGULATORY COMPLIANCE (OBC 2024)</div>
           <table>
             <tr>
               <th>Requirement</th>
@@ -2580,7 +2643,7 @@ export default function Stage8FinalReview({
       // AI Insights section HTML
       const aiHtml = aiInsights ? `
         <div class="section">
-          <div class="section-header"><span class="section-number">6.</span> AI ENGINE ANALYSIS</div>
+           <div class="section-header"><span class="section-number">5.</span> AI ENGINE ANALYSIS</div>
           <div class="dual-engine-status">
             <div class="engine-badge gemini">🔷 Gemini Pro</div>
             <div class="engine-badge openai">🟢 GPT-5</div>
@@ -2619,7 +2682,7 @@ export default function Stage8FinalReview({
             </div>
           ` : ''}
         </div>
-      ` : '<div class="section"><div class="section-header"><span class="section-number">6.</span> AI ENGINE ANALYSIS</div><div class="status-pending">AI analysis will run on project activation</div></div>';
+      ` : '<div class="section"><div class="section-header"><span class="section-number">5.</span> AI ENGINE ANALYSIS</div><div class="status-pending">AI analysis will run on project activation</div></div>';
       
       const html = `
         <!DOCTYPE html>
@@ -2639,7 +2702,7 @@ export default function Stage8FinalReview({
             
             /* ✓ PAGINATION CONTROL: Prevent content breaks mid-block */
             .section, .hero-card, .phase-card, .checkpoint-list, table, .weather-grid, 
-            .alert-box, .recommendations, .stats-row, .stat-box, .conclusion-box {
+            .alert-box, .recommendations, .stats-row, .stat-box, .conclusion-box, .pillar-card {
               break-inside: avoid;
               page-break-inside: avoid;
             }
@@ -2647,6 +2710,7 @@ export default function Stage8FinalReview({
               .section { break-inside: avoid; page-break-inside: avoid; }
               table { break-inside: avoid; page-break-inside: avoid; }
               .summary-hero { break-inside: avoid; }
+              .pillar-card { break-inside: avoid; page-break-inside: avoid; }
             }
             
             .page-header {
@@ -2895,32 +2959,36 @@ export default function Stage8FinalReview({
               </table>
             </div>
             
-            <!-- Section 2: Phase Progress -->
+            <!-- Section 2: 8-PILLAR OPERATIONAL STATUS (mirrors M.E.S.S.A.) -->
             <div class="section">
-              <div class="section-header"><span class="section-number">2.</span> PHASE PROGRESS</div>
-              <div class="phase-grid">
-                ${phaseProgress.map(p => `
-                  <div class="phase-card">
-                    <div class="phase-name">${p.phase}</div>
-                    <div class="phase-bar"><div class="phase-fill" style="width: ${p.percent}%"></div></div>
-                    <div class="phase-percent">${p.completed}/${p.total} (${p.percent}%)</div>
+              <div class="section-header"><span class="section-number">2.</span> OPERATIONAL TRUTH VERIFICATION (8 Pillars) — ${pillarComplete}/${pillarTotal} Complete</div>
+              
+              ${pillars.map(p => {
+                const statusColor = p.status === 'COMPLETE' || p.status === 'ACTIVE' ? '#166534' : p.status === 'PARTIAL' ? '#92400e' : p.status === 'N/A' ? '#6b7280' : '#991b1b';
+                const statusBg = p.status === 'COMPLETE' || p.status === 'ACTIVE' ? '#dcfce7' : p.status === 'PARTIAL' ? '#fef3c7' : p.status === 'N/A' ? '#f3f4f6' : '#fee2e2';
+                return `
+                <div class="pillar-card pdf-section" style="border-left: 4px solid ${p.color}; background: #fafafa; border-radius: 6px; padding: 12px 16px; margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 13px; font-weight: 700; color: #1f2937;">
+                      ${p.icon} Pillar ${p.id}: ${p.name}
+                    </div>
+                    <span style="display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; background: ${statusBg}; color: ${statusColor};">
+                      ${p.status}
+                    </span>
                   </div>
-                `).join('')}
-              </div>
-            </div>
-            
-            <!-- Section 3: Checkpoint Status -->
-            <div class="section">
-              <div class="section-header"><span class="section-number">3.</span> CHECKPOINT STATUS (${completedCount}/${checkpoints.length})</div>
-              <div class="checkpoint-list">
-                ${checkpoints.map(cp => `
-                  <div class="checkpoint ${cp.completed ? 'done' : ''}">
-                    <div class="checkpoint-icon">${cp.completed ? '✓' : '○'}</div>
-                    <span>${cp.name}</span>
-                    <span class="checkpoint-priority ${cp.priority}">${cp.priority}</span>
-                  </div>
-                `).join('')}
-              </div>
+                  <table style="margin-bottom: 0;">
+                    <tr><th style="width: 35%;">Data Point</th><th>Value</th><th style="width: 15%; text-align: center;">Status</th></tr>
+                    ${p.items.map(item => `
+                      <tr>
+                        <td>${item.label}</td>
+                        <td><strong>${item.value}</strong></td>
+                        <td style="text-align: center; color: ${item.ok ? '#166534' : '#991b1b'}; font-weight: 600;">${item.ok ? '✓' : '✗'}</td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                </div>
+                `;
+              }).join('')}
             </div>
             
             <!-- Section 4: Weather -->
@@ -2934,7 +3002,7 @@ export default function Stage8FinalReview({
             
             <!-- Section 7: Resource Summary -->
             <div class="section">
-              <div class="section-header"><span class="section-number">7.</span> RESOURCE SUMMARY</div>
+              <div class="section-header"><span class="section-number">6.</span> RESOURCE SUMMARY</div>
               <div class="stats-row">
                 <div class="stat-box">
                   <div class="stat-value">${citations.length}</div>
@@ -2977,7 +3045,7 @@ export default function Stage8FinalReview({
       
       setSummaryPreviewHtml(html);
       setShowSummaryPreview(true);
-      toast.success('Project Summary Generated!', { id: 'summary-gen', description: `${completedCount}/${checkpoints.length} checkpoints • ${operationalReadiness}% readiness` });
+      toast.success('Project Summary Generated!', { id: 'summary-gen', description: `${pillarComplete}/${pillarTotal} pillars complete • ${operationalReadiness}% readiness` });
     } catch (err) {
       console.error('[Stage8] Summary generation failed:', err);
       toast.error('Failed to generate summary', { id: 'summary-gen' });
