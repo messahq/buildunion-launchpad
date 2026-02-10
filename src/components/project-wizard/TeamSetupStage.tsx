@@ -7,6 +7,7 @@
 // ============================================
 
 import { useState, useCallback, useEffect } from "react";
+import { useTierFeatures } from "@/hooks/useTierFeatures";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -143,6 +144,7 @@ export default function TeamSetupStage({
   onSkip,
   className,
 }: TeamSetupStageProps) {
+  const { features, canAddTeamMember, canUseFeature, getUpgradeMessage } = useTierFeatures();
   const [teamMembers, setTeamMembers] = useState<TeamMemberInvite[]>([]);
   const [showAccessDialog, setShowAccessDialog] = useState(false);
   const [pendingInvite, setPendingInvite] = useState<Partial<TeamMemberInvite> | null>(null);
@@ -199,6 +201,14 @@ export default function TeamSetupStage({
   const handleEmailInvite = useCallback(() => {
     if (!isValidEmail) return;
     
+    // Tier check
+    if (!canAddTeamMember(teamMembers.length)) {
+      toast.error(`Team member limit reached (${features.maxTeamMembers} max on your plan)`, {
+        action: { label: 'Upgrade', onClick: () => window.location.href = '/buildunion/pricing' },
+      });
+      return;
+    }
+    
     // Check if already added
     if (teamMembers.some(m => m.email?.toLowerCase() === emailInput.toLowerCase())) {
       toast.error('This email is already in the team');
@@ -217,6 +227,14 @@ export default function TeamSetupStage({
   
   // Handle user selection
   const handleUserSelect = useCallback((user: SearchedUser) => {
+    // Tier check
+    if (!canAddTeamMember(teamMembers.length)) {
+      toast.error(`Team member limit reached (${features.maxTeamMembers} max on your plan)`, {
+        action: { label: 'Upgrade', onClick: () => window.location.href = '/buildunion/pricing' },
+      });
+      return;
+    }
+    
     // Check if already added
     if (teamMembers.some(m => m.userId === user.user_id)) {
       toast.error('This user is already in the team');

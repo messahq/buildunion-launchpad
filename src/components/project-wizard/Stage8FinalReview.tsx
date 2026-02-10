@@ -2266,6 +2266,14 @@ export default function Stage8FinalReview({
   
   // Generate Invoice - Opens Preview Modal
   const handleGenerateInvoice = useCallback(async () => {
+    // Tier gate: Invoice generation requires Pro+
+    if (!canGenerateInvoice()) {
+      toast.error(getUpgradeMessage('invoiceGenerationEnabled'), {
+        action: { label: 'Upgrade', onClick: () => window.location.href = '/buildunion/pricing' },
+      });
+      return;
+    }
+    
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
