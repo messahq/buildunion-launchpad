@@ -8031,7 +8031,7 @@ export default function Stage8FinalReview({
                       </div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? "text-cyan-200" : "text-cyan-500"
+                        isActive ? "text-amber-300" : "text-amber-400"
                       )}>
                         {panel.title}
                       </span>
