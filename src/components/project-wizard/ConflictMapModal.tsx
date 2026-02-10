@@ -91,8 +91,18 @@ const CITATION_CONFIG: Record<string, { color: string; icon: React.ElementType; 
   END_DATE: { color: 'hsl(20, 80%, 50%)', icon: Calendar, label: 'End Date' },
   TEAM_SIZE: { color: 'hsl(180, 80%, 40%)', icon: Users, label: 'Team Size' },
   TEAM_MEMBER_INVITE: { color: 'hsl(220, 80%, 50%)', icon: Users, label: 'Team Member' },
-  BUDGET_ESTIMATE: { color: 'hsl(120, 80%, 40%)', icon: DollarSign, label: 'Budget' },
+  TEAM_STRUCTURE: { color: 'hsl(190, 70%, 45%)', icon: Users, label: 'Team Structure' },
+  TEAM_PERMISSION_SET: { color: 'hsl(210, 70%, 50%)', icon: Users, label: 'Permissions' },
+  BUDGET: { color: 'hsl(120, 80%, 40%)', icon: DollarSign, label: 'Budget' },
+  MATERIAL: { color: 'hsl(90, 70%, 40%)', icon: Hammer, label: 'Material' },
   DEMOLITION_PRICE: { color: 'hsl(0, 70%, 50%)', icon: DollarSign, label: 'Demo Price' },
+  EXECUTION_MODE: { color: 'hsl(310, 70%, 50%)', icon: Sparkles, label: 'Exec Mode' },
+  SITE_CONDITION: { color: 'hsl(35, 80%, 50%)', icon: AlertTriangle, label: 'Site Condition' },
+  DNA_FINALIZED: { color: 'hsl(160, 80%, 40%)', icon: CheckCircle2, label: 'DNA Lock' },
+  BLUEPRINT_UPLOAD: { color: 'hsl(230, 70%, 55%)', icon: FileText, label: 'Blueprint' },
+  SITE_PHOTO: { color: 'hsl(140, 70%, 45%)', icon: MapPin, label: 'Site Photo' },
+  VISUAL_VERIFICATION: { color: 'hsl(270, 70%, 55%)', icon: CheckCircle2, label: 'Verification' },
+  WEATHER_ALERT: { color: 'hsl(50, 80%, 50%)', icon: AlertTriangle, label: 'Weather' },
 };
 
 const DEFAULT_CONFIG = { color: 'hsl(220, 10%, 50%)', icon: Circle, label: 'Data' };

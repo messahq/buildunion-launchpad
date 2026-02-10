@@ -28,10 +28,12 @@ export const CITATION_TYPES = {
   BLUEPRINT_UPLOAD: 'BLUEPRINT_UPLOAD',
   SITE_PHOTO: 'SITE_PHOTO',
   VISUAL_VERIFICATION: 'VISUAL_VERIFICATION',
-  // Stage 7: Team Architecture
+  // Stage 6: Team Architecture
   TEAM_STRUCTURE: 'TEAM_STRUCTURE',
   TEAM_MEMBER_INVITE: 'TEAM_MEMBER_INVITE',
   TEAM_PERMISSION_SET: 'TEAM_PERMISSION_SET',
+  // Stage 7-8: Weather & Conditions
+  WEATHER_ALERT: 'WEATHER_ALERT',
 } as const;
 
 export type CitationType = typeof CITATION_TYPES[keyof typeof CITATION_TYPES];
