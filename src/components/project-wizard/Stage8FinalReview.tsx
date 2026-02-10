@@ -8542,7 +8542,48 @@ export default function Stage8FinalReview({
       
       {/* Bottom Action Bar - Command Center Theme */}
       <div className="border-t border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-sm p-3 shrink-0">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2">
+          {/* Loading Status Indicator */}
+          <AnimatePresence>
+            {(isGeneratingAI || isGeneratingSummary || isGeneratingInvoice) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-950/60 to-blue-950/60 border border-cyan-800/30">
+                  <div className="relative flex items-center justify-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+                    <div className="absolute inset-0 animate-ping opacity-20">
+                      <Loader2 className="h-4 w-4 text-cyan-400" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-cyan-300 truncate">
+                      {isGeneratingAI && '🧠 M.E.S.S.A. Dual-Engine Analysis in progress — Gemini & GPT synthesizing...'}
+                      {isGeneratingSummary && '📊 Generating comprehensive Project Summary — analyzing all data points...'}
+                      {isGeneratingInvoice && '📄 Preparing Invoice — calculating financials...'}
+                    </p>
+                    <div className="mt-1.5 h-1 w-full rounded-full bg-cyan-950/80 overflow-hidden">
+                      <motion.div
+                        className={cn(
+                          "h-full rounded-full",
+                          isGeneratingAI && "bg-gradient-to-r from-emerald-500 to-green-400",
+                          isGeneratingSummary && "bg-gradient-to-r from-blue-500 to-cyan-400",
+                          isGeneratingInvoice && "bg-gradient-to-r from-amber-500 to-yellow-400"
+                        )}
+                        initial={{ width: '5%' }}
+                        animate={{ width: ['5%', '45%', '65%', '80%', '90%'] }}
+                        transition={{ duration: 25, ease: 'easeOut', times: [0, 0.2, 0.5, 0.8, 1] }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             {/* Left - Stats */}
             <div className="text-xs text-cyan-700 flex flex-wrap gap-3 font-mono">
