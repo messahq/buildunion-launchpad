@@ -7591,7 +7591,7 @@ export default function Stage8FinalReview({
         borderColor: 'border-emerald-300 dark:border-emerald-700',
         visibilityTier: 'owner' as VisibilityTier,
         dataKeys: [],
-        description: '5-Pillar Synthesis Validation',
+        description: '8-Pillar Synthesis Validation',
       };
     }
     return PANELS.find(p => p.id === fullscreenPanel);
@@ -7611,7 +7611,7 @@ export default function Stage8FinalReview({
         borderColor: 'border-emerald-300 dark:border-emerald-700',
         visibilityTier: 'owner' as VisibilityTier,
         dataKeys: [],
-        description: '5-Pillar Synthesis Validation',
+        description: '8-Pillar Synthesis Validation',
       };
     }
     return PANELS.find(p => p.id === activeOrbitalPanel) || PANELS[0];
@@ -8054,70 +8054,119 @@ export default function Stage8FinalReview({
                 {activeOrbitalPanel === 'messa-deep-audit' ? (
                   <div className="space-y-4">
                     {(() => {
+                      // All citation lookups
+                      const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
+                      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+                      const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+                      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+                      const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+                      const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
                       const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
                       const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                      const hasTech = !!tradeCit && !!templateCit;
+                      const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
+                      const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+                      const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+                      const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
+                      const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
+                      const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+                      const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
                       const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
-                      const hasReg = !!dnaCit;
                       const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
-                      const hasVis = !!photoCit && !!tradeCit;
-                      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-                      const hasFin = (financialSummary?.total_cost ?? 0) > 0 && !!locationCit;
-                      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                      const hasGeo = !!gfaCit;
+                      const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
+                      const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
 
                       const pillarDetails = [
                         {
-                          key: 'technical', label: 'Technical Integrity', sub: 'PDF RAG × Materials Table',
-                          icon: '🔬', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400',
-                          status: hasTech,
+                          key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type',
+                          icon: '🏗️', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400',
+                          status: !!nameCit && !!locationCit && !!workTypeCit,
+                          description: 'Validates that the project identity (Name, Address, Work Type) has been defined and cited.',
+                          sources: [
+                            { label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' },
+                            { label: 'Location', citation: locationCit, field: 'LOCATION' },
+                            { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' },
+                          ],
+                        },
+                        {
+                          key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site',
+                          icon: '📐', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400',
+                          status: !!gfaCit,
+                          description: 'Geometric precision — AI-estimated vs Owner manually overridden GFA as authoritative source.',
+                          sources: [
+                            { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
+                            { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
+                            { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
+                          ],
+                        },
+                        {
+                          key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table',
+                          icon: '🔬', color: 'border-orange-500/40', headerBg: 'bg-orange-500/10', textColor: 'text-orange-400',
+                          status: !!tradeCit && !!templateCit,
                           description: 'Verifies that PDF-extracted technical specs match the locked Materials Table entries.',
                           sources: [
                             { label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' },
                             { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' },
+                            { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' },
                           ],
                         },
                         {
-                          key: 'regulatory', label: 'Regulatory Compliance (OBC)', sub: 'Dual-Engine Validation',
-                          icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400',
-                          status: hasReg,
-                          description: 'Joint Gemini 2.5 Pro + OpenAI GPT-5 validation against OBC 2024.',
+                          key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions',
+                          icon: '👥', color: 'border-teal-500/40', headerBg: 'bg-teal-500/10', textColor: 'text-teal-400',
+                          status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0,
+                          description: 'Validates team composition, role assignments, and permission structures.',
                           sources: [
+                            { label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' },
+                            { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' },
+                            { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' },
+                            { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' },
+                          ],
+                        },
+                        {
+                          key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized',
+                          icon: '📅', color: 'border-indigo-500/40', headerBg: 'bg-indigo-500/10', textColor: 'text-indigo-400',
+                          status: !!timelineCit && !!endDateCit,
+                          description: 'Timeline integrity — start/end dates, DNA finalization, and task phase orchestration.',
+                          sources: [
+                            { label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' },
+                            { label: 'End Date', citation: endDateCit, field: 'END_DATE' },
                             { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' },
                           ],
                         },
                         {
-                          key: 'visual', label: 'Visual Validation', sub: 'AI Vision × Trade Sync',
-                          icon: '👁️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400',
-                          status: hasVis,
-                          description: 'AI Vision cross-reference: site photo content aligns with the selected trade.',
+                          key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync',
+                          icon: '👁️', color: 'border-sky-500/40', headerBg: 'bg-sky-500/10', textColor: 'text-sky-400',
+                          status: !!photoCit || !!blueprintCit,
+                          description: 'AI Vision cross-reference: site photo content aligns with selected trade and blueprints.',
                           sources: [
                             { label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
-                            { label: 'Trade (Cross-ref)', citation: tradeCit, field: 'TRADE_SELECTION' },
+                            { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
                           ],
                         },
                         {
-                          key: 'financial', label: 'Financial Audit', sub: 'Sync + Tax (HST/GST)',
-                          icon: '💰', color: 'border-amber-500/40', headerBg: 'bg-amber-500/10', textColor: 'text-amber-400',
-                          status: hasFin,
-                          description: 'Validates Supabase Pro sync and regional tax calculation (HST 13% ON / GST 5%).',
+                          key: 'weather', label: '7 — Weather & Conditions', sub: 'Alerts × Site Readiness',
+                          icon: '🌦️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400',
+                          status: !!weatherCit || !!siteCondCit,
+                          description: 'Weather alerts and site condition assessment for operational readiness.',
+                          sources: [
+                            { label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' },
+                            { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
+                          ],
+                        },
+                        {
+                          key: 'financial', label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)',
+                          icon: '💰', color: 'border-red-500/40', headerBg: 'bg-red-500/10', textColor: 'text-red-400',
+                          status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit,
+                          description: 'Validates budget sync and regional tax calculation (HST 13% ON / GST 5%).',
                           sources: [
                             { label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' },
+                            { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' },
                             { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
-                          ],
-                        },
-                        {
-                          key: 'geometric', label: 'Geometric Precision', sub: 'Override Authority',
-                          icon: '📐', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400',
-                          status: hasGeo,
-                          description: 'AI-estimated vs Owner manually overridden GFA — authoritative geometric source.',
-                          sources: [
-                            { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
                           ],
                         },
                       ];
 
                       const passCount = pillarDetails.filter(p => p.status).length;
+                      const totalPillars = pillarDetails.length;
 
                       return (
                         <>
@@ -8125,9 +8174,9 @@ export default function Stage8FinalReview({
                           <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/30 bg-emerald-950/20">
                             <div className={cn(
                               "text-2xl font-bold font-mono",
-                              passCount === 5 ? "text-emerald-400" : passCount >= 3 ? "text-amber-400" : "text-red-400"
+                              passCount === totalPillars ? "text-emerald-400" : passCount >= 5 ? "text-amber-400" : "text-red-400"
                             )}>
-                              {passCount}/5
+                              {passCount}/{totalPillars}
                             </div>
                             <div className="flex-1">
                               <div className="text-xs font-medium text-emerald-300">DNA Integrity Score</div>
@@ -8135,23 +8184,23 @@ export default function Stage8FinalReview({
                                 <motion.div
                                   className={cn(
                                     "h-full rounded-full",
-                                    passCount === 5 ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                                      : passCount >= 3 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                                    passCount === totalPillars ? "bg-gradient-to-r from-emerald-500 to-green-400"
+                                      : passCount >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
                                       : "bg-gradient-to-r from-red-500 to-orange-400"
                                   )}
                                   initial={{ width: '0%' }}
-                                  animate={{ width: `${(passCount / 5) * 100}%` }}
+                                  animate={{ width: `${(passCount / totalPillars) * 100}%` }}
                                   transition={{ duration: 0.8, ease: 'easeOut' }}
                                 />
                               </div>
                             </div>
                             <Badge className={cn(
                               "text-[10px] font-mono border",
-                              passCount === 5 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                                : passCount >= 3 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                              passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
                                 : "bg-red-500/20 text-red-300 border-red-500/30"
                             )}>
-                              {passCount === 5 ? 'VERIFIED' : passCount >= 3 ? 'PARTIAL' : 'INCOMPLETE'}
+                              {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
                             </Badge>
                           </div>
 
@@ -8162,7 +8211,7 @@ export default function Stage8FinalReview({
                               className={cn("rounded-xl border overflow-hidden", pillar.color)}
                               initial={{ opacity: 0, y: 12 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: idx * 0.08 }}
+                              transition={{ delay: idx * 0.06 }}
                             >
                               <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
                                 <span className="text-lg">{pillar.icon}</span>
@@ -8520,7 +8569,7 @@ export default function Stage8FinalReview({
                   <span className="text-[11px] font-display font-bold tracking-wide text-emerald-300">
                     MESSA <span className="text-amber-400">DNA</span>
                   </span>
-                  <p className="text-[9px] text-emerald-600/80 leading-tight">Synthesis Validation</p>
+                  <p className="text-[9px] text-emerald-600/80 leading-tight">8-Pillar Validation</p>
                 </div>
                 <motion.div
                   className="h-5 w-5 rounded-full border border-emerald-500/40 flex items-center justify-center"
@@ -8531,26 +8580,27 @@ export default function Stage8FinalReview({
                 </motion.div>
               </div>
 
-              {/* 5 Pillars - Compact */}
+              {/* 8 Pillars - Compact */}
               <div className="space-y-1">
                 {(() => {
-                  // Pillar 1: Technical Integrity — PDF RAG spec vs Materials Table match
-                  const hasTechIntegrity = citations.some(c => c.cite_type === 'TRADE_SELECTION') && citations.some(c => c.cite_type === 'TEMPLATE_LOCK');
-                  // Pillar 2: Regulatory Compliance — Gemini + OpenAI dual OBC validation
-                  const hasRegulatory = citations.some(c => c.cite_type === 'DNA_FINALIZED');
-                  // Pillar 3: Visual Validation — AI Vision cross-check: photo content vs Trade
-                  const hasVisual = citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') && citations.some(c => c.cite_type === 'TRADE_SELECTION');
-                  // Pillar 4: Financial Audit — Supabase Pro sync + HST/GST validation
-                  const hasFinancial = (financialSummary?.total_cost ?? 0) > 0 && citations.some(c => c.cite_type === 'LOCATION');
-                  // Pillar 5: Geometric Precision — AI estimate vs Owner manual override
-                  const hasGeometric = citations.some(c => c.cite_type === 'GFA_LOCK');
+                  const p1 = !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE');
+                  const p2 = !!citations.find(c => c.cite_type === 'GFA_LOCK');
+                  const p3 = !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+                  const p4 = !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0;
+                  const p5 = !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE');
+                  const p6 = !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+                  const p7 = !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION');
+                  const p8 = (financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION');
 
                   return [
-                    { key: 'technical', label: 'Technical Integrity', sub: 'PDF RAG × Materials', icon: '🔬', color: 'text-blue-400', bgColor: 'bg-blue-500/10', status: hasTechIntegrity ? 'pass' : 'pending' },
-                    { key: 'regulatory', label: 'Regulatory (OBC)', sub: 'Dual-Engine Validation', icon: '⚖️', color: 'text-purple-400', bgColor: 'bg-purple-500/10', status: hasRegulatory ? 'pass' : 'pending' },
-                    { key: 'visual', label: 'Visual Validation', sub: 'AI Vision × Trade Sync', icon: '👁️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', status: hasVisual ? 'pass' : 'pending' },
-                    { key: 'financial', label: 'Financial Audit', sub: 'Sync + Tax Validation', icon: '💰', color: 'text-amber-400', bgColor: 'bg-amber-500/10', status: hasFinancial ? 'pass' : 'pending' },
-                    { key: 'geometric', label: 'Geometric Precision', sub: 'Override Authority', icon: '📐', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', status: hasGeometric ? 'pass' : 'pending' },
+                    { key: 'basics', label: 'Project Basics', sub: 'Name × Location × Type', icon: '🏗️', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', status: p1 ? 'pass' : 'pending' },
+                    { key: 'area', label: 'Area & Dimensions', sub: 'GFA × Blueprint × Site', icon: '📐', color: 'text-blue-400', bgColor: 'bg-blue-500/10', status: p2 ? 'pass' : 'pending' },
+                    { key: 'trade', label: 'Trade & Template', sub: 'PDF RAG × Materials', icon: '🔬', color: 'text-orange-400', bgColor: 'bg-orange-500/10', status: p3 ? 'pass' : 'pending' },
+                    { key: 'team', label: 'Team Architecture', sub: 'Roles × Permissions', icon: '👥', color: 'text-teal-400', bgColor: 'bg-teal-500/10', status: p4 ? 'pass' : 'pending' },
+                    { key: 'timeline', label: 'Execution Timeline', sub: 'Start × End × DNA', icon: '📅', color: 'text-indigo-400', bgColor: 'bg-indigo-500/10', status: p5 ? 'pass' : 'pending' },
+                    { key: 'docs', label: 'Documents & Visual', sub: 'Vision × Trade Sync', icon: '👁️', color: 'text-sky-400', bgColor: 'bg-sky-500/10', status: p6 ? 'pass' : 'pending' },
+                    { key: 'weather', label: 'Weather & Conditions', sub: 'Alerts × Readiness', icon: '🌦️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', status: p7 ? 'pass' : 'pending' },
+                    { key: 'financial', label: 'Financial Summary', sub: 'Sync + Tax Audit', icon: '💰', color: 'text-red-400', bgColor: 'bg-red-500/10', status: p8 ? 'pass' : 'pending' },
                   ];
                 })().map((pillar, i) => (
                   <motion.div
@@ -8563,7 +8613,7 @@ export default function Stage8FinalReview({
                     )}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 + i * 0.1 }}
+                    transition={{ delay: 0.8 + i * 0.08 }}
                   >
                     <span className="text-[11px]">{pillar.icon}</span>
                     <div className="flex-1 min-w-0">
@@ -8578,7 +8628,7 @@ export default function Stage8FinalReview({
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{ delay: 1 + i * 0.1, type: 'spring' }}
+                        transition={{ delay: 1 + i * 0.08, type: 'spring' }}
                       >
                         <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                       </motion.div>
@@ -8597,13 +8647,16 @@ export default function Stage8FinalReview({
               {/* Score bar */}
               {(() => {
                 const passCount = [
-                  citations.some(c => c.cite_type === 'TRADE_SELECTION') && citations.some(c => c.cite_type === 'TEMPLATE_LOCK'),
-                  citations.some(c => c.cite_type === 'DNA_FINALIZED'),
-                  (citations.some(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') && citations.some(c => c.cite_type === 'TRADE_SELECTION')),
-                  ((financialSummary?.total_cost ?? 0) > 0 && citations.some(c => c.cite_type === 'LOCATION')),
-                  citations.some(c => c.cite_type === 'GFA_LOCK'),
+                  !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
+                  !!citations.find(c => c.cite_type === 'GFA_LOCK'),
+                  !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
+                  !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
+                  !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
+                  !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+                  !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
+                  ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
                 ].filter(Boolean).length;
-                const pct = (passCount / 5) * 100;
+                const pct = (passCount / 8) * 100;
                 return (
                   <div className="pt-1">
                     <div className="flex items-center justify-between mb-0.5">
@@ -8612,7 +8665,7 @@ export default function Stage8FinalReview({
                         "text-[10px] font-bold font-mono",
                         pct === 100 ? "text-emerald-400" : pct >= 60 ? "text-amber-400" : "text-red-400"
                       )}>
-                        {passCount}/5
+                        {passCount}/8
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
@@ -8779,70 +8832,118 @@ export default function Stage8FinalReview({
                     // Deep Audit fullscreen content
                     <div className="space-y-5 px-2">
                       {(() => {
+                        const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
+                        const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+                        const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+                        const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+                        const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
                         const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
                         const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                        const hasTech = !!tradeCit && !!templateCit;
+                        const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
+                        const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+                        const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+                        const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
+                        const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
+                        const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+                        const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
                         const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
-                        const hasReg = !!dnaCit;
                         const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
-                        const hasVis = !!photoCit && !!tradeCit;
-                        const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-                        const hasFin = (financialSummary?.total_cost ?? 0) > 0 && !!locationCit;
-                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                        const hasGeo = !!gfaCit;
+                        const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
+                        const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
 
                         const pillarDetails = [
                           {
-                            key: 'technical', label: 'Technical Integrity', sub: 'PDF RAG × Materials Table',
-                            icon: '🔬', color: 'border-blue-300 dark:border-blue-500/40', headerBg: 'bg-blue-50 dark:bg-blue-500/10', textColor: 'text-blue-700 dark:text-blue-400',
-                            status: hasTech,
+                            key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type',
+                            icon: '🏗️', color: 'border-emerald-300 dark:border-emerald-500/40', headerBg: 'bg-emerald-50 dark:bg-emerald-500/10', textColor: 'text-emerald-700 dark:text-emerald-400',
+                            status: !!nameCit && !!locationCit && !!workTypeCit,
+                            description: 'Validates that the project identity (Name, Address, Work Type) has been defined and cited.',
+                            sources: [
+                              { label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' },
+                              { label: 'Location', citation: locationCit, field: 'LOCATION' },
+                              { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' },
+                            ],
+                          },
+                          {
+                            key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site',
+                            icon: '📐', color: 'border-blue-300 dark:border-blue-500/40', headerBg: 'bg-blue-50 dark:bg-blue-500/10', textColor: 'text-blue-700 dark:text-blue-400',
+                            status: !!gfaCit,
+                            description: 'Geometric precision — AI-estimated vs Owner manually overridden GFA as authoritative source.',
+                            sources: [
+                              { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
+                              { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
+                              { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
+                            ],
+                          },
+                          {
+                            key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table',
+                            icon: '🔬', color: 'border-orange-300 dark:border-orange-500/40', headerBg: 'bg-orange-50 dark:bg-orange-500/10', textColor: 'text-orange-700 dark:text-orange-400',
+                            status: !!tradeCit && !!templateCit,
                             description: 'Verifies that PDF-extracted technical specs match the locked Materials Table entries.',
                             sources: [
                               { label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' },
                               { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' },
+                              { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' },
                             ],
                           },
                           {
-                            key: 'regulatory', label: 'Regulatory Compliance (OBC)', sub: 'Dual-Engine Validation',
-                            icon: '⚖️', color: 'border-purple-300 dark:border-purple-500/40', headerBg: 'bg-purple-50 dark:bg-purple-500/10', textColor: 'text-purple-700 dark:text-purple-400',
-                            status: hasReg,
-                            description: 'Joint Gemini 2.5 Pro + OpenAI GPT-5 validation against OBC 2024.',
+                            key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions',
+                            icon: '👥', color: 'border-teal-300 dark:border-teal-500/40', headerBg: 'bg-teal-50 dark:bg-teal-500/10', textColor: 'text-teal-700 dark:text-teal-400',
+                            status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0,
+                            description: 'Validates team composition, role assignments, and permission structures.',
                             sources: [
+                              { label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' },
+                              { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' },
+                              { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' },
+                              { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' },
+                            ],
+                          },
+                          {
+                            key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized',
+                            icon: '📅', color: 'border-indigo-300 dark:border-indigo-500/40', headerBg: 'bg-indigo-50 dark:bg-indigo-500/10', textColor: 'text-indigo-700 dark:text-indigo-400',
+                            status: !!timelineCit && !!endDateCit,
+                            description: 'Timeline integrity — start/end dates, DNA finalization, and task phase orchestration.',
+                            sources: [
+                              { label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' },
+                              { label: 'End Date', citation: endDateCit, field: 'END_DATE' },
                               { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' },
                             ],
                           },
                           {
-                            key: 'visual', label: 'Visual Validation', sub: 'AI Vision × Trade Sync',
-                            icon: '👁️', color: 'border-cyan-300 dark:border-cyan-500/40', headerBg: 'bg-cyan-50 dark:bg-cyan-500/10', textColor: 'text-cyan-700 dark:text-cyan-400',
-                            status: hasVis,
-                            description: 'AI Vision cross-reference: site photo content aligns with the selected trade.',
+                            key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync',
+                            icon: '👁️', color: 'border-sky-300 dark:border-sky-500/40', headerBg: 'bg-sky-50 dark:bg-sky-500/10', textColor: 'text-sky-700 dark:text-sky-400',
+                            status: !!photoCit || !!blueprintCit,
+                            description: 'AI Vision cross-reference: site photo content aligns with selected trade and blueprints.',
                             sources: [
                               { label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
-                              { label: 'Trade (Cross-ref)', citation: tradeCit, field: 'TRADE_SELECTION' },
+                              { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
                             ],
                           },
                           {
-                            key: 'financial', label: 'Financial Audit', sub: 'Sync + Tax (HST/GST)',
-                            icon: '💰', color: 'border-amber-300 dark:border-amber-500/40', headerBg: 'bg-amber-50 dark:bg-amber-500/10', textColor: 'text-amber-700 dark:text-amber-400',
-                            status: hasFin,
-                            description: 'Validates Supabase Pro sync and regional tax calculation (HST 13% ON / GST 5%).',
+                            key: 'weather', label: '7 — Weather & Conditions', sub: 'Alerts × Site Readiness',
+                            icon: '🌦️', color: 'border-cyan-300 dark:border-cyan-500/40', headerBg: 'bg-cyan-50 dark:bg-cyan-500/10', textColor: 'text-cyan-700 dark:text-cyan-400',
+                            status: !!weatherCit || !!siteCondCit,
+                            description: 'Weather alerts and site condition assessment for operational readiness.',
+                            sources: [
+                              { label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' },
+                              { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
+                            ],
+                          },
+                          {
+                            key: 'financial', label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)',
+                            icon: '💰', color: 'border-red-300 dark:border-red-500/40', headerBg: 'bg-red-50 dark:bg-red-500/10', textColor: 'text-red-700 dark:text-red-400',
+                            status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit,
+                            description: 'Validates budget sync and regional tax calculation (HST 13% ON / GST 5%).',
                             sources: [
                               { label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' },
+                              { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' },
                               { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
-                            ],
-                          },
-                          {
-                            key: 'geometric', label: 'Geometric Precision', sub: 'Override Authority',
-                            icon: '📐', color: 'border-emerald-300 dark:border-emerald-500/40', headerBg: 'bg-emerald-50 dark:bg-emerald-500/10', textColor: 'text-emerald-700 dark:text-emerald-400',
-                            status: hasGeo,
-                            description: 'AI-estimated vs Owner manually overridden GFA — authoritative geometric source.',
-                            sources: [
-                              { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
                             ],
                           },
                         ];
 
                         const passCount = pillarDetails.filter(p => p.status).length;
+                        const totalPillars = pillarDetails.length;
 
                         return (
                           <>
@@ -8850,9 +8951,9 @@ export default function Stage8FinalReview({
                             <div className="flex items-center gap-4 px-5 py-4 rounded-xl border border-emerald-200 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
                               <div className={cn(
                                 "text-4xl font-bold font-mono",
-                                passCount === 5 ? "text-emerald-600 dark:text-emerald-400" : passCount >= 3 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+                                passCount === totalPillars ? "text-emerald-600 dark:text-emerald-400" : passCount >= 5 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
                               )}>
-                                {passCount}/5
+                                {passCount}/{totalPillars}
                               </div>
                               <div className="flex-1">
                                 <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">DNA Integrity Score</div>
@@ -8860,23 +8961,23 @@ export default function Stage8FinalReview({
                                   <motion.div
                                     className={cn(
                                       "h-full rounded-full",
-                                      passCount === 5 ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                                        : passCount >= 3 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                                      passCount === totalPillars ? "bg-gradient-to-r from-emerald-500 to-green-400"
+                                        : passCount >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
                                         : "bg-gradient-to-r from-red-500 to-orange-400"
                                     )}
                                     initial={{ width: '0%' }}
-                                    animate={{ width: `${(passCount / 5) * 100}%` }}
+                                    animate={{ width: `${(passCount / totalPillars) * 100}%` }}
                                     transition={{ duration: 0.8, ease: 'easeOut' }}
                                   />
                                 </div>
                               </div>
                               <Badge className={cn(
                                 "text-xs font-mono border px-3 py-1",
-                                passCount === 5 ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30"
-                                  : passCount >= 3 ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30"
+                                passCount === totalPillars ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30"
+                                  : passCount >= 5 ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30"
                                   : "bg-red-100 text-red-700 border-red-300 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30"
                               )}>
-                                {passCount === 5 ? 'VERIFIED' : passCount >= 3 ? 'PARTIAL' : 'INCOMPLETE'}
+                                {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
                               </Badge>
                             </div>
 
@@ -8887,7 +8988,7 @@ export default function Stage8FinalReview({
                                 className={cn("rounded-xl border overflow-hidden", pillar.color)}
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.1 }}
+                                transition={{ delay: idx * 0.08 }}
                               >
                                 <div className={cn("flex items-center gap-3 px-5 py-3", pillar.headerBg)}>
                                   <span className="text-xl">{pillar.icon}</span>
