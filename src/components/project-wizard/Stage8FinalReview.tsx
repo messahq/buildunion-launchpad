@@ -8030,10 +8030,12 @@ export default function Stage8FinalReview({
                         )}
                       </div>
                       <span className={cn(
-                        "text-xs font-semibold",
-                        isActive ? "text-amber-300" : "text-amber-400"
+                        "text-xs font-display font-bold tracking-wide",
+                        isActive ? "text-white" : "text-gray-300"
                       )}>
-                        {panel.title}
+                        {panel.title.split(' ').map((word, i) => (
+                          <span key={i} className={i === 0 ? "" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
+                        ))}
                       </span>
                     </div>
                     {dataCount > 0 && hasAccess && (
