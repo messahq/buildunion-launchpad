@@ -270,9 +270,9 @@ const PANELS: PanelConfig[] = [
     title: 'Documents & Contracts',
     titleKey: 'stage8.panel6',
     icon: FolderOpen,
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50 dark:bg-pink-950/30',
-    borderColor: 'border-pink-300 dark:border-pink-700',
+    color: 'text-sky-600',
+    bgColor: 'bg-sky-50 dark:bg-sky-950/30',
+    borderColor: 'border-sky-300 dark:border-sky-700',
     visibilityTier: 'foreman',
     dataKeys: ['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION'],
     description: 'Blueprints, photos, contracts',
@@ -3930,20 +3930,20 @@ export default function Stage8FinalReview({
     return (
       <div className="space-y-4">
         {/* ─── Futuristic Header ─── */}
-        <div className="flex items-center justify-between p-2.5 rounded-xl border-2 border-indigo-300 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 via-violet-50 to-purple-50 dark:from-indigo-950/30 dark:via-violet-950/30 dark:to-purple-950/30 shadow-md">
+        <div className="flex items-center justify-between p-2.5 rounded-xl border-2 border-sky-300 dark:border-sky-700 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 dark:from-sky-950/30 dark:via-blue-950/30 dark:to-cyan-950/30 shadow-md">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-              <FolderOpen className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <div className="h-8 w-8 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+              <FolderOpen className="h-4 w-4 text-sky-600 dark:text-sky-400" />
             </div>
             <div>
-              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 block">Document Vault</span>
-              <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono">
+              <span className="text-xs font-bold text-sky-700 dark:text-sky-300 block">Document Vault</span>
+              <span className="text-[10px] text-sky-500 dark:text-sky-400 font-mono">
                 {documents.length} files · {contracts.length} contracts
               </span>
             </div>
           </div>
           {panelCitations.length > 0 && (
-            <span className="text-[10px] text-violet-600 dark:text-violet-400 font-mono bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono bg-sky-100 dark:bg-sky-900/30 px-1.5 py-0.5 rounded">
               {panelCitations.filter(c => c.id).length} cited
             </span>
           )}
@@ -5761,11 +5761,11 @@ export default function Stage8FinalReview({
                     </div>
                   )}
                   {contracts.length > 0 && (
-                    <div className="flex-1 p-2 rounded-lg border border-pink-500/15 bg-pink-950/10 flex items-center gap-2">
-                      <FileCheck className="h-3.5 w-3.5 text-pink-400/60 flex-shrink-0" />
+                    <div className="flex-1 p-2 rounded-lg border border-sky-500/15 bg-sky-950/10 flex items-center gap-2">
+                      <FileCheck className="h-3.5 w-3.5 text-sky-400/60 flex-shrink-0" />
                       <div>
                         <p className="text-[10px] font-bold text-amber-950 dark:text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
-                        {totalContractValue > 0 && <p className="text-[8px] text-pink-700 dark:text-pink-300/60">${totalContractValue.toLocaleString()}</p>}
+                        {totalContractValue > 0 && <p className="text-[8px] text-sky-700 dark:text-sky-300/60">${totalContractValue.toLocaleString()}</p>}
                       </div>
                     </div>
                   )}
@@ -6474,14 +6474,14 @@ export default function Stage8FinalReview({
           return (
             <div className="space-y-6">
               {/* ─── Header ─── */}
-              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-indigo-300 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 via-violet-50 to-purple-50 dark:from-indigo-950/30 dark:via-violet-950/30 dark:to-purple-950/30 shadow-md">
+              <div className="flex items-center justify-between p-3 rounded-xl border-2 border-sky-300 dark:border-sky-700 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 dark:from-sky-950/30 dark:via-blue-950/30 dark:to-cyan-950/30 shadow-md">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                    <FolderOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  <div className="h-9 w-9 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+                    <FolderOpen className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-indigo-700 dark:text-indigo-300">Document Vault</h4>
-                    <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono">{documents.length} files · {contracts.length} contracts</p>
+                    <h4 className="text-sm font-bold text-sky-700 dark:text-sky-300">Document Vault</h4>
+                    <p className="text-[10px] text-sky-500 dark:text-sky-400 font-mono">{documents.length} files · {contracts.length} contracts</p>
                   </div>
                 </div>
                 {canEdit && (
@@ -7943,13 +7943,13 @@ export default function Stage8FinalReview({
                 const conCount = contracts.length;
                 return (
                   <div className="flex gap-2 mt-0.5">
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20">
-                      <FileText className="h-2.5 w-2.5 text-pink-400" />
-                      <span className="text-[9px] font-mono text-pink-300">{docCount}</span>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
+                      <FileText className="h-2.5 w-2.5 text-sky-400" />
+                      <span className="text-[9px] font-mono text-sky-300">{docCount}</span>
                     </div>
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20">
-                      <FileCheck className="h-2.5 w-2.5 text-pink-400" />
-                      <span className="text-[9px] font-mono text-pink-300">{conCount}</span>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
+                      <FileCheck className="h-2.5 w-2.5 text-sky-400" />
+                      <span className="text-[9px] font-mono text-sky-300">{conCount}</span>
                     </div>
                   </div>
                 );
