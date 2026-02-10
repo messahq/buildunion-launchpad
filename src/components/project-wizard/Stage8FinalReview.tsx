@@ -4939,25 +4939,25 @@ export default function Stage8FinalReview({
       
       return (
         <div className="space-y-3">
-          {/* ✓ TRADE HEADER - Vibrant Fuchsia/Pink gradient */}
+          {/* ✓ TRADE HEADER - Vibrant Orange/Amber gradient */}
           <div className={cn(
             "p-4 rounded-xl border-2 relative overflow-hidden",
             hasTradeCitation
-              ? "bg-gradient-to-br from-fuchsia-50 via-pink-50 to-rose-50 dark:from-fuchsia-950/40 dark:via-pink-950/30 dark:to-rose-950/30 border-fuchsia-300 dark:border-fuchsia-500/40"
+              ? "bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/40 dark:via-amber-950/30 dark:to-yellow-950/30 border-orange-300 dark:border-orange-500/40"
               : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200/50 border-dashed"
           )}>
             {hasTradeCitation && (
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-fuchsia-200/40 to-transparent dark:from-fuchsia-500/10 rounded-bl-3xl" />
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-orange-200/40 to-transparent dark:from-orange-500/10 rounded-bl-3xl" />
             )}
             <div className="flex items-center justify-between mb-2">
               <span className={cn(
                 "text-[10px] font-bold uppercase tracking-widest",
-                hasTradeCitation ? "text-fuchsia-600 dark:text-fuchsia-400" : "text-gray-500"
+                hasTradeCitation ? "text-orange-600 dark:text-orange-400" : "text-gray-500"
               )}>
                 {displayLabel ? '⚡ Selected Trade' : 'Trade'}
               </span>
               {hasTradeCitation ? (
-                <Badge className="text-[10px] bg-gradient-to-r from-fuchsia-100 to-pink-100 dark:from-fuchsia-900/40 dark:to-pink-900/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-300/50">
+                <Badge className="text-[10px] bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/40 dark:to-amber-900/40 text-orange-700 dark:text-orange-300 border border-orange-300/50">
                   ✓ Active
                 </Badge>
               ) : (
@@ -4966,17 +4966,17 @@ export default function Stage8FinalReview({
             </div>
             <p className={cn(
               "text-2xl font-black capitalize tracking-tight",
-              hasTradeCitation ? "text-gray-900 dark:text-fuchsia-100" : "text-gray-400"
+              hasTradeCitation ? "text-gray-900 dark:text-orange-100" : "text-gray-400"
             )}>
               {displayLabel || '—'}
             </p>
             {templateGfaValue !== null && (
-              <p className="text-[10px] text-fuchsia-600/70 dark:text-fuchsia-400/60 mt-1 font-medium">
+              <p className="text-[10px] text-orange-600/70 dark:text-orange-400/60 mt-1 font-medium">
                 @ {templateGfaValue.toLocaleString()} sq ft coverage
               </p>
             )}
             {bestCitationSource && (
-              <p className="text-[10px] text-fuchsia-500 mt-1 font-mono">
+              <p className="text-[10px] text-orange-500 mt-1 font-mono">
                 cite: [{bestCitationSource.id.slice(0, 12)}]
               </p>
             )}
@@ -5026,11 +5026,11 @@ export default function Stage8FinalReview({
                   const isForeman = userRole === 'foreman' || userRole === 'subcontractor';
                   // Alternate row colors for visual interest
                   const rowColors = [
-                    'bg-rose-50/60 dark:bg-rose-950/20 border-rose-200/50 dark:border-rose-800/30',
+                    'bg-orange-50/60 dark:bg-orange-950/20 border-orange-200/50 dark:border-orange-800/30',
                     'bg-cyan-50/60 dark:bg-cyan-950/20 border-cyan-200/50 dark:border-cyan-800/30',
                     'bg-lime-50/60 dark:bg-lime-950/20 border-lime-200/50 dark:border-lime-800/30',
                     'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30',
-                    'bg-fuchsia-50/60 dark:bg-fuchsia-950/20 border-fuchsia-200/50 dark:border-fuchsia-800/30',
+                    'bg-violet-50/60 dark:bg-violet-950/20 border-violet-200/50 dark:border-violet-800/30',
                   ];
                   const rowColor = rowColors[idx % rowColors.length];
                   
@@ -5087,9 +5087,9 @@ export default function Stage8FinalReview({
           
           {/* No Data */}
           {!tradeTemplate.hasData && (
-            <div className="p-4 rounded-xl border-2 border-dashed border-fuchsia-200 dark:border-fuchsia-800/30 text-center bg-gradient-to-br from-fuchsia-50/30 to-pink-50/30 dark:from-fuchsia-950/10 dark:to-pink-950/10">
-              <Hammer className="h-8 w-8 text-fuchsia-300 dark:text-fuchsia-600 mx-auto mb-2" />
-              <p className="text-xs text-fuchsia-600/80 dark:text-fuchsia-400/60 italic">
+            <div className="p-4 rounded-xl border-2 border-dashed border-orange-200 dark:border-orange-800/30 text-center bg-gradient-to-br from-orange-50/30 to-amber-50/30 dark:from-orange-950/10 dark:to-amber-950/10">
+              <Hammer className="h-8 w-8 text-orange-300 dark:text-orange-600 mx-auto mb-2" />
+              <p className="text-xs text-orange-600/80 dark:text-orange-400/60 italic">
                 {!tradeCitation && workTypeCitation
                   ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage' 
                   : !hasTradeCitation 
@@ -5115,17 +5115,17 @@ export default function Stage8FinalReview({
             </div>
           )}
           
-          {/* Execution Mode - Rose/Red */}
+          {/* Execution Mode - Red/Orange */}
           {executionCitation && (
-            <div className="p-3 rounded-xl border-2 border-rose-200 dark:border-rose-500/30 bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/20">
+            <div className="p-3 rounded-xl border-2 border-red-200 dark:border-red-500/30 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/20">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                  <span className="text-xs font-bold text-gray-800 dark:text-rose-200">Execution Mode</span>
+                  <Settings className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <span className="text-xs font-bold text-gray-800 dark:text-red-200">Execution Mode</span>
                 </div>
-                <span className="text-[10px] text-rose-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                <span className="text-[10px] text-red-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
               </div>
-              <p className="text-sm font-bold capitalize text-gray-900 dark:text-rose-100">{executionCitation.answer}</p>
+              <p className="text-sm font-bold capitalize text-gray-900 dark:text-red-100">{executionCitation.answer}</p>
             </div>
           )}
           
