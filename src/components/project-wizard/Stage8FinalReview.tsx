@@ -7691,7 +7691,7 @@ export default function Stage8FinalReview({
         </div>
 
         {/* Desktop: Panels around central canvas */}
-        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_minmax(180px,auto)] gap-2 p-3">
+        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr] gap-2 p-3 relative">
           
           {/* Left column - 4 panels */}
           {PANELS.slice(0, 4).map((panel, idx) => {
@@ -7967,7 +7967,7 @@ export default function Stage8FinalReview({
 
           {/* Central Canvas - spans middle column, all 4 rows */}
           <motion.div
-            className="row-span-5 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
+            className="row-span-4 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
             layout
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -8254,17 +8254,10 @@ export default function Stage8FinalReview({
             );
           })}
 
-          {/* MESSA DNA Synthesis Panel - Bottom left empty cell */}
-          <motion.div
-            className="col-start-1 row-start-5"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-          />
 
-          {/* MESSA DNA Synthesis Panel - Bottom right */}
+          {/* MESSA DNA Synthesis Panel - Floating bottom right */}
           <motion.div
-            className="col-start-3 row-start-5 relative rounded-2xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group"
+            className="absolute bottom-3 right-3 w-[268px] z-30 rounded-2xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group shadow-xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.7 }}
