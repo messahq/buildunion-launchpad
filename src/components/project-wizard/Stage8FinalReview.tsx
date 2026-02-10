@@ -7691,7 +7691,7 @@ export default function Stage8FinalReview({
         </div>
 
         {/* Desktop: Panels around central canvas */}
-        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_auto] gap-2 p-3">
+        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_minmax(180px,auto)] gap-2 p-3">
           
           {/* Left column - 4 panels */}
           {PANELS.slice(0, 4).map((panel, idx) => {
