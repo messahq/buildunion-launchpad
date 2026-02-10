@@ -205,7 +205,7 @@ const PANELS: PanelConfig[] = [
     title: 'Project Basics',
     titleKey: 'stage8.panel1',
     icon: Building2,
-    color: 'text-amber-500',
+    color: 'text-emerald-600',
     bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
     borderColor: 'border-emerald-300 dark:border-emerald-700',
     visibilityTier: 'public',
@@ -218,7 +218,7 @@ const PANELS: PanelConfig[] = [
     title: 'Area & Dimensions',
     titleKey: 'stage8.panel2',
     icon: Ruler,
-    color: 'text-amber-500',
+    color: 'text-blue-600',
     bgColor: 'bg-blue-50 dark:bg-blue-950/30',
     borderColor: 'border-blue-300 dark:border-blue-700',
     visibilityTier: 'foreman',
@@ -231,7 +231,7 @@ const PANELS: PanelConfig[] = [
     title: 'Trade & Template',
     titleKey: 'stage8.panel3',
     icon: Hammer,
-    color: 'text-amber-500',
+    color: 'text-orange-600',
     bgColor: 'bg-orange-50 dark:bg-orange-950/30',
     borderColor: 'border-orange-300 dark:border-orange-700',
     visibilityTier: 'foreman',
@@ -244,7 +244,7 @@ const PANELS: PanelConfig[] = [
     title: 'Team Architecture',
     titleKey: 'stage8.panel4',
     icon: Users,
-    color: 'text-amber-500',
+    color: 'text-teal-600',
     bgColor: 'bg-teal-50 dark:bg-teal-950/30',
     borderColor: 'border-teal-300 dark:border-teal-700',
     visibilityTier: 'foreman',
@@ -257,7 +257,7 @@ const PANELS: PanelConfig[] = [
     title: 'Execution Timeline',
     titleKey: 'stage8.panel5',
     icon: Calendar,
-    color: 'text-amber-500',
+    color: 'text-indigo-600',
     bgColor: 'bg-indigo-50 dark:bg-indigo-950/30',
     borderColor: 'border-indigo-300 dark:border-indigo-700',
     visibilityTier: 'worker',
@@ -270,7 +270,7 @@ const PANELS: PanelConfig[] = [
     title: 'Documents & Contracts',
     titleKey: 'stage8.panel6',
     icon: FolderOpen,
-    color: 'text-amber-500',
+    color: 'text-sky-600',
     bgColor: 'bg-sky-50 dark:bg-sky-950/30',
     borderColor: 'border-sky-300 dark:border-sky-700',
     visibilityTier: 'foreman',
@@ -283,7 +283,7 @@ const PANELS: PanelConfig[] = [
     title: 'Weather & Conditions',
     titleKey: 'stage8.panel7',
     icon: Cloud,
-    color: 'text-amber-500',
+    color: 'text-sky-600',
     bgColor: 'bg-sky-50 dark:bg-sky-950/30',
     borderColor: 'border-sky-300 dark:border-sky-700',
     visibilityTier: 'worker',
@@ -296,7 +296,7 @@ const PANELS: PanelConfig[] = [
     title: 'Financial Summary',
     titleKey: 'stage8.panel8',
     icon: DollarSign,
-    color: 'text-amber-500',
+    color: 'text-red-600',
     bgColor: 'bg-red-50 dark:bg-red-950/30',
     borderColor: 'border-red-300 dark:border-red-700',
     visibilityTier: 'owner',
@@ -7780,7 +7780,7 @@ export default function Stage8FinalReview({
                       </div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? "text-amber-400" : "text-amber-500"
+                        isActive ? "text-cyan-200" : "text-cyan-500"
                       )}>
                         {displayTitle}
                       </span>
@@ -8031,7 +8031,7 @@ export default function Stage8FinalReview({
                       </div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? "text-amber-400" : "text-amber-500"
+                        isActive ? "text-cyan-200" : "text-cyan-500"
                       )}>
                         {panel.title}
                       </span>
@@ -8125,7 +8125,7 @@ export default function Stage8FinalReview({
                 >
                   <div className="flex items-center gap-1">
                     {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                    <span className={cn("text-[10px]", isActive ? "text-amber-400" : "text-amber-500")}>{panel.title.split(' ')[0]}</span>
+                    <span className="text-[10px]">{panel.title.split(' ')[0]}</span>
                   </div>
                   {getMobileMetric()}
                   {/* Unread chat badge */}
