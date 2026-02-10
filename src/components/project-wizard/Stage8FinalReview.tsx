@@ -2443,8 +2443,8 @@ export default function Stage8FinalReview({
         const { data: aiResult } = await supabase.functions.invoke('ai-project-analysis', {
           body: {
             projectId,
-            analysisType: 'quick_assessment',
-            tier: 'standard',
+            analysisType: 'synthesis',
+            tier: 'messa',
           },
         });
         if (aiResult && !aiResult.error) {
