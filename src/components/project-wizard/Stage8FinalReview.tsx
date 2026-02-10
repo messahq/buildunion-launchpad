@@ -7891,7 +7891,7 @@ export default function Stage8FinalReview({
         </div>
 
         {/* Desktop: Panels around central canvas */}
-        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr] gap-2 p-3 relative">
+        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_auto] gap-2 p-3 relative">
           
           {/* Left column - 4 panels */}
           {PANELS.slice(0, 4).map((panel, idx) => {
@@ -8167,7 +8167,7 @@ export default function Stage8FinalReview({
 
           {/* Central Canvas - spans middle column, all 4 rows */}
           <motion.div
-            className="row-span-4 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
+            className="row-span-5 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
             layout
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -8707,13 +8707,13 @@ export default function Stage8FinalReview({
           })}
 
 
-           {/* MESSA DNA Synthesis Panel - Compact floating bottom right */}
-           <motion.div
-            className="absolute bottom-3 right-3 w-[200px] z-30 rounded-xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group shadow-xl"
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.5, delay: 0.7 }}
-             whileHover={{ scale: 1.03, borderColor: 'rgba(16,185,129,0.5)' }}
+           {/* MESSA DNA Synthesis Panel - Grid item in right column, row 5 */}
+           <motion.button
+             className="col-start-3 rounded-xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group relative text-left"
+             initial={{ opacity: 0, x: 40 }}
+             animate={{ opacity: 1, x: 0 }}
+             transition={{ duration: 0.5, delay: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
+             whileHover={{ scale: 1.02, borderColor: 'rgba(16,185,129,0.5)' }}
              onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
            >
              <motion.div
@@ -8721,18 +8721,31 @@ export default function Stage8FinalReview({
                animate={{ top: ['0%', '100%', '0%'] }}
                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
              />
-             <div className="p-2.5 space-y-1.5">
-               <div className="flex items-center gap-2">
-                 <motion.div
-                   className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center"
-                   animate={{ boxShadow: ['0 0 0px rgba(16,185,129,0)', '0 0 10px rgba(16,185,129,0.4)', '0 0 0px rgba(16,185,129,0)'] }}
-                   transition={{ duration: 2.5, repeat: Infinity }}
-                 >
-                   <Sparkles className="h-3 w-3 text-emerald-400" />
-                 </motion.div>
-                 <div className="flex-1 min-w-0">
-                   <span className="text-[10px] font-display font-bold tracking-wide text-emerald-300">
-                     MESSA <span className="text-amber-400">DNA</span>
+             {activeOrbitalPanel === 'messa-deep-audit' && (
+               <motion.div
+                 className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-emerald-400 to-green-500"
+                 layoutId="activePanelIndicatorRight"
+                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+               />
+             )}
+             <div className="p-3 h-full flex flex-col justify-between">
+               <div className="flex items-center justify-between mb-1">
+                 <div className="flex items-center gap-2">
+                   <motion.div
+                     className={cn(
+                       "h-7 w-7 rounded-lg flex items-center justify-center",
+                       activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-500/20" : "bg-emerald-950/50"
+                     )}
+                     animate={activeOrbitalPanel === 'messa-deep-audit' ? { rotate: [0, -5, 5, 0] } : {}}
+                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                   >
+                     <Sparkles className={cn("h-3.5 w-3.5", activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300" : "text-emerald-500")} />
+                   </motion.div>
+                   <span className={cn(
+                     "text-xs font-display font-bold tracking-wide",
+                     activeOrbitalPanel === 'messa-deep-audit' ? "text-white" : "text-gray-300"
+                   )}>
+                     MESSA <span className="text-amber-500">DNA</span>
                    </span>
                  </div>
                  {(() => {
@@ -8746,18 +8759,27 @@ export default function Stage8FinalReview({
                      !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
                      ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
                    ].filter(Boolean).length;
-                   const pct = (passCount / 8) * 100;
                    return (
-                     <span className={cn(
-                       "text-[10px] font-bold font-mono",
-                       pct === 100 ? "text-emerald-400" : pct >= 60 ? "text-amber-400" : "text-red-400"
-                     )}>
+                     <motion.span
+                       className={cn(
+                         "text-[10px] font-mono px-1.5 py-0.5 rounded",
+                         activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-400/20 text-emerald-300" : "bg-emerald-950/50 text-emerald-400"
+                       )}
+                       animate={activeOrbitalPanel === 'messa-deep-audit' ? { scale: [1, 1.1, 1] } : {}}
+                       transition={{ duration: 2, repeat: Infinity }}
+                     >
                        {passCount}/8
-                     </span>
+                     </motion.span>
                    );
                  })()}
                </div>
-               {/* Compact score bar */}
+               <p className={cn(
+                 "text-[11px] leading-tight line-clamp-1 mb-1",
+                 activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300/80" : "text-emerald-700/60"
+               )}>
+                 8-Pillar Validation
+               </p>
+               {/* Score bar */}
                {(() => {
                  const passCount = [
                    !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
@@ -8787,7 +8809,7 @@ export default function Stage8FinalReview({
                  );
                })()}
              </div>
-           </motion.div>
+           </motion.button>
         </div>
 
         {/* Mobile/Tablet: Tab-based layout */}
