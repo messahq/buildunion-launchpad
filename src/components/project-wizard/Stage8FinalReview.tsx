@@ -5194,8 +5194,8 @@ export default function Stage8FinalReview({
         
         return (
           <div className="space-y-3">
-            {/* ─── Header - Dark slate + emerald accent ─── */}
-            <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-500/30 bg-gradient-to-r from-slate-800 via-gray-900 to-slate-800 dark:from-slate-900 dark:via-gray-950 dark:to-slate-900 shadow-lg">
+            {/* ─── Header - Vibrant teal/emerald light ─── */}
+            <div className="flex items-center justify-between p-3 rounded-xl border-2 border-teal-300 dark:border-teal-700 bg-gradient-to-r from-teal-50 via-emerald-50 to-cyan-50 dark:from-teal-950/40 dark:via-emerald-950/30 dark:to-cyan-950/40 shadow-md">
               <div className="flex items-center gap-2.5">
                 <motion.div
                   animate={{ boxShadow: ['0 0 8px rgba(16,185,129,0.3)', '0 0 18px rgba(16,185,129,0.5)', '0 0 8px rgba(16,185,129,0.3)'] }}
@@ -5205,66 +5205,66 @@ export default function Stage8FinalReview({
                   <Users className="h-4 w-4 text-white" />
                 </motion.div>
                 <div>
-                  <span className="text-xs font-black text-white tracking-tight">Team Command</span>
-                  <p className="text-[8px] text-emerald-400/80">{teamMembers.length} operative{teamMembers.length !== 1 ? 's' : ''} deployed</p>
+                  <span className="text-xs font-black text-teal-800 dark:text-teal-200 tracking-tight">Team Command</span>
+                  <p className="text-[8px] text-teal-600 dark:text-teal-400">{teamMembers.length} operative{teamMembers.length !== 1 ? 's' : ''} deployed</p>
                 </div>
               </div>
-              <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] px-1.5 py-0 gap-1 shadow-sm">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600 text-[9px] px-1.5 py-0 gap-1 shadow-sm">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Active
               </Badge>
             </div>
             
-            {/* Stats Row - Dark cards with bright accents */}
+            {/* Stats Row - Light vibrant cards */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-cyan-500/30 bg-gradient-to-br from-slate-800 to-cyan-950 p-2.5 text-center shadow-sm">
-                <p className="text-[9px] font-mono uppercase text-cyan-400 tracking-wide">Members</p>
-                <p className="text-xl font-black text-white">{teamMembers.length}</p>
+              <div className="rounded-xl border-2 border-cyan-300 dark:border-cyan-700 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/30 p-2.5 text-center shadow-sm">
+                <p className="text-[9px] font-mono uppercase text-cyan-600 dark:text-cyan-400 tracking-wide">Members</p>
+                <p className="text-xl font-black text-cyan-800 dark:text-cyan-200">{teamMembers.length}</p>
               </div>
-              <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800 to-amber-950 p-2.5 text-center shadow-sm">
-                <p className="text-[9px] font-mono uppercase text-amber-400 tracking-wide">Roles</p>
-                <p className="text-xl font-black text-white">{uniqueRoles}</p>
+              <div className="rounded-xl border-2 border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-2.5 text-center shadow-sm">
+                <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide">Roles</p>
+                <p className="text-xl font-black text-amber-800 dark:text-amber-200">{uniqueRoles}</p>
               </div>
-              <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-slate-800 to-violet-950 p-2.5 text-center shadow-sm">
-                <p className="text-[9px] font-mono uppercase text-violet-400 tracking-wide">Status</p>
-                <p className="text-sm font-black text-emerald-400">Online</p>
+              <div className="rounded-xl border-2 border-violet-300 dark:border-violet-700 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30 p-2.5 text-center shadow-sm">
+                <p className="text-[9px] font-mono uppercase text-violet-600 dark:text-violet-400 tracking-wide">Status</p>
+                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">Online</p>
               </div>
             </div>
             
             {/* Team Size Citation */}
             {teamSizeCitation && (
-              <div className="p-2.5 rounded-xl border border-indigo-500/25 bg-gradient-to-r from-indigo-950/40 to-slate-900">
+              <div className="p-2.5 rounded-xl border-2 border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-indigo-300 uppercase tracking-widest font-bold">Team Size</span>
-                  <span className="text-[8px] text-indigo-400/60 font-mono">[{teamSizeCitation.id.slice(0, 8)}]</span>
+                  <span className="text-[9px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-bold">Team Size</span>
+                  <span className="text-[8px] text-indigo-400 dark:text-indigo-500 font-mono">[{teamSizeCitation.id.slice(0, 8)}]</span>
                 </div>
-                <p className="text-sm font-bold text-white mt-0.5">{renderCitationValue(teamSizeCitation)}</p>
+                <p className="text-sm font-bold text-indigo-800 dark:text-indigo-200 mt-0.5">{renderCitationValue(teamSizeCitation)}</p>
               </div>
             )}
             
             {/* Member Cards - Alternating dark backgrounds */}
             {teamMembers.length === 0 ? (
-              <div className="p-4 rounded-xl border border-dashed border-slate-600 text-center bg-slate-900/60">
-                <Users className="h-6 w-6 text-slate-500 mx-auto mb-1.5" />
-                <p className="text-[10px] text-slate-400">No team members added</p>
+              <div className="p-4 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 text-center bg-teal-50/50 dark:bg-teal-950/20">
+                <Users className="h-6 w-6 text-teal-400 mx-auto mb-1.5" />
+                <p className="text-[10px] text-teal-600 dark:text-teal-400">No team members added</p>
               </div>
             ) : (
               <div className="space-y-1.5">
                 {teamMembers.map((member, idx) => {
                   const roleColors: Record<string, string> = {
-                    owner: 'from-amber-400 to-orange-500',
-                    foreman: 'from-emerald-400 to-teal-500',
-                    worker: 'from-blue-400 to-indigo-500',
-                    inspector: 'from-violet-400 to-purple-500',
-                    subcontractor: 'from-pink-400 to-rose-500',
-                    member: 'from-slate-400 to-slate-500',
+                    owner: 'from-amber-500 to-orange-600',
+                    foreman: 'from-emerald-500 to-teal-600',
+                    worker: 'from-blue-500 to-indigo-600',
+                    inspector: 'from-violet-500 to-purple-600',
+                    subcontractor: 'from-cyan-500 to-blue-600',
+                    member: 'from-gray-500 to-slate-600',
                   };
                   const rowBgs = [
-                    'border-emerald-500/15 bg-gradient-to-r from-slate-800/80 to-emerald-950/30',
-                    'border-cyan-500/15 bg-gradient-to-r from-slate-800/80 to-cyan-950/30',
-                    'border-amber-500/15 bg-gradient-to-r from-slate-800/80 to-amber-950/30',
-                    'border-violet-500/15 bg-gradient-to-r from-slate-800/80 to-violet-950/30',
-                    'border-rose-500/15 bg-gradient-to-r from-slate-800/80 to-rose-950/30',
+                    'border-emerald-200 dark:border-emerald-700/30 bg-gradient-to-r from-emerald-50/80 to-teal-50/60 dark:from-emerald-950/20 dark:to-teal-950/20',
+                    'border-cyan-200 dark:border-cyan-700/30 bg-gradient-to-r from-cyan-50/80 to-sky-50/60 dark:from-cyan-950/20 dark:to-sky-950/20',
+                    'border-amber-200 dark:border-amber-700/30 bg-gradient-to-r from-amber-50/80 to-orange-50/60 dark:from-amber-950/20 dark:to-orange-950/20',
+                    'border-violet-200 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/80 to-indigo-50/60 dark:from-violet-950/20 dark:to-indigo-950/20',
+                    'border-lime-200 dark:border-lime-700/30 bg-gradient-to-r from-lime-50/80 to-green-50/60 dark:from-lime-950/20 dark:to-green-950/20',
                   ];
                   const gradient = roleColors[member.role] || roleColors.member;
                   const rowBg = rowBgs[idx % rowBgs.length];
@@ -5274,18 +5274,18 @@ export default function Stage8FinalReview({
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className={cn("flex items-center justify-between p-2 rounded-xl border transition-colors group", rowBg)}
+                      className={cn("flex items-center justify-between p-2 rounded-xl border-2 transition-colors group hover:shadow-md", rowBg)}
                     >
                       <div className="flex items-center gap-2">
                         <div className={cn("h-7 w-7 rounded-lg bg-gradient-to-br flex items-center justify-center text-white text-[10px] font-bold shadow-md", gradient)}>
                           {member.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-[11px] font-bold text-white/90">{member.name}</p>
+                          <p className="text-[11px] font-bold text-gray-800 dark:text-gray-100">{member.name}</p>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-emerald-400/70 capitalize font-medium">{member.role}</span>
+                            <span className="text-[9px] text-teal-600 dark:text-teal-400 capitalize font-medium">{member.role}</span>
                             {teamInviteCitation && idx === 0 && (
-                              <span className="text-[7px] text-emerald-500/50 font-mono">[{teamInviteCitation.id.slice(0, 6)}]</span>
+                              <span className="text-[7px] text-teal-500/60 dark:text-teal-400/50 font-mono">[{teamInviteCitation.id.slice(0, 6)}]</span>
                             )}
                           </div>
                         </div>
@@ -5323,16 +5323,16 @@ export default function Stage8FinalReview({
               />
             )}
             
-            {/* Citations - Dark indigo */}
+            {/* Citations - Light indigo */}
             {panelCitations.length > 0 && (
-              <div className="pt-2 border-t border-indigo-500/15 space-y-1">
-                <p className="text-[9px] text-indigo-400 uppercase tracking-widest font-bold mb-1">Citations ({panelCitations.length})</p>
+              <div className="pt-2 border-t border-indigo-200 dark:border-indigo-700/30 space-y-1">
+                <p className="text-[9px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-bold mb-1">Citations ({panelCitations.length})</p>
                 {panelCitations.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-indigo-950/30 border border-indigo-500/15">
-                    <span className="text-[9px] text-indigo-300/70">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-700/30">
+                    <span className="text-[9px] text-indigo-600/70 dark:text-indigo-400/70">{c.cite_type.replace(/_/g, ' ')}</span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold text-white/80">{renderCitationValue(c)}</span>
-                      <span className="text-[7px] text-indigo-400/50 font-mono">[{c.id.slice(0, 6)}]</span>
+                      <span className="text-[9px] font-bold text-indigo-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
+                      <span className="text-[7px] text-indigo-400 dark:text-indigo-500 font-mono">[{c.id.slice(0, 6)}]</span>
                     </div>
                   </div>
                 ))}
@@ -6337,8 +6337,8 @@ export default function Stage8FinalReview({
             animate={{ opacity: 1 }}
             className="space-y-5"
           >
-            {/* Dark Command Header */}
-            <div className="flex items-center justify-between p-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-slate-800 via-gray-900 to-slate-800 shadow-xl">
+            {/* Vibrant Command Header */}
+            <div className="flex items-center justify-between p-4 rounded-2xl border-2 border-teal-300 dark:border-teal-700 bg-gradient-to-r from-teal-50 via-emerald-50 to-cyan-50 dark:from-teal-950/40 dark:via-emerald-950/30 dark:to-cyan-950/40 shadow-xl">
               <div className="flex items-center gap-3">
                 <motion.div
                   animate={{ boxShadow: ['0 0 10px rgba(16,185,129,0.2)', '0 0 25px rgba(16,185,129,0.5)', '0 0 10px rgba(16,185,129,0.2)'] }}
@@ -6348,36 +6348,36 @@ export default function Stage8FinalReview({
                   <Users className="h-6 w-6 text-white" />
                 </motion.div>
                 <div>
-                  <h4 className="text-lg font-black text-white tracking-tight">Team Operatives</h4>
-                  <p className="text-[11px] text-emerald-400/80">{teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''} deployed</p>
+                  <h4 className="text-lg font-black text-teal-800 dark:text-teal-200 tracking-tight">Team Operatives</h4>
+                  <p className="text-[11px] text-teal-600 dark:text-teal-400">{teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''} deployed</p>
                 </div>
               </div>
-              <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] px-2.5 py-1 gap-1.5 shadow-sm">
-                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600 text-[11px] px-2.5 py-1 gap-1.5 shadow-sm">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 Online
               </Badge>
             </div>
 
-            {/* Stats Strip */}
+            {/* Stats Strip - Vibrant light */}
             {(() => {
               const fsRoleCounts = teamMembers.reduce((acc, m) => { acc[m.role] = (acc[m.role] || 0) + 1; return acc; }, {} as Record<string, number>);
               return (
                 <div className="grid grid-cols-4 gap-3">
-                  <div className="rounded-xl border border-cyan-500/30 bg-gradient-to-br from-slate-800 to-cyan-950 p-3 text-center shadow-md">
-                    <p className="text-[10px] font-mono uppercase text-cyan-400 tracking-widest">Total</p>
-                    <p className="text-3xl font-black text-white">{teamMembers.length}</p>
+                  <div className="rounded-xl border-2 border-cyan-300 dark:border-cyan-700 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/30 p-3 text-center shadow-md">
+                    <p className="text-[10px] font-mono uppercase text-cyan-600 dark:text-cyan-400 tracking-widest">Total</p>
+                    <p className="text-3xl font-black text-cyan-800 dark:text-cyan-200">{teamMembers.length}</p>
                   </div>
-                  <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800 to-amber-950 p-3 text-center shadow-md">
-                    <p className="text-[10px] font-mono uppercase text-amber-400 tracking-widest">Roles</p>
-                    <p className="text-3xl font-black text-white">{Object.keys(fsRoleCounts).length}</p>
+                  <div className="rounded-xl border-2 border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-3 text-center shadow-md">
+                    <p className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-widest">Roles</p>
+                    <p className="text-3xl font-black text-amber-800 dark:text-amber-200">{Object.keys(fsRoleCounts).length}</p>
                   </div>
-                  <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-slate-800 to-violet-950 p-3 text-center shadow-md">
-                    <p className="text-[10px] font-mono uppercase text-violet-400 tracking-widest">Owners</p>
-                    <p className="text-3xl font-black text-white">{fsRoleCounts['owner'] || 0}</p>
+                  <div className="rounded-xl border-2 border-violet-300 dark:border-violet-700 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30 p-3 text-center shadow-md">
+                    <p className="text-[10px] font-mono uppercase text-violet-600 dark:text-violet-400 tracking-widest">Owners</p>
+                    <p className="text-3xl font-black text-violet-800 dark:text-violet-200">{fsRoleCounts['owner'] || 0}</p>
                   </div>
-                  <div className="rounded-xl border border-rose-500/30 bg-gradient-to-br from-slate-800 to-rose-950 p-3 text-center shadow-md">
-                    <p className="text-[10px] font-mono uppercase text-rose-400 tracking-widest">Workers</p>
-                    <p className="text-3xl font-black text-white">{(fsRoleCounts['worker'] || 0) + (fsRoleCounts['subcontractor'] || 0)}</p>
+                  <div className="rounded-xl border-2 border-red-300 dark:border-red-700 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 p-3 text-center shadow-md">
+                    <p className="text-[10px] font-mono uppercase text-red-600 dark:text-red-400 tracking-widest">Workers</p>
+                    <p className="text-3xl font-black text-red-800 dark:text-red-200">{(fsRoleCounts['worker'] || 0) + (fsRoleCounts['subcontractor'] || 0)}</p>
                   </div>
                 </div>
               );
@@ -6391,12 +6391,12 @@ export default function Stage8FinalReview({
                 foreman: '#10b981',
                 worker: '#3b82f6',
                 inspector: '#8b5cf6',
-                subcontractor: '#ec4899',
+                subcontractor: '#06b6d4',
                 member: '#94a3b8',
               };
               return (
-                <div className="space-y-2 p-3 rounded-xl border border-slate-600/30 bg-slate-900/60">
-                  <div className="h-3 rounded-full overflow-hidden flex bg-slate-800">
+                <div className="space-y-2 p-3 rounded-xl border-2 border-teal-200 dark:border-teal-700/30 bg-gradient-to-r from-teal-50/50 to-emerald-50/50 dark:from-teal-950/20 dark:to-emerald-950/20">
+                  <div className="h-3 rounded-full overflow-hidden flex bg-gray-200 dark:bg-slate-800">
                     {Object.entries(roleCounts).map(([role, count]) => (
                       <div
                         key={role}
@@ -6409,7 +6409,7 @@ export default function Stage8FinalReview({
                     {Object.entries(roleCounts).map(([role, count]) => (
                       <div key={role} className="flex items-center gap-1.5">
                         <div className="h-2.5 w-2.5 rounded-full shadow-sm" style={{ backgroundColor: roleColorMap[role] || '#94a3b8' }} />
-                        <span className="text-[11px] text-slate-300 capitalize font-medium">{role} ({count})</span>
+                        <span className="text-[11px] text-gray-700 dark:text-gray-300 capitalize font-medium">{role} ({count})</span>
                       </div>
                     ))}
                   </div>
@@ -6417,23 +6417,23 @@ export default function Stage8FinalReview({
               );
             })()}
 
-            {/* Member Cards - Dark with accent borders */}
+            {/* Member Cards - Vibrant with accent borders */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {teamMembers.map((member, idx) => {
                 const roleColors: Record<string, string> = {
-                  owner: 'from-amber-400 to-orange-500',
-                  foreman: 'from-emerald-400 to-teal-500',
-                  worker: 'from-blue-400 to-indigo-500',
-                  inspector: 'from-violet-400 to-purple-500',
-                  subcontractor: 'from-pink-400 to-rose-500',
-                  member: 'from-slate-400 to-slate-500',
+                  owner: 'from-amber-500 to-orange-600',
+                  foreman: 'from-emerald-500 to-teal-600',
+                  worker: 'from-blue-500 to-indigo-600',
+                  inspector: 'from-violet-500 to-purple-600',
+                  subcontractor: 'from-cyan-500 to-blue-600',
+                  member: 'from-gray-500 to-slate-600',
                 };
                 const cardBgs = [
-                  'border-emerald-500/20 bg-gradient-to-r from-slate-800/90 to-emerald-950/40',
-                  'border-cyan-500/20 bg-gradient-to-r from-slate-800/90 to-cyan-950/40',
-                  'border-amber-500/20 bg-gradient-to-r from-slate-800/90 to-amber-950/40',
-                  'border-violet-500/20 bg-gradient-to-r from-slate-800/90 to-violet-950/40',
-                  'border-rose-500/20 bg-gradient-to-r from-slate-800/90 to-rose-950/40',
+                  'border-emerald-200 dark:border-emerald-700/30 bg-gradient-to-r from-emerald-50/80 to-teal-50/60 dark:from-emerald-950/20 dark:to-teal-950/20',
+                  'border-cyan-200 dark:border-cyan-700/30 bg-gradient-to-r from-cyan-50/80 to-sky-50/60 dark:from-cyan-950/20 dark:to-sky-950/20',
+                  'border-amber-200 dark:border-amber-700/30 bg-gradient-to-r from-amber-50/80 to-orange-50/60 dark:from-amber-950/20 dark:to-orange-950/20',
+                  'border-violet-200 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/80 to-indigo-50/60 dark:from-violet-950/20 dark:to-indigo-950/20',
+                  'border-lime-200 dark:border-lime-700/30 bg-gradient-to-r from-lime-50/80 to-green-50/60 dark:from-lime-950/20 dark:to-green-950/20',
                 ];
                 const gradient = roleColors[member.role] || roleColors.member;
                 const cardBg = cardBgs[idx % cardBgs.length];
@@ -6444,7 +6444,7 @@ export default function Stage8FinalReview({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.04 }}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-xl border transition-all group hover:shadow-lg",
+                      "flex items-center gap-3 p-3 rounded-xl border-2 transition-all group hover:shadow-lg",
                       cardBg
                     )}
                   >
@@ -6452,8 +6452,8 @@ export default function Stage8FinalReview({
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white/90 truncate">{member.name}</p>
-                      <p className="text-[10px] text-emerald-400/70 capitalize font-medium">{member.role}</p>
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{member.name}</p>
+                      <p className="text-[10px] text-teal-600 dark:text-teal-400 capitalize font-medium">{member.role}</p>
                     </div>
                   </motion.div>
                 );
