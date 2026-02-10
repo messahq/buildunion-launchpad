@@ -8707,153 +8707,87 @@ export default function Stage8FinalReview({
           })}
 
 
-           {/* MESSA DNA Synthesis Panel - Floating inside central canvas bottom */}
+           {/* MESSA DNA Synthesis Panel - Compact floating bottom right */}
            <motion.div
-            className="absolute bottom-3 left-[292px] w-[260px] z-30 rounded-2xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group shadow-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            whileHover={{ scale: 1.02, borderColor: 'rgba(16,185,129,0.5)' }}
-            onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
-          >
-            {/* Scanning line effect */}
-            <motion.div
-              className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent pointer-events-none"
-              animate={{ top: ['0%', '100%', '0%'] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-            />
-
-            <div className="p-3 space-y-2">
-              {/* Header */}
-              <div className="flex items-center gap-2">
-                <motion.div
-                  className="h-7 w-7 rounded-lg bg-emerald-500/20 flex items-center justify-center"
-                  animate={{ boxShadow: ['0 0 0px rgba(16,185,129,0)', '0 0 12px rgba(16,185,129,0.4)', '0 0 0px rgba(16,185,129,0)'] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                </motion.div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[11px] font-display font-bold tracking-wide text-emerald-300">
-                    MESSA <span className="text-amber-400">DNA</span>
-                  </span>
-                  <p className="text-[9px] text-emerald-600/80 leading-tight">8-Pillar Validation</p>
-                </div>
-                <motion.div
-                  className="h-5 w-5 rounded-full border border-emerald-500/40 flex items-center justify-center"
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                >
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                </motion.div>
-              </div>
-
-              {/* 8 Pillars - Compact */}
-              <div className="space-y-1">
-                {(() => {
-                  const p1 = !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE');
-                  const p2 = !!citations.find(c => c.cite_type === 'GFA_LOCK');
-                  const p3 = !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                  const p4 = !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0;
-                  const p5 = !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE');
-                  const p6 = !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
-                  const p7 = !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION');
-                  const p8 = (financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION');
-
-                  return [
-                    { key: 'basics', label: 'Project Basics', sub: 'Name × Location × Type', icon: '🏗️', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', status: p1 ? 'pass' : 'pending' },
-                    { key: 'area', label: 'Area & Dimensions', sub: 'GFA × Blueprint × Site', icon: '📐', color: 'text-blue-400', bgColor: 'bg-blue-500/10', status: p2 ? 'pass' : 'pending' },
-                    { key: 'trade', label: 'Trade & Template', sub: 'PDF RAG × Materials', icon: '🔬', color: 'text-orange-400', bgColor: 'bg-orange-500/10', status: p3 ? 'pass' : 'pending' },
-                    { key: 'team', label: 'Team Architecture', sub: 'Roles × Permissions', icon: '👥', color: 'text-teal-400', bgColor: 'bg-teal-500/10', status: p4 ? 'pass' : 'pending' },
-                    { key: 'timeline', label: 'Execution Timeline', sub: 'Start × End × DNA', icon: '📅', color: 'text-indigo-400', bgColor: 'bg-indigo-500/10', status: p5 ? 'pass' : 'pending' },
-                    { key: 'docs', label: 'Documents & Visual', sub: 'Vision × Trade Sync', icon: '👁️', color: 'text-sky-400', bgColor: 'bg-sky-500/10', status: p6 ? 'pass' : 'pending' },
-                    { key: 'weather', label: 'Weather & Conditions', sub: 'Alerts × Readiness', icon: '🌦️', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', status: p7 ? 'pass' : 'pending' },
-                    { key: 'financial', label: 'Financial Summary', sub: 'Sync + Tax Audit', icon: '💰', color: 'text-red-400', bgColor: 'bg-red-500/10', status: p8 ? 'pass' : 'pending' },
-                  ];
-                })().map((pillar, i) => (
-                  <motion.div
-                    key={pillar.key}
-                    className={cn(
-                      "flex items-center gap-2 px-2 py-1 rounded-lg border transition-all",
-                      pillar.status === 'pass' 
-                        ? "border-emerald-800/30 bg-emerald-950/20" 
-                        : "border-amber-800/30 bg-amber-950/10"
-                    )}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 + i * 0.08 }}
-                  >
-                    <span className="text-[11px]">{pillar.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <span className={cn("text-[9px] font-medium block truncate leading-tight", pillar.color)}>
-                        {pillar.label}
-                      </span>
-                      <span className="text-[7px] text-white/30 block truncate leading-tight">
-                        {pillar.sub}
-                      </span>
-                    </div>
-                    {pillar.status === 'pass' ? (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 1 + i * 0.08, type: 'spring' }}
-                      >
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        <Circle className="h-3 w-3 text-amber-500/60" />
-                      </motion.div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Score bar */}
-              {(() => {
-                const passCount = [
-                  !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                  !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                  !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                  !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                  !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                  !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                  !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                  ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                ].filter(Boolean).length;
-                const pct = (passCount / 8) * 100;
-                return (
-                  <div className="pt-1">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[8px] font-mono text-emerald-500/70 uppercase tracking-widest">DNA Score</span>
-                      <span className={cn(
-                        "text-[10px] font-bold font-mono",
-                        pct === 100 ? "text-emerald-400" : pct >= 60 ? "text-amber-400" : "text-red-400"
-                      )}>
-                        {passCount}/8
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
-                      <motion.div
-                        className={cn(
-                          "h-full rounded-full",
-                          pct === 100 ? "bg-gradient-to-r from-emerald-500 to-green-400" 
-                            : pct >= 60 ? "bg-gradient-to-r from-amber-500 to-yellow-400" 
-                            : "bg-gradient-to-r from-red-500 to-orange-400"
-                        )}
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 1, delay: 1.2, ease: 'easeOut' }}
-                      />
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </motion.div>
+            className="absolute bottom-3 right-3 w-[200px] z-30 rounded-xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group shadow-xl"
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ duration: 0.5, delay: 0.7 }}
+             whileHover={{ scale: 1.03, borderColor: 'rgba(16,185,129,0.5)' }}
+             onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+           >
+             <motion.div
+               className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent pointer-events-none"
+               animate={{ top: ['0%', '100%', '0%'] }}
+               transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+             />
+             <div className="p-2.5 space-y-1.5">
+               <div className="flex items-center gap-2">
+                 <motion.div
+                   className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center"
+                   animate={{ boxShadow: ['0 0 0px rgba(16,185,129,0)', '0 0 10px rgba(16,185,129,0.4)', '0 0 0px rgba(16,185,129,0)'] }}
+                   transition={{ duration: 2.5, repeat: Infinity }}
+                 >
+                   <Sparkles className="h-3 w-3 text-emerald-400" />
+                 </motion.div>
+                 <div className="flex-1 min-w-0">
+                   <span className="text-[10px] font-display font-bold tracking-wide text-emerald-300">
+                     MESSA <span className="text-amber-400">DNA</span>
+                   </span>
+                 </div>
+                 {(() => {
+                   const passCount = [
+                     !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
+                     !!citations.find(c => c.cite_type === 'GFA_LOCK'),
+                     !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
+                     !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
+                     !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
+                     !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+                     !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
+                     ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
+                   ].filter(Boolean).length;
+                   const pct = (passCount / 8) * 100;
+                   return (
+                     <span className={cn(
+                       "text-[10px] font-bold font-mono",
+                       pct === 100 ? "text-emerald-400" : pct >= 60 ? "text-amber-400" : "text-red-400"
+                     )}>
+                       {passCount}/8
+                     </span>
+                   );
+                 })()}
+               </div>
+               {/* Compact score bar */}
+               {(() => {
+                 const passCount = [
+                   !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
+                   !!citations.find(c => c.cite_type === 'GFA_LOCK'),
+                   !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
+                   !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
+                   !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
+                   !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+                   !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
+                   ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
+                 ].filter(Boolean).length;
+                 const pct = (passCount / 8) * 100;
+                 return (
+                   <div className="h-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
+                     <motion.div
+                       className={cn(
+                         "h-full rounded-full",
+                         pct === 100 ? "bg-gradient-to-r from-emerald-500 to-green-400"
+                           : pct >= 60 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                           : "bg-gradient-to-r from-red-500 to-orange-400"
+                       )}
+                       initial={{ width: '0%' }}
+                       animate={{ width: `${pct}%` }}
+                       transition={{ duration: 1, delay: 1.2, ease: 'easeOut' }}
+                     />
+                   </div>
+                 );
+               })()}
+             </div>
+           </motion.div>
         </div>
 
         {/* Mobile/Tablet: Tab-based layout */}
