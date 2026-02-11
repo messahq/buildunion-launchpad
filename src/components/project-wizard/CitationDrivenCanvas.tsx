@@ -6,7 +6,7 @@
 
 import { forwardRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MapPin, Home, Ruler, Wrench, FileText, Lock, DollarSign, Hammer } from "lucide-react";
+import { Sparkles, MapPin, Home, Ruler, Wrench, FileText, Lock, DollarSign, Hammer, Image, FileUp } from "lucide-react";
 import { Citation, CITATION_TYPES } from "@/types/citation";
 import { cn } from "@/lib/utils";
 
@@ -206,18 +206,33 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
               />
             )}
 
-            {organizedCitations.others.map((citation) => (
-              <MiniCitationCard
-                key={citation.id}
-                citation={citation}
-                icon={citation.cite_type === CITATION_TYPES.SITE_CONDITION ? Hammer : FileText}
-                label={citation.cite_type.replace(/_/g, ' ')}
-                value={String(citation.answer || '—')}
-                color={citation.cite_type === CITATION_TYPES.SITE_CONDITION ? 'bg-orange-500' : 'bg-violet-500'}
-                isHighlighted={highlightedCitationId === citation.id}
-                onCitationClick={onCitationClick}
-              />
-            ))}
+            {organizedCitations.others.map((citation) => {
+              const getIconAndColor = () => {
+                switch (citation.cite_type) {
+                  case CITATION_TYPES.SITE_CONDITION:
+                    return { icon: Hammer, color: 'bg-orange-500', label: 'Site Condition' };
+                  case CITATION_TYPES.BLUEPRINT_UPLOAD:
+                    return { icon: FileUp, color: 'bg-cyan-600', label: 'Blueprint' };
+                  case CITATION_TYPES.SITE_PHOTO:
+                    return { icon: Image, color: 'bg-teal-500', label: 'Site Photo' };
+                  default:
+                    return { icon: FileText, color: 'bg-violet-500', label: citation.cite_type.replace(/_/g, ' ') };
+                }
+              };
+              const { icon, color, label } = getIconAndColor();
+              return (
+                <MiniCitationCard
+                  key={citation.id}
+                  citation={citation}
+                  icon={icon}
+                  label={label}
+                  value={String(citation.answer || '—')}
+                  color={color}
+                  isHighlighted={highlightedCitationId === citation.id}
+                  onCitationClick={onCitationClick}
+                />
+              );
+            })}
           </div>
         )}
       </div>
