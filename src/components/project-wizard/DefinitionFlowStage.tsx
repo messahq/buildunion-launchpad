@@ -2437,22 +2437,12 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       <div
         ref={ref}
         className={cn(
-          "h-full overflow-hidden",
-          // Mobile: vertical stack (template top, chat bottom)
-          // Desktop: horizontal split (chat left, template right)
-          "flex flex-col md:flex-row",
+          "h-full overflow-hidden flex",
           className
         )}
       >
-        {/* LEFT PANEL (Desktop) / BOTTOM (Mobile) - Chat (INPUT) */}
-        <div className={cn(
-          // Mobile: at bottom, compact height when template visible
-          "order-2 md:order-1",
-          "md:w-[380px] lg:w-[420px] md:flex-shrink-0",
-          "border-t md:border-t-0 md:border-r border-amber-200/50 dark:border-amber-800/30",
-          // Mobile height control
-          selectedTrade ? "h-[260px] md:h-full" : "flex-1 md:h-full"
-        )}>
+        {/* LEFT PANEL - Chat (INPUT) - matches Stage 1 layout exactly */}
+        <div className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col h-full">
           <ChatPanel
             currentSubStep={currentSubStep}
             gfaValue={gfaValue}
@@ -2490,23 +2480,17 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           />
         </div>
         
-        {/* RIGHT PANEL (Desktop) / TOP (Mobile) - CitationDrivenCanvas + Template (OUTPUT) */}
-        <div className={cn(
-          "order-1 md:order-2",
-          "flex-1 min-h-0 flex flex-col overflow-y-auto",
-          stage5Active 
-            ? "border-b md:border-b-0 border-purple-200/50 dark:border-purple-800/30"
-            : "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
-        )}>
-          {/* Cumulative CitationDrivenCanvas - shows all previous answers */}
-          <div className={cn("shrink-0", selectedTrade ? "max-h-[40%] overflow-y-auto" : "flex-1")}>
+        {/* RIGHT PANEL - Canvas (OUTPUT) - matches Stage 1 layout exactly */}
+        <div className="hidden md:flex flex-1 flex-col h-full overflow-y-auto">
+          {/* CitationDrivenCanvas - shows all previous answers from Stage 1 & 2 */}
+          <div className={cn("shrink-0", selectedTrade ? "max-h-[40%] overflow-y-auto border-b border-amber-200/50 dark:border-amber-800/30" : "flex-1")}>
             <CitationDrivenCanvas
               citations={existingCitations || []}
               onCitationClick={onCitationClick}
             />
           </div>
           
-          {/* Template Card or Upload Panel - appears below citations when trade is selected */}
+          {/* Template Card / Upload Panel - appears below citations when trade selected */}
           {stage5Active ? (
             <div className="flex-1 min-h-0">
               <VisualUploadCanvasPanel
