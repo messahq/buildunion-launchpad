@@ -5,6 +5,7 @@
 
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { buildUnionPdfHeader, buildUnionPdfFooter } from './pdfGenerator';
 
 // HTML escape function to prevent XSS
 const escapeHtml = (text: string | number | null | undefined): string => {
@@ -461,21 +462,17 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       </style>
     </head>
     <body>
-      <!-- MESSA Style Header -->
-      <div class="header pdf-section">
-        <div class="header-left">
-          <div class="brand-name">${escapeHtml(data.contractor.name) || 'M.E.S.S.A.'}</div>
-          <div class="doc-type">Cost Breakdown</div>
-          <div class="project-title">${escapeHtml(data.projectName)}</div>
-        </div>
-        <div class="header-right">
-          <div class="date">${currentDate}</div>
-          <div class="province">${escapeHtml(provinceCode)}</div>
-          <div class="phone">${escapeHtml(data.contractor.phone)}</div>
-          <div class="detail" style="font-size: 12px; color: #4b5563;">${escapeHtml(data.contractor.email)}</div>
-          <div class="location">${escapeHtml(data.projectAddress?.split(',')[0] || data.contractor.address?.split(',')[0] || '')}</div>
-        </div>
-      </div>
+      <!-- BUILDUNION HEADER -->
+      ${buildUnionPdfHeader({
+        docType: 'M.E.S.S.A. Cost Breakdown',
+        contractorName: data.contractor.name,
+        contractorPhone: data.contractor.phone,
+        contractorEmail: data.contractor.email,
+        contractorWebsite: data.contractor.website,
+        docNumber: data.invoiceNumber,
+      })}
+      
+      <div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:16px;">${escapeHtml(data.projectName)} · ${escapeHtml(data.projectAddress?.split(',')[0] || '')}</div>
       
       <!-- Prepared For Section -->
       <div class="prepared-for pdf-section">
@@ -602,17 +599,11 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
         </div>
       </div>
       
-      <!-- Footer -->
-      <div class="footer">
-        <div>
-          <span class="footer-brand">${escapeHtml(data.contractor.name) || 'M.E.S.S.A.'}</span>
-          <span style="margin-left: 12px;">${escapeHtml(data.contractor.phone)}</span>
-          <span style="margin-left: 8px; color: #6b7280;">${escapeHtml(data.contractor.email)}</span>
-        </div>
-        <div class="footer-badge">
-          Licensed & Insured • ${shortDate}
-        </div>
-      </div>
+      <!-- BUILDUNION FOOTER -->
+      ${buildUnionPdfFooter({
+        contractorName: data.contractor.name,
+        docNumber: `Invoice #${data.invoiceNumber}`,
+      })}
     </body>
     </html>
   `;
@@ -641,7 +632,7 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<Blob> => {
     const usablePageHeightPx = (pageHeight - margin * 2) * pxPerMm;
 
     // Adjust sections to avoid page-break splits
-    const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer');
+    const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer, .bu-pdf-header, .bu-pdf-footer');
     let cumulativeOffset = 0;
     sections.forEach((section) => {
       const el = section as HTMLElement;
@@ -651,11 +642,11 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<Blob> => {
       const pageStart = Math.floor(topInContainer / usablePageHeightPx);
       const bottomInContainer = topInContainer + rect.height;
       const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
-      if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.9) {
+      if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.80) {
         const nextPageTop = (pageStart + 1) * usablePageHeightPx;
         const spacerHeight = nextPageTop - topInContainer;
-        el.style.marginTop = `${spacerHeight + 12}px`;
-        cumulativeOffset += spacerHeight + 12;
+        el.style.marginTop = `${spacerHeight + 20}px`;
+        cumulativeOffset += spacerHeight + 20;
       }
     });
 
