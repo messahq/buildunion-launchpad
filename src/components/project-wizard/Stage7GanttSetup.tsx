@@ -27,6 +27,8 @@ import {
   ArrowUpDown,
   User,
   Trash2,
+  DollarSign,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +44,43 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays, addDays, parseISO } from "date-fns";
+
+// Template item from Stage 3 TEMPLATE_LOCK
+interface TemplateItem {
+  id: string;
+  name: string;
+  category: 'material' | 'labor';
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+// Map template items to phases based on category and name patterns
+function categorizeTemplateItem(item: TemplateItem): string {
+  const nameLower = item.name.toLowerCase();
+  
+  // Demolition-related → demolition phase
+  if (nameLower.includes('demolition') || nameLower.includes('demo') || nameLower.includes('removal')) {
+    return 'demolition';
+  }
+  
+  // Surface prep, primer, underlayment → preparation
+  if (nameLower.includes('prep') || nameLower.includes('primer') || nameLower.includes('underlayment') || 
+      nameLower.includes('tape') || nameLower.includes('compound') || nameLower.includes('mesh') ||
+      nameLower.includes('rebar') || nameLower.includes('forming')) {
+    return 'preparation';
+  }
+  
+  // Finishing, QC, inspection, baseboard, trim → finishing
+  if (nameLower.includes('finish') || nameLower.includes('baseboard') || nameLower.includes('trim') ||
+      nameLower.includes('transition') || nameLower.includes('touch') || nameLower.includes('qc')) {
+    return 'finishing';
+  }
+  
+  // Everything else (main materials + installation labor) → installation
+  return 'installation';
+}
 
 // Phase definitions with logical work breakdown
 const PHASE_DEFINITIONS = [
@@ -124,6 +163,8 @@ interface PhaseTask {
   durationDays: number;
   isVerificationNode: boolean;
   verificationStatus: 'pending' | 'uploaded' | 'verified';
+  isSubTask?: boolean; // Template-derived sub-task
+  templateItemCost?: number; // Cost from template item
 }
 
 interface Stage7GanttSetupProps {
@@ -152,6 +193,9 @@ export default function Stage7GanttSetup({
   
   // Tasks organized by phase
   const [phaseTasks, setPhaseTasks] = useState<PhaseTask[]>([]);
+  
+  // Template items from Stage 3
+  const [templateItems, setTemplateItems] = useState<TemplateItem[]>([]);
   
   // Load project data on mount
   useEffect(() => {
@@ -197,6 +241,15 @@ export default function Stage7GanttSetup({
           
           // Check if demolition is needed
           setHasDemolition(siteConditionCite?.value === 'demolition');
+          
+          // 1b. Extract TEMPLATE_LOCK items
+          const templateLockCite = facts.find((f) => f.cite_type === 'TEMPLATE_LOCK') as Record<string, unknown> | undefined;
+          if (templateLockCite?.metadata) {
+            const meta = templateLockCite.metadata as Record<string, unknown>;
+            if (Array.isArray(meta.items)) {
+              setTemplateItems(meta.items as TemplateItem[]);
+            }
+          }
         }
         
         // 2. Load team members from project_members (accepted invites)
@@ -289,7 +342,7 @@ export default function Stage7GanttSetup({
     loadProjectData();
   }, [projectId, userId]);
   
-  // Generate phase tasks based on dates
+  // Generate phase tasks based on dates + template items
   useEffect(() => {
     if (!projectStartDate || !projectEndDate) return;
     
@@ -300,6 +353,14 @@ export default function Stage7GanttSetup({
     const activePhaseDefs = hasDemolition 
       ? PHASE_DEFINITIONS 
       : PHASE_DEFINITIONS.filter(p => p.id !== 'demolition');
+    
+    // Categorize template items by phase
+    const itemsByPhase: Record<string, TemplateItem[]> = {};
+    templateItems.forEach(item => {
+      const phaseId = categorizeTemplateItem(item);
+      if (!itemsByPhase[phaseId]) itemsByPhase[phaseId] = [];
+      itemsByPhase[phaseId].push(item);
+    });
     
     // Recalculate percentages if no demolition
     const totalPercent = activePhaseDefs.reduce((sum, p) => sum + p.durationPercent, 0);
@@ -312,7 +373,7 @@ export default function Stage7GanttSetup({
       const phaseDays = Math.max(1, Math.round((adjustedPercent / 100) * totalDays));
       const phaseEndDate = addDays(currentDate, phaseDays);
       
-      // Main phase task
+      // Main phase task (header)
       const mainTask: PhaseTask = {
         id: `task_${phase.id}_main`,
         phaseId: phase.id,
@@ -326,6 +387,26 @@ export default function Stage7GanttSetup({
         verificationStatus: 'pending',
       };
       tasks.push(mainTask);
+      
+      // Template sub-tasks for this phase
+      const phaseTemplateItems = itemsByPhase[phase.id] || [];
+      phaseTemplateItems.forEach((item, subIdx) => {
+        const subTask: PhaseTask = {
+          id: `task_${phase.id}_template_${item.id}`,
+          phaseId: phase.id,
+          name: item.name,
+          assigneeId: null,
+          priority: 'medium',
+          startDate: currentDate,
+          endDate: phaseEndDate,
+          durationDays: phaseDays,
+          isVerificationNode: false,
+          verificationStatus: 'pending',
+          isSubTask: true,
+          templateItemCost: item.totalPrice,
+        };
+        tasks.push(subTask);
+      });
       
       // Verification node at end of phase
       if (phase.requiresVerification) {
@@ -348,7 +429,7 @@ export default function Stage7GanttSetup({
     });
     
     setPhaseTasks(tasks);
-  }, [projectStartDate, projectEndDate, hasDemolition]);
+  }, [projectStartDate, projectEndDate, hasDemolition, templateItems]);
   
   // Update task assignee
   const handleAssigneeChange = useCallback((taskId: string, assigneeId: string) => {
@@ -474,6 +555,17 @@ export default function Stage7GanttSetup({
     return grouped;
   }, [phaseTasks]);
   
+  // Calculate phase cost totals from template sub-tasks
+  const phaseCostTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    phaseTasks.forEach(task => {
+      if (task.isSubTask && task.templateItemCost) {
+        totals[task.phaseId] = (totals[task.phaseId] || 0) + task.templateItemCost;
+      }
+    });
+    return totals;
+  }, [phaseTasks]);
+  
   // Calculate total project duration
   const totalDays = useMemo(() => {
     if (!projectStartDate || !projectEndDate) return 0;
@@ -546,6 +638,7 @@ export default function Stage7GanttSetup({
           {Object.entries(tasksByPhase).map(([phaseId, tasks]) => {
             const phase = getPhaseById(phaseId);
             if (!phase) return null;
+            const phaseCost = phaseCostTotals[phaseId];
             
             return (
               <motion.div
@@ -558,11 +651,19 @@ export default function Stage7GanttSetup({
                   phase.borderColor
                 )}
               >
-                <div className="flex items-center gap-2">
-                  <div className={cn("h-3 w-3 rounded-full", phase.color)} />
-                  <h3 className={cn("font-semibold text-sm", phase.textColor)}>
-                    {phase.name}
-                  </h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn("h-3 w-3 rounded-full", phase.color)} />
+                    <h3 className={cn("font-semibold text-sm", phase.textColor)}>
+                      {phase.name}
+                    </h3>
+                  </div>
+                  {phaseCost > 0 && (
+                    <Badge variant="outline" className="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700">
+                      <DollarSign className="h-3 w-3 mr-0.5" />
+                      {phaseCost.toLocaleString()}
+                    </Badge>
+                  )}
                 </div>
                 
                 {tasks.map(task => (
@@ -572,26 +673,45 @@ export default function Stage7GanttSetup({
                       "bg-white/80 dark:bg-slate-900/80 rounded-lg p-3 space-y-2 border",
                       task.isVerificationNode 
                         ? "border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/30"
-                        : "border-slate-200 dark:border-slate-700"
+                        : task.isSubTask
+                          ? "border-dashed border-slate-300 dark:border-slate-600 ml-4"
+                          : "border-slate-200 dark:border-slate-700"
                     )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {task.isVerificationNode ? (
                           <Camera className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        ) : task.isSubTask ? (
+                          <Package className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         ) : (
                           <FileText className="h-4 w-4 text-slate-500" />
                         )}
-                        <span className="text-sm font-medium">{task.name}</span>
+                        <span className={cn("font-medium", task.isSubTask ? "text-xs" : "text-sm")}>{task.name}</span>
                       </div>
-                      {task.isVerificationNode && (
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700"
-                        >
-                          Verification
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {task.templateItemCost != null && task.templateItemCost > 0 && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                            ${task.templateItemCost.toLocaleString()}
+                          </span>
+                        )}
+                        {task.isVerificationNode && (
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700"
+                          >
+                            Verification
+                          </Badge>
+                        )}
+                        {task.isSubTask && (
+                          <Badge 
+                            variant="outline" 
+                            className="text-[10px] py-0 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+                          >
+                            Template
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2">
