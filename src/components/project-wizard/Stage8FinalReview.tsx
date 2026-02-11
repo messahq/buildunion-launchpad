@@ -1079,7 +1079,7 @@ export default function Stage8FinalReview({
         // 4. Load tasks and transform to checklist format
         let { data: tasksData } = await supabase
           .from('project_tasks')
-          .select('id, title, status, priority, description, assigned_to, due_date, created_at')
+          .select('id, title, status, priority, description, assigned_to, due_date, created_at, total_cost, unit_price, quantity')
           .eq('project_id', projectId)
           .is('archived_at', null);
         
@@ -1138,7 +1138,7 @@ export default function Stage8FinalReview({
             const { data: insertedTasks, error: insertErr } = await supabase
               .from('project_tasks')
               .insert(insertRows)
-              .select('id, title, status, priority, description, assigned_to, due_date, created_at');
+              .select('id, title, status, priority, description, assigned_to, due_date, created_at, total_cost, unit_price, quantity');
             
             if (!insertErr && insertedTasks) {
               tasksData = insertedTasks;
@@ -1183,7 +1183,7 @@ export default function Stage8FinalReview({
             
             const hasVerificationPhoto = taskPhotoIds.has(task.id);
             const isSubTask = descLower.includes('template sub-task');
-            const taskCost = (task as any).total_cost ? Number((task as any).total_cost) : null;
+            const taskCost = task.total_cost ? Number(task.total_cost) : null;
             
             return {
               id: task.id,
@@ -1192,8 +1192,8 @@ export default function Stage8FinalReview({
               priority: task.priority,
               phase,
               assigned_to: task.assigned_to,
-              due_date: (task as any).due_date || null,
-              created_at: (task as any).created_at || null,
+              due_date: task.due_date || null,
+              created_at: task.created_at || null,
               isSubTask,
               templateItemCost: taskCost,
               checklist: [
