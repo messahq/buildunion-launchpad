@@ -76,6 +76,7 @@ const TRADE_OPTIONS = [
   { key: 'flooring', label: 'Flooring', icon: Layers },
   { key: 'painting', label: 'Painting', icon: PaintBucket },
   { key: 'drywall', label: 'Drywall', icon: Building2 },
+  { key: 'concrete', label: 'Concrete', icon: Hammer },
   { key: 'custom', label: 'Custom', icon: Settings },
 ];
 
@@ -350,6 +351,22 @@ const ChatPanel = ({
                   <p className="text-sm text-foreground leading-relaxed">
                     What trade are we performing on this project?
                   </p>
+                  {/* Trade selection buttons directly under question */}
+                  {!selectedTrade && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {TRADE_OPTIONS.map((trade) => (
+                        <Button
+                          key={trade.key}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onTradeSelect(trade.key)}
+                          className="text-xs"
+                        >
+                          {trade.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </motion.div>
               
@@ -882,54 +899,13 @@ const ChatPanel = ({
         )}
       </div>
       
-      {/* Bottom Input Area - matches WizardChatInterface */}
-      <div className="p-4 border-t border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm shrink-0">
-        {!selectedTrade ? (
-          /* Trade Selection Grid - like work type selection in Stage 1 */
-          <div className="space-y-3">
-            <p className="text-xs text-amber-600 dark:text-amber-400 text-center font-medium">
-              Select the trade for this project
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {TRADE_OPTIONS.map((trade) => (
-                <motion.button
-                  key={trade.key}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => onTradeSelect(trade.key)}
-                  className="p-3 text-sm text-left rounded-lg border border-amber-200 dark:border-amber-800 bg-card hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/50 dark:hover:to-orange-950/50 hover:border-amber-400 dark:hover:border-amber-600 transition-all flex items-center gap-2"
-                >
-                  <trade.icon className="h-4 w-4 text-amber-500" />
-                  {trade.label}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        ) : !templateLocked ? (
-          /* Template lock prompt */
-          <div className="text-center py-2">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 text-amber-700 dark:text-amber-300"
-            >
-              <Lock className="h-4 w-4" />
-              <span className="text-sm font-medium">Lock template on the right to continue →</span>
-            </motion.div>
-          </div>
-        ) : (
-          /* Stage 4+ completion state */
-          <div className="text-center py-2">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 text-amber-700 dark:text-amber-300"
-            >
-              <Sparkles className="h-4 w-4" />
-              <span className="text-sm font-medium">Follow the steps above</span>
-            </motion.div>
-          </div>
-        )}
+      {/* Bottom Input Area */}
+      <div className="p-3 border-t border-amber-200/50 dark:border-amber-800/30 bg-background/80 backdrop-blur-sm shrink-0">
+        <Input
+          placeholder="Type a message..."
+          disabled
+          className="w-full"
+        />
       </div>
     </div>
   );
