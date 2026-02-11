@@ -9708,13 +9708,13 @@ export default function Stage8FinalReview({
       {/* Contract Template Dialog - Professional Full Preview with PDF & Send */}
       <Dialog open={showContractPreview} onOpenChange={setShowContractPreview}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="pb-4 border-b bg-gradient-to-r from-pink-50/80 to-rose-50/80 dark:from-pink-950/30 dark:to-rose-950/30 -mx-6 -mt-6 px-6 pt-6">
+          <DialogHeader className="pb-4 border-b bg-gradient-to-r from-violet-50/80 to-sky-50/80 dark:from-violet-950/30 dark:to-sky-950/30 -mx-6 -mt-6 px-6 pt-6">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center">
-                <FileCheck className="h-5 w-5 text-pink-600" />
+              <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
+                <FileCheck className="h-5 w-5 text-violet-600" />
               </div>
               <div className="flex-1">
-                <DialogTitle className="text-lg text-pink-700 dark:text-pink-300">
+                <DialogTitle className="text-lg text-violet-700 dark:text-violet-300">
                   {selectedContractType ? 
                     `${selectedContractType.charAt(0).toUpperCase() + selectedContractType.slice(1)} Contract` :
                     'Construction Contract'
@@ -9722,7 +9722,7 @@ export default function Stage8FinalReview({
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground">Contract #{generateContractPreviewData.contractNumber}</p>
               </div>
-              <Badge className="bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+              <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
                 {selectedContractType === 'residential' ? '🏠' : 
                  selectedContractType === 'commercial' ? '🏢' :
                  selectedContractType === 'industrial' ? '🏭' : '🔨'}
@@ -9771,8 +9771,8 @@ export default function Stage8FinalReview({
             
             {/* Section 2: Project Details */}
             <div className="p-4 rounded-lg bg-muted/50 border">
-              <h4 className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <span className="h-5 w-5 rounded-full bg-pink-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+              <h4 className="text-xs font-bold text-violet-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-violet-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
                 Project Description
               </h4>
               <div className="grid grid-cols-2 gap-4">
@@ -9785,8 +9785,8 @@ export default function Stage8FinalReview({
             
             {/* Section 3: Timeline (from citations) */}
             <div className="p-4 rounded-lg bg-muted/50 border">
-              <h4 className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <span className="h-5 w-5 rounded-full bg-pink-600 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+              <h4 className="text-xs font-bold text-violet-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-violet-600 text-white text-[10px] flex items-center justify-center font-bold">3</span>
                 Project Timeline
                 <Badge variant="outline" className="text-[8px] ml-auto">FROM CITATIONS</Badge>
               </h4>
@@ -9800,15 +9800,15 @@ export default function Stage8FinalReview({
 
             {/* Section 4: Financial (if available) */}
             {financialSummary && (financialSummary.total_cost ?? 0) > 0 && (
-              <div className="p-4 rounded-lg border-2 border-pink-200/60 dark:border-pink-700/30 bg-gradient-to-r from-pink-50/50 to-rose-50/50 dark:from-pink-950/10 dark:to-rose-950/10">
-                <h4 className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <span className="h-5 w-5 rounded-full bg-pink-600 text-white text-[10px] flex items-center justify-center font-bold">5</span>
+              <div className="p-4 rounded-lg border-2 border-violet-200/60 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/50 to-sky-50/50 dark:from-violet-950/10 dark:to-sky-950/10">
+                <h4 className="text-xs font-bold text-violet-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <span className="h-5 w-5 rounded-full bg-violet-600 text-white text-[10px] flex items-center justify-center font-bold">5</span>
                   Contract Value
                 </h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase">Total Value</p>
-                    <p className="font-bold text-xl text-pink-700 dark:text-pink-300">${(financialSummary.total_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="font-bold text-xl text-violet-700 dark:text-violet-300">${(financialSummary.total_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase">Materials</p>
@@ -9898,7 +9898,7 @@ export default function Stage8FinalReview({
             
             {/* Send Contract to Client */}
             <Button 
-              className="gap-2 bg-pink-600 hover:bg-pink-700"
+              className="gap-2 bg-violet-600 hover:bg-violet-700"
               disabled={isSendingContract || !clientEmail || !clientName}
               onClick={async () => {
                 // Validate email format
@@ -9970,9 +9970,38 @@ export default function Stage8FinalReview({
                   // Refresh contracts list
                   const { data: updatedContracts } = await supabase
                     .from('contracts')
-                    .select('id, contract_number, status, total_amount')
-                    .eq('project_id', projectId);
+                    .select('id, contract_number, status, total_amount, share_token, project_name, client_name, client_email, contractor_name, contractor_email, start_date, estimated_end_date, contractor_signature, client_signature, client_signed_at, sent_to_client_at, client_viewed_at')
+                    .eq('project_id', projectId)
+                    .is('archived_at', null);
                   if (updatedContracts) setContracts(updatedContracts);
+                  
+                  // Add CONTRACT citation immediately
+                  const newContractCitation: Citation = {
+                    id: `cite_contract_${newContract.id.slice(0, 8)}`,
+                    cite_type: 'CONTRACT' as any,
+                    question_key: `contract_new`,
+                    answer: `#${newContract.contract_number} — PENDING_CLIENT — Unsigned${financialSummary?.total_cost ? ` — $${financialSummary.total_cost.toLocaleString()}` : ''}`,
+                    value: 'pending_client',
+                    timestamp: new Date().toISOString(),
+                    metadata: {
+                      contract_id: newContract.id,
+                      contract_number: newContract.contract_number,
+                      status: 'pending_client',
+                      total_amount: financialSummary?.total_cost || 0,
+                      client_name: clientName,
+                      contractor_name: generateContractPreviewData.contractorName,
+                      client_signed: false,
+                      contractor_signed: false,
+                      sent_at: new Date().toISOString(),
+                      source: 'contract_engine',
+                    },
+                  };
+                  const citationsWithContract = [...citations, newContractCitation];
+                  setCitations(citationsWithContract);
+                  // Persist to verified_facts
+                  await supabase.from('project_summaries')
+                    .update({ verified_facts: citationsWithContract as any })
+                    .eq('project_id', projectId);
                   
                 } catch (err) {
                   console.error('Contract creation failed:', err);
