@@ -34,6 +34,7 @@ import {
   Image,
   FileImage,
   X,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -647,46 +648,36 @@ const ChatPanel = ({
               animate={{ opacity: 1, y: 0 }}
               className="flex justify-start"
             >
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="text-xs font-semibold">MESSA AI</span>
-                </div>
-                <p className="text-sm text-foreground mb-3">
-                  <strong>What's the site condition?</strong>
-                </p>
-                
-                {/* Site Condition buttons */}
-                <div className="grid grid-cols-2 gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onSiteConditionChange('clear')}
-                    className={cn(
-                      "p-3 rounded-xl border-2 transition-all text-left",
-                      siteCondition === 'clear'
-                        ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                        : "border-green-200 dark:border-green-800 hover:border-green-400"
-                    )}
-                  >
-                    <p className="font-medium text-sm">Clear Site</p>
-                    <p className="text-xs text-muted-foreground">Ready to work</p>
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onSiteConditionChange('demolition')}
-                    className={cn(
-                      "p-3 rounded-xl border-2 transition-all text-left",
-                      siteCondition === 'demolition'
-                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
-                        : "border-green-200 dark:border-green-800 hover:border-orange-400"
-                    )}
-                  >
-                    <p className="font-medium text-sm">Demolition Needed</p>
-                    <p className="text-xs text-orange-600 dark:text-orange-400">+${demolitionCost.toLocaleString()} (${demolitionUnitPrice.toFixed(2)}/sq ft)</p>
-                  </motion.button>
-                </div>
+               <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm">
+                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                   <Sparkles className="h-4 w-4" />
+                   <span className="text-xs font-semibold">MESSA AI</span>
+                 </div>
+                 <p className="text-sm text-foreground mb-3">
+                   <strong>What's the site condition?</strong>
+                 </p>
+                 
+                 {/* Site Condition buttons */}
+                 <div className="flex flex-wrap gap-2">
+                   <Button
+                     variant={siteCondition === 'clear' ? 'default' : 'outline'}
+                     size="sm"
+                     onClick={() => onSiteConditionChange('clear')}
+                     className="text-xs"
+                   >
+                     <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                     Clear Site
+                   </Button>
+                   <Button
+                     variant={siteCondition === 'demolition' ? 'default' : 'outline'}
+                     size="sm"
+                     onClick={() => onSiteConditionChange('demolition')}
+                     className="text-xs"
+                   >
+                     <Hammer className="h-3.5 w-3.5 mr-1.5" />
+                     Demolition (+${demolitionCost.toLocaleString()})
+                   </Button>
+                 </div>
               </div>
             </motion.div>
             
@@ -730,46 +721,36 @@ const ChatPanel = ({
               animate={{ opacity: 1, y: 0 }}
               className="flex justify-start"
             >
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="text-xs font-semibold">MESSA AI</span>
-                </div>
-                <p className="text-sm text-foreground mb-3">
-                  <strong>When do you want to start?</strong>
-                </p>
-                
-                {/* Timeline buttons */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onTimelineChange('asap')}
-                    className={cn(
-                      "p-3 rounded-xl border-2 transition-all text-left",
-                      timeline === 'asap'
-                        ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                        : "border-green-200 dark:border-green-800 hover:border-green-400"
-                    )}
-                  >
-                    <p className="font-medium text-sm">ASAP</p>
-                    <p className="text-xs text-muted-foreground">Start immediately</p>
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onTimelineChange('scheduled')}
-                    className={cn(
-                      "p-3 rounded-xl border-2 transition-all text-left",
-                      timeline === 'scheduled'
-                        ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                        : "border-green-200 dark:border-green-800 hover:border-green-400"
-                    )}
-                  >
-                    <p className="font-medium text-sm">Scheduled</p>
-                    <p className="text-xs text-muted-foreground">Pick a date</p>
-                  </motion.button>
-                </div>
+               <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm">
+                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                   <Sparkles className="h-4 w-4" />
+                   <span className="text-xs font-semibold">MESSA AI</span>
+                 </div>
+                 <p className="text-sm text-foreground mb-3">
+                   <strong>When do you want to start?</strong>
+                 </p>
+                 
+                 {/* Timeline buttons */}
+                 <div className="flex flex-wrap gap-2 mb-3">
+                   <Button
+                     variant={timeline === 'asap' ? 'default' : 'outline'}
+                     size="sm"
+                     onClick={() => onTimelineChange('asap')}
+                     className="text-xs"
+                   >
+                     <Zap className="h-3.5 w-3.5 mr-1.5" />
+                     ASAP
+                   </Button>
+                   <Button
+                     variant={timeline === 'scheduled' ? 'default' : 'outline'}
+                     size="sm"
+                     onClick={() => onTimelineChange('scheduled')}
+                     className="text-xs"
+                   >
+                     <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                     Scheduled
+                   </Button>
+                 </div>
                 
                 {/* Start Date Picker */}
                 {timeline === 'scheduled' && (
@@ -833,21 +814,21 @@ const ChatPanel = ({
                 )}
                 
                 {/* Show completion status - Stage 4 complete message (no finalize button yet) */}
-                {scheduledEndDate && !stage5Active && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800"
-                  >
-                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span className="text-sm font-medium">Execution details complete!</span>
-                    </div>
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      Continue to the next stage...
-                    </p>
-                  </motion.div>
-                )}
+                 {scheduledEndDate && !stage5Active && (
+                   <motion.div
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     className="p-3 bg-muted/50 rounded-xl border border-border"
+                   >
+                     <div className="flex items-center gap-2 text-foreground">
+                       <CheckCircle2 className="h-4 w-4 text-amber-500" />
+                       <span className="text-sm font-medium">Execution details complete!</span>
+                     </div>
+                     <p className="text-xs text-muted-foreground mt-1">
+                       Continue to the next stage...
+                     </p>
+                   </motion.div>
+                 )}
               </div>
             </motion.div>
           </>
