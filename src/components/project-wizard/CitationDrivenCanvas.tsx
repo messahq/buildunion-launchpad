@@ -1,15 +1,13 @@
 // ============================================
 // CITATION-DRIVEN CANVAS
 // ============================================
-// The Canvas that renders ONLY from citations
-// No hardcoded data - everything comes from the Source of Truth
+// Compact panels showing previously entered data
 // ============================================
 
 import { forwardRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { Sparkles, MapPin, Home, Ruler, Wrench, FileText } from "lucide-react";
 import { Citation, CITATION_TYPES } from "@/types/citation";
-import CitationRenderer from "./CitationRenderer";
 import { cn } from "@/lib/utils";
 
 interface CitationDrivenCanvasProps {
@@ -18,35 +16,65 @@ interface CitationDrivenCanvasProps {
   highlightedCitationId?: string | null;
   isLoading?: boolean;
   className?: string;
-  onGfaLocked?: boolean; // Trigger when GFA was just locked
+  onGfaLocked?: boolean;
 }
 
-/**
- * CitationDrivenCanvas - The pure, data-driven canvas
- * 
- * Principle: This component has ZERO hardcoded project data.
- * Everything rendered is driven by the citations array.
- * The rendering order and components are determined by cite_type.
- */
+const MiniCitationCard = ({ 
+  citation, 
+  icon: Icon, 
+  label, 
+  value, 
+  color,
+  isHighlighted, 
+  onCitationClick 
+}: { 
+  citation: Citation;
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  color: string;
+  isHighlighted?: boolean;
+  onCitationClick?: (id: string) => void;
+}) => (
+  <motion.button
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    whileHover={{ scale: 1.02 }}
+    onClick={() => onCitationClick?.(citation.id)}
+    className={cn(
+      "w-full text-left p-3 rounded-lg border transition-all",
+      "bg-card hover:shadow-md",
+      isHighlighted 
+        ? "ring-2 ring-amber-500 border-amber-400" 
+        : "border-border hover:border-amber-300 dark:hover:border-amber-700"
+    )}
+  >
+    <div className="flex items-center gap-2">
+      <div className={cn("h-7 w-7 rounded-md flex items-center justify-center shrink-0", color)}>
+        <Icon className="h-3.5 w-3.5 text-white" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
+        <p className="text-sm font-semibold text-foreground truncate">{value}</p>
+      </div>
+      <span className="text-[9px] font-mono text-muted-foreground/60 shrink-0">
+        {citation.id.slice(0, 6)}
+      </span>
+    </div>
+  </motion.button>
+);
+
 const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProps>(
-  ({ citations, onCitationClick, highlightedCitationId, isLoading, className, onGfaLocked }, ref) => {
+  ({ citations, onCitationClick, highlightedCitationId, isLoading, className }, ref) => {
     
-    // Organize citations by type for structured rendering
     const organizedCitations = useMemo(() => {
-      const knownTypes: string[] = [
-        CITATION_TYPES.PROJECT_NAME, 
-        CITATION_TYPES.LOCATION, 
-        CITATION_TYPES.WORK_TYPE, 
-        CITATION_TYPES.GFA_LOCK
-      ];
-      
+      const knownTypes = [CITATION_TYPES.PROJECT_NAME, CITATION_TYPES.LOCATION, CITATION_TYPES.WORK_TYPE, CITATION_TYPES.GFA_LOCK] as string[];
       return {
         projectName: citations.find(c => c.cite_type === CITATION_TYPES.PROJECT_NAME),
         location: citations.find(c => c.cite_type === CITATION_TYPES.LOCATION),
         workType: citations.find(c => c.cite_type === CITATION_TYPES.WORK_TYPE),
         gfa: citations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK),
-        others: citations.filter(c => !knownTypes.includes(c.cite_type)
-        ),
+        others: citations.filter(c => !knownTypes.includes(c.cite_type)),
       };
     }, [citations]);
 
@@ -56,113 +84,108 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
       <div 
         ref={ref} 
         className={cn(
-          "h-full bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 p-6 overflow-y-auto",
+          "bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 p-4 overflow-y-auto",
           className
         )}
       >
-        <div className="max-w-3xl mx-auto space-y-6">
-          
-          {/* Empty State */}
-          <AnimatePresence>
-            {isEmpty && !isLoading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="h-full flex items-center justify-center min-h-[400px]"
-              >
-                <div className="text-center space-y-4">
-                  <motion.div
-                    animate={{ 
-                      scale: [1, 1.05, 1],
-                      rotate: [0, 5, -5, 0]
-                    }}
-                    transition={{ repeat: Infinity, duration: 4 }}
-                    className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20"
-                  >
-                    <Sparkles className="h-10 w-10 text-amber-500" />
-                  </motion.div>
-                  <h3 className="text-xl font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-                    Citation-Driven Canvas
-                  </h3>
-                  <p className="text-amber-700/70 dark:text-amber-400/70 max-w-sm mx-auto">
-                    Answer questions to create verified citations. Each citation becomes a visual element on this canvas.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <AnimatePresence>
+          {isEmpty && !isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center min-h-[200px]"
+            >
+              <div className="text-center space-y-3">
+                <motion.div
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ repeat: Infinity, duration: 4 }}
+                  className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20"
+                >
+                  <Sparkles className="h-7 w-7 text-amber-500" />
+                </motion.div>
+                <p className="text-sm text-muted-foreground">
+                  Answer questions to build your project DNA
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          {/* Loading State */}
-          {isLoading && (
-            <div className="h-full flex items-center justify-center min-h-[400px]">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full"
+        {isLoading && (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+              className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full"
+            />
+          </div>
+        )}
+
+        {!isEmpty && !isLoading && (
+          <div className="grid grid-cols-2 gap-2">
+            {organizedCitations.projectName && (
+              <MiniCitationCard
+                citation={organizedCitations.projectName}
+                icon={Home}
+                label="Project"
+                value={String(organizedCitations.projectName.answer || '—')}
+                color="bg-amber-500"
+                isHighlighted={highlightedCitationId === organizedCitations.projectName.id}
+                onCitationClick={onCitationClick}
               />
-            </div>
-          )}
+            )}
 
-          {/* Render Order: Project Name -> Location -> Work Type -> GFA -> Others */}
-          {!isEmpty && !isLoading && (
-            <>
-              {/* Project Name Citation */}
-              {organizedCitations.projectName && (
-                <CitationRenderer
-                  citation={organizedCitations.projectName}
-                  onCitationClick={onCitationClick}
-                  isHighlighted={highlightedCitationId === organizedCitations.projectName.id}
-                />
-              )}
+            {organizedCitations.location && (
+              <MiniCitationCard
+                citation={organizedCitations.location}
+                icon={MapPin}
+                label="Location"
+                value={String(organizedCitations.location.answer || '—')}
+                color="bg-red-500"
+                isHighlighted={highlightedCitationId === organizedCitations.location.id}
+                onCitationClick={onCitationClick}
+              />
+            )}
 
-              {/* Two-Column Grid for Location & Work Type */}
-              {(organizedCitations.location || organizedCitations.workType) && (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {organizedCitations.location && (
-                    <CitationRenderer
-                      citation={organizedCitations.location}
-                      onCitationClick={onCitationClick}
-                      isHighlighted={highlightedCitationId === organizedCitations.location.id}
-                    />
-                  )}
-                  {organizedCitations.workType && (
-                    <CitationRenderer
-                      citation={organizedCitations.workType}
-                      onCitationClick={onCitationClick}
-                      isHighlighted={highlightedCitationId === organizedCitations.workType.id}
-                      gfaValue={organizedCitations.gfa?.metadata?.gfa_value as number | undefined}
-                      onGfaLocked={onGfaLocked}
-                    />
-                  )}
-                </div>
-              )}
+            {organizedCitations.workType && (
+              <MiniCitationCard
+                citation={organizedCitations.workType}
+                icon={Wrench}
+                label="Work Type"
+                value={String(organizedCitations.workType.answer || '—')}
+                color="bg-blue-500"
+                isHighlighted={highlightedCitationId === organizedCitations.workType.id}
+                onCitationClick={onCitationClick}
+              />
+            )}
 
-              {/* GFA Lock - Full Width */}
-              {organizedCitations.gfa && (
-                <CitationRenderer
-                  citation={organizedCitations.gfa}
-                  onCitationClick={onCitationClick}
-                  isHighlighted={highlightedCitationId === organizedCitations.gfa.id}
-                />
-              )}
+            {organizedCitations.gfa && (
+              <MiniCitationCard
+                citation={organizedCitations.gfa}
+                icon={Ruler}
+                label="GFA (Locked)"
+                value={`${Number(organizedCitations.gfa.metadata?.gfa_value || organizedCitations.gfa.answer || 0).toLocaleString()} sq ft`}
+                color="bg-emerald-500"
+                isHighlighted={highlightedCitationId === organizedCitations.gfa.id}
+                onCitationClick={onCitationClick}
+              />
+            )}
 
-              {/* Other Citations */}
-              {organizedCitations.others.length > 0 && (
-                <div className="space-y-4">
-                  {organizedCitations.others.map((citation) => (
-                    <CitationRenderer
-                      key={citation.id}
-                      citation={citation}
-                      onCitationClick={onCitationClick}
-                      isHighlighted={highlightedCitationId === citation.id}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {organizedCitations.others.map((citation) => (
+              <MiniCitationCard
+                key={citation.id}
+                citation={citation}
+                icon={FileText}
+                label={citation.cite_type.replace(/_/g, ' ')}
+                value={String(citation.answer || '—')}
+                color="bg-violet-500"
+                isHighlighted={highlightedCitationId === citation.id}
+                onCitationClick={onCitationClick}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
