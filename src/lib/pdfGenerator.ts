@@ -26,7 +26,7 @@ const escapeHtml = (text: string | number | null | undefined): string => {
 // Helper: adjust sections so none are split across page boundaries
 const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usablePageHeightPx: number) => {
   // Get all sections that should not be split across pages
-  const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer, .terms, .grid-2, .parties-grid, .party-box, .data-grid, .financial-highlight, .clause, .preamble, .contract-header');
+  const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer, .terms, .grid-2, .parties-grid, .party-box, .data-grid, .financial-highlight, .clause, .preamble, .contract-header, .bu-pdf-header, .bu-pdf-footer');
   let cumulativeOffset = 0;
 
   sections.forEach((section) => {
@@ -42,13 +42,67 @@ const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usab
     const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
 
     // If the section spans two pages and it's small enough to fit on one page
-    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.85) {
+    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.80) {
       const nextPageTop = (pageStart + 1) * usablePageHeightPx;
       const spacerHeight = nextPageTop - topInContainer;
-      el.style.marginTop = `${spacerHeight + 16}px`;
-      cumulativeOffset += spacerHeight + 16;
+      el.style.marginTop = `${spacerHeight + 20}px`;
+      cumulativeOffset += spacerHeight + 20;
     }
   });
+};
+
+// ============================================
+// BUILDUNION PDF HEADER & FOOTER SNIPPETS
+// ============================================
+export const buildUnionPdfHeader = (opts: {
+  docType: string;
+  contractorName?: string;
+  contractorPhone?: string;
+  contractorEmail?: string;
+  contractorWebsite?: string;
+  docNumber?: string;
+  dateStr?: string;
+}) => {
+  const date = opts.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return `
+    <div class="bu-pdf-header pdf-section" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2.5px solid #f59e0b;">
+      <div>
+        <div style="font-size:28px;font-weight:300;letter-spacing:-0.5px;line-height:1.1;">
+          <span style="color:#1f2937;">Build</span><span style="color:#f59e0b;font-weight:700;">Union</span>
+        </div>
+        ${opts.contractorName ? `<div style="font-size:13px;color:#4b5563;margin-top:4px;font-weight:500;">${escapeHtml(opts.contractorName)}</div>` : ''}
+        <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${escapeHtml(opts.docType)}</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#4b5563;">
+        ${opts.docNumber ? `<div style="font-weight:600;color:#1f2937;">#${escapeHtml(opts.docNumber)}</div>` : ''}
+        <div>${date}</div>
+        ${opts.contractorPhone ? `<div style="margin-top:2px;">${escapeHtml(opts.contractorPhone)}</div>` : ''}
+        ${opts.contractorEmail ? `<div style="color:#6b7280;font-size:11px;">${escapeHtml(opts.contractorEmail)}</div>` : ''}
+        ${opts.contractorWebsite ? `<div style="color:#6b7280;font-size:10px;">${escapeHtml(opts.contractorWebsite)}</div>` : ''}
+      </div>
+    </div>
+  `;
+};
+
+export const buildUnionPdfFooter = (opts: {
+  contractorName?: string;
+  docNumber?: string;
+  dateStr?: string;
+}) => {
+  const date = opts.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return `
+    <div class="bu-pdf-footer pdf-section" style="margin-top:36px;padding-top:14px;border-top:1.5px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#9ca3af;font-family:system-ui,sans-serif;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;font-weight:300;"><span style="color:#374151;">Build</span><span style="color:#f59e0b;font-weight:700;">Union</span></span>
+        ${opts.contractorName ? `<span style="color:#6b7280;">· ${escapeHtml(opts.contractorName)}</span>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        ${opts.docNumber ? `<span>${escapeHtml(opts.docNumber)}</span>` : ''}
+        <span>${date}</span>
+        <span style="background:#f3f4f6;padding:2px 8px;border-radius:3px;font-size:9px;">Licensed & Insured</span>
+      </div>
+    </div>
+  `;
 };
 
 export const generatePDFBlob = async (
@@ -173,20 +227,23 @@ export const buildProjectSummaryHTML = (data: {
     <head>
       <meta charset="UTF-8">
       <style>
-        body { font-family: system-ui, -apple-system, sans-serif; color: #1e293b; line-height: 1.5; }
-        .header { text-align: center; margin-bottom: 24px; }
-        .section { margin-bottom: 24px; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; color: #1e293b; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 32px 40px; font-size: 14px; }
+        .pdf-section { break-inside: avoid; page-break-inside: avoid; }
+        .section { margin-bottom: 24px; break-inside: avoid; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #f1f5f9; padding: 12px; text-align: left; }
       </style>
     </head>
     <body>
-      <div class="header">
-        <h1 style="margin: 0; font-size: 24px;">${escapeHtml(companyName || 'BuildUnion')}</h1>
-        <p style="color: #64748b; margin: 8px 0;">Quote #${escapeHtml(quoteNumber)} • ${escapeHtml(currentDate)}</p>
-      </div>
+      ${buildUnionPdfHeader({
+        docType: 'Project Quote',
+        companyName: companyName || undefined,
+        contractorName: companyName || undefined,
+        docNumber: quoteNumber,
+      } as any)}
       
-      <div class="section">
+      <div class="section pdf-section">
         <h3 style="margin: 0 0 12px 0;">Client Information</h3>
         <p style="margin: 4px 0;"><strong>Name:</strong> ${escapeHtml(clientInfo.name)}</p>
         <p style="margin: 4px 0;"><strong>Email:</strong> ${escapeHtml(clientInfo.email)}</p>
@@ -194,7 +251,7 @@ export const buildProjectSummaryHTML = (data: {
         <p style="margin: 4px 0;"><strong>Address:</strong> ${escapeHtml(clientInfo.address)}</p>
       </div>
       
-      <div class="section">
+      <div class="section pdf-section">
         <h3 style="margin: 0 0 12px 0;">Materials & Services</h3>
         <table>
           <thead>
@@ -212,17 +269,22 @@ export const buildProjectSummaryHTML = (data: {
         </table>
       </div>
       
-      <div style="text-align: right; margin-top: 24px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+      <div class="pdf-section" style="text-align: right; margin-top: 24px; padding: 16px; background: #f8fafc; border-radius: 8px;">
         <p style="margin: 4px 0;"><strong>Subtotal:</strong> ${formatCurrency(materialTotal)}</p>
         <p style="margin: 8px 0; font-size: 20px;"><strong>Total:</strong> ${formatCurrency(grandTotal)}</p>
       </div>
       
       ${notes ? `
-        <div class="section" style="margin-top: 24px;">
+        <div class="section pdf-section" style="margin-top: 24px;">
           <h3 style="margin: 0 0 12px 0;">Notes</h3>
           <p style="color: #64748b;">${escapeHtml(notes)}</p>
         </div>
       ` : ''}
+      
+      ${buildUnionPdfFooter({
+        contractorName: companyName || undefined,
+        docNumber: `Quote #${quoteNumber}`,
+      })}
     </body>
     </html>
   `;
@@ -619,8 +681,17 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
       </style>
     </head>
     <body>
-      <!-- HEADER -->
-      <div class="contract-header pdf-section">
+      <!-- BUILDUNION HEADER -->
+      ${buildUnionPdfHeader({
+        docType: config.title,
+        contractorName: data.contractorName,
+        contractorPhone: data.contractorPhone,
+        contractorEmail: data.contractorEmail,
+        docNumber: data.contractNumber,
+      })}
+
+      <!-- CONTRACT TYPE BADGE -->
+      <div class="contract-header pdf-section" style="border-bottom:none;margin-bottom:16px;padding-bottom:8px;">
         ${data.contractorLogo ? `<img src="${data.contractorLogo}" alt="Logo" style="max-height: 48px; margin-bottom: 8px;" />` : ''}
         <div class="type-badge">${config.icon} ${escapeHtml(data.contractType)}</div>
         <h1>${config.title}</h1>
@@ -864,13 +935,13 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
         </div>
       </div>
 
-      <!-- FOOTER -->
-      <div class="contract-footer pdf-section">
-        <p>${escapeHtml(data.contractorName || 'BuildUnion')} &mdash; Professional Construction Management</p>
-        <p class="legal-note">This document is intended for use as a construction contract template. 
-        Both parties acknowledge they have read, understood, and agree to be bound by the terms set forth herein. 
-        It is recommended that both parties seek independent legal counsel before executing this Agreement.</p>
-        <p style="margin-top: 6px;">Contract #${escapeHtml(data.contractNumber)} &nbsp;&bull;&nbsp; ${currentDate}</p>
+      <!-- BUILDUNION FOOTER -->
+      ${buildUnionPdfFooter({
+        contractorName: data.contractorName,
+        docNumber: `Contract #${data.contractNumber}`,
+      })}
+      <div style="text-align:center;font-size:9px;color:#aaa;font-style:italic;margin-top:8px;font-family:system-ui,sans-serif;">
+        This document is intended for use as a construction contract. Both parties acknowledge they have read, understood, and agree to be bound by the terms set forth herein. Independent legal counsel is recommended.
       </div>
     </body>
     </html>
