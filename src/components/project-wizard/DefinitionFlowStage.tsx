@@ -4,10 +4,11 @@
 // Stage 3: Trade Selection → Template Review → Lock Template
 // Stage 4: Execution Flow (Solo/Team → Site Condition → Start Date → Final Lock)
 // LEFT PANEL: Chat with AI questions and selection buttons (INPUT)
-// RIGHT PANEL: Template cards and visualizations (OUTPUT)
+// RIGHT PANEL: CitationDrivenCanvas (cumulative) + Template cards (OUTPUT)
 // ============================================
 
 import { useState, useCallback, useEffect, forwardRef, useRef } from "react";
+import CitationDrivenCanvas from "./CitationDrivenCanvas";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Hammer,
@@ -2489,33 +2490,25 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           />
         </div>
         
-        {/* RIGHT PANEL (Desktop) / TOP (Mobile) - Canvas/Template (OUTPUT) */}
+        {/* RIGHT PANEL (Desktop) / TOP (Mobile) - CitationDrivenCanvas + Template (OUTPUT) */}
         <div className={cn(
           "order-1 md:order-2",
-          "flex-1 min-h-0 flex flex-col",
+          "flex-1 min-h-0 flex flex-col overflow-y-auto",
           stage5Active 
             ? "border-b md:border-b-0 border-purple-200/50 dark:border-purple-800/30"
             : "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
         )}>
-          {/* Cumulative Summary Bar */}
-          <CumulativeSummaryBar
-            existingCitations={existingCitations}
-            gfaValue={gfaValue}
-            selectedTrade={selectedTrade}
-            templateLocked={templateLocked}
-            teamSize={teamSize}
-            teamMembers={teamMembers}
-            siteCondition={siteCondition}
-            timeline={timeline}
-            scheduledDate={scheduledDate}
-            scheduledEndDate={scheduledEndDate}
-            grandTotal={grandTotal}
-            onCitationClick={onCitationClick}
-          />
+          {/* Cumulative CitationDrivenCanvas - shows all previous answers */}
+          <div className={cn("shrink-0", selectedTrade ? "max-h-[40%] overflow-y-auto" : "flex-1")}>
+            <CitationDrivenCanvas
+              citations={existingCitations || []}
+              onCitationClick={onCitationClick}
+            />
+          </div>
           
-          {/* Main Canvas Content */}
-          <div className="flex-1 min-h-0">
-            {stage5Active ? (
+          {/* Template Card or Upload Panel - appears below citations when trade is selected */}
+          {stage5Active ? (
+            <div className="flex-1 min-h-0">
               <VisualUploadCanvasPanel
                 gfaValue={gfaValue}
                 selectedTrade={selectedTrade || ''}
@@ -2528,7 +2521,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
                 onSkipUpload={handleSkipUpload}
                 onConfirmUploads={handleConfirmUploads}
               />
-            ) : selectedTrade ? (
+            </div>
+          ) : selectedTrade ? (
+            <div className="flex-1 min-h-0">
               <CanvasPanel
                 currentSubStep={currentSubStep}
                 selectedTrade={selectedTrade}
@@ -2558,34 +2553,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
                 isSaving={isSaving}
                 templateLocked={templateLocked}
               />
-            ) : (
-              /* Pre-trade selection canvas placeholder */
-              <div className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-b from-amber-50/30 to-orange-50/20 dark:from-amber-950/10 dark:to-orange-950/10">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className="text-center max-w-md"
-                >
-                  <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/20">
-                    <Hammer className="h-10 w-10 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground mb-2">Select Your Trade</h3>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Choose a trade from the chat panel to generate your project template with cost calculations based on <strong>{gfaValue.toLocaleString()} sq ft</strong>
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {TRADE_OPTIONS.map(trade => (
-                      <div key={trade.key} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100/60 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                        <trade.icon className="h-3.5 w-3.5 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{trade.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
     );
