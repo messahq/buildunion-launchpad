@@ -280,123 +280,76 @@ const ChatPanel = ({
   };
   
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-slate-50/50 via-background to-slate-100/30 dark:from-slate-950/30 dark:via-background dark:to-slate-900/20">
-      {/* Chat Header */}
-      <div className={cn(
-        "p-4 border-b shrink-0",
-        isStage5 
-          ? "border-purple-200/50 dark:border-purple-800/30 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 dark:from-purple-950/30 dark:to-indigo-950/30"
-          : isStage4 
-            ? "border-green-200/50 dark:border-green-800/30 bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-950/30 dark:to-emerald-950/30"
-            : "border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30"
-      )}>
+    <div className="h-full flex flex-col bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10">
+      {/* Chat Header - matches WizardChatInterface exactly */}
+      <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "h-10 w-10 rounded-full flex items-center justify-center shadow-lg",
-            isStage5
-              ? "bg-gradient-to-br from-purple-500 to-indigo-500 shadow-purple-500/25"
-              : isStage4 
-                ? "bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25"
-                : "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25"
-          )}>
-            {isStage5 ? <Image className="h-5 w-5 text-white" /> : <Hammer className="h-5 w-5 text-white" />}
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+            <Sparkles className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className={cn(
-              "font-semibold",
-              isStage5 ? "text-purple-700 dark:text-purple-300" : isStage4 ? "text-green-700 dark:text-green-300" : "text-amber-700 dark:text-amber-300"
-            )}>
-              {isStage5 ? "Visual Intelligence" : isStage4 ? "Execution Flow" : "Definition Flow"}
+            <h2 className="font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+              Project Architect
             </h2>
-            <p className={cn(
-              "text-xs",
-              isStage5 ? "text-purple-600/70 dark:text-purple-400/70" : isStage4 ? "text-green-600/70 dark:text-green-400/70" : "text-amber-600/70 dark:text-amber-400/70"
-            )}>
+            <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
               {isStage5 
-                ? "Documentation • Stage 5"
+                ? "Stage 5 • Visual Intelligence"
                 : isStage4 
-                  ? `Step ${stage4Step + 1} of 3 • Stage 4`
-                  : `Template Setup • ${gfaValue.toLocaleString()} sq ft`
+                  ? `Stage 4 • Step ${stage4Step + 1} of 3`
+                  : `Stage 3 • ${gfaValue.toLocaleString()} sq ft`
               }
             </p>
           </div>
         </div>
-        
-        {/* Progress dots */}
-        <div className="flex gap-2 mt-3">
-          {isStage5 ? (
-            <motion.div
-              className="h-2 w-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            />
-          ) : isStage4 ? (
-            // Stage 4: 3 steps (Team, Site, Date)
-            [0, 1, 2].map(step => (
-              <motion.div
-                key={step}
-                className={cn(
-                  "h-2 rounded-full transition-all duration-300",
-                  step === stage4Step
-                    ? "w-8 bg-gradient-to-r from-green-500 to-emerald-500"
-                    : step < stage4Step
-                      ? "w-2 bg-green-500"
-                      : "w-2 bg-green-200 dark:bg-green-800"
-                )}
-                animate={step === stage4Step ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ repeat: step === stage4Step ? Infinity : 0, duration: 1.5 }}
-              />
-            ))
-          ) : (
-            // Stage 3: Just template setup
-            <motion.div
-              className="h-2 w-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            />
-          )}
+        {/* Progress bar - matches WizardChatInterface */}
+        <div className="mt-3 h-1.5 bg-amber-100 dark:bg-amber-950 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+            initial={{ width: 0 }}
+            animate={{ 
+              width: isStage5 
+                ? '100%' 
+                : isStage4 
+                  ? `${((stage4Step + 1) / 3) * 100}%` 
+                  : selectedTrade 
+                    ? '50%' 
+                    : '10%' 
+            }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
         </div>
       </div>
       
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 md:pb-4">
+      {/* Chat Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Welcome message */}
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="flex justify-start"
+        >
+          <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm">
+            <p className="text-sm leading-relaxed">
+              Great progress! Your project area is locked at <strong>{gfaValue.toLocaleString()} sq ft</strong>. Now let's define the scope of work.
+            </p>
+          </div>
+        </motion.div>
+        
         {/* STAGE 3: Trade Selection & Template Lock */}
         <AnimatePresence mode="wait">
           {currentSubStep >= 0 && (
             <>
               {/* AI Question - Trade */}
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.3 }}
                 className="flex justify-start"
               >
-                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
-                    <Sparkles className="h-4 w-4" />
-                    <span className="text-xs font-semibold">MESSA AI</span>
-                  </div>
-                  <p className="text-sm text-foreground">
-                    Selected: <strong>{gfaValue.toLocaleString()} sq ft Interior</strong>. 
-                    <br />What trade are we performing?
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm">
+                  <p className="text-sm text-foreground leading-relaxed">
+                    What trade are we performing on this project?
                   </p>
-                  
-                  {/* Trade selection buttons */}
-                  {!selectedTrade && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {TRADE_OPTIONS.map(trade => (
-                        <Button
-                          key={trade.key}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onTradeSelect(trade.key)}
-                          className="border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-500 text-foreground gap-1.5"
-                        >
-                          <trade.icon className="h-4 w-4 text-amber-500" />
-                          {trade.label}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </motion.div>
               
@@ -474,11 +427,11 @@ const ChatPanel = ({
                animate={{ opacity: 1, y: 0 }}
                className="flex justify-start"
              >
-               <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-green-800 shadow-sm">
-                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
-                   <Sparkles className="h-4 w-4" />
-                   <span className="text-xs font-semibold">MESSA AI • Stage 4</span>
-                 </div>
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm">
+                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-xs font-semibold">MESSA AI • Stage 4</span>
+                  </div>
                  <p className="text-sm text-foreground mb-3">
                    <strong>Who is handling the installation?</strong>
                  </p>
@@ -926,6 +879,56 @@ const ChatPanel = ({
               </motion.div>
             )}
           </>
+        )}
+      </div>
+      
+      {/* Bottom Input Area - matches WizardChatInterface */}
+      <div className="p-4 border-t border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm shrink-0">
+        {!selectedTrade ? (
+          /* Trade Selection Grid - like work type selection in Stage 1 */
+          <div className="space-y-3">
+            <p className="text-xs text-amber-600 dark:text-amber-400 text-center font-medium">
+              Select the trade for this project
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {TRADE_OPTIONS.map((trade) => (
+                <motion.button
+                  key={trade.key}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onTradeSelect(trade.key)}
+                  className="p-3 text-sm text-left rounded-lg border border-amber-200 dark:border-amber-800 bg-card hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/50 dark:hover:to-orange-950/50 hover:border-amber-400 dark:hover:border-amber-600 transition-all flex items-center gap-2"
+                >
+                  <trade.icon className="h-4 w-4 text-amber-500" />
+                  {trade.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        ) : !templateLocked ? (
+          /* Template lock prompt */
+          <div className="text-center py-2">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 text-amber-700 dark:text-amber-300"
+            >
+              <Lock className="h-4 w-4" />
+              <span className="text-sm font-medium">Lock template on the right to continue →</span>
+            </motion.div>
+          </div>
+        ) : (
+          /* Stage 4+ completion state */
+          <div className="text-center py-2">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 text-amber-700 dark:text-amber-300"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm font-medium">Follow the steps above</span>
+            </motion.div>
+          </div>
         )}
       </div>
     </div>
