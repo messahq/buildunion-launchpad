@@ -2050,22 +2050,83 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       }
     };
     
+    // Persist template items to DB (called after add/update/delete)
+    const persistTemplateSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const persistTemplateToDb = useCallback((items: TemplateItem[]) => {
+      // Debounce: wait 800ms after last change before saving
+      if (persistTemplateSaveRef.current) clearTimeout(persistTemplateSaveRef.current);
+      persistTemplateSaveRef.current = setTimeout(async () => {
+        try {
+          const matTotal = items.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
+          const labTotal = items.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
+
+          const { data: currentData } = await supabase
+            .from("project_summaries")
+            .select("id, verified_facts")
+            .eq("project_id", projectId)
+            .maybeSingle();
+
+          const currentFacts = Array.isArray(currentData?.verified_facts) ? currentData.verified_facts : [];
+          // Replace existing TEMPLATE_LOCK citation if present
+          const filteredFacts = currentFacts.filter((f: any) => f.cite_type !== 'TEMPLATE_LOCK');
+          const templateCitation = createCitation({
+            cite_type: CITATION_TYPES.TEMPLATE_LOCK,
+            question_key: 'template_items',
+            answer: `${items.length} items`,
+            value: matTotal + labTotal,
+            metadata: {
+              items,
+              material_total: matTotal,
+              labor_total: labTotal,
+              markup_percent: markupPercent,
+              waste_percent: wastePercent,
+            },
+          });
+          const updatedFacts = [...filteredFacts, templateCitation as unknown as Record<string, unknown>];
+
+          if (currentData?.id) {
+            await supabase
+              .from("project_summaries")
+              .update({
+                verified_facts: updatedFacts as unknown as null,
+                total_cost: matTotal + labTotal,
+                material_cost: matTotal,
+                labor_cost: labTotal,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("project_id", projectId);
+          }
+          console.log("[DefinitionFlow] Template items auto-saved to DB");
+        } catch (err) {
+          console.error("[DefinitionFlow] Failed to auto-save template:", err);
+        }
+      }, 800);
+    }, [projectId, markupPercent, wastePercent]);
+
     // Template item editing
     const handleUpdateItem = (itemId: string, field: keyof TemplateItem, value: number | string) => {
-      setTemplateItems(prev => prev.map(item => {
-        if (item.id === itemId) {
-          const updated = { ...item, [field]: value };
-          if (field === 'quantity' || field === 'unitPrice') {
-            updated.totalPrice = Number(updated.quantity) * Number(updated.unitPrice);
+      setTemplateItems(prev => {
+        const updated = prev.map(item => {
+          if (item.id === itemId) {
+            const u = { ...item, [field]: value };
+            if (field === 'quantity' || field === 'unitPrice') {
+              u.totalPrice = Number(u.quantity) * Number(u.unitPrice);
+            }
+            return u;
           }
-          return updated;
-        }
-        return item;
-      }));
+          return item;
+        });
+        persistTemplateToDb(updated);
+        return updated;
+      });
     };
     
     const handleDeleteItem = (itemId: string) => {
-      setTemplateItems(prev => prev.filter(item => item.id !== itemId));
+      setTemplateItems(prev => {
+        const updated = prev.filter(item => item.id !== itemId);
+        persistTemplateToDb(updated);
+        return updated;
+      });
     };
     
     const handleAddItem = () => {
@@ -2080,7 +2141,11 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         totalPrice: 0,
         applyWaste: true,
       };
-      setTemplateItems(prev => [...prev, newItem]);
+      setTemplateItems(prev => {
+        const updated = [...prev, newItem];
+        persistTemplateToDb(updated);
+        return updated;
+      });
       setEditingItem(newItem.id);
     };
     
