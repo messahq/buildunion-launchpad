@@ -522,81 +522,83 @@ const ChatPanel = ({
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="mt-3 space-y-3"
-                    >
-                      <p className="text-xs text-muted-foreground">Configure your team:</p>
-                      
-                      {teamMembers.map((member, index) => (
-                        <div key={member.id} className="flex items-center gap-2 bg-green-50/50 dark:bg-green-950/20 p-2 rounded-lg">
-                          <select
-                            value={member.role}
-                            onChange={(e) => {
-                              const updated = [...teamMembers];
-                              updated[index] = { ...member, role: e.target.value };
-                              onTeamMembersChange(updated);
-                            }}
-                            className="flex-1 h-8 text-sm rounded-md border border-input bg-background px-2"
-                          >
-                            {TEAM_ROLES.map(role => (
-                              <option key={role.key} value={role.key}>{role.label}</option>
-                            ))}
-                          </select>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={50}
-                            value={member.count || ''}
-                            onChange={(e) => {
-                              const updated = [...teamMembers];
-                              updated[index] = { ...member, count: parseInt(e.target.value) || 0 };
-                              onTeamMembersChange(updated);
-                            }}
-                            onFocus={(e) => e.target.select()}
-                            placeholder="0"
-                            className="w-16 h-8 text-center text-sm"
-                          />
-                          <span className="text-xs text-muted-foreground">ppl</span>
-                          {teamMembers.length > 1 && (
-                            <button
-                              onClick={() => {
-                                const updated = teamMembers.filter((_, i) => i !== index);
-                                onTeamMembersChange(updated);
-                              }}
-                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      
-                      <button
-                        onClick={() => {
-                          const newMember: TeamMember = {
-                            id: `member_${Date.now()}`,
-                            role: 'worker',
-                            count: 1,
-                          };
-                          onTeamMembersChange([...teamMembers, newMember]);
-                        }}
-                        className="w-full p-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 flex items-center justify-center gap-1 rounded-lg border border-dashed border-green-300 dark:border-green-700"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Role
-                      </button>
-                      
-                      {/* Confirm team button */}
-                      {teamMembers.some(m => m.count > 0) && (
-                        <Button
-                          onClick={() => onTeamSizeSelect('team_confirmed')}
-                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-                          size="sm"
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Confirm Team ({teamMembers.reduce((sum, m) => sum + m.count, 0)} people)
-                        </Button>
-                      )}
-                    </motion.div>
+                       className="mt-3 space-y-2"
+                     >
+                       <p className="text-xs text-muted-foreground">Configure your team:</p>
+                       
+                       {teamMembers.map((member, index) => (
+                         <div key={member.id} className="flex items-center gap-2 border border-input bg-background p-2 rounded-lg">
+                           <select
+                             value={member.role}
+                             onChange={(e) => {
+                               const updated = [...teamMembers];
+                               updated[index] = { ...member, role: e.target.value };
+                               onTeamMembersChange(updated);
+                             }}
+                             className="flex-1 h-8 text-sm rounded-md border border-input bg-background px-2"
+                           >
+                             {TEAM_ROLES.map(role => (
+                               <option key={role.key} value={role.key}>{role.label}</option>
+                             ))}
+                           </select>
+                           <Input
+                             type="number"
+                             min={1}
+                             max={50}
+                             value={member.count || ''}
+                             onChange={(e) => {
+                               const updated = [...teamMembers];
+                               updated[index] = { ...member, count: parseInt(e.target.value) || 0 };
+                               onTeamMembersChange(updated);
+                             }}
+                             onFocus={(e) => e.target.select()}
+                             placeholder="0"
+                             className="w-16 h-8 text-center text-sm"
+                           />
+                           <span className="text-xs text-muted-foreground">ppl</span>
+                           {teamMembers.length > 1 && (
+                             <button
+                               onClick={() => {
+                                 const updated = teamMembers.filter((_, i) => i !== index);
+                                 onTeamMembersChange(updated);
+                               }}
+                               className="p-1 hover:bg-destructive/10 rounded"
+                             >
+                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                             </button>
+                           )}
+                         </div>
+                       ))}
+                       
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => {
+                           const newMember: TeamMember = {
+                             id: `member_${Date.now()}`,
+                             role: 'worker',
+                             count: 1,
+                           };
+                           onTeamMembersChange([...teamMembers, newMember]);
+                         }}
+                         className="w-full text-xs border-dashed"
+                       >
+                         <Plus className="h-3.5 w-3.5 mr-1.5" />
+                         Add Role
+                       </Button>
+                       
+                       {/* Confirm team button */}
+                       {teamMembers.some(m => m.count > 0) && (
+                         <Button
+                           onClick={() => onTeamSizeSelect('team_confirmed')}
+                           className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25"
+                           size="sm"
+                         >
+                           <CheckCircle2 className="h-4 w-4 mr-2" />
+                           Confirm Team ({teamMembers.reduce((sum, m) => sum + m.count, 0)} people)
+                         </Button>
+                       )}
+                     </motion.div>
                   )}
                 </div>
               </motion.div>
