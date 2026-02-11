@@ -132,32 +132,46 @@ export const generatePDFBlob = async (
     // Adjust sections to avoid page-break splits
     adjustForPageBreaks(container, 800, usablePageHeightPx);
 
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: options.pageFormat || 'a4'
-    });
-
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
       logging: false
     });
 
-    const imgHeight = (canvas.height * usableWidth) / canvas.width;
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
-    
-    let heightLeft = imgHeight;
-    let position = margin;
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: options.pageFormat || 'a4'
+    });
 
-    pdf.addImage(imgData, 'JPEG', margin, position, usableWidth, imgHeight);
-    heightLeft -= usablePageHeight;
+    // Slice the canvas into individual page-sized chunks to prevent overlap
+    const scaledPageHeightPx = usablePageHeightPx * 2; // html2canvas scale=2
+    const totalCanvasHeight = canvas.height;
+    const canvasWidth = canvas.width;
+    let pageIndex = 0;
 
-    while (heightLeft > 0) {
-      pdf.addPage();
-      position = margin - (imgHeight - heightLeft);
-      pdf.addImage(imgData, 'JPEG', margin, position, usableWidth, imgHeight);
-      heightLeft -= usablePageHeight;
+    while (pageIndex * scaledPageHeightPx < totalCanvasHeight) {
+      if (pageIndex > 0) pdf.addPage();
+
+      const sourceY = pageIndex * scaledPageHeightPx;
+      const sourceH = Math.min(scaledPageHeightPx, totalCanvasHeight - sourceY);
+
+      // Create a temporary canvas for this page slice
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvasWidth;
+      pageCanvas.height = sourceH;
+      const ctx = pageCanvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvasWidth, sourceH);
+        ctx.drawImage(canvas, 0, sourceY, canvasWidth, sourceH, 0, 0, canvasWidth, sourceH);
+      }
+
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.98);
+      const sliceHeightMm = (sourceH / canvasWidth) * usableWidth;
+
+      pdf.addImage(pageImgData, 'JPEG', margin, margin, usableWidth, sliceHeightMm);
+      pageIndex++;
     }
 
     return pdf.output('blob');
