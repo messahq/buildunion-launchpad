@@ -1587,9 +1587,21 @@ const CanvasPanel = ({
                         value={item.name}
                         onChange={(e) => onUpdateItem(item.id, 'name', e.target.value)}
                         className="h-8 text-sm"
+                        placeholder="Item name"
                         autoFocus
                       />
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
+                        <div>
+                          <Label className="text-xs">Category</Label>
+                          <select
+                            value={item.category}
+                            onChange={(e) => onUpdateItem(item.id, 'category', e.target.value)}
+                            className="w-full h-8 text-xs rounded-md border border-input bg-background px-2"
+                          >
+                            <option value="material">Material</option>
+                            <option value="labor">Labor</option>
+                          </select>
+                        </div>
                         <div>
                           <Label className="text-xs">Qty</Label>
                           <Input
@@ -1602,7 +1614,16 @@ const CanvasPanel = ({
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">Unit Price</Label>
+                          <Label className="text-xs">Unit</Label>
+                          <Input
+                            value={item.unit}
+                            onChange={(e) => onUpdateItem(item.id, 'unit', e.target.value)}
+                            placeholder="sq ft"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Unit $</Label>
                           <Input
                             type="number"
                             step="0.01"
@@ -1613,15 +1634,15 @@ const CanvasPanel = ({
                             className="h-8 text-sm"
                           />
                         </div>
-                        <div className="flex items-end">
-                          <Button
-                            size="sm"
-                            onClick={() => onSetEditingItem(null)}
-                            className="w-full h-8"
-                          >
-                            Done
-                          </Button>
-                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          onClick={() => onSetEditingItem(null)}
+                          className="h-7 text-xs"
+                        >
+                          Done
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -2048,16 +2069,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     const handleTradeSelect = async (trade: string) => {
       setSelectedTrade(trade);
       
-      // For non-custom trades, generate AI template
-      if (trade !== 'custom') {
-        generateAITemplate(trade);
-      } else {
-        // Custom: use default template
-        const baseItems = generateTemplateItems(trade, gfaValue);
-        const itemsWithWaste = applyWasteToItems(baseItems, wastePercent);
-        setTemplateItems(itemsWithWaste);
-        setAiTemplateReady(true);
-      }
+      // Generate AI template for ALL trades including custom
+      generateAITemplate(trade);
       
       // Save TRADE_SELECTION citation IMMEDIATELY
       const tradeCitation = createCitation({
