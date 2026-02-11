@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, MapPin, Building, FileText, Sparkles, ChevronRight, Trash2, User, Users, Lock, Calendar } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Building, FileText, Sparkles, ChevronRight, Trash2, User, Users, Lock, Calendar, CheckCircle2, Circle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -65,6 +65,9 @@ const BuildUnionProjectDetails = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [teamMemberRole, setTeamMemberRole] = useState<string>('member');
+  
+  // Tasks state
+  const [projectTasks, setProjectTasks] = useState<{id: string; title: string; status: string; priority: string; due_date: string | null}[]>([]);
   
   // Stage 4 Execution Flow state
   const [stage4Step, setStage4Step] = useState(0); // 0=not started, 1=team, 2=site, 3=date
@@ -203,6 +206,18 @@ const BuildUnionProjectDetails = () => {
         // No summary at all, try geocoding
         const coords = await geocodeAddress(projectData.address);
         if (coords) setCoordinates(coords);
+      }
+
+      // Load tasks for this project
+      const { data: tasksData } = await supabase
+        .from('project_tasks')
+        .select('id, title, status, priority, due_date')
+        .eq('project_id', projectId)
+        .is('archived_at', null)
+        .order('due_date', { ascending: true });
+      
+      if (tasksData) {
+        setProjectTasks(tasksData);
       }
 
       setLoading(false);
@@ -1011,6 +1026,92 @@ const BuildUnionProjectDetails = () => {
                       <span className="text-white text-xs font-bold">LOCKED</span>
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+            
+            {/* TASKS TIMELINE PANEL */}
+            {projectTasks.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="rounded-xl overflow-hidden border-2 border-indigo-200/50 dark:border-indigo-800/30"
+              >
+                {/* Panel Header */}
+                <div className="p-3 bg-indigo-50/80 dark:bg-indigo-950/50 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Execution Timeline</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-indigo-300 dark:border-indigo-700 bg-indigo-100/50 dark:bg-indigo-900/30 px-2">
+                    {projectTasks.filter(t => t.status === 'completed' || t.status === 'done').length}/{projectTasks.length} done
+                  </Badge>
+                </div>
+                {/* Tasks List */}
+                <div className="p-3 space-y-2 bg-gradient-to-br from-indigo-50/30 to-violet-50/30 dark:from-indigo-950/20 dark:to-violet-950/20">
+                  {/* Progress bar */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex-1 h-2 rounded-full bg-indigo-100 dark:bg-indigo-900/50 overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${projectTasks.length > 0 ? Math.round((projectTasks.filter(t => t.status === 'completed' || t.status === 'done').length / projectTasks.length) * 100) : 0}%` }}
+                        transition={{ duration: 0.8 }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                      {projectTasks.length > 0 ? Math.round((projectTasks.filter(t => t.status === 'completed' || t.status === 'done').length / projectTasks.length) * 100) : 0}%
+                    </span>
+                  </div>
+                  
+                  {projectTasks.map((task) => {
+                    const isDone = task.status === 'completed' || task.status === 'done';
+                    const isInProgress = task.status === 'in_progress';
+                    const priorityColors: Record<string, string> = {
+                      critical: 'bg-red-500',
+                      high: 'bg-orange-500',
+                      medium: 'bg-amber-500',
+                      low: 'bg-emerald-500',
+                    };
+                    
+                    return (
+                      <div
+                        key={task.id}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all ${
+                          isDone
+                            ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/30'
+                            : isInProgress
+                            ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/30'
+                            : 'bg-white/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700/50'
+                        }`}
+                      >
+                        {/* Status icon */}
+                        {isDone ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                        ) : isInProgress ? (
+                          <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                        ) : (
+                          <Circle className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        )}
+                        
+                        {/* Task info */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium truncate ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {task.title}
+                          </p>
+                          {task.due_date && (
+                            <p className="text-[10px] text-muted-foreground">
+                              Due: {format(new Date(task.due_date), 'MMM d, yyyy')}
+                            </p>
+                          )}
+                        </div>
+                        
+                        {/* Priority dot */}
+                        <div className={`h-2 w-2 rounded-full ${priorityColors[task.priority] || 'bg-slate-400'}`} />
+                      </div>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
