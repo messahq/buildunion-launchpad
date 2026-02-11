@@ -1075,6 +1075,29 @@ export default function Stage8FinalReview({
           loadedCitations.push(budgetCitation);
           newTeamCitations.push(budgetCitation); // piggyback on persist block
         }
+        
+        // 3e. Generate TEMPLATE_LOCK synthetic citation if financial data exists but no template citation
+        const hasTemplateLockCit = loadedCitations.some(c => c.cite_type === 'TEMPLATE_LOCK');
+        if (!hasTemplateLockCit && summary && (Number(summary.material_cost || 0) > 0 || Number(summary.labor_cost || 0) > 0)) {
+          const matCost = Number(summary.material_cost || 0);
+          const labCost = Number(summary.labor_cost || 0);
+          const syntheticTemplateCit: Citation = {
+            id: `synthetic_template_lock_${Date.now()}`,
+            cite_type: 'TEMPLATE_LOCK',
+            question_key: 'template_lock',
+            answer: `Materials: $${matCost.toLocaleString()} · Labor: $${labCost.toLocaleString()}`,
+            value: 'locked',
+            timestamp: new Date().toISOString(),
+            metadata: {
+              material_cost: matCost,
+              labor_cost: labCost,
+              total_cost: Number(summary.total_cost || 0),
+              source: 'financial_recovery',
+            },
+          };
+          loadedCitations.push(syntheticTemplateCit);
+          console.log('[Stage8] ✓ Created synthetic TEMPLATE_LOCK from financial data');
+        }
 
         // 4. Load tasks and transform to checklist format
         let { data: tasksData } = await supabase
@@ -5336,24 +5359,24 @@ export default function Stage8FinalReview({
             0.55
           )}
 
-          {/* All Citations Footer */}
-          {panelCitations.length > 0 && (
+          {/* All Citations Footer — Show ALL project citations */}
+          {citations.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="pt-3 border-t border-cyan-500/10"
+              className="pt-3 border-t border-cyan-300/30 dark:border-cyan-500/10"
             >
-              <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-400/50 mb-2">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50 mb-2">
                 All Source Citations ({citations.length})
               </p>
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {citations.filter(c => c.cite_type && c.answer).map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-cyan-500/5 border border-cyan-500/10 text-[10px]">
-                    <span className="text-cyan-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-cyan-100/40 dark:bg-cyan-500/5 border border-cyan-200/50 dark:border-cyan-500/10 text-[10px]">
+                    <span className="text-cyan-700/60 dark:text-cyan-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-cyan-200/80 truncate max-w-[160px]">{renderCitationValue(c)}</span>
-                      <span className="text-cyan-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
+                      <span className="font-medium text-gray-700 dark:text-cyan-200/80 truncate max-w-[160px]">{renderCitationValue(c)}</span>
+                      <span className="text-cyan-500/50 dark:text-cyan-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
                     </div>
                   </div>
                 ))}
@@ -6700,6 +6723,10 @@ export default function Stage8FinalReview({
             { label: 'Demolition Cost', cit: demoCit, fallback: null, icon: <span className="text-sm">💥</span>, color: { border: 'border-red-300 dark:border-orange-400/30', bg: 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-orange-950/50 dark:to-red-950/30', text: 'text-gray-800 dark:text-orange-200', glow: 'bg-red-400' } },
           ].filter(r => r.cit || r.fallback !== null);
 
+          // Gather extra citations not shown in main rows (CONTRACT, WEATHER, TEAM_MEMBER_INVITE, etc.)
+          const mainCiteTypes = new Set(['PROJECT_NAME', 'LOCATION', 'WORK_TYPE', 'GFA_LOCK', 'TRADE_SELECTION', 'TEAM_SIZE', 'TEAM_STRUCTURE', 'TIMELINE', 'END_DATE', 'SITE_CONDITION', 'TEMPLATE_LOCK', 'DEMOLITION_PRICE']);
+          const extraCitations = citations.filter(c => c.cite_type && c.answer && !mainCiteTypes.has(c.cite_type));
+
           return (
             <div className="space-y-6">
               {/* Completion Header — Bright */}
@@ -6707,7 +6734,7 @@ export default function Stage8FinalReview({
                 <div>
                   <p className="text-xs font-mono uppercase tracking-wider text-cyan-600/80 dark:text-cyan-400/60">Data Integrity</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{completionPct}%</p>
-                  <p className="text-xs text-cyan-600/60 dark:text-cyan-300/50">{filled} of {allItems.length} fields verified</p>
+                  <p className="text-xs text-cyan-600/60 dark:text-cyan-300/50">{filled} of {allItems.length} core fields · {citations.length} total citations</p>
                 </div>
                 <div className="relative w-16 h-16">
                   <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
@@ -6744,6 +6771,34 @@ export default function Stage8FinalReview({
                   </div>
                 ))}
               </div>
+
+              {/* Extra Citations — CONTRACT, WEATHER, TEAM_MEMBER_INVITE, TEAM_PERMISSION_SET, BUDGET, etc. */}
+              {extraCitations.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50">
+                    Additional Citations ({extraCitations.length})
+                  </p>
+                  <div className="grid gap-2">
+                    {extraCitations.map(c => {
+                      const citeTypeIcons: Record<string, string> = {
+                        'TEAM_MEMBER_INVITE': '👤', 'TEAM_PERMISSION_SET': '🔐', 'CONTRACT': '📜',
+                        'WEATHER_ALERT': '🌤️', 'BUDGET': '💰', 'BLUEPRINT_UPLOAD': '📐',
+                        'SITE_PHOTO': '📸', 'VISUAL_VERIFICATION': '✅', 'EXECUTION_MODE': '⚙️',
+                      };
+                      return (
+                        <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700/30 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/40 dark:to-slate-800/30 hover:shadow-sm transition-all">
+                          <span className="text-sm">{citeTypeIcons[c.cite_type] || '📌'}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400/60">{c.cite_type.replace(/_/g, ' ')}</p>
+                            <p className="text-xs font-medium text-gray-700 dark:text-slate-300 truncate">{c.answer}</p>
+                          </div>
+                          <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono shrink-0">cite:[{c.id.slice(0, 6)}]</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}
