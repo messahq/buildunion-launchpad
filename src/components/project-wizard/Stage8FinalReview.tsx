@@ -351,6 +351,8 @@ interface TaskWithChecklist {
   due_date: string | null;
   created_at: string | null;
   checklist: { id: string; text: string; done: boolean; photoUrl?: string }[];
+  isSubTask?: boolean;
+  templateItemCost?: number | null;
 }
 
 // ============================================
@@ -1155,18 +1157,33 @@ export default function Stage8FinalReview({
           });
           
           const tasksWithChecklist: TaskWithChecklist[] = tasksData.map(task => {
-            // Infer phase from priority/title
+            // Infer phase from description (Stage 7 format) or title keywords
             let phase = 'installation';
+            const descLower = (task.description || '').toLowerCase();
             const titleLower = task.title.toLowerCase();
-            if (titleLower.includes('demo') || titleLower.includes('remove') || titleLower.includes('tear')) {
+            
+            // Priority 1: Phase from description (set by Stage 7)
+            if (descLower.includes('demolition') || descLower.includes('phase: demolition')) {
               phase = 'demolition';
-            } else if (titleLower.includes('prep') || titleLower.includes('measure') || titleLower.includes('setup')) {
+            } else if (descLower.includes('preparation') || descLower.includes('phase: preparation')) {
               phase = 'preparation';
-            } else if (titleLower.includes('finish') || titleLower.includes('qc') || titleLower.includes('inspect') || titleLower.includes('clean')) {
+            } else if (descLower.includes('finishing') || descLower.includes('phase: finishing')) {
+              phase = 'finishing';
+            } else if (descLower.includes('installation') || descLower.includes('phase: installation')) {
+              phase = 'installation';
+            }
+            // Priority 2: Title keyword fallback
+            else if (titleLower.includes('demo') || titleLower.includes('remove') || titleLower.includes('tear')) {
+              phase = 'demolition';
+            } else if (titleLower.includes('prep') || titleLower.includes('measure') || titleLower.includes('setup') || titleLower.includes('primer') || titleLower.includes('underlayment')) {
+              phase = 'preparation';
+            } else if (titleLower.includes('finish') || titleLower.includes('qc') || titleLower.includes('inspect') || titleLower.includes('clean') || titleLower.includes('baseboard') || titleLower.includes('trim') || titleLower.includes('transition')) {
               phase = 'finishing';
             }
             
             const hasVerificationPhoto = taskPhotoIds.has(task.id);
+            const isSubTask = descLower.includes('template sub-task');
+            const taskCost = (task as any).total_cost ? Number((task as any).total_cost) : null;
             
             return {
               id: task.id,
@@ -1177,6 +1194,8 @@ export default function Stage8FinalReview({
               assigned_to: task.assigned_to,
               due_date: (task as any).due_date || null,
               created_at: (task as any).created_at || null,
+              isSubTask,
+              templateItemCost: taskCost,
               checklist: [
                 { id: `${task.id}-start`, text: 'Task started', done: task.status !== 'pending' },
                 { id: `${task.id}-complete`, text: 'Task completed', done: task.status === 'completed' || task.status === 'done' },
@@ -4109,6 +4128,11 @@ export default function Stage8FinalReview({
             const colors = phaseBarColors[phase.key] || phaseBarColors.preparation;
             const phaseComplete = phase.tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
             
+            // Calculate phase cost total from template sub-tasks
+            const phaseCostTotal = phase.tasks
+              .filter(t => t.isSubTask && t.templateItemCost)
+              .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
+            
             return (
               <div key={phase.key} className="space-y-0.5">
                 {/* Phase divider */}
@@ -4119,7 +4143,12 @@ export default function Stage8FinalReview({
                   <div className={cn("h-3 w-3 rounded", colors.bg, colors.border, "border-2 shadow-sm")} />
                   <span className={cn("text-[11px] font-bold uppercase tracking-wider", colors.text)}>{phase.label}</span>
                   <span className="text-[9px] text-gray-500 dark:text-slate-500 font-mono font-bold">{phaseComplete}/{phase.tasks.length}</span>
-                  <div className="flex-1" />
+                  {canViewFinancials && phaseCostTotal > 0 && (
+                    <Badge variant="outline" className="text-[9px] px-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 ml-auto mr-1">
+                      +${phaseCostTotal.toLocaleString()}
+                    </Badge>
+                  )}
+                  <div className={phaseCostTotal > 0 && canViewFinancials ? "" : "flex-1"} />
                   {expandedPhases.has(phase.key) ? (
                     <ChevronUp className="h-3 w-3 text-gray-400 dark:text-slate-600 group-hover:text-gray-600 dark:group-hover:text-slate-400" />
                   ) : (
@@ -4272,6 +4301,11 @@ export default function Stage8FinalReview({
                                                   {task.title}
                                                 </span>
                                                 <div className="flex items-center gap-1 shrink-0">
+                                                  {canViewFinancials && task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
+                                                    <span className="text-[8px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">
+                                                      ${task.templateItemCost.toLocaleString()}
+                                                    </span>
+                                                  )}
                                                   <span className={cn(
                                                     "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
                                                     task.priority === 'high' ? "bg-red-500/20 text-red-400"
@@ -4288,6 +4322,10 @@ export default function Stage8FinalReview({
                                           <TooltipContent side="top" className="text-xs">
                                             <div className="flex flex-col gap-0.5">
                                               <span className="font-semibold">{task.title}</span>
+                                              {task.isSubTask && <span className="text-emerald-500 font-mono text-[10px]">📦 Template Item</span>}
+                                              {task.isSubTask && task.templateItemCost != null && canViewFinancials && (
+                                                <span className="text-emerald-500">Cost: ${task.templateItemCost.toLocaleString()}</span>
+                                              )}
                                               {startLabel && <span className="text-muted-foreground">Start: {startLabel}</span>}
                                               {endLabel && <span className="text-muted-foreground">Due: {endLabel}</span>}
                                               {!startLabel && !endLabel && <span className="text-muted-foreground">No dates set</span>}
@@ -4525,6 +4563,7 @@ export default function Stage8FinalReview({
     renderCitationValue,
     projectId,
     isUploading,
+    canViewFinancials,
   ]);
   
   // Render Panel 6 - Documents with Upload and Contract Generator

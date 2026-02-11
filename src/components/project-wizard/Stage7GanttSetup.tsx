@@ -486,12 +486,18 @@ export default function Stage7GanttSetup({
       title: task.name,
       description: task.isVerificationNode 
         ? `Verification checkpoint: ${task.name}` 
-        : `Phase: ${getPhaseById(task.phaseId)?.name}`,
+        : task.isSubTask
+          ? `Template sub-task: ${getPhaseById(task.phaseId)?.name}`
+          : `Phase: ${getPhaseById(task.phaseId)?.name}`,
       assigned_to: task.assigneeId || userId,
       assigned_by: userId,
       priority: task.priority,
       status: 'pending',
       due_date: task.endDate.toISOString(),
+      // Persist template item cost for sub-tasks
+      total_cost: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
+      unit_price: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
+      quantity: task.isSubTask ? 1 : null,
     }));
     
     const { error } = await supabase
