@@ -2363,60 +2363,84 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         </div>
         
         {/* RIGHT PANEL (Desktop) / TOP (Mobile) - Canvas/Template (OUTPUT) */}
-        {selectedTrade && (
-          <div className={cn(
-            "order-1 md:order-2",
-            "flex-1 min-h-0",
-            stage5Active 
-              ? "border-b md:border-b-0 border-purple-200/50 dark:border-purple-800/30"
-              : "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
-          )}>
-            {stage5Active ? (
-              <VisualUploadCanvasPanel
-                gfaValue={gfaValue}
-                selectedTrade={selectedTrade}
-                grandTotal={grandTotal}
-                uploadedFiles={uploadedFiles}
-                isUploading={isUploading}
-                flowCitations={flowCitations}
-                onFilesDrop={handleFilesDrop}
-                onRemoveFile={handleRemoveFile}
-                onSkipUpload={handleSkipUpload}
-                onConfirmUploads={handleConfirmUploads}
-              />
-            ) : (
-              <CanvasPanel
-                currentSubStep={currentSubStep}
-                selectedTrade={selectedTrade}
-                teamSize={teamSize}
-                siteCondition={siteCondition}
-                gfaValue={gfaValue}
-                templateItems={templateItems}
-                materialTotal={materialTotal}
-                laborTotal={laborTotal}
-                demolitionCost={demolitionCost}
-                demolitionUnitPrice={demolitionUnitPrice}
-                subtotal={subtotal}
-                markupPercent={markupPercent}
-                markupAmount={markupAmount}
-                taxAmount={taxAmount}
-                grandTotal={grandTotal}
-                editingItem={editingItem}
-                wastePercent={wastePercent}
-                onWastePercentChange={handleWastePercentChange}
-                onMarkupPercentChange={handleMarkupPercentChange}
-                onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
-                onUpdateItem={handleUpdateItem}
-                onDeleteItem={handleDeleteItem}
-                onAddItem={handleAddItem}
-                onSetEditingItem={setEditingItem}
-                onLockTemplate={handleLockTemplate}
-                isSaving={isSaving}
-                templateLocked={templateLocked}
-              />
-            )}
-          </div>
-        )}
+        <div className={cn(
+          "order-1 md:order-2",
+          "flex-1 min-h-0",
+          stage5Active 
+            ? "border-b md:border-b-0 border-purple-200/50 dark:border-purple-800/30"
+            : "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
+        )}>
+          {stage5Active ? (
+            <VisualUploadCanvasPanel
+              gfaValue={gfaValue}
+              selectedTrade={selectedTrade || ''}
+              grandTotal={grandTotal}
+              uploadedFiles={uploadedFiles}
+              isUploading={isUploading}
+              flowCitations={flowCitations}
+              onFilesDrop={handleFilesDrop}
+              onRemoveFile={handleRemoveFile}
+              onSkipUpload={handleSkipUpload}
+              onConfirmUploads={handleConfirmUploads}
+            />
+          ) : selectedTrade ? (
+            <CanvasPanel
+              currentSubStep={currentSubStep}
+              selectedTrade={selectedTrade}
+              teamSize={teamSize}
+              siteCondition={siteCondition}
+              gfaValue={gfaValue}
+              templateItems={templateItems}
+              materialTotal={materialTotal}
+              laborTotal={laborTotal}
+              demolitionCost={demolitionCost}
+              demolitionUnitPrice={demolitionUnitPrice}
+              subtotal={subtotal}
+              markupPercent={markupPercent}
+              markupAmount={markupAmount}
+              taxAmount={taxAmount}
+              grandTotal={grandTotal}
+              editingItem={editingItem}
+              wastePercent={wastePercent}
+              onWastePercentChange={handleWastePercentChange}
+              onMarkupPercentChange={handleMarkupPercentChange}
+              onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
+              onUpdateItem={handleUpdateItem}
+              onDeleteItem={handleDeleteItem}
+              onAddItem={handleAddItem}
+              onSetEditingItem={setEditingItem}
+              onLockTemplate={handleLockTemplate}
+              isSaving={isSaving}
+              templateLocked={templateLocked}
+            />
+          ) : (
+            /* Pre-trade selection canvas placeholder */
+            <div className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-b from-amber-50/30 to-orange-50/20 dark:from-amber-950/10 dark:to-orange-950/10">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="text-center max-w-md"
+              >
+                <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/20">
+                  <Hammer className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-2">Select Your Trade</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Choose a trade from the chat panel to generate your project template with cost calculations based on <strong>{gfaValue.toLocaleString()} sq ft</strong>
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {TRADE_OPTIONS.map(trade => (
+                    <div key={trade.key} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100/60 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                      <trade.icon className="h-3.5 w-3.5 text-amber-600" />
+                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{trade.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
