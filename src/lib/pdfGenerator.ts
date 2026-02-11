@@ -246,6 +246,8 @@ export interface ContractTemplateData {
   contractorAddress?: string;
   contractorPhone?: string;
   contractorEmail?: string;
+  contractorLicense?: string;
+  contractorLogo?: string;
   clientName?: string;
   clientAddress?: string;
   clientPhone?: string;
@@ -255,50 +257,86 @@ export interface ContractTemplateData {
   depositPercentage?: number;
   warrantyPeriod?: string;
   paymentSchedule?: string;
+  additionalTerms?: string;
 }
 
 const CONTRACT_TYPE_CONFIG: Record<string, {
   title: string;
   color: string;
+  accent: string;
   icon: string;
   defaultWarranty: string;
   defaultPayment: string;
+  legalPreamble: string;
+  disputeResolution: string;
+  cancellationPolicy: string;
+  liabilityClause: string;
 }> = {
   residential: {
     title: 'Residential Construction Contract',
     color: '#059669',
+    accent: '#d1fae5',
     icon: '🏠',
-    defaultWarranty: '1 year',
-    defaultPayment: '50% deposit, 50% on completion',
+    defaultWarranty: '1 year from the date of substantial completion',
+    defaultPayment: '50% upon execution of this Agreement, 50% upon substantial completion',
+    legalPreamble: 'This Residential Construction Contract ("Agreement") is entered into and made effective as of the date set forth below, by and between the parties identified herein. This Agreement shall govern all construction, renovation, and related services to be performed at the residential property specified.',
+    disputeResolution: 'Any dispute arising under this Agreement shall first be submitted to mediation. If mediation fails, the dispute shall be resolved by binding arbitration in accordance with the rules of the applicable jurisdiction.',
+    cancellationPolicy: 'Either party may terminate this Agreement with 14 days written notice. Upon termination, the Client shall pay for all work completed and materials ordered to date.',
+    liabilityClause: 'The Contractor shall maintain comprehensive general liability insurance with a minimum coverage of $2,000,000 and shall provide proof of Workers\' Compensation (WSIB) coverage upon request.',
   },
   commercial: {
-    title: 'Commercial Construction Contract',
+    title: 'Commercial Construction Agreement',
     color: '#0284c7',
+    accent: '#dbeafe',
     icon: '🏢',
-    defaultWarranty: '2 years',
-    defaultPayment: '30% deposit, 40% midpoint, 30% completion',
+    defaultWarranty: '2 years from the date of substantial completion',
+    defaultPayment: '30% upon execution, 40% at midpoint milestone, 30% upon substantial completion',
+    legalPreamble: 'This Commercial Construction Agreement ("Agreement") is entered into by and between the parties listed below. This Agreement governs all construction, fit-out, and related professional services to be performed at the commercial property described herein, in accordance with all applicable building codes, zoning regulations, and occupational safety standards.',
+    disputeResolution: 'Disputes shall be resolved through binding arbitration under the jurisdiction of the project location. Each party shall bear its own legal costs unless otherwise determined by the arbitrator.',
+    cancellationPolicy: 'Termination requires 30 days written notice. A termination fee of 15% of remaining contract value applies. All completed work and ordered materials shall be paid in full.',
+    liabilityClause: 'The Contractor shall maintain comprehensive general liability insurance ($5,000,000 minimum), professional liability insurance, and Workers\' Compensation coverage. Certificates of insurance shall be provided prior to commencement.',
   },
   industrial: {
     title: 'Industrial Construction Contract',
     color: '#7c3aed',
+    accent: '#ede9fe',
     icon: '🏭',
-    defaultWarranty: '3 years',
-    defaultPayment: '25% deposit, 25% phase 1, 25% phase 2, 25% completion',
+    defaultWarranty: '3 years from the date of substantial completion, with extended structural warranty of 10 years',
+    defaultPayment: '25% upon execution, 25% at Phase 1 completion, 25% at Phase 2 completion, 25% upon final acceptance',
+    legalPreamble: 'This Industrial Construction Contract ("Agreement") is entered into between the parties below for the construction, installation, and commissioning of industrial facilities as described herein. All work shall comply with applicable environmental regulations, industrial safety standards (OSHA/OHS), and relevant building codes.',
+    disputeResolution: 'All disputes shall be resolved through binding arbitration. The arbitration shall be conducted by a panel of three arbitrators with industry expertise. Interim measures may be sought from courts of competent jurisdiction.',
+    cancellationPolicy: 'Termination requires 60 days written notice. A termination fee of 20% of remaining contract value applies, plus demobilization costs. Force majeure events are excluded.',
+    liabilityClause: 'The Contractor shall maintain comprehensive general liability ($10,000,000 minimum), professional liability, pollution liability, and Workers\' Compensation coverage. All subcontractors must carry equivalent coverage.',
   },
   renovation: {
-    title: 'Renovation Contract',
+    title: 'Renovation & Remodeling Contract',
     color: '#ea580c',
+    accent: '#ffedd5',
     icon: '🔨',
-    defaultWarranty: '6 months',
-    defaultPayment: '50% deposit, 50% on completion',
+    defaultWarranty: '6 months on workmanship, manufacturer warranty on materials',
+    defaultPayment: '50% upon execution of this Agreement, 50% upon completion and client walkthrough',
+    legalPreamble: 'This Renovation Contract ("Agreement") is entered into between the parties below for the renovation, remodeling, and improvement of the existing property described herein. The Contractor agrees to perform all work in a professional manner consistent with industry standards.',
+    disputeResolution: 'Any dispute shall first be addressed through direct negotiation between the parties. If unresolved within 15 days, the dispute shall proceed to mediation, then binding arbitration if necessary.',
+    cancellationPolicy: 'Either party may terminate with 7 days written notice. Upon termination, the Client shall pay for all completed work, materials on-site, and non-refundable orders.',
+    liabilityClause: 'The Contractor shall maintain general liability insurance ($2,000,000 minimum) and Workers\' Compensation coverage throughout the project duration.',
   },
+};
+
+const formatContractDate = (dateStr: string): string => {
+  if (!dateStr || dateStr === 'Not set') return '________________';
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch { return dateStr; }
 };
 
 export const buildContractHTML = (data: ContractTemplateData): string => {
   const config = CONTRACT_TYPE_CONFIG[data.contractType] || CONTRACT_TYPE_CONFIG.residential;
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', month: 'long', day: 'numeric' 
-  });
+  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const formattedStart = formatContractDate(data.startDate);
+  const formattedEnd = formatContractDate(data.endDate);
+  const totalFormatted = data.totalAmount ? `$${data.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '________________';
+  const depositPct = data.depositPercentage || 50;
+  const depositAmt = data.totalAmount ? `$${((data.totalAmount * depositPct) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '________________';
 
   return `
     <!DOCTYPE html>
@@ -306,191 +344,531 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
     <head>
       <meta charset="UTF-8">
       <style>
+        @page { margin: 0; size: letter; }
+        * { box-sizing: border-box; }
         body { 
-          font-family: system-ui, -apple-system, sans-serif; 
-          color: #1e293b; 
-          line-height: 1.6; 
-          max-width: 800px;
+          font-family: 'Georgia', 'Times New Roman', serif; 
+          color: #1a1a1a; 
+          line-height: 1.65; 
+          max-width: 780px;
           margin: 0 auto;
-          padding: 40px;
+          padding: 48px 40px;
+          font-size: 13px;
         }
         .pdf-section { break-inside: avoid; page-break-inside: avoid; }
-        .header { 
-          text-align: center; 
-          margin-bottom: 32px; 
-          padding-bottom: 24px;
-          border-bottom: 3px solid ${config.color};
+        
+        /* Header */
+        .contract-header {
+          text-align: center;
+          margin-bottom: 36px;
+          padding-bottom: 20px;
+          border-bottom: 3px double ${config.color};
         }
-        .contract-badge {
+        .contract-header .type-badge {
           display: inline-block;
           background: ${config.color};
           color: white;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          margin-bottom: 8px;
-        }
-        .section { 
-          margin-bottom: 24px; 
-          padding: 16px;
-          background: #f8fafc;
-          border-radius: 8px;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: ${config.color};
+          padding: 5px 18px;
+          border-radius: 3px;
+          font-size: 10px;
+          font-family: system-ui, sans-serif;
+          letter-spacing: 2px;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
           margin-bottom: 12px;
         }
-        .grid-2 {
+        .contract-header h1 {
+          font-size: 26px;
+          font-weight: 700;
+          color: ${config.color};
+          margin: 8px 0 4px;
+          letter-spacing: -0.3px;
+        }
+        .contract-header .contract-meta {
+          font-size: 11px;
+          color: #666;
+          font-family: system-ui, sans-serif;
+        }
+
+        /* Preamble */
+        .preamble {
+          margin-bottom: 28px;
+          padding: 20px 24px;
+          background: ${config.accent};
+          border-left: 4px solid ${config.color};
+          border-radius: 0 6px 6px 0;
+          font-style: italic;
+          font-size: 12.5px;
+          color: #333;
+        }
+
+        /* Section styling */
+        .section {
+          margin-bottom: 22px;
+          break-inside: avoid;
+        }
+        .section-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: ${config.color};
+          text-transform: uppercase;
+          letter-spacing: 1.2px;
+          margin-bottom: 14px;
+          padding-bottom: 6px;
+          border-bottom: 1.5px solid ${config.color}40;
+          font-family: system-ui, sans-serif;
+        }
+        .section-number {
+          display: inline-block;
+          background: ${config.color};
+          color: white;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          text-align: center;
+          line-height: 22px;
+          font-size: 11px;
+          margin-right: 8px;
+          font-weight: 700;
+        }
+
+        /* Data grid */
+        .data-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 16px;
+          gap: 14px;
         }
-        .field { margin-bottom: 8px; }
-        .field-label {
+        .data-field { margin-bottom: 6px; }
+        .data-label {
+          font-size: 9.5px;
+          color: #888;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          font-family: system-ui, sans-serif;
+          margin-bottom: 2px;
+        }
+        .data-value {
+          font-size: 14px;
+          font-weight: 600;
+          color: #1a1a1a;
+        }
+
+        /* Parties */
+        .parties-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+        .party-box {
+          padding: 16px 18px;
+          border: 1.5px solid #e0e0e0;
+          border-radius: 6px;
+          background: #fafafa;
+        }
+        .party-box h4 {
           font-size: 11px;
-          color: #64748b;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: ${config.color};
+          margin: 0 0 12px 0;
+          font-family: system-ui, sans-serif;
+        }
+        .party-field {
+          margin-bottom: 8px;
+          font-size: 12px;
+        }
+        .party-field strong {
+          display: block;
+          font-size: 9px;
+          color: #999;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-weight: 400;
+          font-family: system-ui, sans-serif;
+        }
+
+        /* Financial */
+        .financial-highlight {
+          padding: 18px 20px;
+          background: linear-gradient(135deg, ${config.accent}, white);
+          border: 2px solid ${config.color}30;
+          border-radius: 8px;
+          margin-bottom: 22px;
+        }
+        .total-amount {
+          font-size: 28px;
+          font-weight: 700;
+          color: ${config.color};
+          font-family: system-ui, sans-serif;
+        }
+
+        /* Terms */
+        .terms-content {
+          font-size: 12px;
+          color: #333;
+        }
+        .terms-content p {
+          margin: 6px 0;
+          text-align: justify;
+        }
+        .clause {
+          margin-bottom: 14px;
+        }
+        .clause-title {
+          font-weight: 700;
+          font-size: 12px;
+          color: #1a1a1a;
+          margin-bottom: 3px;
+        }
+
+        /* Scope */
+        .scope-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        .scope-list li {
+          padding: 6px 0 6px 20px;
+          position: relative;
+          font-size: 12.5px;
+        }
+        .scope-list li::before {
+          content: '■';
+          position: absolute;
+          left: 0;
+          color: ${config.color};
+          font-size: 8px;
+          top: 9px;
+        }
+
+        /* Signatures */
+        .signature-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 40px;
+          margin-top: 44px;
+          padding-top: 28px;
+          border-top: 2px solid #e0e0e0;
+          break-inside: avoid;
+        }
+        .signature-block {
+          text-align: center;
+        }
+        .signature-area {
+          height: 80px;
+          border: 1.5px dashed #ccc;
+          border-radius: 6px;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          padding-bottom: 8px;
+        }
+        .signature-area .placeholder {
+          font-size: 10px;
+          color: #bbb;
+          font-family: system-ui, sans-serif;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .sig-line {
+          border-bottom: 1.5px solid #1a1a1a;
+          width: 100%;
+          margin-bottom: 6px;
+        }
+        .sig-label {
+          font-size: 10px;
+          color: #888;
+          font-family: system-ui, sans-serif;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
-        .field-value { font-size: 14px; font-weight: 500; }
-        .terms { font-size: 12px; color: #475569; }
-        .terms p { margin: 8px 0; }
-        .signature-section { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
-        .signature-box { border: 1px dashed #cbd5e1; padding: 24px; text-align: center; border-radius: 8px; margin-bottom: 16px; }
-        .signature-line { border-bottom: 1px solid #1e293b; width: 200px; margin: 24px auto 8px; }
-        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; }
+        .sig-name {
+          font-size: 13px;
+          font-weight: 600;
+          margin-top: 4px;
+        }
+        .sig-date {
+          margin-top: 16px;
+        }
+
+        /* Footer */
+        .contract-footer {
+          margin-top: 36px;
+          padding-top: 14px;
+          border-top: 1.5px solid #e0e0e0;
+          text-align: center;
+          font-size: 10px;
+          color: #aaa;
+          font-family: system-ui, sans-serif;
+        }
+        .contract-footer .legal-note {
+          font-size: 9px;
+          font-style: italic;
+          margin-top: 4px;
+        }
+        .page-number {
+          position: fixed;
+          bottom: 20px;
+          right: 40px;
+          font-size: 9px;
+          color: #ccc;
+          font-family: system-ui, sans-serif;
+        }
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="contract-badge">${config.icon} ${escapeHtml(data.contractType.toUpperCase())}</div>
-        <h1 style="margin: 8px 0; font-size: 24px; color: ${config.color};">${config.title}</h1>
-        <p style="color: #64748b; margin: 0;">Contract #${escapeHtml(data.contractNumber)} • ${currentDate}</p>
-      </div>
-      
-      <div class="section">
-        <div class="section-title">Project Details</div>
-        <div class="grid-2">
-          <div class="field">
-            <div class="field-label">Project Name</div>
-            <div class="field-value">${escapeHtml(data.projectName)}</div>
-          </div>
-          <div class="field">
-            <div class="field-label">Trade / Service</div>
-            <div class="field-value">${escapeHtml(data.trade)}</div>
-          </div>
-          <div class="field">
-            <div class="field-label">Project Address</div>
-            <div class="field-value">${escapeHtml(data.projectAddress)}</div>
-          </div>
-          <div class="field">
-            <div class="field-label">Gross Floor Area</div>
-            <div class="field-value">${data.gfa.toLocaleString()} ${escapeHtml(data.gfaUnit)}</div>
-          </div>
+      <!-- HEADER -->
+      <div class="contract-header pdf-section">
+        <div class="type-badge">${config.icon} ${escapeHtml(data.contractType)}</div>
+        <h1>${config.title}</h1>
+        <div class="contract-meta">
+          Contract No. <strong>${escapeHtml(data.contractNumber)}</strong> &nbsp;•&nbsp; 
+          Issued: ${currentDate}
         </div>
       </div>
-      
-      <div class="section">
-        <div class="section-title">Timeline & Resources</div>
-        <div class="grid-2">
-          <div class="field">
-            <div class="field-label">Start Date</div>
-            <div class="field-value">${escapeHtml(data.startDate)}</div>
+
+      <!-- PREAMBLE -->
+      <div class="preamble pdf-section">
+        ${config.legalPreamble}
+      </div>
+
+      <!-- SECTION 1: PARTIES -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">1</span>Parties to this Agreement</div>
+        <div class="parties-grid">
+          <div class="party-box">
+            <h4>Contractor</h4>
+            <div class="party-field"><strong>Company / Name</strong>${escapeHtml(data.contractorName || '________________________________')}</div>
+            <div class="party-field"><strong>Address</strong>${escapeHtml(data.contractorAddress || '________________________________')}</div>
+            <div class="party-field"><strong>Phone</strong>${escapeHtml(data.contractorPhone || '________________________________')}</div>
+            <div class="party-field"><strong>Email</strong>${escapeHtml(data.contractorEmail || '________________________________')}</div>
+            ${data.contractorLicense ? `<div class="party-field"><strong>License No.</strong>${escapeHtml(data.contractorLicense)}</div>` : ''}
           </div>
-          <div class="field">
-            <div class="field-label">Expected Completion</div>
-            <div class="field-value">${escapeHtml(data.endDate)}</div>
-          </div>
-          <div class="field">
-            <div class="field-label">Team Size</div>
-            <div class="field-value">${data.teamSize} member${data.teamSize !== 1 ? 's' : ''}</div>
-          </div>
-          <div class="field">
-            <div class="field-label">Scheduled Tasks</div>
-            <div class="field-value">${data.taskCount} task${data.taskCount !== 1 ? 's' : ''}</div>
+          <div class="party-box">
+            <h4>Client (Owner)</h4>
+            <div class="party-field"><strong>Full Name</strong>${escapeHtml(data.clientName || '________________________________')}</div>
+            <div class="party-field"><strong>Address</strong>${escapeHtml(data.clientAddress || '________________________________')}</div>
+            <div class="party-field"><strong>Phone</strong>${escapeHtml(data.clientPhone || '________________________________')}</div>
+            <div class="party-field"><strong>Email</strong>${escapeHtml(data.clientEmail || '________________________________')}</div>
           </div>
         </div>
       </div>
-      
-      <div class="grid-2">
-        <div class="section">
-          <div class="section-title">Contractor</div>
-          <div class="field"><div class="field-label">Name</div><div class="field-value">${escapeHtml(data.contractorName || 'To be specified')}</div></div>
-          <div class="field"><div class="field-label">Address</div><div class="field-value">${escapeHtml(data.contractorAddress || '—')}</div></div>
-          <div class="field"><div class="field-label">Phone</div><div class="field-value">${escapeHtml(data.contractorPhone || '—')}</div></div>
-          <div class="field"><div class="field-label">Email</div><div class="field-value">${escapeHtml(data.contractorEmail || '—')}</div></div>
-        </div>
-        <div class="section">
-          <div class="section-title">Client</div>
-          <div class="field"><div class="field-label">Name</div><div class="field-value">${escapeHtml(data.clientName || 'To be specified')}</div></div>
-          <div class="field"><div class="field-label">Address</div><div class="field-value">${escapeHtml(data.clientAddress || '—')}</div></div>
-          <div class="field"><div class="field-label">Phone</div><div class="field-value">${escapeHtml(data.clientPhone || '—')}</div></div>
-          <div class="field"><div class="field-label">Email</div><div class="field-value">${escapeHtml(data.clientEmail || '—')}</div></div>
+
+      <!-- SECTION 2: PROJECT DETAILS -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">2</span>Project Description</div>
+        <div class="data-grid">
+          <div class="data-field">
+            <div class="data-label">Project Name</div>
+            <div class="data-value">${escapeHtml(data.projectName)}</div>
+          </div>
+          <div class="data-field">
+            <div class="data-label">Trade / Service Type</div>
+            <div class="data-value">${escapeHtml(data.trade)}</div>
+          </div>
+          <div class="data-field">
+            <div class="data-label">Project Address</div>
+            <div class="data-value">${escapeHtml(data.projectAddress)}</div>
+          </div>
+          <div class="data-field">
+            <div class="data-label">Gross Floor Area</div>
+            <div class="data-value">${data.gfa > 0 ? data.gfa.toLocaleString() : '____'} ${escapeHtml(data.gfaUnit)}</div>
+          </div>
         </div>
       </div>
-      
-      ${data.totalAmount ? `
-        <div class="section" style="background: linear-gradient(135deg, ${config.color}10, ${config.color}05);">
-          <div class="section-title">Financial Terms</div>
-          <div class="grid-2">
-            <div class="field">
-              <div class="field-label">Total Contract Value</div>
-              <div class="field-value" style="font-size: 20px; color: ${config.color};">$${data.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-            </div>
-            <div class="field">
-              <div class="field-label">Deposit Required</div>
-              <div class="field-value">${data.depositPercentage || 50}% ($${((data.totalAmount * (data.depositPercentage || 50)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })})</div>
-            </div>
+
+      <!-- SECTION 3: TIMELINE -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">3</span>Project Timeline</div>
+        <div class="data-grid">
+          <div class="data-field">
+            <div class="data-label">Commencement Date</div>
+            <div class="data-value">${formattedStart}</div>
           </div>
-          <div class="field" style="margin-top: 12px;"><div class="field-label">Payment Schedule</div><div class="field-value">${escapeHtml(data.paymentSchedule || config.defaultPayment)}</div></div>
+          <div class="data-field">
+            <div class="data-label">Expected Completion Date</div>
+            <div class="data-value">${formattedEnd}</div>
+          </div>
+          <div class="data-field">
+            <div class="data-label">Project Team Size</div>
+            <div class="data-value">${data.teamSize} member${data.teamSize !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="data-field">
+            <div class="data-label">Scheduled Work Items</div>
+            <div class="data-value">${data.taskCount} task${data.taskCount !== 1 ? 's' : ''}</div>
+          </div>
         </div>
-      ` : ''}
-      
-      <div class="section">
-        <div class="section-title">Scope of Work</div>
-        <div class="terms">
+        <div class="terms-content" style="margin-top: 12px;">
+          <p>The Contractor shall commence work on or before the Commencement Date and shall use reasonable efforts to achieve substantial completion by the Expected Completion Date, subject to delays caused by force majeure, change orders, or conditions beyond the Contractor's control.</p>
+        </div>
+      </div>
+
+      <!-- SECTION 4: SCOPE OF WORK -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">4</span>Scope of Work</div>
+        <div class="terms-content">
           ${data.scopeOfWork ? `<p>${escapeHtml(data.scopeOfWork)}</p>` : `
-            <p>The Contractor agrees to perform the following work:</p>
-            <p>• Complete ${escapeHtml(data.trade)} work at the specified project address</p>
-            <p>• Provide all necessary materials, labor, and equipment</p>
-            <p>• Complete work within the specified timeline</p>
-            <p>• Ensure all work meets applicable building codes and standards</p>
+            <p>The Contractor agrees to furnish all labor, materials, equipment, and supervision necessary to complete the following:</p>
+            <ul class="scope-list">
+              <li>Complete all ${escapeHtml(data.trade)} work as specified at the project address listed above</li>
+              <li>Provide all necessary materials conforming to industry standards and applicable building codes</li>
+              <li>Obtain all required permits and inspections as mandated by local authorities</li>
+              <li>Maintain a clean and safe work environment throughout the project duration</li>
+              <li>Deliver work that meets or exceeds the Ontario Building Code (OBC) 2024 standards</li>
+              <li>Provide progress reports and coordinate with the Client on all material decisions</li>
+              <li>Complete a final walkthrough with the Client upon substantial completion</li>
+            </ul>
           `}
         </div>
       </div>
-      
-      <div class="section">
-        <div class="section-title">Terms & Conditions</div>
-        <div class="terms">
-          <p><strong>Warranty:</strong> ${escapeHtml(data.warrantyPeriod || config.defaultWarranty)} from completion date</p>
-          <p><strong>Changes:</strong> Any modifications must be agreed in writing by both parties</p>
-          <p><strong>Delays:</strong> Contractor will notify Client of any delays beyond their control</p>
-          <p><strong>Insurance:</strong> Contractor maintains liability insurance and WSIB coverage</p>
+
+      <!-- SECTION 5: FINANCIAL TERMS -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">5</span>Contract Value & Payment Terms</div>
+        ${data.totalAmount ? `
+          <div class="financial-highlight">
+            <div class="data-grid">
+              <div class="data-field">
+                <div class="data-label">Total Contract Value</div>
+                <div class="total-amount">${totalFormatted}</div>
+              </div>
+              <div class="data-field">
+                <div class="data-label">Required Deposit (${depositPct}%)</div>
+                <div class="data-value" style="font-size: 18px; color: ${config.color};">${depositAmt}</div>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div class="data-field" style="margin-bottom: 14px;">
+            <div class="data-label">Total Contract Value</div>
+            <div class="data-value" style="font-size: 20px;">$________________</div>
+          </div>
+        `}
+        <div class="terms-content">
+          <div class="clause">
+            <div class="clause-title">Payment Schedule</div>
+            <p>${escapeHtml(data.paymentSchedule || config.defaultPayment)}</p>
+          </div>
+          <div class="clause">
+            <div class="clause-title">Late Payment</div>
+            <p>Payments not received within 15 days of the due date shall bear interest at a rate of 1.5% per month (18% per annum) on the outstanding balance. The Contractor reserves the right to suspend work if payment is more than 30 days overdue.</p>
+          </div>
+          <div class="clause">
+            <div class="clause-title">Additional Work / Change Orders</div>
+            <p>Any work not described in Section 4 shall require a written Change Order signed by both parties before commencement. Change Orders may affect the Contract Value and timeline.</p>
+          </div>
         </div>
       </div>
-      
-      <div class="signature-section">
-        <div class="grid-2">
-          <div class="signature-box">
-            <p style="font-weight: 600; margin: 0;">Contractor Signature</p>
-            <div class="signature-line"></div>
-            <p style="font-size: 12px; color: #64748b; margin: 0;">Date: _______________</p>
+
+      <!-- SECTION 6: WARRANTY -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">6</span>Warranty</div>
+        <div class="terms-content">
+          <p>The Contractor warrants all workmanship for a period of <strong>${escapeHtml(data.warrantyPeriod || config.defaultWarranty)}</strong>. This warranty covers defects in workmanship and materials supplied by the Contractor. The warranty does not cover damage resulting from misuse, neglect, or normal wear and tear. Manufacturer warranties on materials and equipment shall be passed through to the Client.</p>
+        </div>
+      </div>
+
+      <!-- SECTION 7: INSURANCE & LIABILITY -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">7</span>Insurance & Liability</div>
+        <div class="terms-content">
+          <p>${config.liabilityClause}</p>
+          <p>The Contractor shall indemnify and hold harmless the Client from any claims, damages, or liabilities arising from the Contractor's work, except those caused by the Client's own negligence or willful misconduct.</p>
+        </div>
+      </div>
+
+      <!-- SECTION 8: DISPUTE RESOLUTION -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">8</span>Dispute Resolution</div>
+        <div class="terms-content">
+          <p>${config.disputeResolution}</p>
+        </div>
+      </div>
+
+      <!-- SECTION 9: TERMINATION -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">9</span>Termination</div>
+        <div class="terms-content">
+          <p>${config.cancellationPolicy}</p>
+        </div>
+      </div>
+
+      <!-- SECTION 10: GENERAL PROVISIONS -->
+      <div class="section pdf-section">
+        <div class="section-title"><span class="section-number">10</span>General Provisions</div>
+        <div class="terms-content">
+          <div class="clause">
+            <div class="clause-title">Entire Agreement</div>
+            <p>This Agreement, including any attached schedules and Change Orders, constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, and agreements.</p>
           </div>
-          <div class="signature-box">
-            <p style="font-weight: 600; margin: 0;">Client Signature</p>
-            <div class="signature-line"></div>
-            <p style="font-size: 12px; color: #64748b; margin: 0;">Date: _______________</p>
+          <div class="clause">
+            <div class="clause-title">Governing Law</div>
+            <p>This Agreement shall be governed by and construed in accordance with the laws of the province/state in which the project is located.</p>
+          </div>
+          <div class="clause">
+            <div class="clause-title">Permits & Compliance</div>
+            <p>The Contractor shall obtain all necessary permits and ensure all work complies with applicable building codes, safety regulations, and environmental standards.</p>
+          </div>
+          ${data.additionalTerms ? `
+            <div class="clause">
+              <div class="clause-title">Additional Terms</div>
+              <p>${escapeHtml(data.additionalTerms)}</p>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div class="signature-grid pdf-section">
+        <div class="signature-block">
+          <div class="signature-area">
+            <span class="placeholder">Contractor Signature</span>
+          </div>
+          <div class="sig-line"></div>
+          <div class="sig-label">Authorized Signature — Contractor</div>
+          <div class="sig-name">${escapeHtml(data.contractorName || '________________________________')}</div>
+          <div class="sig-date">
+            <div class="sig-line" style="margin-top: 20px;"></div>
+            <div class="sig-label">Date</div>
+          </div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-area">
+            <span class="placeholder">Client Signature</span>
+          </div>
+          <div class="sig-line"></div>
+          <div class="sig-label">Authorized Signature — Client (Owner)</div>
+          <div class="sig-name">${escapeHtml(data.clientName || '________________________________')}</div>
+          <div class="sig-date">
+            <div class="sig-line" style="margin-top: 20px;"></div>
+            <div class="sig-label">Date</div>
           </div>
         </div>
       </div>
-      
-      <div class="footer">
-        <p>Generated by BuildUnion • ${currentDate}</p>
-        <p>This contract is legally binding upon signature by both parties.</p>
+
+      <!-- WITNESS (optional) -->
+      <div class="section pdf-section" style="margin-top: 32px;">
+        <div class="section-title">Witness (If Required)</div>
+        <div class="parties-grid">
+          <div>
+            <div class="sig-line" style="margin-top: 40px;"></div>
+            <div class="sig-label">Witness Name & Signature</div>
+          </div>
+          <div>
+            <div class="sig-line" style="margin-top: 40px;"></div>
+            <div class="sig-label">Date</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="contract-footer pdf-section">
+        <p>Generated by <strong>BuildUnion</strong> — Professional Construction Management Platform</p>
+        <p class="legal-note">This document is intended for use as a construction contract template. 
+        Both parties acknowledge they have read, understood, and agree to be bound by the terms set forth herein. 
+        It is recommended that both parties seek independent legal counsel before executing this Agreement.</p>
+        <p style="margin-top: 6px;">Contract #${escapeHtml(data.contractNumber)} &nbsp;•&nbsp; ${currentDate}</p>
       </div>
     </body>
     </html>

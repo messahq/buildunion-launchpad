@@ -9705,7 +9705,7 @@ export default function Stage8FinalReview({
         </DialogContent>
       </Dialog>
       
-      {/* Contract Template Dialog - Full Preview with PDF & Send */}
+      {/* Contract Template Dialog - Professional Full Preview with PDF & Send */}
       <Dialog open={showContractPreview} onOpenChange={setShowContractPreview}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4 border-b bg-gradient-to-r from-pink-50/80 to-rose-50/80 dark:from-pink-950/30 dark:to-rose-950/30 -mx-6 -mt-6 px-6 pt-6">
@@ -9716,8 +9716,8 @@ export default function Stage8FinalReview({
               <div className="flex-1">
                 <DialogTitle className="text-lg text-pink-700 dark:text-pink-300">
                   {selectedContractType ? 
-                    `${selectedContractType.charAt(0).toUpperCase() + selectedContractType.slice(1)} Contract Template` :
-                    'Contract Template'
+                    `${selectedContractType.charAt(0).toUpperCase() + selectedContractType.slice(1)} Contract` :
+                    'Construction Contract'
                   }
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground">Contract #{generateContractPreviewData.contractNumber}</p>
@@ -9726,94 +9726,126 @@ export default function Stage8FinalReview({
                 {selectedContractType === 'residential' ? '🏠' : 
                  selectedContractType === 'commercial' ? '🏢' :
                  selectedContractType === 'industrial' ? '🏭' : '🔨'}
-                {selectedContractType?.toUpperCase()}
+                {' '}{selectedContractType?.toUpperCase()}
               </Badge>
             </div>
           </DialogHeader>
           
           {/* Contract Preview Content */}
           <div className="flex-1 overflow-y-auto py-4 space-y-4">
-            {/* Project Details */}
-            <div className="p-4 rounded-lg bg-muted/50 border">
-              <h4 className="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">Project Details</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div><p className="text-xs text-muted-foreground">Project Name</p><p className="font-medium">{generateContractPreviewData.projectName}</p></div>
-                <div><p className="text-xs text-muted-foreground">Trade / Service</p><p className="font-medium">{generateContractPreviewData.trade}</p></div>
-                <div><p className="text-xs text-muted-foreground">Address</p><p className="font-medium">{generateContractPreviewData.projectAddress}</p></div>
-                <div><p className="text-xs text-muted-foreground">Gross Floor Area</p><p className="font-medium">{String(generateContractPreviewData.gfa)} {generateContractPreviewData.gfaUnit}</p></div>
-              </div>
-            </div>
-            
-            {/* Timeline & Resources */}
-            <div className="p-4 rounded-lg bg-muted/50 border">
-              <h4 className="text-xs font-semibold text-pink-600 uppercase tracking-wide mb-3">Timeline & Resources</h4>
-              <div className="grid grid-cols-4 gap-4">
-                <div><p className="text-xs text-muted-foreground">Start Date</p><p className="font-medium">{String(generateContractPreviewData.startDate)}</p></div>
-                <div><p className="text-xs text-muted-foreground">End Date</p><p className="font-medium">{String(generateContractPreviewData.endDate)}</p></div>
-                <div><p className="text-xs text-muted-foreground">Team Size</p><p className="font-medium">{generateContractPreviewData.teamSize} members</p></div>
-                <div><p className="text-xs text-muted-foreground">Tasks</p><p className="font-medium">{generateContractPreviewData.taskCount} scheduled</p></div>
-              </div>
-            </div>
-            
-            {/* Client Info for Contract */}
-            <div className="p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50">
-              <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-3">Client Information</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Client Name *</label>
-                  <Input
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="John Smith"
-                    className="h-9"
-                  />
+            {/* Section 1: Parties */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Contractor (auto-filled from profile) */}
+              <div className="p-4 rounded-lg border-2 border-emerald-200/60 dark:border-emerald-700/30 bg-emerald-50/30 dark:bg-emerald-950/10">
+                <h4 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Users className="h-3.5 w-3.5" />
+                  Contractor
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div><span className="text-[10px] text-muted-foreground uppercase block">Company / Name</span><span className="font-medium">{generateContractPreviewData.contractorName || 'Not set'}</span></div>
+                  <div><span className="text-[10px] text-muted-foreground uppercase block">Phone</span><span className="font-medium">{generateContractPreviewData.contractorPhone || '—'}</span></div>
+                  <div><span className="text-[10px] text-muted-foreground uppercase block">Email</span><span className="font-medium">{generateContractPreviewData.contractorEmail || '—'}</span></div>
+                  <div><span className="text-[10px] text-muted-foreground uppercase block">Service Area</span><span className="font-medium">{generateContractPreviewData.contractorAddress || '—'}</span></div>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Client Email *</label>
-                  <Input
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="client@example.com"
-                    className="h-9"
-                  />
-                </div>
+                <p className="text-[9px] text-emerald-600 dark:text-emerald-500 mt-2 italic">Auto-filled from your business profile</p>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2">
-                * Client will receive an email with a secure link to view and sign the contract
-              </p>
-            </div>
-            
-            {/* Team Members to notify (optional) */}
-            {teamMembers.length > 0 && (
-              <div className="p-4 rounded-lg bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/50">
-                <h4 className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-3">Notify Team Members (Optional)</h4>
+              
+              {/* Client Info (editable) */}
+              <div className="p-4 rounded-lg border-2 border-amber-200/60 dark:border-amber-700/30 bg-amber-50/30 dark:bg-amber-950/10">
+                <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <User className="h-3.5 w-3.5" />
+                  Client (Owner)
+                </h4>
                 <div className="space-y-2">
-                  {teamMembers.map(member => (
-                    <div key={member.id} className="flex items-center justify-between p-2 rounded bg-background/50">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-teal-500 flex items-center justify-center text-white text-[10px] font-bold">
-                          {member.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm">{member.name}</span>
-                        <Badge variant="outline" className="text-[9px]">{member.role}</Badge>
-                      </div>
-                      <Checkbox defaultChecked className="h-4 w-4" />
-                    </div>
-                  ))}
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase block mb-1">Full Name *</label>
+                    <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="John Smith" className="h-8 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase block mb-1">Email *</label>
+                    <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="client@example.com" className="h-8 text-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Section 2: Project Details */}
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <h4 className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-pink-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                Project Description
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div><p className="text-[10px] text-muted-foreground uppercase">Project Name</p><p className="font-semibold text-sm">{generateContractPreviewData.projectName}</p></div>
+                <div><p className="text-[10px] text-muted-foreground uppercase">Trade / Service</p><p className="font-semibold text-sm">{generateContractPreviewData.trade}</p></div>
+                <div><p className="text-[10px] text-muted-foreground uppercase">Project Address</p><p className="font-semibold text-sm">{generateContractPreviewData.projectAddress}</p></div>
+                <div><p className="text-[10px] text-muted-foreground uppercase">Gross Floor Area</p><p className="font-semibold text-sm">{String(generateContractPreviewData.gfa)} {generateContractPreviewData.gfaUnit}</p></div>
+              </div>
+            </div>
+            
+            {/* Section 3: Timeline (from citations) */}
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <h4 className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-pink-600 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+                Project Timeline
+                <Badge variant="outline" className="text-[8px] ml-auto">FROM CITATIONS</Badge>
+              </h4>
+              <div className="grid grid-cols-4 gap-4">
+                <div><p className="text-[10px] text-muted-foreground uppercase">Commencement</p><p className="font-semibold text-sm">{String(generateContractPreviewData.startDate) !== 'Not set' ? new Date(String(generateContractPreviewData.startDate)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}</p></div>
+                <div><p className="text-[10px] text-muted-foreground uppercase">Completion</p><p className="font-semibold text-sm">{String(generateContractPreviewData.endDate) !== 'Not set' ? new Date(String(generateContractPreviewData.endDate)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not set'}</p></div>
+                <div><p className="text-[10px] text-muted-foreground uppercase">Team Size</p><p className="font-semibold text-sm">{generateContractPreviewData.teamSize} members</p></div>
+                <div><p className="text-[10px] text-muted-foreground uppercase">Work Items</p><p className="font-semibold text-sm">{generateContractPreviewData.taskCount} tasks</p></div>
+              </div>
+            </div>
+
+            {/* Section 4: Financial (if available) */}
+            {financialSummary && (financialSummary.total_cost ?? 0) > 0 && (
+              <div className="p-4 rounded-lg border-2 border-pink-200/60 dark:border-pink-700/30 bg-gradient-to-r from-pink-50/50 to-rose-50/50 dark:from-pink-950/10 dark:to-rose-950/10">
+                <h4 className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <span className="h-5 w-5 rounded-full bg-pink-600 text-white text-[10px] flex items-center justify-center font-bold">5</span>
+                  Contract Value
+                </h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase">Total Value</p>
+                    <p className="font-bold text-xl text-pink-700 dark:text-pink-300">${(financialSummary.total_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase">Materials</p>
+                    <p className="font-semibold text-sm">${(financialSummary.material_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase">Labor</p>
+                    <p className="font-semibold text-sm">${(financialSummary.labor_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
                 </div>
               </div>
             )}
             
             {/* Standard Terms Preview */}
             <div className="p-4 rounded-lg bg-muted/30 border border-dashed">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Standard Terms (Preview)</h4>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>• Warranty: {selectedContractType === 'commercial' ? '2 years' : selectedContractType === 'industrial' ? '3 years' : selectedContractType === 'renovation' ? '6 months' : '1 year'} from completion</p>
-                <p>• Payment: {selectedContractType === 'commercial' ? '30% deposit, 40% midpoint, 30% completion' : selectedContractType === 'industrial' ? '25% phases' : '50% deposit, 50% completion'}</p>
-                <p>• Changes must be agreed in writing by both parties</p>
-                <p>• Contractor maintains liability insurance and WSIB coverage</p>
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="h-5 w-5 rounded-full bg-muted-foreground text-background text-[10px] flex items-center justify-center font-bold">§</span>
+                Included Legal Clauses
+              </h4>
+              <div className="text-xs text-muted-foreground space-y-2">
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Scope of Work</strong> — Detailed description of all work to be performed</span></div>
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Warranty</strong> — {selectedContractType === 'commercial' ? '2 years' : selectedContractType === 'industrial' ? '3 years + 10yr structural' : selectedContractType === 'renovation' ? '6 months' : '1 year'} from completion</span></div>
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Payment Terms</strong> — {selectedContractType === 'commercial' ? '30/40/30 milestone' : selectedContractType === 'industrial' ? '25% per phase' : '50/50 deposit-completion'}</span></div>
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Insurance & Liability</strong> — Comprehensive coverage requirements</span></div>
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Dispute Resolution</strong> — Mediation and arbitration process</span></div>
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Termination</strong> — Notice period and termination fees</span></div>
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Change Orders</strong> — Written approval process</span></div>
+                <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Signature Blocks</strong> — Contractor, Client & Witness areas</span></div>
               </div>
+            </div>
+
+            {/* Email notification */}
+            <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50">
+              <p className="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                <Mail className="h-3 w-3" />
+                The client will receive an email with a secure link to view, review and sign this contract electronically.
+              </p>
             </div>
           </div>
           
@@ -9846,9 +9878,12 @@ export default function Stage8FinalReview({
                     contractorPhone: generateContractPreviewData.contractorPhone,
                     contractorEmail: generateContractPreviewData.contractorEmail,
                     contractorAddress: generateContractPreviewData.contractorAddress,
+                    clientName: clientName || undefined,
+                    clientEmail: clientEmail || undefined,
+                    totalAmount: financialSummary?.total_cost || undefined,
                   };
                   await downloadContractPDF(contractData);
-                  toast.success('Contract PDF downloaded!');
+                  toast.success('Professional contract PDF downloaded!');
                 } catch (err) {
                   console.error('PDF generation failed:', err);
                   toast.error('Failed to generate PDF');
@@ -9885,12 +9920,17 @@ export default function Stage8FinalReview({
                     project_address: generateContractPreviewData.projectAddress,
                     client_name: clientName,
                     client_email: clientEmail,
+                    total_amount: financialSummary?.total_cost || 0,
                     start_date: typeof generateContractPreviewData.startDate === 'string' && generateContractPreviewData.startDate !== 'Not set' 
                       ? (() => { try { return new Date(generateContractPreviewData.startDate as string).toISOString().split('T')[0]; } catch { return null; } })()
                       : null,
                     estimated_end_date: typeof generateContractPreviewData.endDate === 'string' && generateContractPreviewData.endDate !== 'Not set'
                       ? (() => { try { return new Date(generateContractPreviewData.endDate as string).toISOString().split('T')[0]; } catch { return null; } })()
                       : null,
+                    contractor_name: generateContractPreviewData.contractorName,
+                    contractor_phone: generateContractPreviewData.contractorPhone,
+                    contractor_email: generateContractPreviewData.contractorEmail,
+                    scope_of_work: `Complete ${generateContractPreviewData.trade} work at ${generateContractPreviewData.projectAddress}. GFA: ${generateContractPreviewData.gfa} ${generateContractPreviewData.gfaUnit}.`,
                     status: 'pending_client',
                   }).select().single();
                   
@@ -9900,19 +9940,12 @@ export default function Stage8FinalReview({
                   const baseUrl = window.location.origin;
                   const contractUrl = `${baseUrl}/contract/sign?token=${newContract.share_token}`;
                   
-                   // 3. Get current user's profile for contractor name
-                   // Use already loaded userProfile from state
-                   const contractorName = userProfile?.company_name || 'Your Contractor';
-                   const contractorPhone = userProfile?.phone || '';
-                   const contractorEmail = userProfile?.email || '';
-                   
-                   // 4. Send email via edge function
-                   const { data: session } = await supabase.auth.getSession();
+                   // 3. Send email via edge function
                    const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-contract-email', {
                      body: {
                        clientEmail: clientEmail,
                        clientName: clientName,
-                       contractorName: contractorName,
+                       contractorName: generateContractPreviewData.contractorName || 'Your Contractor',
                        projectName: generateContractPreviewData.projectName,
                        contractUrl: contractUrl,
                        contractId: newContract.id,
@@ -9921,15 +9954,10 @@ export default function Stage8FinalReview({
                    
                    if (emailError) {
                      console.error('Email send failed:', emailError);
-                     // Contract created but email failed - still show partial success
                      toast.warning('Contract created but email failed to send. Share the link manually.');
                    } else {
-                     // Update contract with sent timestamp and contractor data from bu_profiles
                      await supabase.from('contracts').update({
                        sent_to_client_at: new Date().toISOString(),
-                       contractor_name: contractorName,
-                       contractor_phone: contractorPhone,
-                       contractor_email: contractorEmail,
                      }).eq('id', newContract.id);
                      
                      toast.success(`Contract sent to ${clientName}!`);
