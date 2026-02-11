@@ -2501,7 +2501,17 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             .from('project-documents')
             .getPublicUrl(filePath);
           
-          // Create citation for each file
+          // Save to project_documents table so Stage 8 can find it
+          await supabase
+            .from('project_documents')
+            .insert({
+              project_id: projectId,
+              file_name: file.name,
+              file_path: filePath,
+              file_size: file.file.size,
+            });
+          
+          // Create citation for each file (use fileName key for Stage 8 compatibility)
           const citationType = file.type === 'blueprint' 
             ? CITATION_TYPES.BLUEPRINT_UPLOAD 
             : CITATION_TYPES.SITE_PHOTO;
@@ -2512,11 +2522,13 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             answer: file.name,
             value: urlData.publicUrl,
             metadata: {
+              fileName: file.name,
               file_name: file.name,
               file_type: file.type,
               file_path: filePath,
               storage_url: urlData.publicUrl,
               uploaded_at: new Date().toISOString(),
+              category: file.type === 'blueprint' ? 'technical' : 'visual',
             },
           });
           
