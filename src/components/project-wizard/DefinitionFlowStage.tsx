@@ -1956,16 +1956,77 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       }
     }, [existingCitations, gfaValue, wastePercent]);
     
+    // Persist template items to DB (called after add/update/delete/waste/markup changes)
+    const persistTemplateSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const persistTemplateToDb = useCallback((items: TemplateItem[]) => {
+      if (persistTemplateSaveRef.current) clearTimeout(persistTemplateSaveRef.current);
+      persistTemplateSaveRef.current = setTimeout(async () => {
+        try {
+          const matTotal = items.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
+          const labTotal = items.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
+
+          const { data: currentData } = await supabase
+            .from("project_summaries")
+            .select("id, verified_facts")
+            .eq("project_id", projectId)
+            .maybeSingle();
+
+          const currentFacts = Array.isArray(currentData?.verified_facts) ? currentData.verified_facts : [];
+          const filteredFacts = currentFacts.filter((f: any) => f.cite_type !== 'TEMPLATE_LOCK');
+          const templateCitation = createCitation({
+            cite_type: CITATION_TYPES.TEMPLATE_LOCK,
+            question_key: 'template_items',
+            answer: `${items.length} items`,
+            value: matTotal + labTotal,
+            metadata: {
+              items,
+              material_total: matTotal,
+              labor_total: labTotal,
+              markup_percent: markupPercent,
+              waste_percent: wastePercent,
+            },
+          });
+          const updatedFacts = [...filteredFacts, templateCitation as unknown as Record<string, unknown>];
+
+          if (currentData?.id) {
+            await supabase
+              .from("project_summaries")
+              .update({
+                verified_facts: updatedFacts as unknown as null,
+                total_cost: matTotal + labTotal,
+                material_cost: matTotal,
+                labor_cost: labTotal,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("project_id", projectId);
+          }
+          console.log("[DefinitionFlow] Template items auto-saved to DB");
+        } catch (err) {
+          console.error("[DefinitionFlow] Failed to auto-save template:", err);
+        }
+      }, 800);
+    }, [projectId, markupPercent, wastePercent]);
+
+
     // Recalculate when waste percent changes
     const handleWastePercentChange = useCallback((newWastePercent: number) => {
       setWastePercent(newWastePercent);
-      setTemplateItems(prev => applyWasteToItems(prev, newWastePercent));
-    }, []);
+      setTemplateItems(prev => {
+        const updated = applyWasteToItems(prev, newWastePercent);
+        persistTemplateToDb(updated);
+        return updated;
+      });
+    }, [persistTemplateToDb]);
     
     // Handle markup percent changes
     const handleMarkupPercentChange = useCallback((newMarkupPercent: number) => {
       setMarkupPercent(newMarkupPercent);
-    }, []);
+      // Trigger auto-save with current items and new markup
+      setTemplateItems(prev => {
+        persistTemplateToDb(prev);
+        return prev;
+      });
+    }, [persistTemplateToDb]);
     
     // Calculate totals
     const materialTotal = templateItems.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
@@ -2050,59 +2111,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       }
     };
     
-    // Persist template items to DB (called after add/update/delete)
-    const persistTemplateSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const persistTemplateToDb = useCallback((items: TemplateItem[]) => {
-      // Debounce: wait 800ms after last change before saving
-      if (persistTemplateSaveRef.current) clearTimeout(persistTemplateSaveRef.current);
-      persistTemplateSaveRef.current = setTimeout(async () => {
-        try {
-          const matTotal = items.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
-          const labTotal = items.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
-
-          const { data: currentData } = await supabase
-            .from("project_summaries")
-            .select("id, verified_facts")
-            .eq("project_id", projectId)
-            .maybeSingle();
-
-          const currentFacts = Array.isArray(currentData?.verified_facts) ? currentData.verified_facts : [];
-          // Replace existing TEMPLATE_LOCK citation if present
-          const filteredFacts = currentFacts.filter((f: any) => f.cite_type !== 'TEMPLATE_LOCK');
-          const templateCitation = createCitation({
-            cite_type: CITATION_TYPES.TEMPLATE_LOCK,
-            question_key: 'template_items',
-            answer: `${items.length} items`,
-            value: matTotal + labTotal,
-            metadata: {
-              items,
-              material_total: matTotal,
-              labor_total: labTotal,
-              markup_percent: markupPercent,
-              waste_percent: wastePercent,
-            },
-          });
-          const updatedFacts = [...filteredFacts, templateCitation as unknown as Record<string, unknown>];
-
-          if (currentData?.id) {
-            await supabase
-              .from("project_summaries")
-              .update({
-                verified_facts: updatedFacts as unknown as null,
-                total_cost: matTotal + labTotal,
-                material_cost: matTotal,
-                labor_cost: labTotal,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("project_id", projectId);
-          }
-          console.log("[DefinitionFlow] Template items auto-saved to DB");
-        } catch (err) {
-          console.error("[DefinitionFlow] Failed to auto-save template:", err);
-        }
-      }, 800);
-    }, [projectId, markupPercent, wastePercent]);
-
     // Template item editing
     const handleUpdateItem = (itemId: string, field: keyof TemplateItem, value: number | string) => {
       setTemplateItems(prev => {
