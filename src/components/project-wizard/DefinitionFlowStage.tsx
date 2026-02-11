@@ -1054,7 +1054,8 @@ const VisualUploadCanvasPanel = ({
     CITATION_TYPES.TRADE_SELECTION, 
     CITATION_TYPES.TEMPLATE_LOCK, 
     CITATION_TYPES.TEAM_SIZE, 
-    CITATION_TYPES.EXECUTION_MODE
+    CITATION_TYPES.EXECUTION_MODE,
+    CITATION_TYPES.SITE_CONDITION,
   ];
   const relevantCitations = flowCitations.filter(c => 
     relevantCitationTypes.includes(c.cite_type)
@@ -1138,7 +1139,7 @@ const VisualUploadCanvasPanel = ({
             )}
             
             {/* Show other citations from flow */}
-            {relevantCitations.filter(c => c.cite_type === CITATION_TYPES.TEAM_SIZE).map(c => (
+            {relevantCitations.filter(c => c.cite_type === CITATION_TYPES.EXECUTION_MODE).map(c => (
               <div key={c.id} className="flex items-center justify-between py-2 px-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-purple-500" />
@@ -1148,6 +1149,22 @@ const VisualUploadCanvasPanel = ({
                   cite_execution
                 </Badge>
                 <span className="font-semibold text-purple-700 dark:text-purple-300">{c.answer}</span>
+              </div>
+            ))}
+            
+            {/* Demolition Citation */}
+            {relevantCitations.filter(c => c.cite_type === CITATION_TYPES.SITE_CONDITION).map(c => (
+              <div key={c.id} className="flex items-center justify-between py-2 px-3 bg-orange-50/50 dark:bg-orange-950/30 rounded-lg border border-orange-200/50 dark:border-orange-800/30">
+                <div className="flex items-center gap-2">
+                  <Hammer className="h-4 w-4 text-orange-500" />
+                  <span className="text-sm font-medium">
+                    {c.value === 'demolition' ? 'Demolition' : 'Site Condition'}
+                  </span>
+                </div>
+                <Badge variant="outline" className="font-mono text-orange-600 dark:text-orange-400 border-orange-300">
+                  cite_site
+                </Badge>
+                <span className="font-semibold text-orange-700 dark:text-orange-300">{c.answer}</span>
               </div>
             ))}
           </div>
@@ -1380,6 +1397,8 @@ interface CumulativeSummaryBarProps {
   teamSize: string | null;
   teamMembers: TeamMember[];
   siteCondition: 'clear' | 'demolition';
+  demolitionCost: number;
+  demolitionUnitPrice: number;
   timeline: 'asap' | 'scheduled';
   scheduledDate: Date | undefined;
   scheduledEndDate: Date | undefined;
@@ -1395,6 +1414,8 @@ const CumulativeSummaryBar = ({
   teamSize,
   teamMembers,
   siteCondition,
+  demolitionCost,
+  demolitionUnitPrice,
   timeline,
   scheduledDate,
   scheduledEndDate,
@@ -1445,8 +1466,10 @@ const CumulativeSummaryBar = ({
   }
 
   // Site condition
-  if (templateLocked && (siteCondition === 'clear' || siteCondition === 'demolition')) {
-    summaryEntries.push({ label: 'Site', value: siteCondition === 'clear' ? 'Clear' : 'Demolition', icon: Settings, color: siteCondition === 'demolition' ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400' });
+  if (templateLocked && siteCondition === 'clear') {
+    summaryEntries.push({ label: 'Site', value: 'Clear', icon: CheckCircle2, color: 'text-green-600 dark:text-green-400' });
+  } else if (templateLocked && siteCondition === 'demolition') {
+    summaryEntries.push({ label: 'Demolition', value: `$${demolitionUnitPrice.toFixed(2)}/sqft → $${demolitionCost.toLocaleString()}`, icon: Hammer, color: 'text-orange-600 dark:text-orange-400' });
   }
 
   // Timeline
@@ -1459,37 +1482,67 @@ const CumulativeSummaryBar = ({
     summaryEntries.push({ label: 'End', value: format(scheduledEndDate, 'MMM d'), icon: Calendar, color: 'text-green-600 dark:text-green-400' });
   }
 
+  // Compact mode: when both dates are set, switch to a 2-row dense list
+  const isCompact = !!(scheduledEndDate);
+
   if (summaryEntries.length === 0) return null;
 
   return (
     <div className="shrink-0 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/60 via-white/60 to-orange-50/60 dark:from-amber-950/30 dark:via-background/60 dark:to-orange-950/30 backdrop-blur-sm">
-      <div className="px-4 py-2">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-          <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Project Summary</span>
-          <span className="text-xs text-muted-foreground">({summaryEntries.length} facts)</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {summaryEntries.map((entry, idx) => (
-            <motion.button
-              key={`${entry.label}-${idx}`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.05 }}
-              onClick={() => entry.citationId && onCitationClick?.(entry.citationId)}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-all",
-                "bg-white/80 dark:bg-slate-800/80 border-amber-200/60 dark:border-amber-800/40",
-                "hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-sm",
-                entry.citationId && "cursor-pointer"
-              )}
-            >
-              <entry.icon className={cn("h-3 w-3", entry.color)} />
-              <span className="text-muted-foreground font-medium">{entry.label}:</span>
-              <span className="font-semibold text-foreground truncate max-w-[120px]">{entry.value}</span>
-            </motion.button>
-          ))}
-        </div>
+      <div className={cn("px-4", isCompact ? "py-1.5" : "py-2")}>
+        {!isCompact && (
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Project Summary</span>
+            <span className="text-xs text-muted-foreground">({summaryEntries.length} facts)</span>
+          </div>
+        )}
+        {isCompact ? (
+          /* Compact 2-row list layout */
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+            {summaryEntries.map((entry, idx) => (
+              <motion.button
+                key={`${entry.label}-${idx}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: idx * 0.02 }}
+                onClick={() => entry.citationId && onCitationClick?.(entry.citationId)}
+                className={cn(
+                  "flex items-center gap-1.5 py-0.5 text-xs text-left transition-all",
+                  "hover:bg-amber-100/50 dark:hover:bg-amber-900/30 rounded px-1 -mx-1",
+                  entry.citationId && "cursor-pointer"
+                )}
+              >
+                <entry.icon className={cn("h-3 w-3 shrink-0", entry.color)} />
+                <span className="text-muted-foreground">{entry.label}:</span>
+                <span className="font-medium text-foreground truncate">{entry.value}</span>
+              </motion.button>
+            ))}
+          </div>
+        ) : (
+          /* Normal pill layout */
+          <div className="flex flex-wrap gap-1.5">
+            {summaryEntries.map((entry, idx) => (
+              <motion.button
+                key={`${entry.label}-${idx}`}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.05 }}
+                onClick={() => entry.citationId && onCitationClick?.(entry.citationId)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-all",
+                  "bg-white/80 dark:bg-slate-800/80 border-amber-200/60 dark:border-amber-800/40",
+                  "hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-sm",
+                  entry.citationId && "cursor-pointer"
+                )}
+              >
+                <entry.icon className={cn("h-3 w-3", entry.color)} />
+                <span className="text-muted-foreground font-medium">{entry.label}:</span>
+                <span className="font-semibold text-foreground truncate max-w-[120px]">{entry.value}</span>
+              </motion.button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2339,12 +2392,35 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setSiteCondition(condition);
       // Only auto-advance for 'clear' — demolition needs price confirmation first
       if (condition === 'clear' && currentSubStep === 2) {
+        // Save citation for clear site immediately
+        const siteCitation = createCitation({
+          cite_type: CITATION_TYPES.SITE_CONDITION,
+          question_key: 'site_condition',
+          answer: 'Clear Site',
+          value: 'clear',
+          metadata: { demolition_required: false },
+        });
+        setFlowCitations(prev => [...prev, siteCitation]);
         setCurrentSubStep(3);
       }
     };
     
-    // Confirm demolition with user-set price, then advance
+    // Confirm demolition with user-set price, then save citation and advance
     const handleConfirmDemolition = () => {
+      // Create SITE_CONDITION citation immediately so it appears on the right panel
+      const siteCitation = createCitation({
+        cite_type: CITATION_TYPES.SITE_CONDITION,
+        question_key: 'site_condition',
+        answer: `Demolition: $${demolitionUnitPrice.toFixed(2)}/sqft → $${(gfaValue * demolitionUnitPrice).toLocaleString()}`,
+        value: 'demolition',
+        metadata: { 
+          demolition_required: true,
+          demolition_unit_price: demolitionUnitPrice,
+          demolition_cost: gfaValue * demolitionUnitPrice,
+        },
+      });
+      setFlowCitations(prev => [...prev, siteCitation]);
+      
       if (currentSubStep === 2) {
         setCurrentSubStep(3);
       }
@@ -2699,6 +2775,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             <CitationDrivenCanvas
               citations={[...(existingCitations || []), ...flowCitations]}
               onCitationClick={onCitationClick}
+              compact={!!scheduledEndDate}
             />
           </div>
           
