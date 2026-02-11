@@ -1040,13 +1040,77 @@ export default function Stage8FinalReview({
         }
 
         // 4. Load tasks and transform to checklist format
-        const { data: tasksData } = await supabase
+        let { data: tasksData } = await supabase
           .from('project_tasks')
           .select('id, title, status, priority, description, assigned_to, due_date, created_at')
           .eq('project_id', projectId)
           .is('archived_at', null);
         
-        if (tasksData) {
+        // Auto-generate tasks if none exist (Stage 7 was skipped or failed)
+        if (!tasksData || tasksData.length === 0) {
+          const timelineCit = loadedCitations.find(c => c.cite_type === 'TIMELINE');
+          const endDateCit = loadedCitations.find(c => c.cite_type === 'END_DATE');
+          const siteCondCit = loadedCitations.find(c => c.cite_type === 'SITE_CONDITION');
+          
+          const startStr = (timelineCit?.metadata as any)?.start_date || (summary as any)?.project_start_date;
+          const endStr = endDateCit?.value || (endDateCit?.metadata as any)?.end_date || (summary as any)?.project_end_date;
+          
+          if (startStr && endStr) {
+            const startD = new Date(startStr as string);
+            const endD = new Date(endStr as string);
+            const totalDays = Math.max(1, Math.round((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)));
+            const hasDemolition = siteCondCit?.value === 'demolition';
+            
+            const phases = [
+              ...(hasDemolition ? [{ id: 'demolition', name: 'Demolition Work', pct: 15, pri: 'critical' }] : []),
+              { id: 'preparation', name: 'Preparation Work', pct: 25, pri: 'high' },
+              { id: 'installation', name: 'Installation Work', pct: 45, pri: 'medium' },
+              { id: 'finishing', name: 'Finishing & QC', pct: 15, pri: 'medium' },
+            ];
+            const totalPct = phases.reduce((s, p) => s + p.pct, 0);
+            
+            let curDate = startD;
+            const autoTasks: { title: string; description: string; priority: string; due_date: string }[] = [];
+            
+            for (const phase of phases) {
+              const days = Math.max(1, Math.round((phase.pct / totalPct) * totalDays));
+              const phaseEnd = new Date(curDate.getTime() + days * 86400000);
+              autoTasks.push({
+                title: phase.name,
+                description: `Phase: ${phase.id}`,
+                priority: phase.pri,
+                due_date: phaseEnd.toISOString(),
+              });
+              autoTasks.push({
+                title: `${phase.id.charAt(0).toUpperCase() + phase.id.slice(1)} Verification`,
+                description: `Verification checkpoint: ${phase.id}`,
+                priority: 'critical',
+                due_date: phaseEnd.toISOString(),
+              });
+              curDate = phaseEnd;
+            }
+            
+            const insertRows = autoTasks.map(t => ({
+              project_id: projectId,
+              assigned_to: userId,
+              assigned_by: userId,
+              status: 'pending',
+              ...t,
+            }));
+            
+            const { data: insertedTasks, error: insertErr } = await supabase
+              .from('project_tasks')
+              .insert(insertRows)
+              .select('id, title, status, priority, description, assigned_to, due_date, created_at');
+            
+            if (!insertErr && insertedTasks) {
+              tasksData = insertedTasks;
+              console.log('[Stage8] Auto-generated', insertedTasks.length, 'tasks');
+            }
+          }
+        }
+        
+        if (tasksData && tasksData.length > 0) {
           // ✓ Check which tasks have verification photos via loaded citations
           const taskPhotoIds = new Set<string>();
           loadedCitations.forEach((c: Citation) => {
