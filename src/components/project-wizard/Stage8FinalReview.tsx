@@ -9392,6 +9392,36 @@ export default function Stage8FinalReview({
                 </button>
               );
             })}
+            {/* MESSA DNA Tab */}
+            {hasAccessToTier('owner') && (
+              <button
+                className={cn(
+                  "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[60px]",
+                  activeOrbitalPanel === 'messa-deep-audit'
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                    : "text-emerald-700 hover:text-emerald-400 hover:bg-emerald-950/30"
+                )}
+                onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+              >
+                <div className="flex items-center gap-1">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-[10px]">DNA</span>
+                </div>
+                {(() => {
+                  const passCount = [
+                    !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
+                    !!citations.find(c => c.cite_type === 'GFA_LOCK'),
+                    !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
+                    !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
+                    !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
+                    !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+                    !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
+                    ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
+                  ].filter(Boolean).length;
+                  return <span className="text-[8px] font-mono opacity-70">{passCount}/8</span>;
+                })()}
+              </button>
+            )}
           </div>
           {/* Content area */}
           <div className="flex-1 overflow-y-auto p-4" ref={mobileContentRef}>
