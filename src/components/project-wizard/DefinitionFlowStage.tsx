@@ -495,31 +495,25 @@ const ChatPanel = ({
                  
                    {/* Solo/Team buttons */}
                    {currentSubStep === 1 && !teamSize && (
-                     <div className="grid grid-cols-2 gap-3">
-                       <motion.button
-                         whileHover={{ scale: 1.03, y: -2 }}
-                         whileTap={{ scale: 0.97 }}
+                     <div className="flex flex-wrap gap-2 mt-1">
+                       <Button
+                         variant="outline"
+                         size="sm"
                          onClick={() => onTeamSizeSelect('solo')}
-                         className="group relative p-4 rounded-2xl border-2 border-cyan-200 dark:border-cyan-800 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/40 dark:to-sky-950/40 hover:border-cyan-400 dark:hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-200/40 dark:hover:shadow-cyan-900/30 transition-all duration-300 flex flex-col items-center gap-2 text-center"
+                         className="text-xs"
                        >
-                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-sky-500 flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:shadow-cyan-300/50 transition-shadow">
-                           <User className="h-6 w-6 text-white" />
-                         </div>
-                         <span className="text-sm font-bold text-foreground">Solo</span>
-                         <span className="text-[10px] text-muted-foreground leading-tight">Just me — personal project</span>
-                       </motion.button>
-                       <motion.button
-                         whileHover={{ scale: 1.03, y: -2 }}
-                         whileTap={{ scale: 0.97 }}
+                         <User className="h-3.5 w-3.5 mr-1.5" />
+                         Solo
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
                          onClick={() => onTeamSizeSelect('team')}
-                         className="group relative p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/40 dark:to-green-950/40 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-200/40 dark:hover:shadow-emerald-900/30 transition-all duration-300 flex flex-col items-center gap-2 text-center"
+                         className="text-xs"
                        >
-                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:shadow-emerald-300/50 transition-shadow">
-                           <Users className="h-6 w-6 text-white" />
-                         </div>
-                         <span className="text-sm font-bold text-foreground">Team</span>
-                         <span className="text-[10px] text-muted-foreground leading-tight">Multiple workers & roles</span>
-                       </motion.button>
+                         <Users className="h-3.5 w-3.5 mr-1.5" />
+                         Team
+                       </Button>
                      </div>
                    )}
                   
