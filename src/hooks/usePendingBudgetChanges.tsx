@@ -247,13 +247,34 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'pending_budget_changes',
           filter: `project_id=eq.${projectId}`,
         },
         (payload) => {
-          console.log('[usePendingBudgetChanges] Realtime update:', payload);
+          console.log('[usePendingBudgetChanges] New pending change:', payload);
+          fetchPendingChanges();
+          // Notify owner about new change
+          const newChange = payload.new as any;
+          if (newChange && newChange.requested_by !== user?.id) {
+            toast.warning(`New modification request: ${newChange.item_name || 'Budget item'}`, {
+              description: newChange.change_reason || 'Requires your approval',
+              duration: 8000,
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'pending_budget_changes',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          console.log('[usePendingBudgetChanges] Change updated:', payload);
           fetchPendingChanges();
         }
       )
@@ -262,7 +283,7 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId, enabled, fetchPendingChanges]);
+  }, [projectId, enabled, fetchPendingChanges, user?.id]);
 
   // Computed values
   const pendingCount = pendingChanges.filter(c => c.status === 'pending').length;
