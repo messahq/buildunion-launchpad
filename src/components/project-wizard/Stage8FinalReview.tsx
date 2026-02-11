@@ -7834,7 +7834,7 @@ export default function Stage8FinalReview({
                          </p>
                       </div>
                     </div>
-                  </motion.div>
+                    </motion.div>
 
                   {/* ─── Cost Breakdown: Horizontal Compact Cards + Inline Bar ─── */}
                   {costBreakdownData.length > 0 && (
@@ -7901,6 +7901,96 @@ export default function Stage8FinalReview({
                       </div>
                     </motion.div>
                   )}
+
+                  {/* ─── Phase Cost Breakdown (from Template Sub-tasks) ─── */}
+                  {(() => {
+                    const phaseGroups = tasks
+                      .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
+                      .reduce<Record<string, { total: number; count: number; items: { title: string; cost: number }[] }>>((acc, t) => {
+                        const phase = t.phase || 'installation';
+                        if (!acc[phase]) acc[phase] = { total: 0, count: 0, items: [] };
+                        acc[phase].total += t.templateItemCost!;
+                        acc[phase].count += 1;
+                        acc[phase].items.push({ title: t.title, cost: t.templateItemCost! });
+                        return acc;
+                      }, {});
+                    
+                    const phaseEntries = TASK_PHASES.filter(p => phaseGroups[p.key]);
+                    const phaseTotal = phaseEntries.reduce((s, p) => s + phaseGroups[p.key].total, 0);
+                    
+                    if (phaseEntries.length === 0) return null;
+                    
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
+                        className="space-y-2"
+                      >
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center gap-2">
+                            <div className="h-3 w-0.5 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-full" />
+                            <span className="text-[10px] text-amber-800 dark:text-white/60 uppercase tracking-widest font-semibold">Phase Breakdown</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-amber-300/80">${phaseTotal.toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-1.5">
+                          {phaseEntries.map((phase, i) => {
+                            const group = phaseGroups[phase.key];
+                            const pct = phaseTotal > 0 ? ((group.total / phaseTotal) * 100).toFixed(1) : '0';
+                            const phaseColors: Record<string, string> = {
+                              demolition: 'hsl(0, 70%, 55%)',
+                              preparation: 'hsl(35, 80%, 50%)',
+                              installation: 'hsl(220, 75%, 55%)',
+                              finishing: 'hsl(145, 65%, 45%)',
+                            };
+                            const color = phaseColors[phase.key] || 'hsl(220, 75%, 55%)';
+                            
+                            return (
+                              <motion.div
+                                key={phase.key}
+                                initial={{ opacity: 0, x: -8 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 + i * 0.06 }}
+                                className="p-2.5 rounded-lg border border-amber-500/15 bg-gradient-to-r from-amber-950/20 to-orange-950/10"
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
+                                    <span className="text-xs font-semibold text-amber-900 dark:text-white/90">{phase.label}</span>
+                                    <span className="text-[9px] text-amber-500/60 font-mono">({group.count} items)</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-amber-950 dark:text-white font-mono">${group.total.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1 rounded-full bg-amber-900/30 overflow-hidden">
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${pct}%` }}
+                                      transition={{ duration: 0.7, delay: 0.4 + i * 0.08 }}
+                                      className="h-full rounded-full"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] text-amber-700 dark:text-white/60 font-mono w-10 text-right">{pct}%</span>
+                                </div>
+                                {/* Individual items */}
+                                <div className="mt-1.5 space-y-0.5 pl-4">
+                                  {group.items.map((item, j) => (
+                                    <div key={j} className="flex items-center justify-between">
+                                      <span className="text-[10px] text-amber-600 dark:text-amber-300/60 truncate max-w-[65%]">• {item.title}</span>
+                                      <span className="text-[10px] font-mono text-amber-700 dark:text-amber-200/70">${item.cost.toLocaleString()}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
 
                   {/* ─── Donut Chart + GFA in compact row ─── */}
                   <motion.div
