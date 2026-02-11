@@ -380,18 +380,18 @@ const ChatPanel = ({
                   
                   {/* Trade selection buttons */}
                   {!selectedTrade && (
-                    <div className="grid grid-cols-2 gap-2 mt-4">
+                    <div className="flex flex-wrap gap-2 mt-4">
                       {TRADE_OPTIONS.map(trade => (
-                        <motion.button
+                        <Button
                           key={trade.key}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          variant="outline"
+                          size="sm"
                           onClick={() => onTradeSelect(trade.key)}
-                          className="p-3 rounded-xl border-2 border-amber-200 dark:border-amber-800 bg-card hover:border-amber-400 dark:hover:border-amber-600 transition-all flex flex-col items-center gap-1"
+                          className="border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-500 text-foreground gap-1.5"
                         >
-                          <trade.icon className="h-6 w-6 text-amber-500" />
-                          <span className="text-sm font-medium">{trade.label}</span>
-                        </motion.button>
+                          <trade.icon className="h-4 w-4 text-amber-500" />
+                          {trade.label}
+                        </Button>
                       ))}
                     </div>
                   )}
