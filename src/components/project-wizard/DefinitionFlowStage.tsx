@@ -126,6 +126,13 @@ function generateTemplateItems(trade: string, gfaSqft: number): TemplateItem[] {
       { id: '4', name: 'Installation Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 2.25, totalPrice: gfaSqft * 2.25, applyWaste: false },
       { id: '5', name: 'Finishing Labor (Tape & Mud)', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 1.75, totalPrice: gfaSqft * 1.75, applyWaste: false },
     ],
+    concrete: [
+      { id: '1', name: 'Ready-Mix Concrete', category: 'material', baseQuantity: Math.ceil(gfaSqft / 27), quantity: Math.ceil(gfaSqft / 27), unit: 'cu yd', unitPrice: 165, totalPrice: Math.ceil(gfaSqft / 27) * 165, applyWaste: true },
+      { id: '2', name: 'Rebar (Grade 60)', category: 'material', baseQuantity: Math.ceil(gfaSqft * 0.5), quantity: Math.ceil(gfaSqft * 0.5), unit: 'lbs', unitPrice: 0.85, totalPrice: Math.ceil(gfaSqft * 0.5) * 0.85, applyWaste: true },
+      { id: '3', name: 'Wire Mesh', category: 'material', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 0.45, totalPrice: gfaSqft * 0.45, applyWaste: true },
+      { id: '4', name: 'Forming & Pouring Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 3.50, totalPrice: gfaSqft * 3.50, applyWaste: false },
+      { id: '5', name: 'Finishing Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 2.00, totalPrice: gfaSqft * 2.00, applyWaste: false },
+    ],
     custom: [
       { id: '1', name: 'Custom Material', category: 'material', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 5, totalPrice: gfaSqft * 5, applyWaste: true },
       { id: '2', name: 'Custom Labor', category: 'labor', baseQuantity: gfaSqft, quantity: gfaSqft, unit: 'sq ft', unitPrice: 3, totalPrice: gfaSqft * 3, applyWaste: false },
@@ -178,6 +185,9 @@ interface ChatPanelProps {
   scheduledEndDate: Date | undefined;
   demolitionCost: number;
   demolitionUnitPrice: number;
+  // AI template generation
+  isGeneratingTemplate: boolean;
+  aiTemplateReady: boolean;
   // Stage 5: Visual Intelligence
   stage5Active: boolean;
   uploadedFiles: UploadedFile[];
@@ -216,6 +226,8 @@ const ChatPanel = ({
   scheduledEndDate,
   demolitionCost,
   demolitionUnitPrice,
+  isGeneratingTemplate,
+  aiTemplateReady,
   stage5Active,
   uploadedFiles,
   isUploading,
@@ -392,25 +404,53 @@ const ChatPanel = ({
                 </motion.div>
               )}
               
-              {/* Template Lock prompt (before Stage 4) */}
-              {selectedTrade && !templateLocked && (
+              {/* AI Generating indicator */}
+              {selectedTrade && isGeneratingTemplate && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                   className="flex justify-start"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 shadow-sm">
-                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span className="text-xs font-semibold">Template Ready</span>
+                  <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                      <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Generating template...</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Your {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template is ready. 
-                      Review materials & pricing on the right, then lock it to proceed.
+                    <p className="text-xs text-muted-foreground">
+                      MESSA AI is creating a {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template for {gfaValue.toLocaleString()} sq ft.
+                    </p>
+                    <div className="mt-2 h-1.5 bg-amber-100 dark:bg-amber-900 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                        initial={{ width: '10%' }}
+                        animate={{ width: '90%' }}
+                        transition={{ duration: 8, ease: "easeOut" }}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              
+              {/* Template Ready - AI done */}
+              {selectedTrade && aiTemplateReady && !templateLocked && !isGeneratingTemplate && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex justify-start"
+                >
+                  <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-300 dark:border-amber-700 shadow-sm">
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-xs font-semibold">AI Template Ready</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Your {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template has been generated. 
+                      Review and edit on the right, then lock it.
                     </p>
                     <p className="text-xs text-muted-foreground italic">
-                      👉 Click "Lock Template & Continue" on the card to proceed to Stage 4.
+                      👉 Click "Lock Template & Continue" on the card.
                     </p>
                   </div>
                 </motion.div>
@@ -1820,6 +1860,10 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Step 1: Trade selection
     const [selectedTrade, setSelectedTrade] = useState<string | null>(null);
     
+    // AI template generation state
+    const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
+    const [aiTemplateReady, setAiTemplateReady] = useState(false);
+    
     // Template lock state (Stage 3 → Stage 4 transition)
     const [templateLocked, setTemplateLocked] = useState(false);
     
@@ -1842,7 +1886,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     
     // Stage 4 Step 2: Site condition
     const [siteCondition, setSiteCondition] = useState<'clear' | 'demolition'>('clear');
-    const [demolitionUnitPrice, setDemolitionUnitPrice] = useState(2.5); // Editable $/sq ft
+    const [demolitionUnitPrice, setDemolitionUnitPrice] = useState(2.5);
     
     // Stage 4 Step 3: Timeline
     const [timeline, setTimeline] = useState<'asap' | 'scheduled'>('asap');
@@ -1857,14 +1901,60 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Collected citations
     const [flowCitations, setFlowCitations] = useState<Citation[]>([]);
     
-    // Generate template when trade is selected
-    useEffect(() => {
-      if (selectedTrade) {
-        const baseItems = generateTemplateItems(selectedTrade, gfaValue);
+    // AI template generation function
+    const generateAITemplate = useCallback(async (trade: string) => {
+      setIsGeneratingTemplate(true);
+      setAiTemplateReady(false);
+      
+      // Extract project info from existing citations
+      const projectName = existingCitations.find(c => c.cite_type === CITATION_TYPES.PROJECT_NAME)?.answer || '';
+      const location = existingCitations.find(c => c.cite_type === CITATION_TYPES.LOCATION)?.answer || '';
+      const workType = existingCitations.find(c => c.cite_type === CITATION_TYPES.WORK_TYPE)?.answer || '';
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-trade-template', {
+          body: {
+            trade: TRADE_OPTIONS.find(t => t.key === trade)?.label || trade,
+            gfa_sqft: gfaValue,
+            project_name: projectName,
+            location,
+            work_type: workType,
+          },
+        });
+        
+        if (error) throw error;
+        
+        if (data?.items && Array.isArray(data.items)) {
+          const aiItems: TemplateItem[] = data.items.map((item: any, idx: number) => ({
+            id: `ai_${idx + 1}`,
+            name: item.name,
+            category: item.category === 'labor' ? 'labor' : 'material',
+            baseQuantity: Number(item.quantity) || 0,
+            quantity: Math.ceil((Number(item.quantity) || 0) * (item.category === 'material' ? 1 + wastePercent / 100 : 1)),
+            unit: item.unit || 'pcs',
+            unitPrice: Number(item.unitPrice) || 0,
+            totalPrice: Math.ceil((Number(item.quantity) || 0) * (item.category === 'material' ? 1 + wastePercent / 100 : 1)) * (Number(item.unitPrice) || 0),
+            applyWaste: item.category === 'material',
+          }));
+          
+          setTemplateItems(aiItems);
+          setAiTemplateReady(true);
+          toast.success("AI template generated!");
+        } else {
+          throw new Error("Invalid AI response format");
+        }
+      } catch (err) {
+        console.error("[DefinitionFlow] AI template generation failed:", err);
+        toast.error("AI generation failed, using default template");
+        // Fallback to hardcoded template
+        const baseItems = generateTemplateItems(trade, gfaValue);
         const itemsWithWaste = applyWasteToItems(baseItems, wastePercent);
         setTemplateItems(itemsWithWaste);
+        setAiTemplateReady(true);
+      } finally {
+        setIsGeneratingTemplate(false);
       }
-    }, [selectedTrade, gfaValue]);
+    }, [existingCitations, gfaValue, wastePercent]);
     
     // Recalculate when waste percent changes
     const handleWastePercentChange = useCallback((newWastePercent: number) => {
@@ -1897,7 +1987,18 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     const handleTradeSelect = async (trade: string) => {
       setSelectedTrade(trade);
       
-      // ✓ CRITICAL: Save TRADE_SELECTION citation IMMEDIATELY on selection
+      // For non-custom trades, generate AI template
+      if (trade !== 'custom') {
+        generateAITemplate(trade);
+      } else {
+        // Custom: use default template
+        const baseItems = generateTemplateItems(trade, gfaValue);
+        const itemsWithWaste = applyWasteToItems(baseItems, wastePercent);
+        setTemplateItems(itemsWithWaste);
+        setAiTemplateReady(true);
+      }
+      
+      // Save TRADE_SELECTION citation IMMEDIATELY
       const tradeCitation = createCitation({
         cite_type: CITATION_TYPES.TRADE_SELECTION,
         question_key: 'trade_selection',
@@ -1914,7 +2015,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           .maybeSingle();
         
         const currentFacts = Array.isArray(currentData?.verified_facts) ? currentData.verified_facts : [];
-        // Remove any existing TRADE_SELECTION to avoid duplicates
         const filteredFacts = currentFacts.filter((f: any) => f.cite_type !== 'TRADE_SELECTION');
         const updatedFacts = [...filteredFacts, tradeCitation as unknown as Record<string, unknown>];
         
@@ -1936,7 +2036,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             });
         }
         
-        // Also update projects.trade immediately
         await supabase
           .from("projects")
           .update({ 
@@ -1945,9 +2044,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           })
           .eq("id", projectId);
         
-        console.log("[DefinitionFlow] TRADE_SELECTION saved immediately:", trade);
+        console.log("[DefinitionFlow] TRADE_SELECTION saved:", trade);
       } catch (err) {
-        console.error("[DefinitionFlow] Failed to save trade selection:", err);
+        console.error("[DefinitionFlow] Failed to save trade:", err);
       }
     };
     
@@ -2435,6 +2534,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             scheduledEndDate={scheduledEndDate}
             demolitionCost={demolitionCost}
             demolitionUnitPrice={demolitionUnitPrice}
+            isGeneratingTemplate={isGeneratingTemplate}
+            aiTemplateReady={aiTemplateReady}
             stage5Active={stage5Active}
             uploadedFiles={uploadedFiles}
             isUploading={isUploading}
@@ -2462,14 +2563,31 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         {/* RIGHT PANEL - Canvas (OUTPUT) - matches Stage 1 layout exactly */}
         <div className="hidden md:flex flex-1 flex-col h-full overflow-y-auto">
           {/* CitationDrivenCanvas - shows all previous answers from Stage 1 & 2 */}
-          <div className={cn("shrink-0", selectedTrade ? "max-h-[40%] overflow-y-auto border-b border-amber-200/50 dark:border-amber-800/30" : "flex-1")}>
+          <div className={cn("shrink-0", (aiTemplateReady && selectedTrade) ? "max-h-[40%] overflow-y-auto border-b border-amber-200/50 dark:border-amber-800/30" : "flex-1")}>
             <CitationDrivenCanvas
               citations={existingCitations || []}
               onCitationClick={onCitationClick}
             />
           </div>
           
-          {/* Template Card / Upload Panel - appears below citations when trade selected */}
+          {/* AI Generating spinner on right panel */}
+          {selectedTrade && isGeneratingTemplate && (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center space-y-3">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20"
+                >
+                  <Sparkles className="h-6 w-6 text-amber-500" />
+                </motion.div>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">AI is generating your template...</p>
+                <p className="text-xs text-muted-foreground">Analyzing {gfaValue.toLocaleString()} sq ft {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} project</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Template Card / Upload Panel - appears when AI template ready */}
           {stage5Active ? (
             <div className="flex-1 min-h-0">
               <VisualUploadCanvasPanel
@@ -2485,7 +2603,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
                 onConfirmUploads={handleConfirmUploads}
               />
             </div>
-          ) : selectedTrade ? (
+          ) : (selectedTrade && aiTemplateReady) ? (
             <div className="flex-1 min-h-0">
               <CanvasPanel
                 currentSubStep={currentSubStep}
