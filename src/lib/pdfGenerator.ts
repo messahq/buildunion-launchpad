@@ -26,7 +26,7 @@ const escapeHtml = (text: string | number | null | undefined): string => {
 // Helper: adjust sections so none are split across page boundaries
 const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usablePageHeightPx: number) => {
   // Get all sections that should not be split across pages
-  const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer, .terms, .grid-2, .parties-grid, .party-box, .data-grid, .financial-highlight, .clause, .preamble, .contract-header, .bu-pdf-header, .bu-pdf-footer');
+  const sections = container.querySelectorAll('.pdf-section, .section, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .financial-highlight, .clause, .preamble, .contract-header, .bu-pdf-header, .bu-pdf-footer');
   let cumulativeOffset = 0;
 
   sections.forEach((section) => {
@@ -41,12 +41,12 @@ const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usab
     const bottomInContainer = topInContainer + rect.height;
     const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
 
-    // If the section spans two pages and it's small enough to fit on one page
-    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.80) {
+    // If the section spans two pages and it's small enough to fit on one page (use 70% threshold)
+    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.70) {
       const nextPageTop = (pageStart + 1) * usablePageHeightPx;
-      const spacerHeight = nextPageTop - topInContainer;
-      el.style.marginTop = `${spacerHeight + 20}px`;
-      cumulativeOffset += spacerHeight + 20;
+      const spacerHeight = nextPageTop - topInContainer + 10;
+      el.style.marginTop = `${spacerHeight}px`;
+      cumulativeOffset += spacerHeight;
     }
   });
 };
@@ -915,21 +915,6 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
           <div class="sig-name">${escapeHtml(data.clientName || '________________________________')}</div>
           <div class="sig-date">
             <div class="sig-line" style="margin-top: 20px;"></div>
-            <div class="sig-label">Date</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- WITNESS (optional) -->
-      <div class="section pdf-section" style="margin-top: 32px;">
-        <div class="section-title">Witness (If Required)</div>
-        <div class="parties-grid">
-          <div>
-            <div class="sig-line" style="margin-top: 40px;"></div>
-            <div class="sig-label">Witness Name & Signature</div>
-          </div>
-          <div>
-            <div class="sig-line" style="margin-top: 40px;"></div>
             <div class="sig-label">Date</div>
           </div>
         </div>
