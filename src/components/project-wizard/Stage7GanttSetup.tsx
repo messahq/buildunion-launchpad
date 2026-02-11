@@ -385,33 +385,61 @@ export default function Stage7GanttSetup({
     return PHASE_DEFINITIONS.find(p => p.id === phaseId);
   }, []);
   
+  // Save tasks to database (reusable)
+  const saveTasksToDb = useCallback(async () => {
+    // Check if tasks already exist for this project to avoid duplicates
+    const { data: existingTasks } = await supabase
+      .from('project_tasks')
+      .select('id')
+      .eq('project_id', projectId)
+      .is('archived_at', null)
+      .limit(1);
+    
+    if (existingTasks && existingTasks.length > 0) {
+      console.log('[Stage7] Tasks already exist, skipping insert');
+      return true;
+    }
+
+    const tasksToInsert = phaseTasks.map(task => ({
+      project_id: projectId,
+      title: task.name,
+      description: task.isVerificationNode 
+        ? `Verification checkpoint: ${task.name}` 
+        : `Phase: ${getPhaseById(task.phaseId)?.name}`,
+      assigned_to: task.assigneeId || userId,
+      assigned_by: userId,
+      priority: task.priority,
+      status: 'pending',
+      due_date: task.endDate.toISOString(),
+    }));
+    
+    const { error } = await supabase
+      .from('project_tasks')
+      .insert(tasksToInsert);
+    
+    if (error) {
+      console.error('[Stage7] Failed to create tasks:', error);
+      return false;
+    }
+    return true;
+  }, [phaseTasks, projectId, userId, getPhaseById]);
+
+  // Auto-save tasks when they're generated (so skipping Stage 7 still persists them)
+  useEffect(() => {
+    if (phaseTasks.length === 0) return;
+    
+    const autoSave = async () => {
+      await saveTasksToDb();
+    };
+    autoSave();
+  }, [phaseTasks, saveTasksToDb]);
+
   // Save and generate dashboard
   const handleGenerateDashboard = useCallback(async () => {
     setIsSaving(true);
     
     try {
-      // Save tasks to project_tasks table
-      const tasksToInsert = phaseTasks.map(task => ({
-        project_id: projectId,
-        title: task.name,
-        description: task.isVerificationNode 
-          ? `Verification checkpoint: ${task.name}` 
-          : `Phase: ${getPhaseById(task.phaseId)?.name}`,
-        assigned_to: task.assigneeId || userId, // Default to owner if unassigned
-        assigned_by: userId,
-        priority: task.priority,
-        status: 'pending',
-        due_date: task.endDate.toISOString(),
-      }));
-      
-      const { error: tasksError } = await supabase
-        .from('project_tasks')
-        .insert(tasksToInsert);
-      
-      if (tasksError) {
-        console.error('[Stage7] Failed to create tasks:', tasksError);
-        // Continue anyway - tasks can be created later
-      }
+      await saveTasksToDb();
       
       // Update project status to 'active'
       const { error: projectError } = await supabase
@@ -432,7 +460,7 @@ export default function Stage7GanttSetup({
     } finally {
       setIsSaving(false);
     }
-  }, [phaseTasks, projectId, userId, getPhaseById, onComplete]);
+  }, [saveTasksToDb, projectId, onComplete]);
   
   // Group tasks by phase for rendering
   const tasksByPhase = useMemo(() => {
