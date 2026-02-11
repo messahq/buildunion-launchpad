@@ -6,7 +6,7 @@
 
 import { forwardRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MapPin, Home, Ruler, Wrench, FileText, Lock, DollarSign } from "lucide-react";
+import { Sparkles, MapPin, Home, Ruler, Wrench, FileText, Lock, DollarSign, Hammer } from "lucide-react";
 import { Citation, CITATION_TYPES } from "@/types/citation";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ interface CitationDrivenCanvasProps {
   onCitationClick?: (citationId: string) => void;
   highlightedCitationId?: string | null;
   isLoading?: boolean;
+  compact?: boolean;
   className?: string;
   onGfaLocked?: boolean;
 }
@@ -65,7 +66,7 @@ const MiniCitationCard = ({
 );
 
 const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProps>(
-  ({ citations, onCitationClick, highlightedCitationId, isLoading, className }, ref) => {
+  ({ citations, onCitationClick, highlightedCitationId, isLoading, compact, className }, ref) => {
     
     const organizedCitations = useMemo(() => {
       const knownTypes = [
@@ -90,7 +91,8 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
       <div 
         ref={ref} 
         className={cn(
-          "bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 p-4 overflow-y-auto",
+          "bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-y-auto",
+          compact ? "p-2" : "p-4",
           className
         )}
       >
@@ -129,7 +131,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
         )}
 
         {!isEmpty && !isLoading && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className={cn("grid gap-2", compact ? "grid-cols-3" : "grid-cols-2")}>
             {organizedCitations.projectName && (
               <MiniCitationCard
                 citation={organizedCitations.projectName}
@@ -208,10 +210,10 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
               <MiniCitationCard
                 key={citation.id}
                 citation={citation}
-                icon={FileText}
+                icon={citation.cite_type === CITATION_TYPES.SITE_CONDITION ? Hammer : FileText}
                 label={citation.cite_type.replace(/_/g, ' ')}
                 value={String(citation.answer || '—')}
-                color="bg-violet-500"
+                color={citation.cite_type === CITATION_TYPES.SITE_CONDITION ? 'bg-orange-500' : 'bg-violet-500'}
                 isHighlighted={highlightedCitationId === citation.id}
                 onCitationClick={onCitationClick}
               />
