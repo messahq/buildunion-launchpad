@@ -3,12 +3,14 @@
 // ============================================
 // Manages pending modifications that require Owner approval
 // Maintains Operational Truth by isolating changes until approved
+// Citation-driven: every approve/reject creates a BUDGET_APPROVAL citation
 // ============================================
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { createCitation, CITATION_TYPES, type Citation } from '@/types/citation';
 
 export interface PendingBudgetChange {
   id: string;
@@ -133,6 +135,58 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
     }
   }, [projectId, user?.id, fetchPendingChanges]);
 
+  // Helper: persist a BUDGET_APPROVAL citation to verified_facts
+  const persistApprovalCitation = useCallback(async (
+    change: PendingBudgetChange,
+    decision: 'approved' | 'rejected',
+    reviewNotes?: string,
+  ) => {
+    if (!projectId) return;
+    try {
+      // Fetch current verified_facts
+      const { data: sumData } = await supabase
+        .from('project_summaries')
+        .select('id, verified_facts')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      
+      if (!sumData) return;
+
+      const currentFacts: Citation[] = Array.isArray(sumData.verified_facts)
+        ? (sumData.verified_facts as unknown as Citation[])
+        : [];
+
+      const citation = createCitation({
+        cite_type: CITATION_TYPES.BUDGET_APPROVAL,
+        question_key: `budget_${decision}_${change.item_id}`,
+        answer: `${decision === 'approved' ? '✅ Approved' : '❌ Rejected'}: ${change.item_name}`,
+        value: {
+          decision,
+          item_id: change.item_id,
+          item_name: change.item_name,
+          item_type: change.item_type,
+          original: { qty: change.original_quantity, price: change.original_unit_price, total: change.original_total },
+          proposed: { qty: change.new_quantity, price: change.new_unit_price, total: change.new_total },
+          reason: change.change_reason,
+          review_notes: reviewNotes || null,
+          requested_by: change.requested_by,
+          reviewed_by: user?.id,
+        },
+      });
+
+      const updatedFacts = [...currentFacts, citation];
+
+      await supabase
+        .from('project_summaries')
+        .update({ verified_facts: updatedFacts as any })
+        .eq('id', sumData.id);
+
+      console.log(`[usePendingBudgetChanges] ✓ BUDGET_APPROVAL citation persisted: ${decision}`);
+    } catch (err) {
+      console.error('[usePendingBudgetChanges] Citation persist error:', err);
+    }
+  }, [projectId, user?.id]);
+
   // Approve a pending change (Owner action)
   const approveChange = useCallback(async (changeId: string, reviewNotes?: string) => {
     if (!user?.id) {
@@ -141,6 +195,9 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
     }
     
     try {
+      // Find the change to get its details for the citation
+      const change = pendingChanges.find(c => c.id === changeId);
+
       const { error: updateError } = await supabase
         .from('pending_budget_changes')
         .update({
@@ -152,6 +209,11 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
         .eq('id', changeId);
       
       if (updateError) throw updateError;
+
+      // Persist citation for DNA audit
+      if (change) {
+        await persistApprovalCitation(change, 'approved', reviewNotes);
+      }
       
       toast.success('Modification approved', {
         description: 'Budget will be updated automatically',
@@ -168,7 +230,7 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       });
       return false;
     }
-  }, [user?.id, fetchPendingChanges]);
+  }, [user?.id, fetchPendingChanges, pendingChanges, persistApprovalCitation]);
 
   // Reject a pending change (Owner action)
   const rejectChange = useCallback(async (changeId: string, reviewNotes?: string) => {
@@ -178,6 +240,8 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
     }
     
     try {
+      const change = pendingChanges.find(c => c.id === changeId);
+
       const { error: updateError } = await supabase
         .from('pending_budget_changes')
         .update({
@@ -189,6 +253,11 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
         .eq('id', changeId);
       
       if (updateError) throw updateError;
+
+      // Persist citation for DNA audit
+      if (change) {
+        await persistApprovalCitation(change, 'rejected', reviewNotes);
+      }
       
       toast.info('Modification rejected');
       
@@ -203,7 +272,7 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       });
       return false;
     }
-  }, [user?.id, fetchPendingChanges]);
+  }, [user?.id, fetchPendingChanges, pendingChanges, persistApprovalCitation]);
 
   // Cancel own pending change (Foreman action)
   const cancelChange = useCallback(async (changeId: string) => {
