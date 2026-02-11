@@ -36,6 +36,8 @@ export const CITATION_TYPES = {
   WEATHER_ALERT: 'WEATHER_ALERT',
   // Stage 6: Contracts
   CONTRACT: 'CONTRACT',
+  // Budget approval tracking
+  BUDGET_APPROVAL: 'BUDGET_APPROVAL',
 } as const;
 
 export type CitationType = typeof CITATION_TYPES[keyof typeof CITATION_TYPES];
