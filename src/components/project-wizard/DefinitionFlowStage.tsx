@@ -204,6 +204,8 @@ interface ChatPanelProps {
   onTeamSizeSelect: (size: string) => void;
   onTeamMembersChange: (members: TeamMember[]) => void;
   onSiteConditionChange: (condition: 'clear' | 'demolition') => void;
+  onDemolitionUnitPriceChange: (value: number) => void;
+  onConfirmDemolition: () => void;
   onTimelineChange: (timeline: 'asap' | 'scheduled') => void;
   onScheduledDateChange: (date: Date | undefined) => void;
   onScheduledEndDateChange: (date: Date | undefined) => void;
@@ -242,6 +244,8 @@ const ChatPanel = ({
   onTeamSizeSelect,
   onTeamMembersChange,
   onSiteConditionChange,
+  onDemolitionUnitPriceChange,
+  onConfirmDemolition,
   onTimelineChange,
   onScheduledDateChange,
   onScheduledEndDateChange,
@@ -657,28 +661,73 @@ const ChatPanel = ({
                    <strong>What's the site condition?</strong>
                  </p>
                  
-                 {/* Site Condition buttons */}
-                 <div className="flex flex-wrap gap-2">
-                   <Button
-                     variant={siteCondition === 'clear' ? 'default' : 'outline'}
-                     size="sm"
-                     onClick={() => onSiteConditionChange('clear')}
-                     className="text-xs"
-                   >
-                     <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                     Clear Site
-                   </Button>
-                   <Button
-                     variant={siteCondition === 'demolition' ? 'default' : 'outline'}
-                     size="sm"
-                     onClick={() => onSiteConditionChange('demolition')}
-                     className="text-xs"
-                   >
-                     <Hammer className="h-3.5 w-3.5 mr-1.5" />
-                     Demolition (+${demolitionCost.toLocaleString()})
-                   </Button>
-                 </div>
-              </div>
+                  {/* Site Condition buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={siteCondition === 'clear' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onSiteConditionChange('clear')}
+                      className="text-xs"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                      Clear Site
+                    </Button>
+                    <Button
+                      variant={siteCondition === 'demolition' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onSiteConditionChange('demolition')}
+                      className="text-xs"
+                    >
+                      <Hammer className="h-3.5 w-3.5 mr-1.5" />
+                      Demolition
+                    </Button>
+                  </div>
+                  
+                  {/* Demolition price input - appears when demolition is selected */}
+                  {siteCondition === 'demolition' && currentSubStep === 2 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 p-3 rounded-lg border border-input bg-background space-y-2"
+                    >
+                      <Label className="text-xs text-muted-foreground">Demolition price per sq ft</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">$</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={50}
+                          step={0.25}
+                          value={demolitionUnitPrice || ''}
+                          onChange={(e) => onDemolitionUnitPriceChange(Math.max(0, Math.min(50, parseFloat(e.target.value) || 0)))}
+                          onFocus={(e) => {
+                            if (demolitionUnitPrice === 0) {
+                              e.target.value = '';
+                            } else {
+                              e.target.select();
+                            }
+                          }}
+                          placeholder="2.50"
+                          className="w-20 h-8 text-center text-sm"
+                          autoFocus
+                        />
+                        <span className="text-xs text-muted-foreground">/sq ft</span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          = <strong>${demolitionCost.toLocaleString()}</strong>
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={onConfirmDemolition}
+                        disabled={demolitionUnitPrice <= 0}
+                        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                        Confirm Demolition (+${demolitionCost.toLocaleString()})
+                      </Button>
+                    </motion.div>
+                  )}
+               </div>
             </motion.div>
             
             {/* Show site condition answer if selected and we're past this step */}
@@ -2285,12 +2334,19 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setTeamMembers(members);
     }, []);
     
-    // Stage 4 Step 2: Site condition change (triggers live card update)
+    // Stage 4 Step 2: Site condition change
     const handleSiteConditionChange = (condition: 'clear' | 'demolition') => {
       setSiteCondition(condition);
-      // If user picks demolition and we haven't moved to step 3 yet, auto-advance
+      // Only auto-advance for 'clear' — demolition needs price confirmation first
+      if (condition === 'clear' && currentSubStep === 2) {
+        setCurrentSubStep(3);
+      }
+    };
+    
+    // Confirm demolition with user-set price, then advance
+    const handleConfirmDemolition = () => {
       if (currentSubStep === 2) {
-        setCurrentSubStep(3); // Move to Stage 4 Step 3 (Timeline)
+        setCurrentSubStep(3);
       }
     };
     
@@ -2618,6 +2674,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             onTeamSizeSelect={handleTeamSizeSelect}
             onTeamMembersChange={handleTeamMembersChange}
             onSiteConditionChange={handleSiteConditionChange}
+            onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
+            onConfirmDemolition={handleConfirmDemolition}
             onTimelineChange={setTimeline}
             onScheduledDateChange={setScheduledDate}
             onScheduledEndDateChange={setScheduledEndDate}
