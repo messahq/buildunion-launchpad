@@ -512,6 +512,7 @@ const BuildUnionNewProject = () => {
                 projectId={projectId}
                 userId={user.id}
                 gfaValue={gfaValue}
+                existingCitations={citations}
                 onFlowComplete={handleDefinitionFlowComplete}
                 onCitationClick={handleCitationClick}
                 className="h-full"

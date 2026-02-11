@@ -64,6 +64,7 @@ interface DefinitionFlowStageProps {
   projectId: string;
   userId: string;
   gfaValue: number;
+  existingCitations?: Citation[];
   onFlowComplete: (citations: Citation[]) => void;
   onCitationClick?: (citationId: string) => void;
   className?: string;
@@ -1317,6 +1318,132 @@ const VisualUploadCanvasPanel = ({
 };
 
 // ============================================
+// CUMULATIVE SUMMARY BAR - Shows all previous answers
+// ============================================
+interface CumulativeSummaryBarProps {
+  existingCitations: Citation[];
+  gfaValue: number;
+  selectedTrade: string | null;
+  templateLocked: boolean;
+  teamSize: string | null;
+  teamMembers: TeamMember[];
+  siteCondition: 'clear' | 'demolition';
+  timeline: 'asap' | 'scheduled';
+  scheduledDate: Date | undefined;
+  scheduledEndDate: Date | undefined;
+  grandTotal: number;
+  onCitationClick?: (citationId: string) => void;
+}
+
+const CumulativeSummaryBar = ({
+  existingCitations,
+  gfaValue,
+  selectedTrade,
+  templateLocked,
+  teamSize,
+  teamMembers,
+  siteCondition,
+  timeline,
+  scheduledDate,
+  scheduledEndDate,
+  grandTotal,
+  onCitationClick,
+}: CumulativeSummaryBarProps) => {
+  // Build cumulative entries from existing citations + current stage answers
+  const summaryEntries: { label: string; value: string; icon: typeof Sparkles; citationId?: string; color: string }[] = [];
+
+  // Stage 1 citations
+  const nameCitation = existingCitations.find(c => c.cite_type === CITATION_TYPES.PROJECT_NAME);
+  if (nameCitation) {
+    summaryEntries.push({ label: 'Project', value: nameCitation.answer, icon: Building2, citationId: nameCitation.id, color: 'text-amber-600 dark:text-amber-400' });
+  }
+
+  const locationCitation = existingCitations.find(c => c.cite_type === CITATION_TYPES.LOCATION);
+  if (locationCitation) {
+    summaryEntries.push({ label: 'Location', value: locationCitation.answer, icon: MapPin, citationId: locationCitation.id, color: 'text-amber-600 dark:text-amber-400' });
+  }
+
+  const workTypeCitation = existingCitations.find(c => c.cite_type === CITATION_TYPES.WORK_TYPE);
+  if (workTypeCitation) {
+    summaryEntries.push({ label: 'Work Type', value: workTypeCitation.answer, icon: Building2, citationId: workTypeCitation.id, color: 'text-amber-600 dark:text-amber-400' });
+  }
+
+  // Stage 2 - GFA
+  const gfaCitation = existingCitations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK);
+  if (gfaCitation || gfaValue > 0) {
+    summaryEntries.push({ label: 'GFA', value: `${gfaValue.toLocaleString()} sq ft`, icon: Layers, citationId: gfaCitation?.id, color: 'text-blue-600 dark:text-blue-400' });
+  }
+
+  // Stage 3 - Trade (from current flow)
+  if (selectedTrade) {
+    summaryEntries.push({ label: 'Trade', value: TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label || selectedTrade, icon: Hammer, color: 'text-orange-600 dark:text-orange-400' });
+  }
+
+  // Template locked
+  if (templateLocked) {
+    summaryEntries.push({ label: 'Template', value: `$${grandTotal.toLocaleString()}`, icon: Lock, color: 'text-green-600 dark:text-green-400' });
+  }
+
+  // Stage 4 - Team
+  if (teamSize === 'solo') {
+    summaryEntries.push({ label: 'Team', value: 'Solo', icon: User, color: 'text-green-600 dark:text-green-400' });
+  } else if (teamSize === 'team_confirmed') {
+    const total = teamMembers.reduce((sum, m) => sum + m.count, 0);
+    summaryEntries.push({ label: 'Team', value: `${total} people`, icon: Users, color: 'text-green-600 dark:text-green-400' });
+  }
+
+  // Site condition
+  if (templateLocked && (siteCondition === 'clear' || siteCondition === 'demolition')) {
+    summaryEntries.push({ label: 'Site', value: siteCondition === 'clear' ? 'Clear' : 'Demolition', icon: Settings, color: siteCondition === 'demolition' ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400' });
+  }
+
+  // Timeline
+  if (timeline === 'asap' && templateLocked) {
+    summaryEntries.push({ label: 'Start', value: 'ASAP', icon: Calendar, color: 'text-green-600 dark:text-green-400' });
+  } else if (timeline === 'scheduled' && scheduledDate) {
+    summaryEntries.push({ label: 'Start', value: format(scheduledDate, 'MMM d'), icon: Calendar, color: 'text-green-600 dark:text-green-400' });
+  }
+  if (scheduledEndDate) {
+    summaryEntries.push({ label: 'End', value: format(scheduledEndDate, 'MMM d'), icon: Calendar, color: 'text-green-600 dark:text-green-400' });
+  }
+
+  if (summaryEntries.length === 0) return null;
+
+  return (
+    <div className="shrink-0 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/60 via-white/60 to-orange-50/60 dark:from-amber-950/30 dark:via-background/60 dark:to-orange-950/30 backdrop-blur-sm">
+      <div className="px-4 py-2">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+          <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Project Summary</span>
+          <span className="text-xs text-muted-foreground">({summaryEntries.length} facts)</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {summaryEntries.map((entry, idx) => (
+            <motion.button
+              key={`${entry.label}-${idx}`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.05 }}
+              onClick={() => entry.citationId && onCitationClick?.(entry.citationId)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-all",
+                "bg-white/80 dark:bg-slate-800/80 border-amber-200/60 dark:border-amber-800/40",
+                "hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-sm",
+                entry.citationId && "cursor-pointer"
+              )}
+            >
+              <entry.icon className={cn("h-3 w-3", entry.color)} />
+              <span className="text-muted-foreground font-medium">{entry.label}:</span>
+              <span className="font-semibold text-foreground truncate max-w-[120px]">{entry.value}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
 // RIGHT PANEL - Canvas (OUTPUT)
 // ============================================
 interface CanvasPanelProps {
@@ -1705,7 +1832,7 @@ const CanvasPanel = ({
 // MAIN COMPONENT
 // ============================================
 const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>(
-  ({ projectId, userId, gfaValue, onFlowComplete, onCitationClick, className }, ref) => {
+  ({ projectId, userId, gfaValue, existingCitations = [], onFlowComplete, onCitationClick, className }, ref) => {
     // Flow step state
     const [currentSubStep, setCurrentSubStep] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
@@ -2365,81 +2492,100 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         {/* RIGHT PANEL (Desktop) / TOP (Mobile) - Canvas/Template (OUTPUT) */}
         <div className={cn(
           "order-1 md:order-2",
-          "flex-1 min-h-0",
+          "flex-1 min-h-0 flex flex-col",
           stage5Active 
             ? "border-b md:border-b-0 border-purple-200/50 dark:border-purple-800/30"
             : "border-b md:border-b-0 border-amber-200/50 dark:border-amber-800/30"
         )}>
-          {stage5Active ? (
-            <VisualUploadCanvasPanel
-              gfaValue={gfaValue}
-              selectedTrade={selectedTrade || ''}
-              grandTotal={grandTotal}
-              uploadedFiles={uploadedFiles}
-              isUploading={isUploading}
-              flowCitations={flowCitations}
-              onFilesDrop={handleFilesDrop}
-              onRemoveFile={handleRemoveFile}
-              onSkipUpload={handleSkipUpload}
-              onConfirmUploads={handleConfirmUploads}
-            />
-          ) : selectedTrade ? (
-            <CanvasPanel
-              currentSubStep={currentSubStep}
-              selectedTrade={selectedTrade}
-              teamSize={teamSize}
-              siteCondition={siteCondition}
-              gfaValue={gfaValue}
-              templateItems={templateItems}
-              materialTotal={materialTotal}
-              laborTotal={laborTotal}
-              demolitionCost={demolitionCost}
-              demolitionUnitPrice={demolitionUnitPrice}
-              subtotal={subtotal}
-              markupPercent={markupPercent}
-              markupAmount={markupAmount}
-              taxAmount={taxAmount}
-              grandTotal={grandTotal}
-              editingItem={editingItem}
-              wastePercent={wastePercent}
-              onWastePercentChange={handleWastePercentChange}
-              onMarkupPercentChange={handleMarkupPercentChange}
-              onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
-              onUpdateItem={handleUpdateItem}
-              onDeleteItem={handleDeleteItem}
-              onAddItem={handleAddItem}
-              onSetEditingItem={setEditingItem}
-              onLockTemplate={handleLockTemplate}
-              isSaving={isSaving}
-              templateLocked={templateLocked}
-            />
-          ) : (
-            /* Pre-trade selection canvas placeholder */
-            <div className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-b from-amber-50/30 to-orange-50/20 dark:from-amber-950/10 dark:to-orange-950/10">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="text-center max-w-md"
-              >
-                <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/20">
-                  <Hammer className="h-10 w-10 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Select Your Trade</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Choose a trade from the chat panel to generate your project template with cost calculations based on <strong>{gfaValue.toLocaleString()} sq ft</strong>
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {TRADE_OPTIONS.map(trade => (
-                    <div key={trade.key} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100/60 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                      <trade.icon className="h-3.5 w-3.5 text-amber-600" />
-                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{trade.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
-          )}
+          {/* Cumulative Summary Bar */}
+          <CumulativeSummaryBar
+            existingCitations={existingCitations}
+            gfaValue={gfaValue}
+            selectedTrade={selectedTrade}
+            templateLocked={templateLocked}
+            teamSize={teamSize}
+            teamMembers={teamMembers}
+            siteCondition={siteCondition}
+            timeline={timeline}
+            scheduledDate={scheduledDate}
+            scheduledEndDate={scheduledEndDate}
+            grandTotal={grandTotal}
+            onCitationClick={onCitationClick}
+          />
+          
+          {/* Main Canvas Content */}
+          <div className="flex-1 min-h-0">
+            {stage5Active ? (
+              <VisualUploadCanvasPanel
+                gfaValue={gfaValue}
+                selectedTrade={selectedTrade || ''}
+                grandTotal={grandTotal}
+                uploadedFiles={uploadedFiles}
+                isUploading={isUploading}
+                flowCitations={flowCitations}
+                onFilesDrop={handleFilesDrop}
+                onRemoveFile={handleRemoveFile}
+                onSkipUpload={handleSkipUpload}
+                onConfirmUploads={handleConfirmUploads}
+              />
+            ) : selectedTrade ? (
+              <CanvasPanel
+                currentSubStep={currentSubStep}
+                selectedTrade={selectedTrade}
+                teamSize={teamSize}
+                siteCondition={siteCondition}
+                gfaValue={gfaValue}
+                templateItems={templateItems}
+                materialTotal={materialTotal}
+                laborTotal={laborTotal}
+                demolitionCost={demolitionCost}
+                demolitionUnitPrice={demolitionUnitPrice}
+                subtotal={subtotal}
+                markupPercent={markupPercent}
+                markupAmount={markupAmount}
+                taxAmount={taxAmount}
+                grandTotal={grandTotal}
+                editingItem={editingItem}
+                wastePercent={wastePercent}
+                onWastePercentChange={handleWastePercentChange}
+                onMarkupPercentChange={handleMarkupPercentChange}
+                onDemolitionUnitPriceChange={handleDemolitionUnitPriceChange}
+                onUpdateItem={handleUpdateItem}
+                onDeleteItem={handleDeleteItem}
+                onAddItem={handleAddItem}
+                onSetEditingItem={setEditingItem}
+                onLockTemplate={handleLockTemplate}
+                isSaving={isSaving}
+                templateLocked={templateLocked}
+              />
+            ) : (
+              /* Pre-trade selection canvas placeholder */
+              <div className="h-full flex flex-col items-center justify-center p-8 bg-gradient-to-b from-amber-50/30 to-orange-50/20 dark:from-amber-950/10 dark:to-orange-950/10">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center max-w-md"
+                >
+                  <div className="mx-auto mb-6 h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/20">
+                    <Hammer className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2">Select Your Trade</h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Choose a trade from the chat panel to generate your project template with cost calculations based on <strong>{gfaValue.toLocaleString()} sq ft</strong>
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {TRADE_OPTIONS.map(trade => (
+                      <div key={trade.key} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100/60 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                        <trade.icon className="h-3.5 w-3.5 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{trade.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
