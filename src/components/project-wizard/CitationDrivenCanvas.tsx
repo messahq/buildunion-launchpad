@@ -6,7 +6,7 @@
 
 import { forwardRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MapPin, Home, Ruler, Wrench, FileText } from "lucide-react";
+import { Sparkles, MapPin, Home, Ruler, Wrench, FileText, Lock, DollarSign } from "lucide-react";
 import { Citation, CITATION_TYPES } from "@/types/citation";
 import { cn } from "@/lib/utils";
 
@@ -68,12 +68,18 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
   ({ citations, onCitationClick, highlightedCitationId, isLoading, className }, ref) => {
     
     const organizedCitations = useMemo(() => {
-      const knownTypes = [CITATION_TYPES.PROJECT_NAME, CITATION_TYPES.LOCATION, CITATION_TYPES.WORK_TYPE, CITATION_TYPES.GFA_LOCK] as string[];
+      const knownTypes = [
+        CITATION_TYPES.PROJECT_NAME, CITATION_TYPES.LOCATION, 
+        CITATION_TYPES.WORK_TYPE, CITATION_TYPES.GFA_LOCK,
+        CITATION_TYPES.TRADE_SELECTION, CITATION_TYPES.TEMPLATE_LOCK,
+      ] as string[];
       return {
         projectName: citations.find(c => c.cite_type === CITATION_TYPES.PROJECT_NAME),
         location: citations.find(c => c.cite_type === CITATION_TYPES.LOCATION),
         workType: citations.find(c => c.cite_type === CITATION_TYPES.WORK_TYPE),
         gfa: citations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK),
+        trade: citations.find(c => c.cite_type === CITATION_TYPES.TRADE_SELECTION),
+        template: citations.find(c => c.cite_type === CITATION_TYPES.TEMPLATE_LOCK),
         others: citations.filter(c => !knownTypes.includes(c.cite_type)),
       };
     }, [citations]);
@@ -168,6 +174,32 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
                 value={`${Number(organizedCitations.gfa.metadata?.gfa_value || organizedCitations.gfa.answer || 0).toLocaleString()} sq ft`}
                 color="bg-emerald-500"
                 isHighlighted={highlightedCitationId === organizedCitations.gfa.id}
+                onCitationClick={onCitationClick}
+              />
+            )}
+
+            {organizedCitations.trade && (
+              <MiniCitationCard
+                citation={organizedCitations.trade}
+                icon={Wrench}
+                label="Trade"
+                value={String(organizedCitations.trade.answer || '—')}
+                color="bg-orange-500"
+                isHighlighted={highlightedCitationId === organizedCitations.trade.id}
+                onCitationClick={onCitationClick}
+              />
+            )}
+
+            {organizedCitations.template && (
+              <MiniCitationCard
+                citation={organizedCitations.template}
+                icon={Lock}
+                label="Template (Locked)"
+                value={organizedCitations.template.value 
+                  ? `$${Number(organizedCitations.template.value).toLocaleString()}`
+                  : String(organizedCitations.template.answer || '—')}
+                color="bg-green-600"
+                isHighlighted={highlightedCitationId === organizedCitations.template.id}
                 onCitationClick={onCitationClick}
               />
             )}
