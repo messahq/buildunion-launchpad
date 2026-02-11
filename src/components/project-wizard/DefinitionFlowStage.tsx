@@ -2070,6 +2070,11 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         try {
           const matTotal = items.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
           const labTotal = items.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
+          // ✓ CRITICAL: Save NET (pre-tax) total to DB. Stage 8 applies regional tax.
+          const demolitionAmt = siteCondition === 'demolition' ? gfaValue * demolitionUnitPrice : 0;
+          const sub = matTotal + labTotal + demolitionAmt;
+          const mkup = sub * (markupPercent / 100);
+          const netTotal = sub + mkup; // Pre-tax net
 
           const { data: currentData } = await supabase
             .from("project_summaries")
@@ -2082,14 +2087,17 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           const templateCitation = createCitation({
             cite_type: CITATION_TYPES.TEMPLATE_LOCK,
             question_key: 'template_items',
-            answer: `${items.length} items`,
-            value: matTotal + labTotal,
+            answer: `${items.length} items totaling $${netTotal.toLocaleString()}`,
+            value: netTotal,
             metadata: {
               items,
               material_total: matTotal,
               labor_total: labTotal,
               markup_percent: markupPercent,
               waste_percent: wastePercent,
+              demolition_cost: demolitionAmt,
+              markup_amount: mkup,
+              subtotal: sub,
             },
           });
           const updatedFacts = [...filteredFacts, templateCitation as unknown as Record<string, unknown>];
@@ -2099,7 +2107,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               .from("project_summaries")
               .update({
                 verified_facts: updatedFacts as unknown as null,
-                total_cost: matTotal + labTotal,
+                total_cost: netTotal,
                 material_cost: matTotal,
                 labor_cost: labTotal,
                 updated_at: new Date().toISOString(),
@@ -2111,7 +2119,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           console.error("[DefinitionFlow] Failed to auto-save template:", err);
         }
       }, 800);
-    }, [projectId, markupPercent, wastePercent]);
+    }, [projectId, markupPercent, wastePercent, siteCondition, gfaValue, demolitionUnitPrice]);
 
 
     // Recalculate when waste percent changes
@@ -2274,14 +2282,17 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       const templateCitation = createCitation({
         cite_type: CITATION_TYPES.TEMPLATE_LOCK,
         question_key: 'template_items',
-        answer: `${templateItems.length} items totaling $${grandTotal.toLocaleString()}`,
-        value: grandTotal,
+        answer: `${templateItems.length} items totaling $${subtotalWithMarkup.toLocaleString()}`,
+        value: subtotalWithMarkup, // ✓ NET pre-tax: Stage 8 applies regional tax
         metadata: {
           items: templateItems,
           material_total: materialTotal,
           labor_total: laborTotal,
           markup_percent: markupPercent,
-          waste_percent: wastePercent, // ✓ CRITICAL: Store waste factor for Stage 8 display
+          waste_percent: wastePercent,
+          demolition_cost: demolitionCost,
+          markup_amount: markupAmount,
+          subtotal: subtotal,
         },
       });
       
@@ -2301,7 +2312,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             .from("project_summaries")
             .update({
               verified_facts: updatedFacts as unknown as null,
-              total_cost: grandTotal,
+              total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
               updated_at: new Date().toISOString(),
@@ -2314,7 +2325,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               project_id: projectId,
               user_id: userId,
               verified_facts: updatedFacts as unknown as null,
-              total_cost: grandTotal,
+              total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
             });
@@ -2624,14 +2635,14 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         const dnaCitation = createCitation({
           cite_type: CITATION_TYPES.DNA_FINALIZED,
           question_key: 'project_dna',
-          answer: `Project DNA Locked: ${gfaValue.toLocaleString()} sq ft | $${grandTotal.toLocaleString()}`,
+          answer: `Project DNA Locked: ${gfaValue.toLocaleString()} sq ft | $${subtotalWithMarkup.toLocaleString()} (net)`,
           value: {
             gfa: gfaValue,
             trade: selectedTrade,
             team_size: teamSize,
             site_condition: siteCondition,
             timeline: timeline,
-            grand_total: grandTotal,
+            grand_total: subtotalWithMarkup, // NET pre-tax
             start_date: timeline === 'asap' ? new Date().toISOString() : scheduledDate?.toISOString(),
             end_date: scheduledEndDate?.toISOString(),
           },
@@ -2672,7 +2683,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             .from("project_summaries")
             .update({
               verified_facts: updatedFacts as unknown as null,
-              total_cost: grandTotal,
+              total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
               updated_at: new Date().toISOString(),
@@ -2686,7 +2697,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               project_id: projectId,
               user_id: userId,
               verified_facts: updatedFacts as unknown as null,
-              total_cost: grandTotal,
+              total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
             });
@@ -2778,16 +2789,19 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         {/* RIGHT PANEL - Canvas (OUTPUT) - matches Stage 1 layout exactly */}
         <div className="hidden md:flex flex-1 flex-col h-full overflow-y-auto">
           {/* CitationDrivenCanvas - shows all previous answers from Stage 1 & 2, plus locked template */}
+          {/* When Stage 5 is active, canvas shrinks to summary bar so upload zone is prominent */}
           <div className={cn(
             "shrink-0", 
-            (aiTemplateReady && selectedTrade && !templateLocked) 
-              ? "max-h-[40%] overflow-y-auto border-b border-amber-200/50 dark:border-amber-800/30" 
-              : "flex-1"
+            stage5Active
+              ? "max-h-[120px] overflow-y-auto border-b border-purple-200/50 dark:border-purple-800/30"
+              : (aiTemplateReady && selectedTrade && !templateLocked) 
+                ? "max-h-[40%] overflow-y-auto border-b border-amber-200/50 dark:border-amber-800/30" 
+                : "flex-1"
           )}>
             <CitationDrivenCanvas
               citations={[...(existingCitations || []), ...flowCitations]}
               onCitationClick={onCitationClick}
-              compact={!!scheduledEndDate}
+              compact={stage5Active || !!scheduledEndDate}
             />
           </div>
           
