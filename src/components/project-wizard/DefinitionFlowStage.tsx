@@ -2635,10 +2635,15 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         
         {/* RIGHT PANEL - Canvas (OUTPUT) - matches Stage 1 layout exactly */}
         <div className="hidden md:flex flex-1 flex-col h-full overflow-y-auto">
-          {/* CitationDrivenCanvas - shows all previous answers from Stage 1 & 2 */}
-          <div className={cn("shrink-0", (aiTemplateReady && selectedTrade) ? "max-h-[40%] overflow-y-auto border-b border-amber-200/50 dark:border-amber-800/30" : "flex-1")}>
+          {/* CitationDrivenCanvas - shows all previous answers from Stage 1 & 2, plus locked template */}
+          <div className={cn(
+            "shrink-0", 
+            (aiTemplateReady && selectedTrade && !templateLocked) 
+              ? "max-h-[40%] overflow-y-auto border-b border-amber-200/50 dark:border-amber-800/30" 
+              : "flex-1"
+          )}>
             <CitationDrivenCanvas
-              citations={existingCitations || []}
+              citations={[...(existingCitations || []), ...flowCitations]}
               onCitationClick={onCitationClick}
             />
           </div>
@@ -2676,7 +2681,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
                 onConfirmUploads={handleConfirmUploads}
               />
             </div>
-          ) : (selectedTrade && aiTemplateReady) ? (
+          ) : (selectedTrade && aiTemplateReady && !templateLocked) ? (
             <div className="flex-1 min-h-0">
               <CanvasPanel
                 currentSubStep={currentSubStep}
