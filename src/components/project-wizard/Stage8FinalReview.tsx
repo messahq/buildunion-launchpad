@@ -501,6 +501,7 @@ export default function Stage8FinalReview({
   
   // ✓ Pending Budget Changes - Foreman Modification Loop
   const [showPendingApprovalModal, setShowPendingApprovalModal] = useState(false);
+  const pendingApprovalShownRef = useRef(false);
   
   // ✓ Conflict Map Modal
   const [showConflictMap, setShowConflictMap] = useState(false);
@@ -528,6 +529,32 @@ export default function Stage8FinalReview({
     cancelChange,
     loading: pendingChangesLoading,
   } = usePendingBudgetChanges({ projectId, enabled: true });
+  
+  // ✓ AUTO-POPUP: Show approval modal when Owner loads dashboard with pending changes
+  // Also triggers on realtime updates (new pending change from Foreman)
+  useEffect(() => {
+    if (userRole !== 'owner') return;
+    if (!hasPending) {
+      pendingApprovalShownRef.current = false;
+      return;
+    }
+    // Auto-open on first load or when new pending changes arrive
+    if (!pendingApprovalShownRef.current && !showPendingApprovalModal) {
+      pendingApprovalShownRef.current = true;
+      // Small delay so dashboard renders first
+      const timer = setTimeout(() => {
+        setShowPendingApprovalModal(true);
+        toast.info(`${pendingCount} pending modification${pendingCount > 1 ? 's' : ''} require your approval`, {
+          description: 'Review team changes before they take effect',
+          action: {
+            label: 'Review Now',
+            onClick: () => setShowPendingApprovalModal(true),
+          },
+        });
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [userRole, hasPending, pendingCount]);
   
   // ✓ Team member document sharing state (in-app messages)
   const [selectedTeamRecipients, setSelectedTeamRecipients] = useState<string[]>([]);
@@ -10917,7 +10944,11 @@ export default function Stage8FinalReview({
       {/* Pending Approval Modal - Owner approves Foreman modifications */}
       <PendingApprovalModal
         open={showPendingApprovalModal}
-        onOpenChange={setShowPendingApprovalModal}
+        onOpenChange={(open) => {
+          setShowPendingApprovalModal(open);
+          // Reset ref when modal is closed so next new change triggers auto-popup
+          if (!open) pendingApprovalShownRef.current = false;
+        }}
         pendingChanges={pendingChanges}
         onApprove={approveChange}
         onReject={rejectChange}
