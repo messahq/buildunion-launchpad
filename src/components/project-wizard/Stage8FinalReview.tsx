@@ -2426,7 +2426,6 @@ export default function Stage8FinalReview({
         body: {
           projectId,
           analysisType: 'synthesis',
-          tier: 'messa', // Use top models
         },
       });
       
@@ -3386,7 +3385,6 @@ export default function Stage8FinalReview({
           body: {
             projectId,
             analysisType: 'synthesis',
-            tier: 'messa',
           },
         });
         if (aiResult && !aiResult.error) {

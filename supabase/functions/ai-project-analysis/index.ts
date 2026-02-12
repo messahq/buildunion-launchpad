@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,50 @@ const supabaseClient = createClient(
 );
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+// ============================================
+// SERVER-SIDE TIER RESOLUTION VIA STRIPE
+// Never trust client-sent tier parameter
+// ============================================
+const PRODUCT_TIERS: Record<string, string> = {
+  "prod_Tog02cwkocBGA0": "pro",
+  "prod_Tog0mYcKDEXUfl": "premium",
+  "prod_Tog7TlfoWskDXG": "pro",
+  "prod_Tog8IdlcfqOduT": "premium",
+};
+
+async function resolveUserTier(userEmail: string): Promise<'free' | 'pro' | 'premium'> {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) {
+    logStep("STRIPE_SECRET_KEY not set, defaulting to free tier");
+    return 'free';
+  }
+
+  try {
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+    if (customers.data.length === 0) return 'free';
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customers.data[0].id,
+      limit: 1,
+    });
+
+    const validSub = subscriptions.data.find((s: Stripe.Subscription) => 
+      s.status === "active" || s.status === "trialing"
+    );
+
+    if (!validSub) return 'free';
+
+    const productId = validSub.items.data[0].price.product as string;
+    const tier = PRODUCT_TIERS[productId];
+    logStep("Stripe tier resolved", { productId, tier });
+    return (tier as 'pro' | 'premium') || 'free';
+  } catch (err) {
+    logStep("Stripe tier resolution failed, defaulting to free", { error: String(err) });
+    return 'free';
+  }
+}
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[M.E.S.S.A. SYNTHESIS] ${step}`, details ? JSON.stringify(details) : '');
@@ -519,7 +564,13 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id });
 
     const body: AnalysisRequest = await req.json();
-    const { projectId, analysisType = 'synthesis', tier = 'messa', region = 'ontario' } = body;
+    const { projectId, analysisType = 'synthesis', region = 'ontario' } = body;
+    
+    // Server-side tier resolution - ignore client-sent tier
+    const resolvedTier = await resolveUserTier(user.email || '');
+    // Map resolved tier: premium users get 'messa' (top models), others get their tier
+    const tier = resolvedTier === 'premium' ? 'messa' as const : resolvedTier;
+    logStep("Tier resolved server-side", { resolvedTier, effectiveTier: tier });
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "Project ID required" }), {

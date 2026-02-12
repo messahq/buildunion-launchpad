@@ -1,5 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+
+const STRIPE_PRODUCT_TIERS: Record<string, string> = {
+  "prod_Tog02cwkocBGA0": "pro", "prod_Tog0mYcKDEXUfl": "premium",
+  "prod_Tog7TlfoWskDXG": "pro", "prod_Tog8IdlcfqOduT": "premium",
+};
+
+async function resolveStripeTier(email: string): Promise<string> {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) return 'free';
+  try {
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const customers = await stripe.customers.list({ email, limit: 1 });
+    if (customers.data.length === 0) return 'free';
+    const subs = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+    const valid = subs.data.find((s: Stripe.Subscription) => s.status === "active" || s.status === "trialing");
+    if (!valid) return 'free';
+    return STRIPE_PRODUCT_TIERS[valid.items.data[0].price.product as string] || 'free';
+  } catch { return 'free'; }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,11 +108,13 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { projectId, includeWeather = true, tier = "free" } = await req.json() as ProjectBriefRequest;
+    const { projectId, includeWeather = true } = await req.json() as ProjectBriefRequest;
     
-    // Select model based on subscription tier
-    const { model: selectedModel, maxTokens } = selectModelForTier(tier);
-    console.log(`[Tiered AI] Using ${selectedModel} with ${maxTokens} tokens for tier: ${tier}`);
+    // Server-side tier resolution via Stripe
+    const userEmail = (claimsData.claims as any).email || '';
+    const resolvedTier = userEmail ? await resolveStripeTier(userEmail) : 'free';
+    const { model: selectedModel, maxTokens } = selectModelForTier(resolvedTier);
+    console.log(`[Tiered AI] Using ${selectedModel} with ${maxTokens} tokens for tier: ${resolvedTier} (server-resolved)`);
 
     if (!projectId) {
       return new Response(JSON.stringify({ error: "projectId is required" }), {

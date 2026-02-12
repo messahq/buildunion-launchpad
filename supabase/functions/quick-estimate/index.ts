@@ -1,9 +1,41 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// ============================================
+// SERVER-SIDE TIER RESOLUTION VIA STRIPE
+// ============================================
+const PRODUCT_TIERS: Record<string, string> = {
+  "prod_Tog02cwkocBGA0": "pro",
+  "prod_Tog0mYcKDEXUfl": "premium",
+  "prod_Tog7TlfoWskDXG": "pro",
+  "prod_Tog8IdlcfqOduT": "premium",
+};
+
+async function resolveUserTier(userEmail: string): Promise<'free' | 'pro' | 'premium'> {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) {
+    console.log("[TIER] STRIPE_SECRET_KEY not set, defaulting to free");
+    return 'free';
+  }
+  try {
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+    if (customers.data.length === 0) return 'free';
+    const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+    const validSub = subscriptions.data.find((s: Stripe.Subscription) => s.status === "active" || s.status === "trialing");
+    if (!validSub) return 'free';
+    const productId = validSub.items.data[0].price.product as string;
+    return (PRODUCT_TIERS[productId] as 'pro' | 'premium') || 'free';
+  } catch (err) {
+    console.log("[TIER] Resolution failed:", String(err));
+    return 'free';
+  }
+}
 
 // ============================================
 // FILTER ANSWERS & AI TRIGGERS INTERFACES
@@ -1647,22 +1679,28 @@ serve(async (req) => {
   }
 
   try {
-    const { image, description, type, isPremium, tier, filterAnswers, aiTriggers, precisionMode } = await req.json();
+    const { image, description, type, filterAnswers, aiTriggers, precisionMode } = await req.json();
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
     if (!image) throw new Error("No image provided");
 
-    // Determine tier: explicit tier > isPremium flag > default to free
-    let userTier: "free" | "pro" | "premium" = "free";
-    if (tier === "premium" || tier === "pro" || tier === "free") {
-      userTier = tier;
-    } else if (isPremium === true) {
-      userTier = "premium";
+    // Server-side tier resolution via Stripe - ignore client-sent tier/isPremium
+    const authHeader = req.headers.get("Authorization");
+    let userEmail = '';
+    if (authHeader) {
+      try {
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.57.2");
+        const sb = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+        const token = authHeader.replace("Bearer ", "");
+        const { data: userData } = await sb.auth.getUser(token);
+        userEmail = userData?.user?.email || '';
+      } catch { /* ignore */ }
     }
+    const userTier = userEmail ? await resolveUserTier(userEmail) : 'free' as const;
     
     // Precision mode upgrade: use higher quality models for OCR
-    const effectiveTier = precisionMode ? "premium" : userTier;
+    const effectiveTier = precisionMode ? "premium" as const : userTier;
     
     console.log(`Processing ${type} request... (Tier: ${userTier}, Precision: ${precisionMode || false})`);
     

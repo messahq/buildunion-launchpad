@@ -1,5 +1,42 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+
+// ============================================
+// SERVER-SIDE TIER RESOLUTION VIA STRIPE
+// ============================================
+const PRODUCT_TIERS_MAP: Record<string, string> = {
+  "prod_Tog02cwkocBGA0": "pro",
+  "prod_Tog0mYcKDEXUfl": "premium",
+  "prod_Tog7TlfoWskDXG": "pro",
+  "prod_Tog8IdlcfqOduT": "premium",
+};
+
+async function resolveUserTierFromAuth(authHeader: string | null): Promise<'free' | 'pro' | 'premium'> {
+  if (!authHeader) return 'free';
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) return 'free';
+  
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, supabaseKey);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData } = await sb.auth.getUser(token);
+    if (!userData?.user?.email) return 'free';
+    
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const customers = await stripe.customers.list({ email: userData.user.email, limit: 1 });
+    if (customers.data.length === 0) return 'free';
+    const subscriptions = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+    const validSub = subscriptions.data.find((s: Stripe.Subscription) => s.status === "active" || s.status === "trialing");
+    if (!validSub) return 'free';
+    const productId = validSub.items.data[0].price.product as string;
+    return (PRODUCT_TIERS_MAP[productId] as 'pro' | 'premium') || 'free';
+  } catch {
+    return 'free';
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1330,7 +1367,9 @@ serve(async (req) => {
     // Support both old format (messages + projectContext) and new format (projectId + question)
     let messages = requestBody.messages;
     const requestedDualEngine = requestBody.dualEngine ?? true;
-    const tier = requestBody.tier || "free"; // Accept tier from frontend
+    // Server-side tier resolution - ignore client-sent tier
+    const tier = await resolveUserTierFromAuth(req.headers.get("Authorization"));
+    console.log(`[TIER] Resolved tier: ${tier}`);
     
     // Handle new simplified format: { projectId, question, analysisType }
     let projectContext = requestBody.projectContext;
