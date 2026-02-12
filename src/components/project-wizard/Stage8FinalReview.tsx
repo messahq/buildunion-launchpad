@@ -1115,9 +1115,13 @@ export default function Stage8FinalReview({
           const startStr = (timelineCit?.metadata as any)?.start_date || (summary as any)?.project_start_date;
           const endStr = endDateCit?.value || (endDateCit?.metadata as any)?.end_date || (summary as any)?.project_end_date;
           
-          if (startStr && endStr) {
-            const startD = new Date(startStr as string);
-            const endD = new Date(endStr as string);
+          // Fallback: if no dates exist, use today + 30 days
+          const fallbackStart = new Date();
+          const fallbackEnd = new Date(fallbackStart.getTime() + 30 * 86400000);
+          
+          {
+            const startD = startStr ? new Date(startStr as string) : fallbackStart;
+            const endD = endStr ? new Date(endStr as string) : fallbackEnd;
             const totalDays = Math.max(1, Math.round((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)));
             const hasDemolition = siteCondCit?.value === 'demolition';
             
