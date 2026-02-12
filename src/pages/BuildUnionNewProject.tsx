@@ -290,6 +290,7 @@ const BuildUnionNewProject = () => {
     // Save citations to project
     if (projectId) {
       const allCitations = [...citations, ...citations_data];
+      setCitations(allCitations);
       
       const { error } = await supabase
         .from('project_summaries')
@@ -320,6 +321,7 @@ const BuildUnionNewProject = () => {
     // Save team citations
     if (projectId) {
       const allCitations = [...citations, ...teamCitations];
+      setCitations(allCitations);
       
       const { error } = await supabase
         .from('project_summaries')
