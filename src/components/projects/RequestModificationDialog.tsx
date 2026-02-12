@@ -5,6 +5,7 @@
 // ============================================
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ export function RequestModificationDialog({
   onSubmit,
   loading,
 }: RequestModificationDialogProps) {
+  const { t } = useTranslation();
   const [newValue, setNewValue] = useState<string>(currentValue.toString());
   const [reason, setReason] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
@@ -63,20 +65,20 @@ export function RequestModificationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Request Modification</DialogTitle>
+          <DialogTitle>{t('requestModification.title', 'Request Modification')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Item Info */}
           <div>
-            <Label className="text-muted-foreground">Item</Label>
+            <Label className="text-muted-foreground">{t('requestModification.item', 'Item')}</Label>
             <div className="font-medium mt-1">{itemName}</div>
           </div>
 
           {/* Current Value */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-muted-foreground">Current Value</Label>
+              <Label className="text-muted-foreground">{t('requestModification.currentValue', 'Current Value')}</Label>
               <div className="font-mono text-lg font-semibold mt-1">
                 {currentValue} {unit}
               </div>
@@ -84,7 +86,7 @@ export function RequestModificationDialog({
 
             {/* New Value Input */}
             <div>
-              <Label htmlFor="new-value">New Value</Label>
+              <Label htmlFor="new-value">{t('requestModification.newValue', 'New Value')}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <Input
                   id="new-value"
@@ -94,7 +96,7 @@ export function RequestModificationDialog({
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   className="font-mono"
-                  placeholder="Enter new value"
+                  placeholder={t('requestModification.enterNewValue', 'Enter new value')}
                 />
                 <span className="text-muted-foreground">{unit}</span>
               </div>
@@ -104,11 +106,11 @@ export function RequestModificationDialog({
           {/* Reason */}
           <div>
             <Label htmlFor="reason">
-              Reason for Change <span className="text-muted-foreground">(required)</span>
+              {t('requestModification.reason', 'Reason for Change')} <span className="text-muted-foreground">{t('requestModification.reasonRequired', '(required)')}</span>
             </Label>
             <Textarea
               id="reason"
-              placeholder="Explain why this modification is needed..."
+              placeholder={t('requestModification.reasonPlaceholder', 'Explain why this modification is needed...')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="min-h-[80px] mt-1"
@@ -122,7 +124,7 @@ export function RequestModificationDialog({
             onClick={() => onOpenChange(false)}
             disabled={submitting || loading}
           >
-            Cancel
+            {t('requestModification.cancel', 'Cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -132,7 +134,7 @@ export function RequestModificationDialog({
             {submitting || loading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : null}
-            Submit Request
+            {t('requestModification.submit', 'Submit Request')}
           </Button>
         </DialogFooter>
       </DialogContent>

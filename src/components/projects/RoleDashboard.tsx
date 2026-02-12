@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
   ClipboardList, Cloud, FileText, Users, DollarSign,
@@ -71,6 +72,7 @@ const ROLE_PANELS: Record<string, string[]> = {
 
 const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [data, setData] = useState<DashboardData>({
     project: null,
     taskStats: { total: 0, completed: 0, myTasks: 0, myCompleted: 0 },
@@ -188,7 +190,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 className="text-cyan-400 hover:text-cyan-300"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Workspace
+                {t('roleDashboard.workspace', 'Workspace')}
               </Button>
               <div className="h-6 w-px bg-cyan-800/50" />
               <div>
@@ -212,7 +214,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 className="gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-md shadow-cyan-900/30"
               >
                 <Maximize2 className="h-3.5 w-3.5" />
-                Full Dashboard
+                {t('roleDashboard.fullDashboard', 'Full Dashboard')}
               </Button>
             </div>
           </div>
@@ -225,13 +227,13 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         <div className="mb-6 flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-950/30 border border-cyan-800/20 text-xs text-cyan-500">
           <Eye className="h-3.5 w-3.5 shrink-0" />
           <span>
-            Showing <strong className="text-cyan-300">{ROLE_LABELS[role]}</strong> view — 
-            {role === 'owner' ? ' full access to all panels' :
-             role === 'foreman' ? ' tasks, documents, team & weather (no financials)' :
-             role === 'worker' ? ' your assigned tasks & weather only' :
-             role === 'inspector' ? ' assigned inspections, documents & weather' :
-             role === 'subcontractor' ? ' your tasks, documents & timeline' :
-             ' limited view based on your role'}
+            {t('roleDashboard.permissionNotice', 'Showing')} <strong className="text-cyan-300">{ROLE_LABELS[role]}</strong> {t('roleDashboard.view', 'view')} — 
+            {role === 'owner' ? ` ${t('roleDashboard.ownerAccess', 'full access to all panels')}` :
+             role === 'foreman' ? ` ${t('roleDashboard.foremanAccess', 'tasks, documents, team & weather (no financials)')}` :
+             role === 'worker' ? ` ${t('roleDashboard.workerAccess', 'your assigned tasks & weather only')}` :
+             role === 'inspector' ? ` ${t('roleDashboard.inspectorAccess', 'assigned inspections, documents & weather')}` :
+             role === 'subcontractor' ? ` ${t('roleDashboard.subcontractorAccess', 'your tasks, documents & timeline')}` :
+             ` ${t('roleDashboard.limitedAccess', 'limited view based on your role')}`}
           </span>
         </div>
 
@@ -243,14 +245,14 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-cyan-400 flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" />
-                    {panels.includes('my-tasks') ? 'My Tasks' : 'All Tasks'}
+                    {panels.includes('my-tasks') ? t('roleDashboard.myTasks', 'My Tasks') : t('roleDashboard.allTasks', 'All Tasks')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {panels.includes('my-tasks') ? (
                     <>
                       <p className="text-3xl font-bold text-white">{data.taskStats.myCompleted}/{data.taskStats.myTasks}</p>
-                      <p className="text-xs text-cyan-600 mt-1">assigned to you</p>
+                      <p className="text-xs text-cyan-600 mt-1">{t('roleDashboard.assignedToYou', 'assigned to you')}</p>
                       {data.taskStats.myTasks > 0 && (
                         <div className="mt-3 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
                           <div 
@@ -263,7 +265,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                   ) : (
                     <>
                       <p className="text-3xl font-bold text-white">{data.taskStats.completed}/{data.taskStats.total}</p>
-                      <p className="text-xs text-cyan-600 mt-1">tasks completed</p>
+                      <p className="text-xs text-cyan-600 mt-1">{t('roleDashboard.tasksCompleted', 'tasks completed')}</p>
                       {data.taskStats.total > 0 && (
                         <div className="mt-3 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
                           <div 
@@ -286,13 +288,13 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-blue-400 flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    Documents
+                    {t('roleDashboard.documents', 'Documents')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-white">{data.docCount}</p>
                   <p className="text-xs text-blue-600 mt-1">
-                    {role === 'foreman' ? 'view & upload' : 'view only'}
+                    {role === 'foreman' ? t('roleDashboard.viewUpload', 'view & upload') : t('roleDashboard.viewOnly', 'view only')}
                   </p>
                 </CardContent>
               </Card>
@@ -306,12 +308,12 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-purple-400 flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    Team
+                    {t('roleDashboard.team', 'Team')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-white">{data.teamCount}</p>
-                  <p className="text-xs text-purple-600 mt-1">team members</p>
+                  <p className="text-xs text-purple-600 mt-1">{t('roleDashboard.teamMembers', 'team members')}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -324,7 +326,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-sky-400 flex items-center gap-2">
                     <Cloud className="h-4 w-4" />
-                    Site Weather
+                    {t('roleDashboard.siteWeather', 'Site Weather')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -340,7 +342,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                       )}
                     </>
                   ) : (
-                    <p className="text-sm text-cyan-700">No data</p>
+                    <p className="text-sm text-cyan-700">{t('roleDashboard.noData', 'No data')}</p>
                   )}
                 </CardContent>
               </Card>
@@ -354,17 +356,17 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-teal-400 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Timeline
+                    {t('roleDashboard.timeline', 'Timeline')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-cyan-600">Start</span>
+                      <span className="text-cyan-600">{t('roleDashboard.start', 'Start')}</span>
                       <span className="text-white font-medium">{formatDate(data.timeline.start)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-cyan-600">End</span>
+                      <span className="text-cyan-600">{t('roleDashboard.end', 'End')}</span>
                       <span className="text-white font-medium">{formatDate(data.timeline.end)}</span>
                     </div>
                   </div>
@@ -380,18 +382,18 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-amber-400 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Financials
+                    {t('roleDashboard.financials', 'Financials')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold text-white">${data.financials.total.toLocaleString()}</p>
                   <div className="mt-2 space-y-1 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-amber-600">Material</span>
+                      <span className="text-amber-600">{t('roleDashboard.material', 'Material')}</span>
                       <span className="text-amber-300">${data.financials.material.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-amber-600">Labor</span>
+                      <span className="text-amber-600">{t('roleDashboard.labor', 'Labor')}</span>
                       <span className="text-amber-300">${data.financials.labor.toLocaleString()}</span>
                     </div>
                   </div>
