@@ -6794,21 +6794,33 @@ export default function Stage8FinalReview({
         const cardTaxAmt = cardNet * cardTax.rate;
         const cardGross = cardNet + cardTaxAmt;
 
-        // Simulated trend data from project creation to now
-        const trendData = (() => {
-          if (!hasFinancialData) return [];
-          const mat = materialCost || 0;
-          const lab = laborCost || 0;
-          const demo = demoCost || 0;
-          // Build a simple 5-point cumulative cost curve
-          return [
-            { label: 'W1', value: 0 },
-            { label: 'W2', value: Math.round(mat * 0.3) },
-            { label: 'W3', value: Math.round(mat * 0.6 + lab * 0.2) },
-            { label: 'W4', value: Math.round(mat * 0.9 + lab * 0.5 + demo * 0.5) },
-            { label: 'Now', value: Math.round(mat + lab + demo) },
-          ];
-        })();
+        // Phase-based trend data (same as fullscreen)
+        const canvasPhaseTrendGroups = tasks
+          .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
+          .reduce<Record<string, number>>((acc, t) => {
+            const phase = t.phase || 'installation';
+            acc[phase] = (acc[phase] || 0) + t.templateItemCost!;
+            return acc;
+          }, {});
+        const canvasPhaseColors: Record<string, string> = {
+          demolition: 'hsl(0, 70%, 55%)',
+          preparation: 'hsl(35, 80%, 50%)',
+          installation: 'hsl(220, 75%, 55%)',
+          finishing: 'hsl(145, 65%, 45%)',
+        };
+        const canvasPhaseOrder = ['demolition', 'preparation', 'installation', 'finishing'];
+        const canvasPhaseLabels: Record<string, string> = { demolition: 'Demo', preparation: 'Prep', installation: 'Install', finishing: 'Finish' };
+        let canvasCum = 0;
+        const canvasTrendPts = canvasPhaseOrder
+          .filter(k => canvasPhaseTrendGroups[k] && canvasPhaseTrendGroups[k] > 0)
+          .map(k => {
+            canvasCum += canvasPhaseTrendGroups[k];
+            return { label: canvasPhaseLabels[k], value: canvasCum, phaseValue: canvasPhaseTrendGroups[k], color: canvasPhaseColors[k] };
+          });
+        if (canvasTrendPts.length > 0) canvasTrendPts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(251,191,36,0.4)' });
+        const canvasTrendTotal = canvasCum;
+        // Determine "current" phase index (first phase not fully completed = last with data)
+        const currentPhaseIdx = canvasTrendPts.length > 1 ? canvasTrendPts.length - 1 : 0;
 
         const costItems = [
           materialCost !== null && { name: 'Materials', value: materialCost, color: 'hsl(200, 80%, 50%)', icon: Hammer },
@@ -6818,131 +6830,61 @@ export default function Stage8FinalReview({
         const costTotal = costItems.reduce((s, i) => s + i.value, 0);
         
         return (
-          <div className="space-y-3">
-            {/* ─── Header ─── */}
-            <div className="flex items-center justify-between p-2 rounded-lg border border-amber-500/25 bg-gradient-to-r from-amber-950/30 via-orange-950/20 to-amber-950/30">
-              <div className="flex items-center gap-2">
-                <motion.div
-                  animate={{ boxShadow: ['0 0 8px rgba(251,191,36,0.2)', '0 0 16px rgba(251,191,36,0.4)', '0 0 8px rgba(251,191,36,0.2)'] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="h-7 w-7 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
-                >
-                  <DollarSign className="h-4 w-4 text-white" />
-                </motion.div>
-                <span className="text-xs font-bold text-amber-900 dark:text-amber-100">Financial DNA</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-amber-700 dark:text-amber-300/80 bg-amber-500/15 px-1.5 py-0.5 rounded font-mono">{cardTax.province}</span>
-                <Badge className="bg-green-500/20 text-green-300 border border-green-500/30 text-[9px] px-1.5 py-0 gap-0.5">
-                  <Unlock className="h-2 w-2" /> Owner
-                </Badge>
-                {hasPending && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPendingApprovalModal(true)}
-                    className="h-5 px-1.5 text-[9px] text-amber-400 hover:bg-amber-500/10 gap-0.5 animate-pulse"
-                  >
-                    <AlertTriangle className="h-2.5 w-2.5" /> {pendingCount}
-                  </Button>
-                )}
-              </div>
-            </div>
-
+           <div className="space-y-3">
             {hasFinancialData ? (
               <>
-                {/* ─── Net / Tax / Gross Row ─── */}
-                <div className="grid grid-cols-3 gap-1.5">
-                  <div className="p-2 rounded-lg border border-amber-500/15 bg-gradient-to-br from-amber-950/20 to-orange-950/10">
-                    <span className="text-[8px] text-amber-700 dark:text-amber-200/80 uppercase tracking-widest font-semibold flex items-center gap-1">
-                      <div className="h-1 w-1 rounded-full bg-amber-600 dark:bg-amber-300/60" /> Net
-                    </span>
-                    <p className="text-sm font-bold text-amber-950 dark:text-white font-mono mt-0.5">
-                      ${cardNet.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg border border-amber-500/20 bg-amber-950/15">
-                    <span className="text-[8px] text-amber-700 dark:text-amber-300/80 uppercase tracking-widest font-semibold flex items-center gap-1">
-                      <div className="h-1 w-1 rounded-full bg-amber-600 dark:bg-amber-400/50" /> {cardTax.name}
-                    </span>
-                    <p className="text-sm font-bold text-amber-800 dark:text-amber-200 font-mono mt-0.5">
-                      +${cardTaxAmt.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg border border-emerald-500/25 bg-emerald-950/15">
-                    <span className="text-[8px] text-emerald-700 dark:text-emerald-300/80 uppercase tracking-widest font-semibold flex items-center gap-1">
-                      <div className="h-1 w-1 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" /> Gross
-                    </span>
-                    <p className="text-sm font-black text-emerald-800 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-emerald-300 dark:to-teal-300 font-mono mt-0.5">
-                      ${cardGross.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                    </p>
-                  </div>
-                </div>
-
-                {/* ─── Cost Breakdown Bars ─── */}
-                {costItems.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="h-1.5 rounded-full overflow-hidden flex bg-amber-900/20">
-                      {costItems.map((item) => (
-                        <div
-                          key={item.name}
-                          style={{ width: costTotal > 0 ? `${(item.value / costTotal) * 100}%` : '0%', backgroundColor: item.color }}
-                          className="h-full first:rounded-l-full last:rounded-r-full"
-                        />
-                      ))}
-                    </div>
-                    {costItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={item.name} className="flex items-center justify-between p-1.5 rounded-md bg-gradient-to-r from-amber-950/15 to-orange-950/10 border border-amber-500/10">
-                          <div className="flex items-center gap-2">
-                            <div className="h-5 w-5 rounded flex items-center justify-center" style={{ backgroundColor: `${item.color}22` }}>
-                              <Icon className="h-2.5 w-2.5" style={{ color: item.color }} />
-                            </div>
-                            <span className="text-[10px] font-medium text-amber-900 dark:text-white/90">{item.name}</span>
-                          </div>
-                          <span className="text-[11px] font-bold text-amber-950 dark:text-white font-mono">${item.value.toLocaleString()}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* ─── Cost Trend Mini Chart ─── */}
-                {trendData.length > 0 && (() => {
-                  const maxVal = Math.max(...trendData.map(d => d.value), 1);
-                  const chartPoints = trendData.map((d, i) => ({
-                    x: (i / (trendData.length - 1)) * 200,
+                {/* ─── Cost Trend Mini Chart (Phase-based) ─── */}
+                {canvasTrendPts.length >= 2 && (() => {
+                  const maxVal = Math.max(...canvasTrendPts.map(d => d.value), 1);
+                  const chartPoints = canvasTrendPts.map((d, i) => ({
+                    x: (i / (canvasTrendPts.length - 1)) * 200,
                     y: 55 - (d.value / maxVal) * 50,
                     ...d,
                   }));
                   return (
                     <div className="p-2.5 rounded-lg border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-orange-950/10 to-yellow-950/15">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] text-amber-800 dark:text-amber-300/90 uppercase tracking-widest font-semibold">Cost Trend</span>
-                        <span className="text-[9px] text-amber-700 dark:text-amber-200/80 font-mono">${(trendData[trendData.length - 1]?.value || 0).toLocaleString()}</span>
+                        <span className="text-[9px] text-amber-800 dark:text-amber-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
+                        <span className="text-[9px] text-amber-700 dark:text-amber-200/80 font-mono">${canvasTrendTotal.toLocaleString()}</span>
                       </div>
                       <div className="h-16 w-full relative group/trend">
                         <svg viewBox="0 0 200 60" className="w-full h-full" preserveAspectRatio="none">
                           {[0, 20, 40, 60].map(y => (
                             <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(251,191,36,0.08)" strokeWidth="0.5" />
                           ))}
-                          <path d={`M0,55 L${chartPoints.map(p => `${p.x},${p.y}`).join(' L')} L200,55 Z`} fill="url(#cardTrendGrad)" opacity="0.35" />
+                          <path d={`M0,55 L${chartPoints.map(p => `${p.x},${p.y}`).join(' L')} L200,55 Z`} fill="url(#cardPhaseTrendGrad)" opacity="0.35" />
                           <path d={`M${chartPoints.map(p => `${p.x},${p.y}`).join(' L')}`} fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="1.5" strokeLinecap="round" />
                           {chartPoints.map((p, i) => (
                             <g key={i}>
-                              <circle cx={p.x} cy={p.y} r={i === chartPoints.length - 1 ? 3 : 1.5}
-                                fill={i === chartPoints.length - 1 ? '#f59e0b' : 'rgba(251,191,36,0.5)'}
+                              <circle cx={p.x} cy={p.y} r={i === currentPhaseIdx ? 3.5 : 1.5}
+                                fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
+                                stroke={i === currentPhaseIdx ? '#d97706' : 'none'} strokeWidth="1"
                                 className="transition-all duration-200"
                               />
-                              {/* Invisible hover target */}
+                              {/* Current position pulsing ring */}
+                              {i === currentPhaseIdx && (
+                                <>
+                                  <circle cx={p.x} cy={p.y} r="6" fill="none" stroke={p.color} strokeWidth="0.8" opacity="0.5">
+                                    <animate attributeName="r" values="4;8;4" dur="2s" repeatCount="indefinite" />
+                                    <animate attributeName="opacity" values="0.6;0.1;0.6" dur="2s" repeatCount="indefinite" />
+                                  </circle>
+                                </>
+                              )}
                               <circle cx={p.x} cy={p.y} r="12" fill="transparent" className="cursor-pointer">
-                                <title>{p.label}: ${p.value.toLocaleString()}</title>
+                                <title>{p.label}: ${p.phaseValue.toLocaleString()} (Σ ${p.value.toLocaleString()})</title>
                               </circle>
                             </g>
                           ))}
+                          {/* Current position vertical indicator line */}
+                          {chartPoints[currentPhaseIdx] && (
+                            <line
+                              x1={chartPoints[currentPhaseIdx].x} y1={chartPoints[currentPhaseIdx].y + 5}
+                              x2={chartPoints[currentPhaseIdx].x} y2="55"
+                              stroke={chartPoints[currentPhaseIdx].color} strokeWidth="0.8" strokeDasharray="2,2" opacity="0.5"
+                            />
+                          )}
                           <defs>
-                            <linearGradient id="cardTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                            <linearGradient id="cardPhaseTrendGrad" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
                               <stop offset="100%" stopColor="rgba(251,191,36,0)" />
                             </linearGradient>
@@ -6960,8 +6902,9 @@ export default function Stage8FinalReview({
                                 style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
                               >
                                 <div className="w-6 h-6 rounded-full cursor-pointer" />
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded-md bg-amber-900/95 border border-amber-500/40 text-[9px] font-mono text-amber-100 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-amber-900/50 pointer-events-none z-10">
-                                  {p.label}: <span className="font-bold text-amber-300">${p.value.toLocaleString()}</span>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded-md bg-slate-800 dark:bg-slate-900 border border-slate-600 dark:border-slate-700 text-[9px] font-mono text-slate-50 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-slate-900/60 pointer-events-none z-10">
+                                  {p.label}: <span className="font-bold text-amber-300">${p.phaseValue.toLocaleString()}</span>
+                                  {i > 0 && <span className="text-amber-400/60 ml-1">(Σ ${p.value.toLocaleString()})</span>}
                                 </div>
                               </div>
                             );
@@ -6969,8 +6912,8 @@ export default function Stage8FinalReview({
                         </div>
                       </div>
                       <div className="flex justify-between mt-0.5">
-                        {trendData.map(d => (
-                          <span key={d.label} className="text-[7px] text-amber-700 dark:text-amber-300/70 font-mono">{d.label}</span>
+                        {canvasTrendPts.map((d, i) => (
+                          <span key={d.label} className={`text-[7px] font-mono ${i === currentPhaseIdx ? 'text-amber-400 font-bold' : 'text-amber-700 dark:text-amber-300/70'}`}>{d.label}{i === currentPhaseIdx ? ' ●' : ''}</span>
                         ))}
                       </div>
                     </div>
@@ -8652,6 +8595,7 @@ export default function Stage8FinalReview({
                     // Add starting zero point
                     if (pts.length > 0) pts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(251,191,36,0.4)' });
                     const trendSpentTotal = cumulative;
+                    const fsCurrentIdx = pts.length > 1 ? pts.length - 1 : 0;
 
                     if (pts.length < 2) return null;
 
@@ -8691,10 +8635,25 @@ export default function Stage8FinalReview({
                             />
                             {svgPts.map((p, i) => (
                               <g key={i}>
-                                <circle cx={p.x} cy={p.y} r={i === svgPts.length - 1 ? 4 : 2.5}
+                                <circle cx={p.x} cy={p.y} r={i === fsCurrentIdx ? 5 : 2.5}
                                   fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
-                                  stroke={i === svgPts.length - 1 ? '#d97706' : 'none'} strokeWidth="1"
+                                  stroke={i === fsCurrentIdx ? '#d97706' : 'none'} strokeWidth="1.5"
                                 />
+                                {/* Current position pulsing ring */}
+                                {i === fsCurrentIdx && (
+                                  <circle cx={p.x} cy={p.y} r="8" fill="none" stroke={p.color} strokeWidth="1" opacity="0.5">
+                                    <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite" />
+                                    <animate attributeName="opacity" values="0.6;0.1;0.6" dur="2s" repeatCount="indefinite" />
+                                  </circle>
+                                )}
+                                {/* Current position vertical dashed line */}
+                                {i === fsCurrentIdx && (
+                                  <line
+                                    x1={p.x} y1={p.y + 6}
+                                    x2={p.x} y2="75"
+                                    stroke={p.color} strokeWidth="1" strokeDasharray="3,2" opacity="0.4"
+                                  />
+                                )}
                                 <circle cx={p.x} cy={p.y} r="16" fill="transparent" className="cursor-pointer">
                                   <title>{p.label}: ${p.value.toLocaleString()} (phase: ${p.phaseValue.toLocaleString()})</title>
                                 </circle>
@@ -8727,8 +8686,8 @@ export default function Stage8FinalReview({
                             })}
                           </div>
                           <div className="flex justify-between mt-1 px-0.5">
-                            {svgPts.map(p => (
-                              <span key={p.label} className="text-[9px] text-amber-700 dark:text-amber-300/70 font-mono">{p.label}</span>
+                            {svgPts.map((p, i) => (
+                              <span key={p.label} className={`text-[9px] font-mono ${i === fsCurrentIdx ? 'text-amber-400 font-bold' : 'text-amber-700 dark:text-amber-300/70'}`}>{p.label}{i === fsCurrentIdx ? ' ●' : ''}</span>
                             ))}
                           </div>
                         </div>
