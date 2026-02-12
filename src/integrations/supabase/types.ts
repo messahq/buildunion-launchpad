@@ -1969,6 +1969,19 @@ export type Database = {
         Returns: boolean
       }
       is_share_token_valid: { Args: { _contract_id: string }; Returns: boolean }
+      match_obc_chunks: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          chunk_text: string
+          section_number: string
+          similarity: number
+        }[]
+      }
       search_bu_users_for_team: {
         Args: { _limit?: number; _project_id: string; _search_query: string }
         Returns: {
