@@ -19,6 +19,9 @@ import {
   Loader2,
   CheckCircle2,
   Save,
+  Camera,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -31,6 +34,13 @@ interface TaskItem {
   id: string;
   label: string;
   completed: boolean;
+}
+
+interface PhotoItem {
+  id: string;
+  file: File;
+  preview: string;
+  caption: string;
 }
 
 const TEMPLATE_PRESETS: Record<TemplateType, { icon: string; label: string; color: string; tasks: string[] }> = {
@@ -96,7 +106,10 @@ export default function QuickLogCreator() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [savedLogId, setSavedLogId] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const pdfRef = useRef<HTMLDivElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const selectTemplate = (type: TemplateType) => {
     setSelectedTemplate(type);
@@ -130,6 +143,48 @@ export default function QuickLogCreator() {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const newPhotos: PhotoItem[] = files.map((file) => ({
+      id: `photo-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      preview: URL.createObjectURL(file),
+      caption: "",
+    }));
+    setPhotos((prev) => [...prev, ...newPhotos]);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
+
+  const removePhoto = (id: string) => {
+    setPhotos((prev) => {
+      const photo = prev.find((p) => p.id === id);
+      if (photo) URL.revokeObjectURL(photo.preview);
+      return prev.filter((p) => p.id !== id);
+    });
+  };
+
+  const updatePhotoCaption = (id: string, caption: string) => {
+    setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, caption } : p)));
+  };
+
+  const uploadPhotosToStorage = async (logId: string): Promise<string[]> => {
+    if (!user || photos.length === 0) return [];
+    const urls: string[] = [];
+    for (const photo of photos) {
+      const ext = photo.file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${logId}/${photo.id}.${ext}`;
+      const { error } = await supabase.storage
+        .from("site-log-pdfs")
+        .upload(path, photo.file, { contentType: photo.file.type, upsert: true });
+      if (!error) {
+        const { data: publicUrl } = supabase.storage.from("site-log-pdfs").getPublicUrl(path);
+        urls.push(publicUrl.publicUrl);
+      }
+    }
+    return urls;
+  };
+
   const completedCount = tasks.filter((t) => t.completed).length;
 
   const handleSave = async () => {
@@ -144,6 +199,7 @@ export default function QuickLogCreator() {
       const tasksData = {
         clientName: clientName.trim() || undefined,
         items: tasks.map((t) => ({ label: t.label, completed: t.completed })),
+        photoCaptions: photos.map((p) => p.caption),
       };
 
       const { data, error } = await supabase
@@ -155,7 +211,7 @@ export default function QuickLogCreator() {
           tasks_data: tasksData,
           completed_count: completedCount,
           total_count: tasks.length,
-          photos_count: 0,
+          photos_count: photos.length,
           notes: notes.trim() || null,
         })
         .select("id")
@@ -163,12 +219,21 @@ export default function QuickLogCreator() {
 
       if (error) throw error;
       setSavedLogId(data.id);
+
+      // Upload photos if any
+      if (photos.length > 0) {
+        setIsUploadingPhotos(true);
+        await uploadPhotosToStorage(data.id);
+        setIsUploadingPhotos(false);
+      }
+
       toast.success("Report saved!");
     } catch (error) {
       console.error("Error saving site log:", error);
       toast.error("Failed to save report");
     } finally {
       setIsSaving(false);
+      setIsUploadingPhotos(false);
     }
   };
 
@@ -234,6 +299,7 @@ export default function QuickLogCreator() {
   };
 
   const resetForm = () => {
+    photos.forEach((p) => URL.revokeObjectURL(p.preview));
     setSelectedTemplate(null);
     setReportName("");
     setClientName("");
@@ -241,6 +307,7 @@ export default function QuickLogCreator() {
     setNotes("");
     setNewTaskLabel("");
     setSavedLogId(null);
+    setPhotos([]);
   };
 
   // Template selection
@@ -364,6 +431,59 @@ export default function QuickLogCreator() {
             <Button variant="outline" size="icon" onClick={addCustomTask}>
               <Plus className="h-4 w-4" />
             </Button>
+          </div>
+
+          {/* Photos */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                Photos ({photos.length})
+              </Label>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => photoInputRef.current?.click()}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Photos
+              </Button>
+            </div>
+            {photos.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {photos.map((photo) => (
+                  <div key={photo.id} className="relative group rounded-lg overflow-hidden border border-muted">
+                    <img
+                      src={photo.preview}
+                      alt="Inspection photo"
+                      className="w-full h-28 object-cover"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto(photo.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      value={photo.caption}
+                      onChange={(e) => updatePhotoCaption(photo.id, e.target.value)}
+                      placeholder="Caption..."
+                      className="text-xs h-7 rounded-none border-0 border-t"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
