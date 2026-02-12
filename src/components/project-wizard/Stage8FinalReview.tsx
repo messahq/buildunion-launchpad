@@ -1170,6 +1170,70 @@ export default function Stage8FinalReview({
           }
         }
         
+        // 4b. Template sub-task recovery: if tasks exist but none are template sub-tasks, backfill
+        if (tasksData && tasksData.length > 0) {
+          const hasTemplateSubTasks = tasksData.some(t => t.description?.startsWith('Template sub-task:'));
+          
+          if (!hasTemplateSubTasks) {
+            // Find TEMPLATE_LOCK citation with items
+            const templateLockCit = loadedCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+            const templateItems = (templateLockCit?.metadata as any)?.items as any[] | undefined;
+            
+            if (templateItems && templateItems.length > 0) {
+              console.log('[Stage8] Recovery: Found', templateItems.length, 'template items but 0 sub-tasks in DB. Backfilling...');
+              
+              // Categorize helper (same logic as Stage 7)
+              const categorize = (name: string): string => {
+                const n = name.toLowerCase();
+                if (n.includes('demolition') || n.includes('demo') || n.includes('removal')) return 'demolition';
+                if (n.includes('prep') || n.includes('primer') || n.includes('underlayment') || 
+                    n.includes('tape') || n.includes('compound') || n.includes('mesh') ||
+                    n.includes('rebar') || n.includes('forming')) return 'preparation';
+                if (n.includes('finish') || n.includes('baseboard') || n.includes('trim') ||
+                    n.includes('transition') || n.includes('touch') || n.includes('qc')) return 'finishing';
+                return 'installation';
+              };
+              
+              const phaseNames: Record<string, string> = {
+                demolition: 'Demolition', preparation: 'Preparation',
+                installation: 'Installation', finishing: 'Finishing & QC',
+              };
+              
+              // Get a due date from existing tasks as fallback
+              const fallbackDueDate = tasksData.find(t => t.due_date)?.due_date || new Date().toISOString();
+              
+              const subTaskRows = templateItems.map((item: any) => {
+                const phase = categorize(item.name || '');
+                return {
+                  project_id: projectId,
+                  title: item.name || 'Template Item',
+                  description: `Template sub-task: ${phaseNames[phase] || 'Installation'}`,
+                  assigned_to: userId,
+                  assigned_by: userId,
+                  priority: 'medium',
+                  status: 'pending',
+                  due_date: fallbackDueDate,
+                  total_cost: item.totalPrice || item.total_price || null,
+                  unit_price: item.unitPrice || item.unit_price || null,
+                  quantity: item.quantity || 1,
+                };
+              });
+              
+              const { data: insertedSubTasks, error: subErr } = await supabase
+                .from('project_tasks')
+                .insert(subTaskRows)
+                .select('id, title, status, priority, description, assigned_to, due_date, created_at, total_cost, unit_price, quantity');
+              
+              if (!subErr && insertedSubTasks) {
+                tasksData = [...tasksData, ...insertedSubTasks];
+                console.log('[Stage8] ✓ Recovery inserted', insertedSubTasks.length, 'template sub-tasks');
+              } else if (subErr) {
+                console.error('[Stage8] Recovery insert failed:', subErr);
+              }
+            }
+          }
+        }
+        
         if (tasksData && tasksData.length > 0) {
           // ✓ Check which tasks have verification photos via loaded citations
           const taskPhotoIds = new Set<string>();
