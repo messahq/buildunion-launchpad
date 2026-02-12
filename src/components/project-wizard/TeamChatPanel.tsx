@@ -31,6 +31,7 @@ interface ChatMessage {
   created_at: string;
   sender_name?: string;
   sender_role?: string;
+  source?: 'project' | 'direct';
 }
 
 interface TeamMember {
@@ -80,35 +81,91 @@ export function TeamChatPanel({
   // Build userId→name/role map
   const memberMap = new Map<string, { name: string; role: string }>();
   teamMembers.forEach((m) => memberMap.set(m.userId, { name: m.name, role: m.role }));
+  // Ensure the current user (owner) is in the map
+  if (!memberMap.has(userId)) {
+    memberMap.set(userId, { name: 'You', role: 'owner' });
+  }
 
   // Fetch messages
+  // Collect all userIds for this project (team members + owner)
+  const allMemberUserIds = teamMembers.map(m => m.userId).filter(id => !!id);
+  // Include the current user (owner) if not already in the list
+  if (!allMemberUserIds.includes(userId)) {
+    allMemberUserIds.push(userId);
+  }
+
   const fetchMessages = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      // 1. Fetch project-scoped chat messages
+      const { data: projectMsgs, error: projErr } = await supabase
         .from("project_chat_messages")
         .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: true })
         .limit(200);
 
-      if (error) throw error;
+      if (projErr) throw projErr;
 
-      const enriched: ChatMessage[] = (data || []).map((msg) => {
+      const enrichedProject: ChatMessage[] = (projectMsgs || []).map((msg) => {
         const member = memberMap.get(msg.user_id);
         return {
           ...msg,
           sender_name: member?.name || "Unknown",
           sender_role: member?.role || "member",
+          source: 'project' as const,
         };
       });
 
-      setMessages(enriched);
+      // 2. Fetch direct messages (team_messages) between project members
+      let enrichedDirect: ChatMessage[] = [];
+      if (allMemberUserIds.length >= 2) {
+        const { data: directMsgs, error: dmErr } = await supabase
+          .from("team_messages")
+          .select("*")
+          .or(
+            allMemberUserIds
+              .map(uid => `sender_id.eq.${uid},recipient_id.eq.${uid}`)
+              .join(',')
+          )
+          .order("created_at", { ascending: true })
+          .limit(200);
+
+        if (!dmErr && directMsgs) {
+          // Filter to only messages between project members
+          enrichedDirect = directMsgs
+            .filter(msg => 
+              allMemberUserIds.includes(msg.sender_id) && 
+              allMemberUserIds.includes(msg.recipient_id)
+            )
+            .map(msg => {
+              const member = memberMap.get(msg.sender_id);
+              return {
+                id: `dm-${msg.id}`,
+                project_id: projectId,
+                user_id: msg.sender_id,
+                message: msg.message,
+                attachment_url: msg.attachment_url,
+                attachment_name: msg.attachment_name,
+                created_at: msg.created_at,
+                sender_name: msg.sender_id === userId ? 'You' : (member?.name || "Unknown"),
+                sender_role: member?.role || "member",
+                source: 'direct' as const,
+              };
+            });
+        }
+      }
+
+      // 3. Merge and sort by created_at
+      const allMessages = [...enrichedProject, ...enrichedDirect]
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      setMessages(allMessages);
     } catch (err) {
       console.error("[TeamChat] Fetch error:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, allMemberUserIds.join(',')]);
 
   // Initial fetch + realtime subscription
   useEffect(() => {
@@ -125,11 +182,46 @@ export function TeamChatPanel({
           filter: `project_id=eq.${projectId}`,
         },
         (payload) => {
-          const newMsg = payload.new as ChatMessage;
+          const newMsg = payload.new as any;
           const member = memberMap.get(newMsg.user_id);
-          newMsg.sender_name = member?.name || "Unknown";
-          newMsg.sender_role = member?.role || "member";
-          setMessages((prev) => [...prev, newMsg]);
+          const enriched: ChatMessage = {
+            ...newMsg,
+            sender_name: member?.name || "Unknown",
+            sender_role: member?.role || "member",
+            source: 'project',
+          };
+          setMessages((prev) => [...prev, enriched]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "team_messages",
+        },
+        (payload) => {
+          const dm = payload.new as any;
+          // Only show if both sender and recipient are project members
+          if (
+            allMemberUserIds.includes(dm.sender_id) &&
+            allMemberUserIds.includes(dm.recipient_id)
+          ) {
+            const member = memberMap.get(dm.sender_id);
+            const enriched: ChatMessage = {
+              id: `dm-${dm.id}`,
+              project_id: projectId,
+              user_id: dm.sender_id,
+              message: dm.message,
+              attachment_url: dm.attachment_url,
+              attachment_name: dm.attachment_name,
+              created_at: dm.created_at,
+              sender_name: dm.sender_id === userId ? 'You' : (member?.name || "Unknown"),
+              sender_role: member?.role || "member",
+              source: 'direct',
+            };
+            setMessages((prev) => [...prev, enriched]);
+          }
         }
       )
       .subscribe();
@@ -331,6 +423,11 @@ export function TeamChatPanel({
                               <span className="text-[8px] text-amber-600/70 dark:text-amber-400/50 capitalize">
                                 {msg.sender_role}
                               </span>
+                              {msg.source === 'direct' && (
+                                <span className="text-[7px] font-bold text-blue-500 dark:text-blue-400 bg-blue-500/10 px-1 py-0.5 rounded">
+                                  DM
+                                </span>
+                              )}
                             </div>
                           )}
 
