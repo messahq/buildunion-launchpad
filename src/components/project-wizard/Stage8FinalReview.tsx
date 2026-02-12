@@ -1213,8 +1213,7 @@ export default function Stage8FinalReview({
                   priority: 'medium',
                   status: 'pending',
                   due_date: fallbackDueDate,
-                  total_cost: item.totalPrice || item.total_price || null,
-                  unit_price: item.unitPrice || item.unit_price || null,
+                  unit_price: item.unitPrice || item.unit_price || item.totalPrice || item.total_price || 0,
                   quantity: item.quantity || 1,
                 };
               });

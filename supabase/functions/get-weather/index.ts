@@ -141,15 +141,17 @@ serve(async (req) => {
       const normalizedLocation = location.toString().toLowerCase().trim();
       
       if (invalidLocations.includes(normalizedLocation) || normalizedLocation.length < 3) {
+        // Return empty weather data instead of error for invalid placeholder addresses
         return new Response(
           JSON.stringify({ 
-            error: "Invalid location", 
-            message: "Please provide a valid project address for weather data",
-            code: "INVALID_LOCATION"
+            current: null,
+            forecast: [],
+            location: { lat: 0, lon: 0, name: 'Unknown', country: '' },
+            warning: "Invalid or placeholder address. Set a real project address to get weather data."
           }),
           { 
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400 
+            status: 200 
           }
         );
       }

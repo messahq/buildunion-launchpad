@@ -499,9 +499,8 @@ export default function Stage7GanttSetup({
         priority: task.priority,
         status: 'pending',
         due_date: task.endDate.toISOString(),
-        total_cost: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
-        unit_price: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
-        quantity: task.isSubTask ? 1 : null,
+        unit_price: task.isSubTask && task.templateItemCost ? task.templateItemCost : 0,
+        quantity: task.isSubTask ? 1 : 1,
       }));
       
       const { error } = await supabase
@@ -527,8 +526,7 @@ export default function Stage7GanttSetup({
         priority: task.priority,
         status: 'pending',
         due_date: task.endDate.toISOString(),
-        total_cost: task.templateItemCost || null,
-        unit_price: task.templateItemCost || null,
+        unit_price: task.templateItemCost || 0,
         quantity: 1,
       }));
       
