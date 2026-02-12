@@ -127,6 +127,7 @@ import { Stage8CommandBar } from "@/components/project-wizard/Stage8CommandBar";
 import { ConflictMapModal } from "@/components/project-wizard/ConflictMapModal";
 import { TeamChatPanel } from "@/components/project-wizard/TeamChatPanel";
 import { MaterialTracker } from "@/components/materials/MaterialTracker";
+import { MaterialsLaborPreview } from "@/components/project-wizard/MaterialsLaborPreview";
 
 // ============================================
 // VISIBILITY TIERS
@@ -10980,6 +10981,12 @@ export default function Stage8FinalReview({
                   src={getDocumentPreviewUrl(previewDocument.file_path)}
                   className="w-full h-[60vh] rounded-lg border"
                   title={previewDocument.file_name}
+                />
+              ) : previewDocument.file_name.includes('materials-labor') && previewDocument.file_name.match(/\.txt$/i) ? (
+                // Materials-Labor Template Preview
+                <MaterialsLaborPreview 
+                  filePath={previewDocument.file_path} 
+                  fileName={previewDocument.file_name}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
