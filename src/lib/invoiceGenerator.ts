@@ -87,19 +87,39 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     year: 'numeric', month: 'short', day: 'numeric'
   });
 
-  // Separate line items by category
-  const materialItems = data.lineItems.filter(item => 
-    item.category === 'material' || (!item.category && !item.description.toLowerCase().includes('installation'))
-  );
-  const laborItems = data.lineItems.filter(item => 
-    item.category === 'labor' || (!item.category && item.description.toLowerCase().includes('installation'))
-  );
+  // Separate line items by category using three-pillar structure:
+  // Materials = physical products only (NOT labor, NOT demolition)
+  // Labor = any item with "labor" in description
+  // Demolition = any item with "demolition" or "demo" tag
+  const laborItems = data.lineItems.filter(item => {
+    if (item.category === 'labor') return true;
+    if (!item.category) {
+      const desc = item.description.toLowerCase();
+      return desc.includes('labor') || desc.includes('installation labor') || desc.includes('preparation labor') || desc.includes('cleanup labor');
+    }
+    return false;
+  });
   
-  // Calculate totals
-  const materialsTotal = data.materialsCost || materialItems.reduce((sum, item) => sum + item.total, 0);
-  const laborTotal = data.laborCost || laborItems.reduce((sum, item) => sum + item.total, 0);
-  const otherTotal = data.otherCost || 0;
-  const subtotal = materialsTotal + laborTotal + otherTotal;
+  const demolitionItems = data.lineItems.filter(item => {
+    const desc = item.description.toLowerCase();
+    return desc.includes('demolition') || desc.includes('demo ') || desc.includes('removal');
+  });
+  
+  const laborAndDemoIds = new Set([
+    ...laborItems.map(i => `${i.description}-${i.quantity}-${i.unitPrice}`),
+    ...demolitionItems.map(i => `${i.description}-${i.quantity}-${i.unitPrice}`)
+  ]);
+  
+  const materialItems = data.lineItems.filter(item => {
+    const key = `${item.description}-${item.quantity}-${item.unitPrice}`;
+    return !laborAndDemoIds.has(key);
+  });
+  
+  // Calculate totals dynamically from line items (Operational Truth)
+  const materialsTotal = materialItems.reduce((sum, item) => sum + item.total, 0);
+  const laborTotal = laborItems.reduce((sum, item) => sum + item.total, 0);
+  const demolitionTotal = demolitionItems.reduce((sum, item) => sum + item.total, 0);
+  const subtotal = materialsTotal + laborTotal + demolitionTotal;
 
   // Build materials table rows
   const materialsRowsHTML = materialItems.length > 0 ? materialItems.map(item => `
@@ -130,6 +150,17 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
       <td colspan="5" style="padding: 20px; text-align: center; color: #9ca3af;">No labor items</td>
     </tr>
   `;
+
+  // Build demolition table rows
+  const demolitionRowsHTML = demolitionItems.length > 0 ? demolitionItems.map(item => `
+    <tr>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity.toLocaleString()}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(item.unit)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${item.unitPrice.toFixed(2)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">$${item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+    </tr>
+  `).join('') : '';
 
   // Province code extraction
   const provinceCode = data.contractor.province || data.taxInfo.province?.substring(0, 2).toUpperCase() || 'ON';
@@ -527,6 +558,25 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
         </tbody>
       </table>
       
+      <!-- Demolition Table (only if items exist) -->
+      ${demolitionItems.length > 0 ? `
+        <div class="section-header" style="color: #dc2626; border-color: #ef4444;"># Demolition</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40%;">Description</th>
+              <th style="width: 12%;">Qty</th>
+              <th style="width: 15%;">Unit</th>
+              <th style="width: 15%;">Price</th>
+              <th style="width: 18%;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${demolitionRowsHTML}
+          </tbody>
+        </table>
+      ` : ''}
+      
       <!-- Summary + Tax Grid -->
       <div class="summary-section pdf-section">
         <!-- Summary Box -->
@@ -540,10 +590,12 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
             <span class="label">Labor</span>
             <span class="value">$${laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-          <div class="summary-row">
-            <span class="label">Other</span>
-            <span class="value">$${otherTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          ${demolitionTotal > 0 ? `
+          <div class="summary-row" style="color: #dc2626;">
+            <span class="label">Demolition</span>
+            <span class="value" style="color: #dc2626;">$${demolitionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
+          ` : ''}
           <div class="summary-row" style="border-top: 2px solid #d1d5db; margin-top: 8px; padding-top: 8px;">
             <span class="label"><strong>Subtotal</strong></span>
             <span class="value">$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
