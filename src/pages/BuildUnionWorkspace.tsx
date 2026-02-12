@@ -650,11 +650,19 @@ const BuildUnionWorkspace = () => {
 
                     {/* Material Deliveries */}
                     {(project.total_materials || 0) > 0 && (
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
-                        <TruckIcon className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-xs font-semibold text-foreground">
-                          {project.delivered_materials || 0}/{project.total_materials || 0}
-                        </span>
+                      <div className="flex flex-col gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-1.5">
+                          <TruckIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="text-xs font-semibold text-foreground">
+                            {project.delivered_materials || 0}/{project.total_materials || 0}
+                          </span>
+                        </div>
+                        {(project.total_materials || 0) > 0 && (
+                          <Progress 
+                            value={Math.round(((project.delivered_materials || 0) / (project.total_materials || 1)) * 100)} 
+                            className="h-1"
+                          />
+                        )}
                       </div>
                     )}
 
