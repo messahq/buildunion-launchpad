@@ -911,8 +911,8 @@ export default function Stage7GanttSetup({
         </div>
         
         {/* Gantt Chart */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-3">
+         <div className="flex-1 overflow-y-auto p-3">
+           <div className="space-y-1">
             {/* Timeline header */}
             <div className="flex items-center justify-between text-xs text-muted-foreground px-4 mb-4">
               <span>{projectStartDate ? format(projectStartDate, 'MMM dd') : ''}</span>
@@ -936,28 +936,28 @@ export default function Stage7GanttSetup({
                   transition={{ delay: index * 0.05 }}
                   className="relative"
                 >
-                  {/* Task row */}
-                  <div className="flex items-center gap-3 mb-1">
-                    {/* Task label */}
-                    <div className={cn("w-36 shrink-0 flex items-center gap-2", task.isSubTask && "pl-3")}>
-                      {task.isSubTask ? (
-                        <Package className={cn("h-3 w-3 shrink-0", task.templateItemCategory === 'labor' ? "text-blue-500" : "text-orange-500")} />
-                      ) : (
-                        <div className={cn("h-2 w-2 rounded-full shrink-0", priority?.color || 'bg-slate-400')} />
-                      )}
-                      <span className={cn(
-                        "font-medium truncate text-foreground",
-                        task.isSubTask ? "text-[11px] text-muted-foreground" : "text-xs"
-                      )}>
-                        {task.isSubTask && '↳ '}{task.name}
-                      </span>
-                    </div>
-                    
-                    {/* Gantt bar container */}
-                    <div className={cn(
-                      "flex-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg relative overflow-hidden",
-                      task.isSubTask ? "h-6" : "h-8"
-                    )}>
+                   {/* Task row */}
+                   <div className="flex items-center gap-1.5 mb-0.5">
+                     {/* Task label */}
+                     <div className={cn("w-28 shrink-0 flex items-center gap-1", task.isSubTask && "pl-2")}>
+                       {task.isSubTask ? (
+                         <Package className={cn("h-2.5 w-2.5 shrink-0", task.templateItemCategory === 'labor' ? "text-blue-500" : "text-orange-500")} />
+                       ) : (
+                         <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", priority?.color || 'bg-slate-400')} />
+                       )}
+                       <span className={cn(
+                         "font-medium truncate text-foreground",
+                         task.isSubTask ? "text-[10px] text-muted-foreground" : "text-[11px]"
+                       )}>
+                         {task.isSubTask && '↳ '}{task.name}
+                       </span>
+                     </div>
+                     
+                     {/* Gantt bar container */}
+                     <div className={cn(
+                       "flex-1 bg-slate-200/50 dark:bg-slate-800/50 rounded relative overflow-hidden",
+                       task.isSubTask ? "h-5" : "h-6"
+                     )}>
                       {/* Task bar */}
                        <motion.div
                          initial={{ scaleX: 0 }}
@@ -995,17 +995,17 @@ export default function Stage7GanttSetup({
                          
                          {/* Assignee avatar */}
                          {assignee && !task.isVerificationNode && (
-                           <div className="h-5 w-5 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-[10px] font-bold text-black dark:text-white">
+                           <div className="h-4 w-4 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-[8px] font-bold text-black dark:text-white">
                              {assignee.name.charAt(0).toUpperCase()}
                            </div>
                          )}
                        </motion.div>
                     </div>
                     
-                    {/* Assignee label */}
-                    <div className="w-20 shrink-0 text-xs text-muted-foreground truncate">
-                      {assignee?.name || '-'}
-                    </div>
+                     {/* Assignee label */}
+                     <div className="w-16 shrink-0 text-[10px] text-muted-foreground truncate">
+                       {assignee?.name || '-'}
+                     </div>
                   </div>
                 </motion.div>
               );
