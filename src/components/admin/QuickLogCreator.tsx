@@ -95,7 +95,7 @@ const TEMPLATE_PRESETS: Record<TemplateType, { icon: string; label: string; colo
   },
 };
 
-export default function QuickLogCreator() {
+export default function QuickLogCreator({ projectId }: { projectId?: string }) {
   const { user } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType | null>(null);
   const [reportName, setReportName] = useState("");
@@ -213,6 +213,7 @@ export default function QuickLogCreator() {
           total_count: tasks.length,
           photos_count: photos.length,
           notes: notes.trim() || null,
+          project_id: projectId || null,
         })
         .select("id")
         .single();

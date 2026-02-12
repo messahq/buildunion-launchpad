@@ -1289,6 +1289,7 @@ export type Database = {
           notes: string | null
           pdf_url: string | null
           photos_count: number | null
+          project_id: string | null
           report_name: string
           tasks_data: Json | null
           template_type: string
@@ -1303,6 +1304,7 @@ export type Database = {
           notes?: string | null
           pdf_url?: string | null
           photos_count?: number | null
+          project_id?: string | null
           report_name: string
           tasks_data?: Json | null
           template_type: string
@@ -1317,6 +1319,7 @@ export type Database = {
           notes?: string | null
           pdf_url?: string | null
           photos_count?: number | null
+          project_id?: string | null
           report_name?: string
           tasks_data?: Json | null
           template_type?: string
@@ -1324,7 +1327,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "site_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_templates: {
         Row: {
