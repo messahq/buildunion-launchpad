@@ -9148,7 +9148,9 @@ export default function Stage8FinalReview({
                         "text-xs font-semibold",
                         isActive ? "text-amber-500" : "text-foreground"
                       )}>
-                        {displayTitle}
+                        {displayTitle.split(' ').map((word, i) => (
+                          <span key={i} className={i === 0 ? "" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
+                        ))}
                       </span>
                     </div>
                     {dataCount > 0 && hasAccess && (
