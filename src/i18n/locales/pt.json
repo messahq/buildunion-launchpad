@@ -840,6 +840,14 @@
     "title": "Notificações",
     "markAllRead": "Marcar tudo lido",
     "empty": "Sem notificações",
-    "emptyDesc": "As atualizações aparecerão aqui"
+    "emptyDesc": "As atualizações aparecerão aqui",
+    "delete": "Excluir",
+    "deleteAll": "Excluir tudo",
+    "status": "Status",
+    "sentAt": "Enviado",
+    "readAt": "Lido",
+    "link": "Link",
+    "data": "Dados",
+    "goToLink": "Abrir"
   }
 }

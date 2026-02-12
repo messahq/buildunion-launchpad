@@ -1055,6 +1055,14 @@
     "title": "Értesítések",
     "markAllRead": "Mind olvasott",
     "empty": "Még nincsenek értesítések",
-    "emptyDesc": "Itt fogod látni a frissítéseket"
+    "emptyDesc": "Itt fogod látni a frissítéseket",
+    "delete": "Törlés",
+    "deleteAll": "Összes törlése",
+    "status": "Állapot",
+    "sentAt": "Küldve",
+    "readAt": "Olvasva",
+    "link": "Link",
+    "data": "Adat",
+    "goToLink": "Megnyitás"
   }
 }

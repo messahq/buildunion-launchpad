@@ -1055,6 +1055,14 @@
     "title": "Notifications",
     "markAllRead": "Mark all read",
     "empty": "No notifications yet",
-    "emptyDesc": "You'll see updates here"
+    "emptyDesc": "You'll see updates here",
+    "delete": "Delete",
+    "deleteAll": "Delete all",
+    "status": "Status",
+    "sentAt": "Sent",
+    "readAt": "Read",
+    "link": "Link",
+    "data": "Data",
+    "goToLink": "Open"
   }
 }

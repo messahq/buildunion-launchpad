@@ -852,6 +852,14 @@
     "title": "Benachrichtigungen",
     "markAllRead": "Alle gelesen",
     "empty": "Keine Benachrichtigungen",
-    "emptyDesc": "Updates erscheinen hier"
+    "emptyDesc": "Updates erscheinen hier",
+    "delete": "Löschen",
+    "deleteAll": "Alle löschen",
+    "status": "Status",
+    "sentAt": "Gesendet",
+    "readAt": "Gelesen",
+    "link": "Link",
+    "data": "Daten",
+    "goToLink": "Öffnen"
   }
 }
