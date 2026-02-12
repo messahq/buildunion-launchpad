@@ -5886,13 +5886,13 @@ export default function Stage8FinalReview({
       
       return (
         <div className="space-y-3">
-          {/* ✓ TRADE HEADER - Vibrant Orange/Amber gradient */}
-          <div className={cn(
-            "p-4 rounded-xl border-2 relative overflow-hidden",
-            hasTradeCitation
-              ? "bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/40 dark:via-amber-950/30 dark:to-yellow-950/30 border-orange-300 dark:border-orange-500/40"
-              : "bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-950/30 dark:to-slate-950/30 border-gray-200/50 border-dashed"
-          )}>
+           {/* ✓ TRADE HEADER - Amber outline style */}
+           <div className={cn(
+             "p-4 rounded-xl border-2 relative overflow-hidden bg-card",
+             hasTradeCitation
+               ? "border-amber-400 dark:border-amber-500 hover:bg-amber-50/20 dark:hover:bg-amber-950/10"
+               : "border-amber-300/40 dark:border-amber-500/30 border-dashed"
+           )}>
             {hasTradeCitation && (
               <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-orange-200/40 to-transparent dark:from-orange-500/10 rounded-bl-3xl" />
             )}
