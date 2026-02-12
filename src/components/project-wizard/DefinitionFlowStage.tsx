@@ -2516,18 +2516,83 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     };
     
     // Auto-transition to Stage 5 when Stage 4 is complete (end date selected)
+    // Also create TIMELINE + END_DATE citations immediately
     useEffect(() => {
       if (scheduledEndDate && templateLocked && !stage5Active && currentSubStep >= 3) {
+        // Create TIMELINE citation immediately
+        const hasTimeline = flowCitations.some(c => c.cite_type === CITATION_TYPES.TIMELINE);
+        if (!hasTimeline) {
+          const timelineCitation = createCitation({
+            cite_type: CITATION_TYPES.TIMELINE,
+            question_key: 'timeline',
+            answer: timeline === 'asap' ? 'ASAP' : `Scheduled: ${scheduledDate ? format(scheduledDate, 'PPP') : 'TBD'}`,
+            value: timeline,
+            metadata: {
+              start_date: timeline === 'asap' ? new Date().toISOString() : scheduledDate?.toISOString(),
+            },
+          });
+          setFlowCitations(prev => [...prev, timelineCitation]);
+        }
+
+        // Create END_DATE citation immediately
+        const hasEndDate = flowCitations.some(c => c.cite_type === CITATION_TYPES.END_DATE);
+        if (!hasEndDate) {
+          const endDateCitation = createCitation({
+            cite_type: CITATION_TYPES.END_DATE,
+            question_key: 'end_date',
+            answer: format(scheduledEndDate, 'PPP'),
+            value: scheduledEndDate.toISOString(),
+            metadata: {
+              end_date: scheduledEndDate.toISOString(),
+            },
+          });
+          setFlowCitations(prev => [...prev, endDateCitation]);
+        }
+
         // Small delay before transitioning to Stage 5
         const timer = setTimeout(() => {
           setStage5Active(true);
         }, 1500);
         return () => clearTimeout(timer);
       }
-    }, [scheduledEndDate, templateLocked, stage5Active, currentSubStep]);
+    }, [scheduledEndDate, templateLocked, stage5Active, currentSubStep, timeline, scheduledDate, flowCitations]);
+
+    // Update TIMELINE citation when start date changes (if already created)
+    useEffect(() => {
+      if (!scheduledDate || !templateLocked) return;
+      setFlowCitations(prev => {
+        const idx = prev.findIndex(c => c.cite_type === CITATION_TYPES.TIMELINE);
+        if (idx === -1) return prev;
+        const updated = [...prev];
+        updated[idx] = {
+          ...updated[idx],
+          answer: `Scheduled: ${format(scheduledDate, 'PPP')}`,
+          value: 'scheduled',
+          metadata: { ...updated[idx].metadata, start_date: scheduledDate.toISOString() },
+        };
+        return updated;
+      });
+    }, [scheduledDate, templateLocked]);
+
+    // Update END_DATE citation when end date changes (if already created)
+    useEffect(() => {
+      if (!scheduledEndDate || !templateLocked) return;
+      setFlowCitations(prev => {
+        const idx = prev.findIndex(c => c.cite_type === CITATION_TYPES.END_DATE);
+        if (idx === -1) return prev;
+        const updated = [...prev];
+        updated[idx] = {
+          ...updated[idx],
+          answer: format(scheduledEndDate, 'PPP'),
+          value: scheduledEndDate.toISOString(),
+          metadata: { ...updated[idx].metadata, end_date: scheduledEndDate.toISOString() },
+        };
+        return updated;
+      });
+    }, [scheduledEndDate, templateLocked]);
     
     // Stage 5: File upload handlers
-    const handleFilesDrop = useCallback((files: File[]) => {
+    const handleFilesDrop = useCallback(async (files: File[]) => {
       const newFiles: UploadedFile[] = files.map(file => ({
         id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         name: file.name,
@@ -2537,7 +2602,63 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         uploaded: false,
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
-    }, []);
+
+      // Auto-upload each file immediately to storage + project_documents + create citation
+      for (const nf of newFiles) {
+        try {
+          const filePath = `${projectId}/${nf.id}_${nf.name}`;
+          const { error: uploadErr } = await supabase.storage
+            .from('project-documents')
+            .upload(filePath, nf.file);
+          
+          if (uploadErr) {
+            console.error('[Stage5] Auto-upload failed:', uploadErr);
+            continue;
+          }
+
+          const { data: urlData } = supabase.storage
+            .from('project-documents')
+            .getPublicUrl(filePath);
+
+          await supabase.from('project_documents').insert({
+            project_id: projectId,
+            file_name: nf.name,
+            file_path: filePath,
+            file_size: nf.file.size,
+          });
+
+          // Create citation immediately
+          const citationType = nf.type === 'blueprint'
+            ? CITATION_TYPES.BLUEPRINT_UPLOAD
+            : CITATION_TYPES.SITE_PHOTO;
+
+          const citation = createCitation({
+            cite_type: citationType,
+            question_key: nf.type === 'blueprint' ? 'blueprint_upload' : 'site_photo_upload',
+            answer: nf.name,
+            value: urlData.publicUrl,
+            metadata: {
+              fileName: nf.name,
+              file_name: nf.name,
+              file_type: nf.type,
+              file_path: filePath,
+              storage_url: urlData.publicUrl,
+              uploaded_at: new Date().toISOString(),
+              category: nf.type === 'blueprint' ? 'technical' : 'visual',
+            },
+          });
+
+          setFlowCitations(prev => [...prev, citation]);
+          setUploadedFiles(prev => prev.map(f =>
+            f.id === nf.id ? { ...f, uploaded: true, storageUrl: urlData.publicUrl } : f
+          ));
+
+          console.log(`[Stage5] ✓ Auto-uploaded & cited: ${nf.name}`);
+        } catch (err) {
+          console.error(`[Stage5] Auto-upload error for ${nf.name}:`, err);
+        }
+      }
+    }, [projectId]);
     
     const handleRemoveFile = useCallback((fileId: string) => {
       setUploadedFiles(prev => {
@@ -2569,38 +2690,34 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     }, []);
     
     const handleConfirmUploads = useCallback(async () => {
-      if (uploadedFiles.length === 0) return;
-      
       setIsUploading(true);
       
       try {
-        const uploadedCitations: Citation[] = [];
+        // Only upload files that haven't been auto-uploaded yet
+        const pendingFiles = uploadedFiles.filter(f => !f.uploaded);
         
-        for (const file of uploadedFiles) {
-          // Upload to Supabase storage
+        for (const file of pendingFiles) {
           const filePath = `${projectId}/${file.id}_${file.name}`;
-          const { data, error } = await supabase.storage
+          const { error } = await supabase.storage
             .from('project-documents')
             .upload(filePath, file.file);
           
-          if (error) throw error;
+          if (error) {
+            console.error('[Stage5] Upload failed for:', file.name, error);
+            continue;
+          }
           
-          // Get public URL
           const { data: urlData } = supabase.storage
             .from('project-documents')
             .getPublicUrl(filePath);
           
-          // Save to project_documents table so Stage 8 can find it
-          await supabase
-            .from('project_documents')
-            .insert({
-              project_id: projectId,
-              file_name: file.name,
-              file_path: filePath,
-              file_size: file.file.size,
-            });
+          await supabase.from('project_documents').insert({
+            project_id: projectId,
+            file_name: file.name,
+            file_path: filePath,
+            file_size: file.file.size,
+          });
           
-          // Create citation for each file (use fileName key for Stage 8 compatibility)
           const citationType = file.type === 'blueprint' 
             ? CITATION_TYPES.BLUEPRINT_UPLOAD 
             : CITATION_TYPES.SITE_PHOTO;
@@ -2621,9 +2738,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             },
           });
           
-          uploadedCitations.push(citation);
-          
-          // Update file as uploaded
+          setFlowCitations(prev => [...prev, citation]);
           setUploadedFiles(prev => prev.map(f => 
             f.id === file.id ? { ...f, uploaded: true, storageUrl: urlData.publicUrl } : f
           ));
@@ -2645,9 +2760,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           },
         });
         
-        setFlowCitations(prev => [...prev, ...uploadedCitations, verificationCitation]);
+        setFlowCitations(prev => [...prev, verificationCitation]);
         
-        toast.success(`${uploadedFiles.length} file(s) uploaded successfully!`);
+        toast.success(`${uploadedFiles.length} file(s) ready!`);
         
         // Proceed to finalize
         await handleFinalLock();
@@ -2665,7 +2780,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       setIsSaving(true);
       
       try {
-        const siteCitation = createCitation({
+        // Only create site/demolition citations if not already in flowCitations
+        const hasSiteCitation = flowCitations.some(c => c.cite_type === CITATION_TYPES.SITE_CONDITION);
+        const siteCitation = !hasSiteCitation ? createCitation({
           cite_type: CITATION_TYPES.SITE_CONDITION,
           question_key: 'site_condition',
           answer: siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed',
@@ -2674,10 +2791,11 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             demolition_required: siteCondition === 'demolition',
             demolition_cost: demolitionCost,
           },
-        });
+        }) : null;
         
-        // Demolition price citation (only if demolition selected)
-        const demolitionPriceCitation = siteCondition === 'demolition' ? createCitation({
+        // Demolition price citation (only if demolition selected and not already created)
+        const hasDemolitionCitation = flowCitations.some(c => c.cite_type === CITATION_TYPES.DEMOLITION_PRICE);
+        const demolitionPriceCitation = (siteCondition === 'demolition' && !hasDemolitionCitation) ? createCitation({
           cite_type: CITATION_TYPES.DEMOLITION_PRICE,
           question_key: 'demolition_unit_price',
           answer: `$${demolitionUnitPrice.toFixed(2)}/sq ft`,
@@ -2689,7 +2807,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           },
         }) : null;
         
-        const timelineCitation = createCitation({
+        // Only create timeline/end_date citations if not already in flowCitations
+        const hasTimelineCitation = flowCitations.some(c => c.cite_type === CITATION_TYPES.TIMELINE);
+        const timelineCitation = !hasTimelineCitation ? createCitation({
           cite_type: CITATION_TYPES.TIMELINE,
           question_key: 'timeline',
           answer: timeline === 'asap' ? 'ASAP' : `Scheduled: ${scheduledDate ? format(scheduledDate, 'PPP') : 'TBD'}`,
@@ -2697,10 +2817,11 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           metadata: {
             start_date: timeline === 'asap' ? new Date().toISOString() : scheduledDate?.toISOString(),
           },
-        });
+        }) : null;
         
         // End date citation
-        const endDateCitation = scheduledEndDate ? createCitation({
+        const hasEndDateCitation = flowCitations.some(c => c.cite_type === CITATION_TYPES.END_DATE);
+        const endDateCitation = (scheduledEndDate && !hasEndDateCitation) ? createCitation({
           cite_type: CITATION_TYPES.END_DATE,
           question_key: 'end_date',
           answer: format(scheduledEndDate, 'PPP'),
@@ -2734,14 +2855,15 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           },
         });
         
-        const allCitations = [
-          ...flowCitations, 
-          siteCitation, 
+        const newCitations = [
+          ...(siteCitation ? [siteCitation] : []),
           ...(demolitionPriceCitation ? [demolitionPriceCitation] : []),
-          timelineCitation,
+          ...(timelineCitation ? [timelineCitation] : []),
           ...(endDateCitation ? [endDateCitation] : []),
           dnaCitation
         ];
+        
+        const allCitations = [...flowCitations, ...newCitations];
         
         const { data: currentData } = await supabase
           .from("project_summaries")
