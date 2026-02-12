@@ -417,7 +417,19 @@ export default function Stage8FinalReview({
   } | null>(null);
   
   // UI state
-  const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set());
+  const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set([
+    'citations-panel-1-basics',
+    'citations-panel-2-gfa',
+    'citations-panel-3-trade',
+    'citations-panel-4-team',
+    'citations-panel-5-timeline',
+    'citations-panel-6-documents',
+    'citations-panel-7-weather',
+    'citations-panel-8-financial',
+    'citations-all-source',
+    'citations-fullscreen',
+    'citations-additional',
+  ]));
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [activeOrbitalPanel, setActiveOrbitalPanel] = useState<string>('panel-1-basics');
   const [editingField, setEditingField] = useState<string | null>(null);
