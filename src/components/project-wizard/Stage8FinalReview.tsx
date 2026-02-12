@@ -6833,6 +6833,111 @@ export default function Stage8FinalReview({
            <div className="space-y-3">
             {hasFinancialData ? (
               <>
+                {/* ─── Header ─── */}
+                <div className="flex items-center justify-between p-2 rounded-lg border border-amber-500/25 bg-gradient-to-r from-amber-950/30 via-orange-950/20 to-amber-950/30">
+                  <div className="flex items-center gap-2">
+                    <motion.div
+                      animate={{ boxShadow: ['0 0 8px rgba(251,191,36,0.2)', '0 0 16px rgba(251,191,36,0.4)', '0 0 8px rgba(251,191,36,0.2)'] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="h-7 w-7 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
+                    >
+                      <DollarSign className="h-4 w-4 text-white" />
+                    </motion.div>
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-900 dark:text-amber-100">Financial</h4>
+                      <p className="text-[8px] text-amber-700 dark:text-amber-300/70">Budget overview</p>
+                    </div>
+                  </div>
+                  {budgetTotal !== null && budgetTotal > 0 && (
+                    <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400 font-mono">
+                      ${budgetTotal.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+
+                {/* ─── Donut + Cost Breakdown ─── */}
+                {costItems.length > 0 && (
+                  <div className="grid grid-cols-[auto_1fr] gap-2 items-center">
+                    {/* Mini Donut */}
+                    <div className="relative w-14 h-14">
+                      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                        {(() => {
+                          const phaseGroups = tasks
+                            .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
+                            .reduce<Record<string, number>>((acc, t) => {
+                              const phase = t.phase || 'installation';
+                              acc[phase] = (acc[phase] || 0) + t.templateItemCost!;
+                              return acc;
+                            }, {});
+                          const phaseColors: Record<string, string> = {
+                            demolition: 'hsl(0, 70%, 55%)',
+                            preparation: 'hsl(35, 80%, 50%)',
+                            installation: 'hsl(220, 75%, 55%)',
+                            finishing: 'hsl(145, 65%, 45%)',
+                          };
+                          const phaseOrder = ['demolition', 'preparation', 'installation', 'finishing'];
+                          const items = phaseOrder
+                            .filter(k => phaseGroups[k] && phaseGroups[k] > 0)
+                            .map(k => ({ key: k, value: phaseGroups[k], color: phaseColors[k] }));
+                          const total = items.reduce((s, i) => s + i.value, 0);
+                          if (total === 0) return null;
+                          let offset = 0;
+                          return items.map((item, idx) => {
+                            const pct = item.value / total;
+                            const startAngle = offset * 360;
+                            const endAngle = (offset + pct) * 360;
+                            const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+                            const startRad = (startAngle - 90) * Math.PI / 180;
+                            const endRad = (endAngle - 90) * Math.PI / 180;
+                            const x1 = 50 + 40 * Math.cos(startRad);
+                            const y1 = 50 + 40 * Math.sin(startRad);
+                            const x2 = 50 + 40 * Math.cos(endRad);
+                            const y2 = 50 + 40 * Math.sin(endRad);
+                            offset += pct;
+                            return (
+                              <path key={idx}
+                                d={`M50,50 L${x1},${y1} A40,40 0 ${largeArc},1 ${x2},${y2} Z`}
+                                fill={item.color} opacity="0.8"
+                              />
+                            );
+                          });
+                        })()}
+                        <circle cx="50" cy="50" r="22" fill="hsl(var(--background))" />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-[7px] font-bold text-amber-900 dark:text-white/90 leading-none">
+                          ${costTotal > 1000 ? `${(costTotal / 1000).toFixed(1)}K` : costTotal.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Breakdown items */}
+                    <div className="space-y-1">
+                      {costItems.map(item => {
+                        const Icon = item.icon;
+                        return (
+                          <div key={item.name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: item.color }} />
+                              <Icon className="h-2.5 w-2.5" style={{ color: item.color }} />
+                              <span className="text-[10px] font-medium text-amber-900 dark:text-white/90">{item.name}</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-amber-950 dark:text-white font-mono">${item.value.toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── Tax Summary ─── */}
+                <div className="flex items-center justify-between p-1.5 rounded-md border border-amber-500/10 bg-amber-950/10">
+                  <span className="text-[9px] text-amber-700 dark:text-amber-300/70">{cardTax.name} ({(cardTax.rate * 100).toFixed(1)}%)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-amber-700 dark:text-amber-300/60 font-mono">+${cardTaxAmt.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    <span className="text-[10px] font-bold text-amber-900 dark:text-white font-mono">${cardGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  </div>
+                </div>
+
                 {/* ─── Cost Trend Mini Chart (Phase-based) ─── */}
                 {canvasTrendPts.length >= 2 && (() => {
                   const maxVal = Math.max(...canvasTrendPts.map(d => d.value), 1);
