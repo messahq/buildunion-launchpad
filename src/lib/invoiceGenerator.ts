@@ -87,38 +87,49 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     year: 'numeric', month: 'short', day: 'numeric'
   });
 
-  // Separate line items by category using three-pillar structure:
-  // Materials = physical products only (NOT labor, NOT demolition)
-  // Labor = any item with "labor" in description
-  // Demolition = any item with "demolition" or "demo" tag
-  const laborItems = data.lineItems.filter(item => {
-    if (item.category === 'labor') return true;
-    if (!item.category) {
-      const desc = item.description.toLowerCase();
-      return desc.includes('labor') || desc.includes('installation labor') || desc.includes('preparation labor') || desc.includes('cleanup labor');
-    }
-    return false;
-  });
+  // ============================================
+  // THREE-PILLAR CATEGORY CLASSIFICATION
+  // Independent calculation from raw line items — NOT from PDF table grouping.
+  // This ensures the Summary box reflects Database Truth (Financial Summary).
+  // ============================================
   
-  const demolitionItems = data.lineItems.filter(item => {
+  const isLaborItem = (item: InvoiceLineItem): boolean => {
+    if (item.category === 'labor') return true;
+    const desc = item.description.toLowerCase();
+    // Explicit labor keywords: any service/work item
+    return (
+      desc.includes('labor') ||
+      desc.includes('installation') ||
+      desc.includes('preparation') ||
+      desc.includes('cleanup') ||
+      desc.includes('grinding') ||
+      desc.includes('floor preparation') ||
+      desc.includes('prep work') ||
+      desc.includes('site prep')
+    );
+  };
+  
+  const isDemolitionItem = (item: InvoiceLineItem): boolean => {
     const desc = item.description.toLowerCase();
     return desc.includes('demolition') || desc.includes('demo ') || desc.includes('removal');
+  };
+  
+  // Step 1: Classify each item ONCE using priority: Demolition > Labor > Material
+  const classifiedItems = data.lineItems.map(item => {
+    if (isDemolitionItem(item)) return { ...item, _class: 'demolition' as const };
+    if (isLaborItem(item)) return { ...item, _class: 'labor' as const };
+    return { ...item, _class: 'material' as const };
   });
   
-  const laborAndDemoIds = new Set([
-    ...laborItems.map(i => `${i.description}-${i.quantity}-${i.unitPrice}`),
-    ...demolitionItems.map(i => `${i.description}-${i.quantity}-${i.unitPrice}`)
-  ]);
+  const laborItems = classifiedItems.filter(i => i._class === 'labor');
+  const demolitionItems = classifiedItems.filter(i => i._class === 'demolition');
+  const materialItems = classifiedItems.filter(i => i._class === 'material');
   
-  const materialItems = data.lineItems.filter(item => {
-    const key = `${item.description}-${item.quantity}-${item.unitPrice}`;
-    return !laborAndDemoIds.has(key);
-  });
-  
-  // Calculate totals dynamically from line items (Operational Truth)
-  const materialsTotal = materialItems.reduce((sum, item) => sum + item.total, 0);
-  const laborTotal = laborItems.reduce((sum, item) => sum + item.total, 0);
-  const demolitionTotal = demolitionItems.reduce((sum, item) => sum + item.total, 0);
+  // Step 2: Calculate totals dynamically from raw data (Operational Truth)
+  // Each total = SUM(quantity * unitPrice) from classified items
+  const materialsTotal = materialItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  const laborTotal = laborItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  const demolitionTotal = demolitionItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   const subtotal = materialsTotal + laborTotal + demolitionTotal;
 
   // Build materials table rows
