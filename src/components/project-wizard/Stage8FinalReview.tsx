@@ -4366,9 +4366,22 @@ export default function Stage8FinalReview({
                               className="group"
                             >
                               {/* Gantt row */}
-                              <div className="flex items-center gap-2 py-1">
+                              <div className={cn(
+                                "flex items-center gap-2 py-1",
+                                task.isSubTask && "pl-5"
+                              )}>
+                                {/* Sub-task connector line */}
+                                {task.isSubTask && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <div className="w-3 h-px bg-muted-foreground/20" />
+                                  </div>
+                                )}
                                 {/* Priority dot */}
-                                <div className={cn("h-2 w-2 rounded-full shrink-0", priorityColors[task.priority] || 'bg-slate-500')} />
+                                <div className={cn(
+                                  "rounded-full shrink-0",
+                                  task.isSubTask ? "h-1.5 w-1.5" : "h-2 w-2",
+                                  priorityColors[task.priority] || 'bg-slate-500'
+                                )} />
                                 
                                 {/* Task completion toggle */}
                                 <Checkbox
@@ -4390,11 +4403,14 @@ export default function Stage8FinalReview({
                                       });
                                   }}
                                   disabled={!canToggleTaskStatus(task.assigned_to)}
-                                  className="h-4 w-4 shrink-0"
+                                  className={cn("shrink-0", task.isSubTask ? "h-3.5 w-3.5" : "h-4 w-4")}
                                 />
 
                                 {/* Gantt bar container - proportional timeline */}
-                                <div className="flex-1 relative h-8 bg-gray-100 dark:bg-slate-800/30 rounded-lg overflow-hidden border border-gray-200 dark:border-transparent">
+                                <div className={cn(
+                                  "flex-1 relative bg-gray-100 dark:bg-slate-800/30 rounded-lg overflow-hidden border border-gray-200 dark:border-transparent",
+                                  task.isSubTask ? "h-6" : "h-8"
+                                )}>
                                   {(() => {
                                     const barStyle = getGanttBarStyle(task);
                                     const startLabel = formatTaskDate(task.created_at);
@@ -4430,9 +4446,11 @@ export default function Stage8FinalReview({
                                               {/* Task name & info */}
                                               <div className="relative h-full flex items-center justify-between px-1.5 gap-1">
                                                 <span className={cn(
-                                                  "text-[10px] font-semibold truncate",
+                                                  "font-semibold truncate",
+                                                  task.isSubTask ? "text-[9px]" : "text-[10px]",
                                                   isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
                                                 )}>
+                                                  {task.isSubTask && <span className="text-muted-foreground mr-0.5">↳</span>}
                                                   {task.title}
                                                 </span>
                                                 <div className="flex items-center gap-1 shrink-0">
