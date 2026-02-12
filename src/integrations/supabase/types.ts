@@ -514,6 +514,59 @@ export type Database = {
           },
         ]
       }
+      material_deliveries: {
+        Row: {
+          created_at: string
+          delivered_quantity: number
+          expected_quantity: number
+          id: string
+          logged_at: string
+          logged_by: string
+          material_name: string
+          notes: string | null
+          photo_url: string | null
+          project_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_quantity?: number
+          expected_quantity?: number
+          id?: string
+          logged_at?: string
+          logged_by: string
+          material_name: string
+          notes?: string | null
+          photo_url?: string | null
+          project_id: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_quantity?: number
+          expected_quantity?: number
+          id?: string
+          logged_at?: string
+          logged_by?: string
+          material_name?: string
+          notes?: string | null
+          photo_url?: string | null
+          project_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_deliveries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_logs: {
         Row: {
           body: string | null

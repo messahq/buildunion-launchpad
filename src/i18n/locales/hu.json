@@ -1029,5 +1029,26 @@
     "noData": "Nincs rögzített adat ennél a fázisnál",
     "itemsRecorded": "elem rögzítve",
     "itemRecorded": "elem rögzítve"
+  },
+  "materials": {
+    "tracker": "Anyagkövetés",
+    "delivered": "leszállítva",
+    "inTransit": "úton",
+    "overallCoverage": "Teljes fedezet",
+    "logDelivery": "Szállítmány rögzítése",
+    "pending": "Várakozó",
+    "partial": "Részleges",
+    "complete": "Teljes",
+    "over": "Túlszállítás",
+    "noExpected": "Még nincsenek anyagok a sablonban",
+    "fillRequired": "Válasszon anyagot és adjon meg mennyiséget",
+    "deliveryLogged": "{{qty}} {{unit}} {{name}} rögzítve",
+    "logFailed": "Nem sikerült rögzíteni",
+    "material": "Anyag",
+    "selectMaterial": "Válasszon anyagot...",
+    "quantity": "Mennyiség",
+    "notes": "Megjegyzések",
+    "notesPlaceholder": "Szállítási részletek, állapot, stb.",
+    "confirm": "Szállítmány megerősítése"
   }
 }

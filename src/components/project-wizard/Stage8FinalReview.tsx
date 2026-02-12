@@ -126,6 +126,7 @@ import { PendingChangeBadge } from "@/components/projects/PendingChangeBadge";
 import { Stage8CommandBar } from "@/components/project-wizard/Stage8CommandBar";
 import { ConflictMapModal } from "@/components/project-wizard/ConflictMapModal";
 import { TeamChatPanel } from "@/components/project-wizard/TeamChatPanel";
+import { MaterialTracker } from "@/components/materials/MaterialTracker";
 
 // ============================================
 // VISIBILITY TIERS
@@ -7485,6 +7486,20 @@ export default function Stage8FinalReview({
                 </div>
               )}
               
+              {/* ✓ MATERIAL DELIVERY TRACKER - Planned vs Actual */}
+              {template.hasData && materialsWithWaste.length > 0 && (
+                <MaterialTracker
+                  projectId={projectId}
+                  userId={userId}
+                  userRole={userRole}
+                  expectedMaterials={materialsWithWaste.map(m => ({
+                    name: m.name,
+                    qty: m.qty,
+                    unit: m.unit,
+                  }))}
+                />
+              )}
+
               {/* No Data */}
               {!template.hasData && (
                 <div className="p-8 rounded-2xl border-2 border-dashed border-fuchsia-200 dark:border-fuchsia-800/30 text-center bg-gradient-to-br from-fuchsia-50/30 to-pink-50/30 dark:from-fuchsia-950/10 dark:to-pink-950/10">
