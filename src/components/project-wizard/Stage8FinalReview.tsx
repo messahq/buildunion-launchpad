@@ -9144,12 +9144,9 @@ export default function Stage8FinalReview({
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
                       </motion.div>
-                      <span className={cn(
-                        "text-xs font-semibold",
-                        isActive ? "text-amber-500" : "text-foreground"
-                      )}>
+                      <span className="text-xs font-semibold">
                         {displayTitle.split(' ').map((word, i) => (
-                          <span key={i} className={i === 0 ? "" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
+                          <span key={i} className={i === 0 ? "text-white dark:text-white font-light" : "text-amber-500 font-semibold"}>{i > 0 ? ' ' : ''}{word}</span>
                         ))}
                       </span>
                     </div>
