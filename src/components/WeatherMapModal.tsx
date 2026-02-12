@@ -172,6 +172,46 @@ export function WeatherMapModal({
               : t
           )
         );
+
+        // Send push notification to team members when owner goes "On Site"
+        if (newStatus === "on_site" && projectId) {
+          // Check if current user is the owner
+          const { data: project } = await supabase
+            .from("projects")
+            .select("user_id")
+            .eq("id", projectId)
+            .single();
+
+          if (project?.user_id === user.id) {
+            // Get team member user IDs (exclude owner)
+            const { data: members } = await supabase
+              .from("project_members")
+              .select("user_id")
+              .eq("project_id", projectId);
+
+            const memberIds = members?.map((m) => m.user_id).filter((id) => id !== user.id) || [];
+
+            if (memberIds.length > 0) {
+              const { data: ownerProfile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("user_id", user.id)
+                .single();
+
+              const ownerName = ownerProfile?.full_name || "The owner";
+
+              supabase.functions.invoke("send-push-notification", {
+                body: {
+                  title: "🏗️ Owner On Site",
+                  body: `${ownerName} has arrived at the project site`,
+                  userIds: memberIds,
+                  projectId,
+                  data: { type: "owner_on_site" },
+                },
+              }).catch((err) => console.error("Push notification error:", err));
+            }
+          }
+        }
       }
     } catch (err) {
       console.error("Error updating status:", err);
