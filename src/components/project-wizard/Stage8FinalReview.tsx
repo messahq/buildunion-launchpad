@@ -8949,13 +8949,13 @@ export default function Stage8FinalReview({
                 initial={{ opacity: 0, x: -40 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className={cn(
-                  "relative rounded-xl border-2 text-left transition-all duration-200 overflow-hidden group",
-                  isActive
-                    ? "border-amber-400 dark:border-amber-500 bg-card shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                    : "border-amber-400/40 dark:border-amber-500/40 bg-card hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50/20 dark:hover:bg-amber-950/10",
-                  !hasAccess && "opacity-40 cursor-not-allowed"
-                )}
+               className={cn(
+                   "relative rounded-xl border-2 text-left transition-all duration-200 overflow-hidden group",
+                   isActive
+                     ? "border-amber-400 dark:border-amber-500 bg-slate-950 dark:bg-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                     : "border-amber-400/40 dark:border-amber-500/40 bg-slate-950 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-slate-900/50 dark:hover:bg-slate-800/50",
+                   !hasAccess && "opacity-40 cursor-not-allowed"
+               )}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                 whileHover={hasAccess ? { scale: 1.02, x: 4 } : undefined}
                 whileTap={hasAccess ? { scale: 0.98 } : undefined}
@@ -9060,16 +9060,19 @@ export default function Stage8FinalReview({
             );
           })}
 
-          {/* Central Canvas - spans middle column, all 4 rows */}
-          <motion.div
-            className="row-span-5 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/90 backdrop-blur-sm overflow-hidden flex flex-col"
-            layout
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            {/* Canvas header */}
-            <div className="px-4 py-3 border-b border-cyan-900/30 flex items-center justify-between bg-gradient-to-r from-cyan-950/40 to-blue-950/40 shrink-0">
+           {/* Central Canvas - spans middle column, all 4 rows */}
+           <motion.div
+             className="row-span-5 relative rounded-2xl border-2 border-cyan-400/50 bg-slate-950 dark:bg-slate-900 backdrop-blur-sm overflow-hidden flex flex-col shadow-[0_0_30px_rgba(34,211,238,0.2)]"
+             style={{
+               borderImage: 'linear-gradient(135deg, rgba(34,211,238,0.8), rgba(56,189,248,0.6), rgba(34,211,238,0.4)) 1'
+             }}
+             layout
+             initial={{ opacity: 0, scale: 0.95 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ duration: 0.6, delay: 0.3 }}
+           >
+             {/* Canvas header */}
+             <div className="px-4 py-3 border-b border-cyan-700/40 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <motion.div
                   animate={{ rotate: [0, 360] }}
