@@ -8650,7 +8650,7 @@ export default function Stage8FinalReview({
                         return { label: phaseTrendLabels[k], value: cumulative, phaseValue: phaseTrendGroups[k], color: phaseTrendColors[k] };
                       });
                     // Add starting zero point
-                    if (pts.length > 0) pts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(56,189,248,0.4)' });
+                    if (pts.length > 0) pts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(251,191,36,0.4)' });
                     const trendSpentTotal = cumulative;
 
                     if (pts.length < 2) return null;
@@ -8667,19 +8667,19 @@ export default function Stage8FinalReview({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.45 }}
-                        className="p-4 rounded-xl border border-sky-500/25 bg-gradient-to-br from-sky-950/25 via-cyan-950/15 to-blue-950/20"
+                        className="p-4 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-950/25 via-orange-950/15 to-yellow-950/20"
                       >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="h-4 w-0.5 bg-gradient-to-b from-sky-400 to-cyan-500 rounded-full" />
-                            <span className="text-xs font-semibold text-sky-800 dark:text-sky-200 uppercase tracking-wider">Spending by Phase</span>
+                            <div className="h-4 w-0.5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
+                            <span className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider">Spending by Phase</span>
                           </div>
-                          <span className="text-[10px] text-sky-700 dark:text-sky-300/80 font-mono">${trendSpentTotal.toLocaleString()}</span>
+                          <span className="text-[10px] text-amber-700 dark:text-amber-300/80 font-mono">${trendSpentTotal.toLocaleString()}</span>
                         </div>
                         <div className="relative">
                           <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
                             {[0, 25, 50, 75].map(y => (
-                              <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(56,189,248,0.08)" strokeWidth="0.5" />
+                              <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(251,191,36,0.06)" strokeWidth="0.5" />
                             ))}
                             <path
                               d={`M0,75 L${svgPts.map(p => `${p.x},${p.y}`).join(' L')} L280,75 Z`}
@@ -8687,13 +8687,13 @@ export default function Stage8FinalReview({
                             />
                             <path
                               d={`M${svgPts.map(p => `${p.x},${p.y}`).join(' L')}`}
-                              fill="none" stroke="rgba(56,189,248,0.85)" strokeWidth="2" strokeLinecap="round"
+                              fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="2" strokeLinecap="round"
                             />
                             {svgPts.map((p, i) => (
                               <g key={i}>
                                 <circle cx={p.x} cy={p.y} r={i === svgPts.length - 1 ? 4 : 2.5}
-                                  fill={i === 0 ? 'rgba(56,189,248,0.4)' : p.color}
-                                  stroke={i === svgPts.length - 1 ? '#0284c7' : 'none'} strokeWidth="1"
+                                  fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
+                                  stroke={i === svgPts.length - 1 ? '#d97706' : 'none'} strokeWidth="1"
                                 />
                                 <circle cx={p.x} cy={p.y} r="16" fill="transparent" className="cursor-pointer">
                                   <title>{p.label}: ${p.value.toLocaleString()} (phase: ${p.phaseValue.toLocaleString()})</title>
@@ -8702,8 +8702,8 @@ export default function Stage8FinalReview({
                             ))}
                             <defs>
                               <linearGradient id="fsTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="rgba(56,189,248,0.4)" />
-                                <stop offset="100%" stopColor="rgba(56,189,248,0)" />
+                                <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
+                                <stop offset="100%" stopColor="rgba(251,191,36,0)" />
                               </linearGradient>
                             </defs>
                           </svg>
@@ -8719,8 +8719,8 @@ export default function Stage8FinalReview({
                                 >
                                   <div className="w-8 h-8 rounded-full cursor-pointer" />
                                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-900 border border-slate-600 dark:border-slate-700 text-[10px] font-mono text-slate-50 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-slate-900/60 pointer-events-none z-10">
-                                    {p.label}: <span className="font-bold text-sky-300">${p.phaseValue.toLocaleString()}</span>
-                                    {i > 0 && <span className="text-sky-400/60 ml-1">(Σ ${p.value.toLocaleString()})</span>}
+                                    {p.label}: <span className="font-bold text-amber-300">${p.phaseValue.toLocaleString()}</span>
+                                    {i > 0 && <span className="text-amber-400/60 ml-1">(Σ ${p.value.toLocaleString()})</span>}
                                   </div>
                                 </div>
                               );
@@ -8728,7 +8728,7 @@ export default function Stage8FinalReview({
                           </div>
                           <div className="flex justify-between mt-1 px-0.5">
                             {svgPts.map(p => (
-                              <span key={p.label} className="text-[9px] text-sky-700 dark:text-sky-300/70 font-mono">{p.label}</span>
+                              <span key={p.label} className="text-[9px] text-amber-700 dark:text-amber-300/70 font-mono">{p.label}</span>
                             ))}
                           </div>
                         </div>
