@@ -1979,6 +1979,7 @@ export type Database = {
           chunk_id: string
           chunk_text: string
           section_number: string
+          section_title: string
           similarity: number
         }[]
       }
