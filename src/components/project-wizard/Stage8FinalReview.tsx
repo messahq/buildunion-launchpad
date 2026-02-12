@@ -5687,20 +5687,45 @@ export default function Stage8FinalReview({
               transition={{ delay: 0.6 }}
               className="pt-3 border-t border-cyan-300/30 dark:border-cyan-500/10"
             >
-              <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50 mb-2">
-                All Source Citations ({citations.length})
-              </p>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {citations.filter(c => c.cite_type && c.answer).map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-cyan-100/40 dark:bg-cyan-500/5 border border-cyan-200/50 dark:border-cyan-500/10 text-[10px]">
-                    <span className="text-cyan-700/60 dark:text-cyan-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700 dark:text-cyan-200/80 truncate max-w-[160px]">{renderCitationValue(c)}</span>
-                      <span className="text-cyan-500/50 dark:text-cyan-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
+              <button
+                onClick={() => setCollapsedPanels(prev => {
+                  const next = new Set(prev);
+                  next.has('all-source-citations') ? next.delete('all-source-citations') : next.add('all-source-citations');
+                  return next;
+                })}
+                className="w-full flex items-center justify-between mb-2 hover:opacity-80 transition-opacity"
+              >
+                <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50">
+                  All Source Citations ({citations.length})
+                </p>
+                {collapsedPanels.has('all-source-citations') ? (
+                  <ChevronRight className="h-3 w-3 text-cyan-400" />
+                ) : (
+                  <ChevronDown className="h-3 w-3 text-cyan-400" />
+                )}
+              </button>
+              <AnimatePresence>
+                {!collapsedPanels.has('all-source-citations') && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {citations.filter(c => c.cite_type && c.answer).map(c => (
+                        <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-cyan-100/40 dark:bg-cyan-500/5 border border-cyan-200/50 dark:border-cyan-500/10 text-[10px]">
+                          <span className="text-cyan-700/60 dark:text-cyan-300/60 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-700 dark:text-cyan-200/80 truncate max-w-[160px]">{renderCitationValue(c)}</span>
+                            <span className="text-cyan-500/50 dark:text-cyan-500/40 font-mono">cite:[{c.id.slice(0, 6)}]</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </div>
@@ -6460,19 +6485,45 @@ export default function Stage8FinalReview({
               />
             )}
             
-            {/* Citations - Light indigo */}
+            {/* Citations - Collapsible */}
             {panelCitations.length > 0 && (
-              <div className="pt-2 border-t border-indigo-200 dark:border-indigo-700/30 space-y-1">
-                <p className="text-[9px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-bold mb-1">Citations ({panelCitations.length})</p>
-                {panelCitations.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-700/30">
-                    <span className="text-[9px] text-indigo-600/70 dark:text-indigo-400/70">{c.cite_type.replace(/_/g, ' ')}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold text-indigo-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
-                      <span className="text-[7px] text-indigo-400 dark:text-indigo-500 font-mono">[{c.id.slice(0, 6)}]</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="pt-2 border-t border-indigo-200 dark:border-indigo-700/30">
+                <button
+                  onClick={() => setCollapsedPanels(prev => {
+                    const next = new Set(prev);
+                    const key = `citations-${activeOrbitalPanel}`;
+                    next.has(key) ? next.delete(key) : next.add(key);
+                    return next;
+                  })}
+                  className="w-full flex items-center justify-between mb-1 hover:opacity-80 transition-opacity"
+                >
+                  <p className="text-[9px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-bold">Citations ({panelCitations.length})</p>
+                  {collapsedPanels.has(`citations-${activeOrbitalPanel}`) ? (
+                    <ChevronRight className="h-3 w-3 text-indigo-400" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 text-indigo-400" />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {!collapsedPanels.has(`citations-${activeOrbitalPanel}`) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden space-y-1"
+                    >
+                      {panelCitations.map(c => (
+                        <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-700/30">
+                          <span className="text-[9px] text-indigo-600/70 dark:text-indigo-400/70">{c.cite_type.replace(/_/g, ' ')}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-bold text-indigo-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
+                            <span className="text-[7px] text-indigo-400 dark:text-indigo-500 font-mono">[{c.id.slice(0, 6)}]</span>
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
@@ -7095,28 +7146,53 @@ export default function Stage8FinalReview({
               {/* Extra Citations — CONTRACT, WEATHER, TEAM_MEMBER_INVITE, TEAM_PERMISSION_SET, BUDGET, etc. */}
               {extraCitations.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-xs font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50">
-                    Additional Citations ({extraCitations.length})
-                  </p>
-                  <div className="grid gap-2">
-                    {extraCitations.map(c => {
-                      const citeTypeIcons: Record<string, string> = {
-                        'TEAM_MEMBER_INVITE': '👤', 'TEAM_PERMISSION_SET': '🔐', 'CONTRACT': '📜',
-                        'WEATHER_ALERT': '🌤️', 'BUDGET': '💰', 'BLUEPRINT_UPLOAD': '📐',
-                        'SITE_PHOTO': '📸', 'VISUAL_VERIFICATION': '✅', 'EXECUTION_MODE': '⚙️',
-                      };
-                      return (
-                        <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700/30 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/40 dark:to-slate-800/30 hover:shadow-sm transition-all">
-                          <span className="text-sm">{citeTypeIcons[c.cite_type] || '📌'}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400/60">{c.cite_type.replace(/_/g, ' ')}</p>
-                            <p className="text-xs font-medium text-gray-700 dark:text-slate-300 truncate">{c.answer}</p>
-                          </div>
-                          <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono shrink-0">cite:[{c.id.slice(0, 6)}]</span>
-                        </div>
-                      );
+                  <button
+                    onClick={() => setCollapsedPanels(prev => {
+                      const next = new Set(prev);
+                      next.has('extra-citations') ? next.delete('extra-citations') : next.add('extra-citations');
+                      return next;
                     })}
-                  </div>
+                    className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
+                  >
+                    <p className="text-xs font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50">
+                      Additional Citations ({extraCitations.length})
+                    </p>
+                    {collapsedPanels.has('extra-citations') ? (
+                      <ChevronRight className="h-3.5 w-3.5 text-cyan-400" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5 text-cyan-400" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {!collapsedPanels.has('extra-citations') && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid gap-2">
+                          {extraCitations.map(c => {
+                            const citeTypeIcons: Record<string, string> = {
+                              'TEAM_MEMBER_INVITE': '👤', 'TEAM_PERMISSION_SET': '🔐', 'CONTRACT': '📜',
+                              'WEATHER_ALERT': '🌤️', 'BUDGET': '💰', 'BLUEPRINT_UPLOAD': '📐',
+                              'SITE_PHOTO': '📸', 'VISUAL_VERIFICATION': '✅', 'EXECUTION_MODE': '⚙️',
+                            };
+                            return (
+                              <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700/30 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/40 dark:to-slate-800/30 hover:shadow-sm transition-all">
+                                <span className="text-sm">{citeTypeIcons[c.cite_type] || '📌'}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400/60">{c.cite_type.replace(/_/g, ' ')}</p>
+                                  <p className="text-xs font-medium text-gray-700 dark:text-slate-300 truncate">{c.answer}</p>
+                                </div>
+                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono shrink-0">cite:[{c.id.slice(0, 6)}]</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
             </div>
@@ -7229,17 +7305,43 @@ export default function Stage8FinalReview({
 
               {/* All Panel Citations */}
               {panelCitations.length > 0 && (
-                <div className="pt-3 border-t border-gray-200 dark:border-slate-700/30 space-y-2">
-                  <p className="text-xs font-mono text-gray-500 dark:text-slate-500 uppercase tracking-wider">All Citations ({panelCitations.length})</p>
-                  {panelCitations.map(c => (
-                    <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 dark:bg-slate-800/30 border border-gray-200/50 dark:border-slate-700/20">
-                      <span className="text-xs text-gray-500 dark:text-slate-400">{c.cite_type.replace(/_/g, ' ')}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-700 dark:text-slate-300">{renderCitationValue(c)}</span>
-                        <span className="text-[9px] text-sky-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="pt-3 border-t border-gray-200 dark:border-slate-700/30">
+                  <button
+                    onClick={() => setCollapsedPanels(prev => {
+                      const next = new Set(prev);
+                      const key = `citations-fullscreen-${panel.id}`;
+                      next.has(key) ? next.delete(key) : next.add(key);
+                      return next;
+                    })}
+                    className="w-full flex items-center justify-between mb-2 hover:opacity-80 transition-opacity"
+                  >
+                    <p className="text-xs font-mono text-gray-500 dark:text-slate-500 uppercase tracking-wider">All Citations ({panelCitations.length})</p>
+                    {collapsedPanels.has(`citations-fullscreen-${panel.id}`) ? (
+                      <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {!collapsedPanels.has(`citations-fullscreen-${panel.id}`) && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden space-y-2"
+                      >
+                        {panelCitations.map(c => (
+                          <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 dark:bg-slate-800/30 border border-gray-200/50 dark:border-slate-700/20">
+                            <span className="text-xs text-gray-500 dark:text-slate-400">{c.cite_type.replace(/_/g, ' ')}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-700 dark:text-slate-300">{renderCitationValue(c)}</span>
+                              <span className="text-[9px] text-sky-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                            </div>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
             </div>
