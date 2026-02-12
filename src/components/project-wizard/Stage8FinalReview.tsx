@@ -3051,11 +3051,26 @@ export default function Stage8FinalReview({
       const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
       const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
       const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
-      const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
+      const photoCits = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
       const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
       const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
       const budgetCit = citations.find(c => c.cite_type === 'BUDGET');
       const allTeamInviteCits = citations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+
+      // Fetch user profile for branded header
+      let profile: { company_name?: string | null; phone?: string | null; company_website?: string | null } = {};
+      try {
+        const { data: bp } = await supabase
+          .from('bu_profiles')
+          .select('company_name, phone, company_website')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (bp) profile = bp;
+      } catch (_) { /* ignore */ }
+
+      // Fetch user email
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const userEmail = authUser?.email || '';
 
       interface DnaPillar {
         label: string; sub: string; icon: string; color: string; status: boolean;
@@ -3090,8 +3105,9 @@ export default function Stage8FinalReview({
           { label: 'End Date', cit: endDateCit, field: 'END_DATE' },
           { label: 'DNA Finalized', cit: dnaCit, field: 'DNA_FINALIZED' },
         ]},
-        { label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync', icon: '👁️', color: '#0ea5e9', status: !!photoCit || !!blueprintCit, sources: [
-          { label: 'Site Photo / Visual', cit: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
+        { label: '6 — Visual Intelligence', sub: 'Site Photos × AI Vision × Blueprint', icon: '👁️', color: '#0ea5e9', status: photoCits.length > 0 || !!blueprintCit, sources: [
+          ...photoCits.slice(0, 5).map((pc, i) => ({ label: `Photo ${i + 1}`, cit: pc, field: pc.cite_type || 'SITE_PHOTO' })),
+          ...(photoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
           { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
         ]},
         { label: '7 — Weather & Conditions', sub: 'Alerts × Site Readiness', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit, sources: [
@@ -3113,76 +3129,215 @@ export default function Stage8FinalReview({
       const projAddr = projectData?.address || '';
       const scoreLabel = passCount === 8 ? 'PERFECT' : passCount >= 5 ? 'PARTIAL' : 'CRITICAL';
 
+      const esc = (v: string | number | null | undefined) => {
+        if (v === null || v === undefined) return '';
+        return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      };
+
       const buildSourceRow = (s: { label: string; cit: Citation | undefined; field: string }) => {
         const val = s.cit?.answer || (s.cit?.metadata as any)?.value || '—';
         const ts = s.cit?.timestamp ? new Date(s.cit.timestamp).toLocaleDateString() : '—';
         const citeId = s.cit?.id?.slice(0, 8) || '—';
         const statusColor = s.cit ? '#059669' : '#dc2626';
         const statusText = s.cit ? '✓ cite:' + citeId : '✗ Missing';
-        const displayVal = typeof val === 'string' ? val.slice(0, 60) : JSON.stringify(val).slice(0, 60);
+        const displayVal = typeof val === 'string' ? esc(val.slice(0, 55)) : esc(JSON.stringify(val).slice(0, 55));
         return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
-          '<td style="padding:5px 8px;color:#6b7280;">' + s.label + '</td>' +
-          '<td style="padding:5px 8px;font-family:monospace;font-size:10px;color:' + statusColor + ';">' + statusText + '</td>' +
-          '<td style="padding:5px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + displayVal + '</td>' +
-          '<td style="padding:5px 8px;color:#9ca3af;font-size:10px;">' + ts + '</td>' +
+          '<td style="padding:4px 8px;color:#6b7280;">' + esc(s.label) + '</td>' +
+          '<td style="padding:4px 8px;font-family:monospace;font-size:10px;color:' + statusColor + ';">' + statusText + '</td>' +
+          '<td style="padding:4px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + displayVal + '</td>' +
+          '<td style="padding:4px 8px;color:#9ca3af;font-size:10px;">' + ts + '</td>' +
           '</tr>';
       };
 
+      // Build pillar HTML blocks - each is a pdf-section to prevent page breaks inside
       const pillarRows = pillars.map(p => {
         const sourcesHtml = p.sources.map(buildSourceRow).join('');
-        const bgHex = p.color + '15';
-        const borderHex = p.color + '30';
+        const bgHex = p.color + '12';
         const statusBg = p.status ? '#dcfce7' : '#fef2f2';
         const statusTxt = p.status ? '#166534' : '#991b1b';
         const statusLabel = p.status ? '✓ PASS' : '✗ FAIL';
-        return '<div class="pdf-section" style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:16px;overflow:hidden;break-inside:avoid;">' +
-          '<div style="background:' + bgHex + ';padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid ' + borderHex + ';">' +
-            '<span style="font-size:20px;">' + p.icon + '</span>' +
+        return '<div class="pdf-section" style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:14px;overflow:hidden;">' +
+          '<div style="background:' + bgHex + ';padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5e7eb;">' +
+            '<span style="font-size:18px;">' + p.icon + '</span>' +
             '<div style="flex:1;">' +
-              '<div style="font-weight:600;font-size:14px;color:#1f2937;">' + p.label + '</div>' +
-              '<div style="font-size:11px;color:#6b7280;">' + p.sub + '</div>' +
+              '<div style="font-weight:600;font-size:13px;color:#1f2937;">' + esc(p.label) + '</div>' +
+              '<div style="font-size:10px;color:#6b7280;">' + esc(p.sub) + '</div>' +
             '</div>' +
-            '<span style="background:' + statusBg + ';color:' + statusTxt + ';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">' + statusLabel + '</span>' +
+            '<span style="background:' + statusBg + ';color:' + statusTxt + ';padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;">' + statusLabel + '</span>' +
           '</div>' +
           '<table style="width:100%;border-collapse:collapse;">' +
-            '<thead><tr style="background:#f9fafb;font-size:10px;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;">' +
-              '<th style="padding:6px 8px;text-align:left;">Source</th>' +
-              '<th style="padding:6px 8px;text-align:left;">Citation</th>' +
-              '<th style="padding:6px 8px;text-align:left;">Value</th>' +
-              '<th style="padding:6px 8px;text-align:left;">Date</th>' +
+            '<thead><tr style="background:#f9fafb;font-size:9px;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;">' +
+              '<th style="padding:4px 8px;text-align:left;">Source</th>' +
+              '<th style="padding:4px 8px;text-align:left;">Citation</th>' +
+              '<th style="padding:4px 8px;text-align:left;">Value</th>' +
+              '<th style="padding:4px 8px;text-align:left;">Date</th>' +
             '</tr></thead>' +
             '<tbody>' + sourcesHtml + '</tbody>' +
           '</table>' +
         '</div>';
       }).join('');
 
+      // ============================================
+      // OBC 2024 COMPLIANCE SECTION
+      // ============================================
+      let obcHtml = '';
+      if (obcComplianceResults.sections.length > 0) {
+        const obcRows = obcComplianceResults.sections.slice(0, 10).map(s => {
+          const relevance = Math.round((s.relevance_score || 0) * 100);
+          const relColor = relevance >= 70 ? '#059669' : relevance >= 40 ? '#d97706' : '#6b7280';
+          const contentPreview = esc((s.content || '').slice(0, 120));
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;font-weight:600;color:#1e40af;white-space:nowrap;">§ ' + esc(s.section_number) + '</td>' +
+            '<td style="padding:5px 8px;color:#374151;">' + esc(s.section_title) + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;max-width:250px;overflow:hidden;text-overflow:ellipsis;">' + contentPreview + '</td>' +
+            '<td style="padding:5px 8px;text-align:center;"><span style="color:' + relColor + ';font-weight:600;font-size:10px;">' + relevance + '%</span></td>' +
+          '</tr>';
+        }).join('');
+
+        obcHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+            '<span style="font-size:18px;">⚖️</span>' +
+            '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">OBC 2024 Part 9 — Compliance Matrix</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">Trade-specific regulatory requirements retrieved via RAG pipeline (' + esc(tradeCit?.answer || 'N/A') + ')</div>' +
+          '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+            '<thead><tr style="background:#eff6ff;font-size:9px;text-transform:uppercase;color:#3b82f6;letter-spacing:0.05em;">' +
+              '<th style="padding:6px 8px;text-align:left;">Section</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Title</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Excerpt</th>' +
+              '<th style="padding:6px 8px;text-align:center;">Relevance</th>' +
+            '</tr></thead>' +
+            '<tbody>' + obcRows + '</tbody>' +
+          '</table>' +
+        '</div>';
+      }
+
+      // ============================================
+      // VISUAL INTELLIGENCE SECTION
+      // ============================================
+      let visualHtml = '';
+      if (photoCits.length > 0 || blueprintCit) {
+        const photoRows = photoCits.slice(0, 8).map((pc, i) => {
+          const ts = pc.timestamp ? new Date(pc.timestamp).toLocaleDateString() : '—';
+          const cId = pc.id?.slice(0, 8) || '—';
+          const desc = esc((pc.answer || '').slice(0, 80));
+          const meta = pc.metadata as any;
+          const aiTag = meta?.ai_analysis ? '✓ AI Analyzed' : '—';
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;color:#6b7280;">' + (pc.cite_type === 'VISUAL_VERIFICATION' ? '🔍 Verification' : '📷 Site Photo') + ' #' + (i + 1) + '</td>' +
+            '<td style="padding:5px 8px;font-family:monospace;font-size:10px;color:#059669;">cite:' + cId + '</td>' +
+            '<td style="padding:5px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + desc + '</td>' +
+            '<td style="padding:5px 8px;color:#7c3aed;font-size:10px;">' + aiTag + '</td>' +
+            '<td style="padding:5px 8px;color:#9ca3af;font-size:10px;">' + ts + '</td>' +
+          '</tr>';
+        }).join('');
+
+        visualHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+            '<span style="font-size:18px;">👁️</span>' +
+            '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + '</div>' +
+          '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+            '<thead><tr style="background:#f0fdf4;font-size:9px;text-transform:uppercase;color:#059669;letter-spacing:0.05em;">' +
+              '<th style="padding:6px 8px;text-align:left;">Asset</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Citation</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Description</th>' +
+              '<th style="padding:6px 8px;text-align:left;">AI Vision</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Date</th>' +
+            '</tr></thead>' +
+            '<tbody>' + photoRows + '</tbody>' +
+          '</table>' +
+        '</div>';
+      }
+
+      // ============================================
+      // FINANCIAL SNAPSHOT (owner only)
+      // ============================================
+      let financialHtml = '';
+      if (financialSummary && (financialSummary.total_cost ?? 0) > 0) {
+        const fmt = (n: number | null) => n != null ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+        financialHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+            '<span style="font-size:18px;">💰</span>' +
+            '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Financial Snapshot</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:12px;">' +
+            '<div class="pdf-section" style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;text-align:center;">' +
+              '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Materials</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#059669;margin-top:4px;">' + fmt(financialSummary.material_cost) + '</div>' +
+            '</div>' +
+            '<div class="pdf-section" style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;text-align:center;">' +
+              '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Labor</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#2563eb;margin-top:4px;">' + fmt(financialSummary.labor_cost) + '</div>' +
+            '</div>' +
+            '<div class="pdf-section" style="flex:1;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;text-align:center;">' +
+              '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Total</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#d97706;margin-top:4px;">' + fmt(financialSummary.total_cost) + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      // ============================================
+      // ASSEMBLE FULL HTML
+      // ============================================
+      const { buildUnionPdfHeader, buildUnionPdfFooter, downloadPDF } = await import('@/lib/pdfGenerator');
+      
+      const header = buildUnionPdfHeader({
+        docType: 'M.E.S.S.A. DNA Deep Audit Report',
+        contractorName: profile.company_name || undefined,
+        contractorPhone: profile.phone || undefined,
+        contractorEmail: userEmail || undefined,
+        contractorWebsite: profile.company_website || undefined,
+        dateStr: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      });
+
+      const footer = buildUnionPdfFooter({
+        contractorName: profile.company_name || undefined,
+        docNumber: 'DNA-' + projectId.slice(0, 8).toUpperCase(),
+      });
+
       const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
         '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-        'body { font-family: "Segoe UI", system-ui, sans-serif; color: #1f2937; padding: 40px; max-width: 800px; margin: 0 auto; }' +
-        '.pdf-section { break-inside: avoid; }' +
+        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 40px; max-width: 800px; margin: 0 auto; font-size: 13px; line-height: 1.5; }' +
+        '.pdf-section { break-inside: avoid; page-break-inside: avoid; }' +
+        'table { break-inside: avoid; page-break-inside: avoid; }' +
         '</style></head><body>' +
-        '<div style="text-align:center;margin-bottom:32px;">' +
-          '<div style="font-size:12px;text-transform:uppercase;letter-spacing:0.15em;color:#6b7280;margin-bottom:6px;">M.E.S.S.A. DNA Deep Audit</div>' +
-          '<div style="font-size:22px;font-weight:700;color:#064e3b;">' + projName + '</div>' +
-          '<div style="font-size:12px;color:#9ca3af;margin-top:4px;">Generated: ' + new Date().toLocaleString() + ' · ' + projAddr + '</div>' +
+        header +
+        // Title block
+        '<div class="pdf-section" style="text-align:center;margin-bottom:28px;">' +
+          '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:#6b7280;margin-bottom:4px;">M.E.S.S.A. DNA Deep Audit</div>' +
+          '<div style="font-size:20px;font-weight:700;color:#064e3b;">' + esc(projName) + '</div>' +
+          (projAddr ? '<div style="font-size:11px;color:#9ca3af;margin-top:3px;">' + esc(projAddr) + '</div>' : '') +
+          '<div style="font-size:10px;color:#9ca3af;margin-top:2px;">Generated: ' + new Date().toLocaleString() + '</div>' +
         '</div>' +
-        '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">' +
-          '<div style="font-size:36px;font-weight:800;font-family:monospace;">' + passCount + '/8</div>' +
+        // Score bar
+        '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:10px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;gap:14px;">' +
+          '<div style="font-size:32px;font-weight:800;font-family:monospace;">' + passCount + '/8</div>' +
           '<div style="flex:1;">' +
-            '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">DNA Integrity Score — ' + pct + '%</div>' +
-            '<div style="height:10px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;">' +
+            '<div style="font-size:13px;font-weight:600;margin-bottom:5px;">DNA Integrity Score — ' + pct + '%</div>' +
+            '<div style="height:8px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;">' +
               '<div style="height:100%;width:' + pct + '%;background:' + scoreColor + ';border-radius:999px;"></div>' +
             '</div>' +
           '</div>' +
-          '<div style="background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">' + scoreLabel + '</div>' +
+          '<div style="background:rgba(255,255,255,0.15);padding:3px 12px;border-radius:20px;font-size:11px;font-weight:600;">' + scoreLabel + '</div>' +
+        '</div>' +
+        // Section header: 8 Pillars
+        '<div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
+          '<span style="font-size:16px;">🧬</span> 8-Pillar Validation Matrix' +
         '</div>' +
         pillarRows +
-        '<div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;">' +
-          'BuildUnion · M.E.S.S.A. DNA Deep Audit Report v1.0 · ' + nowStr +
-        '</div>' +
+        // OBC Compliance
+        obcHtml +
+        // Visual Intelligence
+        visualHtml +
+        // Financial
+        financialHtml +
+        // Footer
+        footer +
       '</body></html>';
 
-      const { downloadPDF } = await import('@/lib/pdfGenerator');
       await downloadPDF(html, {
         filename: 'dna-audit-' + (projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export') + '.pdf',
         pageFormat: 'letter',
@@ -3195,7 +3350,7 @@ export default function Stage8FinalReview({
     } finally {
       setIsGeneratingDnaReport(false);
     }
-  }, [citations, projectData, financialSummary, teamMembers]);
+  }, [citations, projectData, financialSummary, teamMembers, obcComplianceResults, userId]);
   
   // Generate Invoice - Opens Preview Modal
   const handleGenerateInvoice = useCallback(async () => {
