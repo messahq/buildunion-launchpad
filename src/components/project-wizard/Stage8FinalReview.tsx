@@ -8904,10 +8904,10 @@ export default function Stage8FinalReview({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className={cn(
-                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
+                  "relative rounded-xl border-2 text-left transition-all duration-200 overflow-hidden group",
                   isActive
-                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
-                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
+                    ? "border-amber-400 dark:border-amber-500 bg-card shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                    : "border-amber-400/40 dark:border-amber-500/40 bg-card hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50/20 dark:hover:bg-amber-950/10",
                   !hasAccess && "opacity-40 cursor-not-allowed"
                 )}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
@@ -8920,9 +8920,9 @@ export default function Stage8FinalReview({
                     className="absolute inset-0 rounded-xl pointer-events-none"
                     animate={{ 
                       boxShadow: [
-                        '0 0 15px rgba(34,211,238,0.08)',
-                        '0 0 25px rgba(34,211,238,0.18)',
-                        '0 0 15px rgba(34,211,238,0.08)',
+                        '0 0 15px rgba(245,158,11,0.08)',
+                        '0 0 25px rgba(245,158,11,0.18)',
+                        '0 0 15px rgba(245,158,11,0.08)',
                       ]
                     }}
                     transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -8934,20 +8934,20 @@ export default function Stage8FinalReview({
                       <motion.div 
                         className={cn(
                           "h-7 w-7 rounded-lg flex items-center justify-center",
-                          isActive ? "bg-cyan-500/20" : "bg-cyan-950/50"
+                          isActive ? "bg-amber-500/20" : "bg-muted"
                         )}
                         animate={isActive ? { rotate: [0, 5, -5, 0] } : {}}
                         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                       >
                         {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-cyan-300" : "text-cyan-600")} />
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-amber-500" : "text-muted-foreground")} />
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-gray-600" />
                         )}
                       </motion.div>
                       <span className={cn(
                         "text-xs font-semibold",
-                        isActive ? "text-cyan-200" : "text-cyan-500"
+                        isActive ? "text-amber-500" : "text-foreground"
                       )}>
                         {displayTitle}
                       </span>
@@ -8956,7 +8956,7 @@ export default function Stage8FinalReview({
                       <motion.span 
                         className={cn(
                           "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                          isActive ? "bg-cyan-400/20 text-cyan-300" : "bg-cyan-950/50 text-cyan-700"
+                          isActive ? "bg-amber-400/20 text-amber-500" : "bg-muted text-muted-foreground"
                         )}
                         animate={isActive ? { scale: [1, 1.1, 1] } : {}}
                         transition={{ duration: 2, repeat: Infinity }}
@@ -8978,7 +8978,7 @@ export default function Stage8FinalReview({
                   </div>
                   <p className={cn(
                     "text-[11px] leading-tight line-clamp-1 mb-1",
-                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
+                    isActive ? "text-amber-500/80" : "text-muted-foreground/60"
                   )}>
                     {getSummaryText()}
                   </p>
@@ -8992,7 +8992,7 @@ export default function Stage8FinalReview({
                 {/* Active glow bar with pulse */}
                 {isActive && (
                   <motion.div
-                    className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
+                    className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-amber-500"
                     layoutId="activePanelIndicator"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
