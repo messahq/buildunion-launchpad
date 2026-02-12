@@ -801,6 +801,19 @@ ${weatherData.forecast?.slice(0, 3).map(f => `- **${f.date}:** ${f.temp_min}°C 
       },
     };
 
+    // Log AI usage
+    try {
+      const sbAdmin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+      await sbAdmin.from("ai_model_usage").insert({
+        user_id: userId,
+        function_name: "generate-project-brief",
+        model_used: selectedModel,
+        tier: resolvedTier,
+        tokens_used: maxTokens,
+        success: true,
+      });
+    } catch (logErr) { console.error("Usage log error:", logErr); }
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

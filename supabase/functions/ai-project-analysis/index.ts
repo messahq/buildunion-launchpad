@@ -836,6 +836,18 @@ serve(async (req) => {
       version: engineConfig.synthesisVersion,
     });
 
+    // Log AI usage to database
+    try {
+      await supabaseClient.from("ai_model_usage").insert({
+        user_id: user.id,
+        function_name: "ai-project-analysis",
+        model_used: engineConfig.geminiModel + (response.dualEngineUsed ? ` + ${engineConfig.openaiModel}` : ""),
+        tier: resolvedTier,
+        tokens_used: engineConfig.maxTokensGemini,
+        success: true,
+      });
+    } catch (logErr) { console.error("Usage log error:", logErr); }
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

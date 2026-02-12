@@ -66,6 +66,8 @@ import {
   XCircle,
   AlertTriangle,
   Database,
+  Bot,
+  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -91,6 +93,27 @@ interface DashboardStats {
   adminCount: number;
   moderatorCount: number;
   forumPosts: number;
+}
+
+interface AiUsageRecord {
+  id: string;
+  user_id: string;
+  function_name: string;
+  model_used: string;
+  tier: string;
+  tokens_used: number;
+  success: boolean;
+  error_message: string | null;
+  created_at: string;
+}
+
+interface AiUsageStats {
+  totalCalls: number;
+  byTier: Record<string, number>;
+  byFunction: Record<string, number>;
+  byModel: Record<string, number>;
+  successRate: number;
+  totalTokens: number;
 }
 
 interface ForumPost {
@@ -131,6 +154,11 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [postToDelete, setPostToDelete] = useState<ForumPost | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [aiUsageData, setAiUsageData] = useState<AiUsageRecord[]>([]);
+  const [aiUsageStats, setAiUsageStats] = useState<AiUsageStats>({
+    totalCalls: 0, byTier: {}, byFunction: {}, byModel: {}, successRate: 100, totalTokens: 0,
+  });
+  const [aiUsageLoading, setAiUsageLoading] = useState(false);
 
   // Redirect non-admins
   useEffect(() => {
@@ -245,11 +273,65 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchAiUsageData = async () => {
+    setAiUsageLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("ai_model_usage")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+
+      const records = (data || []) as unknown as AiUsageRecord[];
+      setAiUsageData(records);
+
+      // Calculate stats
+      const byTier: Record<string, number> = {};
+      const byFunction: Record<string, number> = {};
+      const byModel: Record<string, number> = {};
+      let successCount = 0;
+      let totalTokens = 0;
+
+      records.forEach(r => {
+        byTier[r.tier] = (byTier[r.tier] || 0) + 1;
+        byFunction[r.function_name] = (byFunction[r.function_name] || 0) + 1;
+        // Split compound model names for stats
+        r.model_used.split(" + ").forEach(m => {
+          byModel[m.trim()] = (byModel[m.trim()] || 0) + 1;
+        });
+        if (r.success) successCount++;
+        totalTokens += r.tokens_used || 0;
+      });
+
+      setAiUsageStats({
+        totalCalls: records.length,
+        byTier,
+        byFunction,
+        byModel,
+        successRate: records.length > 0 ? Math.round((successCount / records.length) * 100) : 100,
+        totalTokens,
+      });
+    } catch (error) {
+      console.error("Error fetching AI usage data:", error);
+      toast.error("Failed to load AI usage data");
+    } finally {
+      setAiUsageLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchDashboardData();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin && activeTab === "ai-usage") {
+      fetchAiUsageData();
+    }
+  }, [isAdmin, activeTab]);
 
   const handleUpdateRole = async () => {
     if (!selectedUser) return;
@@ -398,7 +480,7 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
             <TabsTrigger value="overview" className="gap-2">
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -409,15 +491,19 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="subscriptions" className="gap-2">
               <CreditCard className="h-4 w-4" />
-              <span className="hidden sm:inline">Subscriptions</span>
+              <span className="hidden sm:inline">Subs</span>
+            </TabsTrigger>
+            <TabsTrigger value="ai-usage" className="gap-2">
+              <Cpu className="h-4 w-4" />
+              <span className="hidden sm:inline">AI Usage</span>
             </TabsTrigger>
             <TabsTrigger value="moderation" className="gap-2">
               <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">Moderation</span>
+              <span className="hidden sm:inline">Mod</span>
             </TabsTrigger>
             <TabsTrigger value="sync" className="gap-2">
               <Database className="h-4 w-4" />
-              <span className="hidden sm:inline">DB Sync</span>
+              <span className="hidden sm:inline">Sync</span>
             </TabsTrigger>
           </TabsList>
 
@@ -796,6 +882,189 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* AI Usage Tab */}
+          <TabsContent value="ai-usage" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Cpu className="h-5 w-5 text-primary" />
+                AI Model Usage Analytics
+              </h2>
+              <Button variant="outline" size="sm" onClick={fetchAiUsageData} disabled={aiUsageLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${aiUsageLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total AI Calls</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-primary" />
+                    <span className="text-2xl font-bold">{aiUsageStats.totalCalls}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <span className="text-2xl font-bold">{aiUsageStats.successRate}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Tokens</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-amber-500" />
+                    <span className="text-2xl font-bold">{aiUsageStats.totalTokens.toLocaleString()}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Unique Models</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2">
+                    <Cpu className="h-5 w-5 text-purple-500" />
+                    <span className="text-2xl font-bold">{Object.keys(aiUsageStats.byModel).length}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Breakdown Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* By Tier */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Usage by Tier</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Object.entries(aiUsageStats.byTier).sort((a, b) => b[1] - a[1]).map(([tier, count]) => (
+                    <div key={tier} className="flex items-center justify-between">
+                      <Badge variant={tier === "premium" ? "default" : tier === "pro" ? "secondary" : "outline"}>
+                        {tier.toUpperCase()}
+                      </Badge>
+                      <span className="font-mono text-sm font-bold">{count}</span>
+                    </div>
+                  ))}
+                  {Object.keys(aiUsageStats.byTier).length === 0 && (
+                    <p className="text-sm text-muted-foreground">No data yet</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* By Function */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Usage by Function</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Object.entries(aiUsageStats.byFunction).sort((a, b) => b[1] - a[1]).map(([fn, count]) => (
+                    <div key={fn} className="flex items-center justify-between">
+                      <span className="text-xs font-mono truncate max-w-[150px]">{fn}</span>
+                      <span className="font-mono text-sm font-bold">{count}</span>
+                    </div>
+                  ))}
+                  {Object.keys(aiUsageStats.byFunction).length === 0 && (
+                    <p className="text-sm text-muted-foreground">No data yet</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* By Model */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Usage by Model</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Object.entries(aiUsageStats.byModel).sort((a, b) => b[1] - a[1]).map(([model, count]) => (
+                    <div key={model} className="flex items-center justify-between">
+                      <span className="text-xs font-mono truncate max-w-[150px]">{model.replace("google/", "").replace("openai/", "")}</span>
+                      <span className="font-mono text-sm font-bold">{count}</span>
+                    </div>
+                  ))}
+                  {Object.keys(aiUsageStats.byModel).length === 0 && (
+                    <p className="text-sm text-muted-foreground">No data yet</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Calls Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Recent AI Calls (last 500)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {aiUsageLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Function</TableHead>
+                          <TableHead>Tier</TableHead>
+                          <TableHead>Model</TableHead>
+                          <TableHead>Tokens</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {aiUsageData.slice(0, 50).map(record => (
+                          <TableRow key={record.id}>
+                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                              {format(new Date(record.created_at), "MMM d, HH:mm")}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{record.function_name}</TableCell>
+                            <TableCell>
+                              <Badge variant={record.tier === "premium" ? "default" : record.tier === "pro" ? "secondary" : "outline"} className="text-xs">
+                                {record.tier}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs max-w-[200px] truncate">
+                              {record.model_used.replace(/google\//g, "").replace(/openai\//g, "")}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{record.tokens_used}</TableCell>
+                            <TableCell>
+                              {record.success ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-destructive" />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {aiUsageData.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                              No AI usage data recorded yet. Usage will appear here after AI functions are called.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </CardContent>
