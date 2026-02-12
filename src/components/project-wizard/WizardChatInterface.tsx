@@ -468,6 +468,38 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
             )}
           </AnimatePresence>
 
+          {/* Inline Work Type Cards */}
+          <AnimatePresence>
+            {isSelectQuestion && currentStep < WIZARD_QUESTIONS.length && !isSaving && (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-[90%] space-y-2">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    Select the type of work
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {currentQuestion?.options?.map((option) => (
+                      <motion.button
+                        key={option}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => handleSubmit(option)}
+                        className="px-3 py-2 text-xs text-left rounded-lg border border-amber-200 dark:border-amber-800 bg-card hover:bg-amber-50 dark:hover:bg-amber-950/50 hover:border-amber-400 dark:hover:border-amber-500 transition-all"
+                      >
+                        {WORK_TYPE_LABELS[option as WorkType]}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -475,25 +507,9 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
         <div className="p-4 border-t border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm">
           {currentStep < WIZARD_QUESTIONS.length ? (
             isSelectQuestion ? (
-              /* Work Type Selection Grid */
-              <div className="space-y-3">
-                <p className="text-xs text-amber-600 dark:text-amber-400 text-center font-medium">
-                  Select the type of work
-                </p>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                  {currentQuestion.options?.map((option) => (
-                    <motion.button
-                      key={option}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleSubmit(option)}
-                      disabled={isSaving}
-                      className="p-3 text-sm text-left rounded-lg border border-amber-200 dark:border-amber-800 bg-card hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-950/50 dark:hover:to-orange-950/50 hover:border-amber-400 dark:hover:border-amber-600 transition-all disabled:opacity-50"
-                    >
-                      {WORK_TYPE_LABELS[option as WorkType]}
-                    </motion.button>
-                  ))}
-                </div>
+              /* Hidden - work type cards are now inline in chat */
+              <div className="text-center py-2">
+                <span className="text-xs text-muted-foreground">↑ Select from above</span>
               </div>
             ) : (
               /* Text/Address Input */
