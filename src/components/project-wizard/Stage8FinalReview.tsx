@@ -526,6 +526,12 @@ export default function Stage8FinalReview({
   // ✓ DNA Report PDF
   const [isGeneratingDnaReport, setIsGeneratingDnaReport] = useState(false);
   
+  // ✓ DNA Report Email
+  const [showDnaEmailDialog, setShowDnaEmailDialog] = useState(false);
+  const [dnaEmailClientName, setDnaEmailClientName] = useState('');
+  const [dnaEmailClientEmail, setDnaEmailClientEmail] = useState('');
+  const [isSendingDnaEmail, setIsSendingDnaEmail] = useState(false);
+  
   // ✓ OBC RAG Compliance Check
   const [obcComplianceResults, setObcComplianceResults] = useState<{
     sections: Array<{
@@ -3350,7 +3356,94 @@ export default function Stage8FinalReview({
     } finally {
       setIsGeneratingDnaReport(false);
     }
-  }, [citations, projectData, financialSummary, teamMembers, obcComplianceResults, userId]);
+   }, [citations, projectData, financialSummary, teamMembers, obcComplianceResults, userId]);
+
+  // ============================================
+  // SEND DNA REPORT VIA EMAIL
+  // ============================================
+  const handleSendDnaReportEmail = useCallback(async () => {
+    if (!dnaEmailClientEmail || !dnaEmailClientName) {
+      toast.error('Please enter client name and email');
+      return;
+    }
+    setIsSendingDnaEmail(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) {
+        toast.error('Please sign in to send reports');
+        return;
+      }
+
+      // Gather pillar data
+      const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
+      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+      const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+      const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+      const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
+      const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+      const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
+      const photoCits = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
+      const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+      const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
+      const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
+
+      const pillars = [
+        { label: '1 — Project Basics', icon: '🏗️', status: !!nameCit && !!locationCit && !!workTypeCit, sourceSummary: [nameCit?.answer, locationCit?.answer].filter(Boolean).join(' · ').slice(0, 60) },
+        { label: '2 — Area & Dimensions', icon: '📐', status: !!gfaCit, sourceSummary: gfaCit?.answer?.slice(0, 60) || '' },
+        { label: '3 — Trade & Template', icon: '🔬', status: !!tradeCit && !!templateCit, sourceSummary: tradeCit?.answer?.slice(0, 60) || '' },
+        { label: '4 — Team Architecture', icon: '👥', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sourceSummary: `${teamMembers.length} members` },
+        { label: '5 — Execution Timeline', icon: '📅', status: !!timelineCit && !!endDateCit, sourceSummary: [timelineCit?.answer, endDateCit?.answer].filter(Boolean).join(' → ').slice(0, 60) },
+        { label: '6 — Visual Intelligence', icon: '👁️', status: photoCits.length > 0 || !!blueprintCit, sourceSummary: `${photoCits.length} photos${blueprintCit ? ' + blueprint' : ''}` },
+        { label: '7 — Weather & Conditions', icon: '🌦️', status: !!weatherCit || !!siteCondCit, sourceSummary: weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '' },
+        { label: '8 — Financial Summary', icon: '💰', status: (financialSummary?.total_cost ?? 0) > 0, sourceSummary: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()}` : '' },
+      ];
+
+      const passCount = pillars.filter(p => p.status).length;
+      const pct = Math.round((passCount / 8) * 100);
+
+      // Get profile
+      let profile: { company_name?: string | null; phone?: string | null; company_website?: string | null } = {};
+      try {
+        const { data: bp } = await supabase.from('bu_profiles').select('company_name, phone, company_website').eq('user_id', userId).maybeSingle();
+        if (bp) profile = bp;
+      } catch (_) { /* ignore */ }
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      const response = await supabase.functions.invoke('send-dna-report', {
+        body: {
+          clientEmail: dnaEmailClientEmail,
+          clientName: dnaEmailClientName,
+          projectName: projectData?.name || 'Project',
+          projectAddress: projectData?.address || '',
+          projectId,
+          dnaScore: pct,
+          dnaPassCount: passCount,
+          pillars,
+          contractorName: profile.company_name || undefined,
+          contractorPhone: profile.phone || undefined,
+          contractorEmail: authUser?.email || undefined,
+          contractorWebsite: profile.company_website || undefined,
+          financialSummary: financialSummary || undefined,
+        },
+      });
+
+      if (response.error) throw new Error(response.error.message || 'Failed to send email');
+
+      toast.success(`DNA Report sent to ${dnaEmailClientEmail}`);
+      setShowDnaEmailDialog(false);
+      setDnaEmailClientName('');
+      setDnaEmailClientEmail('');
+    } catch (err: any) {
+      console.error('[DNA Email] Error:', err);
+      toast.error(err.message || 'Failed to send DNA report email');
+    } finally {
+      setIsSendingDnaEmail(false);
+    }
+  }, [dnaEmailClientEmail, dnaEmailClientName, citations, projectData, financialSummary, teamMembers, userId, projectId]);
   
   // Generate Invoice - Opens Preview Modal
   const handleGenerateInvoice = useCallback(async () => {
@@ -11617,6 +11710,16 @@ export default function Stage8FinalReview({
                 DNA Report
               </Button>
 
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDnaEmailDialog(true)}
+                className="gap-1.5 text-xs border-sky-800/50 text-sky-400 hover:bg-sky-950/30 hover:text-sky-300 bg-transparent"
+              >
+                <Send className="h-3.5 w-3.5" />
+                Email DNA
+              </Button>
+
               {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
                   size="sm"
@@ -12313,6 +12416,57 @@ export default function Stage8FinalReview({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* DNA Report Email Dialog */}
+      <Dialog open={showDnaEmailDialog} onOpenChange={setShowDnaEmailDialog}>
+        <DialogContent className="sm:max-w-md bg-background border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Send className="h-5 w-5 text-sky-500" />
+              Send DNA Report via Email
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Send the M.E.S.S.A. DNA audit summary directly to your client. They'll receive the 8-pillar validation matrix, integrity score, and financial snapshot.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Name</label>
+                <Input
+                  placeholder="e.g. John Smith"
+                  value={dnaEmailClientName}
+                  onChange={(e) => setDnaEmailClientName(e.target.value)}
+                  className="bg-muted/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Email</label>
+                <Input
+                  type="email"
+                  placeholder="e.g. john@example.com"
+                  value={dnaEmailClientEmail}
+                  onChange={(e) => setDnaEmailClientEmail(e.target.value)}
+                  className="bg-muted/50"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDnaEmailDialog(false)} size="sm">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendDnaReportEmail}
+              disabled={isSendingDnaEmail || !dnaEmailClientEmail || !dnaEmailClientName}
+              size="sm"
+              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+            >
+              {isSendingDnaEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              {isSendingDnaEmail ? 'Sending...' : 'Send Report'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
     </div>
   );
