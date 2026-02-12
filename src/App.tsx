@@ -34,6 +34,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import BuildUnionAbout from "./pages/BuildUnionAbout";
 import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
+import QuickLog from "./pages/QuickLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ const App = () => (
                     {/* Public contract signing page - no auth required */}
                     <Route path="/contract/sign" element={<ContractSignature />} />
                     <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/buildunion/quick-log" element={<RequireEmailVerification><QuickLog /></RequireEmailVerification>} />
                     <Route path="/buildunion/about" element={<BuildUnionAbout />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />

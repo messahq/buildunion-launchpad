@@ -72,7 +72,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 // DatabaseSyncDashboard removed for Project 3.0
-import QuickLogCreator from "@/components/admin/QuickLogCreator";
+// QuickLogCreator moved to /buildunion/quick-log
 
 interface UserWithProfile {
   id: string;
@@ -486,7 +486,7 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
             <TabsTrigger value="overview" className="gap-2">
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -506,10 +506,6 @@ export default function AdminDashboard() {
             <TabsTrigger value="moderation" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Mod</span>
-            </TabsTrigger>
-            <TabsTrigger value="quick-log" className="gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Quick Log</span>
             </TabsTrigger>
             <TabsTrigger value="sync" className="gap-2">
               <Database className="h-4 w-4" />
@@ -1081,10 +1077,6 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Quick Log Tab */}
-          <TabsContent value="quick-log" className="space-y-6">
-            <QuickLogCreator />
-          </TabsContent>
 
           {/* Database Sync Tab - removed for Project 3.0 */}
           <TabsContent value="sync" className="space-y-6">

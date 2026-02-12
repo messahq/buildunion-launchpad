@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info, HelpCircle, Ruler } from "lucide-react";
+import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info, HelpCircle, Ruler, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -645,6 +645,10 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 <DropdownMenuItem onClick={() => navigate("/buildunion/profile/view")} className="hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10">
                   <Eye className="h-4 w-4 mr-2" />
                   View Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/buildunion/quick-log")} className="hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Quick Log
                 </DropdownMenuItem>
                 {isAdmin && (
                   <>
