@@ -2847,6 +2847,76 @@ export default function Stage8FinalReview({
       <li>Cost per sq ft: $${snapshot.budget?.perSqFt?.toFixed(2) || '0.00'} CAD</li>
     </ul>
     
+    ${gemini.visualAnalysis && gemini.visualAnalysis.imagesAnalyzed > 0 ? `
+    <!-- 4.2 VISUAL INTELLIGENCE ANALYSIS (AI Vision) -->
+    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>4.2 Visual Intelligence Analysis</strong> <span style="background: #06b6d4; color: white; font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">🔍 AI VISION — ${gemini.visualAnalysis.imagesAnalyzed} images analyzed</span></p>
+    
+    ${(gemini.visualAnalysis.blueprintFindings || []).length > 0 ? `
+    <p style="font-size: 11px; color: #0891b2; font-weight: 700; margin: 12px 0 6px 0;">📐 Blueprint Analysis</p>
+    <table>
+      <thead>
+        <tr><th>File</th><th>Type</th><th>Dimensions</th><th>Key Observations</th></tr>
+      </thead>
+      <tbody>
+        ${(gemini.visualAnalysis.blueprintFindings || []).map((bp: any) => `
+          <tr>
+            <td style="font-weight: 600;">${bp.fileName || 'Blueprint'}</td>
+            <td>${bp.type || 'Drawing'}</td>
+            <td>${bp.dimensions || '—'}</td>
+            <td>${(bp.observations || []).slice(0, 3).join('; ') || 'No observations'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    ${(gemini.visualAnalysis.blueprintFindings || []).some((bp: any) => (bp.codeFlags || []).length > 0) ? `
+    <p style="font-size: 11px; color: #dc2626; font-weight: 600; margin: 8px 0 4px 0;">⚠️ Code Flags from Blueprint Review:</p>
+    <ul class="pillar-list" style="padding-left: 16px;">
+      ${(gemini.visualAnalysis.blueprintFindings || []).flatMap((bp: any) => (bp.codeFlags || []).map((flag: string) => `<li style="color: #dc2626;">${flag}</li>`)).join('')}
+    </ul>
+    ` : ''}
+    ` : ''}
+    
+    ${(gemini.visualAnalysis.sitePhotoFindings || []).length > 0 ? `
+    <p style="font-size: 11px; color: #0891b2; font-weight: 700; margin: 12px 0 6px 0;">📷 Site Photo Analysis</p>
+    <table>
+      <thead>
+        <tr><th>Photo</th><th>Stage</th><th>Trades Visible</th><th>Quality</th><th>Observations</th></tr>
+      </thead>
+      <tbody>
+        ${(gemini.visualAnalysis.sitePhotoFindings || []).map((photo: any) => `
+          <tr>
+            <td style="font-weight: 600;">${photo.fileName || 'Photo'}</td>
+            <td>${photo.stage || '—'}</td>
+            <td>${(photo.tradesVisible || []).join(', ') || '—'}</td>
+            <td><span style="font-weight: 700; color: ${(photo.qualityScore || 0) >= 70 ? '#16a34a' : (photo.qualityScore || 0) >= 40 ? '#ca8a04' : '#dc2626'};">${photo.qualityScore || 0}/100</span></td>
+            <td>${(photo.observations || []).slice(0, 2).join('; ') || 'No observations'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    ${(gemini.visualAnalysis.sitePhotoFindings || []).some((p: any) => (p.safetyIssues || []).length > 0) ? `
+    <p style="font-size: 11px; color: #dc2626; font-weight: 600; margin: 8px 0 4px 0;">🚨 Safety Issues Detected in Photos:</p>
+    <ul class="pillar-list" style="padding-left: 16px;">
+      ${(gemini.visualAnalysis.sitePhotoFindings || []).flatMap((p: any) => (p.safetyIssues || []).map((issue: string) => `<li style="color: #dc2626;">${issue}</li>`)).join('')}
+    </ul>
+    ` : ''}
+    ` : ''}
+    
+    <table style="margin-top: 12px;">
+      <tr><td style="width: 40%; font-weight: 600;">Overall Visual Score</td><td style="font-weight: 700; color: ${(gemini.visualAnalysis.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04'};">${gemini.visualAnalysis.overallVisualScore || 0}/100</td></tr>
+      <tr><td style="font-weight: 600;">Images Analyzed</td><td>${gemini.visualAnalysis.imagesAnalyzed} files (${data.engines?.gemini?.imageFileNames?.join(', ') || 'N/A'})</td></tr>
+    </table>
+    
+    ${(gemini.visualAnalysis.criticalVisualFlags || []).length > 0 ? `
+    <p style="font-size: 11px; color: #dc2626; font-weight: 700; margin: 12px 0 4px 0;">🔴 Critical Visual Flags:</p>
+    <ul class="pillar-list" style="padding-left: 16px;">
+      ${(gemini.visualAnalysis.criticalVisualFlags || []).map((flag: string) => `<li style="color: #dc2626; font-weight: 600;">${flag}</li>`).join('')}
+    </ul>
+    ` : ''}
+    ` : `
+    <p style="font-size: 12px; color: #6b7280; font-style: italic; margin: 16px 0;">⚠️ No project images were available for AI visual analysis. Upload blueprints and site photos to enable Visual Intelligence.</p>
+    `}
+    
     ${data.dualEngineUsed && openai ? `
     <!-- 5. REGULATORY ALIGNMENT -->
     <div class="section-header"><span class="section-number">5.</span> REGULATORY ALIGNMENT (${data.region?.toUpperCase() || 'Ontario'} Building Code)</div>

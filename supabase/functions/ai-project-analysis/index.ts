@@ -107,14 +107,13 @@ interface ProjectData {
   citations: any[];
 }
 
-async function callAI(model: string, messages: Array<{role: string; content: string}>, maxTokens: number): Promise<string> {
+async function callAI(model: string, messages: Array<{role: string; content: any}>, maxTokens: number): Promise<string> {
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY not configured");
   }
 
   logStep(`Calling ${model}`, { tokens: maxTokens });
 
-  // OpenAI models use max_completion_tokens, Gemini uses max_tokens
   const isOpenAI = model.includes('openai');
   const tokenParam = isOpenAI ? 'max_completion_tokens' : 'max_tokens';
 
@@ -149,12 +148,129 @@ async function callAI(model: string, messages: Array<{role: string; content: str
 }
 
 // ============================================
+// IMAGE FETCHING - Download from Storage as base64
+// ============================================
+async function fetchImageAsBase64(filePath: string): Promise<{ base64: string; mimeType: string } | null> {
+  try {
+    const { data, error } = await supabaseClient.storage
+      .from('project-documents')
+      .download(filePath);
+
+    if (error || !data) {
+      logStep('Failed to download image', { filePath, error: error?.message });
+      return null;
+    }
+
+    const arrayBuffer = await data.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < uint8.length; i++) {
+      binary += String.fromCharCode(uint8[i]);
+    }
+    const base64 = btoa(binary);
+
+    // Detect mime type from extension
+    const ext = filePath.split('.').pop()?.toLowerCase() || '';
+    const mimeMap: Record<string, string> = {
+      'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+      'gif': 'image/gif', 'webp': 'image/webp', 'heic': 'image/heic',
+    };
+    const mimeType = mimeMap[ext] || 'image/jpeg';
+
+    logStep('Image fetched successfully', { filePath, sizeKB: Math.round(uint8.length / 1024) });
+    return { base64, mimeType };
+  } catch (err) {
+    logStep('Image fetch error', { filePath, error: String(err) });
+    return null;
+  }
+}
+
+async function fetchProjectImages(filePaths: string[], maxImages: number = 5): Promise<Array<{ base64: string; mimeType: string; fileName: string }>> {
+  const results: Array<{ base64: string; mimeType: string; fileName: string }> = [];
+  const pathsToFetch = filePaths.slice(0, maxImages);
+
+  for (const filePath of pathsToFetch) {
+    const img = await fetchImageAsBase64(filePath);
+    if (img) {
+      // Skip images larger than 4MB base64 (roughly 3MB actual)
+      if (img.base64.length > 4 * 1024 * 1024) {
+        logStep('Image too large, skipping', { filePath });
+        continue;
+      }
+      results.push({ ...img, fileName: filePath.split('/').pop() || filePath });
+    }
+  }
+
+  logStep('Images fetched for visual analysis', { count: results.length, requested: pathsToFetch.length });
+  return results;
+}
+
+// ============================================
+// BUILD MULTIMODAL GEMINI MESSAGE
+// ============================================
+function buildMultimodalMessage(
+  textPrompt: string,
+  images: Array<{ base64: string; mimeType: string; fileName: string }>
+): Array<{ type: string; text?: string; image_url?: { url: string } }> {
+  const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+
+  // Add text prompt first
+  parts.push({ type: "text", text: textPrompt });
+
+  // Add each image
+  for (const img of images) {
+    parts.push({
+      type: "image_url",
+      image_url: {
+        url: `data:${img.mimeType};base64,${img.base64}`,
+      },
+    });
+    parts.push({
+      type: "text",
+      text: `[Image: ${img.fileName}]`,
+    });
+  }
+
+  return parts;
+}
+
+// ============================================
 // GEMINI - Visual & Site Assessment Engine
 // ============================================
-function buildGeminiSynthesisPrompt(projectData: ProjectData): string {
+function buildGeminiSynthesisPrompt(projectData: ProjectData, hasImages: boolean): string {
   const progressPercent = projectData.taskCount > 0 
     ? Math.round((projectData.completedTasks / projectData.taskCount) * 100) 
     : 0;
+
+  const visualInstructions = hasImages ? `
+
+### CRITICAL: VISUAL IMAGE ANALYSIS
+You have been provided with actual project images (blueprints and/or site photos).
+**YOU MUST analyze each image in detail.** For each image:
+
+**For BLUEPRINTS:**
+- Identify the type of drawing (floor plan, elevation, section, detail)
+- Read and report any dimensions, room labels, annotations visible
+- Estimate the total area from the floor plan if dimensions are readable
+- Identify structural elements (walls, columns, beams, foundations)
+- Note any mechanical/electrical/plumbing (MEP) routing shown
+- Flag any code compliance concerns visible in the design
+- Identify the scale if noted on the drawing
+
+**For SITE PHOTOS:**
+- Describe exactly what you see: construction stage, materials present, work in progress
+- Identify safety hazards (missing PPE, fall risks, improper scaffolding, exposed wiring)
+- Assess workmanship quality (level walls, proper joints, clean work area)
+- Note material storage conditions (covered, organized, weather-protected)
+- Identify the trade work visible (framing, electrical, plumbing, concrete, etc.)
+- Estimate completion percentage of visible work
+- Flag any building code violations visible
+
+Include your visual findings in the "visualAnalysis" field of your JSON response.
+` : `
+### NOTE: No project images were available for visual analysis.
+Provide assessment based on project data only. Set visualAnalysis.imagesAnalyzed to 0.
+`;
 
   return `
 # M.E.S.S.A. VISUAL SYNTHESIS ENGINE
@@ -184,7 +300,7 @@ function buildGeminiSynthesisPrompt(projectData: ProjectData): string {
 ### TIMELINE
 - **Start Date:** ${projectData.startDate || 'Not set'}
 - **End Date:** ${projectData.endDate || 'Not set'}
-
+${visualInstructions}
 ---
 
 ## ANALYSIS REQUIREMENTS
@@ -233,6 +349,13 @@ Format your response as valid JSON with the following structure:
   "executiveSummary": "string",
   "healthScore": number,
   "healthGrade": "Excellent|Good|Fair|Needs Attention|Critical",
+  "visualAnalysis": {
+    "imagesAnalyzed": number,
+    "blueprintFindings": [{"fileName": "string", "type": "string", "dimensions": "string", "observations": ["array"], "codeFlags": ["array"]}],
+    "sitePhotoFindings": [{"fileName": "string", "stage": "string", "tradesVisible": ["array"], "safetyIssues": ["array"], "qualityScore": number, "observations": ["array"]}],
+    "overallVisualScore": number,
+    "criticalVisualFlags": ["array"]
+  },
   "siteCondition": {
     "status": "string",
     "observations": ["array"],
@@ -512,16 +635,44 @@ serve(async (req) => {
     let openaiAnalysis: Record<string, unknown> | null = null;
 
     // ============================================
-    // STEP 1: GEMINI VISUAL SYNTHESIS
+    // STEP 0: FETCH PROJECT IMAGES FOR VISUAL ANALYSIS
     // ============================================
-    const geminiPrompt = buildGeminiSynthesisPrompt(projectData);
-    const geminiMessages = [
-      { role: "system", content: "You are M.E.S.S.A., an expert construction project analyzer specializing in visual assessment and site evaluation. Always respond with valid JSON." },
-      { role: "user", content: geminiPrompt },
-    ];
+    const allImagePaths = [...projectData.sitePhotos, ...projectData.blueprints.filter((b: string) => b.match(/\.(jpg|jpeg|png|gif|webp)$/i))];
+    logStep("Fetching project images for visual analysis", { totalPaths: allImagePaths.length });
+    
+    const projectImages = await fetchProjectImages(allImagePaths, 6);
+    logStep("Images ready for Gemini", { 
+      fetched: projectImages.length, 
+      fileNames: projectImages.map(i => i.fileName),
+    });
+
+    // ============================================
+    // STEP 1: GEMINI VISUAL SYNTHESIS (MULTIMODAL)
+    // ============================================
+    const hasImages = projectImages.length > 0;
+    const geminiPrompt = buildGeminiSynthesisPrompt(projectData, hasImages);
+    
+    let geminiMessages: Array<{role: string; content: any}>;
+    
+    if (hasImages) {
+      // Build multimodal message with actual images
+      const multimodalContent = buildMultimodalMessage(geminiPrompt, projectImages);
+      geminiMessages = [
+        { role: "system", content: "You are M.E.S.S.A., an expert construction project analyzer specializing in VISUAL assessment of blueprints, site photos, and construction documentation. You MUST carefully analyze every image provided and describe what you see in detail. Always respond with valid JSON." },
+        { role: "user", content: multimodalContent },
+      ];
+      logStep("Sending multimodal request to Gemini", { imageCount: projectImages.length });
+    } else {
+      // Text-only fallback
+      geminiMessages = [
+        { role: "system", content: "You are M.E.S.S.A., an expert construction project analyzer specializing in visual assessment and site evaluation. Always respond with valid JSON." },
+        { role: "user", content: geminiPrompt },
+      ];
+      logStep("No images available, sending text-only request to Gemini");
+    }
     
     const geminiResult = await callAI(engineConfig.geminiModel, geminiMessages, engineConfig.geminiTokens);
-    logStep("Gemini Visual Synthesis complete", { length: geminiResult.length });
+    logStep("Gemini Visual Synthesis complete", { length: geminiResult.length, hadImages: hasImages });
 
     try {
       const jsonMatch = geminiResult.match(/\{[\s\S]*\}/);
@@ -585,6 +736,8 @@ serve(async (req) => {
           model: engineConfig.geminiModel,
           provider: 'google',
           role: 'Visual & Site Assessment',
+          imagesAnalyzed: projectImages.length,
+          imageFileNames: projectImages.map(i => i.fileName),
           analysis: geminiAnalysis,
         },
         openai: engineConfig.runDualEngine ? {
