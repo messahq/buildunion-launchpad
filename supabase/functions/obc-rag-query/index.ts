@@ -8,28 +8,20 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Generate embedding for query text
+// Generate embedding using Supabase built-in gte-small model (384 dimensions)
+// @ts-ignore - Supabase.ai is available in edge runtime
+const model = new Supabase.ai.Session('gte-small');
+
 async function generateQueryEmbedding(text: string): Promise<number[] | null> {
   try {
-    const res = await fetch("https://ai.lovable.dev/embeddings", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        input: text,
-      }),
+    const embedding = await model.run(text, {
+      mean_pool: true,
+      normalize: true,
     });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.data?.[0]?.embedding || null;
+    return Array.from(embedding);
   } catch {
     return null;
   }
