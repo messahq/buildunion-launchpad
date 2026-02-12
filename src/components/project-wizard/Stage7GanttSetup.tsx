@@ -959,41 +959,47 @@ export default function Stage7GanttSetup({
                       task.isSubTask ? "h-6" : "h-8"
                     )}>
                       {/* Task bar */}
-                      <motion.div
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        transition={{ delay: index * 0.1, duration: 0.4 }}
-                        className={cn(
-                          "absolute h-full rounded-lg flex items-center justify-between px-2 origin-left",
-                          task.isVerificationNode 
-                            ? "bg-gradient-to-r from-purple-400 to-purple-500 dark:from-purple-600 dark:to-purple-700"
-                            : task.isSubTask
-                              ? task.templateItemCategory === 'labor'
-                                ? "bg-gradient-to-r from-blue-400 to-blue-500 dark:from-blue-600 dark:to-blue-700 opacity-80"
-                                : "bg-gradient-to-r from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700 opacity-80"
-                              : phase.color
-                        )}
-                        style={{ left: position.left, width: position.width }}
-                      >
-                        {/* Verification node indicator */}
-                        {task.isVerificationNode && (
-                          <Camera className="h-3 w-3 text-white" />
-                        )}
-                        
-                        {/* Sub-task cost (owner visibility) */}
-                        {task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
-                          <span className="text-[9px] font-mono font-bold text-white/90 truncate">
-                            ${task.templateItemCost.toLocaleString()}
-                          </span>
-                        )}
-                        
-                        {/* Assignee avatar */}
-                        {assignee && !task.isVerificationNode && (
-                          <div className="h-5 w-5 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold text-white">
-                            {assignee.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </motion.div>
+                       <motion.div
+                         initial={{ scaleX: 0 }}
+                         animate={{ scaleX: 1 }}
+                         transition={{ delay: index * 0.1, duration: 0.4 }}
+                         className={cn(
+                           "absolute h-full rounded-lg flex items-center justify-between px-2 origin-left border-2",
+                           task.isVerificationNode 
+                             ? "border-purple-500 dark:border-purple-600 bg-purple-50/30 dark:bg-purple-950/20"
+                             : task.isSubTask
+                               ? task.templateItemCategory === 'labor'
+                                 ? "border-blue-500 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20"
+                                 : "border-orange-500 dark:border-orange-600 bg-orange-50/30 dark:bg-orange-950/20"
+                               : cn(
+                                   "border-2",
+                                   phase.id === 'demolition' && 'border-red-500 dark:border-red-600 bg-red-50/30 dark:bg-red-950/20',
+                                   phase.id === 'preparation' && 'border-yellow-500 dark:border-yellow-600 bg-yellow-50/30 dark:bg-yellow-950/20',
+                                   phase.id === 'installation' && 'border-blue-500 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20',
+                                   phase.id === 'finishing' && 'border-green-500 dark:border-green-600 bg-green-50/30 dark:bg-green-950/20'
+                                 )
+                         )}
+                         style={{ left: position.left, width: position.width }}
+                       >
+                         {/* Verification node indicator */}
+                         {task.isVerificationNode && (
+                           <Camera className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                         )}
+                         
+                         {/* Sub-task cost (owner visibility) */}
+                         {task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
+                           <span className="text-[9px] font-mono font-bold text-black dark:text-white truncate">
+                             ${task.templateItemCost.toLocaleString()}
+                           </span>
+                         )}
+                         
+                         {/* Assignee avatar */}
+                         {assignee && !task.isVerificationNode && (
+                           <div className="h-5 w-5 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-[10px] font-bold text-black dark:text-white">
+                             {assignee.name.charAt(0).toUpperCase()}
+                           </div>
+                         )}
+                       </motion.div>
                     </div>
                     
                     {/* Assignee label */}
