@@ -6,6 +6,7 @@
 // ============================================
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -65,17 +66,22 @@ export function PendingApprovalModal({
   onReject,
   loading,
 }: PendingApprovalModalProps) {
+  const { t } = useTranslation();
   const [selectedChangeId, setSelectedChangeId] = useState<string | null>(null);
-  const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewNotesMap, setReviewNotesMap] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const pendingOnly = pendingChanges.filter(c => c.status === 'pending');
 
+  const getReviewNotes = (id: string) => reviewNotesMap[id] || '';
+  const setReviewNotes = (id: string, value: string) =>
+    setReviewNotesMap(prev => ({ ...prev, [id]: value }));
+
   const handleApprove = async (changeId: string) => {
     setActionLoading(changeId);
-    const success = await onApprove(changeId, reviewNotes);
+    const success = await onApprove(changeId, getReviewNotes(changeId));
     if (success) {
-      setReviewNotes('');
+      setReviewNotesMap(prev => { const next = { ...prev }; delete next[changeId]; return next; });
       setSelectedChangeId(null);
     }
     setActionLoading(null);
@@ -83,9 +89,9 @@ export function PendingApprovalModal({
 
   const handleReject = async (changeId: string) => {
     setActionLoading(changeId);
-    const success = await onReject(changeId, reviewNotes);
+    const success = await onReject(changeId, getReviewNotes(changeId));
     if (success) {
-      setReviewNotes('');
+      setReviewNotesMap(prev => { const next = { ...prev }; delete next[changeId]; return next; });
       setSelectedChangeId(null);
     }
     setActionLoading(null);
@@ -110,10 +116,10 @@ export function PendingApprovalModal({
               <AlertTriangle className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <span>Pending Approvals</span>
+              <span>{t('pendingApproval.title', 'Pending Approvals')}</span>
               {pendingOnly.length > 0 && (
                 <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700">
-                  {pendingOnly.length} pending
+                  {pendingOnly.length} {t('pendingApproval.pending', 'pending')}
                 </Badge>
               )}
             </div>
@@ -124,8 +130,8 @@ export function PendingApprovalModal({
           {pendingOnly.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>No pending modifications</p>
-              <p className="text-sm">All team changes have been reviewed</p>
+              <p>{t('pendingApproval.noModifications', 'No pending modifications')}</p>
+              <p className="text-sm">{t('pendingApproval.allReviewed', 'All team changes have been reviewed')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -165,7 +171,7 @@ export function PendingApprovalModal({
                         </div>
                         
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                          Pending
+                          {t('pendingApproval.pendingBadge', 'Pending')}
                         </Badge>
                       </div>
                       
@@ -182,7 +188,7 @@ export function PendingApprovalModal({
                               {/* Change Details */}
                               <div className="grid grid-cols-3 gap-4 text-sm">
                                 <div className="space-y-1">
-                                  <div className="text-muted-foreground">Original</div>
+                                  <div className="text-muted-foreground">{t('pendingApproval.original', 'Original')}</div>
                                   <div className="font-mono">
                                     {formatNumber(change.original_quantity)} × {formatCurrency(change.original_unit_price)}
                                   </div>
@@ -194,7 +200,7 @@ export function PendingApprovalModal({
                                 </div>
                                 
                                 <div className="space-y-1">
-                                  <div className="text-muted-foreground">Proposed</div>
+                                  <div className="text-muted-foreground">{t('pendingApproval.proposed', 'Proposed')}</div>
                                   <div className="font-mono text-primary">
                                     {formatNumber(change.new_quantity)} × {formatCurrency(change.new_unit_price)}
                                   </div>
@@ -205,7 +211,7 @@ export function PendingApprovalModal({
                               {/* Change Reason */}
                               {change.change_reason && (
                                 <div className="text-sm">
-                                  <div className="text-muted-foreground mb-1">Reason:</div>
+                                  <div className="text-muted-foreground mb-1">{t('pendingApproval.reason', 'Reason:')}</div>
                                   <div className="bg-background p-2 rounded border italic">
                                     "{change.change_reason}"
                                   </div>
@@ -215,9 +221,9 @@ export function PendingApprovalModal({
                               {/* Review Notes Input */}
                               <div>
                                 <Textarea
-                                  placeholder="Add review notes (optional)..."
-                                  value={reviewNotes}
-                                  onChange={(e) => setReviewNotes(e.target.value)}
+                                  placeholder={t('pendingApproval.reviewNotes', 'Add review notes (optional)...')}
+                                  value={getReviewNotes(change.id)}
+                                  onChange={(e) => setReviewNotes(change.id, e.target.value)}
                                   className="min-h-[60px] text-sm"
                                 />
                               </div>
@@ -236,7 +242,7 @@ export function PendingApprovalModal({
                                   ) : (
                                     <CheckCircle2 className="h-4 w-4 mr-1" />
                                   )}
-                                  Approve
+                                   {t('pendingApproval.approve', 'Approve')}
                                 </Button>
                                 <Button
                                   variant="destructive"
@@ -250,7 +256,7 @@ export function PendingApprovalModal({
                                   ) : (
                                     <XCircle className="h-4 w-4 mr-1" />
                                   )}
-                                  Reject
+                                   {t('pendingApproval.reject', 'Reject')}
                                 </Button>
                               </div>
                             </div>
@@ -267,7 +273,7 @@ export function PendingApprovalModal({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            {t('pendingApproval.close', 'Close')}
           </Button>
         </DialogFooter>
       </DialogContent>
