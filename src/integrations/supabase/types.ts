@@ -611,6 +611,8 @@ export type Database = {
           body: string | null
           data: Json | null
           id: string
+          link: string | null
+          read_at: string | null
           sent_at: string
           status: string
           title: string
@@ -620,6 +622,8 @@ export type Database = {
           body?: string | null
           data?: Json | null
           id?: string
+          link?: string | null
+          read_at?: string | null
           sent_at?: string
           status?: string
           title: string
@@ -629,6 +633,8 @@ export type Database = {
           body?: string | null
           data?: Json | null
           id?: string
+          link?: string | null
+          read_at?: string | null
           sent_at?: string
           status?: string
           title?: string

@@ -1050,5 +1050,11 @@
     "notes": "Notes",
     "notesPlaceholder": "Delivery details, condition, etc.",
     "confirm": "Confirm Delivery"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet",
+    "emptyDesc": "You'll see updates here"
   }
 }

@@ -1050,5 +1050,11 @@
     "notes": "Megjegyzések",
     "notesPlaceholder": "Szállítási részletek, állapot, stb.",
     "confirm": "Szállítmány megerősítése"
+  },
+  "notifications": {
+    "title": "Értesítések",
+    "markAllRead": "Mind olvasott",
+    "empty": "Még nincsenek értesítések",
+    "emptyDesc": "Itt fogod látni a frissítéseket"
   }
 }

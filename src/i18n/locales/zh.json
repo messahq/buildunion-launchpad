@@ -836,5 +836,11 @@
     "checkFailed": "检查验证状态失败",
     "stillPending": "邮箱尚未验证。请检查您的收件箱。",
     "verified": "邮箱已验证！正在跳转至工作区..."
+  },
+  "notifications": {
+    "title": "通知",
+    "markAllRead": "全部标为已读",
+    "empty": "暂无通知",
+    "emptyDesc": "更新将在此显示"
   }
 }

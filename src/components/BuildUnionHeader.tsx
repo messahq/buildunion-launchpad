@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Globe, LogOut, User, Crown, Zap, Folder, Eye, Sun, Moon, Users, MessageSquare, Loader2, ChevronDown, Newspaper, Menu, X, Home, CreditCard, Shield, Search, Info, HelpCircle, Ruler, FileText } from "lucide-react";
+import NotificationCenter from "@/components/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -551,6 +552,9 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Notification Center - only for logged in users */}
+            {user && <NotificationCenter />}
 
             {/* Messages Link - only for logged in users */}
             {user && (

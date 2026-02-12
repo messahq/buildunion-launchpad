@@ -847,5 +847,11 @@
     "checkFailed": "Échec de la vérification du statut",
     "stillPending": "Email pas encore vérifié. Veuillez vérifier votre boîte de réception.",
     "verified": "Email vérifié! Redirection vers l'espace de travail..."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer lu",
+    "empty": "Aucune notification",
+    "emptyDesc": "Les mises à jour apparaîtront ici"
   }
 }
