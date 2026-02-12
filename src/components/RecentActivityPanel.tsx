@@ -14,6 +14,8 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  RefreshCw,
+  X,
 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
@@ -22,8 +24,15 @@ interface ActivityItem {
   type: "task" | "document" | "chat" | "team" | "contract";
   title: string;
   detail?: string;
+  projectId?: string;
   projectName?: string;
   timestamp: string;
+}
+
+interface RecentActivityPanelProps {
+  selectedProjectId?: string | null;
+  selectedProjectName?: string | null;
+  onClearFilter?: () => void;
 }
 
 const ACTIVITY_ICONS: Record<string, typeof Activity> = {
@@ -50,12 +59,17 @@ const ACTIVITY_BG: Record<string, string> = {
   contract: "bg-amber-100 dark:bg-amber-900/30",
 };
 
-export function RecentActivityPanel() {
+export function RecentActivityPanel({
+  selectedProjectId,
+  selectedProjectName,
+  onClearFilter,
+}: RecentActivityPanelProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [allActivities, setAllActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -92,7 +106,7 @@ export function RecentActivityPanel() {
       ];
 
       if (allProjects.length === 0) {
-        setActivities([]);
+        setAllActivities([]);
         setLoading(false);
         return;
       }
@@ -146,6 +160,7 @@ export function RecentActivityPanel() {
           type: "task",
           title: task.title,
           detail: task.status === "completed" ? "Completed" : task.status,
+          projectId: task.project_id,
           projectName: projectNameMap[task.project_id],
           timestamp: task.updated_at,
         });
@@ -158,6 +173,7 @@ export function RecentActivityPanel() {
           type: "document",
           title: doc.file_name,
           detail: "Uploaded",
+          projectId: doc.project_id,
           projectName: projectNameMap[doc.project_id],
           timestamp: doc.uploaded_at,
         });
@@ -172,6 +188,7 @@ export function RecentActivityPanel() {
             msg.message.length > 60
               ? msg.message.substring(0, 60) + "…"
               : msg.message,
+          projectId: msg.project_id,
           projectName: projectNameMap[msg.project_id],
           timestamp: msg.created_at,
         });
@@ -183,6 +200,7 @@ export function RecentActivityPanel() {
           id: `team-${m.id}`,
           type: "team",
           title: `New ${m.role} joined`,
+          projectId: m.project_id,
           projectName: projectNameMap[m.project_id],
           timestamp: m.joined_at,
         });
@@ -195,6 +213,7 @@ export function RecentActivityPanel() {
           type: "contract",
           title: `Contract ${c.contract_number}`,
           detail: c.status,
+          projectId: c.project_id || undefined,
           projectName: c.project_id ? projectNameMap[c.project_id] : undefined,
           timestamp: c.updated_at,
         });
@@ -206,14 +225,19 @@ export function RecentActivityPanel() {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
-      setActivities(items.slice(0, 20));
+      setAllActivities(items.slice(0, 30));
       setLoading(false);
     };
 
     fetchActivity();
-  }, [user]);
+  }, [user, refreshKey]);
 
   if (!user) return null;
+
+  // Filter activities by selected project
+  const activities = selectedProjectId
+    ? allActivities.filter((a) => a.projectId === selectedProjectId)
+    : allActivities;
 
   return (
     <div className="rounded-xl border border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-b from-amber-50/30 to-background dark:from-amber-950/10 dark:to-background overflow-hidden">
@@ -235,12 +259,64 @@ export function RecentActivityPanel() {
             </span>
           )}
         </div>
-        {collapsed ? (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        )}
+        <div className="flex items-center gap-1">
+          {/* Refresh button */}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              setRefreshKey((k) => k + 1);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.stopPropagation();
+                setRefreshKey((k) => k + 1);
+              }
+            }}
+            className="p-1 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors cursor-pointer"
+          >
+            <RefreshCw
+              className={cn(
+                "h-3.5 w-3.5 text-muted-foreground",
+                loading && "animate-spin"
+              )}
+            />
+          </span>
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
       </button>
+
+      {/* Active project filter badge */}
+      {selectedProjectId && selectedProjectName && (
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-100/70 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-800/30">
+            <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300 truncate flex-1">
+              {selectedProjectName}
+            </span>
+            {onClearFilter && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClearFilter();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onClearFilter();
+                }}
+                className="p-0.5 rounded hover:bg-amber-200 dark:hover:bg-amber-800/40 transition-colors cursor-pointer"
+              >
+                <X className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <AnimatePresence>
@@ -259,10 +335,15 @@ export function RecentActivityPanel() {
                 </div>
               ) : activities.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">
-                  {t(
-                    "workspace.noActivity",
-                    "No recent activity across your projects."
-                  )}
+                  {selectedProjectId
+                    ? t(
+                        "workspace.noProjectActivity",
+                        "No recent activity for this project."
+                      )
+                    : t(
+                        "workspace.noActivity",
+                        "No recent activity across your projects."
+                      )}
                 </p>
               ) : (
                 activities.map((item, idx) => {
@@ -293,16 +374,18 @@ export function RecentActivityPanel() {
                           {item.title}
                         </p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          {item.projectName && (
+                          {!selectedProjectId && item.projectName && (
                             <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
                               {item.projectName}
                             </span>
                           )}
                           {item.detail && (
                             <>
-                              <span className="text-[10px] text-muted-foreground">
-                                ·
-                              </span>
+                              {!selectedProjectId && item.projectName && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  ·
+                                </span>
+                              )}
                               <span className="text-[10px] text-muted-foreground capitalize">
                                 {item.detail}
                               </span>

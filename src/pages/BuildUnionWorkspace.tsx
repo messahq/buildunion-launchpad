@@ -176,6 +176,8 @@ const BuildUnionWorkspace = () => {
   const [projectToDelete, setProjectToDelete] = useState<SavedProject | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [materialFilter, setMaterialFilter] = useState<'all' | 'pending' | 'delivered'>('all');
+  const [activityProjectId, setActivityProjectId] = useState<string | null>(null);
+  const [activityProjectName, setActivityProjectName] = useState<string | null>(null);
 
   // Compute stats for quick overview
   const stats = useMemo(() => {
@@ -493,13 +495,21 @@ const BuildUnionWorkspace = () => {
 
           {/* Right sidebar - Recent Activity */}
           <div className="hidden lg:block w-72 shrink-0 sticky top-8 self-start">
-            <RecentActivityPanel />
+            <RecentActivityPanel
+              selectedProjectId={activityProjectId}
+              selectedProjectName={activityProjectName}
+              onClearFilter={() => { setActivityProjectId(null); setActivityProjectName(null); }}
+            />
           </div>
         </div>
 
         {/* Mobile: Recent Activity below content */}
         <div className="lg:hidden max-w-4xl mx-auto mt-6">
-          <RecentActivityPanel />
+          <RecentActivityPanel
+            selectedProjectId={activityProjectId}
+            selectedProjectName={activityProjectName}
+            onClearFilter={() => { setActivityProjectId(null); setActivityProjectName(null); }}
+          />
         </div>
       </main>
 
@@ -605,8 +615,18 @@ const BuildUnionWorkspace = () => {
             whileTap={{ scale: 0.99 }}
           >
             <Card 
-              className="cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group"
-              onClick={() => navigate(`/buildunion/project/${project.id}`)}
+              className={cn(
+                "cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group",
+                activityProjectId === project.id && "ring-2 ring-amber-400 dark:ring-amber-500"
+              )}
+              onClick={() => {
+                if (activityProjectId === project.id) {
+                  navigate(`/buildunion/project/${project.id}`);
+                } else {
+                  setActivityProjectId(project.id);
+                  setActivityProjectName(project.name);
+                }
+              }}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
