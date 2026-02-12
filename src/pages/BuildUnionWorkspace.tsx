@@ -174,6 +174,7 @@ const BuildUnionWorkspace = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<SavedProject | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [materialFilter, setMaterialFilter] = useState<'all' | 'pending' | 'delivered'>('all');
 
   // Compute stats for quick overview
   const stats = useMemo(() => {
@@ -549,9 +550,39 @@ const BuildUnionWorkspace = () => {
       );
     }
 
+    const filteredProjects = projects.filter((p) => {
+      if (materialFilter === 'all') return true;
+      const hasMaterials = (p.total_materials || 0) > 0;
+      const allDelivered = hasMaterials && (p.delivered_materials || 0) >= (p.total_materials || 0);
+      if (materialFilter === 'delivered') return allDelivered;
+      if (materialFilter === 'pending') return hasMaterials && !allDelivered;
+      return true;
+    });
+
     return (
-      <div className="grid gap-4">
-        {projects.map((project) => (
+      <div className="space-y-4">
+        {/* Material Status Filter */}
+        <div className="flex items-center gap-2">
+          {(['all', 'pending', 'delivered'] as const).map((filter) => (
+            <Button
+              key={filter}
+              variant={materialFilter === filter ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMaterialFilter(filter)}
+              className={cn(
+                "text-xs h-7 px-3",
+                materialFilter === filter && "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+              )}
+            >
+              {filter === 'all' ? t("workspace.filterAll", "All") 
+                : filter === 'pending' ? t("workspace.filterPending", "Pending") 
+                : t("workspace.filterDelivered", "Delivered")}
+            </Button>
+          ))}
+        </div>
+
+        <div className="grid gap-4">
+        {filteredProjects.map((project) => (
           <motion.div
             key={project.id}
             initial={{ opacity: 0, y: 10 }}
@@ -681,6 +712,7 @@ const BuildUnionWorkspace = () => {
             </Card>
           </motion.div>
         ))}
+        </div>
       </div>
     );
   }
