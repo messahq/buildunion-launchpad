@@ -422,6 +422,7 @@ export default function Stage8FinalReview({
   const [editValue, setEditValue] = useState<string>('');
   const [modificationDialog, setModificationDialog] = useState<{ open: boolean; material?: any } | null>(null);
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(['demolition', 'preparation', 'installation', 'finishing']));
+  const [verifiedDataExpanded, setVerifiedDataExpanded] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showContractPreview, setShowContractPreview] = useState(false);
   const [selectedUploadCategory, setSelectedUploadCategory] = useState<DocumentCategory>('technical');
@@ -4137,10 +4138,31 @@ export default function Stage8FinalReview({
       };
 
       // Project timeline boundaries from citations
+      // ✓ FIX: Use metadata dates (ISO format) instead of human-readable answer strings
       const timelineCitation = citations.find(c => c.cite_type === 'TIMELINE');
       const endDateCitation = citations.find(c => c.cite_type === 'END_DATE');
-      const projectStart = timelineCitation?.answer ? new Date(timelineCitation.answer).getTime() : null;
-      const projectEnd = endDateCitation?.answer ? new Date(endDateCitation.answer).getTime() : null;
+      const extractDateMs = (citation: Citation | undefined, metaKey: string): number | null => {
+        if (!citation) return null;
+        // Priority 1: metadata date (ISO format)
+        const metaDate = citation.metadata?.[metaKey];
+        if (metaDate && typeof metaDate === 'string') {
+          const d = new Date(metaDate);
+          if (!isNaN(d.getTime())) return d.getTime();
+        }
+        // Priority 2: value (might be ISO date)
+        if (citation.value && typeof citation.value === 'string') {
+          const d = new Date(citation.value);
+          if (!isNaN(d.getTime())) return d.getTime();
+        }
+        // Priority 3: answer (might be ISO date like "2026-02-12")
+        if (citation.answer) {
+          const d = new Date(citation.answer);
+          if (!isNaN(d.getTime())) return d.getTime();
+        }
+        return null;
+      };
+      const projectStart = extractDateMs(timelineCitation, 'start_date');
+      const projectEnd = extractDateMs(endDateCitation, 'end_date');
       const totalDuration = projectStart && projectEnd ? projectEnd - projectStart : null;
 
       // Calculate proportional left offset and width for a task
@@ -4181,7 +4203,13 @@ export default function Stage8FinalReview({
                   value={(() => {
                     const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
                     if (!tc) return '';
-                    try { return tc.answer.split('T')[0]; } catch { return tc.answer; }
+                    // ✓ FIX: Use metadata.start_date (ISO) instead of human-readable answer
+                    const metaStart = tc.metadata?.start_date;
+                    if (metaStart && typeof metaStart === 'string') {
+                      try { return new Date(metaStart).toISOString().split('T')[0]; } catch {}
+                    }
+                    try { const d = new Date(tc.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
+                    return '';
                   })()}
                   onChange={async (e) => {
                     const newDate = e.target.value;
@@ -4224,7 +4252,16 @@ export default function Stage8FinalReview({
                   value={(() => {
                     const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
                     if (!ec) return '';
-                    try { return ec.answer.split('T')[0]; } catch { return ec.answer; }
+                    // ✓ FIX: Use metadata.end_date (ISO) instead of human-readable answer
+                    const metaEnd = ec.metadata?.end_date;
+                    if (metaEnd && typeof metaEnd === 'string') {
+                      try { return new Date(metaEnd).toISOString().split('T')[0]; } catch {}
+                    }
+                    if (ec.value && typeof ec.value === 'string') {
+                      try { const d = new Date(ec.value); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
+                    }
+                    try { const d = new Date(ec.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
+                    return '';
                   })()}
                   onChange={async (e) => {
                     const newDate = e.target.value;
@@ -4468,7 +4505,7 @@ export default function Stage8FinalReview({
                           {/* Label inside bar */}
                           <div className="absolute inset-0 flex items-center justify-center gap-1.5 px-1">
                             <span className={cn("text-[9px] font-bold uppercase tracking-wider truncate", colors.text)}>
-                              {phaseDays}d
+                              {isNaN(phaseDays) ? '' : `${phaseDays}d`}
                             </span>
                             <span className={cn("text-[8px] font-mono font-bold", colors.text)}>
                               {phaseProgressPct}%
@@ -7198,33 +7235,52 @@ export default function Stage8FinalReview({
         {/* Generic citations for non-basics/non-gfa panels */}
         {panel.id !== 'panel-1-basics' && panel.id !== 'panel-2-gfa' && panelCitations.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <button
+              onClick={() => setVerifiedDataExpanded(prev => !prev)}
+              className="w-full text-sm font-semibold mb-1 flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               <FileText className="h-4 w-4" />
               Verified Data ({panelCitations.length})
-            </h4>
-            <div className="grid gap-3">
-              {panelCitations.map(citation => (
-                <div
-                  key={citation.id}
-                  className="group flex items-start justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+              {verifiedDataExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
+              )}
+            </button>
+            <AnimatePresence>
+              {verifiedDataExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
                 >
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                      {citation.cite_type.replace(/_/g, ' ')}
-                    </p>
-                    {renderCitationValue(citation)}
-                    {citation.metadata && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(citation.timestamp), 'MMM dd, yyyy HH:mm')}
-                      </p>
-                    )}
+                  <div className="grid gap-3 mt-2">
+                    {panelCitations.map(citation => (
+                      <div
+                        key={citation.id}
+                        className="group flex items-start justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                            {citation.cite_type.replace(/_/g, ' ')}
+                          </p>
+                          {renderCitationValue(citation)}
+                          {citation.metadata && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {format(new Date(citation.timestamp), 'MMM dd, yyyy HH:mm')}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">
+                          [{citation.id.slice(0, 8)}]
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
-                  <Badge variant="outline" className="text-[10px]">
-                    [{citation.id.slice(0, 8)}]
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
         
@@ -8587,7 +8643,7 @@ export default function Stage8FinalReview({
         )}
       </div>
     );
-  }, [getCitationsForPanel, renderCitationValue, teamMembers, weatherData, contracts, canViewFinancials, renderPanel5Content, documents, DOCUMENT_CATEGORIES]);
+  }, [getCitationsForPanel, renderCitationValue, teamMembers, weatherData, contracts, canViewFinancials, renderPanel5Content, documents, DOCUMENT_CATEGORIES, verifiedDataExpanded]);
   
   // Render single panel
   const renderPanel = useCallback((panel: PanelConfig) => {
@@ -9480,7 +9536,20 @@ export default function Stage8FinalReview({
               if (panel.id === 'panel-5-timeline') {
                 const startCitation = panelCitations.find(c => c.cite_type === 'TIMELINE');
                 const endCitation = panelCitations.find(c => c.cite_type === 'END_DATE');
-                if (startCitation && endCitation) return `${startCitation.answer} → ${endCitation.answer}`;
+                if (startCitation && endCitation) {
+                  // ✓ FIX: Format dates from metadata instead of raw answer
+                  const formatCiteDate = (c: Citation, key: string) => {
+                    const metaDate = c.metadata?.[key];
+                    if (metaDate && typeof metaDate === 'string') {
+                      try { return format(new Date(metaDate), 'MMM d'); } catch {}
+                    }
+                    if (c.value && typeof c.value === 'string') {
+                      try { const d = new Date(c.value); if (!isNaN(d.getTime())) return format(d, 'MMM d'); } catch {}
+                    }
+                    return c.answer?.slice(0, 12) || '?';
+                  };
+                  return `${formatCiteDate(startCitation, 'start_date')} → ${formatCiteDate(endCitation, 'end_date')}`;
+                }
                 return `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
               }
               if (panel.id === 'panel-6-documents') {
