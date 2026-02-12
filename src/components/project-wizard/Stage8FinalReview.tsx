@@ -6472,9 +6472,28 @@ export default function Stage8FinalReview({
           ? 10 // default if template has waste items but no explicit waste_percent
           : 0;
       
-      const tradeTemplate = tradeKey 
-        ? getTemplateForTrade(tradeKey, templateGfaValue)
-        : { materials: [], tasks: [], hasData: false };
+      // ✓ PRIORITY: Use SAVED template_items from DB (via TEMPLATE_LOCK citation metadata)
+      // This ensures Stage 3 data (including Concrete, Custom, etc.) always appears in Stage 8
+      const savedItems = (templateCitation?.metadata?.items as any[]) || [];
+      
+      let tradeTemplate: { materials: {name: string; qty: number; unit: string}[]; tasks: any[]; hasData: boolean; phases?: any[]; phaseTasks?: any[] };
+      
+      if (savedItems.length > 0) {
+        // ✓ Use actual saved items from Stage 3 lock - works for ALL trades
+        const materials = savedItems
+          .filter((item: any) => item.category === 'material')
+          .map((item: any) => ({
+            name: item.name,
+            qty: item.quantity || item.baseQuantity || 0,
+            unit: item.unit || 'units',
+          }));
+        tradeTemplate = { materials, tasks: [], hasData: materials.length > 0 };
+      } else if (tradeKey) {
+        // Fallback: hardcoded template for known trades
+        tradeTemplate = getTemplateForTrade(tradeKey, templateGfaValue);
+      } else {
+        tradeTemplate = { materials: [], tasks: [], hasData: false };
+      }
       
       // ✓ APPLY WASTE TO MATERIALS
       const materialsWithWaste = tradeTemplate.materials.map(mat => {
@@ -7924,9 +7943,24 @@ export default function Stage8FinalReview({
             return { materials, hasData: true };
           };
           
-          const template = tradeKey 
-            ? getTemplateForTradeFullscreen(tradeKey, gfaValue) 
-            : { materials: [], hasData: false };
+          // ✓ PRIORITY: Use saved template_items from TEMPLATE_LOCK citation
+          const fsSavedItems = (templateCitation?.metadata?.items as any[]) || [];
+          
+          let template: { materials: {name: string; qty: number; unit: string}[]; hasData: boolean };
+          if (fsSavedItems.length > 0) {
+            const mats = fsSavedItems
+              .filter((item: any) => item.category === 'material')
+              .map((item: any) => ({
+                name: item.name,
+                qty: item.quantity || item.baseQuantity || 0,
+                unit: item.unit || 'units',
+              }));
+            template = { materials: mats, hasData: mats.length > 0 };
+          } else if (tradeKey) {
+            template = getTemplateForTradeFullscreen(tradeKey, gfaValue);
+          } else {
+            template = { materials: [], hasData: false };
+          }
           
           // Apply waste to materials
           const materialsWithWaste = template.materials.map(mat => {
