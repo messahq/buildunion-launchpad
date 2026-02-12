@@ -112,52 +112,54 @@ async function enrichProjectsWithKPIs(rawProjects: any[]): Promise<SavedProject[
   
   const projectIds = rawProjects.map(p => p.id);
   
-  const [summariesRes, tasksRes, deliveriesRes] = await Promise.all([
-    supabase.from("project_summaries").select("project_id, project_end_date").in("project_id", projectIds),
-    supabase.from("project_tasks").select("project_id, status, title, priority").in("project_id", projectIds).is("archived_at", null),
-    supabase.from("material_deliveries").select("project_id, material_name, delivered_quantity").in("project_id", projectIds),
-  ]);
+   const [summariesRes, tasksRes, deliveriesRes] = await Promise.all([
+     supabase.from("project_summaries").select("project_id, project_end_date").in("project_id", projectIds),
+     supabase.from("project_tasks").select("project_id, status, title, priority").in("project_id", projectIds).is("archived_at", null),
+     supabase.from("material_deliveries").select("project_id, material_name, delivered_quantity, expected_quantity").in("project_id", projectIds),
+   ]);
 
-  const summaries = summariesRes.data || [];
-  const allTasks = tasksRes.data || [];
-  const allDeliveries = deliveriesRes.data || [];
+   const summaries = summariesRes.data || [];
+   const allTasks = tasksRes.data || [];
+   const allDeliveries = deliveriesRes.data || [];
 
-  return rawProjects.map(p => {
-    const summary = summaries.find((s: any) => s.project_id === p.id);
-    const endDate = summary?.project_end_date;
-    const daysRemaining = endDate ? differenceInDays(parseISO(endDate), new Date()) : null;
+   return rawProjects.map(p => {
+     const summary = summaries.find((s: any) => s.project_id === p.id);
+     const endDate = summary?.project_end_date;
+     const daysRemaining = endDate ? differenceInDays(parseISO(endDate), new Date()) : null;
 
-    const projectTasks = allTasks.filter((t: any) => t.project_id === p.id);
-    const totalTasks = projectTasks.length;
-    const completedTasks = projectTasks.filter((t: any) => t.status === 'completed').length;
-    const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-    
-    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    const pendingTasks = projectTasks
-      .filter((t: any) => t.status !== 'completed')
-      .sort((a: any, b: any) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2));
-    const nextTask = pendingTasks[0]?.title || null;
+     const projectTasks = allTasks.filter((t: any) => t.project_id === p.id);
+     const totalTasks = projectTasks.length;
+     const completedTasks = projectTasks.filter((t: any) => t.status === 'completed').length;
+     const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+     
+     const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+     const pendingTasks = projectTasks
+       .filter((t: any) => t.status !== 'completed')
+       .sort((a: any, b: any) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2));
+     const nextTask = pendingTasks[0]?.title || null;
 
-    const projectDeliveries = allDeliveries.filter((d: any) => d.project_id === p.id);
-    const deliveredMaterialNames = new Set(projectDeliveries.map((d: any) => d.material_name));
-    
-    let healthStatus: 'green' | 'yellow' | 'red' = 'green';
-    if (daysRemaining !== null && daysRemaining < 0) healthStatus = 'red';
-    else if (daysRemaining !== null && daysRemaining < 7) healthStatus = 'yellow';
-    else if (totalTasks > 0 && progressPercent < 30 && daysRemaining !== null && daysRemaining < 14) healthStatus = 'red';
+     const projectDeliveries = allDeliveries.filter((d: any) => d.project_id === p.id);
+     const deliveredMaterialNames = new Set(projectDeliveries.map((d: any) => d.material_name));
+     const totalMaterialsExpected = new Set(projectDeliveries.map((d: any) => d.material_name)).size;
+     
+     let healthStatus: 'green' | 'yellow' | 'red' = 'green';
+     if (daysRemaining !== null && daysRemaining < 0) healthStatus = 'red';
+     else if (daysRemaining !== null && daysRemaining < 7) healthStatus = 'yellow';
+     else if (totalTasks > 0 && progressPercent < 30 && daysRemaining !== null && daysRemaining < 14) healthStatus = 'red';
 
-    return {
-      ...p,
-      days_remaining: daysRemaining,
-      progress_percent: progressPercent,
-      task_count: totalTasks,
-      completed_tasks: completedTasks,
-      next_task: nextTask,
-      delivered_materials: deliveredMaterialNames.size,
-      health_status: healthStatus,
-      project_end_date: endDate || null,
-    } as SavedProject;
-  });
+     return {
+       ...p,
+       days_remaining: daysRemaining,
+       progress_percent: progressPercent,
+       task_count: totalTasks,
+       completed_tasks: completedTasks,
+       next_task: nextTask,
+       delivered_materials: deliveredMaterialNames.size,
+       total_materials: totalMaterialsExpected,
+       health_status: healthStatus,
+       project_end_date: endDate || null,
+     } as SavedProject;
+   });
 }
 
 const BuildUnionWorkspace = () => {
@@ -647,11 +649,11 @@ const BuildUnionWorkspace = () => {
                     </div>
 
                     {/* Material Deliveries */}
-                    {(project.delivered_materials || 0) > 0 && (
+                    {(project.total_materials || 0) > 0 && (
                       <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
                         <TruckIcon className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span className="text-xs font-semibold text-foreground">
-                          {project.delivered_materials} {t('common.materials', 'materials')}
+                          {project.delivered_materials || 0}/{project.total_materials || 0}
                         </span>
                       </div>
                     )}
