@@ -2115,11 +2115,89 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               .eq("project_id", projectId);
           }
           console.log("[DefinitionFlow] Template items auto-saved to DB");
+
+          // ✓ AUTO-SAVE TO DOCUMENTS: Save Materials & Labor snapshot as JSON document
+          // This makes it visible in Stage 8 Panel 6 (Documents)
+          try {
+            const materials = items.filter(i => i.category === 'material');
+            const labor = items.filter(i => i.category === 'labor');
+            const tradeName = selectedTrade ? (TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label || selectedTrade) : 'Custom';
+            
+            const documentSnapshot = {
+              generated_at: new Date().toISOString(),
+              trade: tradeName,
+              gfa_sqft: gfaValue,
+              waste_percent: wastePercent,
+              markup_percent: markupPercent,
+              demolition_cost: demolitionAmt,
+              materials: materials.map(m => ({
+                name: m.name,
+                category: m.category,
+                quantity: m.quantity,
+                baseQuantity: m.baseQuantity,
+                unit: m.unit,
+                unitPrice: m.unitPrice,
+                totalPrice: m.totalPrice,
+                wasteApplied: m.applyWaste,
+              })),
+              labor: labor.map(l => ({
+                name: l.name,
+                category: l.category,
+                quantity: l.quantity,
+                unit: l.unit,
+                unitPrice: l.unitPrice,
+                totalPrice: l.totalPrice,
+              })),
+              summary: {
+                material_total: matTotal,
+                labor_total: labTotal,
+                subtotal: sub,
+                markup_amount: mkup,
+                net_total: netTotal,
+              },
+            };
+
+            const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
+            const docFileName = `materials-labor-${tradeName.toLowerCase()}.json`;
+            const docFilePath = `${projectId}/${docFileName}`;
+
+            // Upsert: remove old version first, then upload new
+            await supabase.storage.from('project-documents').remove([docFilePath]);
+            const { error: uploadErr } = await supabase.storage
+              .from('project-documents')
+              .upload(docFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+
+            if (!uploadErr) {
+              // Upsert document record: delete old matching record, insert new
+              const { data: existingDoc } = await supabase
+                .from('project_documents')
+                .select('id')
+                .eq('project_id', projectId)
+                .eq('file_name', docFileName)
+                .maybeSingle();
+
+              if (existingDoc) {
+                await supabase.from('project_documents').delete().eq('id', existingDoc.id);
+              }
+
+              await supabase.from('project_documents').insert({
+                project_id: projectId,
+                file_name: docFileName,
+                file_path: docFilePath,
+                file_size: jsonBlob.size,
+              });
+
+              console.log("[DefinitionFlow] ✓ Materials & Labor document auto-saved to Documents");
+            }
+          } catch (docErr) {
+            console.error("[DefinitionFlow] Failed to save template document:", docErr);
+            // Non-blocking: don't interrupt main template save
+          }
         } catch (err) {
           console.error("[DefinitionFlow] Failed to auto-save template:", err);
         }
       }, 800);
-    }, [projectId, markupPercent, wastePercent, siteCondition, gfaValue, demolitionUnitPrice]);
+    }, [projectId, markupPercent, wastePercent, siteCondition, gfaValue, demolitionUnitPrice, selectedTrade]);
 
 
     // Recalculate when waste percent changes
