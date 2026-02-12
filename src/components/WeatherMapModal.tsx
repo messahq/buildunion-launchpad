@@ -26,7 +26,7 @@ export function WeatherMapModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Weather & Site Log - {projectName}</DialogTitle>
+          <DialogTitle>Site Log & Location - {projectName}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="weather" className="w-full">
