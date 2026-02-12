@@ -1447,6 +1447,99 @@ export default function Stage8FinalReview({
           }
         });
         
+        // 5b. Recovery: If template document missing, try to find it in storage or recreate from TEMPLATE_LOCK citation
+        const hasTemplateDoc = docsWithCategory.some(d => d.file_name.includes('materials-labor'));
+        if (!hasTemplateDoc) {
+          // Try to find trade name from citations
+          const tradeCit = loadedCitations.find(c => c.cite_type === 'TRADE_SELECTION');
+          const tradeName = (tradeCit?.answer || tradeCit?.value || 'custom') as string;
+          const expectedFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.json`;
+          const expectedFilePath = `${projectId}/${expectedFileName}`;
+          
+          // Check if file exists in storage but DB record is missing
+          const { data: storageCheck } = await supabase.storage
+            .from('project-documents')
+            .list(projectId, { search: 'materials-labor' });
+          
+          if (storageCheck && storageCheck.length > 0) {
+            // File exists in storage — register in project_documents
+            const storageFile = storageCheck[0];
+            const filePath = `${projectId}/${storageFile.name}`;
+            const { data: insertedDoc } = await supabase
+              .from('project_documents')
+              .insert({
+                project_id: projectId,
+                file_name: storageFile.name,
+                file_path: filePath,
+                file_size: storageFile.metadata?.size || 0,
+              })
+              .select('id, file_name, file_path, uploaded_at')
+              .single();
+            
+            if (insertedDoc) {
+              docsWithCategory.push({
+                id: insertedDoc.id,
+                file_name: insertedDoc.file_name,
+                file_path: insertedDoc.file_path,
+                category: 'financial' as DocumentCategory,
+                uploadedAt: insertedDoc.uploaded_at,
+              });
+              console.log('[Stage8] ✓ Recovered template document from storage:', storageFile.name);
+            }
+          } else {
+            // No file in storage either — recreate from TEMPLATE_LOCK citation or financial data
+            const templateLockCit = loadedCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+            const matCost = Number(summary?.material_cost || 0);
+            const labCost = Number(summary?.labor_cost || 0);
+            
+            if (matCost > 0 || labCost > 0) {
+              const documentSnapshot = {
+                project_id: projectId,
+                trade: tradeName,
+                generated_at: new Date().toISOString(),
+                source: 'stage8_recovery',
+                items: (templateLockCit?.metadata as any)?.items || [],
+                totals: {
+                  material_cost: matCost,
+                  labor_cost: labCost,
+                  total_cost: Number(summary?.total_cost || 0),
+                },
+              };
+              
+              const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
+              
+              await supabase.storage.from('project-documents').remove([expectedFilePath]);
+              const { error: uploadErr } = await supabase.storage
+                .from('project-documents')
+                .upload(expectedFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+              
+              if (!uploadErr) {
+                const { data: newDoc } = await supabase
+                  .from('project_documents')
+                  .insert({
+                    project_id: projectId,
+                    file_name: expectedFileName,
+                    file_path: expectedFilePath,
+                    file_size: jsonBlob.size,
+                  })
+                  .select('id, file_name, file_path, uploaded_at')
+                  .single();
+                
+                if (newDoc) {
+                  docsWithCategory.push({
+                    id: newDoc.id,
+                    file_name: newDoc.file_name,
+                    file_path: newDoc.file_path,
+                    category: 'financial' as DocumentCategory,
+                    uploadedAt: newDoc.uploaded_at,
+                  });
+                  console.log('[Stage8] ✓ Recreated template document from financial data');
+                }
+              }
+            }
+          }
+        }
+        
         setDocuments(docsWithCategory);
         
         // 6. Load contracts
