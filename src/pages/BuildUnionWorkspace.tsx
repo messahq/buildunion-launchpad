@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PendingInvitationsPanel } from "@/components/PendingInvitationsPanel";
+import { RecentActivityPanel } from "@/components/RecentActivityPanel";
 import { Progress } from "@/components/ui/progress";
 import {
   Tooltip,
@@ -368,7 +369,9 @@ const BuildUnionWorkspace = () => {
       <BuildUnionHeader />
       
       <main className="flex-1 container mx-auto px-4 py-8 pb-28">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto flex gap-6">
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
           {/* Header with Amber accent */}
           <div className="flex flex-col gap-6 mb-8">
             <div className="flex items-center justify-between">
@@ -486,6 +489,17 @@ const BuildUnionWorkspace = () => {
           ) : (
             renderOwnProjects()
           )}
+          </div>
+
+          {/* Right sidebar - Recent Activity */}
+          <div className="hidden lg:block w-72 shrink-0 sticky top-8 self-start">
+            <RecentActivityPanel />
+          </div>
+        </div>
+
+        {/* Mobile: Recent Activity below content */}
+        <div className="lg:hidden max-w-4xl mx-auto mt-6">
+          <RecentActivityPanel />
         </div>
       </main>
 
