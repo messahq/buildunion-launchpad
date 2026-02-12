@@ -6988,21 +6988,25 @@ export default function Stage8FinalReview({
                               {i === currentPhaseIdx && (
                                 <g transform={`translate(${p.x - 7}, ${p.y - 18})`}>
                                   {/* Crane base */}
-                                  <rect x="5" y="14" width="4" height="4" fill={p.color} rx="0.5" />
+                                  <rect x="5" y="14" width="4" height="4" fill="#6B7280" rx="0.5" />
                                   {/* Crane mast */}
-                                  <rect x="6" y="2" width="2" height="12" fill={p.color} rx="0.3" />
+                                  <rect x="6" y="2" width="2" height="12" fill="#6B7280" rx="0.3" />
                                   {/* Crane boom (arm) */}
-                                  <line x1="7" y1="3" x2="14" y2="3" stroke={p.color} strokeWidth="1.5" strokeLinecap="round" />
+                                  <line x1="7" y1="3" x2="14" y2="3" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" />
                                   {/* Hook cable */}
-                                  <line x1="12" y1="3" x2="12" y2="7" stroke={p.color} strokeWidth="0.7" />
+                                  <line x1="12" y1="3" x2="12" y2="7" stroke="#6B7280" strokeWidth="0.7" />
                                   {/* Hook */}
-                                  <path d="M11,7 Q11,9 12,9 Q13,9 13,7" fill="none" stroke={p.color} strokeWidth="0.7" />
+                                  <path d="M11,7 Q11,9 12,9 Q13,9 13,7" fill="none" stroke="#6B7280" strokeWidth="0.7" />
                                   {/* Counter-weight boom */}
-                                  <line x1="7" y1="3" x2="2" y2="3" stroke={p.color} strokeWidth="1.2" strokeLinecap="round" />
+                                  <line x1="7" y1="3" x2="2" y2="3" stroke="#6B7280" strokeWidth="1.2" strokeLinecap="round" />
                                   {/* Counter weight */}
-                                  <rect x="1" y="2" width="2.5" height="2" fill={p.color} rx="0.3" />
+                                  <rect x="1" y="2" width="2.5" height="2" fill="#6B7280" rx="0.3" />
+                                  {/* Spent amount label */}
+                                  <text x="20" y="11" fontSize="4" fontWeight="bold" fill="#374151" fontFamily="monospace">
+                                    ${canvasSpentCompleted.toLocaleString()}
+                                  </text>
                                   {/* Pulsing glow */}
-                                  <circle cx="7" cy="9" r="5" fill={p.color} opacity="0.15">
+                                  <circle cx="7" cy="9" r="5" fill="#6B7280" opacity="0.15">
                                     <animate attributeName="r" values="4;8;4" dur="2.5s" repeatCount="indefinite" />
                                     <animate attributeName="opacity" values="0.15;0.03;0.15" dur="2.5s" repeatCount="indefinite" />
                                   </circle>
@@ -8797,21 +8801,25 @@ export default function Stage8FinalReview({
                                 {i === fsCurrentIdx && (
                                   <g transform={`translate(${p.x - 10}, ${p.y - 26})`}>
                                     {/* Crane base */}
-                                    <rect x="7" y="20" width="6" height="6" fill={p.color} rx="0.8" />
+                                    <rect x="7" y="20" width="6" height="6" fill="#6B7280" rx="0.8" />
                                     {/* Crane mast */}
-                                    <rect x="8.5" y="3" width="3" height="17" fill={p.color} rx="0.5" />
+                                    <rect x="8.5" y="3" width="3" height="17" fill="#6B7280" rx="0.5" />
                                     {/* Crane boom (arm) */}
-                                    <line x1="10" y1="4.5" x2="20" y2="4.5" stroke={p.color} strokeWidth="2" strokeLinecap="round" />
+                                    <line x1="10" y1="4.5" x2="20" y2="4.5" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" />
                                     {/* Hook cable */}
-                                    <line x1="17" y1="4.5" x2="17" y2="10" stroke={p.color} strokeWidth="1" />
+                                    <line x1="17" y1="4.5" x2="17" y2="10" stroke="#6B7280" strokeWidth="1" />
                                     {/* Hook */}
-                                    <path d="M15.5,10 Q15.5,13 17,13 Q18.5,13 18.5,10" fill="none" stroke={p.color} strokeWidth="1" />
+                                    <path d="M15.5,10 Q15.5,13 17,13 Q18.5,13 18.5,10" fill="none" stroke="#6B7280" strokeWidth="1" />
                                     {/* Counter-weight boom */}
-                                    <line x1="10" y1="4.5" x2="3" y2="4.5" stroke={p.color} strokeWidth="1.5" strokeLinecap="round" />
+                                    <line x1="10" y1="4.5" x2="3" y2="4.5" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" />
                                     {/* Counter weight */}
-                                    <rect x="1.5" y="3" width="3.5" height="3" fill={p.color} rx="0.5" />
+                                    <rect x="1.5" y="3" width="3.5" height="3" fill="#6B7280" rx="0.5" />
+                                    {/* Spent amount label */}
+                                    <text x="30" y="15" fontSize="5" fontWeight="bold" fill="#374151" fontFamily="monospace">
+                                      ${fsSpentCompleted.toLocaleString()}
+                                    </text>
                                     {/* Pulsing glow */}
-                                    <circle cx="10" cy="13" r="7" fill={p.color} opacity="0.12">
+                                    <circle cx="10" cy="13" r="7" fill="#6B7280" opacity="0.12">
                                       <animate attributeName="r" values="6;12;6" dur="2.5s" repeatCount="indefinite" />
                                       <animate attributeName="opacity" values="0.12;0.02;0.12" dur="2.5s" repeatCount="indefinite" />
                                     </circle>
