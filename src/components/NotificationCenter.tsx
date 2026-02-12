@@ -136,7 +136,7 @@ const NotificationCenter = () => {
         </div>
 
         {/* Content */}
-        <ScrollArea className="max-h-[360px]">
+        <ScrollArea className="max-h-[420px]">
           {loading ? (
             <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
               {t("common.loading", "Loading...")}

@@ -31,7 +31,7 @@ export const useNotifications = () => {
         .select("*")
         .eq("user_id", user.id)
         .order("sent_at", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (error) throw error;
       setNotifications((data as unknown as Notification[]) || []);
@@ -61,7 +61,7 @@ export const useNotifications = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as unknown as Notification, ...prev].slice(0, 20));
+          setNotifications((prev) => [payload.new as unknown as Notification, ...prev].slice(0, 50));
         }
       )
       .subscribe();
