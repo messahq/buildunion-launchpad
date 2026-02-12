@@ -9391,7 +9391,11 @@ export default function Stage8FinalReview({
           className="absolute top-2 right-2 z-10 h-7 w-7 p-0 opacity-70 hover:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
-            setFullscreenPanel(panel.id);
+            if (panel.id === 'panel-7-weather') {
+              setWeatherModalOpen(true);
+            } else {
+              setFullscreenPanel(panel.id);
+            }
           }}
         >
           <Maximize2 className="h-4 w-4" />
@@ -9915,7 +9919,7 @@ export default function Stage8FinalReview({
                   size="sm"
                   variant="ghost"
                   className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
-                  onClick={() => setFullscreenPanel(activePanelConfig.id)}
+                   onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
                 </Button>
@@ -10771,7 +10775,7 @@ export default function Stage8FinalReview({
                       size="sm"
                       variant="ghost"
                       className="h-7 w-7 p-0"
-                      onClick={() => setFullscreenPanel(activePanelConfig.id)}
+                      onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
                     >
                       <Maximize2 className="h-4 w-4" />
                     </Button>
