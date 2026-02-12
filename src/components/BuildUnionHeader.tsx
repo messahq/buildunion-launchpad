@@ -41,15 +41,6 @@ import { UnitToggle } from "@/components/UnitToggle";
 const languages = [
   { code: "en", name: "English" },
   { code: "es", name: "Español" },
-  { code: "fr", name: "Français" },
-  { code: "de", name: "Deutsch" },
-  { code: "zh", name: "中文" },
-  { code: "ar", name: "العربية" },
-  { code: "pt", name: "Português" },
-  { code: "ru", name: "Русский" },
-  { code: "ja", name: "日本語" },
-  { code: "hi", name: "हिन्दी" },
-  { code: "hu", name: "Magyar" },
 ];
 
 interface BuildUnionHeaderProps {
