@@ -9527,34 +9527,43 @@ export default function Stage8FinalReview({
   return (
     <div className={cn("h-full flex flex-col overflow-hidden bg-[#0a0e1a]", className)}>
       {/* Compact Header */}
-      <div className="px-4 py-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
-        <div className="flex flex-col items-center gap-1">
-          <h2 className="text-xl font-light tracking-wide">
-            <span className="text-white">Build</span>
-            <span className="text-amber-500 font-semibold">Union</span>
-          </h2>
-          <p className="text-[10px] text-cyan-500/60">
-            {projectData?.name || 'Project'} • Stage 8
-          </p>
-          <div className="flex items-center gap-2 mt-1">
+      <div className="px-3 lg:px-4 py-1.5 lg:py-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between gap-2 lg:flex-col lg:items-center lg:gap-1">
+          {/* Left: Logo + project name */}
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-base lg:text-xl font-light tracking-wide shrink-0">
+              <span className="text-white">B</span>
+              <span className="text-amber-500 font-semibold hidden sm:inline">uild</span>
+              <span className="text-amber-500 font-semibold">U</span>
+              <span className="text-white hidden sm:inline">nion</span>
+            </h2>
+            <span className="text-[10px] text-cyan-500/60 truncate lg:hidden">
+              {projectData?.name || 'Project'}
+            </span>
+            <p className="text-[10px] text-cyan-500/60 hidden lg:block">
+              {projectData?.name || 'Project'} • Stage 8
+            </p>
+          </div>
+          {/* Right: Badges */}
+          <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
             {dataSource !== 'supabase' && (
-              <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[10px]">
+              <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[9px] lg:text-[10px] px-1.5 py-0">
                 <AlertTriangle className="h-2.5 w-2.5" />
-                {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
+                {dataSource === 'localStorage' ? 'Off' : 'Mix'}
               </Badge>
             )}
             {canViewFinancials && (
               <Badge variant="outline" className={cn(
-                "gap-1 text-[10px] border-cyan-800/50",
+                "gap-1 text-[9px] lg:text-[10px] border-cyan-800/50 px-1.5 py-0",
                 isFinancialSummaryUnlocked 
                   ? "bg-emerald-950/30 text-emerald-400" 
                   : "bg-red-950/30 text-red-400"
               )}>
                 {isFinancialSummaryUnlocked ? <Unlock className="h-2.5 w-2.5" /> : <LockKeyhole className="h-2.5 w-2.5" />}
-                {isFinancialSummaryUnlocked ? 'Unlocked' : 'Locked'}
+                <span className="hidden sm:inline">{isFinancialSummaryUnlocked ? 'Unlocked' : 'Locked'}</span>
               </Badge>
             )}
-            <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[10px]">
+            <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[9px] lg:text-[10px] px-1.5 py-0">
               {projectData?.status || 'draft'}
             </Badge>
             {userRole === 'owner' && (
@@ -9563,14 +9572,14 @@ export default function Stage8FinalReview({
                 size="sm"
                 onClick={() => setIsEditModeEnabled(!isEditModeEnabled)}
                 className={cn(
-                  "h-7 gap-1.5 text-[10px]",
+                  "h-6 lg:h-7 gap-1 text-[9px] lg:text-[10px] px-1.5 lg:px-2",
                   isEditModeEnabled 
                     ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-500" 
                     : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30"
                 )}
               >
                 {isEditModeEnabled ? <Edit2 className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                {isEditModeEnabled ? 'Editing' : 'View'}
+                <span className="hidden sm:inline">{isEditModeEnabled ? 'Editing' : 'View'}</span>
               </Button>
             )}
           </div>
@@ -9585,8 +9594,8 @@ export default function Stage8FinalReview({
           backgroundSize: '40px 40px',
         }} />
 
-        {/* Ambient floating particles */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Ambient floating particles - hidden on mobile for performance */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden hidden lg:block">
           {[...Array(6)].map((_, i) => (
             <motion.div
               key={`particle-${i}`}
@@ -10654,7 +10663,7 @@ export default function Stage8FinalReview({
         {/* Mobile/Tablet: Tab-based layout */}
         <div className="lg:hidden flex flex-col h-full">
           {/* Tab strip with mini visuals */}
-          <div className="flex overflow-x-auto gap-1.5 px-3 py-2 border-b border-cyan-900/30 bg-[#0c1120]/80 shrink-0">
+          <div className="flex overflow-x-auto gap-1 px-2 py-1.5 border-b border-cyan-900/30 bg-[#0c1120]/80 shrink-0 scrollbar-hide">
             {PANELS.map((panel) => {
               const isActive = activeOrbitalPanel === panel.id;
               const hasAccess = hasAccessToTier(panel.visibilityTier);
@@ -10696,7 +10705,7 @@ export default function Stage8FinalReview({
                 <button
                   key={panel.id}
                   className={cn(
-                    "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[60px]",
+                    "relative flex flex-col items-center gap-0 px-2 py-1 rounded-lg text-[9px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[48px]",
                     isActive 
                       ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                       : "text-cyan-700 hover:text-cyan-400 hover:bg-cyan-950/30",
@@ -10705,9 +10714,9 @@ export default function Stage8FinalReview({
                   onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                   disabled={!hasAccess}
                 >
-                  <div className="flex items-center gap-1">
-                    {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                    <span className="text-[10px]">{panel.title.split(' ')[0]}</span>
+                  <div className="flex items-center gap-0.5">
+                    {hasAccess ? <Icon className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                    <span className="text-[9px]">{panel.title.split(' ')[0]}</span>
                   </div>
                   {getMobileMetric()}
                   {/* Unread chat badge */}
@@ -10755,7 +10764,7 @@ export default function Stage8FinalReview({
             )}
           </div>
           {/* Content area */}
-          <div className="flex-1 overflow-y-auto p-4" ref={mobileContentRef}>
+          <div className="flex-1 overflow-y-auto p-3 pb-2" ref={mobileContentRef}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeOrbitalPanel}
@@ -11625,8 +11634,8 @@ export default function Stage8FinalReview({
       </Dialog>
       
       {/* Bottom Action Bar - Command Center Theme */}
-      <div className="border-t border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-sm p-3 shrink-0">
-        <div className="max-w-7xl mx-auto flex flex-col gap-2">
+      <div className="border-t border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-sm p-2 lg:p-3 shrink-0 mb-16 lg:mb-0">
+        <div className="max-w-7xl mx-auto flex flex-col gap-1.5 lg:gap-2">
           {/* Loading Status Indicator */}
           <AnimatePresence>
             {(isGeneratingAI || isGeneratingSummary || isGeneratingInvoice) && (
@@ -11636,20 +11645,15 @@ export default function Stage8FinalReview({
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-950/60 to-blue-950/60 border border-cyan-800/30">
-                  <div className="relative flex items-center justify-center">
-                    <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
-                    <div className="absolute inset-0 animate-ping opacity-20">
-                      <Loader2 className="h-4 w-4 text-cyan-400" />
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-gradient-to-r from-cyan-950/60 to-blue-950/60 border border-cyan-800/30">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-cyan-300 truncate">
-                      {isGeneratingAI && '🧠 M.E.S.S.A. Dual-Engine Analysis in progress — Gemini & GPT synthesizing...'}
-                      {isGeneratingSummary && '📊 Generating comprehensive Project Summary — analyzing all data points...'}
-                      {isGeneratingInvoice && '📄 Preparing Invoice — calculating financials...'}
+                    <p className="text-[10px] lg:text-xs font-medium text-cyan-300 truncate">
+                      {isGeneratingAI && '🧠 M.E.S.S.A. Analysis...'}
+                      {isGeneratingSummary && '📊 Generating Summary...'}
+                      {isGeneratingInvoice && '📄 Preparing Invoice...'}
                     </p>
-                    <div className="mt-1.5 h-1 w-full rounded-full bg-cyan-950/80 overflow-hidden">
+                    <div className="mt-1 h-1 w-full rounded-full bg-cyan-950/80 overflow-hidden">
                       <motion.div
                         className={cn(
                           "h-full rounded-full",
@@ -11668,27 +11672,27 @@ export default function Stage8FinalReview({
             )}
           </AnimatePresence>
           
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            {/* Left - Stats */}
-            <div className="text-xs text-cyan-700 flex flex-wrap gap-3 font-mono">
-              <span><span className="text-cyan-400 font-medium">{citations.length}</span> citations</span>
+          <div className="flex items-center justify-between gap-2">
+            {/* Left - Stats (hidden on small mobile) */}
+            <div className="text-[9px] lg:text-xs text-cyan-700 hidden sm:flex flex-wrap gap-2 lg:gap-3 font-mono">
+              <span><span className="text-cyan-400 font-medium">{citations.length}</span> cit</span>
               <span><span className="text-teal-400 font-medium">{teamMembers.length}</span> team</span>
               <span><span className="text-blue-400 font-medium">{tasks.length}</span> tasks</span>
               <span><span className="text-pink-400 font-medium">{documents.length}</span> docs</span>
             </div>
             
-            {/* Right - Actions */}
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Right - Actions: scrollable on mobile */}
+            <div className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto flex-1 sm:flex-initial justify-end scrollbar-hide">
               {canViewFinancials && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateInvoice}
                   disabled={isGeneratingInvoice}
-                  className="gap-1.5 text-xs border-amber-800/50 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 bg-transparent"
+                  className="gap-1 text-[10px] lg:text-xs border-amber-800/50 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 bg-transparent h-7 px-2 shrink-0"
                 >
-                  {isGeneratingInvoice ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
-                  Invoice
+                  {isGeneratingInvoice ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                  <span className="hidden sm:inline">Invoice</span>
                 </Button>
               )}
               
@@ -11697,10 +11701,10 @@ export default function Stage8FinalReview({
                 size="sm"
                 onClick={handleGenerateSummary}
                 disabled={isGeneratingSummary}
-                className="gap-1.5 text-xs border-blue-800/50 text-blue-400 hover:bg-blue-950/30 hover:text-blue-300 bg-transparent"
+                className="gap-1 text-[10px] lg:text-xs border-blue-800/50 text-blue-400 hover:bg-blue-950/30 hover:text-blue-300 bg-transparent h-7 px-2 shrink-0"
               >
-                {isGeneratingSummary ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardList className="h-3.5 w-3.5" />}
-                Summary
+                {isGeneratingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <ClipboardList className="h-3 w-3" />}
+                <span className="hidden sm:inline">Summary</span>
               </Button>
               
               <Button
@@ -11708,20 +11712,20 @@ export default function Stage8FinalReview({
                 size="sm"
                 onClick={handleDnaReportPdf}
                 disabled={isGeneratingDnaReport}
-                className="gap-1.5 text-xs border-emerald-800/50 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300 bg-transparent"
+                className="gap-1 text-[10px] lg:text-xs border-emerald-800/50 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300 bg-transparent h-7 px-2 shrink-0"
               >
-                {isGeneratingDnaReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Shield className="h-3.5 w-3.5" />}
-                DNA Report
+                {isGeneratingDnaReport ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
+                DNA
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowDnaEmailDialog(true)}
-                className="gap-1.5 text-xs border-sky-800/50 text-sky-400 hover:bg-sky-950/30 hover:text-sky-300 bg-transparent"
+                className="gap-1 text-[10px] lg:text-xs border-sky-800/50 text-sky-400 hover:bg-sky-950/30 hover:text-sky-300 bg-transparent h-7 px-2 shrink-0 hidden sm:flex"
               >
-                <Send className="h-3.5 w-3.5" />
-                Email DNA
+                <Send className="h-3 w-3" />
+                <span className="hidden md:inline">Email</span>
               </Button>
 
               {(userRole === 'owner' || userRole === 'foreman') && (
@@ -11729,10 +11733,10 @@ export default function Stage8FinalReview({
                   size="sm"
                   onClick={handleMessaSynthesis}
                   disabled={isGeneratingAI}
-                  className="gap-1.5 text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30"
+                  className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30 h-7 px-2 shrink-0"
                 >
-                  {isGeneratingAI ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                  M.E.S.S.A.
+                  {isGeneratingAI ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  <span className="hidden sm:inline">M.E.S.S.A.</span>
                 </Button>
               )}
               
@@ -11745,20 +11749,20 @@ export default function Stage8FinalReview({
                         onClick={handleComplete}
                         disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
                         className={cn(
-                          "gap-1.5 text-xs shadow-md",
+                          "gap-1 text-[10px] lg:text-xs shadow-md h-7 px-2 shrink-0",
                           userRole === 'owner' && !isFinancialSummaryUnlocked
                             ? "bg-gray-800 text-gray-500 cursor-not-allowed"
                             : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-cyan-900/30"
                         )}
                       >
                         {isSaving ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin" />
                         ) : userRole === 'owner' && !isFinancialSummaryUnlocked ? (
-                          <LockKeyhole className="h-3.5 w-3.5" />
+                          <LockKeyhole className="h-3 w-3" />
                         ) : (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <CheckCircle2 className="h-3 w-3" />
                         )}
-                        Finish
+                        <span className="hidden sm:inline">Finish</span>
                       </Button>
                     </span>
                   </TooltipTrigger>
