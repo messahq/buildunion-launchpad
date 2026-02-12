@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import { differenceInDays, parseISO } from "date-fns";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2, Crown, Zap, CheckCircle2, Clock, Eye, EyeOff, ClipboardList, DollarSign, FileText, Cloud, Shield } from "lucide-react";
+import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2, Crown, Zap, CheckCircle2, Clock, Eye, EyeOff, ClipboardList, DollarSign, FileText, Cloud, Shield, TruckIcon, AlertTriangle, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +12,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useTierFeatures } from "@/hooks/useTierFeatures";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -44,6 +46,15 @@ interface SavedProject {
   team_count?: number;
   task_count?: number;
   completed_tasks?: number;
+  // Live KPI data
+  days_remaining?: number | null;
+  progress_percent?: number;
+  material_coverage?: number;
+  next_task?: string | null;
+  health_status?: 'green' | 'yellow' | 'red';
+  project_end_date?: string | null;
+  total_materials?: number;
+  delivered_materials?: number;
 }
 
 interface SharedProject {
@@ -95,6 +106,60 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
   completed: { label: 'Completed', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', icon: CheckCircle2 },
 };
 
+// Enrich projects with live KPI data (tasks, dates, deliveries)
+async function enrichProjectsWithKPIs(rawProjects: any[]): Promise<SavedProject[]> {
+  if (rawProjects.length === 0) return [];
+  
+  const projectIds = rawProjects.map(p => p.id);
+  
+  const [summariesRes, tasksRes, deliveriesRes] = await Promise.all([
+    supabase.from("project_summaries").select("project_id, project_end_date").in("project_id", projectIds),
+    supabase.from("project_tasks").select("project_id, status, title, priority").in("project_id", projectIds).is("archived_at", null),
+    supabase.from("material_deliveries").select("project_id, material_name, delivered_quantity").in("project_id", projectIds),
+  ]);
+
+  const summaries = summariesRes.data || [];
+  const allTasks = tasksRes.data || [];
+  const allDeliveries = deliveriesRes.data || [];
+
+  return rawProjects.map(p => {
+    const summary = summaries.find((s: any) => s.project_id === p.id);
+    const endDate = summary?.project_end_date;
+    const daysRemaining = endDate ? differenceInDays(parseISO(endDate), new Date()) : null;
+
+    const projectTasks = allTasks.filter((t: any) => t.project_id === p.id);
+    const totalTasks = projectTasks.length;
+    const completedTasks = projectTasks.filter((t: any) => t.status === 'completed').length;
+    const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const pendingTasks = projectTasks
+      .filter((t: any) => t.status !== 'completed')
+      .sort((a: any, b: any) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2));
+    const nextTask = pendingTasks[0]?.title || null;
+
+    const projectDeliveries = allDeliveries.filter((d: any) => d.project_id === p.id);
+    const deliveredMaterialNames = new Set(projectDeliveries.map((d: any) => d.material_name));
+    
+    let healthStatus: 'green' | 'yellow' | 'red' = 'green';
+    if (daysRemaining !== null && daysRemaining < 0) healthStatus = 'red';
+    else if (daysRemaining !== null && daysRemaining < 7) healthStatus = 'yellow';
+    else if (totalTasks > 0 && progressPercent < 30 && daysRemaining !== null && daysRemaining < 14) healthStatus = 'red';
+
+    return {
+      ...p,
+      days_remaining: daysRemaining,
+      progress_percent: progressPercent,
+      task_count: totalTasks,
+      completed_tasks: completedTasks,
+      next_task: nextTask,
+      delivered_materials: deliveredMaterialNames.size,
+      health_status: healthStatus,
+      project_end_date: endDate || null,
+    } as SavedProject;
+  });
+}
+
 const BuildUnionWorkspace = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -137,7 +202,9 @@ const BuildUnionWorkspace = () => {
         console.error("Error loading own projects:", ownError);
         toast.error("Failed to load projects");
       } else {
-        setProjects(ownProjects || []);
+        // Enrich projects with KPI data
+        const enrichedProjects = await enrichProjectsWithKPIs(ownProjects || []);
+        setProjects(enrichedProjects);
       }
 
       // Load shared projects (projects where user is a team member)
@@ -522,7 +589,7 @@ const BuildUnionWorkspace = () => {
                   </CardDescription>
                 )}
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   {project.trade && (
                     <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
@@ -537,7 +604,69 @@ const BuildUnionWorkspace = () => {
                       </Badge>
                     );
                   })()}
+                  {/* Health badge */}
+                  {project.health_status && project.status === 'active' && (
+                    <span className={cn(
+                      "h-2.5 w-2.5 rounded-full shrink-0",
+                      project.health_status === 'green' && "bg-emerald-500",
+                      project.health_status === 'yellow' && "bg-amber-500",
+                      project.health_status === 'red' && "bg-red-500",
+                    )} />
+                  )}
                 </div>
+
+                {/* KPI Strip - only for active projects with data */}
+                {project.status === 'active' && (project.task_count || 0) > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    {/* Days Remaining */}
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                      <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className={cn(
+                        "text-xs font-semibold",
+                        project.days_remaining !== null && project.days_remaining < 0 
+                          ? "text-red-600 dark:text-red-400"
+                          : project.days_remaining !== null && project.days_remaining < 7 
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-foreground"
+                      )}>
+                        {project.days_remaining !== null 
+                          ? project.days_remaining < 0 
+                            ? `${Math.abs(project.days_remaining)}d overdue`
+                            : `${project.days_remaining}d left`
+                          : '—'}
+                      </span>
+                    </div>
+
+                    {/* Task Progress */}
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                      <ClipboardList className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-xs font-semibold text-foreground">
+                        {project.completed_tasks || 0}/{project.task_count || 0}
+                      </span>
+                      <Progress value={project.progress_percent || 0} className="h-1 flex-1" />
+                    </div>
+
+                    {/* Material Deliveries */}
+                    {(project.delivered_materials || 0) > 0 && (
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                        <TruckIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs font-semibold text-foreground">
+                          {project.delivered_materials} {t('common.materials', 'materials')}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Next Task */}
+                    {project.next_task && (
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50 col-span-2 sm:col-span-1">
+                        <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                        <span className="text-xs text-muted-foreground truncate">
+                          {project.next_task}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>

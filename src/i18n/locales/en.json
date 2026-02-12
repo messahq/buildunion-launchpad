@@ -1029,5 +1029,26 @@
     "noData": "No data recorded for this stage",
     "itemsRecorded": "items recorded",
     "itemRecorded": "item recorded"
+  },
+  "materials": {
+    "tracker": "Material Tracker",
+    "delivered": "delivered",
+    "inTransit": "in transit",
+    "overallCoverage": "Overall Coverage",
+    "logDelivery": "Log Delivery",
+    "pending": "Pending",
+    "partial": "Partial",
+    "complete": "Complete",
+    "over": "Over-delivered",
+    "noExpected": "No materials defined in template yet",
+    "fillRequired": "Please select a material and enter quantity",
+    "deliveryLogged": "{{qty}} {{unit}} of {{name}} logged",
+    "logFailed": "Failed to log delivery",
+    "material": "Material",
+    "selectMaterial": "Select material...",
+    "quantity": "Quantity",
+    "notes": "Notes",
+    "notesPlaceholder": "Delivery details, condition, etc.",
+    "confirm": "Confirm Delivery"
   }
 }
