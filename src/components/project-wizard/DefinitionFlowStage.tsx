@@ -2421,6 +2421,81 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           .eq("id", projectId);
         
         console.log("[DefinitionFlow] Trade & Template saved to DB immediately:", selectedTrade);
+        
+        // ✓ ALSO SAVE TEMPLATE DOCUMENT to storage for Stage 8 Documents panel
+        try {
+          const materials = templateItems.filter(i => i.category === 'material');
+          const labor = templateItems.filter(i => i.category === 'labor');
+          const tradeName = TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label || selectedTrade || 'Custom';
+          const demolitionAmt = siteCondition === 'demolition' ? gfaValue * demolitionUnitPrice : 0;
+          
+          const documentSnapshot = {
+            generated_at: new Date().toISOString(),
+            trade: tradeName,
+            gfa_sqft: gfaValue,
+            waste_percent: wastePercent,
+            markup_percent: markupPercent,
+            demolition_cost: demolitionAmt,
+            materials: materials.map(m => ({
+              name: m.name,
+              category: m.category,
+              quantity: m.quantity,
+              baseQuantity: m.baseQuantity,
+              unit: m.unit,
+              unitPrice: m.unitPrice,
+              totalPrice: m.totalPrice,
+              wasteApplied: m.applyWaste,
+            })),
+            labor: labor.map(l => ({
+              name: l.name,
+              category: l.category,
+              quantity: l.quantity,
+              unit: l.unit,
+              unitPrice: l.unitPrice,
+              totalPrice: l.totalPrice,
+            })),
+            summary: {
+              material_total: materialTotal,
+              labor_total: laborTotal,
+              subtotal: subtotal,
+              markup_amount: markupAmount,
+              net_total: subtotalWithMarkup,
+            },
+          };
+
+          const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
+          const docFileName = `materials-labor-${tradeName.toLowerCase()}.json`;
+          const docFilePath = `${projectId}/${docFileName}`;
+
+          await supabase.storage.from('project-documents').remove([docFilePath]);
+          const { error: uploadErr } = await supabase.storage
+            .from('project-documents')
+            .upload(docFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+
+          if (!uploadErr) {
+            const { data: existingDoc } = await supabase
+              .from('project_documents')
+              .select('id')
+              .eq('project_id', projectId)
+              .eq('file_name', docFileName)
+              .maybeSingle();
+
+            if (existingDoc) {
+              await supabase.from('project_documents').delete().eq('id', existingDoc.id);
+            }
+
+            await supabase.from('project_documents').insert({
+              project_id: projectId,
+              file_name: docFileName,
+              file_path: docFilePath,
+              file_size: jsonBlob.size,
+            });
+
+            console.log("[DefinitionFlow] ✓ Template document saved on lock");
+          }
+        } catch (docErr) {
+          console.error("[DefinitionFlow] Failed to save template document on lock:", docErr);
+        }
       } catch (err) {
         console.error("[DefinitionFlow] Failed to save trade immediately:", err);
         // Continue anyway - will try again at DNA Finalize
