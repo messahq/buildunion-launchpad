@@ -2679,6 +2679,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         
         let error;
         if (currentData?.id) {
+          const startDateValue = timeline === 'asap' ? new Date().toISOString().split('T')[0] : scheduledDate?.toISOString().split('T')[0] || null;
+          const endDateValue = scheduledEndDate?.toISOString().split('T')[0] || null;
+          
           const result = await supabase
             .from("project_summaries")
             .update({
@@ -2686,11 +2689,16 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
+              project_start_date: startDateValue,
+              project_end_date: endDateValue,
               updated_at: new Date().toISOString(),
             })
             .eq("project_id", projectId);
           error = result.error;
         } else {
+          const startDateValue = timeline === 'asap' ? new Date().toISOString().split('T')[0] : scheduledDate?.toISOString().split('T')[0] || null;
+          const endDateValue = scheduledEndDate?.toISOString().split('T')[0] || null;
+          
           const result = await supabase
             .from("project_summaries")
             .insert({
@@ -2700,6 +2708,8 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
+              project_start_date: startDateValue,
+              project_end_date: endDateValue,
             });
           error = result.error;
         }
