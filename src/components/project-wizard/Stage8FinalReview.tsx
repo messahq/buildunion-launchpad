@@ -6819,8 +6819,23 @@ export default function Stage8FinalReview({
           });
         if (canvasTrendPts.length > 0) canvasTrendPts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(251,191,36,0.4)' });
         const canvasTrendTotal = canvasCum;
-        // Determine "current" phase index (first phase not fully completed = last with data)
-        const currentPhaseIdx = canvasTrendPts.length > 1 ? canvasTrendPts.length - 1 : 0;
+        // Determine "current" spent = sum of COMPLETED sub-tasks only
+        const canvasSpentCompleted = tasks
+          .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0 && (t.status === 'completed' || t.status === 'done'))
+          .reduce((s, t) => s + t.templateItemCost!, 0);
+        // Find where the spent amount falls on the cumulative line (interpolate between points)
+        let currentPhaseIdx = 0;
+        if (canvasTrendPts.length > 1) {
+          for (let i = 1; i < canvasTrendPts.length; i++) {
+            if (canvasTrendPts[i].value >= canvasSpentCompleted) {
+              currentPhaseIdx = i;
+              break;
+            }
+          }
+          // If spent is less than first phase, stay at start
+          if (canvasSpentCompleted <= 0) currentPhaseIdx = 0;
+        }
+        const canvasSpentValue = canvasSpentCompleted;
 
         const costItems = [
           materialCost !== null && { name: 'Materials', value: materialCost, color: 'hsl(200, 80%, 50%)', icon: Hammer },
@@ -6950,7 +6965,10 @@ export default function Stage8FinalReview({
                     <div className="p-2.5 rounded-lg border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-orange-950/10 to-yellow-950/15">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[9px] text-amber-800 dark:text-amber-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
-                        <span className="text-[9px] text-amber-700 dark:text-amber-200/80 font-mono">${canvasTrendTotal.toLocaleString()}</span>
+                        <span className="text-[9px] font-mono">
+                          <span className="text-emerald-400 font-bold">${canvasSpentValue.toLocaleString()}</span>
+                          <span className="text-amber-700 dark:text-amber-400/50"> / ${canvasTrendTotal.toLocaleString()}</span>
+                        </span>
                       </div>
                       <div className="h-16 w-full relative group/trend">
                         <svg viewBox="0 0 200 60" className="w-full h-full" preserveAspectRatio="none">
@@ -8700,7 +8718,20 @@ export default function Stage8FinalReview({
                     // Add starting zero point
                     if (pts.length > 0) pts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(251,191,36,0.4)' });
                     const trendSpentTotal = cumulative;
-                    const fsCurrentIdx = pts.length > 1 ? pts.length - 1 : 0;
+                    // Current position = based on COMPLETED sub-tasks only
+                    const fsSpentCompleted = tasks
+                      .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0 && (t.status === 'completed' || t.status === 'done'))
+                      .reduce((s, t) => s + t.templateItemCost!, 0);
+                    let fsCurrentIdx = 0;
+                    if (pts.length > 1) {
+                      for (let i = 1; i < pts.length; i++) {
+                        if (pts[i].value >= fsSpentCompleted) {
+                          fsCurrentIdx = i;
+                          break;
+                        }
+                      }
+                      if (fsSpentCompleted <= 0) fsCurrentIdx = 0;
+                    }
 
                     if (pts.length < 2) return null;
 
@@ -8723,7 +8754,10 @@ export default function Stage8FinalReview({
                             <div className="h-4 w-0.5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
                             <span className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider">Spending by Phase</span>
                           </div>
-                          <span className="text-[10px] text-amber-700 dark:text-amber-300/80 font-mono">${trendSpentTotal.toLocaleString()}</span>
+                          <span className="text-[10px] font-mono">
+                            <span className="text-emerald-400 font-bold">${fsSpentCompleted.toLocaleString()}</span>
+                            <span className="text-amber-700 dark:text-amber-400/50"> / ${trendSpentTotal.toLocaleString()}</span>
+                          </span>
                         </div>
                         <div className="relative">
                           <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
