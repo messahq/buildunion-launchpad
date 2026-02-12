@@ -6984,14 +6984,29 @@ export default function Stage8FinalReview({
                                 stroke={i === currentPhaseIdx ? '#d97706' : 'none'} strokeWidth="1"
                                 className="transition-all duration-200"
                               />
-                              {/* Current position pulsing ring */}
+                              {/* Construction crane indicator */}
                               {i === currentPhaseIdx && (
-                                <>
-                                  <circle cx={p.x} cy={p.y} r="6" fill="none" stroke={p.color} strokeWidth="0.8" opacity="0.5">
-                                    <animate attributeName="r" values="4;8;4" dur="2s" repeatCount="indefinite" />
-                                    <animate attributeName="opacity" values="0.6;0.1;0.6" dur="2s" repeatCount="indefinite" />
+                                <g transform={`translate(${p.x - 7}, ${p.y - 18})`}>
+                                  {/* Crane base */}
+                                  <rect x="5" y="14" width="4" height="4" fill={p.color} rx="0.5" />
+                                  {/* Crane mast */}
+                                  <rect x="6" y="2" width="2" height="12" fill={p.color} rx="0.3" />
+                                  {/* Crane boom (arm) */}
+                                  <line x1="7" y1="3" x2="14" y2="3" stroke={p.color} strokeWidth="1.5" strokeLinecap="round" />
+                                  {/* Hook cable */}
+                                  <line x1="12" y1="3" x2="12" y2="7" stroke={p.color} strokeWidth="0.7" />
+                                  {/* Hook */}
+                                  <path d="M11,7 Q11,9 12,9 Q13,9 13,7" fill="none" stroke={p.color} strokeWidth="0.7" />
+                                  {/* Counter-weight boom */}
+                                  <line x1="7" y1="3" x2="2" y2="3" stroke={p.color} strokeWidth="1.2" strokeLinecap="round" />
+                                  {/* Counter weight */}
+                                  <rect x="1" y="2" width="2.5" height="2" fill={p.color} rx="0.3" />
+                                  {/* Pulsing glow */}
+                                  <circle cx="7" cy="9" r="5" fill={p.color} opacity="0.15">
+                                    <animate attributeName="r" values="4;8;4" dur="2.5s" repeatCount="indefinite" />
+                                    <animate attributeName="opacity" values="0.15;0.03;0.15" dur="2.5s" repeatCount="indefinite" />
                                   </circle>
-                                </>
+                                </g>
                               )}
                               <circle cx={p.x} cy={p.y} r="12" fill="transparent" className="cursor-pointer">
                                 <title>{p.label}: ${p.phaseValue.toLocaleString()} (Σ ${p.value.toLocaleString()})</title>
@@ -8778,12 +8793,29 @@ export default function Stage8FinalReview({
                                   fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
                                   stroke={i === fsCurrentIdx ? '#d97706' : 'none'} strokeWidth="1.5"
                                 />
-                                {/* Current position pulsing ring */}
+                                {/* Construction crane indicator */}
                                 {i === fsCurrentIdx && (
-                                  <circle cx={p.x} cy={p.y} r="8" fill="none" stroke={p.color} strokeWidth="1" opacity="0.5">
-                                    <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite" />
-                                    <animate attributeName="opacity" values="0.6;0.1;0.6" dur="2s" repeatCount="indefinite" />
-                                  </circle>
+                                  <g transform={`translate(${p.x - 10}, ${p.y - 26})`}>
+                                    {/* Crane base */}
+                                    <rect x="7" y="20" width="6" height="6" fill={p.color} rx="0.8" />
+                                    {/* Crane mast */}
+                                    <rect x="8.5" y="3" width="3" height="17" fill={p.color} rx="0.5" />
+                                    {/* Crane boom (arm) */}
+                                    <line x1="10" y1="4.5" x2="20" y2="4.5" stroke={p.color} strokeWidth="2" strokeLinecap="round" />
+                                    {/* Hook cable */}
+                                    <line x1="17" y1="4.5" x2="17" y2="10" stroke={p.color} strokeWidth="1" />
+                                    {/* Hook */}
+                                    <path d="M15.5,10 Q15.5,13 17,13 Q18.5,13 18.5,10" fill="none" stroke={p.color} strokeWidth="1" />
+                                    {/* Counter-weight boom */}
+                                    <line x1="10" y1="4.5" x2="3" y2="4.5" stroke={p.color} strokeWidth="1.5" strokeLinecap="round" />
+                                    {/* Counter weight */}
+                                    <rect x="1.5" y="3" width="3.5" height="3" fill={p.color} rx="0.5" />
+                                    {/* Pulsing glow */}
+                                    <circle cx="10" cy="13" r="7" fill={p.color} opacity="0.12">
+                                      <animate attributeName="r" values="6;12;6" dur="2.5s" repeatCount="indefinite" />
+                                      <animate attributeName="opacity" values="0.12;0.02;0.12" dur="2.5s" repeatCount="indefinite" />
+                                    </circle>
+                                  </g>
                                 )}
                                 {/* Current position vertical dashed line */}
                                 {i === fsCurrentIdx && (
