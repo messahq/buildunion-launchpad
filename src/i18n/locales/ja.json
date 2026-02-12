@@ -824,6 +824,14 @@
     "title": "通知",
     "markAllRead": "すべて既読にする",
     "empty": "通知はありません",
-    "emptyDesc": "ここに更新が表示されます"
+    "emptyDesc": "ここに更新が表示されます",
+    "delete": "削除",
+    "deleteAll": "すべて削除",
+    "status": "ステータス",
+    "sentAt": "送信日時",
+    "readAt": "既読日時",
+    "link": "リンク",
+    "data": "データ",
+    "goToLink": "開く"
   }
 }

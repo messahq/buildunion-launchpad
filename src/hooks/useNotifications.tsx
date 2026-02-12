@@ -104,5 +104,30 @@ export const useNotifications = () => {
     }
   };
 
-  return { notifications, unreadCount, loading, markAsRead, markAllAsRead, refetch: fetchNotifications };
+  const deleteNotification = async (id: string) => {
+    const { error } = await supabase
+      .from("notification_logs")
+      .delete()
+      .eq("id", id);
+
+    if (!error) {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }
+  };
+
+  const deleteAllNotifications = async () => {
+    if (!user || notifications.length === 0) return;
+
+    const ids = notifications.map((n) => n.id);
+    const { error } = await supabase
+      .from("notification_logs")
+      .delete()
+      .in("id", ids);
+
+    if (!error) {
+      setNotifications([]);
+    }
+  };
+
+  return { notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification, deleteAllNotifications, refetch: fetchNotifications };
 };
