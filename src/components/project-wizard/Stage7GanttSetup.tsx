@@ -165,6 +165,7 @@ interface PhaseTask {
   verificationStatus: 'pending' | 'uploaded' | 'verified';
   isSubTask?: boolean; // Template-derived sub-task
   templateItemCost?: number; // Cost from template item
+  templateItemCategory?: 'material' | 'labor'; // MAT or LAB badge
 }
 
 interface Stage7GanttSetupProps {
@@ -447,6 +448,7 @@ export default function Stage7GanttSetup({
           verificationStatus: 'pending',
           isSubTask: true,
           templateItemCost: item.totalPrice,
+          templateItemCategory: item.category,
         };
         tasks.push(subTask);
       });
@@ -791,9 +793,14 @@ export default function Stage7GanttSetup({
                         {task.isSubTask && (
                           <Badge 
                             variant="outline" 
-                            className="text-[10px] py-0 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+                            className={cn(
+                              "text-[10px] py-0",
+                              task.templateItemCategory === 'labor'
+                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-700"
+                                : "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700"
+                            )}
                           >
-                            Template
+                            {task.templateItemCategory === 'labor' ? 'LAB' : 'MAT'}
                           </Badge>
                         )}
                       </div>
@@ -934,7 +941,7 @@ export default function Stage7GanttSetup({
                     {/* Task label */}
                     <div className={cn("w-36 shrink-0 flex items-center gap-2", task.isSubTask && "pl-3")}>
                       {task.isSubTask ? (
-                        <Package className="h-3 w-3 text-emerald-500 shrink-0" />
+                        <Package className={cn("h-3 w-3 shrink-0", task.templateItemCategory === 'labor' ? "text-blue-500" : "text-orange-500")} />
                       ) : (
                         <div className={cn("h-2 w-2 rounded-full shrink-0", priority?.color || 'bg-slate-400')} />
                       )}
@@ -961,7 +968,9 @@ export default function Stage7GanttSetup({
                           task.isVerificationNode 
                             ? "bg-gradient-to-r from-purple-400 to-purple-500 dark:from-purple-600 dark:to-purple-700"
                             : task.isSubTask
-                              ? cn(phase.color, "opacity-70")
+                              ? task.templateItemCategory === 'labor'
+                                ? "bg-gradient-to-r from-blue-400 to-blue-500 dark:from-blue-600 dark:to-blue-700 opacity-80"
+                                : "bg-gradient-to-r from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700 opacity-80"
                               : phase.color
                         )}
                         style={{ left: position.left, width: position.width }}
@@ -1007,10 +1016,18 @@ export default function Stage7GanttSetup({
                   <span>{phase.name}</span>
                 </div>
               ))}
-              <div className="flex items-center gap-2 text-xs">
-                <div className="h-3 w-3 rounded bg-gradient-to-r from-purple-400 to-purple-500" />
-                <span>Verification Point</span>
-              </div>
+               <div className="flex items-center gap-2 text-xs">
+                 <div className="h-3 w-3 rounded bg-gradient-to-r from-purple-400 to-purple-500" />
+                 <span>Verification Point</span>
+               </div>
+               <div className="flex items-center gap-2 text-xs">
+                 <div className="h-3 w-3 rounded bg-gradient-to-r from-orange-400 to-orange-500" />
+                 <span>Material (MAT)</span>
+               </div>
+               <div className="flex items-center gap-2 text-xs">
+                 <div className="h-3 w-3 rounded bg-gradient-to-r from-blue-400 to-blue-500" />
+                 <span>Labor (LAB)</span>
+               </div>
             </div>
             
             <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">

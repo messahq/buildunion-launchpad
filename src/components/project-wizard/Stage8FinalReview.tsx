@@ -711,7 +711,7 @@ export default function Stage8FinalReview({
         // 2. Load citations AND financial data from project_summaries
         const { data: summary } = await supabase
           .from('project_summaries')
-          .select('verified_facts, material_cost, labor_cost, total_cost')
+          .select('verified_facts, material_cost, labor_cost, total_cost, template_items')
           .eq('project_id', projectId)
           .maybeSingle();
         
@@ -1081,6 +1081,10 @@ export default function Stage8FinalReview({
         if (!hasTemplateLockCit && summary && (Number(summary.material_cost || 0) > 0 || Number(summary.labor_cost || 0) > 0)) {
           const matCost = Number(summary.material_cost || 0);
           const labCost = Number(summary.labor_cost || 0);
+          // Also try to load individual template_items from DB for subtask generation
+          const dbTemplateItems = Array.isArray(summary.template_items) && summary.template_items.length > 0
+            ? summary.template_items
+            : undefined;
           const syntheticTemplateCit: Citation = {
             id: `synthetic_template_lock_${Date.now()}`,
             cite_type: 'TEMPLATE_LOCK',
@@ -1093,6 +1097,7 @@ export default function Stage8FinalReview({
               labor_cost: labCost,
               total_cost: Number(summary.total_cost || 0),
               source: 'financial_recovery',
+              ...(dbTemplateItems ? { items: dbTemplateItems } : {}),
             },
           };
           loadedCitations.push(syntheticTemplateCit);

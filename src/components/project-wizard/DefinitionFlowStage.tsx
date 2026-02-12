@@ -2393,6 +2393,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
+              template_items: templateItems as unknown as null, // ✓ Persist individual items for Stage 7/8 Gantt
               updated_at: new Date().toISOString(),
             })
             .eq("project_id", projectId);
@@ -2406,6 +2407,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               total_cost: subtotalWithMarkup, // ✓ NET pre-tax
               material_cost: materialTotal,
               labor_cost: laborTotal,
+              template_items: templateItems as unknown as null, // ✓ Persist individual items for Stage 7/8 Gantt
             });
         }
         
