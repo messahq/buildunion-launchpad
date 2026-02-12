@@ -294,15 +294,15 @@ const PANELS: PanelConfig[] = [
   {
     id: 'panel-7-weather',
     panelNumber: 7,
-    title: 'Weather & Conditions',
+    title: 'Site Log & Location',
     titleKey: 'stage8.panel7',
     icon: Cloud,
-    color: 'text-sky-600',
-    bgColor: 'bg-sky-50 dark:bg-sky-950/30',
-    borderColor: 'border-sky-300 dark:border-sky-700',
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-50 dark:bg-cyan-950/30',
+    borderColor: 'border-cyan-200 dark:border-cyan-800',
     visibilityTier: 'worker',
     dataKeys: ['WEATHER_ALERT', 'SITE_CONDITION'],
-    description: 'Weather alerts, site conditions',
+    description: 'Site log, weather alerts, location',
   },
   {
     id: 'panel-8-financial',
@@ -3116,7 +3116,7 @@ export default function Stage8FinalReview({
           ...(photoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
           { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
         ]},
-        { label: '7 — Weather & Conditions', sub: 'Alerts × Site Readiness', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit, sources: [
+        { label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit, sources: [
           { label: 'Weather Alert', cit: weatherCit, field: 'WEATHER_ALERT' },
           { label: 'Site Condition', cit: siteCondCit, field: 'SITE_CONDITION' },
         ]},
@@ -3397,7 +3397,7 @@ export default function Stage8FinalReview({
         { label: '4 — Team Architecture', icon: '👥', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sourceSummary: `${teamMembers.length} members` },
         { label: '5 — Execution Timeline', icon: '📅', status: !!timelineCit && !!endDateCit, sourceSummary: [timelineCit?.answer, endDateCit?.answer].filter(Boolean).join(' → ').slice(0, 60) },
         { label: '6 — Visual Intelligence', icon: '👁️', status: photoCits.length > 0 || !!blueprintCit, sourceSummary: `${photoCits.length} photos${blueprintCit ? ' + blueprint' : ''}` },
-        { label: '7 — Weather & Conditions', icon: '🌦️', status: !!weatherCit || !!siteCondCit, sourceSummary: weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '' },
+        { label: '7 — Site Log & Location', icon: '🌦️', status: !!weatherCit || !!siteCondCit, sourceSummary: weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '' },
         { label: '8 — Financial Summary', icon: '💰', status: (financialSummary?.total_cost ?? 0) > 0, sourceSummary: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()}` : '' },
       ];
 
@@ -3708,7 +3708,7 @@ export default function Stage8FinalReview({
           ],
         },
         {
-          id: 7, name: 'Weather & Conditions', icon: '🌤️', color: '#0ea5e9',
+          id: 7, name: 'Site Log & Location', icon: '🌤️', color: '#0ea5e9',
           status: address ? 'ACTIVE' : 'MISSING',
           items: [
             { label: 'Location Set', value: address ? 'Yes' : 'No', ok: !!address },
@@ -10030,7 +10030,7 @@ export default function Stage8FinalReview({
                           ],
                         },
                         {
-                          key: 'weather', label: '7 — Weather & Conditions', sub: 'Alerts × Site Readiness',
+                          key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness',
                           icon: '🌦️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400',
                           status: !!weatherCit || !!siteCondCit,
                           description: 'Weather alerts and site condition assessment for operational readiness.',
@@ -10911,7 +10911,7 @@ export default function Stage8FinalReview({
                             ],
                           },
                           {
-                            key: 'weather', label: '7 — Weather & Conditions', sub: 'Alerts × Site Readiness',
+                            key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness',
                             icon: '🌦️', color: 'border-cyan-300 dark:border-cyan-500/40', headerBg: 'bg-cyan-50 dark:bg-cyan-500/10', textColor: 'text-cyan-700 dark:text-cyan-400',
                             status: !!weatherCit || !!siteCondCit,
                             description: 'Weather alerts and site condition assessment for operational readiness.',
@@ -11770,7 +11770,7 @@ export default function Stage8FinalReview({
         </div>
       </div>
 
-      {/* Weather & Location Modal - Conditional render for build compatibility */}
+      {/* Site Log & Location Modal */}
       {weatherModalOpen && (
         <WeatherMapModal
           open={weatherModalOpen}
@@ -11785,6 +11785,7 @@ export default function Stage8FinalReview({
             (citations.find(c => c.cite_type === 'LOCATION')?.metadata?.coordinates as any)?.lng || undefined
           }
           projectName={projectData?.name || 'Project'}
+          projectId={projectId}
         />
       )}
       
