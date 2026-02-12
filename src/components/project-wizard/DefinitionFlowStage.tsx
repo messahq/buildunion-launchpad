@@ -2158,7 +2158,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             };
 
             const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
-            const docFileName = `materials-labor-${tradeName.toLowerCase()}.json`;
+            const docFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.json`;
             const docFilePath = `${projectId}/${docFileName}`;
 
             // Upsert: remove old version first, then upload new
@@ -2464,7 +2464,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           };
 
           const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
-          const docFileName = `materials-labor-${tradeName.toLowerCase()}.json`;
+          const docFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.json`;
           const docFilePath = `${projectId}/${docFileName}`;
 
           await supabase.storage.from('project-documents').remove([docFilePath]);
