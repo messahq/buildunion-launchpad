@@ -8687,7 +8687,11 @@ export default function Stage8FinalReview({
                   <Lock className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground">{panel.title}</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground">
+                    {panel.title.split(' ').map((word, i) => (
+                      <span key={i} className={i === 0 ? "" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
+                    ))}
+                  </h3>
                   <p className="text-[10px] text-muted-foreground">Restricted</p>
                 </div>
               </div>
