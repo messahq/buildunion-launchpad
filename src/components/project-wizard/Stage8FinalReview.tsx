@@ -8625,99 +8625,116 @@ export default function Stage8FinalReview({
                     );
                   })()}
 
-                  {/* ─── Cost Trend Chart (Full-screen) ─── */}
-                  {totalForPercentage > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.45 }}
-                      className="p-4 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-950/25 via-orange-950/15 to-yellow-950/20"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-4 w-0.5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
-                           <span className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider">Cost Trend</span>
-                         </div>
-                         <span className="text-[10px] text-amber-700 dark:text-amber-300/80 font-mono">${totalForPercentage.toLocaleString()}</span>
-                      </div>
-                      {(() => {
-                        const mat = storedMaterialCost;
-                        const lab = storedLaborCost;
-                        const dem = demoCost;
-                        const pts = [
-                          { label: 'W1', value: 0 },
-                          { label: 'W2', value: Math.round(mat * 0.3) },
-                          { label: 'W3', value: Math.round(mat * 0.6 + lab * 0.2) },
-                          { label: 'W4', value: Math.round(mat * 0.9 + lab * 0.5 + dem * 0.5) },
-                          { label: 'Now', value: Math.round(mat + lab + dem) },
-                        ];
-                        const maxV = Math.max(...pts.map(p => p.value), 1);
-                        const svgPts = pts.map((p, i) => ({
-                          x: (i / (pts.length - 1)) * 280,
-                          y: 75 - (p.value / maxV) * 65,
-                          ...p,
-                        }));
-                        return (
-                          <div className="relative">
-                            <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
-                              {[0, 25, 50, 75].map(y => (
-                                <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(251,191,36,0.06)" strokeWidth="0.5" />
-                              ))}
-                              <path
-                                d={`M0,75 L${svgPts.map(p => `${p.x},${p.y}`).join(' L')} L280,75 Z`}
-                                fill="url(#fsTrendGrad)" opacity="0.3"
-                              />
-                              <path
-                                d={`M${svgPts.map(p => `${p.x},${p.y}`).join(' L')}`}
-                                fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="2" strokeLinecap="round"
-                              />
-                              {svgPts.map((p, i) => (
-                                <g key={i}>
-                                  <circle cx={p.x} cy={p.y} r={i === svgPts.length - 1 ? 4 : 2}
-                                    fill={i === svgPts.length - 1 ? '#f59e0b' : 'rgba(251,191,36,0.4)'}
-                                    stroke={i === svgPts.length - 1 ? '#d97706' : 'none'} strokeWidth="1"
-                                  />
-                                  <circle cx={p.x} cy={p.y} r="16" fill="transparent" className="cursor-pointer">
-                                    <title>{p.label}: ${p.value.toLocaleString()}</title>
-                                  </circle>
-                                </g>
-                              ))}
-                              <defs>
-                                <linearGradient id="fsTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
-                                  <stop offset="100%" stopColor="rgba(251,191,36,0)" />
-                                </linearGradient>
-                              </defs>
-                            </svg>
-                            {/* Interactive tooltip overlays */}
-                            <div className="absolute inset-0">
-                              {svgPts.map((p, i) => {
-                                const leftPct = (p.x / 280) * 100;
-                                const topPct = (p.y / 80) * 100;
-                                return (
-                                  <div
-                                    key={i}
-                                    className="absolute group/dot"
-                                    style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
-                                  >
-                                    <div className="w-8 h-8 rounded-full cursor-pointer" />
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-amber-900/95 border border-amber-500/50 text-[10px] font-mono text-amber-100 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-amber-900/60 pointer-events-none z-10">
-                                      {p.label}: <span className="font-bold text-amber-300">${p.value.toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <div className="flex justify-between mt-1 px-0.5">
-                              {svgPts.map(p => (
-                                <span key={p.label} className="text-[9px] text-amber-700 dark:text-amber-300/70 font-mono">{p.label}</span>
-                              ))}
-                            </div>
+                  {/* ─── Cost Trend Chart (Phase Spending) ─── */}
+                  {(() => {
+                    const phaseTrendGroups = tasks
+                      .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
+                      .reduce<Record<string, number>>((acc, t) => {
+                        const phase = t.phase || 'installation';
+                        acc[phase] = (acc[phase] || 0) + t.templateItemCost!;
+                        return acc;
+                      }, {});
+                    const phaseTrendColors: Record<string, string> = {
+                      demolition: 'hsl(0, 70%, 55%)',
+                      preparation: 'hsl(35, 80%, 50%)',
+                      installation: 'hsl(220, 75%, 55%)',
+                      finishing: 'hsl(145, 65%, 45%)',
+                    };
+                    const orderedPhases = ['demolition', 'preparation', 'installation', 'finishing'];
+                    const phaseTrendLabels: Record<string, string> = { demolition: 'Demo', preparation: 'Prep', installation: 'Install', finishing: 'Finish' };
+                    let cumulative = 0;
+                    const pts = orderedPhases
+                      .filter(k => phaseTrendGroups[k] && phaseTrendGroups[k] > 0)
+                      .map(k => {
+                        cumulative += phaseTrendGroups[k];
+                        return { label: phaseTrendLabels[k], value: cumulative, phaseValue: phaseTrendGroups[k], color: phaseTrendColors[k] };
+                      });
+                    // Add starting zero point
+                    if (pts.length > 0) pts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(251,191,36,0.4)' });
+                    const trendSpentTotal = cumulative;
+
+                    if (pts.length < 2) return null;
+
+                    const maxV = Math.max(...pts.map(p => p.value), 1);
+                    const svgPts = pts.map((p, i) => ({
+                      x: (i / (pts.length - 1)) * 280,
+                      y: 75 - (p.value / maxV) * 65,
+                      ...p,
+                    }));
+
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.45 }}
+                        className="p-4 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-950/25 via-orange-950/15 to-yellow-950/20"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-4 w-0.5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
+                            <span className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider">Spending by Phase</span>
                           </div>
-                        );
-                      })()}
-                    </motion.div>
-                  )}
+                          <span className="text-[10px] text-amber-700 dark:text-amber-300/80 font-mono">${trendSpentTotal.toLocaleString()}</span>
+                        </div>
+                        <div className="relative">
+                          <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
+                            {[0, 25, 50, 75].map(y => (
+                              <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(251,191,36,0.06)" strokeWidth="0.5" />
+                            ))}
+                            <path
+                              d={`M0,75 L${svgPts.map(p => `${p.x},${p.y}`).join(' L')} L280,75 Z`}
+                              fill="url(#fsTrendGrad)" opacity="0.3"
+                            />
+                            <path
+                              d={`M${svgPts.map(p => `${p.x},${p.y}`).join(' L')}`}
+                              fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="2" strokeLinecap="round"
+                            />
+                            {svgPts.map((p, i) => (
+                              <g key={i}>
+                                <circle cx={p.x} cy={p.y} r={i === svgPts.length - 1 ? 4 : 2.5}
+                                  fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
+                                  stroke={i === svgPts.length - 1 ? '#d97706' : 'none'} strokeWidth="1"
+                                />
+                                <circle cx={p.x} cy={p.y} r="16" fill="transparent" className="cursor-pointer">
+                                  <title>{p.label}: ${p.value.toLocaleString()} (phase: ${p.phaseValue.toLocaleString()})</title>
+                                </circle>
+                              </g>
+                            ))}
+                            <defs>
+                              <linearGradient id="fsTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
+                                <stop offset="100%" stopColor="rgba(251,191,36,0)" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                          <div className="absolute inset-0">
+                            {svgPts.map((p, i) => {
+                              const leftPct = (p.x / 280) * 100;
+                              const topPct = (p.y / 80) * 100;
+                              return (
+                                <div
+                                  key={i}
+                                  className="absolute group/dot"
+                                  style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
+                                >
+                                  <div className="w-8 h-8 rounded-full cursor-pointer" />
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-amber-900/95 border border-amber-500/50 text-[10px] font-mono text-amber-100 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-amber-900/60 pointer-events-none z-10">
+                                    {p.label}: <span className="font-bold text-amber-300">${p.phaseValue.toLocaleString()}</span>
+                                    {i > 0 && <span className="text-amber-400/60 ml-1">(Σ ${p.value.toLocaleString()})</span>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-between mt-1 px-0.5">
+                            {svgPts.map(p => (
+                              <span key={p.label} className="text-[9px] text-amber-700 dark:text-amber-300/70 font-mono">{p.label}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
 
                   {/* ─── Contracts Strip ─── */}
                   {contracts.length > 0 && (
