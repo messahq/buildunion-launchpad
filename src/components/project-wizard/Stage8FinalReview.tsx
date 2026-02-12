@@ -8514,78 +8514,116 @@ export default function Stage8FinalReview({
                     );
                   })()}
 
-                  {/* ─── Donut Chart + GFA in compact row ─── */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="grid grid-cols-2 gap-2"
-                  >
-                    {/* Mini Donut */}
-                    {costBreakdownData.length > 0 && (
-                      <div className="p-3 rounded-xl border border-amber-500/15 bg-gradient-to-br from-amber-950/20 to-orange-950/10 flex items-center gap-3">
-                        <div className="relative w-16 h-16 flex-shrink-0">
-                          <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                            {costBreakdownData.map((item, index) => {
-                              const previousTotal = costBreakdownData.slice(0, index).reduce((sum, i) => sum + i.value, 0);
-                              const startAngle = (previousTotal / totalForPercentage) * 360;
-                              const endAngle = ((previousTotal + item.value) / totalForPercentage) * 360;
-                              const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-                              const startRad = (startAngle - 90) * Math.PI / 180;
-                              const endRad = (endAngle - 90) * Math.PI / 180;
-                              const x1 = 50 + 40 * Math.cos(startRad);
-                              const y1 = 50 + 40 * Math.sin(startRad);
-                              const x2 = 50 + 40 * Math.cos(endRad);
-                              const y2 = 50 + 40 * Math.sin(endRad);
-                              return (
-                                <motion.path
-                                  key={item.name}
-                                  d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                                  fill={item.color}
-                                  initial={{ opacity: 0, scale: 0 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                                  style={{ transformOrigin: 'center' }}
-                                />
-                              );
-                            })}
-                            <circle cx="50" cy="50" r="22" fill="#1c1208" />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-[9px] font-bold text-amber-900 dark:text-white/90">${(totalForPercentage / 1000).toFixed(0)}K</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          {costBreakdownData.map(item => (
-                            <div key={item.name} className="flex items-center gap-1.5">
-                              <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                              <span className="text-[10px] text-amber-800 dark:text-white/70">{item.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  {/* ─── Phase Donut Chart + GFA in compact row ─── */}
+                  {(() => {
+                    const phaseDonutGroups = tasks
+                      .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
+                      .reduce<Record<string, number>>((acc, t) => {
+                        const phase = t.phase || 'installation';
+                        acc[phase] = (acc[phase] || 0) + t.templateItemCost!;
+                        return acc;
+                      }, {});
+                    const phaseDonutColors: Record<string, string> = {
+                      demolition: 'hsl(0, 70%, 55%)',
+                      preparation: 'hsl(35, 80%, 50%)',
+                      installation: 'hsl(220, 75%, 55%)',
+                      finishing: 'hsl(145, 65%, 45%)',
+                    };
+                    const phaseDonutLabels: Record<string, string> = {
+                      demolition: 'Demo',
+                      preparation: 'Prep',
+                      installation: 'Install',
+                      finishing: 'Finish',
+                    };
+                    const phaseDonutItems = TASK_PHASES
+                      .filter(p => phaseDonutGroups[p.key] && phaseDonutGroups[p.key] > 0)
+                      .map(p => ({ key: p.key, label: phaseDonutLabels[p.key] || p.label, value: phaseDonutGroups[p.key], color: phaseDonutColors[p.key] }));
+                    const phaseDonutTotal = phaseDonutItems.reduce((s, i) => s + i.value, 0);
+                    // Find the largest phase as "current stage"
+                    const activePhase = phaseDonutItems.length > 0 
+                      ? phaseDonutItems.reduce((max, i) => i.value > max.value ? i : max, phaseDonutItems[0])
+                      : null;
+                    const donutItems = phaseDonutItems.length > 0 ? phaseDonutItems : costBreakdownData.map(d => ({ key: d.name, label: d.name, value: d.value, color: d.color }));
+                    const donutTotal = phaseDonutItems.length > 0 ? phaseDonutTotal : totalForPercentage;
+                    const donutCenter = activePhase 
+                      ? { amount: `$${(activePhase.value / 1000).toFixed(1)}K`, label: activePhase.label }
+                      : { amount: `$${(totalForPercentage / 1000).toFixed(0)}K`, label: 'Total' };
 
-                    {/* GFA Reference */}
-                    {gfaCitation && gfaValue ? (
-                      <div className="p-3 rounded-xl border border-amber-500/15 bg-amber-950/10 flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
-                          <Ruler className="h-4 w-4 text-amber-400" />
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-amber-300/80 uppercase tracking-widest">GFA</p>
-                           <p className="text-sm font-bold text-amber-950 dark:text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-amber-700 dark:text-amber-300/70">sq ft</span></p>
-                           {budgetTotal > 0 && (
-                             <p className="text-[10px] text-amber-700 dark:text-amber-300/70 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
-                           )}
-                        </div>
-                      </div>
-                     ) : costBreakdownData.length === 0 ? null : (
-                       <div className="p-3 rounded-xl border border-amber-500/10 bg-amber-950/10 flex items-center justify-center">
-                         <span className="text-[10px] text-amber-400/50">No GFA data</span>
-                       </div>
-                    )}
-                  </motion.div>
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                        className="grid grid-cols-2 gap-2"
+                      >
+                        {/* Phase Donut */}
+                        {donutItems.length > 0 && (
+                          <div className="p-3 rounded-xl border border-amber-500/15 bg-gradient-to-br from-amber-950/20 to-orange-950/10 flex items-center gap-3">
+                            <div className="relative w-16 h-16 flex-shrink-0">
+                              <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                                {donutItems.map((item, index) => {
+                                  const previousTotal = donutItems.slice(0, index).reduce((sum, i) => sum + i.value, 0);
+                                  const startAngle = (previousTotal / donutTotal) * 360;
+                                  const endAngle = ((previousTotal + item.value) / donutTotal) * 360;
+                                  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+                                  const startRad = (startAngle - 90) * Math.PI / 180;
+                                  const endRad = (endAngle - 90) * Math.PI / 180;
+                                  const x1 = 50 + 40 * Math.cos(startRad);
+                                  const y1 = 50 + 40 * Math.sin(startRad);
+                                  const x2 = 50 + 40 * Math.cos(endRad);
+                                  const y2 = 50 + 40 * Math.sin(endRad);
+                                  return (
+                                    <motion.path
+                                      key={item.key}
+                                      d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                                      fill={item.color}
+                                      initial={{ opacity: 0, scale: 0 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                                      style={{ transformOrigin: 'center' }}
+                                    />
+                                  );
+                                })}
+                                <circle cx="50" cy="50" r="22" fill="#1c1208" />
+                              </svg>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <span className="text-[8px] font-bold text-amber-900 dark:text-white/90 leading-none">{donutCenter.amount}</span>
+                                <span className="text-[6px] text-amber-600 dark:text-amber-300/60 mt-0.5 leading-none">{donutCenter.label}</span>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              {donutItems.map(item => (
+                                <div key={item.key} className="flex items-center gap-1.5">
+                                  <div className="h-2 w-2 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
+                                  <span className="text-[10px] text-amber-800 dark:text-white/70">{item.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* GFA Reference */}
+                        {gfaCitation && gfaValue ? (
+                          <div className="p-3 rounded-xl border border-amber-500/15 bg-amber-950/10 flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                              <Ruler className="h-4 w-4 text-amber-400" />
+                            </div>
+                            <div>
+                              <p className="text-[9px] text-amber-300/80 uppercase tracking-widest">GFA</p>
+                              <p className="text-sm font-bold text-amber-950 dark:text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-amber-700 dark:text-amber-300/70">sq ft</span></p>
+                              {budgetTotal > 0 && (
+                                <p className="text-[10px] text-amber-700 dark:text-amber-300/70 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : donutItems.length === 0 ? null : (
+                          <div className="p-3 rounded-xl border border-amber-500/10 bg-amber-950/10 flex items-center justify-center">
+                            <span className="text-[10px] text-amber-400/50">No GFA data</span>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })()}
 
                   {/* ─── Cost Trend Chart (Full-screen) ─── */}
                   {totalForPercentage > 0 && (
