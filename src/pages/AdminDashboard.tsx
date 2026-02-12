@@ -72,6 +72,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 // DatabaseSyncDashboard removed for Project 3.0
+import QuickLogCreator from "@/components/admin/QuickLogCreator";
 
 interface UserWithProfile {
   id: string;
@@ -159,8 +160,7 @@ export default function AdminDashboard() {
     totalCalls: 0, byTier: {}, byFunction: {}, byModel: {}, successRate: 100, totalTokens: 0,
   });
   const [aiUsageLoading, setAiUsageLoading] = useState(false);
-  const [siteLogs, setSiteLogs] = useState<any[]>([]);
-  const [siteLogsLoading, setSiteLogsLoading] = useState(false);
+  // siteLogs state removed - now using QuickLogCreator component
 
   // Redirect non-admins
   useEffect(() => {
@@ -323,24 +323,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchSiteLogs = async () => {
-    setSiteLogsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("site_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      setSiteLogs(data || []);
-    } catch (error) {
-      console.error("Error fetching site logs:", error);
-      toast.error("Failed to load site logs");
-    } finally {
-      setSiteLogsLoading(false);
-    }
-  };
+  // fetchSiteLogs removed - now using QuickLogCreator component
 
   useEffect(() => {
     if (isAdmin) {
@@ -354,11 +337,7 @@ export default function AdminDashboard() {
     }
   }, [isAdmin, activeTab]);
 
-  useEffect(() => {
-    if (isAdmin && activeTab === "quick-log") {
-      fetchSiteLogs();
-    }
-  }, [isAdmin, activeTab]);
+  // Quick Log useEffect removed - now using QuickLogCreator component
 
   const handleUpdateRole = async () => {
     if (!selectedUser) return;
@@ -1104,89 +1083,7 @@ export default function AdminDashboard() {
 
           {/* Quick Log Tab */}
           <TabsContent value="quick-log" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      My Quick Log Reports
-                    </CardTitle>
-                    <CardDescription>Site inspection reports from takarítás (cleaning) work</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={fetchSiteLogs} disabled={siteLogsLoading}>
-                    <RefreshCw className={`h-4 w-4 mr-2 ${siteLogsLoading ? "animate-spin" : ""}`} />
-                    Refresh
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {siteLogsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : siteLogs.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                    <p>No Quick Log reports yet</p>
-                  </div>
-                ) : (
-                  <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Report Name</TableHead>
-                          <TableHead>Template</TableHead>
-                          <TableHead>Tasks</TableHead>
-                          <TableHead>Completed</TableHead>
-                          <TableHead>Photos</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead className="text-right">PDF</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {siteLogs.map((log) => (
-                          <TableRow key={log.id}>
-                            <TableCell className="font-medium">{log.report_name}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {log.template_type === 'standard' ? '📋 Standard' : 
-                                 log.template_type === 'deep' ? '🔍 Deep' : 
-                                 '🔧 Maintenance'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">{log.total_count || 0}</TableCell>
-                            <TableCell className="text-center">
-                              <CheckCircle2 className="h-4 w-4 text-green-500 inline mr-1" />
-                              {log.completed_count || 0}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              📸 {log.photos_count || 0}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {format(new Date(log.created_at), "MMM d, yyyy")}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {log.pdf_url ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(log.pdf_url, "_blank")}
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <QuickLogCreator />
           </TabsContent>
 
           {/* Database Sync Tab - removed for Project 3.0 */}
