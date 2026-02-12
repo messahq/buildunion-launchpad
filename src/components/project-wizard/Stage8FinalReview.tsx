@@ -8939,117 +8939,10 @@ export default function Stage8FinalReview({
         </div>
 
         {/* Desktop: Panels around central canvas */}
-        <div className="hidden lg:flex flex-col h-full gap-2 p-3">
+        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_auto] gap-2 p-3 relative">
           
-          {/* TOP ROW: Area + Trade + Timeline — 3 compact panels side by side */}
-          <div className="grid grid-cols-3 gap-2 shrink-0">
-            {[PANELS[1], PANELS[2], PANELS[4]].map((panel, idx) => {
-              const hasAccess = hasAccessToTier(panel.visibilityTier);
-              const Icon = panel.icon;
-              const panelCitations = getCitationsForPanel(panel.dataKeys);
-              const isActive = activeOrbitalPanel === panel.id;
-              const dataCount = panel.id === 'panel-5-timeline' ? tasks.length
-                : panelCitations.length;
-
-              let displayTitle = panel.title;
-              if (panel.id === 'panel-3-trade') {
-                const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-                if (tradeCitation?.answer) displayTitle = `${tradeCitation.answer} Template`;
-              }
-
-              const getTopRowSummary = () => {
-                if (!hasAccess) return 'Restricted';
-                if (panel.id === 'panel-2-gfa') {
-                  const gfaCitation = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
-                  return gfaCitation ? `${gfaCitation.answer}` : 'Not set';
-                }
-                if (panel.id === 'panel-3-trade') {
-                  const tradeCitation = panelCitations.find(c => c.cite_type === 'TRADE_SELECTION');
-                  return tradeCitation?.answer || 'No trade selected';
-                }
-                if (panel.id === 'panel-5-timeline') {
-                  const startCitation = panelCitations.find(c => c.cite_type === 'TIMELINE');
-                  const endCitation = panelCitations.find(c => c.cite_type === 'END_DATE');
-                  if (startCitation && endCitation) {
-                    const formatCiteDate = (c: Citation, key: string) => {
-                      const metaDate = c.metadata?.[key];
-                      if (metaDate && typeof metaDate === 'string') {
-                        try { return format(new Date(metaDate), 'MMM d'); } catch {}
-                      }
-                      return c.answer?.slice(0, 12) || '?';
-                    };
-                    return `${formatCiteDate(startCitation, 'start_date')} → ${formatCiteDate(endCitation, 'end_date')}`;
-                  }
-                  return `${tasks.length} tasks`;
-                }
-                return `${dataCount} items`;
-              };
-
-              return (
-                <motion.button
-                  key={panel.id}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: idx * 0.08 }}
-                  className={cn(
-                    "relative rounded-xl border-2 text-left transition-all duration-200 overflow-hidden group p-2.5",
-                    isActive
-                      ? "border-amber-400 dark:border-amber-500 bg-slate-950 dark:bg-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                      : "border-amber-400/40 dark:border-amber-500/40 bg-slate-950 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-500",
-                    !hasAccess && "opacity-40 cursor-not-allowed"
-                  )}
-                  onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                  whileHover={hasAccess ? { scale: 1.02 } : undefined}
-                  whileTap={hasAccess ? { scale: 0.98 } : undefined}
-                >
-                  {isActive && (
-                    <motion.div
-                      className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-amber-400 to-amber-500"
-                      layoutId="activeTopPanelIndicator"
-                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  <div className="flex items-center gap-2">
-                    <motion.div 
-                      className={cn(
-                        "h-6 w-6 rounded-lg flex items-center justify-center shrink-0",
-                        isActive ? "bg-amber-500/20" : "bg-muted"
-                      )}
-                    >
-                      <Icon className={cn("h-3 w-3", isActive ? "text-amber-500" : "text-muted-foreground")} />
-                    </motion.div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] font-semibold block truncate">
-                        {displayTitle.split(' ').map((word, i) => (
-                          <span key={i} className={i === 0 ? "text-white dark:text-white font-light" : "text-amber-500 font-semibold"}>{i > 0 ? ' ' : ''}{word}</span>
-                        ))}
-                      </span>
-                      <span className={cn(
-                        "text-[9px] block truncate",
-                        isActive ? "text-amber-500/70" : "text-muted-foreground/60"
-                      )}>
-                        {getTopRowSummary()}
-                      </span>
-                    </div>
-                    {dataCount > 0 && hasAccess && (
-                      <span className={cn(
-                        "text-[9px] font-mono px-1 py-0.5 rounded shrink-0",
-                        isActive ? "bg-amber-400/20 text-amber-500" : "bg-muted text-muted-foreground"
-                      )}>
-                        {dataCount}
-                      </span>
-                    )}
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-
-          {/* MAIN GRID: Left sidebar + Canvas + Right sidebar */}
-          <div className="flex-1 grid grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_auto] gap-2 relative min-h-0">
-          
-          {/* Left column - Basics & Team (Area/Trade moved to top row) */}
-          {[PANELS[0], PANELS[3]].map((panel, idx) => {
+          {/* Left column - 4 panels */}
+          {PANELS.slice(0, 4).map((panel, idx) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
@@ -9319,9 +9212,9 @@ export default function Stage8FinalReview({
             );
           })}
 
-           {/* Central Canvas - spans middle column, all rows */}
+           {/* Central Canvas - spans middle column, all 4 rows */}
            <motion.div
-             className="row-span-3 relative rounded-2xl border-2 border-cyan-400/50 bg-slate-950 dark:bg-slate-900 backdrop-blur-sm overflow-hidden flex flex-col shadow-[0_0_30px_rgba(34,211,238,0.2)]"
+             className="row-span-5 relative rounded-2xl border-2 border-cyan-400/50 bg-slate-950 dark:bg-slate-900 backdrop-blur-sm overflow-hidden flex flex-col shadow-[0_0_30px_rgba(34,211,238,0.2)]"
              style={{
                borderImage: 'linear-gradient(135deg, rgba(34,211,238,0.8), rgba(56,189,248,0.6), rgba(34,211,238,0.4)) 1'
              }}
@@ -9630,8 +9523,8 @@ export default function Stage8FinalReview({
             </AnimatePresence>
           </motion.div>
 
-          {/* Right column - Docs, Weather, Financial (Timeline moved to top row) */}
-          {[PANELS[5], PANELS[6], PANELS[7]].map((panel, idx) => {
+          {/* Right column - 4 panels */}
+          {PANELS.slice(4, 8).map((panel, idx) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
@@ -9980,7 +9873,6 @@ export default function Stage8FinalReview({
                })()}
              </div>
            </motion.button>
-          </div>
         </div>
 
         {/* Mobile/Tablet: Tab-based layout */}
