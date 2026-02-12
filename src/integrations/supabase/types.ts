@@ -597,6 +597,106 @@ export type Database = {
         }
         Relationships: []
       }
+      obc_chunks: {
+        Row: {
+          char_count: number | null
+          chunk_index: number
+          chunk_text: string
+          created_at: string | null
+          id: string
+          section_id: string | null
+          token_estimate: number | null
+        }
+        Insert: {
+          char_count?: number | null
+          chunk_index: number
+          chunk_text: string
+          created_at?: string | null
+          id?: string
+          section_id?: string | null
+          token_estimate?: number | null
+        }
+        Update: {
+          char_count?: number | null
+          chunk_index?: number
+          chunk_text?: string
+          created_at?: string | null
+          id?: string
+          section_id?: string | null
+          token_estimate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obc_chunks_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "obc_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obc_embeddings: {
+        Row: {
+          chunk_id: string
+          created_at: string | null
+          embedding: string | null
+          embedding_model: string | null
+          id: string
+        }
+        Insert: {
+          chunk_id: string
+          created_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
+          id?: string
+        }
+        Update: {
+          chunk_id?: string
+          created_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obc_embeddings_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "obc_chunks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obc_sections: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          part_number: number
+          section_number: string
+          section_title: string
+          subsection_number: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          part_number: number
+          section_number: string
+          section_title: string
+          subsection_number?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          part_number?: number
+          section_number?: string
+          section_title?: string
+          subsection_number?: string | null
+        }
+        Relationships: []
+      }
       pending_budget_changes: {
         Row: {
           change_reason: string | null
@@ -1299,6 +1399,41 @@ export type Database = {
           sender_id?: string
         }
         Relationships: []
+      }
+      trade_obc_mapping: {
+        Row: {
+          created_at: string | null
+          id: string
+          obc_section_id: string
+          relevance_score: number | null
+          required: boolean | null
+          trade_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          obc_section_id: string
+          relevance_score?: number | null
+          required?: boolean | null
+          trade_type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          obc_section_id?: string
+          relevance_score?: number | null
+          required?: boolean | null
+          trade_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_obc_mapping_obc_section_id_fkey"
+            columns: ["obc_section_id"]
+            isOneToOne: false
+            referencedRelation: "obc_sections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_draft_data: {
         Row: {
