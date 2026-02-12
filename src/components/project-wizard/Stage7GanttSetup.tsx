@@ -203,10 +203,10 @@ export default function Stage7GanttSetup({
       setIsLoading(true);
       
       try {
-        // 1. Load verified_facts for dates and site condition
+        // 1. Load verified_facts + financial data for dates and site condition
         const { data: summaryData } = await supabase
           .from('project_summaries')
-          .select('verified_facts')
+          .select('verified_facts, template_items, material_cost, labor_cost, total_cost')
           .eq('project_id', projectId)
           .single();
         
@@ -242,12 +242,55 @@ export default function Stage7GanttSetup({
           // Check if demolition is needed
           setHasDemolition(siteConditionCite?.value === 'demolition');
           
-          // 1b. Extract TEMPLATE_LOCK items
+          // 1b. Extract TEMPLATE_LOCK items (primary source)
           const templateLockCite = facts.find((f) => f.cite_type === 'TEMPLATE_LOCK') as Record<string, unknown> | undefined;
           if (templateLockCite?.metadata) {
             const meta = templateLockCite.metadata as Record<string, unknown>;
-            if (Array.isArray(meta.items)) {
+            if (Array.isArray(meta.items) && meta.items.length > 0) {
               setTemplateItems(meta.items as TemplateItem[]);
+            }
+          }
+          
+          // 1c. Synthetic Recovery: If no TEMPLATE_LOCK items but financial data exists, 
+          // generate synthetic template items from DB costs so subtasks appear on Gantt
+          if (!templateLockCite || !(templateLockCite.metadata as Record<string, unknown>)?.items) {
+            const dbMaterialCost = Number(summaryData.material_cost) || 0;
+            const dbLaborCost = Number(summaryData.labor_cost) || 0;
+            const dbTotalCost = Number(summaryData.total_cost) || 0;
+            const dbTemplateItems = Array.isArray(summaryData.template_items) ? summaryData.template_items : [];
+            
+            if (dbTemplateItems.length > 0) {
+              // Use template_items from DB directly
+              setTemplateItems(dbTemplateItems as unknown as TemplateItem[]);
+            } else if (dbTotalCost > 0) {
+              // Generate synthetic items from aggregate costs
+              const syntheticItems: TemplateItem[] = [];
+              if (dbMaterialCost > 0) {
+                syntheticItems.push({
+                  id: 'synthetic_material',
+                  name: 'Materials (from estimate)',
+                  category: 'material',
+                  quantity: 1,
+                  unit: 'lot',
+                  unitPrice: dbMaterialCost,
+                  totalPrice: dbMaterialCost,
+                });
+              }
+              if (dbLaborCost > 0) {
+                syntheticItems.push({
+                  id: 'synthetic_labor',
+                  name: 'Labor (from estimate)',
+                  category: 'labor',
+                  quantity: 1,
+                  unit: 'lot',
+                  unitPrice: dbLaborCost,
+                  totalPrice: dbLaborCost,
+                });
+              }
+              if (syntheticItems.length > 0) {
+                setTemplateItems(syntheticItems);
+                console.log('[Stage7] Synthetic recovery: generated', syntheticItems.length, 'items from DB costs');
+              }
             }
           }
         }
@@ -889,15 +932,25 @@ export default function Stage7GanttSetup({
                   {/* Task row */}
                   <div className="flex items-center gap-3 mb-1">
                     {/* Task label */}
-                    <div className="w-36 shrink-0 flex items-center gap-2">
-                      <div className={cn("h-2 w-2 rounded-full shrink-0", priority?.color || 'bg-slate-400')} />
-                      <span className="text-xs font-medium truncate text-foreground">
-                        {task.name}
+                    <div className={cn("w-36 shrink-0 flex items-center gap-2", task.isSubTask && "pl-3")}>
+                      {task.isSubTask ? (
+                        <Package className="h-3 w-3 text-emerald-500 shrink-0" />
+                      ) : (
+                        <div className={cn("h-2 w-2 rounded-full shrink-0", priority?.color || 'bg-slate-400')} />
+                      )}
+                      <span className={cn(
+                        "font-medium truncate text-foreground",
+                        task.isSubTask ? "text-[11px] text-muted-foreground" : "text-xs"
+                      )}>
+                        {task.isSubTask && '↳ '}{task.name}
                       </span>
                     </div>
                     
                     {/* Gantt bar container */}
-                    <div className="flex-1 h-8 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg relative overflow-hidden">
+                    <div className={cn(
+                      "flex-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg relative overflow-hidden",
+                      task.isSubTask ? "h-6" : "h-8"
+                    )}>
                       {/* Task bar */}
                       <motion.div
                         initial={{ scaleX: 0 }}
@@ -907,13 +960,22 @@ export default function Stage7GanttSetup({
                           "absolute h-full rounded-lg flex items-center justify-between px-2 origin-left",
                           task.isVerificationNode 
                             ? "bg-gradient-to-r from-purple-400 to-purple-500 dark:from-purple-600 dark:to-purple-700"
-                            : phase.color
+                            : task.isSubTask
+                              ? cn(phase.color, "opacity-70")
+                              : phase.color
                         )}
                         style={{ left: position.left, width: position.width }}
                       >
                         {/* Verification node indicator */}
                         {task.isVerificationNode && (
                           <Camera className="h-3 w-3 text-white" />
+                        )}
+                        
+                        {/* Sub-task cost (owner visibility) */}
+                        {task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
+                          <span className="text-[9px] font-mono font-bold text-white/90 truncate">
+                            ${task.templateItemCost.toLocaleString()}
+                          </span>
                         )}
                         
                         {/* Assignee avatar */}
