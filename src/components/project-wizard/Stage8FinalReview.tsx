@@ -526,11 +526,83 @@ export default function Stage8FinalReview({
   // ✓ DNA Report PDF
   const [isGeneratingDnaReport, setIsGeneratingDnaReport] = useState(false);
   
+  // ✓ OBC RAG Compliance Check
+  const [obcComplianceResults, setObcComplianceResults] = useState<{
+    sections: Array<{
+      section_number: string;
+      section_title: string;
+      content: string;
+      relevance_score: number;
+      source: string;
+    }>;
+    loading: boolean;
+    error: string | null;
+    lastCheckedAt: string | null;
+  }>({ sections: [], loading: false, error: null, lastCheckedAt: null });
+  
   // ✓ Unread chat messages indicator for Team panel
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const lastSeenChatRef = useRef<string | null>(null);
 
 
+  // ✓ OBC RAG Compliance: Auto-fetch when DNA panel is active
+  const runObcComplianceCheck = useCallback(async () => {
+    if (obcComplianceResults.loading) return;
+    
+    const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+    const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+    const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+    const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+    
+    if (!tradeCit && !workTypeCit) {
+      setObcComplianceResults(prev => ({ ...prev, error: 'Trade or Work Type citation required', sections: [] }));
+      return;
+    }
+    
+    setObcComplianceResults(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      // Build context from verified_facts
+      const contextParts: string[] = [];
+      if (gfaCit) contextParts.push(`GFA: ${gfaCit.answer}`);
+      if (workTypeCit) contextParts.push(`Work Type: ${workTypeCit.answer}`);
+      if (locationCit) contextParts.push(`Location: ${locationCit.answer}`);
+      
+      const tradeValue = tradeCit?.answer?.toLowerCase()?.replace(/\s+/g, '_') || '';
+      
+      const { data, error } = await supabase.functions.invoke('obc-rag-query', {
+        body: {
+          trade_type: tradeValue,
+          query: `${workTypeCit?.answer || ''} residential building code requirements`,
+          project_context: contextParts.join(', '),
+          top_k: 8,
+        },
+      });
+      
+      if (error) throw error;
+      
+      setObcComplianceResults({
+        sections: data?.sections || [],
+        loading: false,
+        error: null,
+        lastCheckedAt: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      console.error('[OBC RAG] Compliance check failed:', err);
+      setObcComplianceResults(prev => ({
+        ...prev,
+        loading: false,
+        error: err?.message || 'Failed to check OBC compliance',
+      }));
+    }
+  }, [citations, obcComplianceResults.loading]);
+  
+  // Auto-trigger OBC check when DNA panel is activated
+  useEffect(() => {
+    if (activeOrbitalPanel === 'messa-deep-audit' && !obcComplianceResults.lastCheckedAt && !obcComplianceResults.loading) {
+      runObcComplianceCheck();
+    }
+  }, [activeOrbitalPanel, obcComplianceResults.lastCheckedAt, obcComplianceResults.loading, runObcComplianceCheck]);
 
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
@@ -9791,6 +9863,109 @@ export default function Stage8FinalReview({
                               </div>
                             </motion.div>
                           ))}
+
+                          {/* ═══════════ OBC 2024 COMPLIANCE CHECK ═══════════ */}
+                          <motion.div
+                            className="rounded-xl border border-violet-500/40 overflow-hidden"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                          >
+                            <div className="flex items-center gap-3 px-4 py-2.5 bg-violet-500/10">
+                              <span className="text-lg">📜</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-semibold text-violet-400">OBC 2024 Compliance</div>
+                                <div className="text-[10px] text-white/40">RAG-Powered Building Code Validation</div>
+                              </div>
+                              {obcComplianceResults.loading ? (
+                                <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
+                              ) : obcComplianceResults.sections.length > 0 ? (
+                                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] gap-1 border">
+                                  <CheckCircle2 className="h-3 w-3" /> {obcComplianceResults.sections.length} §
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] gap-1 border">
+                                  <AlertTriangle className="h-3 w-3" /> {obcComplianceResults.error ? 'ERROR' : 'PENDING'}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="px-4 py-3 space-y-3">
+                              <p className="text-[11px] text-white/60 leading-relaxed">
+                                Cross-references project verified_facts against Ontario Building Code 2024 Part 9 (Residential) using semantic search and trade-specific mapping.
+                              </p>
+
+                              {obcComplianceResults.loading && (
+                                <div className="flex items-center gap-3 py-4 justify-center">
+                                  <Loader2 className="h-5 w-5 text-violet-400 animate-spin" />
+                                  <span className="text-xs text-violet-300/80 font-mono">Running OBC RAG query...</span>
+                                </div>
+                              )}
+
+                              {obcComplianceResults.error && !obcComplianceResults.loading && (
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-800/30 bg-red-950/20 text-[11px] text-red-400">
+                                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{obcComplianceResults.error}</span>
+                                </div>
+                              )}
+
+                              {obcComplianceResults.sections.length > 0 && !obcComplianceResults.loading && (
+                                <div className="space-y-2">
+                                  <div className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Applicable OBC Sections</div>
+                                  {obcComplianceResults.sections.map((section, si) => (
+                                    <div
+                                      key={si}
+                                      className="flex items-start gap-2 px-3 py-2 rounded-lg border border-violet-800/20 bg-violet-950/10 text-[11px]"
+                                    >
+                                      <div className="mt-0.5">
+                                        {section.source === 'trade_mapping' ? (
+                                          <Lock className="h-3.5 w-3.5 text-violet-400" />
+                                        ) : (
+                                          <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="font-medium text-white/80">§{section.section_number}</span>
+                                          <span className="text-violet-300/80">{section.section_title}</span>
+                                          <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-white/10 text-white/30 font-mono">
+                                            {section.source === 'trade_mapping' ? 'MAPPED' : 'SEMANTIC'}
+                                          </Badge>
+                                          <span className="text-[9px] font-mono text-white/20">
+                                            {(section.relevance_score * 100).toFixed(0)}%
+                                          </span>
+                                        </div>
+                                        {section.content && (
+                                          <p className="mt-1 text-white/40 text-[10px] leading-relaxed line-clamp-2">
+                                            {section.content.slice(0, 200)}{section.content.length > 200 ? '…' : ''}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Re-run button */}
+                              {!obcComplianceResults.loading && (
+                                <div className="flex items-center justify-between pt-1">
+                                  <span className="text-[9px] text-white/20 font-mono">
+                                    {obcComplianceResults.lastCheckedAt 
+                                      ? `Last: ${new Date(obcComplianceResults.lastCheckedAt).toLocaleTimeString()}`
+                                      : 'Not checked yet'}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={runObcComplianceCheck}
+                                    className="text-[10px] h-6 px-2 text-violet-400 hover:text-violet-300 hover:bg-violet-950/30"
+                                  >
+                                    <Sparkles className="h-3 w-3 mr-1" />
+                                    Re-check
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
                         </>
                       );
                     })()}
