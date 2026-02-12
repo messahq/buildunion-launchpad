@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeatherWidget } from "./WeatherWidget";
-import { MapPin } from "lucide-react";
+import { MapPin, Clipboard } from "lucide-react";
 
 interface WeatherMapModalProps {
   open: boolean;
@@ -10,6 +10,7 @@ interface WeatherMapModalProps {
   lat?: number;
   lon?: number;
   projectName?: string;
+  projectId?: string;
 }
 
 export function WeatherMapModal({
@@ -19,18 +20,20 @@ export function WeatherMapModal({
   lat,
   lon,
   projectName = "Project",
+  projectId,
 }: WeatherMapModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Weather & Location - {projectName}</DialogTitle>
+          <DialogTitle>Weather & Site Log - {projectName}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="weather" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="weather">Weather Forecast</TabsTrigger>
             <TabsTrigger value="location">Location Map</TabsTrigger>
+            <TabsTrigger value="sitelog">Site Log</TabsTrigger>
           </TabsList>
 
           {/* Weather Tab */}
@@ -84,6 +87,31 @@ export function WeatherMapModal({
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* Site Log Tab */}
+          <TabsContent value="sitelog" className="space-y-4">
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <div className="flex items-start gap-3">
+                <Clipboard className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <h3 className="font-medium text-sm">Site Log Report</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Quick inspection log with templates: Standard, Deep, or Maintenance
+                  </p>
+                  {projectId && (
+                    <a
+                      href={`/buildunion/quick-log?projectId=${projectId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+                    >
+                      Create Site Log
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
