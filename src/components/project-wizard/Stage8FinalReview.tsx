@@ -1133,8 +1133,39 @@ export default function Stage8FinalReview({
             ];
             const totalPct = phases.reduce((s, p) => s + p.pct, 0);
             
+            // Get template items for sub-task generation
+            const templateLockCitAuto = loadedCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+            const templateItemsAuto = (templateLockCitAuto?.metadata as any)?.items as any[] | undefined;
+            
+            // Categorize helper
+            const categorizeName = (name: string): string => {
+              const n = name.toLowerCase();
+              if (n.includes('demolition') || n.includes('demo') || n.includes('removal')) return 'demolition';
+              if (n.includes('prep') || n.includes('primer') || n.includes('underlayment') || 
+                  n.includes('tape') || n.includes('compound') || n.includes('mesh') ||
+                  n.includes('rebar') || n.includes('forming')) return 'preparation';
+              if (n.includes('finish') || n.includes('baseboard') || n.includes('trim') ||
+                  n.includes('transition') || n.includes('touch') || n.includes('qc')) return 'finishing';
+              return 'installation';
+            };
+            
+            // Group template items by phase
+            const itemsByPhase: Record<string, any[]> = {};
+            if (templateItemsAuto) {
+              templateItemsAuto.forEach((item: any) => {
+                const phaseId = categorizeName(item.name || '');
+                if (!itemsByPhase[phaseId]) itemsByPhase[phaseId] = [];
+                itemsByPhase[phaseId].push(item);
+              });
+            }
+            
+            const phaseNames: Record<string, string> = {
+              demolition: 'Demolition', preparation: 'Preparation',
+              installation: 'Installation', finishing: 'Finishing & QC',
+            };
+            
             let curDate = startD;
-            const autoTasks: { title: string; description: string; priority: string; due_date: string }[] = [];
+            const autoTasks: { title: string; description: string; priority: string; due_date: string; unit_price?: number; quantity?: number }[] = [];
             
             for (const phase of phases) {
               const days = Math.max(1, Math.round((phase.pct / totalPct) * totalDays));
@@ -1145,6 +1176,20 @@ export default function Stage8FinalReview({
                 priority: phase.pri,
                 due_date: phaseEnd.toISOString(),
               });
+              
+              // Add template sub-tasks for this phase (LAB + MAT items)
+              const phaseItems = itemsByPhase[phase.id] || [];
+              phaseItems.forEach((item: any) => {
+                autoTasks.push({
+                  title: item.name || 'Template Item',
+                  description: `Template sub-task: ${phaseNames[phase.id] || 'Installation'}`,
+                  priority: 'medium',
+                  due_date: phaseEnd.toISOString(),
+                  unit_price: item.unitPrice || item.unit_price || item.totalPrice || item.total_price || 0,
+                  quantity: item.quantity || 1,
+                });
+              });
+              
               autoTasks.push({
                 title: `${phase.id.charAt(0).toUpperCase() + phase.id.slice(1)} Verification`,
                 description: `Verification checkpoint: ${phase.id}`,
