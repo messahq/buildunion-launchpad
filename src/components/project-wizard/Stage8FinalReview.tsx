@@ -711,7 +711,7 @@ export default function Stage8FinalReview({
         // 2. Load citations AND financial data from project_summaries
         const { data: summary } = await supabase
           .from('project_summaries')
-          .select('verified_facts, material_cost, labor_cost, total_cost, template_items')
+          .select('verified_facts, material_cost, labor_cost, total_cost, template_items, project_start_date, project_end_date')
           .eq('project_id', projectId)
           .maybeSingle();
         
@@ -838,11 +838,52 @@ export default function Stage8FinalReview({
           }
         }
         
-        // ✓ TIMELINE & END_DATE: Keep synthetic recovery as initial fallback only if no user-set citations exist
+        // ✓ TIMELINE & END_DATE: Use project_summaries DB fields FIRST, then fallback to tasks
         const hasTimeline = loadedCitations.some(c => c.cite_type === 'TIMELINE');
         const hasEndDate = loadedCitations.some(c => c.cite_type === 'END_DATE');
         
-        if (!hasTimeline || !hasEndDate) {
+        // Priority 1: Use project_start_date / project_end_date from project_summaries (user-saved dates)
+        if (!hasTimeline && summary?.project_start_date) {
+          const dbStartDate = summary.project_start_date;
+          const dbTimelineCitation: Citation = {
+            id: `db_timeline_${Date.now()}`,
+            cite_type: 'TIMELINE',
+            question_key: 'timeline',
+            answer: dbStartDate,
+            value: 'scheduled',
+            timestamp: new Date().toISOString(),
+            metadata: {
+              start_date: dbStartDate,
+              source: 'project_summaries',
+            },
+          };
+          loadedCitations.push(dbTimelineCitation);
+          console.log('[Stage8] ✓ Created TIMELINE from project_summaries.project_start_date:', dbStartDate);
+        }
+        
+        if (!hasEndDate && summary?.project_end_date) {
+          const dbEndDate = summary.project_end_date;
+          const dbEndDateCitation: Citation = {
+            id: `db_end_date_${Date.now()}`,
+            cite_type: 'END_DATE',
+            question_key: 'end_date',
+            answer: dbEndDate,
+            value: dbEndDate,
+            timestamp: new Date().toISOString(),
+            metadata: {
+              end_date: dbEndDate,
+              source: 'project_summaries',
+            },
+          };
+          loadedCitations.push(dbEndDateCitation);
+          console.log('[Stage8] ✓ Created END_DATE from project_summaries.project_end_date:', dbEndDate);
+        }
+        
+        // Priority 2: Only if DB fields are also empty, fall back to task due_dates
+        const hasTimelineNow = loadedCitations.some(c => c.cite_type === 'TIMELINE');
+        const hasEndDateNow = loadedCitations.some(c => c.cite_type === 'END_DATE');
+        
+        if (!hasTimelineNow || !hasEndDateNow) {
           try {
             const { data: taskDates } = await supabase
               .from('project_tasks')
@@ -856,7 +897,7 @@ export default function Stage8FinalReview({
               const earliest = validDates[0];
               const latest = validDates[validDates.length - 1];
               
-              if (!hasTimeline && earliest) {
+              if (!hasTimelineNow && earliest) {
                 const syntheticTimeline: Citation = {
                   id: `synthetic_timeline_${Date.now()}`,
                   cite_type: 'TIMELINE',
@@ -870,10 +911,10 @@ export default function Stage8FinalReview({
                   },
                 };
                 loadedCitations.push(syntheticTimeline);
-                console.log('[Stage8] ✓ Created synthetic TIMELINE from tasks:', earliest.toISOString());
+                console.log('[Stage8] ✓ Fallback TIMELINE from tasks:', earliest.toISOString());
               }
               
-              if (!hasEndDate && latest) {
+              if (!hasEndDateNow && latest) {
                 const syntheticEndDate: Citation = {
                   id: `synthetic_end_date_${Date.now()}`,
                   cite_type: 'END_DATE',
@@ -887,7 +928,7 @@ export default function Stage8FinalReview({
                   },
                 };
                 loadedCitations.push(syntheticEndDate);
-                console.log('[Stage8] ✓ Created synthetic END_DATE from tasks:', latest.toISOString());
+                console.log('[Stage8] ✓ Fallback END_DATE from tasks:', latest.toISOString());
               }
             }
           } catch (err) {
