@@ -588,50 +588,50 @@ export default function TeamSetupStage({
           
           {/* Added Members List */}
           {teamMembers.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-end"
-            >
-              <div className="max-w-[90%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserCheck className="h-4 w-4" />
-                  <span className="text-sm font-semibold">Team ({teamMembers.length})</span>
-                </div>
-                <div className="space-y-2">
-                  {teamMembers.map((member) => {
-                    const level = ACCESS_LEVELS.find(l => l.key === member.accessLevel);
-                    return (
-                      <div
-                        key={member.id}
-                        className="flex items-center gap-2 bg-white/10 rounded-lg p-2"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {member.type === 'email' ? member.email : member.userName}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs bg-white/20 text-white border-0">
-                              {level?.label}
-                            </Badge>
-                            <span className="text-xs text-white/70">
-                              {member.status === 'pending' ? (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" /> Pending
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1">
-                                  <CheckCircle2 className="h-3 w-3" /> Active
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveMember(member.id)}
-                          className="p-1 hover:bg-white/20 rounded"
-                        >
-                          <X className="h-4 w-4" />
+             <motion.div
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="flex justify-end"
+             >
+               <div className="max-w-[90%] rounded-2xl rounded-br-md px-4 py-3 border-2 border-amber-400 dark:border-amber-500 bg-card text-foreground shadow-lg shadow-amber-500/10 dark:shadow-amber-500/5">
+                 <div className="flex items-center gap-2 mb-2">
+                   <UserCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                   <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">Team ({teamMembers.length})</span>
+                 </div>
+                 <div className="space-y-2">
+                   {teamMembers.map((member) => {
+                     const level = ACCESS_LEVELS.find(l => l.key === member.accessLevel);
+                     return (
+                       <div
+                         key={member.id}
+                         className="flex items-center gap-2 bg-amber-50/20 dark:bg-amber-900/10 rounded-lg p-2"
+                       >
+                         <div className="flex-1 min-w-0">
+                           <p className="text-sm font-medium truncate text-foreground">
+                             {member.type === 'email' ? member.email : member.userName}
+                           </p>
+                           <div className="flex items-center gap-2">
+                             <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-0">
+                               {level?.label}
+                             </Badge>
+                             <span className="text-xs text-muted-foreground">
+                               {member.status === 'pending' ? (
+                                 <span className="flex items-center gap-1">
+                                   <Clock className="h-3 w-3" /> Pending
+                                 </span>
+                               ) : (
+                                 <span className="flex items-center gap-1">
+                                   <CheckCircle2 className="h-3 w-3" /> Active
+                                 </span>
+                               )}
+                             </span>
+                           </div>
+                         </div>
+                         <button
+                           onClick={() => handleRemoveMember(member.id)}
+                           className="p-1 hover:bg-amber-100/30 dark:hover:bg-amber-900/20 rounded"
+                         >
+                           <X className="h-4 w-4 text-foreground" />
                         </button>
                       </div>
                     );
