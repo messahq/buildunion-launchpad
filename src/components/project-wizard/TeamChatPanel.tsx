@@ -190,7 +190,11 @@ export function TeamChatPanel({
             sender_role: member?.role || "member",
             source: 'project',
           };
-          setMessages((prev) => [...prev, enriched]);
+          // Dedup: skip if already added by optimistic update
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === enriched.id)) return prev;
+            return [...prev, enriched];
+          });
         }
       )
       .on(
@@ -220,7 +224,11 @@ export function TeamChatPanel({
               sender_role: member?.role || "member",
               source: 'direct',
             };
-            setMessages((prev) => [...prev, enriched]);
+            // Dedup
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === enriched.id)) return prev;
+              return [...prev, enriched];
+            });
           }
         }
       )
@@ -236,22 +244,40 @@ export function TeamChatPanel({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  // Send message
+  // Send message with optimistic update
   const handleSend = async () => {
     if (!newMessage.trim() && !isUploading) return;
-
+    const messageText = newMessage.trim();
+    setNewMessage("");
     setIsSending(true);
     try {
-      const { error } = await supabase.from("project_chat_messages").insert({
+      const { data, error } = await supabase.from("project_chat_messages").insert({
         project_id: projectId,
         user_id: userId,
-        message: newMessage.trim(),
-      });
+        message: messageText,
+      }).select().single();
 
       if (error) throw error;
-      setNewMessage("");
+
+      // Optimistic: add message immediately (dedup with realtime)
+      if (data) {
+        const member = memberMap.get(userId);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.id)) return prev;
+          return [
+            ...prev,
+            {
+              ...data,
+              sender_name: member?.name || "You",
+              sender_role: member?.role || "owner",
+              source: "project" as const,
+            },
+          ];
+        });
+      }
     } catch (err: any) {
       toast.error("Failed to send message");
+      setNewMessage(messageText); // Restore on error
       console.error("[TeamChat] Send error:", err);
     } finally {
       setIsSending(false);
