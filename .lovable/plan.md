@@ -1,127 +1,63 @@
 
-# Health Score Solo skálázás + Lokalizáció + Teszt lefedettség
+# Fix: Template Sub-Tasks Not Appearing in Execution Timeline
 
-## Összefoglaló
-A Solo módban a Health Score jelenleg 16 pontra számol, holott 5 data source (Documents, Contracts, Team + opcionális) "N/A" státuszú. Ez torzítja a %-ot. Emellett hiányoznak a Solo-specifikus i18n kulcsok és a verification logikához nincsenek tesztek.
+## Problem Found
 
----
+The root cause is in `Stage7GanttSetup.tsx` line 479: the `saveTasksToDb` function checks if **any** tasks already exist for the project, and if they do, it **skips the entire insert** -- including all template sub-tasks. Since generic phase tasks (like "Preparation Work", "Installation Work") are created first (or were created in earlier sessions), the template-derived sub-tasks are never saved to the database.
 
-## 1. Health Score Solo skálázás
+**Database evidence**: All 30+ tasks in `project_tasks` have descriptions like `"Phase: Installation"` or `"Verification checkpoint: ..."` -- zero have `"Template sub-task:"` in their description. All have `total_cost: 0`.
 
-### Jelenlegi probléma
-A `ProjectCommandCenter.tsx` 580. sorában:
-```typescript
-const healthScore = Math.round(
-  (dataSources.filter(s => s.status === "complete").length / dataSources.length) * 100
-);
+## Fix Plan
+
+### Step 1: Fix `saveTasksToDb` in `Stage7GanttSetup.tsx`
+
+Replace the "skip all if any exist" logic with a smarter approach:
+- Check which sub-tasks are **already** in the database (by matching `description LIKE 'Template sub-task:%'`)
+- Only insert **new** template sub-tasks that don't already exist
+- Keep existing phase tasks intact (no duplicates)
+
+```text
+Before (broken):
+  if (existingTasks.length > 0) return; // skips EVERYTHING
+
+After (fixed):
+  1. Check existing tasks
+  2. If phase tasks exist but NO template sub-tasks:
+     -> Insert only the template sub-tasks
+  3. If template sub-tasks already exist:
+     -> Skip (no duplicates)
 ```
 
-Ez **16-ra oszt** mindig, holott Solo módban 3-5 pillar automatikusan "complete" az "N/A" miatt - de nem relevánsak a %-ban.
+### Step 2: Add Template Sub-Task Recovery in `Stage8FinalReview.tsx`
 
-### Javítás
-Solo módban csak a **releváns** pillarokat számoljuk:
-- Kizárjuk: `documents`, `contracts`, `team` (ezek N/A)
-- A többi 13 pont marad értékelve
+When Stage 8 loads tasks (line 1102-1170), if it finds:
+- A TEMPLATE_LOCK citation with items
+- But zero tasks with `"Template sub-task:"` in their description
 
-```typescript
-// Új logika
-const relevantSources = isSoloMode 
-  ? dataSources.filter(s => !["documents", "contracts", "team"].includes(s.id))
-  : dataSources;
+Then it should automatically insert the missing template sub-tasks into the database, using the same phase categorization logic from Stage 7. This ensures that even if Stage 7 was skipped or had the bug, Stage 8 self-heals.
 
-const healthScore = Math.round(
-  (relevantSources.filter(s => s.status === "complete").length / relevantSources.length) * 100
-);
-```
+### Step 3: Backfill Existing Projects
 
-### Hatás
-- Solo: 13/13 = 100% (ha minden releváns teljes)
-- Team: 16/16 = 100% (változatlan)
+For the current project that already has tasks but no sub-tasks, the Stage 8 recovery (Step 2) will automatically detect and insert the missing template sub-tasks on next load.
 
----
+## Technical Details
 
-## 2. Lokalizáció - Solo-specifikus kulcsok
+### File Changes
 
-### Hiányzó kulcsok (11 nyelv)
-Új namespace: `commandCenter.solo`
+**`src/components/project-wizard/Stage7GanttSetup.tsx`**
+- Lines 470-512: Replace `saveTasksToDb` with smarter duplicate detection
+- Instead of checking "any task exists", check specifically for template sub-tasks
+- Insert only missing template sub-tasks alongside existing phase tasks
 
-| Kulcs | EN | HU |
-|-------|----|----|
-| `notRequired` | "Not required (Solo)" | "Nem szükséges (Egyéni)" |
-| `documentsOptional` | "Documents are optional in Solo Mode" | "Dokumentumok opcionálisak Egyéni módban" |
-| `contractsOptional` | "Contracts not needed for personal projects" | "Szerződések nem szükségesek személyes projektekhez" |
-| `teamNotApplicable` | "Team features disabled in Solo Mode" | "Csapat funkciók letiltva Egyéni módban" |
+**`src/components/project-wizard/Stage8FinalReview.tsx`**
+- Lines 1102-1170: Add template sub-task recovery after task loading
+- Read TEMPLATE_LOCK citation metadata.items
+- If tasks exist but none have "Template sub-task:" description, generate and insert them
+- Use the same `categorizeTemplateItem` logic (keyword-based phase assignment)
+- Re-fetch tasks after insertion so the UI reflects the new sub-tasks
 
-### Fájlok
-Minden nyelv: `src/i18n/locales/*.json`
-
----
-
-## 3. Unit tesztek - `buildDataSourcesStatus`
-
-### Új tesztfájl
-`src/test/operationalTruth.test.ts`
-
-### Teszt esetek
-1. **Solo mód**: Documents, Contracts, Team → "complete" (N/A)
-2. **Team mód**: Ezek valós adatot igényelnek
-3. **Health Score Solo**: 13 releváns pontból számol
-4. **Health Score Team**: 16 pontból számol
-5. **Conflict check**: Solo módban nem figyelmeztet team hiányra
-
-### Kód struktúra
-```typescript
-import { describe, it, expect } from "vitest";
-
-describe("buildDataSourcesStatus - Solo Mode", () => {
-  it("should mark Documents as complete in Solo Mode", () => {
-    // ...
-  });
-  
-  it("should calculate health score from 13 sources in Solo Mode", () => {
-    // ...
-  });
-});
-
-describe("buildDataSourcesStatus - Team Mode", () => {
-  it("should require real document uploads in Team Mode", () => {
-    // ...
-  });
-});
-```
-
----
-
-## Technikai részletek
-
-### Érintett fájlok
-
-| Fájl | Módosítás |
-|------|-----------|
-| `src/components/projects2/ProjectCommandCenter.tsx` | Health Score kalkuláció |
-| `src/i18n/locales/en.json` | Új Solo kulcsok |
-| `src/i18n/locales/hu.json` | Új Solo kulcsok |
-| `src/i18n/locales/es.json` | Új Solo kulcsok |
-| `src/i18n/locales/fr.json` | Új Solo kulcsok |
-| `src/i18n/locales/de.json` | Új Solo kulcsok |
-| `src/i18n/locales/zh.json` | Új Solo kulcsok |
-| `src/i18n/locales/ar.json` | Új Solo kulcsok |
-| `src/i18n/locales/pt.json` | Új Solo kulcsok |
-| `src/i18n/locales/ru.json` | Új Solo kulcsok |
-| `src/i18n/locales/ja.json` | Új Solo kulcsok |
-| `src/i18n/locales/hi.json` | Új Solo kulcsok |
-| `src/test/operationalTruth.test.ts` | Új tesztfájl |
-
-### Változtatások sorrendje
-1. Health Score logika javítása
-2. Lokalizációs kulcsok hozzáadása (11 nyelv)
-3. i18n kulcsok beépítése a UI-ba
-4. Unit tesztek írása
-5. Tesztek futtatása ellenőrzésként
-
----
-
-## Várható eredmény
-- Solo projektek: tiszta 13-pontos Health Score
-- Minden nyelven: érthető "Nem szükséges" üzenetek
-- Tesztekkel lefedett: verification logika
+### What This Fixes
+- Template-derived materials/labor items will appear as actionable sub-tasks in Panel 5 (Execution Timeline)
+- Each sub-task will show its cost badge (for Owner view)
+- Panel 8 (Financial Summary) Phase Cost Breakdown will have actual data to aggregate
+- PDF reports and invoices will include the phase-level cost breakdown
