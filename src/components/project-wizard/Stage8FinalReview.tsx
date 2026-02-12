@@ -9866,19 +9866,19 @@ export default function Stage8FinalReview({
 
                           {/* ═══════════ OBC 2024 COMPLIANCE CHECK ═══════════ */}
                           <motion.div
-                            className="rounded-xl border border-violet-500/40 overflow-hidden"
+                            className="rounded-xl border border-cyan-500/40 overflow-hidden"
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
                           >
-                            <div className="flex items-center gap-3 px-4 py-2.5 bg-violet-500/10">
+                            <div className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-cyan-500/10 to-sky-500/10">
                               <span className="text-lg">📜</span>
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-violet-400">OBC 2024 Compliance</div>
+                                <div className="text-sm font-semibold text-cyan-400">OBC 2024 Compliance</div>
                                 <div className="text-[10px] text-white/40">RAG-Powered Building Code Validation</div>
                               </div>
                               {obcComplianceResults.loading ? (
-                                <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
+                                <Loader2 className="h-4 w-4 text-cyan-400 animate-spin" />
                               ) : obcComplianceResults.sections.length > 0 ? (
                                 <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] gap-1 border">
                                   <CheckCircle2 className="h-3 w-3" /> {obcComplianceResults.sections.length} §
@@ -9896,8 +9896,8 @@ export default function Stage8FinalReview({
 
                               {obcComplianceResults.loading && (
                                 <div className="flex items-center gap-3 py-4 justify-center">
-                                  <Loader2 className="h-5 w-5 text-violet-400 animate-spin" />
-                                  <span className="text-xs text-violet-300/80 font-mono">Running OBC RAG query...</span>
+                                  <Loader2 className="h-5 w-5 text-cyan-400 animate-spin" />
+                                  <span className="text-xs text-cyan-300/80 font-mono">Running OBC RAG query...</span>
                                 </div>
                               )}
 
@@ -9914,19 +9914,19 @@ export default function Stage8FinalReview({
                                   {obcComplianceResults.sections.map((section, si) => (
                                     <div
                                       key={si}
-                                      className="flex items-start gap-2 px-3 py-2 rounded-lg border border-violet-800/20 bg-violet-950/10 text-[11px]"
+                                      className="flex items-start gap-2 px-3 py-2 rounded-lg border border-cyan-800/20 bg-cyan-950/10 text-[11px]"
                                     >
                                       <div className="mt-0.5">
                                         {section.source === 'trade_mapping' ? (
-                                          <Lock className="h-3.5 w-3.5 text-violet-400" />
+                                          <Lock className="h-3.5 w-3.5 text-cyan-400" />
                                         ) : (
-                                          <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                                          <Sparkles className="h-3.5 w-3.5 text-sky-400" />
                                         )}
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                           <span className="font-medium text-white/80">§{section.section_number}</span>
-                                          <span className="text-violet-300/80">{section.section_title}</span>
+                                          <span className="text-cyan-300/80">{section.section_title}</span>
                                           <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-white/10 text-white/30 font-mono">
                                             {section.source === 'trade_mapping' ? 'MAPPED' : 'SEMANTIC'}
                                           </Badge>
@@ -9957,7 +9957,7 @@ export default function Stage8FinalReview({
                                     variant="ghost"
                                     size="sm"
                                     onClick={runObcComplianceCheck}
-                                    className="text-[10px] h-6 px-2 text-violet-400 hover:text-violet-300 hover:bg-violet-950/30"
+                                    className="text-[10px] h-6 px-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30"
                                   >
                                     <Sparkles className="h-3 w-3 mr-1" />
                                     Re-check
@@ -10744,6 +10744,90 @@ export default function Stage8FinalReview({
                                 </div>
                               </motion.div>
                             ))}
+
+                            {/* ═══════════ OBC 2024 COMPLIANCE CHECK (Fullscreen) ═══════════ */}
+                            <motion.div
+                              className="rounded-xl border border-cyan-300 dark:border-cyan-500/40 overflow-hidden"
+                              initial={{ opacity: 0, y: 16 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.7 }}
+                            >
+                              <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-50 dark:from-cyan-500/10 dark:via-sky-500/10 dark:to-blue-500/10">
+                                <span className="text-xl">📜</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-bold text-cyan-700 dark:text-cyan-400">OBC 2024 Compliance</div>
+                                  <div className="text-xs text-muted-foreground">RAG-Powered Building Code Validation</div>
+                                </div>
+                                {obcComplianceResults.loading ? (
+                                  <Loader2 className="h-4 w-4 text-cyan-500 animate-spin" />
+                                ) : obcComplianceResults.sections.length > 0 ? (
+                                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 text-xs gap-1.5 border">
+                                    <CheckCircle2 className="h-3.5 w-3.5" /> {obcComplianceResults.sections.length} Sections
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 text-xs gap-1.5 border">
+                                    <AlertTriangle className="h-3.5 w-3.5" /> {obcComplianceResults.error ? 'ERROR' : 'PENDING'}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="px-5 py-4 space-y-4">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  Cross-references project verified_facts against Ontario Building Code 2024 Part 9 (Residential) using semantic search and trade-specific mapping.
+                                </p>
+                                {obcComplianceResults.loading && (
+                                  <div className="flex items-center gap-3 py-6 justify-center">
+                                    <Loader2 className="h-5 w-5 text-cyan-500 animate-spin" />
+                                    <span className="text-sm text-cyan-600 dark:text-cyan-300 font-mono">Running OBC RAG query...</span>
+                                  </div>
+                                )}
+                                {obcComplianceResults.error && !obcComplianceResults.loading && (
+                                  <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-red-200 bg-red-50/50 dark:border-red-800/20 dark:bg-red-950/10 text-sm text-red-600 dark:text-red-400">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    <span>{obcComplianceResults.error}</span>
+                                  </div>
+                                )}
+                                {obcComplianceResults.sections.length > 0 && !obcComplianceResults.loading && (
+                                  <div className="space-y-2.5">
+                                    <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">Applicable OBC Sections</div>
+                                    {obcComplianceResults.sections.map((section, si) => (
+                                      <div key={si} className="flex items-start gap-3 px-4 py-3 rounded-lg border border-cyan-200 bg-cyan-50/50 dark:border-cyan-800/20 dark:bg-cyan-950/10 text-sm">
+                                        <div className="mt-0.5">
+                                          {section.source === 'trade_mapping' ? (
+                                            <Lock className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                                          ) : (
+                                            <Sparkles className="h-4 w-4 text-sky-500 dark:text-sky-400" />
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-semibold text-foreground">§{section.section_number}</span>
+                                            <span className="text-cyan-700 dark:text-cyan-300">{section.section_title}</span>
+                                            <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono">{section.source === 'trade_mapping' ? 'MAPPED' : 'SEMANTIC'}</Badge>
+                                            <span className="text-[10px] font-mono text-muted-foreground/40">{(section.relevance_score * 100).toFixed(0)}%</span>
+                                          </div>
+                                          {section.content && (
+                                            <p className="mt-1.5 text-muted-foreground text-xs leading-relaxed line-clamp-3">
+                                              {section.content.slice(0, 300)}{section.content.length > 300 ? '…' : ''}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {!obcComplianceResults.loading && (
+                                  <div className="flex items-center justify-between pt-2">
+                                    <span className="text-xs text-muted-foreground/50 font-mono">
+                                      {obcComplianceResults.lastCheckedAt ? `Last checked: ${new Date(obcComplianceResults.lastCheckedAt).toLocaleTimeString()}` : 'Not checked yet'}
+                                    </span>
+                                    <Button variant="outline" size="sm" onClick={runObcComplianceCheck} className="text-xs h-7 px-3 text-cyan-600 hover:text-cyan-700 border-cyan-300 hover:bg-cyan-50 dark:text-cyan-400 dark:border-cyan-700 dark:hover:bg-cyan-950/30">
+                                      <Sparkles className="h-3 w-3 mr-1.5" />
+                                      Re-check OBC
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
                           </>
                         );
                       })()}
