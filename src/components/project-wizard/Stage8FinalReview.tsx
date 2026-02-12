@@ -1449,94 +1449,106 @@ export default function Stage8FinalReview({
           }
         });
         
-        // 5b. Recovery: If template document missing, try to find it in storage or recreate from TEMPLATE_LOCK citation
+        // 5b. Auto-generate template document if missing — ensures it's always in Documents panel
         const hasTemplateDoc = docsWithCategory.some(d => d.file_name.includes('materials-labor'));
         if (!hasTemplateDoc) {
-          // Try to find trade name from citations
           const tradeCit = loadedCitations.find(c => c.cite_type === 'TRADE_SELECTION');
+          const templateLockCit = loadedCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
           const tradeName = (tradeCit?.answer || tradeCit?.value || 'custom') as string;
-          const expectedFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.json`;
+          const normalizedTrade = tradeName.toLowerCase().replace(/\s+/g, '_');
+          const expectedFileName = `materials-labor-${normalizedTrade}.json`;
           const expectedFilePath = `${projectId}/${expectedFileName}`;
           
-          // Check if file exists in storage but DB record is missing
+          // First: check storage for ANY materials-labor file (may have old space-name)
           const { data: storageCheck } = await supabase.storage
             .from('project-documents')
             .list(projectId, { search: 'materials-labor' });
           
+          // Clean up old files with spaces in name (legacy format)
           if (storageCheck && storageCheck.length > 0) {
-            // File exists in storage — register in project_documents
-            const storageFile = storageCheck[0];
-            const filePath = `${projectId}/${storageFile.name}`;
-            const { data: insertedDoc } = await supabase
-              .from('project_documents')
-              .insert({
-                project_id: projectId,
-                file_name: storageFile.name,
-                file_path: filePath,
-                file_size: storageFile.metadata?.size || 0,
-              })
-              .select('id, file_name, file_path, uploaded_at')
-              .single();
-            
-            if (insertedDoc) {
-              docsWithCategory.push({
-                id: insertedDoc.id,
-                file_name: insertedDoc.file_name,
-                file_path: insertedDoc.file_path,
-                category: 'financial' as DocumentCategory,
-                uploadedAt: insertedDoc.uploaded_at,
-              });
-              console.log('[Stage8] ✓ Recovered template document from storage:', storageFile.name);
+            const oldFiles = storageCheck.filter(f => f.name !== expectedFileName);
+            if (oldFiles.length > 0) {
+              await supabase.storage.from('project-documents').remove(
+                oldFiles.map(f => `${projectId}/${f.name}`)
+              );
             }
-          } else {
-            // No file in storage either — recreate from TEMPLATE_LOCK citation or financial data
-            const templateLockCit = loadedCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-            const matCost = Number(summary?.material_cost || 0);
-            const labCost = Number(summary?.labor_cost || 0);
+          }
+          
+          // Always (re)create from TEMPLATE_LOCK citation — this is the freshest data
+          const templateItems = (templateLockCit?.metadata as any)?.items as any[] | undefined;
+          const matCost = Number(summary?.material_cost || (templateLockCit?.metadata as any)?.material_total || 0);
+          const labCost = Number(summary?.labor_cost || (templateLockCit?.metadata as any)?.labor_total || 0);
+          
+          if ((templateItems && templateItems.length > 0) || matCost > 0 || labCost > 0) {
+            const materials = (templateItems || []).filter((i: any) => i.category === 'material');
+            const labor = (templateItems || []).filter((i: any) => i.category === 'labor');
             
-            if (matCost > 0 || labCost > 0) {
-              const documentSnapshot = {
-                project_id: projectId,
-                trade: tradeName,
-                generated_at: new Date().toISOString(),
-                source: 'stage8_recovery',
-                items: (templateLockCit?.metadata as any)?.items || [],
-                totals: {
-                  material_cost: matCost,
-                  labor_cost: labCost,
-                  total_cost: Number(summary?.total_cost || 0),
-                },
-              };
+            const documentSnapshot = {
+              generated_at: new Date().toISOString(),
+              trade: tradeName,
+              gfa_sqft: Number((loadedCitations.find(c => c.cite_type === 'GFA_LOCK')?.value) || 0),
+              waste_percent: (templateLockCit?.metadata as any)?.waste_percent || 0,
+              markup_percent: (templateLockCit?.metadata as any)?.markup_percent || 0,
+              demolition_cost: (templateLockCit?.metadata as any)?.demolition_cost || 0,
+              source: 'stage8_auto',
+              materials: materials.map((m: any) => ({
+                name: m.name, category: m.category, quantity: m.quantity,
+                baseQuantity: m.baseQuantity, unit: m.unit,
+                unitPrice: m.unitPrice, totalPrice: m.totalPrice,
+                wasteApplied: m.applyWaste,
+              })),
+              labor: labor.map((l: any) => ({
+                name: l.name, category: l.category, quantity: l.quantity,
+                unit: l.unit, unitPrice: l.unitPrice, totalPrice: l.totalPrice,
+              })),
+              summary: {
+                material_total: matCost,
+                labor_total: labCost,
+                subtotal: (templateLockCit?.metadata as any)?.subtotal || (matCost + labCost),
+                markup_amount: (templateLockCit?.metadata as any)?.markup_amount || 0,
+                net_total: Number(summary?.total_cost || templateLockCit?.value || 0),
+              },
+            };
+            
+            const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
+            
+            await supabase.storage.from('project-documents').remove([expectedFilePath]);
+            const { error: uploadErr } = await supabase.storage
+              .from('project-documents')
+              .upload(expectedFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+            
+            if (!uploadErr) {
+              // Clean any old DB records with mismatched names
+              const { data: oldDocs } = await supabase
+                .from('project_documents')
+                .select('id, file_name')
+                .eq('project_id', projectId)
+                .ilike('file_name', 'materials-labor%');
               
-              const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
+              if (oldDocs && oldDocs.length > 0) {
+                await supabase.from('project_documents').delete().in('id', oldDocs.map(d => d.id));
+              }
               
-              await supabase.storage.from('project-documents').remove([expectedFilePath]);
-              const { error: uploadErr } = await supabase.storage
-                .from('project-documents')
-                .upload(expectedFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+              const { data: newDoc } = await supabase
+                .from('project_documents')
+                .insert({
+                  project_id: projectId,
+                  file_name: expectedFileName,
+                  file_path: expectedFilePath,
+                  file_size: jsonBlob.size,
+                })
+                .select('id, file_name, file_path, uploaded_at')
+                .single();
               
-              if (!uploadErr) {
-                const { data: newDoc } = await supabase
-                  .from('project_documents')
-                  .insert({
-                    project_id: projectId,
-                    file_name: expectedFileName,
-                    file_path: expectedFilePath,
-                    file_size: jsonBlob.size,
-                  })
-                  .select('id, file_name, file_path, uploaded_at')
-                  .single();
-                
-                if (newDoc) {
-                  docsWithCategory.push({
-                    id: newDoc.id,
-                    file_name: newDoc.file_name,
-                    file_path: newDoc.file_path,
-                    category: 'financial' as DocumentCategory,
-                    uploadedAt: newDoc.uploaded_at,
-                  });
-                  console.log('[Stage8] ✓ Recreated template document from financial data');
-                }
+              if (newDoc) {
+                docsWithCategory.push({
+                  id: newDoc.id,
+                  file_name: newDoc.file_name,
+                  file_path: newDoc.file_path,
+                  category: 'financial' as DocumentCategory,
+                  uploadedAt: newDoc.uploaded_at,
+                });
+                console.log('[Stage8] ✓ Auto-generated template document:', expectedFileName);
               }
             }
           }
