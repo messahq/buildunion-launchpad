@@ -8769,8 +8769,10 @@ export default function Stage8FinalReview({
                 <Icon className={cn("h-4 w-4", panel.color)} />
               </div>
               <div>
-                <h3 className={cn("text-sm font-semibold", panel.color)}>
-                  {dynamicTitle}
+                <h3 className="text-sm font-semibold">
+                  {dynamicTitle.split(' ').map((word, i) => (
+                    <span key={i} className={i === 0 ? "text-foreground" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
+                  ))}
                 </h3>
                 <p className="text-[10px] text-muted-foreground">
                   {dataCount > 0 ? `${dataCount} items` : panel.description}
@@ -10064,8 +10066,10 @@ export default function Stage8FinalReview({
                       <fullscreenPanelConfig.icon className={cn("h-5 w-5", fullscreenPanelConfig.color)} />
                     </div>
                     <div className="flex-1">
-                      <DialogTitle className={cn("text-lg", fullscreenPanelConfig.color)}>
-                        {getFullscreenTitle()}
+                      <DialogTitle className="text-lg">
+                        {getFullscreenTitle().split(' ').map((word, i) => (
+                          <span key={i} className={i === 0 ? "text-foreground" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
+                        ))}
                       </DialogTitle>
                       <p className="text-sm text-muted-foreground">{fullscreenPanelConfig.description}</p>
                     </div>
