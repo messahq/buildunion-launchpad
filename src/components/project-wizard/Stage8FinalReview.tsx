@@ -1456,7 +1456,7 @@ export default function Stage8FinalReview({
           const templateLockCit = loadedCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
           const tradeName = (tradeCit?.answer || tradeCit?.value || 'custom') as string;
           const normalizedTrade = tradeName.toLowerCase().replace(/\s+/g, '_');
-          const expectedFileName = `materials-labor-${normalizedTrade}.json`;
+          const expectedFileName = `materials-labor-${normalizedTrade}.txt`;
           const expectedFilePath = `${projectId}/${expectedFileName}`;
           
           // First: check storage for ANY materials-labor file (may have old space-name)
@@ -1510,12 +1510,12 @@ export default function Stage8FinalReview({
               },
             };
             
-            const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
+            const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'text/plain' });
             
             await supabase.storage.from('project-documents').remove([expectedFilePath]);
             const { error: uploadErr } = await supabase.storage
               .from('project-documents')
-              .upload(expectedFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+              .upload(expectedFilePath, jsonBlob, { contentType: 'text/plain', upsert: true });
             
             if (!uploadErr) {
               // Clean any old DB records with mismatched names
