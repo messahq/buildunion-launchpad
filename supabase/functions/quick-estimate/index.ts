@@ -1840,6 +1840,26 @@ serve(async (req) => {
       readinessScore: result.estimate?.messaAudit?.operationalReadiness?.readinessScore || 0,
     })}`);
 
+    // Log AI usage
+    try {
+      const { createClient: createSbLog } = await import("https://esm.sh/@supabase/supabase-js@2.57.2");
+      const sbLog = createSbLog(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+      if (authHeader) {
+        const tokenLog = authHeader.replace("Bearer ", "");
+        const { data: uLog } = await sbLog.auth.getUser(tokenLog);
+        if (uLog?.user) {
+          await sbLog.from("ai_model_usage").insert({
+            user_id: uLog.user.id,
+            function_name: "quick-estimate",
+            model_used: modelConfig.visualModel + (modelConfig.runDualEngine ? ` + ${modelConfig.validationModel}` : ""),
+            tier: userTier,
+            tokens_used: modelConfig.maxTokensVisual,
+            success: true,
+          });
+        }
+      }
+    } catch (logErr) { console.error("Usage log error:", logErr); }
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

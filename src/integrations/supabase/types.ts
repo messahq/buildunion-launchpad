@@ -53,6 +53,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_model_usage: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          latency_ms: number | null
+          model_used: string
+          success: boolean | null
+          tier: string
+          tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          latency_ms?: number | null
+          model_used: string
+          success?: boolean | null
+          tier?: string
+          tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          latency_ms?: number | null
+          model_used?: string
+          success?: boolean | null
+          tier?: string
+          tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       api_key_requests: {
         Row: {
           created_at: string

@@ -1578,6 +1578,24 @@ ${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 15
 
       console.log(`Verification: ${verificationStatus}, True conflicts: ${trueConflicts.length}, Operational truths: ${comparison?.operationalTruths?.length || 0}`);
 
+      // Log dual-engine AI usage
+      try {
+        const { createClient: createSbClient } = await import("https://esm.sh/@supabase/supabase-js@2.57.2");
+        const sbAdmin = createSbClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+        const token = req.headers.get("Authorization")?.replace("Bearer ", "") || "";
+        const { data: uData } = await sbAdmin.auth.getUser(token);
+        if (uData?.user) {
+          await sbAdmin.from("ai_model_usage").insert({
+            user_id: uData.user.id,
+            function_name: "ask-messa",
+            model_used: modelConfig.geminiModel + (dualEngine ? ` + ${modelConfig.openaiModel}` : ""),
+            tier,
+            tokens_used: modelConfig.maxTokens,
+            success: true,
+          });
+        }
+      } catch (logErr) { console.error("Usage log error:", logErr); }
+
       return new Response(
         JSON.stringify({
           content: primaryContent,
@@ -1611,6 +1629,24 @@ ${openaiResponse.content.substring(0, 1500)}${openaiResponse.content.length > 15
         }
       );
     }
+
+    // Log single-engine AI usage
+    try {
+      const { createClient: createSbClient2 } = await import("https://esm.sh/@supabase/supabase-js@2.57.2");
+      const sbAdmin2 = createSbClient2(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+      const token2 = req.headers.get("Authorization")?.replace("Bearer ", "") || "";
+      const { data: uData2 } = await sbAdmin2.auth.getUser(token2);
+      if (uData2?.user) {
+        await sbAdmin2.from("ai_model_usage").insert({
+          user_id: uData2.user.id,
+          function_name: "ask-messa",
+          model_used: modelConfig.geminiModel,
+          tier,
+          tokens_used: modelConfig.maxTokens,
+          success: true,
+        });
+      }
+    } catch (logErr) { console.error("Usage log error:", logErr); }
 
     // Single engine mode (streaming) - text only, using tier-selected model
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

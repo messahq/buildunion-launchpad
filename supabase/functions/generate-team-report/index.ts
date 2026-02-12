@@ -293,6 +293,19 @@ Keep the tone professional and constructive. Use Canadian English and CAD curren
       overallStats,
     };
 
+    // Log AI usage
+    try {
+      const sbAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+      await sbAdmin.from("ai_model_usage").insert({
+        user_id: userId,
+        function_name: "generate-team-report",
+        model_used: selectedModel,
+        tier: resolvedTier,
+        tokens_used: maxTokens,
+        success: true,
+      });
+    } catch (logErr) { console.error("Usage log error:", logErr); }
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
