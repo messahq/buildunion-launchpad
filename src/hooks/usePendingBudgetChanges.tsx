@@ -187,6 +187,71 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
     }
   }, [projectId, user?.id]);
 
+  // Apply approved changes to project_summaries line_items
+  const applyApprovedChange = useCallback(async (change: PendingBudgetChange) => {
+    if (!projectId) return;
+    
+    try {
+      const { data: sumData, error: fetchErr } = await supabase
+        .from('project_summaries')
+        .select('id, line_items, material_cost, labor_cost, total_cost')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      
+      if (fetchErr || !sumData) {
+        console.error('[usePendingBudgetChanges] Cannot find summary to apply change:', fetchErr);
+        return;
+      }
+
+      const lineItems: any[] = Array.isArray(sumData.line_items) ? [...sumData.line_items] : [];
+      
+      // Find matching line item by item_id
+      const itemIndex = lineItems.findIndex((item: any) => item.id === change.item_id);
+      
+      if (itemIndex >= 0) {
+        // Update existing item with approved values
+        if (change.new_quantity !== null) lineItems[itemIndex].quantity = change.new_quantity;
+        if (change.new_unit_price !== null) lineItems[itemIndex].unitPrice = change.new_unit_price;
+        if (change.new_total !== null) {
+          lineItems[itemIndex].total = change.new_total;
+        } else if (change.new_quantity !== null && change.new_unit_price !== null) {
+          lineItems[itemIndex].total = change.new_quantity * change.new_unit_price;
+        }
+      }
+
+      // Recalculate totals dynamically from line items
+      let materialCost = 0;
+      let laborCost = 0;
+      for (const item of lineItems) {
+        const itemTotal = item.total || (item.quantity || 0) * (item.unitPrice || 0);
+        if (item.type === 'labor') {
+          laborCost += itemTotal;
+        } else {
+          materialCost += itemTotal;
+        }
+      }
+
+      const { error: updateErr } = await supabase
+        .from('project_summaries')
+        .update({
+          line_items: lineItems as any,
+          material_cost: materialCost,
+          labor_cost: laborCost,
+          total_cost: materialCost + laborCost,
+        })
+        .eq('id', sumData.id);
+      
+      if (updateErr) {
+        console.error('[usePendingBudgetChanges] Failed to apply approved change:', updateErr);
+        toast.error('Approved but failed to update budget');
+      } else {
+        console.log('[usePendingBudgetChanges] ✓ Budget updated with approved values');
+      }
+    } catch (err) {
+      console.error('[usePendingBudgetChanges] Apply error:', err);
+    }
+  }, [projectId]);
+
   // Approve a pending change (Owner action)
   const approveChange = useCallback(async (changeId: string, reviewNotes?: string) => {
     if (!user?.id) {
@@ -195,7 +260,7 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
     }
     
     try {
-      // Find the change to get its details for the citation
+      // Find the change to get its details
       const change = pendingChanges.find(c => c.id === changeId);
 
       const { error: updateError } = await supabase
@@ -210,13 +275,14 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       
       if (updateError) throw updateError;
 
-      // Persist citation for DNA audit
+      // Apply the approved values to project_summaries
       if (change) {
+        await applyApprovedChange(change);
         await persistApprovalCitation(change, 'approved', reviewNotes);
       }
       
-      toast.success('Modification approved', {
-        description: 'Budget will be updated automatically',
+      toast.success('Modification approved & applied', {
+        description: 'Budget has been updated with the new values',
       });
       
       // Refresh list
@@ -230,7 +296,7 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       });
       return false;
     }
-  }, [user?.id, fetchPendingChanges, pendingChanges, persistApprovalCitation]);
+  }, [user?.id, fetchPendingChanges, pendingChanges, persistApprovalCitation, applyApprovedChange]);
 
   // Reject a pending change (Owner action)
   const rejectChange = useCallback(async (changeId: string, reviewNotes?: string) => {
