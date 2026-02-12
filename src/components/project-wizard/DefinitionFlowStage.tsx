@@ -2157,15 +2157,15 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               },
             };
 
-            const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
-            const docFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.json`;
+            const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'text/plain' });
+            const docFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.txt`;
             const docFilePath = `${projectId}/${docFileName}`;
 
             // Upsert: remove old version first, then upload new
             await supabase.storage.from('project-documents').remove([docFilePath]);
             const { error: uploadErr } = await supabase.storage
               .from('project-documents')
-              .upload(docFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+              .upload(docFilePath, jsonBlob, { contentType: 'text/plain', upsert: true });
 
             if (!uploadErr) {
               // Upsert document record: delete old matching record, insert new
@@ -2463,14 +2463,14 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             },
           };
 
-          const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'application/json' });
-          const docFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.json`;
+          const jsonBlob = new Blob([JSON.stringify(documentSnapshot, null, 2)], { type: 'text/plain' });
+          const docFileName = `materials-labor-${tradeName.toLowerCase().replace(/\s+/g, '_')}.txt`;
           const docFilePath = `${projectId}/${docFileName}`;
 
           await supabase.storage.from('project-documents').remove([docFilePath]);
           const { error: uploadErr } = await supabase.storage
             .from('project-documents')
-            .upload(docFilePath, jsonBlob, { contentType: 'application/json', upsert: true });
+            .upload(docFilePath, jsonBlob, { contentType: 'text/plain', upsert: true });
 
           if (!uploadErr) {
             const { data: existingDoc } = await supabase
