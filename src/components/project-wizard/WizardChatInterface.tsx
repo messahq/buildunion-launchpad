@@ -405,27 +405,32 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               >
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-3 transition-all duration-300",
+                    "max-w-[85%] rounded-2xl px-4 py-2.5 transition-all duration-300",
                     message.type === 'user'
-                      ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-br-md shadow-lg shadow-amber-500/25"
+                      ? "border-2 border-amber-400 dark:border-amber-500 bg-card text-foreground rounded-br-md shadow-sm"
                       : "bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm rounded-bl-md",
                     message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2",
                     message.saveError && "ring-2 ring-red-500"
                   )}
                 >
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                  
-                  {/* Citation Badge - Clickable to scroll to source */}
-                  {message.citation && (
-                    <CitationBadge
-                      citation={message.citation}
-                      onClick={onCitationClick}
-                      variant={message.type === 'user' ? 'user' : 'system'}
-                      isSaving={message.isSaving}
-                      saveError={message.saveError}
-                      className="mt-2"
-                    />
-                  )}
+                  <div className={cn(
+                    "flex items-center gap-2",
+                    message.citation ? "justify-between" : ""
+                  )}>
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    
+                    {/* Citation Badge - Inline next to text */}
+                    {message.citation && (
+                      <CitationBadge
+                        citation={message.citation}
+                        onClick={onCitationClick}
+                        variant={message.type === 'user' ? 'user' : 'system'}
+                        isSaving={message.isSaving}
+                        saveError={message.saveError}
+                        className="shrink-0"
+                      />
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))}

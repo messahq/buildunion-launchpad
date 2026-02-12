@@ -41,7 +41,7 @@ export const CitationBadge = ({
 
   // Variant-specific styles
   const variantStyles = {
-    user: "bg-white/20 text-white hover:bg-white/30 border-white/20",
+    user: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-800/40 border-amber-300 dark:border-amber-600",
     system: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 border-amber-200/50 dark:border-amber-700/50",
     panel: "bg-indigo-100/80 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200/80 dark:hover:bg-indigo-800/30 border-indigo-200/50 dark:border-indigo-700/50",
     inline: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200/50 dark:border-slate-700/50",
