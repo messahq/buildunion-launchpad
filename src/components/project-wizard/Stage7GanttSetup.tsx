@@ -466,48 +466,86 @@ export default function Stage7GanttSetup({
     return PHASE_DEFINITIONS.find(p => p.id === phaseId);
   }, []);
   
-  // Save tasks to database (reusable)
+  // Save tasks to database (reusable) — smart duplicate detection
   const saveTasksToDb = useCallback(async () => {
-    // Check if tasks already exist for this project to avoid duplicates
+    // Check existing tasks for this project
     const { data: existingTasks } = await supabase
       .from('project_tasks')
-      .select('id')
+      .select('id, description')
       .eq('project_id', projectId)
-      .is('archived_at', null)
-      .limit(1);
+      .is('archived_at', null);
     
-    if (existingTasks && existingTasks.length > 0) {
-      console.log('[Stage7] Tasks already exist, skipping insert');
+    const existingCount = existingTasks?.length || 0;
+    const hasTemplateSubTasks = existingTasks?.some(t => 
+      t.description?.startsWith('Template sub-task:')
+    ) || false;
+    
+    // Separate phase tasks from template sub-tasks
+    const phaseOnlyTasks = phaseTasks.filter(t => !t.isSubTask);
+    const templateSubTasks = phaseTasks.filter(t => t.isSubTask);
+    
+    // Case 1: No tasks at all — insert everything
+    if (existingCount === 0) {
+      const tasksToInsert = phaseTasks.map(task => ({
+        project_id: projectId,
+        title: task.name,
+        description: task.isVerificationNode 
+          ? `Verification checkpoint: ${task.name}` 
+          : task.isSubTask
+            ? `Template sub-task: ${getPhaseById(task.phaseId)?.name}`
+            : `Phase: ${getPhaseById(task.phaseId)?.name}`,
+        assigned_to: task.assigneeId || userId,
+        assigned_by: userId,
+        priority: task.priority,
+        status: 'pending',
+        due_date: task.endDate.toISOString(),
+        total_cost: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
+        unit_price: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
+        quantity: task.isSubTask ? 1 : null,
+      }));
+      
+      const { error } = await supabase
+        .from('project_tasks')
+        .insert(tasksToInsert);
+      
+      if (error) {
+        console.error('[Stage7] Failed to create tasks:', error);
+        return false;
+      }
+      console.log('[Stage7] ✓ Inserted all', tasksToInsert.length, 'tasks');
       return true;
     }
-
-    const tasksToInsert = phaseTasks.map(task => ({
-      project_id: projectId,
-      title: task.name,
-      description: task.isVerificationNode 
-        ? `Verification checkpoint: ${task.name}` 
-        : task.isSubTask
-          ? `Template sub-task: ${getPhaseById(task.phaseId)?.name}`
-          : `Phase: ${getPhaseById(task.phaseId)?.name}`,
-      assigned_to: task.assigneeId || userId,
-      assigned_by: userId,
-      priority: task.priority,
-      status: 'pending',
-      due_date: task.endDate.toISOString(),
-      // Persist template item cost for sub-tasks
-      total_cost: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
-      unit_price: task.isSubTask && task.templateItemCost ? task.templateItemCost : null,
-      quantity: task.isSubTask ? 1 : null,
-    }));
     
-    const { error } = await supabase
-      .from('project_tasks')
-      .insert(tasksToInsert);
-    
-    if (error) {
-      console.error('[Stage7] Failed to create tasks:', error);
-      return false;
+    // Case 2: Phase tasks exist but NO template sub-tasks — insert only sub-tasks
+    if (!hasTemplateSubTasks && templateSubTasks.length > 0) {
+      const subTasksToInsert = templateSubTasks.map(task => ({
+        project_id: projectId,
+        title: task.name,
+        description: `Template sub-task: ${getPhaseById(task.phaseId)?.name}`,
+        assigned_to: task.assigneeId || userId,
+        assigned_by: userId,
+        priority: task.priority,
+        status: 'pending',
+        due_date: task.endDate.toISOString(),
+        total_cost: task.templateItemCost || null,
+        unit_price: task.templateItemCost || null,
+        quantity: 1,
+      }));
+      
+      const { error } = await supabase
+        .from('project_tasks')
+        .insert(subTasksToInsert);
+      
+      if (error) {
+        console.error('[Stage7] Failed to insert template sub-tasks:', error);
+        return false;
+      }
+      console.log('[Stage7] ✓ Inserted', subTasksToInsert.length, 'template sub-tasks (phase tasks already existed)');
+      return true;
     }
+    
+    // Case 3: Both phase tasks and template sub-tasks already exist — skip
+    console.log('[Stage7] Tasks already complete, skipping insert');
     return true;
   }, [phaseTasks, projectId, userId, getPhaseById]);
 
