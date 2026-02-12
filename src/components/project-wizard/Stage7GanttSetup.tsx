@@ -1013,9 +1013,9 @@ export default function Stage7GanttSetup({
           </div>
           
           {/* Legend */}
-          <div className="mt-8 p-4 bg-white/60 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-3">Legend</h4>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="mt-2 p-2 bg-white/60 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
+            <h4 className="text-[10px] font-semibold text-muted-foreground mb-1.5">Legend</h4>
+            <div className="grid grid-cols-2 gap-1.5">
               {PHASE_DEFINITIONS.filter(p => hasDemolition || p.id !== 'demolition').map(phase => (
                 <div key={phase.id} className="flex items-center gap-2 text-xs">
                   <div className={cn("h-3 w-3 rounded", phase.color)} />
