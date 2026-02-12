@@ -835,5 +835,11 @@
     "checkFailed": "Falha ao verificar o status",
     "stillPending": "Email ainda não verificado. Por favor, verifique sua caixa de entrada.",
     "verified": "Email verificado! Redirecionando para a área de trabalho..."
+  },
+  "notifications": {
+    "title": "Notificações",
+    "markAllRead": "Marcar tudo lido",
+    "empty": "Sem notificações",
+    "emptyDesc": "As atualizações aparecerão aqui"
   }
 }

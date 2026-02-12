@@ -847,5 +847,11 @@
     "checkFailed": "Statusüberprüfung fehlgeschlagen",
     "stillPending": "E-Mail noch nicht verifiziert. Bitte überprüfen Sie Ihren Posteingang.",
     "verified": "E-Mail verifiziert! Weiterleitung zum Arbeitsbereich..."
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "markAllRead": "Alle gelesen",
+    "empty": "Keine Benachrichtigungen",
+    "emptyDesc": "Updates erscheinen hier"
   }
 }
