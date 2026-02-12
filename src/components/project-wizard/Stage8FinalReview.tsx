@@ -8718,7 +8718,7 @@ export default function Stage8FinalReview({
                                   style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
                                 >
                                   <div className="w-8 h-8 rounded-full cursor-pointer" />
-                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-amber-900/95 border border-amber-500/50 text-[10px] font-mono text-amber-100 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-amber-900/60 pointer-events-none z-10">
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-900 border border-slate-600 dark:border-slate-700 text-[10px] font-mono text-slate-50 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-slate-900/60 pointer-events-none z-10">
                                     {p.label}: <span className="font-bold text-amber-300">${p.phaseValue.toLocaleString()}</span>
                                     {i > 0 && <span className="text-amber-400/60 ml-1">(Σ ${p.value.toLocaleString()})</span>}
                                   </div>
