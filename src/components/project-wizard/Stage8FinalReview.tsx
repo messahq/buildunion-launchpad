@@ -2919,7 +2919,15 @@ export default function Stage8FinalReview({
     </ul>
     ` : ''}
     ` : `
-    <p style="font-size: 12px; color: #6b7280; font-style: italic; margin: 16px 0;">⚠️ No project images were available for AI visual analysis. Upload blueprints and site photos to enable Visual Intelligence.</p>
+    <div class="pdf-section" style="margin: 16px 0; padding: 12px; background: #fefce8; border: 1px solid #fde68a; border-radius: 8px;">
+      <p style="font-size: 12px; color: #92400e; font-weight: 600;">📂 Unresolved Visual Evidence</p>
+      <p style="font-size: 11px; color: #78350f; margin-top: 4px;">
+        ${(data.projectSnapshot?.documents || 0) > 0 
+          ? `${data.projectSnapshot.documents} file(s) found in project storage but AI visual analysis could not process them. Upload image files (.jpg, .png) for Visual Intelligence analysis.`
+          : 'No project images uploaded yet. Upload blueprints and site photos to the Documents panel to enable Visual Intelligence.'
+        }
+      </p>
+    </div>
     `}
     
     ${data.dualEngineUsed && openai ? `
@@ -3040,6 +3048,25 @@ export default function Stage8FinalReview({
   // ============================================
   const handleDnaReportPdf = useCallback(async () => {
     setIsGeneratingDnaReport(true);
+    
+    // ============================================
+    // STEP 0: On-demand AI Visual Analysis
+    // Analyze unprocessed files before generating PDF
+    // ============================================
+    let aiAnalysisData: any = null;
+    try {
+      toast.loading('Analyzing project visuals...', { id: 'dna-analysis' });
+      const { data: analysisResult } = await supabase.functions.invoke('ai-project-analysis', {
+        body: { projectId, analysisType: 'synthesis' },
+      });
+      if (analysisResult) {
+        aiAnalysisData = analysisResult;
+        toast.dismiss('dna-analysis');
+      }
+    } catch (analysisErr) {
+      console.warn('[DNA Report] AI analysis skipped:', analysisErr);
+      toast.dismiss('dna-analysis');
+    }
     try {
       const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
       const locationCit = citations.find(c => c.cite_type === 'LOCATION');
@@ -3222,7 +3249,95 @@ export default function Stage8FinalReview({
       // VISUAL INTELLIGENCE SECTION
       // ============================================
       let visualHtml = '';
-      if (photoCits.length > 0 || blueprintCit) {
+      
+      // Fetch project document count to determine if files exist
+      let projectDocCount = 0;
+      try {
+        const { count } = await supabase
+          .from('project_documents')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', projectId);
+        projectDocCount = count || 0;
+      } catch (_) { /* ignore */ }
+
+      // AI Visual Analysis from on-demand analysis
+      const geminiVisual = aiAnalysisData?.engines?.gemini?.analysis?.visualAnalysis;
+      const conflictAlerts = aiAnalysisData?.conflictAlerts || [];
+      const imagesAnalyzedCount = aiAnalysisData?.engines?.gemini?.imagesAnalyzed || 0;
+      
+      // Conflict Alerts Section
+      let conflictHtml = '';
+      if (conflictAlerts.length > 0) {
+        const conflictRows = conflictAlerts.map((c: any) => 
+          '<tr style="font-size:11px;border-bottom:1px solid #fecaca;">' +
+            '<td style="padding:5px 8px;font-weight:700;color:#dc2626;">🔴 ' + (c.type || 'MISMATCH') + '</td>' +
+            '<td style="padding:5px 8px;">' + (c.visual_value?.toLocaleString() || '?') + ' sq ft</td>' +
+            '<td style="padding:5px 8px;">' + (c.db_value?.toLocaleString() || '?') + ' sq ft</td>' +
+            '<td style="padding:5px 8px;font-weight:700;color:#dc2626;">+' + (c.deviation_pct || 0) + '%</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">' + (c.source || 'AI Vision') + '</td>' +
+          '</tr>'
+        ).join('');
+        
+        conflictHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:14px;border:2px solid #dc2626;border-radius:8px;overflow:hidden;">' +
+          '<div style="background:#fef2f2;padding:10px 14px;border-bottom:1px solid #fecaca;">' +
+            '<div style="font-size:14px;font-weight:700;color:#991b1b;">⚠️ CONFLICT DETECTED — Visual Evidence vs Database</div>' +
+            '<div style="font-size:10px;color:#dc2626;margin-top:2px;">Automatic conflict detection by M.E.S.S.A. Visual Intelligence Engine</div>' +
+          '</div>' +
+          '<table style="width:100%;border-collapse:collapse;">' +
+            '<thead><tr style="background:#fff5f5;font-size:9px;text-transform:uppercase;color:#dc2626;letter-spacing:0.05em;">' +
+              '<th style="padding:6px 8px;text-align:left;">Conflict</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Visual Value</th>' +
+              '<th style="padding:6px 8px;text-align:left;">DB Value</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Deviation</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Source</th>' +
+            '</tr></thead>' +
+            '<tbody>' + conflictRows + '</tbody>' +
+          '</table>' +
+        '</div>';
+      }
+
+      // AI Vision findings
+      let aiVisionHtml = '';
+      if (geminiVisual && imagesAnalyzedCount > 0) {
+        let bpRows = '';
+        if ((geminiVisual.blueprintFindings || []).length > 0) {
+          bpRows = '<p style="font-size:11px;color:#0891b2;font-weight:700;margin:12px 0 6px 0;">📐 Blueprint Analysis</p>' +
+            '<table><thead><tr><th>File</th><th>Type</th><th>Dimensions</th><th>Key Observations</th></tr></thead><tbody>' +
+            (geminiVisual.blueprintFindings || []).map((bp: any) => 
+              '<tr><td style="font-weight:600;">' + esc(bp.fileName || 'Blueprint') + '</td>' +
+              '<td>' + esc(bp.type || 'Drawing') + '</td>' +
+              '<td>' + esc(bp.dimensions || '—') + '</td>' +
+              '<td>' + esc((bp.observations || []).slice(0, 3).join('; ') || 'No observations') + '</td></tr>'
+            ).join('') + '</tbody></table>';
+        }
+        
+        let photoRows2 = '';
+        if ((geminiVisual.sitePhotoFindings || []).length > 0) {
+          photoRows2 = '<p style="font-size:11px;color:#0891b2;font-weight:700;margin:12px 0 6px 0;">📷 Site Photo Analysis</p>' +
+            '<table><thead><tr><th>Photo</th><th>Stage</th><th>Trades</th><th>Quality</th><th>Observations</th></tr></thead><tbody>' +
+            (geminiVisual.sitePhotoFindings || []).map((photo: any) => 
+              '<tr><td style="font-weight:600;">' + esc(photo.fileName || 'Photo') + '</td>' +
+              '<td>' + esc(photo.stage || '—') + '</td>' +
+              '<td>' + esc((photo.tradesVisible || []).join(', ') || '—') + '</td>' +
+              '<td><span style="font-weight:700;color:' + ((photo.qualityScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + (photo.qualityScore || 0) + '/100</span></td>' +
+              '<td>' + esc((photo.observations || []).slice(0, 2).join('; ') || '—') + '</td></tr>'
+            ).join('') + '</tbody></table>';
+        }
+        
+        aiVisionHtml = '<div class="pdf-section" style="margin-top:16px;">' +
+          '<p style="font-size:12px;color:#374151;margin-bottom:8px;"><strong>AI Visual Intelligence Analysis</strong> <span style="background:#06b6d4;color:white;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;">🔍 ' + imagesAnalyzedCount + ' images analyzed</span></p>' +
+          bpRows + photoRows2 +
+          '<table style="margin-top:8px;"><tr><td style="width:40%;font-weight:600;">Overall Visual Score</td><td style="font-weight:700;color:' + ((geminiVisual.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + (geminiVisual.overallVisualScore || 0) + '/100</td></tr></table>' +
+        '</div>';
+      } else if (projectDocCount > 0 && imagesAnalyzedCount === 0) {
+        // Files exist but were not analyzed — NEVER say "No images available"
+        aiVisionHtml = '<div class="pdf-section" style="margin-top:16px;padding:12px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;">' +
+          '<p style="font-size:12px;color:#92400e;font-weight:600;">📂 Unresolved Visual Evidence</p>' +
+          '<p style="font-size:11px;color:#78350f;margin-top:4px;">' + projectDocCount + ' file(s) found in project documents but AI visual analysis could not process them. This may be due to file format limitations or processing errors. Files are present but unverified.</p>' +
+        '</div>';
+      }
+
+      if (photoCits.length > 0 || blueprintCit || projectDocCount > 0) {
         const photoRows = photoCits.slice(0, 8).map((pc, i) => {
           const ts = pc.timestamp ? new Date(pc.timestamp).toLocaleDateString() : '—';
           const cId = pc.id?.slice(0, 8) || '—';
@@ -3243,17 +3358,21 @@ export default function Stage8FinalReview({
             '<span style="font-size:18px;">👁️</span>' +
             '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
           '</div>' +
-          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + '</div>' +
-          '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
-            '<thead><tr style="background:#f0fdf4;font-size:9px;text-transform:uppercase;color:#059669;letter-spacing:0.05em;">' +
-              '<th style="padding:6px 8px;text-align:left;">Asset</th>' +
-              '<th style="padding:6px 8px;text-align:left;">Citation</th>' +
-              '<th style="padding:6px 8px;text-align:left;">Description</th>' +
-              '<th style="padding:6px 8px;text-align:left;">AI Vision</th>' +
-              '<th style="padding:6px 8px;text-align:left;">Date</th>' +
-            '</tr></thead>' +
-            '<tbody>' + photoRows + '</tbody>' +
-          '</table>' +
+          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + ' · ' + projectDocCount + ' document(s) in storage</div>' +
+          conflictHtml +
+          (photoRows ? (
+            '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+              '<thead><tr style="background:#f0fdf4;font-size:9px;text-transform:uppercase;color:#059669;letter-spacing:0.05em;">' +
+                '<th style="padding:6px 8px;text-align:left;">Asset</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Citation</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Description</th>' +
+                '<th style="padding:6px 8px;text-align:left;">AI Vision</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Date</th>' +
+              '</tr></thead>' +
+              '<tbody>' + photoRows + '</tbody>' +
+            '</table>'
+          ) : '') +
+          aiVisionHtml +
         '</div>';
       }
 
@@ -3356,7 +3475,7 @@ export default function Stage8FinalReview({
     } finally {
       setIsGeneratingDnaReport(false);
     }
-   }, [citations, projectData, financialSummary, teamMembers, obcComplianceResults, userId]);
+   }, [citations, projectData, financialSummary, teamMembers, obcComplianceResults, userId, projectId]);
 
   // ============================================
   // SEND DNA REPORT VIA EMAIL
