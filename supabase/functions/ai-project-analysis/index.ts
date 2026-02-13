@@ -766,6 +766,118 @@ serve(async (req) => {
     }
 
     // ============================================
+    // CONFLICT DETECTION: Visual vs Database
+    // ============================================
+    const conflictAlerts: Array<{ type: string; visual_value: number; db_value: number; deviation_pct: number; source: string }> = [];
+    
+    if (geminiAnalysis) {
+      // Extract area values from Gemini visual analysis
+      const visualAnalysis = (geminiAnalysis as any)?.visualAnalysis;
+      const executiveSummary = (geminiAnalysis as any)?.executiveSummary || '';
+      const rawAnalysis = (geminiAnalysis as any)?.rawAnalysis || '';
+      const allText = JSON.stringify(geminiAnalysis);
+      
+      // Search for sq ft values in AI response
+      const sqftPattern = /(\d[\d,]*\.?\d*)\s*(?:sq\.?\s*ft|square\s*feet|sqft|SF)/gi;
+      const extractedAreas: number[] = [];
+      let match;
+      while ((match = sqftPattern.exec(allText)) !== null) {
+        const val = parseFloat(match[1].replace(/,/g, ''));
+        if (val > 0 && val < 1000000) extractedAreas.push(val);
+      }
+      
+      // Compare with project GFA
+      if (extractedAreas.length > 0 && projectData.gfa > 0) {
+        for (const extractedArea of extractedAreas) {
+          const deviation = Math.abs(extractedArea - projectData.gfa) / projectData.gfa * 100;
+          if (deviation > 15) { // >15% deviation = conflict
+            conflictAlerts.push({
+              type: 'AREA_MISMATCH',
+              visual_value: extractedArea,
+              db_value: projectData.gfa,
+              deviation_pct: Math.round(deviation),
+              source: 'Gemini Vision OCR',
+            });
+            logStep("CONFLICT DETECTED: Area mismatch", { 
+              visual: extractedArea, db: projectData.gfa, deviation: `${Math.round(deviation)}%` 
+            });
+          }
+        }
+      }
+      
+      // Deduplicate conflicts (keep the one with highest deviation)
+      const uniqueConflicts = conflictAlerts.reduce((acc, c) => {
+        const existing = acc.find(a => a.type === c.type);
+        if (!existing || c.deviation_pct > existing.deviation_pct) {
+          return [...acc.filter(a => a.type !== c.type), c];
+        }
+        return acc;
+      }, [] as typeof conflictAlerts);
+      conflictAlerts.length = 0;
+      conflictAlerts.push(...uniqueConflicts);
+    }
+
+    // ============================================
+    // PERSIST: Save to photo_estimate + verified_facts
+    // ============================================
+    if (summary) {
+      try {
+        const photoEstimateUpdate = {
+          ...(typeof summary.photo_estimate === 'object' && summary.photo_estimate ? summary.photo_estimate : {}),
+          visual_analysis: {
+            analyzed_at: new Date().toISOString(),
+            images_analyzed: projectImages.length,
+            image_file_names: projectImages.map(i => i.fileName),
+            gemini_findings: (geminiAnalysis as any)?.visualAnalysis || null,
+            conflict_alerts: conflictAlerts,
+            analysis_status: conflictAlerts.length > 0 ? 'conflict_detected' : 'verified',
+          },
+        };
+
+        // Add CONFLICT_ALERT citations to verified_facts
+        const currentFacts = Array.isArray(summary.verified_facts) ? [...(summary.verified_facts as any[])] : [];
+        
+        // Remove old CONFLICT_ALERT citations
+        const filteredFacts = currentFacts.filter((f: any) => f.cite_type !== 'CONFLICT_ALERT');
+        
+        // Add new conflict citations
+        for (const conflict of conflictAlerts) {
+          filteredFacts.push({
+            id: crypto.randomUUID(),
+            cite_type: 'CONFLICT_ALERT',
+            question: `Visual Evidence (${conflict.visual_value.toLocaleString()} sq ft) disputes Database Entry (${conflict.db_value.toLocaleString()} sq ft)`,
+            answer: `Deviation: +${conflict.deviation_pct}%. Source: ${conflict.source}. Requires manual verification.`,
+            timestamp: new Date().toISOString(),
+            metadata: {
+              conflict_type: conflict.type,
+              visual_value: conflict.visual_value,
+              db_value: conflict.db_value,
+              deviation_pct: conflict.deviation_pct,
+              source: conflict.source,
+              auto_detected: true,
+            },
+          });
+        }
+
+        await supabaseClient
+          .from("project_summaries")
+          .update({
+            photo_estimate: photoEstimateUpdate,
+            verified_facts: filteredFacts,
+          })
+          .eq("id", summary.id);
+
+        logStep("Persisted analysis results", { 
+          conflicts: conflictAlerts.length,
+          factsCount: filteredFacts.length,
+          summaryId: summary.id,
+        });
+      } catch (persistErr) {
+        logStep("Failed to persist analysis results", { error: String(persistErr) });
+      }
+    }
+
+    // ============================================
     // BUILD M.E.S.S.A. UNIFIED RESPONSE
     // ============================================
     const synthesisId = `MESSA-${projectId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
@@ -780,6 +892,9 @@ serve(async (req) => {
       synthesisVersion: engineConfig.synthesisVersion,
       dualEngineUsed: engineConfig.runDualEngine && openaiAnalysis !== null,
       region: detectedRegion,
+      
+      // Conflict Detection Results
+      conflictAlerts,
       
       // M.E.S.S.A. Dual Engine Results
       engines: {
@@ -834,6 +949,7 @@ serve(async (req) => {
       synthesisId,
       dualEngine: response.dualEngineUsed,
       version: engineConfig.synthesisVersion,
+      conflicts: conflictAlerts.length,
     });
 
     // Log AI usage to database
@@ -843,11 +959,10 @@ serve(async (req) => {
         function_name: "ai-project-analysis",
         model_used: engineConfig.geminiModel + (response.dualEngineUsed ? ` + ${engineConfig.openaiModel}` : ""),
         tier: resolvedTier,
-        tokens_used: engineConfig.maxTokensGemini,
+        tokens_used: engineConfig.geminiTokens,
         success: true,
       });
     } catch (logErr) { console.error("Usage log error:", logErr); }
-
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
