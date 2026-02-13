@@ -82,22 +82,29 @@ const ROLE_PANELS: Record<string, string[]> = {
   member: ["my-tasks", "weather"],
 };
 
-const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-  const [data, setData] = useState<DashboardData>({
-    project: null,
-    taskStats: { total: 0, completed: 0, myTasks: 0, myCompleted: 0 },
-    docCount: 0,
-    teamCount: 0,
-    weather: null,
-    financials: null,
-    timeline: { start: null, end: null },
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
+useEffect(() => {
     loadDashboardData();
+
+    // OPERATIONAL TRUTH: Ez a csatorna figyeli a pénzt ÉS a feladatokat is
+    const channel = supabase
+      .channel('dashboard-sync')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'project_summaries', filter: `project_id=eq.${projectId}` },
+        () => loadDashboardData()
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'project_tasks', filter: `project_id=eq.${projectId}` },
+        () => {
+          console.log("Timeline frissülés észlelve, újratöltés...");
+          loadDashboardData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, userId]);
 
     // OPERATIONAL TRUTH: Ez a rész figyeli élőben a változásokat
     const channel = supabase
