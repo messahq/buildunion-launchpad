@@ -10,9 +10,21 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
-  ClipboardList, Cloud, FileText, Users, DollarSign,
-  Calendar, MapPin, Loader2, CheckCircle2, Clock,
-  AlertTriangle, Maximize2, ArrowLeft, Shield, Eye
+  ClipboardList,
+  Cloud,
+  FileText,
+  Users,
+  DollarSign,
+  Calendar,
+  MapPin,
+  Loader2,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Maximize2,
+  ArrowLeft,
+  Shield,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,14 +72,14 @@ const ROLE_ACCENT: Record<string, string> = {
 
 // Which panels each role can see
 const ROLE_PANELS: Record<string, string[]> = {
-  owner: ['tasks', 'documents', 'team', 'weather', 'financials', 'timeline'],
-  foreman: ['tasks', 'documents', 'team', 'weather', 'timeline'],
-  worker: ['my-tasks', 'weather', 'timeline'],
-  inspector: ['my-tasks', 'documents', 'weather'],
-  subcontractor: ['my-tasks', 'documents', 'weather', 'timeline'],
-  supplier: ['documents', 'weather', 'timeline'],
-  client: ['overview', 'documents', 'weather', 'timeline'],
-  member: ['my-tasks', 'weather'],
+  owner: ["tasks", "documents", "team", "weather", "financials", "timeline"],
+  foreman: ["tasks", "documents", "team", "weather", "timeline"],
+  worker: ["my-tasks", "weather", "timeline"],
+  inspector: ["my-tasks", "documents", "weather"],
+  subcontractor: ["my-tasks", "documents", "weather", "timeline"],
+  supplier: ["documents", "weather", "timeline"],
+  client: ["overview", "documents", "weather", "timeline"],
+  member: ["my-tasks", "weather"],
 };
 
 const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
@@ -86,6 +98,23 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
 
   useEffect(() => {
     loadDashboardData();
+
+    // OPERATIONAL TRUTH: Ez a rész figyeli élőben a változásokat
+    const channel = supabase
+      .channel("dashboard-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_summaries", filter: `project_id=eq.${projectId}` },
+        () => {
+          console.log("Frissítés: Új pénzügyi adat érkezett a Supabase-ből!");
+          loadDashboardData();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [projectId, userId]);
 
   const loadDashboardData = async () => {
@@ -93,14 +122,21 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
       // Parallel fetch all data
       const [projectRes, tasksRes, docsRes, membersRes, summaryRes] = await Promise.all([
         supabase.from("projects").select("name, address, trade, status").eq("id", projectId).single(),
-        supabase.from("project_tasks").select("id, status, assigned_to").eq("project_id", projectId).is("archived_at", null),
+        supabase
+          .from("project_tasks")
+          .select("id, status, assigned_to")
+          .eq("project_id", projectId)
+          .is("archived_at", null),
         supabase.from("project_documents").select("id").eq("project_id", projectId),
         supabase.from("project_members").select("id").eq("project_id", projectId),
-        supabase.from("project_summaries").select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date").eq("project_id", projectId),
+        supabase
+          .from("project_summaries")
+          .select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date")
+          .eq("project_id", projectId),
       ]);
 
       const tasks = tasksRes.data || [];
-      const myTasks = tasks.filter(t => t.assigned_to === userId);
+      const myTasks = tasks.filter((t) => t.assigned_to === userId);
 
       // Extract timeline from verified_facts
       let startDate: string | null = null;
@@ -108,8 +144,8 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
       if (summaryRes.data && summaryRes.data.length > 0) {
         const facts = summaryRes.data[0].verified_facts as any[];
         if (Array.isArray(facts)) {
-          const timelineFact = facts.find((f: any) => f.cite_type === 'TIMELINE');
-          const endFact = facts.find((f: any) => f.cite_type === 'END_DATE');
+          const timelineFact = facts.find((f: any) => f.cite_type === "TIMELINE");
+          const endFact = facts.find((f: any) => f.cite_type === "END_DATE");
           if (timelineFact) startDate = timelineFact.answer;
           if (endFact) endDate = endFact.answer;
         }
@@ -120,7 +156,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
       if (projectRes.data?.address) {
         try {
           const { data: weatherRes } = await supabase.functions.invoke("get-weather", {
-            body: { location: projectRes.data.address, days: 1 }
+            body: { location: projectRes.data.address, days: 1 },
           });
           if (weatherRes?.current) {
             weatherData = weatherRes.current;
@@ -134,18 +170,21 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         project: projectRes.data,
         taskStats: {
           total: tasks.length,
-          completed: tasks.filter(t => t.status === 'completed').length,
+          completed: tasks.filter((t) => t.status === "completed").length,
           myTasks: myTasks.length,
-          myCompleted: myTasks.filter(t => t.status === 'completed').length,
+          myCompleted: myTasks.filter((t) => t.status === "completed").length,
         },
         docCount: docsRes.data?.length || 0,
         teamCount: (membersRes.data?.length || 0) + 1, // +1 for owner
         weather: weatherData,
-        financials: role === 'owner' && summaryRes.data?.[0] ? {
-          total: summaryRes.data[0].total_cost || 0,
-          material: summaryRes.data[0].material_cost || 0,
-          labor: summaryRes.data[0].labor_cost || 0,
-        } : null,
+        financials:
+          role === "owner" && summaryRes.data?.[0]
+            ? {
+                total: summaryRes.data[0].total_cost || 0,
+                material: summaryRes.data[0].material_cost || 0,
+                labor: summaryRes.data[0].labor_cost || 0,
+              }
+            : null,
         timeline: { start: startDate, end: endDate },
       });
     } catch (error) {
@@ -168,11 +207,11 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   }
 
   const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'Not set';
+    if (!dateStr) return "Not set";
     try {
-      return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     } catch {
-      return 'Not set';
+      return "Not set";
     }
   };
 
@@ -186,15 +225,15 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/buildunion/workspace')}
+                onClick={() => navigate("/buildunion/workspace")}
                 className="text-cyan-400 hover:text-cyan-300"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                {t('roleDashboard.workspace', 'Workspace')}
+                {t("roleDashboard.workspace", "Workspace")}
               </Button>
               <div className="h-6 w-px bg-cyan-800/50" />
               <div>
-                <h1 className="text-lg font-semibold text-cyan-100">{data.project?.name || 'Project'}</h1>
+                <h1 className="text-lg font-semibold text-cyan-100">{data.project?.name || "Project"}</h1>
                 {data.project?.address && (
                   <p className="text-xs text-cyan-600 flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
@@ -214,7 +253,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                 className="gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-md shadow-cyan-900/30"
               >
                 <Maximize2 className="h-3.5 w-3.5" />
-                {t('roleDashboard.fullDashboard', 'Full Dashboard')}
+                {t("roleDashboard.fullDashboard", "Full Dashboard")}
               </Button>
             </div>
           </div>
@@ -227,35 +266,47 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         <div className="mb-6 flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-950/30 border border-cyan-800/20 text-xs text-cyan-500">
           <Eye className="h-3.5 w-3.5 shrink-0" />
           <span>
-            {t('roleDashboard.permissionNotice', 'Showing')} <strong className="text-cyan-300">{ROLE_LABELS[role]}</strong> {t('roleDashboard.view', 'view')} — 
-            {role === 'owner' ? ` ${t('roleDashboard.ownerAccess', 'full access to all panels')}` :
-             role === 'foreman' ? ` ${t('roleDashboard.foremanAccess', 'tasks, documents, team & weather (no financials)')}` :
-             role === 'worker' ? ` ${t('roleDashboard.workerAccess', 'your assigned tasks & weather only')}` :
-             role === 'inspector' ? ` ${t('roleDashboard.inspectorAccess', 'assigned inspections, documents & weather')}` :
-             role === 'subcontractor' ? ` ${t('roleDashboard.subcontractorAccess', 'your tasks, documents & timeline')}` :
-             ` ${t('roleDashboard.limitedAccess', 'limited view based on your role')}`}
+            {t("roleDashboard.permissionNotice", "Showing")}{" "}
+            <strong className="text-cyan-300">{ROLE_LABELS[role]}</strong> {t("roleDashboard.view", "view")} —
+            {role === "owner"
+              ? ` ${t("roleDashboard.ownerAccess", "full access to all panels")}`
+              : role === "foreman"
+                ? ` ${t("roleDashboard.foremanAccess", "tasks, documents, team & weather (no financials)")}`
+                : role === "worker"
+                  ? ` ${t("roleDashboard.workerAccess", "your assigned tasks & weather only")}`
+                  : role === "inspector"
+                    ? ` ${t("roleDashboard.inspectorAccess", "assigned inspections, documents & weather")}`
+                    : role === "subcontractor"
+                      ? ` ${t("roleDashboard.subcontractorAccess", "your tasks, documents & timeline")}`
+                      : ` ${t("roleDashboard.limitedAccess", "limited view based on your role")}`}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Tasks Panel */}
-          {(panels.includes('tasks') || panels.includes('my-tasks')) && (
+          {(panels.includes("tasks") || panels.includes("my-tasks")) && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-cyan-400 flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" />
-                    {panels.includes('my-tasks') ? t('roleDashboard.myTasks', 'My Tasks') : t('roleDashboard.allTasks', 'All Tasks')}
+                    {panels.includes("my-tasks")
+                      ? t("roleDashboard.myTasks", "My Tasks")
+                      : t("roleDashboard.allTasks", "All Tasks")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {panels.includes('my-tasks') ? (
+                  {panels.includes("my-tasks") ? (
                     <>
-                      <p className="text-3xl font-bold text-white">{data.taskStats.myCompleted}/{data.taskStats.myTasks}</p>
-                      <p className="text-xs text-cyan-600 mt-1">{t('roleDashboard.assignedToYou', 'assigned to you')}</p>
+                      <p className="text-3xl font-bold text-white">
+                        {data.taskStats.myCompleted}/{data.taskStats.myTasks}
+                      </p>
+                      <p className="text-xs text-cyan-600 mt-1">
+                        {t("roleDashboard.assignedToYou", "assigned to you")}
+                      </p>
                       {data.taskStats.myTasks > 0 && (
                         <div className="mt-3 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
-                          <div 
+                          <div
                             className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all"
                             style={{ width: `${(data.taskStats.myCompleted / data.taskStats.myTasks) * 100}%` }}
                           />
@@ -264,11 +315,15 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                     </>
                   ) : (
                     <>
-                      <p className="text-3xl font-bold text-white">{data.taskStats.completed}/{data.taskStats.total}</p>
-                      <p className="text-xs text-cyan-600 mt-1">{t('roleDashboard.tasksCompleted', 'tasks completed')}</p>
+                      <p className="text-3xl font-bold text-white">
+                        {data.taskStats.completed}/{data.taskStats.total}
+                      </p>
+                      <p className="text-xs text-cyan-600 mt-1">
+                        {t("roleDashboard.tasksCompleted", "tasks completed")}
+                      </p>
                       {data.taskStats.total > 0 && (
                         <div className="mt-3 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
-                          <div 
+                          <div
                             className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all"
                             style={{ width: `${(data.taskStats.completed / data.taskStats.total) * 100}%` }}
                           />
@@ -282,19 +337,21 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           )}
 
           {/* Documents Panel */}
-          {panels.includes('documents') && (
+          {panels.includes("documents") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-blue-400 flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    {t('roleDashboard.documents', 'Documents')}
+                    {t("roleDashboard.documents", "Documents")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-white">{data.docCount}</p>
                   <p className="text-xs text-blue-600 mt-1">
-                    {role === 'foreman' ? t('roleDashboard.viewUpload', 'view & upload') : t('roleDashboard.viewOnly', 'view only')}
+                    {role === "foreman"
+                      ? t("roleDashboard.viewUpload", "view & upload")
+                      : t("roleDashboard.viewOnly", "view only")}
                   </p>
                 </CardContent>
               </Card>
@@ -302,31 +359,31 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           )}
 
           {/* Team Panel */}
-          {panels.includes('team') && (
+          {panels.includes("team") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-purple-400 flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    {t('roleDashboard.team', 'Team')}
+                    {t("roleDashboard.team", "Team")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold text-white">{data.teamCount}</p>
-                  <p className="text-xs text-purple-600 mt-1">{t('roleDashboard.teamMembers', 'team members')}</p>
+                  <p className="text-xs text-purple-600 mt-1">{t("roleDashboard.teamMembers", "team members")}</p>
                 </CardContent>
               </Card>
             </motion.div>
           )}
 
           {/* Weather Panel */}
-          {panels.includes('weather') && (
+          {panels.includes("weather") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-sky-400 flex items-center gap-2">
                     <Cloud className="h-4 w-4" />
-                    {t('roleDashboard.siteWeather', 'Site Weather')}
+                    {t("roleDashboard.siteWeather", "Site Weather")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -342,7 +399,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                       )}
                     </>
                   ) : (
-                    <p className="text-sm text-cyan-700">{t('roleDashboard.noData', 'No data')}</p>
+                    <p className="text-sm text-cyan-700">{t("roleDashboard.noData", "No data")}</p>
                   )}
                 </CardContent>
               </Card>
@@ -350,23 +407,23 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           )}
 
           {/* Timeline Panel */}
-          {panels.includes('timeline') && (
+          {panels.includes("timeline") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-teal-400 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {t('roleDashboard.timeline', 'Timeline')}
+                    {t("roleDashboard.timeline", "Timeline")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-cyan-600">{t('roleDashboard.start', 'Start')}</span>
+                      <span className="text-cyan-600">{t("roleDashboard.start", "Start")}</span>
                       <span className="text-white font-medium">{formatDate(data.timeline.start)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-cyan-600">{t('roleDashboard.end', 'End')}</span>
+                      <span className="text-cyan-600">{t("roleDashboard.end", "End")}</span>
                       <span className="text-white font-medium">{formatDate(data.timeline.end)}</span>
                     </div>
                   </div>
@@ -376,24 +433,24 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           )}
 
           {/* Financials Panel - Owner Only */}
-          {panels.includes('financials') && data.financials && (
+          {panels.includes("financials") && data.financials && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
               <Card className="bg-[#0c1120] border-amber-900/30 hover:border-amber-700/50 transition-colors">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-amber-400 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    {t('roleDashboard.financials', 'Financials')}
+                    {t("roleDashboard.financials", "Financials")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold text-white">${data.financials.total.toLocaleString()}</p>
                   <div className="mt-2 space-y-1 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-amber-600">{t('roleDashboard.material', 'Material')}</span>
+                      <span className="text-amber-600">{t("roleDashboard.material", "Material")}</span>
                       <span className="text-amber-300">${data.financials.material.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-amber-600">{t('roleDashboard.labor', 'Labor')}</span>
+                      <span className="text-amber-600">{t("roleDashboard.labor", "Labor")}</span>
                       <span className="text-amber-300">${data.financials.labor.toLocaleString()}</span>
                     </div>
                   </div>
@@ -403,7 +460,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           )}
 
           {/* Overview Panel - Client */}
-          {panels.includes('overview') && (
+          {panels.includes("overview") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
@@ -413,10 +470,10 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Badge className={data.project?.status === 'active' ? 'bg-emerald-600' : 'bg-slate-600'}>
-                    {data.project?.status || 'Unknown'}
+                  <Badge className={data.project?.status === "active" ? "bg-emerald-600" : "bg-slate-600"}>
+                    {data.project?.status || "Unknown"}
                   </Badge>
-                  <p className="text-xs text-cyan-600 mt-2">{data.project?.trade || 'General'}</p>
+                  <p className="text-xs text-cyan-600 mt-2">{data.project?.trade || "General"}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -424,9 +481,9 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         </div>
 
         {/* Full Dashboard CTA */}
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           className="mt-8 text-center"
         >
