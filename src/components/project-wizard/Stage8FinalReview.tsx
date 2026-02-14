@@ -528,6 +528,7 @@ export default function Stage8FinalReview({
    const [showDnaPreviewDialog, setShowDnaPreviewDialog] = useState(false);
    const [dnaReportBlobUrl, setDnaReportBlobUrl] = useState<string | null>(null);
    const [dnaReportFilename, setDnaReportFilename] = useState('');
+   const [dnaReportHtml, setDnaReportHtml] = useState<string>('');
    
    // ✓ DNA Report Email
    const [showDnaEmailDialog, setShowDnaEmailDialog] = useState(false);
@@ -3841,12 +3842,16 @@ export default function Stage8FinalReview({
         pageFormat: 'letter',
       });
 
-      // Create preview URL
+      // Store HTML for inline preview (srcdoc)
+      setDnaReportHtml(html);
+
+      // Create blob URL for download
       const blobUrl = URL.createObjectURL(blob);
       setDnaReportBlobUrl(blobUrl);
       setDnaReportFilename(filename);
 
       // Auto-save to project documents (overwrite previous DNA report)
+      let savedToDocuments = false;
       if (projectId) {
         try {
           const storagePath = `${projectId}/dna-report-latest.pdf`;
@@ -3856,7 +3861,9 @@ export default function Stage8FinalReview({
             .from('project-documents')
             .upload(storagePath, blob, { contentType: 'application/pdf', upsert: true });
           
-          if (!uploadErr) {
+          if (uploadErr) {
+            console.warn('[DNA Report] Storage upload error:', uploadErr);
+          } else {
             // Check if a DNA report doc record already exists
             const { data: existingDocs } = await supabase
               .from('project_documents')
@@ -3866,21 +3873,61 @@ export default function Stage8FinalReview({
               .limit(1);
 
             if (existingDocs && existingDocs.length > 0) {
-              // Delete old record and re-insert (since UPDATE is not allowed on project_documents)
               await supabase.from('project_documents').delete().eq('id', existingDocs[0].id);
             }
             
-            await supabase.from('project_documents').insert({
+            const { error: insertErr } = await supabase.from('project_documents').insert({
               project_id: projectId,
               file_name: 'DNA Audit Report.pdf',
               file_path: storagePath,
               file_size: blob.size,
             });
+            
+            if (!insertErr) {
+              savedToDocuments = true;
+              // Also update local documents state
+              setDocuments(prev => {
+                const filtered = prev.filter(d => d.file_name !== 'DNA Audit Report.pdf');
+                return [...filtered, {
+                  id: crypto.randomUUID(),
+                  file_name: 'DNA Audit Report.pdf',
+                  file_path: storagePath,
+                  category: 'technical' as DocumentCategory,
+                }];
+              });
+            }
           }
         } catch (saveErr) {
           console.warn('[DNA Report] Auto-save to documents failed:', saveErr);
         }
       }
+
+      // Create DNA_FINALIZED citation
+      const dnaCitation: Citation = {
+        id: `cite-dna-finalized-${Date.now()}`,
+        cite_type: 'DNA_FINALIZED',
+        question_key: 'dna_report',
+        answer: `DNA Audit Report generated on ${new Date().toLocaleDateString('en-US')}`,
+        value: `DNA Report generated on ${new Date().toLocaleDateString('en-US')}`,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          filename,
+          savedToDocuments,
+          generatedAt: new Date().toISOString(),
+        },
+      };
+      
+      setCitations(prev => {
+        // Replace existing DNA_FINALIZED citation if any
+        const filtered = prev.filter(c => c.cite_type !== 'DNA_FINALIZED');
+        const updated = [...filtered, dnaCitation];
+        // Persist
+        supabase.from('project_summaries')
+          .update({ verified_facts: updated as any })
+          .eq('project_id', projectId)
+          .then(() => {});
+        return updated;
+      });
 
       // Show preview dialog
       setShowDnaPreviewDialog(true);
@@ -13060,9 +13107,12 @@ export default function Stage8FinalReview({
       {/* DNA Report Preview Dialog */}
       <Dialog open={showDnaPreviewDialog} onOpenChange={(open) => {
         setShowDnaPreviewDialog(open);
-        if (!open && dnaReportBlobUrl) {
-          URL.revokeObjectURL(dnaReportBlobUrl);
-          setDnaReportBlobUrl(null);
+        if (!open) {
+          if (dnaReportBlobUrl) {
+            URL.revokeObjectURL(dnaReportBlobUrl);
+            setDnaReportBlobUrl(null);
+          }
+          setDnaReportHtml('');
         }
       }}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-background border-border p-0 overflow-hidden">
@@ -13073,23 +13123,15 @@ export default function Stage8FinalReview({
             </DialogTitle>
           </DialogHeader>
           
-          {/* PDF Preview */}
+          {/* HTML Preview (inline - no Chrome blocking) */}
           <div className="flex-1 overflow-hidden" style={{ height: '60vh' }}>
-            {dnaReportBlobUrl ? (
-              <object
-                data={dnaReportBlobUrl}
-                type="application/pdf"
-                className="w-full h-full border-0"
+            {dnaReportHtml ? (
+              <iframe
+                srcDoc={dnaReportHtml}
+                className="w-full h-full border-0 bg-white"
                 title="DNA Audit Report Preview"
-              >
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4 p-8">
-                  <FileText className="h-12 w-12 text-emerald-500/50" />
-                  <p className="text-sm text-center">
-                    A böngésző nem tudja megjeleníteni az előnézetet.<br />
-                    Kattints a <strong>Download PDF</strong> gombra a letöltéshez.
-                  </p>
-                </div>
-              </object>
+                sandbox="allow-same-origin"
+              />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin mr-2" />
