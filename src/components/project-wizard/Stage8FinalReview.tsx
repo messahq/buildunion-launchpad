@@ -7375,25 +7375,25 @@ export default function Stage8FinalReview({
             {hasFinancialData ? (
               <>
                 {/* ─── Header ─── */}
-                <div className="flex items-center justify-between p-2 rounded-lg border border-amber-500/25 bg-gradient-to-r from-amber-950/30 via-orange-950/20 to-amber-950/30">
-                  <div className="flex items-center gap-2">
-                    <motion.div
-                      animate={{ boxShadow: ['0 0 8px rgba(251,191,36,0.2)', '0 0 16px rgba(251,191,36,0.4)', '0 0 8px rgba(251,191,36,0.2)'] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="h-7 w-7 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
-                    >
-                      <DollarSign className="h-4 w-4 text-white" />
-                    </motion.div>
-                    <div>
-                      <h4 className="text-xs font-bold text-amber-900 dark:text-amber-100">Financial</h4>
-                      <p className="text-[8px] text-amber-700 dark:text-amber-300/70">Budget overview</p>
-                    </div>
-                  </div>
-                  {budgetTotal !== null && budgetTotal > 0 && (
-                    <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400 font-mono">
-                      ${budgetTotal.toLocaleString()}
-                    </span>
-                  )}
+                 <div className="flex items-center justify-between p-2 rounded-lg border border-sky-300/30 bg-gradient-to-r from-sky-50 via-blue-50 to-sky-50 dark:from-sky-950/30 dark:via-blue-950/20 dark:to-sky-950/30 dark:border-sky-500/25">
+                   <div className="flex items-center gap-2">
+                     <motion.div
+                       animate={{ boxShadow: ['0 0 8px rgba(14,165,233,0.2)', '0 0 16px rgba(14,165,233,0.4)', '0 0 8px rgba(14,165,233,0.2)'] }}
+                       transition={{ duration: 2, repeat: Infinity }}
+                       className="h-7 w-7 rounded-md bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center"
+                     >
+                       <DollarSign className="h-4 w-4 text-white" />
+                     </motion.div>
+                     <div>
+                       <h4 className="text-xs font-bold text-slate-800 dark:text-sky-100">Financial</h4>
+                       <p className="text-[8px] text-slate-500 dark:text-sky-300/70">Budget overview</p>
+                     </div>
+                   </div>
+                   {budgetTotal !== null && budgetTotal > 0 && (
+                     <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-500 font-mono">
+                       ${budgetTotal.toLocaleString()}
+                     </span>
+                   )}
                 </div>
 
                 {/* ─── Donut + Cost Breakdown ─── */}
@@ -7447,10 +7447,10 @@ export default function Stage8FinalReview({
                         })()}
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-[9px] font-bold text-amber-900 dark:text-white/90 leading-none">
-                          ${costTotal > 1000 ? `${(costTotal / 1000).toFixed(1)}K` : costTotal.toLocaleString()}
-                        </span>
-                        <span className="text-[6px] text-amber-700 dark:text-amber-400/60 mt-0.5">TOTAL</span>
+                         <span className="text-[9px] font-bold text-slate-800 dark:text-white/90 leading-none">
+                           ${costTotal > 1000 ? `${(costTotal / 1000).toFixed(1)}K` : costTotal.toLocaleString()}
+                         </span>
+                         <span className="text-[6px] text-slate-500 dark:text-sky-400/60 mt-0.5">TOTAL</span>
                       </div>
                     </div>
                     {/* Legend items */}
@@ -7462,9 +7462,9 @@ export default function Stage8FinalReview({
                             <div className="flex items-center gap-1.5">
                               <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
                               <Icon className="h-3 w-3" style={{ color: item.color }} />
-                              <span className="text-[10px] font-medium text-amber-900 dark:text-white/90">{item.name}</span>
-                            </div>
-                            <span className="text-[11px] font-bold text-amber-950 dark:text-white font-mono">${item.value.toLocaleString()}</span>
+                               <span className="text-[10px] font-medium text-slate-700 dark:text-white/90">{item.name}</span>
+                             </div>
+                             <span className="text-[11px] font-bold text-slate-800 dark:text-white font-mono">${item.value.toLocaleString()}</span>
                           </div>
                         );
                       })}
@@ -7473,12 +7473,12 @@ export default function Stage8FinalReview({
                 )}
 
                 {/* ─── Tax Summary ─── */}
-                <div className="flex items-center justify-between p-1.5 rounded-md border border-amber-500/10 bg-amber-950/10">
-                  <span className="text-[9px] text-amber-700 dark:text-amber-300/70">{cardTax.name} ({(cardTax.rate * 100).toFixed(1)}%)</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-amber-700 dark:text-amber-300/60 font-mono">+${cardTaxAmt.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                    <span className="text-[10px] font-bold text-amber-900 dark:text-white font-mono">${cardGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  </div>
+                 <div className="flex items-center justify-between p-1.5 rounded-md border border-sky-200/30 bg-sky-50/60 dark:bg-sky-950/10 dark:border-sky-500/10">
+                   <span className="text-[9px] text-slate-500 dark:text-sky-300/70">{cardTax.name} ({(cardTax.rate * 100).toFixed(1)}%)</span>
+                   <div className="flex items-center gap-2">
+                     <span className="text-[9px] text-slate-500 dark:text-sky-300/60 font-mono">+${cardTaxAmt.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                     <span className="text-[10px] font-bold text-slate-800 dark:text-white font-mono">${cardGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                   </div>
                 </div>
 
                 {/* ─── Cost Trend Mini Chart (Phase-based) ─── */}
@@ -7490,72 +7490,58 @@ export default function Stage8FinalReview({
                     ...d,
                   }));
                   return (
-                    <div className="p-2 rounded-lg border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-orange-950/10 to-yellow-950/15">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[8px] text-amber-800 dark:text-amber-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
-                        <span className="text-[8px] font-mono">
-                          <span className="text-emerald-400 font-bold">${canvasSpentValue.toLocaleString()}</span>
-                          <span className="text-amber-700 dark:text-amber-400/50"> / ${canvasTrendTotal.toLocaleString()}</span>
-                        </span>
-                      </div>
-                      <div className="h-10 w-full relative group/trend">
-                        <svg viewBox="0 0 200 40" className="w-full h-full" preserveAspectRatio="none">
-                          {[0, 15, 30].map(y => (
-                            <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(251,191,36,0.08)" strokeWidth="0.5" />
-                          ))}
-                          <path d={`M0,35 L${chartPoints.map(p => `${p.x},${(p.y / 60) * 40}`).join(' L')} L200,35 Z`} fill="url(#cardPhaseTrendGrad)" opacity="0.35" />
-                          <path d={`M${chartPoints.map(p => `${p.x},${(p.y / 60) * 40}`).join(' L')}`} fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="1.5" strokeLinecap="round" />
-                          {chartPoints.map((p, i) => (
-                            <g key={i}>
-                              <circle cx={p.x} cy={(p.y / 60) * 40} r={i === currentPhaseIdx ? 3 : 1.5}
-                                fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
-                                stroke={i === currentPhaseIdx ? '#d97706' : 'none'} strokeWidth="1"
-                              />
-                              <circle cx={p.x} cy={(p.y / 60) * 40} r="10" fill="transparent" className="cursor-pointer">
-                                <title>{p.label}: ${p.phaseValue.toLocaleString()} (Σ ${p.value.toLocaleString()})</title>
-                              </circle>
-                            </g>
-                          ))}
-                          {chartPoints[currentPhaseIdx] && (
-                            <line
-                              x1={chartPoints[currentPhaseIdx].x} y1={(chartPoints[currentPhaseIdx].y / 60) * 40 + 3}
-                              x2={chartPoints[currentPhaseIdx].x} y2="35"
-                              stroke={chartPoints[currentPhaseIdx].color} strokeWidth="0.8" strokeDasharray="2,2" opacity="0.5"
-                            />
-                          )}
-                          <defs>
-                            <linearGradient id="cardPhaseTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
-                              <stop offset="100%" stopColor="rgba(251,191,36,0)" />
-                            </linearGradient>
-                          </defs>
-                        </svg>
-                      </div>
-                      <div className="flex justify-between mt-0.5">
-                        {canvasTrendPts.map((d, i) => (
-                          <span key={d.label} className={`text-[7px] font-mono ${i === currentPhaseIdx ? 'text-amber-400 font-bold' : 'text-amber-700 dark:text-amber-300/70'}`}>{d.label}{i === currentPhaseIdx ? ' ●' : ''}</span>
-                        ))}
-                      </div>
-                    </div>
+                     <div className="p-2 rounded-lg border border-sky-200/30 bg-gradient-to-br from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:via-blue-950/10 dark:to-sky-950/15 dark:border-sky-500/20">
+                       <div className="flex items-center justify-between mb-1.5">
+                         <span className="text-[8px] text-slate-600 dark:text-sky-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
+                         <span className="text-[8px] font-mono">
+                           <span className="text-emerald-500 dark:text-emerald-400 font-bold">${canvasSpentValue.toLocaleString()}</span>
+                           <span className="text-slate-400 dark:text-sky-400/50"> / ${canvasTrendTotal.toLocaleString()}</span>
+                         </span>
+                       </div>
+                       {/* Bar chart instead of line chart */}
+                       <div className="flex items-end gap-1 h-10">
+                         {canvasTrendPts.filter(d => d.label !== 'Start').map((d, i) => {
+                           const maxVal = Math.max(...canvasTrendPts.map(p => p.phaseValue), 1);
+                           const barH = (d.phaseValue / maxVal) * 100;
+                           return (
+                             <div key={d.label} className="flex-1 flex flex-col items-center gap-0.5">
+                               <motion.div
+                                 className="w-full rounded-t-sm"
+                                 style={{ backgroundColor: d.color, minHeight: 2 }}
+                                 initial={{ height: 0 }}
+                                 animate={{ height: `${Math.max(barH, 8)}%` }}
+                                 transition={{ duration: 0.6, delay: 0.2 + i * 0.1 }}
+                                 title={`${d.label}: $${d.phaseValue.toLocaleString()}`}
+                               />
+                             </div>
+                           );
+                         })}
+                       </div>
+                       <div className="flex justify-between mt-1">
+                         {canvasTrendPts.filter(d => d.label !== 'Start').map((d, i) => (
+                           <span key={d.label} className={`text-[7px] font-mono flex-1 text-center ${i === Math.max(0, currentPhaseIdx - 1) ? 'text-sky-500 dark:text-sky-400 font-bold' : 'text-slate-400 dark:text-sky-300/70'}`}>{d.label}</span>
+                         ))}
+                       </div>
+                     </div>
                   );
                 })()}
 
                 {/* ─── GFA + Contract strip ─── */}
-                <div className="flex gap-1.5">
-                  {financialGfaValue !== null && budgetTotal !== null && (
-                    <div className="flex-1 p-2 rounded-lg border border-amber-500/15 bg-amber-950/10 flex items-center gap-2">
-                      <Ruler className="h-3.5 w-3.5 text-amber-400/60 flex-shrink-0" />
-                      <div>
-                        <p className="text-[10px] font-bold text-amber-950 dark:text-white">${(budgetTotal / financialGfaValue).toFixed(2)}<span className="text-[8px] text-amber-700 dark:text-amber-300/70">/sqft</span></p>
-                        <p className="text-[8px] text-amber-700 dark:text-amber-300/60">{financialGfaValue.toLocaleString()} sq ft</p>
-                      </div>
-                    </div>
+                 <div className="flex gap-1.5">
+                   {financialGfaValue !== null && budgetTotal !== null && (
+                     <div className="flex-1 p-2 rounded-lg border border-sky-200/30 bg-sky-50/60 dark:bg-sky-950/10 dark:border-sky-500/15 flex items-center gap-2">
+                       <Ruler className="h-3.5 w-3.5 text-sky-400/60 flex-shrink-0" />
+                       <div>
+                         <p className="text-[10px] font-bold text-slate-800 dark:text-white">${(budgetTotal / financialGfaValue).toFixed(2)}<span className="text-[8px] text-slate-500 dark:text-sky-300/70">/sqft</span></p>
+                         <p className="text-[8px] text-slate-500 dark:text-sky-300/60">{financialGfaValue.toLocaleString()} sq ft</p>
+                       </div>
+                     </div>
                   )}
                   {contracts.length > 0 && (
                     <div className="flex-1 p-2 rounded-lg border border-sky-500/15 bg-sky-950/10 flex items-center gap-2">
                       <FileCheck className="h-3.5 w-3.5 text-sky-400/60 flex-shrink-0" />
                       <div>
-                        <p className="text-[10px] font-bold text-amber-950 dark:text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
+                        <p className="text-[10px] font-bold text-slate-800 dark:text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
                         {totalContractValue > 0 && <p className="text-[8px] text-sky-700 dark:text-sky-300/60">${totalContractValue.toLocaleString()}</p>}
                       </div>
                     </div>
@@ -9336,69 +9322,43 @@ export default function Stage8FinalReview({
                             <span className="text-slate-500 dark:text-sky-400/50"> / ${trendSpentTotal.toLocaleString()}</span>
                           </span>
                         </div>
-                        <div className="relative">
-                          <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
-                            {[0, 25, 50, 75].map(y => (
-                              <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(14,165,233,0.1)" strokeWidth="0.5" />
-                            ))}
-                            <path
-                              d={`M0,75 L${svgPts.map(p => `${p.x},${p.y}`).join(' L')} L280,75 Z`}
-                              fill="url(#fsTrendGrad)" opacity="0.4"
-                            />
-                            <path
-                              d={`M${svgPts.map(p => `${p.x},${p.y}`).join(' L')}`}
-                              fill="none" stroke="rgba(14,165,233,0.85)" strokeWidth="2" strokeLinecap="round"
-                            />
-                            {svgPts.map((p, i) => (
-                              <g key={i}>
-                                <circle cx={p.x} cy={p.y} r={i === fsCurrentIdx ? 5 : 2.5}
-                                  fill={i === 0 ? 'rgba(14,165,233,0.4)' : p.color}
-                                  stroke={i === fsCurrentIdx ? '#0284c7' : 'none'} strokeWidth="1.5"
-                                />
-                                {/* Current position vertical dashed line */}
-                                {i === fsCurrentIdx && (
-                                  <line
-                                    x1={p.x} y1={p.y + 6}
-                                    x2={p.x} y2="75"
-                                    stroke={p.color} strokeWidth="1" strokeDasharray="3,2" opacity="0.4"
-                                  />
-                                )}
-                                <circle cx={p.x} cy={p.y} r="16" fill="transparent" className="cursor-pointer">
-                                  <title>{p.label}: ${p.value.toLocaleString()} (phase: ${p.phaseValue.toLocaleString()})</title>
-                                </circle>
-                              </g>
-                            ))}
-                            <defs>
-                              <linearGradient id="fsTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="rgba(14,165,233,0.4)" />
-                                <stop offset="100%" stopColor="rgba(14,165,233,0)" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                          <div className="absolute inset-0">
-                            {svgPts.map((p, i) => {
-                              const leftPct = (p.x / 280) * 100;
-                              const topPct = (p.y / 80) * 100;
-                              return (
-                                <div
-                                  key={i}
-                                  className="absolute group/dot"
-                                  style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
-                                >
-                                  <div className="w-8 h-8 rounded-full cursor-pointer" />
-                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-900 border border-slate-600 dark:border-slate-700 text-[10px] font-mono text-slate-50 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-slate-900/60 pointer-events-none z-10">
-                                    {p.label}: <span className="font-bold text-amber-300">${p.phaseValue.toLocaleString()}</span>
-                                    {i > 0 && <span className="text-amber-400/60 ml-1">(Σ ${p.value.toLocaleString()})</span>}
-                                  </div>
+                        {/* Bar chart visualization */}
+                        <div className="flex items-end gap-2 h-24 px-2">
+                          {svgPts.filter((_, i) => i > 0).map((p, i) => {
+                            const maxPhaseVal = Math.max(...svgPts.filter((_, j) => j > 0).map(pt => pt.phaseValue), 1);
+                            const barH = (p.phaseValue / maxPhaseVal) * 100;
+                            const isCurrentPhase = (i + 1) === fsCurrentIdx;
+                            return (
+                              <div key={p.label} className="flex-1 flex flex-col items-center gap-1 group/bar relative">
+                                {/* Value label on hover */}
+                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-slate-800 dark:bg-slate-900 border border-slate-600 dark:border-slate-700 text-[9px] font-mono text-slate-50 whitespace-nowrap opacity-0 group-hover/bar:opacity-100 transition-opacity shadow-lg pointer-events-none z-10">
+                                  ${p.phaseValue.toLocaleString()}
                                 </div>
-                              );
-                            })}
-                          </div>
-                          <div className="flex justify-between mt-1 px-0.5">
-                            {svgPts.map((p, i) => (
-                              <span key={p.label} className={`text-[9px] font-mono ${i === fsCurrentIdx ? 'text-sky-500 font-bold' : 'text-slate-500 dark:text-sky-300/70'}`}>{p.label}{i === fsCurrentIdx ? ' ●' : ''}</span>
-                            ))}
-                          </div>
+                                <motion.div
+                                  className="w-full rounded-t-md relative overflow-hidden"
+                                  style={{ backgroundColor: p.color, minHeight: 4 }}
+                                  initial={{ height: 0 }}
+                                  animate={{ height: `${Math.max(barH, 5)}%` }}
+                                  transition={{ duration: 0.7, delay: 0.3 + i * 0.1 }}
+                                >
+                                  {isCurrentPhase && (
+                                    <motion.div
+                                      className="absolute inset-0 bg-white/20"
+                                      animate={{ opacity: [0.1, 0.3, 0.1] }}
+                                      transition={{ duration: 2, repeat: Infinity }}
+                                    />
+                                  )}
+                                </motion.div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between mt-2 px-2">
+                          {svgPts.filter((_, i) => i > 0).map((p, i) => (
+                            <span key={p.label} className={`text-[9px] font-mono flex-1 text-center ${(i + 1) === fsCurrentIdx ? 'text-sky-500 dark:text-sky-400 font-bold' : 'text-slate-500 dark:text-sky-300/70'}`}>
+                              {p.label}{(i + 1) === fsCurrentIdx ? ' ●' : ''}
+                            </span>
+                          ))}
                         </div>
                       </motion.div>
                     );
@@ -10629,15 +10589,15 @@ export default function Stage8FinalReview({
                 return (
                   <div className="space-y-1.5">
                     <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-red-300 leading-none">${total > 0 ? total.toLocaleString() : '—'}</span>
+                      <span className="text-lg font-bold text-sky-300 leading-none">${total > 0 ? total.toLocaleString() : '—'}</span>
                     </div>
                     <div className="flex h-1.5 rounded-full overflow-hidden bg-cyan-950/50">
-                      <motion.div className="h-full bg-gradient-to-r from-amber-400 to-amber-500" initial={{ width: 0 }} animate={{ width: `${matPct}%` }} transition={{ duration: 0.6 }} />
-                      <motion.div className="h-full bg-gradient-to-r from-red-400 to-red-500" initial={{ width: 0 }} animate={{ width: `${labPct}%` }} transition={{ duration: 0.6, delay: 0.1 }} />
+                      <motion.div className="h-full bg-gradient-to-r from-sky-400 to-sky-500" initial={{ width: 0 }} animate={{ width: `${matPct}%` }} transition={{ duration: 0.6 }} />
+                      <motion.div className="h-full bg-gradient-to-r from-blue-400 to-blue-500" initial={{ width: 0 }} animate={{ width: `${labPct}%` }} transition={{ duration: 0.6, delay: 0.1 }} />
                     </div>
                     <div className="flex gap-2 text-[8px]">
-                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Mat</span>
-                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-red-400" />Lab</span>
+                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Mat</span>
+                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-400" />Lab</span>
                     </div>
                   </div>
                 );
