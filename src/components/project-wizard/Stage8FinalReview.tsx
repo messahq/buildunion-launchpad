@@ -13076,11 +13076,20 @@ export default function Stage8FinalReview({
           {/* PDF Preview */}
           <div className="flex-1 overflow-hidden" style={{ height: '60vh' }}>
             {dnaReportBlobUrl ? (
-              <iframe
-                src={dnaReportBlobUrl}
+              <object
+                data={dnaReportBlobUrl}
+                type="application/pdf"
                 className="w-full h-full border-0"
                 title="DNA Audit Report Preview"
-              />
+              >
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4 p-8">
+                  <FileText className="h-12 w-12 text-emerald-500/50" />
+                  <p className="text-sm text-center">
+                    A böngésző nem tudja megjeleníteni az előnézetet.<br />
+                    Kattints a <strong>Download PDF</strong> gombra a letöltéshez.
+                  </p>
+                </div>
+              </object>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin mr-2" />
