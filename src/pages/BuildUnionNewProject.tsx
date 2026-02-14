@@ -495,6 +495,7 @@ const BuildUnionNewProject = () => {
                   userId={user.id}
                   onGFALocked={handleGFALockComplete}
                   onCitationClick={handleCitationClick}
+                  workType={citations.find(c => c.cite_type === 'WORK_TYPE')?.value as string | undefined}
                   className="w-full"
                 />
               </motion.div>
