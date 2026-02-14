@@ -8908,10 +8908,10 @@ export default function Stage8FinalReview({
 
               {/* ─── Task Completion Progress ─── */}
               {(() => {
-                const baseTasks = tasks.filter(t => !t.isSubTask);
-                const totalT = baseTasks.length;
-                const completedT = baseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-                const inProgressT = baseTasks.filter(t => t.status === 'in_progress').length;
+                const allTasks = tasks;
+                const totalT = allTasks.length;
+                const completedT = allTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+                const inProgressT = allTasks.filter(t => t.status === 'in_progress').length;
                 const progressPct = totalT > 0 ? Math.round((completedT / totalT) * 100) : 0;
                 return totalT > 0 ? (
                   <motion.div
