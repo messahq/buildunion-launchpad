@@ -5141,12 +5141,11 @@ export default function Stage8FinalReview({
         return member?.name?.charAt(0)?.toUpperCase() || 'U';
       };
 
-      // Gantt bar width based on checklist completion
+      // Gantt bar width based on task status
       const getTaskProgress = (task: TaskWithChecklist) => {
         if (task.status === 'completed' || task.status === 'done') return 100;
-        if (!task.checklist || task.checklist.length === 0) return task.status === 'in_progress' ? 50 : 0;
-        const done = task.checklist.filter(c => c.done).length;
-        return Math.round((done / task.checklist.length) * 100);
+        if (task.status === 'in_progress') return 50;
+        return 0;
       };
 
       // Project timeline boundaries from citations
@@ -5575,6 +5574,18 @@ export default function Stage8FinalReview({
                                 <Checkbox
                                   checked={isCompleted}
                                   onCheckedChange={(checked) => {
+                                    // If completing: check if verification photo exists
+                                    if (checked) {
+                                      const hasPhoto = citations.some(c => 
+                                        c.cite_type === 'SITE_PHOTO' && c.metadata?.taskId === task.id
+                                      );
+                                      if (!hasPhoto) {
+                                        toast.warning(`Upload a verification photo for "${task.title}" before completing`, {
+                                          description: 'Use the 📷 button to upload a site photo',
+                                          duration: 5000,
+                                        });
+                                      }
+                                    }
                                     const newStatus = checked ? 'completed' : 'pending';
                                     supabase
                                       .from('project_tasks')
@@ -5830,30 +5841,23 @@ export default function Stage8FinalReview({
                                         </SelectContent>
                                       </Select>
                                     </div>
-                                    {/* Checklist */}
-                                    {task.checklist.map(item => (
-                                      <div key={item.id} className="flex items-center gap-2">
-                                        <Checkbox
-                                          id={item.id}
-                                          checked={item.done}
-                                          onCheckedChange={(checked) => updateChecklistItem(task.id, item.id, !!checked)}
-                                          disabled={!canEdit}
-                                          className="h-3.5 w-3.5"
-                                        />
-                                        <label
-                                          htmlFor={item.id}
-                                          className={cn(
-                                            "text-[10px] cursor-pointer",
-                                            item.done && "line-through text-slate-600"
-                                          )}
-                                        >
-                                          {item.text}
-                                        </label>
-                                        {item.id.includes('-verify') && item.done && (
-                                          <Camera className="h-2.5 w-2.5 text-purple-400" />
-                                        )}
-                                      </div>
-                                    ))}
+                                    {/* Photo verification status */}
+                                    {(() => {
+                                      const hasPhoto = citations.some(c => 
+                                        c.cite_type === 'SITE_PHOTO' && c.metadata?.taskId === task.id
+                                      );
+                                      return hasPhoto ? (
+                                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-500">
+                                          <Camera className="h-3 w-3" />
+                                          <span>Photo verified</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1.5 text-[10px] text-amber-500">
+                                          <AlertTriangle className="h-3 w-3" />
+                                          <span>No verification photo</span>
+                                        </div>
+                                      );
+                                    })()}
                                   </motion.div>
                                 )}
                               </AnimatePresence>
