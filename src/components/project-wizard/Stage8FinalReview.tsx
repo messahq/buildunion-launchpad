@@ -7398,9 +7398,9 @@ export default function Stage8FinalReview({
 
                 {/* ─── Donut + Cost Breakdown ─── */}
                 {costItems.length > 0 && (
-                  <div className="grid grid-cols-[auto_1fr] gap-2 items-center">
-                    {/* Mini Donut */}
-                    <div className="relative w-14 h-14">
+                  <div className="grid grid-cols-[auto_1fr] gap-3 items-center">
+                    {/* Donut Chart - larger & more readable */}
+                    <div className="relative w-20 h-20">
                       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                         {(() => {
                           const phaseGroups = tasks
@@ -7422,44 +7422,46 @@ export default function Stage8FinalReview({
                             .map(k => ({ key: k, value: phaseGroups[k], color: phaseColors[k] }));
                           const total = items.reduce((s, i) => s + i.value, 0);
                           if (total === 0) return null;
+                          const radius = 38;
+                          const circumference = 2 * Math.PI * radius;
                           let offset = 0;
                           return items.map((item, idx) => {
                             const pct = item.value / total;
-                            const startAngle = offset * 360;
-                            const endAngle = (offset + pct) * 360;
-                            const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-                            const startRad = (startAngle - 90) * Math.PI / 180;
-                            const endRad = (endAngle - 90) * Math.PI / 180;
-                            const x1 = 50 + 40 * Math.cos(startRad);
-                            const y1 = 50 + 40 * Math.sin(startRad);
-                            const x2 = 50 + 40 * Math.cos(endRad);
-                            const y2 = 50 + 40 * Math.sin(endRad);
+                            const dashLen = pct * circumference;
+                            const dashGap = circumference - dashLen;
+                            const dashOffset = -offset * circumference;
                             offset += pct;
                             return (
-                              <path key={idx}
-                                d={`M50,50 L${x1},${y1} A40,40 0 ${largeArc},1 ${x2},${y2} Z`}
-                                fill={item.color} opacity="0.8"
+                              <circle key={idx}
+                                cx="50" cy="50" r={radius}
+                                fill="none"
+                                stroke={item.color}
+                                strokeWidth="12"
+                                strokeDasharray={`${dashLen} ${dashGap}`}
+                                strokeDashoffset={dashOffset}
+                                strokeLinecap="butt"
+                                opacity="0.85"
                               />
                             );
                           });
                         })()}
-                        <circle cx="50" cy="50" r="22" fill="hsl(var(--background))" />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-[7px] font-bold text-amber-900 dark:text-white/90 leading-none">
+                        <span className="text-[9px] font-bold text-amber-900 dark:text-white/90 leading-none">
                           ${costTotal > 1000 ? `${(costTotal / 1000).toFixed(1)}K` : costTotal.toLocaleString()}
                         </span>
+                        <span className="text-[6px] text-amber-700 dark:text-amber-400/60 mt-0.5">TOTAL</span>
                       </div>
                     </div>
-                    {/* Breakdown items */}
-                    <div className="space-y-1">
+                    {/* Legend items */}
+                    <div className="space-y-1.5">
                       {costItems.map(item => {
                         const Icon = item.icon;
                         return (
                           <div key={item.name} className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                              <div className="h-1.5 w-1.5 rounded-sm" style={{ backgroundColor: item.color }} />
-                              <Icon className="h-2.5 w-2.5" style={{ color: item.color }} />
+                              <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
+                              <Icon className="h-3 w-3" style={{ color: item.color }} />
                               <span className="text-[10px] font-medium text-amber-900 dark:text-white/90">{item.name}</span>
                             </div>
                             <span className="text-[11px] font-bold text-amber-950 dark:text-white font-mono">${item.value.toLocaleString()}</span>
@@ -7488,38 +7490,36 @@ export default function Stage8FinalReview({
                     ...d,
                   }));
                   return (
-                    <div className="p-2.5 rounded-lg border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-orange-950/10 to-yellow-950/15">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] text-amber-800 dark:text-amber-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
-                        <span className="text-[9px] font-mono">
+                    <div className="p-2 rounded-lg border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-orange-950/10 to-yellow-950/15">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[8px] text-amber-800 dark:text-amber-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
+                        <span className="text-[8px] font-mono">
                           <span className="text-emerald-400 font-bold">${canvasSpentValue.toLocaleString()}</span>
                           <span className="text-amber-700 dark:text-amber-400/50"> / ${canvasTrendTotal.toLocaleString()}</span>
                         </span>
                       </div>
-                      <div className="h-16 w-full relative group/trend">
-                        <svg viewBox="0 0 200 60" className="w-full h-full" preserveAspectRatio="none">
-                          {[0, 20, 40, 60].map(y => (
+                      <div className="h-10 w-full relative group/trend">
+                        <svg viewBox="0 0 200 40" className="w-full h-full" preserveAspectRatio="none">
+                          {[0, 15, 30].map(y => (
                             <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(251,191,36,0.08)" strokeWidth="0.5" />
                           ))}
-                          <path d={`M0,55 L${chartPoints.map(p => `${p.x},${p.y}`).join(' L')} L200,55 Z`} fill="url(#cardPhaseTrendGrad)" opacity="0.35" />
-                          <path d={`M${chartPoints.map(p => `${p.x},${p.y}`).join(' L')}`} fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="1.5" strokeLinecap="round" />
+                          <path d={`M0,35 L${chartPoints.map(p => `${p.x},${(p.y / 60) * 40}`).join(' L')} L200,35 Z`} fill="url(#cardPhaseTrendGrad)" opacity="0.35" />
+                          <path d={`M${chartPoints.map(p => `${p.x},${(p.y / 60) * 40}`).join(' L')}`} fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="1.5" strokeLinecap="round" />
                           {chartPoints.map((p, i) => (
                             <g key={i}>
-                              <circle cx={p.x} cy={p.y} r={i === currentPhaseIdx ? 3.5 : 1.5}
+                              <circle cx={p.x} cy={(p.y / 60) * 40} r={i === currentPhaseIdx ? 3 : 1.5}
                                 fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
                                 stroke={i === currentPhaseIdx ? '#d97706' : 'none'} strokeWidth="1"
-                                className="transition-all duration-200"
                               />
-                              <circle cx={p.x} cy={p.y} r="12" fill="transparent" className="cursor-pointer">
+                              <circle cx={p.x} cy={(p.y / 60) * 40} r="10" fill="transparent" className="cursor-pointer">
                                 <title>{p.label}: ${p.phaseValue.toLocaleString()} (Σ ${p.value.toLocaleString()})</title>
                               </circle>
                             </g>
                           ))}
-                          {/* Current position vertical indicator line */}
                           {chartPoints[currentPhaseIdx] && (
                             <line
-                              x1={chartPoints[currentPhaseIdx].x} y1={chartPoints[currentPhaseIdx].y + 5}
-                              x2={chartPoints[currentPhaseIdx].x} y2="55"
+                              x1={chartPoints[currentPhaseIdx].x} y1={(chartPoints[currentPhaseIdx].y / 60) * 40 + 3}
+                              x2={chartPoints[currentPhaseIdx].x} y2="35"
                               stroke={chartPoints[currentPhaseIdx].color} strokeWidth="0.8" strokeDasharray="2,2" opacity="0.5"
                             />
                           )}
@@ -7530,26 +7530,6 @@ export default function Stage8FinalReview({
                             </linearGradient>
                           </defs>
                         </svg>
-                        {/* HTML Tooltip overlays */}
-                        <div className="absolute inset-0 flex justify-between items-start pointer-events-none">
-                          {chartPoints.map((p, i) => {
-                            const leftPct = (p.x / 200) * 100;
-                            const topPct = (p.y / 60) * 100;
-                            return (
-                              <div
-                                key={i}
-                                className="absolute pointer-events-auto group/dot"
-                                style={{ left: `${leftPct}%`, top: `${topPct}%`, transform: 'translate(-50%, -50%)' }}
-                              >
-                                <div className="w-6 h-6 rounded-full cursor-pointer" />
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded-md bg-slate-800 dark:bg-slate-900 border border-slate-600 dark:border-slate-700 text-[9px] font-mono text-slate-50 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 shadow-lg shadow-slate-900/60 pointer-events-none z-10">
-                                  {p.label}: <span className="font-bold text-amber-300">${p.phaseValue.toLocaleString()}</span>
-                                  {i > 0 && <span className="text-amber-400/60 ml-1">(Σ ${p.value.toLocaleString()})</span>}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
                       </div>
                       <div className="flex justify-between mt-0.5">
                         {canvasTrendPts.map((d, i) => (
