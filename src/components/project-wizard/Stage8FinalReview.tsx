@@ -7481,48 +7481,65 @@ export default function Stage8FinalReview({
                    </div>
                 </div>
 
-                {/* ─── Cost Trend Mini Chart (Phase-based) ─── */}
+                {/* ─── Cost Trend Area Chart (Phase-based) ─── */}
                 {canvasTrendPts.length >= 2 && (() => {
+                  const filteredPts = canvasTrendPts.filter(d => d.label !== 'Start');
                   const maxVal = Math.max(...canvasTrendPts.map(d => d.value), 1);
-                  const chartPoints = canvasTrendPts.map((d, i) => ({
-                    x: (i / (canvasTrendPts.length - 1)) * 200,
-                    y: 55 - (d.value / maxVal) * 50,
-                    ...d,
+                  const W = 200, H = 48, padX = 4, padY = 4;
+                  const usableW = W - padX * 2, usableH = H - padY * 2;
+                  // cumulative points including start=0
+                  const allPts = [{ label: '', value: 0, phaseValue: 0, color: '' }, ...filteredPts];
+                  const linePoints = allPts.map((d, i) => ({
+                    x: padX + (i / (allPts.length - 1)) * usableW,
+                    y: padY + usableH - (d.value / maxVal) * usableH,
                   }));
+                  const linePath = linePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+                  const areaPath = `${linePath} L${linePoints[linePoints.length - 1].x},${H} L${linePoints[0].x},${H} Z`;
+                  // spent progress X position
+                  let spentX = padX;
+                  for (let i = 1; i < allPts.length; i++) {
+                    if (allPts[i].value >= canvasSpentValue) {
+                      const prev = allPts[i - 1];
+                      const ratio = prev.value === allPts[i].value ? 1 : (canvasSpentValue - prev.value) / (allPts[i].value - prev.value);
+                      spentX = linePoints[i - 1].x + ratio * (linePoints[i].x - linePoints[i - 1].x);
+                      break;
+                    }
+                    if (i === allPts.length - 1) spentX = linePoints[i].x;
+                  }
                   return (
-                     <div className="p-2 rounded-lg border border-sky-200/30 bg-gradient-to-br from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:via-blue-950/10 dark:to-sky-950/15 dark:border-sky-500/20">
-                       <div className="flex items-center justify-between mb-1.5">
-                         <span className="text-[8px] text-slate-600 dark:text-sky-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
-                         <span className="text-[8px] font-mono">
-                           <span className="text-emerald-500 dark:text-emerald-400 font-bold">${canvasSpentValue.toLocaleString()}</span>
-                           <span className="text-slate-400 dark:text-sky-400/50"> / ${canvasTrendTotal.toLocaleString()}</span>
-                         </span>
-                       </div>
-                       {/* Bar chart instead of line chart */}
-                       <div className="flex items-end gap-1 h-10">
-                         {canvasTrendPts.filter(d => d.label !== 'Start').map((d, i) => {
-                           const maxVal = Math.max(...canvasTrendPts.map(p => p.phaseValue), 1);
-                           const barH = (d.phaseValue / maxVal) * 100;
-                           return (
-                             <div key={d.label} className="flex-1 flex flex-col items-center gap-0.5">
-                               <motion.div
-                                 className="w-full rounded-t-sm"
-                                 style={{ backgroundColor: d.color, minHeight: 2 }}
-                                 initial={{ height: 0 }}
-                                 animate={{ height: `${Math.max(barH, 8)}%` }}
-                                 transition={{ duration: 0.6, delay: 0.2 + i * 0.1 }}
-                                 title={`${d.label}: $${d.phaseValue.toLocaleString()}`}
-                               />
-                             </div>
-                           );
-                         })}
-                       </div>
-                       <div className="flex justify-between mt-1">
-                         {canvasTrendPts.filter(d => d.label !== 'Start').map((d, i) => (
-                           <span key={d.label} className={`text-[7px] font-mono flex-1 text-center ${i === Math.max(0, currentPhaseIdx - 1) ? 'text-sky-500 dark:text-sky-400 font-bold' : 'text-slate-400 dark:text-sky-300/70'}`}>{d.label}</span>
-                         ))}
-                       </div>
-                     </div>
+                    <div className="p-2 rounded-lg border border-sky-200/30 bg-gradient-to-br from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:via-blue-950/10 dark:to-sky-950/15 dark:border-sky-500/20">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[8px] text-slate-600 dark:text-sky-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
+                        <span className="text-[8px] font-mono">
+                          <span className="text-emerald-500 dark:text-emerald-400 font-bold">${canvasSpentValue.toLocaleString()}</span>
+                          <span className="text-slate-400 dark:text-sky-400/50"> / ${canvasTrendTotal.toLocaleString()}</span>
+                        </span>
+                      </div>
+                      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 48 }}>
+                        <defs>
+                          <linearGradient id="canvasAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="rgb(56,189,248)" stopOpacity="0.45" />
+                            <stop offset="100%" stopColor="rgb(56,189,248)" stopOpacity="0.03" />
+                          </linearGradient>
+                        </defs>
+                        {/* Area fill */}
+                        <path d={areaPath} fill="url(#canvasAreaGrad)" />
+                        {/* Cumulative line */}
+                        <path d={linePath} fill="none" stroke="rgb(14,165,233)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Phase dots */}
+                        {linePoints.slice(1).map((p, i) => (
+                          <circle key={i} cx={p.x} cy={p.y} r="2.5" fill={filteredPts[i]?.color || 'rgb(14,165,233)'} stroke="white" strokeWidth="0.8" />
+                        ))}
+                        {/* Spent progress marker */}
+                        <line x1={spentX} y1={padY} x2={spentX} y2={H} stroke="rgb(16,185,129)" strokeWidth="1" strokeDasharray="2 2" opacity="0.7" />
+                        <circle cx={spentX} cy={padY + 1} r="2" fill="rgb(16,185,129)" />
+                      </svg>
+                      <div className="flex justify-between mt-0.5">
+                        {filteredPts.map((d, i) => (
+                          <span key={d.label} className={`text-[7px] font-mono flex-1 text-center ${i === Math.max(0, currentPhaseIdx - 1) ? 'text-sky-500 dark:text-sky-400 font-bold' : 'text-slate-400 dark:text-sky-300/70'}`}>{d.label}</span>
+                        ))}
+                      </div>
+                    </div>
                   );
                 })()}
 
@@ -9322,44 +9339,95 @@ export default function Stage8FinalReview({
                             <span className="text-slate-500 dark:text-sky-400/50"> / ${trendSpentTotal.toLocaleString()}</span>
                           </span>
                         </div>
-                        {/* Bar chart visualization */}
-                        <div className="flex items-end gap-2 h-24 px-2">
-                          {svgPts.filter((_, i) => i > 0).map((p, i) => {
-                            const maxPhaseVal = Math.max(...svgPts.filter((_, j) => j > 0).map(pt => pt.phaseValue), 1);
-                            const barH = (p.phaseValue / maxPhaseVal) * 100;
-                            const isCurrentPhase = (i + 1) === fsCurrentIdx;
-                            return (
-                              <div key={p.label} className="flex-1 flex flex-col items-center gap-1 group/bar relative">
-                                {/* Value label on hover */}
-                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-slate-800 dark:bg-slate-900 border border-slate-600 dark:border-slate-700 text-[9px] font-mono text-slate-50 whitespace-nowrap opacity-0 group-hover/bar:opacity-100 transition-opacity shadow-lg pointer-events-none z-10">
-                                  ${p.phaseValue.toLocaleString()}
-                                </div>
-                                <motion.div
-                                  className="w-full rounded-t-md relative overflow-hidden"
-                                  style={{ backgroundColor: p.color, minHeight: 4 }}
-                                  initial={{ height: 0 }}
-                                  animate={{ height: `${Math.max(barH, 5)}%` }}
-                                  transition={{ duration: 0.7, delay: 0.3 + i * 0.1 }}
-                                >
-                                  {isCurrentPhase && (
-                                    <motion.div
-                                      className="absolute inset-0 bg-white/20"
-                                      animate={{ opacity: [0.1, 0.3, 0.1] }}
-                                      transition={{ duration: 2, repeat: Infinity }}
-                                    />
-                                  )}
-                                </motion.div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="flex justify-between mt-2 px-2">
-                          {svgPts.filter((_, i) => i > 0).map((p, i) => (
-                            <span key={p.label} className={`text-[9px] font-mono flex-1 text-center ${(i + 1) === fsCurrentIdx ? 'text-sky-500 dark:text-sky-400 font-bold' : 'text-slate-500 dark:text-sky-300/70'}`}>
-                              {p.label}{(i + 1) === fsCurrentIdx ? ' ●' : ''}
-                            </span>
-                          ))}
-                        </div>
+                        {/* Area chart visualization */}
+                        {(() => {
+                          const filteredPts = svgPts.filter((_, i) => i > 0);
+                          const maxV = Math.max(...svgPts.map(d => d.value), 1);
+                          const W = 320, H = 100, padX = 24, padY = 12, padB = 18;
+                          const usableW = W - padX * 2, usableH = H - padY - padB;
+                          const allPts = [{ label: '', value: 0, phaseValue: 0, color: '' }, ...filteredPts];
+                          const lnPts = allPts.map((d, i) => ({
+                            x: padX + (i / (allPts.length - 1)) * usableW,
+                            y: padY + usableH - (d.value / maxV) * usableH,
+                          }));
+                          // Smooth curve
+                          const catmullRom = (pts: {x:number,y:number}[]) => {
+                            if (pts.length < 2) return '';
+                            let d = `M${pts[0].x},${pts[0].y}`;
+                            for (let i = 0; i < pts.length - 1; i++) {
+                              const p0 = pts[Math.max(i - 1, 0)];
+                              const p1 = pts[i];
+                              const p2 = pts[i + 1];
+                              const p3 = pts[Math.min(i + 2, pts.length - 1)];
+                              const cp1x = p1.x + (p2.x - p0.x) / 6;
+                              const cp1y = p1.y + (p2.y - p0.y) / 6;
+                              const cp2x = p2.x - (p3.x - p1.x) / 6;
+                              const cp2y = p2.y - (p3.y - p1.y) / 6;
+                              d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+                            }
+                            return d;
+                          };
+                          const curvePath = catmullRom(lnPts);
+                          const areaPath = `${curvePath} L${lnPts[lnPts.length-1].x},${padY + usableH} L${lnPts[0].x},${padY + usableH} Z`;
+                          // Y-axis grid lines
+                          const gridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => ({
+                            y: padY + usableH - pct * usableH,
+                            val: Math.round(pct * maxV),
+                          }));
+                          // spent X
+                          let spentX = padX;
+                          for (let i = 1; i < allPts.length; i++) {
+                            if (allPts[i].value >= fsSpentCompleted) {
+                              const prev = allPts[i - 1];
+                              const ratio = prev.value === allPts[i].value ? 1 : (fsSpentCompleted - prev.value) / (allPts[i].value - prev.value);
+                              spentX = lnPts[i - 1].x + ratio * (lnPts[i].x - lnPts[i - 1].x);
+                              break;
+                            }
+                            if (i === allPts.length - 1) spentX = lnPts[i].x;
+                          }
+                          return (
+                            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 120 }}>
+                              <defs>
+                                <linearGradient id="fsAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="rgb(56,189,248)" stopOpacity="0.5" />
+                                  <stop offset="50%" stopColor="rgb(59,130,246)" stopOpacity="0.2" />
+                                  <stop offset="100%" stopColor="rgb(59,130,246)" stopOpacity="0.02" />
+                                </linearGradient>
+                                <filter id="fsShadow"><feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="rgb(14,165,233)" floodOpacity="0.3" /></filter>
+                              </defs>
+                              {/* Grid */}
+                              {gridLines.map((g, i) => (
+                                <g key={i}>
+                                  <line x1={padX} y1={g.y} x2={W - padX} y2={g.y} stroke="currentColor" strokeWidth="0.3" className="text-slate-200 dark:text-sky-800/40" />
+                                  <text x={padX - 4} y={g.y + 3} textAnchor="end" className="fill-slate-400 dark:fill-sky-400/60" style={{ fontSize: 7, fontFamily: 'monospace' }}>
+                                    {g.val >= 1000 ? `${(g.val / 1000).toFixed(0)}k` : g.val}
+                                  </text>
+                                </g>
+                              ))}
+                              {/* Area */}
+                              <path d={areaPath} fill="url(#fsAreaGrad)" />
+                              {/* Line */}
+                              <path d={curvePath} fill="none" stroke="rgb(14,165,233)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#fsShadow)" />
+                              {/* Phase dots with values */}
+                              {lnPts.slice(1).map((p, i) => (
+                                <g key={i}>
+                                  <circle cx={p.x} cy={p.y} r="5" fill={filteredPts[i]?.color || 'rgb(14,165,233)'} stroke="white" strokeWidth="1.5" className="drop-shadow-sm" />
+                                  <text x={p.x} y={p.y - 8} textAnchor="middle" className="fill-slate-600 dark:fill-sky-200" style={{ fontSize: 8, fontFamily: 'monospace', fontWeight: 600 }}>
+                                    ${filteredPts[i]?.phaseValue >= 1000 ? `${(filteredPts[i].phaseValue / 1000).toFixed(1)}k` : filteredPts[i]?.phaseValue.toLocaleString()}
+                                  </text>
+                                  {/* Phase label */}
+                                  <text x={p.x} y={padY + usableH + 12} textAnchor="middle" style={{ fontSize: 8, fontFamily: 'monospace', fontWeight: (i + 1) === fsCurrentIdx ? 700 : 400 }} className={(i + 1) === fsCurrentIdx ? 'fill-sky-500 dark:fill-sky-400' : 'fill-slate-500 dark:fill-sky-300/70'}>
+                                    {filteredPts[i]?.label}{(i + 1) === fsCurrentIdx ? ' ●' : ''}
+                                  </text>
+                                </g>
+                              ))}
+                              {/* Spent progress marker */}
+                              <line x1={spentX} y1={padY - 2} x2={spentX} y2={padY + usableH} stroke="rgb(16,185,129)" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.8" />
+                              <rect x={spentX - 14} y={padY - 10} width="28" height="10" rx="3" fill="rgb(16,185,129)" opacity="0.9" />
+                              <text x={spentX} y={padY - 3} textAnchor="middle" fill="white" style={{ fontSize: 6, fontFamily: 'monospace', fontWeight: 700 }}>SPENT</text>
+                            </svg>
+                          );
+                        })()}
                       </motion.div>
                     );
                   })()}
