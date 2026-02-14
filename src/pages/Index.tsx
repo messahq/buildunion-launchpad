@@ -90,20 +90,12 @@ const Index = () => {
 
       {/* Top Section - BuildUnion Text */}
       <div className="relative z-10 flex flex-col items-center pt-8 md:pt-16 flex-1">
-        {/* BuildUnion Text Button */}
-        <button
-          onClick={() => {
-            runEngineeringAnalysis({ type: "Renovation", total_budget: 5000 });
-            navigate("/buildunion");
-          }}
-          className="group cursor-pointer focus:outline-none transition-all duration-300 hover:opacity-80"
-        >
-          <span className="text-lg md:text-xl font-medium tracking-wide">
-            <span className="text-white">Build</span>
-            <span className="text-yellow-400">Union</span>
-          </span>
-        </button>
-      </div>
+        <button 
+  onClick={() => runEngineeringAnalysis(selectedProject)} 
+  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-bold shadow-xl transition-all transform hover:scale-105 active:scale-95"
+>
+  BUILDUNION AI RUN
+</button>
 
       {/* Center Section - Clickable Orb */}
       <div
