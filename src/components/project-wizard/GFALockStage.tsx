@@ -32,6 +32,7 @@ interface GFALockStageProps {
   onGFALocked: (citation: Citation) => void;
   onCitationClick?: (citationId: string) => void;
   existingGFA?: Citation | null;
+  workType?: string;
   className?: string;
 }
 
@@ -82,9 +83,13 @@ function parseGFAInput(input: string): { value: number; originalUnit: string; sq
   };
 }
 
+// Service-based trades that don't need real area
+const SERVICE_TRADES = ['electrical', 'plumbing', 'hvac', 'repair', 'landscaping', 'other'];
+
 const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
-  ({ projectId, userId, onGFALocked, onCitationClick, existingGFA, className }, ref) => {
-    const [inputValue, setInputValue] = useState("");
+  ({ projectId, userId, onGFALocked, onCitationClick, existingGFA, workType, className }, ref) => {
+    const isServiceTrade = workType ? SERVICE_TRADES.includes(workType) : false;
+    const [inputValue, setInputValue] = useState(isServiceTrade ? "1" : "");
     const [parsedValue, setParsedValue] = useState<ReturnType<typeof parseGFAInput>>(null);
     const [isLocking, setIsLocking] = useState(false);
     const [isLocked, setIsLocked] = useState(!!existingGFA);
@@ -240,14 +245,19 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     <Calculator className="h-12 w-12 md:h-16 md:w-16 mx-auto text-amber-500 drop-shadow-lg" />
                   </motion.div>
                   <h3 className="text-lg md:text-xl font-semibold text-foreground">
-                    Define Your Project Area
+                    {isServiceTrade ? "Service Trade Detected" : "Define Your Project Area"}
                   </h3>
                   <p className="text-xs md:text-sm text-muted-foreground px-2">
-                    This value will be locked and used for all cost calculations.
+                    {isServiceTrade 
+                      ? "Area pre-set to 1 sq ft — costs will be based on your template line items, not area."
+                      : "This value will be locked and used for all cost calculations."
+                    }
                   </p>
-                  <p className="text-[10px] md:text-xs text-amber-600/80 dark:text-amber-400/80 px-2 mt-1">
-                    💡 For service-based trades (Plumbing, Electrical, HVAC), enter <strong>1 sq ft</strong> as a placeholder — costs will be based on your template items, not area.
-                  </p>
+                  {!isServiceTrade && (
+                    <p className="text-[10px] md:text-xs text-amber-600/80 dark:text-amber-400/80 px-2 mt-1">
+                      💡 For service trades (Plumbing, Electrical, HVAC), enter <strong>1 sq ft</strong> — costs come from template items.
+                    </p>
+                  )}
                 </div>
                 
                 {/* GFA Input Field */}
