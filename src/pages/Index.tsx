@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import DockHeader from "@/components/DockHeader";
-
+import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const navigate = useNavigate();
 const runEngineeringAnalysis = async (projectData: any) => {
