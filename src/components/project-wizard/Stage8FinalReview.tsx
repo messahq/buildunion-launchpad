@@ -8861,26 +8861,26 @@ export default function Stage8FinalReview({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-3 rounded-xl border border-amber-500/25 bg-gradient-to-r from-amber-950/30 via-orange-950/20 to-amber-950/30"
+                className="flex items-center justify-between p-3 rounded-xl border border-sky-300/40 bg-gradient-to-r from-sky-50 via-blue-50 to-sky-50 dark:from-sky-950/30 dark:via-blue-950/20 dark:to-sky-950/30 dark:border-sky-500/25"
               >
                 <div className="flex items-center gap-3">
                   <motion.div
-                    animate={{ boxShadow: ['0 0 12px rgba(251,191,36,0.2)', '0 0 24px rgba(251,191,36,0.5)', '0 0 12px rgba(251,191,36,0.2)'] }}
+                    animate={{ boxShadow: ['0 0 12px rgba(14,165,233,0.2)', '0 0 24px rgba(14,165,233,0.5)', '0 0 12px rgba(14,165,233,0.2)'] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
+                    className="h-9 w-9 rounded-lg bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center"
                   >
                     <DollarSign className="h-5 w-5 text-white" />
                   </motion.div>
                   <div>
-                    <h4 className="text-sm font-bold text-amber-900 dark:text-amber-100 tracking-tight">Financial Command Center</h4>
-                    <p className="text-[10px] text-amber-700 dark:text-amber-300/80">Real-time budget analytics</p>
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-sky-100 tracking-tight">Financial Command Center</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-sky-300/80">Real-time budget analytics</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-amber-700 dark:text-amber-300/80 bg-amber-500/15 px-2 py-0.5 rounded font-mono flex items-center gap-1">
+                  <span className="text-[10px] text-slate-600 dark:text-sky-300/80 bg-sky-100 dark:bg-sky-500/15 px-2 py-0.5 rounded font-mono flex items-center gap-1">
                     <MapPin className="h-2.5 w-2.5" /> {taxInfo.province}
                   </span>
-                  <Badge className="bg-green-500/20 text-green-300 border border-green-500/30 text-[10px] px-2 py-0.5 gap-1">
+                  <Badge className="bg-emerald-100 dark:bg-green-500/20 text-emerald-700 dark:text-green-300 border border-emerald-300 dark:border-green-500/30 text-[10px] px-2 py-0.5 gap-1">
                     <Unlock className="h-2.5 w-2.5" /> Owner
                   </Badge>
                 </div>
@@ -8898,21 +8898,21 @@ export default function Stage8FinalReview({
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 }}
-                    className="p-2.5 rounded-xl border border-amber-500/15 bg-gradient-to-r from-amber-950/15 to-orange-950/10"
+                    className="p-2.5 rounded-xl border border-sky-200/50 bg-gradient-to-r from-sky-50/80 to-blue-50/60 dark:from-sky-950/15 dark:to-blue-950/10 dark:border-sky-500/15"
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-[10px] text-amber-700 dark:text-amber-200/80 uppercase tracking-widest font-semibold">Task Progress</span>
+                        <span className="text-[10px] text-slate-600 dark:text-sky-200/80 uppercase tracking-widest font-semibold">Task Progress</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-amber-950 dark:text-white font-mono">{completedT}/{totalT}</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-white font-mono">{completedT}/{totalT}</span>
                         <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${progressPct === 100 ? 'bg-emerald-500/20 text-emerald-300' : progressPct >= 50 ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'}`}>
                           {progressPct}%
                         </span>
                       </div>
                     </div>
-                    <div className="h-2 rounded-full overflow-hidden flex bg-amber-900/25 border border-amber-500/15">
+                    <div className="h-2 rounded-full overflow-hidden flex bg-sky-100 dark:bg-sky-900/25 border border-sky-200/40 dark:border-sky-500/15">
                       {completedT > 0 && (
                         <motion.div
                           initial={{ width: 0 }}
@@ -8931,9 +8931,9 @@ export default function Stage8FinalReview({
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1.5">
-                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[9px] text-amber-600 dark:text-amber-300/60">Done</span></div>
-                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-400" /><span className="text-[9px] text-amber-600 dark:text-amber-300/60">In Progress</span></div>
-                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-900/40" /><span className="text-[9px] text-amber-600 dark:text-amber-300/60">Pending</span></div>
+                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Done</span></div>
+                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-400" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">In Progress</span></div>
+                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-sky-900/40" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Pending</span></div>
                     </div>
                   </motion.div>
                 ) : null;
@@ -8943,8 +8943,8 @@ export default function Stage8FinalReview({
                 <>
                   {/* ─── Budget Source Label ─── */}
                   <div className="flex items-center gap-2 px-1">
-                    <div className="h-1 w-1 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-[9px] text-amber-600 dark:text-amber-400/70 uppercase tracking-widest font-medium">
+                    <div className="h-1 w-1 rounded-full bg-sky-400 animate-pulse" />
+                    <span className="text-[9px] text-slate-500 dark:text-sky-400/70 uppercase tracking-widest font-medium">
                       Planned Budget (from Template & Scope) — synced to Invoice
                     </span>
                   </div>
@@ -8956,44 +8956,44 @@ export default function Stage8FinalReview({
                     className="grid grid-cols-3 gap-2"
                   >
                     {/* Net */}
-                     <div className="p-3 rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-950/25 to-orange-950/15 relative overflow-hidden">
-                       <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent" />
+                     <div className="p-3 rounded-xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-blue-50/80 dark:from-sky-950/25 dark:to-blue-950/15 dark:border-sky-500/20 relative overflow-hidden">
+                       <div className="absolute inset-0 bg-gradient-to-br from-sky-400/[0.03] to-transparent" />
                        <div className="relative">
                          <div className="flex items-center gap-1.5 mb-1">
-                           <div className="h-1.5 w-1.5 rounded-full bg-amber-300/70" />
-                           <span className="text-[9px] text-amber-700 dark:text-amber-200/80 uppercase tracking-widest font-semibold">Net (Planned)</span>
-                         </div>
-                         <p className="text-lg font-bold text-amber-950 dark:text-white font-mono leading-tight">
-                           ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                        </p>
-                      </div>
+                           <div className="h-1.5 w-1.5 rounded-full bg-sky-400/70" />
+                           <span className="text-[9px] text-slate-600 dark:text-sky-200/80 uppercase tracking-widest font-semibold">Net (Planned)</span>
+                          </div>
+                          <p className="text-lg font-bold text-slate-800 dark:text-white font-mono leading-tight">
+                            ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                         </p>
+                       </div>
                     </div>
                     {/* Tax */}
-                    <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-950/20 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent" />
+                    <div className="p-3 rounded-xl border border-sky-200/50 bg-sky-50/80 dark:bg-sky-950/20 dark:border-sky-500/20 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-sky-400/[0.03] to-transparent" />
                       <div className="relative">
                         <div className="flex items-center gap-1.5 mb-1">
-                          <div className="h-1.5 w-1.5 rounded-full bg-amber-400/60" />
-                           <span className="text-[9px] text-amber-700 dark:text-amber-300/80 uppercase tracking-widest font-semibold">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%</span>
+                          <div className="h-1.5 w-1.5 rounded-full bg-sky-400/60" />
+                           <span className="text-[9px] text-slate-600 dark:text-sky-300/80 uppercase tracking-widest font-semibold">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%</span>
                          </div>
-                         <p className="text-lg font-bold text-amber-800 dark:text-amber-200 font-mono leading-tight">
-                           +${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                        </p>
-                      </div>
+                         <p className="text-lg font-bold text-slate-700 dark:text-sky-200 font-mono leading-tight">
+                            +${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                         </p>
+                       </div>
                     </div>
                     {/* Gross */}
-                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.05] to-transparent" />
+                    <div className="p-3 rounded-xl border border-emerald-300/50 bg-emerald-50/80 dark:bg-emerald-950/20 dark:border-emerald-500/30 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/[0.05] to-transparent" />
                       <div className="relative">
                         <div className="flex items-center gap-1.5 mb-1">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                            <span className="text-[9px] text-emerald-700 dark:text-emerald-300/90 uppercase tracking-widest font-semibold">Gross (Est.)</span>
                          </div>
-                         <p className="text-xl font-black text-emerald-800 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-emerald-300 dark:to-teal-300 font-mono leading-tight">
-                           ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                         </p>
-                      </div>
-                    </div>
+                         <p className="text-xl font-black text-emerald-700 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-emerald-300 dark:to-teal-300 font-mono leading-tight">
+                            ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                          </p>
+                       </div>
+                     </div>
                     </motion.div>
 
                   {/* ─── Cost Breakdown: Horizontal Compact Cards + Inline Bar ─── */}
@@ -9006,11 +9006,11 @@ export default function Stage8FinalReview({
                     >
                       {/* Budget allocation label */}
                       <div className="flex items-center justify-between px-0.5">
-                        <span className="text-[9px] text-amber-600 dark:text-amber-400/70 uppercase tracking-widest font-medium">Budget Allocation</span>
-                        <span className="text-[9px] text-amber-600 dark:text-amber-400/50 font-mono">${totalForPercentage.toLocaleString()} total</span>
+                        <span className="text-[9px] text-slate-500 dark:text-sky-400/70 uppercase tracking-widest font-medium">Budget Allocation</span>
+                        <span className="text-[9px] text-slate-500 dark:text-sky-400/50 font-mono">${totalForPercentage.toLocaleString()} total</span>
                       </div>
                       {/* Stacked bar */}
-                      <div className="h-2.5 rounded-full overflow-hidden flex bg-amber-900/25 border border-amber-500/15">
+                      <div className="h-2.5 rounded-full overflow-hidden flex bg-sky-100 dark:bg-sky-900/25 border border-sky-200/40 dark:border-sky-500/15">
                         {costBreakdownData.map((item, i) => (
                           <motion.div
                             key={item.name}
@@ -9034,7 +9034,7 @@ export default function Stage8FinalReview({
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.3 + i * 0.08 }}
-                              className="flex items-center gap-3 p-2.5 rounded-lg border border-amber-500/15 bg-gradient-to-r from-amber-950/20 to-orange-950/10 hover:from-amber-950/30 hover:to-orange-950/20 transition-colors group"
+                              className="flex items-center gap-3 p-2.5 rounded-lg border border-sky-200/40 bg-gradient-to-r from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:to-blue-950/10 dark:border-sky-500/15 hover:from-sky-100/80 hover:to-blue-100/60 dark:hover:from-sky-950/30 dark:hover:to-blue-950/20 transition-colors group"
                             >
                               <div
                                 className="h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0"
@@ -9044,11 +9044,11 @@ export default function Stage8FinalReview({
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
-                                   <span className="text-xs font-semibold text-amber-900 dark:text-white/90">{item.name}</span>
-                                   <span className="text-sm font-bold text-amber-950 dark:text-white font-mono">${item.value.toLocaleString()}</span>
+                                   <span className="text-xs font-semibold text-slate-700 dark:text-white/90">{item.name}</span>
+                                   <span className="text-sm font-bold text-slate-800 dark:text-white font-mono">${item.value.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <div className="flex-1 h-1 rounded-full bg-amber-900/30 overflow-hidden">
+                                  <div className="flex-1 h-1 rounded-full bg-sky-100 dark:bg-sky-900/30 overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
@@ -9057,7 +9057,7 @@ export default function Stage8FinalReview({
                                       style={{ backgroundColor: item.color }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-amber-700 dark:text-white/60 font-mono w-10 text-right">{pct}%</span>
+                                  <span className="text-[10px] text-slate-500 dark:text-white/60 font-mono w-10 text-right">{pct}%</span>
                                 </div>
                               </div>
                             </motion.div>
@@ -9095,9 +9095,9 @@ export default function Stage8FinalReview({
                         <div className="flex items-center justify-between px-1">
                           <div className="flex items-center gap-2">
                             <div className="h-3 w-0.5 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-full" />
-                            <span className="text-[10px] text-amber-800 dark:text-white/60 uppercase tracking-widest font-semibold">Phase Breakdown</span>
+                            <span className="text-[10px] text-slate-600 dark:text-white/60 uppercase tracking-widest font-semibold">Phase Breakdown</span>
                           </div>
-                          <span className="text-[10px] font-mono text-amber-300/80">${phaseTotal.toLocaleString()}</span>
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-sky-300/80">${phaseTotal.toLocaleString()}</span>
                         </div>
                         
                         <div className="grid grid-cols-1 gap-1.5">
@@ -9118,18 +9118,18 @@ export default function Stage8FinalReview({
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.3 + i * 0.06 }}
-                                className="p-2.5 rounded-lg border border-amber-500/15 bg-gradient-to-r from-amber-950/20 to-orange-950/10"
+                                className="p-2.5 rounded-lg border border-sky-200/40 bg-gradient-to-r from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:to-blue-950/10 dark:border-sky-500/15"
                               >
                                 <div className="flex items-center justify-between mb-1">
                                   <div className="flex items-center gap-2">
                                     <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
-                                    <span className="text-xs font-semibold text-amber-900 dark:text-white/90">{phase.label}</span>
-                                    <span className="text-[9px] text-amber-500/60 font-mono">({group.count} items)</span>
+                                    <span className="text-xs font-semibold text-slate-700 dark:text-white/90">{phase.label}</span>
+                                    <span className="text-[9px] text-slate-400 dark:text-sky-500/60 font-mono">({group.count} items)</span>
                                   </div>
-                                  <span className="text-sm font-bold text-amber-950 dark:text-white font-mono">${group.total.toLocaleString()}</span>
+                                  <span className="text-sm font-bold text-slate-800 dark:text-white font-mono">${group.total.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1 rounded-full bg-amber-900/30 overflow-hidden">
+                                  <div className="flex-1 h-1 rounded-full bg-sky-100 dark:bg-sky-900/30 overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
@@ -9138,14 +9138,14 @@ export default function Stage8FinalReview({
                                       style={{ backgroundColor: color }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-amber-700 dark:text-white/60 font-mono w-10 text-right">{pct}%</span>
+                                  <span className="text-[10px] text-slate-500 dark:text-white/60 font-mono w-10 text-right">{pct}%</span>
                                 </div>
                                 {/* Individual items */}
                                 <div className="mt-1.5 space-y-0.5 pl-4">
                                   {group.items.map((item, j) => (
                                     <div key={j} className="flex items-center justify-between">
-                                      <span className="text-[10px] text-amber-600 dark:text-amber-300/60 truncate max-w-[65%]">• {item.title}</span>
-                                      <span className="text-[10px] font-mono text-amber-700 dark:text-amber-200/70">${item.cost.toLocaleString()}</span>
+                                      <span className="text-[10px] text-slate-500 dark:text-sky-300/60 truncate max-w-[65%]">• {item.title}</span>
+                                      <span className="text-[10px] font-mono text-slate-600 dark:text-sky-200/70">${item.cost.toLocaleString()}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -9201,7 +9201,7 @@ export default function Stage8FinalReview({
                       >
                         {/* Phase Donut */}
                         {donutItems.length > 0 && (
-                          <div className="p-3 rounded-xl border border-amber-500/15 bg-gradient-to-br from-amber-950/20 to-orange-950/10 flex items-center gap-3">
+                          <div className="p-3 rounded-xl border border-sky-200/40 bg-gradient-to-br from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:to-blue-950/10 dark:border-sky-500/15 flex items-center gap-3">
                             <div className="relative w-16 h-16 flex-shrink-0">
                               <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                                 {donutItems.map((item, index) => {
@@ -9227,18 +9227,18 @@ export default function Stage8FinalReview({
                                     />
                                   );
                                 })}
-                                <circle cx="50" cy="50" r="22" fill="#1c1208" />
+                                <circle cx="50" cy="50" r="22" className="fill-white dark:fill-slate-900" />
                               </svg>
                               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-[8px] font-bold text-amber-900 dark:text-white/90 leading-none">{donutCenter.amount}</span>
-                                <span className="text-[6px] text-amber-600 dark:text-amber-300/60 mt-0.5 leading-none">{donutCenter.label}</span>
+                                <span className="text-[8px] font-bold text-slate-800 dark:text-white/90 leading-none">{donutCenter.amount}</span>
+                                <span className="text-[6px] text-slate-500 dark:text-sky-300/60 mt-0.5 leading-none">{donutCenter.label}</span>
                               </div>
                             </div>
                             <div className="space-y-1">
                               {donutItems.map(item => (
                                 <div key={item.key} className="flex items-center gap-1.5">
                                   <div className="h-2 w-2 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
-                                  <span className="text-[10px] text-amber-800 dark:text-white/70">{item.label}</span>
+                                  <span className="text-[10px] text-slate-600 dark:text-white/70">{item.label}</span>
                                 </div>
                               ))}
                             </div>
@@ -9247,21 +9247,21 @@ export default function Stage8FinalReview({
 
                         {/* GFA Reference */}
                         {gfaCitation && gfaValue ? (
-                          <div className="p-3 rounded-xl border border-amber-500/15 bg-amber-950/10 flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
-                              <Ruler className="h-4 w-4 text-amber-400" />
+                          <div className="p-3 rounded-xl border border-sky-200/40 bg-sky-50/60 dark:bg-sky-950/10 dark:border-sky-500/15 flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-sky-100 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
+                              <Ruler className="h-4 w-4 text-sky-500 dark:text-sky-400" />
                             </div>
                             <div>
-                              <p className="text-[9px] text-amber-300/80 uppercase tracking-widest">GFA</p>
-                              <p className="text-sm font-bold text-amber-950 dark:text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-amber-700 dark:text-amber-300/70">sq ft</span></p>
+                              <p className="text-[9px] text-slate-500 dark:text-sky-300/80 uppercase tracking-widest">GFA</p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-slate-500 dark:text-sky-300/70">sq ft</span></p>
                               {budgetTotal > 0 && (
-                                <p className="text-[10px] text-amber-700 dark:text-amber-300/70 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
+                                <p className="text-[10px] text-slate-500 dark:text-sky-300/70 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
                               )}
                             </div>
                           </div>
                         ) : donutItems.length === 0 ? null : (
-                          <div className="p-3 rounded-xl border border-amber-500/10 bg-amber-950/10 flex items-center justify-center">
-                            <span className="text-[10px] text-amber-400/50">No GFA data</span>
+                          <div className="p-3 rounded-xl border border-sky-200/30 bg-sky-50/40 dark:bg-sky-950/10 dark:border-sky-500/10 flex items-center justify-center">
+                            <span className="text-[10px] text-slate-400 dark:text-sky-400/50">No GFA data</span>
                           </div>
                         )}
                       </motion.div>
@@ -9324,36 +9324,36 @@ export default function Stage8FinalReview({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.45 }}
-                        className="p-4 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-950/25 via-orange-950/15 to-yellow-950/20"
+                        className="p-4 rounded-xl border border-sky-200/50 bg-gradient-to-br from-sky-50 via-blue-50/80 to-sky-50/60 dark:from-sky-950/25 dark:via-blue-950/15 dark:to-sky-950/20 dark:border-sky-500/25"
                       >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="h-4 w-0.5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
-                            <span className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wider">Spending by Phase</span>
+                            <div className="h-4 w-0.5 bg-gradient-to-b from-sky-400 to-blue-500 rounded-full" />
+                            <span className="text-xs font-semibold text-slate-700 dark:text-sky-200 uppercase tracking-wider">Spending by Phase</span>
                           </div>
                           <span className="text-[10px] font-mono">
                             <span className="text-emerald-400 font-bold">${fsSpentCompleted.toLocaleString()}</span>
-                            <span className="text-amber-700 dark:text-amber-400/50"> / ${trendSpentTotal.toLocaleString()}</span>
+                            <span className="text-slate-500 dark:text-sky-400/50"> / ${trendSpentTotal.toLocaleString()}</span>
                           </span>
                         </div>
                         <div className="relative">
                           <svg viewBox="0 0 280 80" className="w-full h-24" preserveAspectRatio="none">
                             {[0, 25, 50, 75].map(y => (
-                              <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(251,191,36,0.06)" strokeWidth="0.5" />
+                              <line key={y} x1="0" y1={y} x2="280" y2={y} stroke="rgba(14,165,233,0.1)" strokeWidth="0.5" />
                             ))}
                             <path
                               d={`M0,75 L${svgPts.map(p => `${p.x},${p.y}`).join(' L')} L280,75 Z`}
-                              fill="url(#fsTrendGrad)" opacity="0.3"
+                              fill="url(#fsTrendGrad)" opacity="0.4"
                             />
                             <path
                               d={`M${svgPts.map(p => `${p.x},${p.y}`).join(' L')}`}
-                              fill="none" stroke="rgba(251,191,36,0.85)" strokeWidth="2" strokeLinecap="round"
+                              fill="none" stroke="rgba(14,165,233,0.85)" strokeWidth="2" strokeLinecap="round"
                             />
                             {svgPts.map((p, i) => (
                               <g key={i}>
                                 <circle cx={p.x} cy={p.y} r={i === fsCurrentIdx ? 5 : 2.5}
-                                  fill={i === 0 ? 'rgba(251,191,36,0.4)' : p.color}
-                                  stroke={i === fsCurrentIdx ? '#d97706' : 'none'} strokeWidth="1.5"
+                                  fill={i === 0 ? 'rgba(14,165,233,0.4)' : p.color}
+                                  stroke={i === fsCurrentIdx ? '#0284c7' : 'none'} strokeWidth="1.5"
                                 />
                                 {/* Current position vertical dashed line */}
                                 {i === fsCurrentIdx && (
@@ -9370,8 +9370,8 @@ export default function Stage8FinalReview({
                             ))}
                             <defs>
                               <linearGradient id="fsTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="rgba(251,191,36,0.4)" />
-                                <stop offset="100%" stopColor="rgba(251,191,36,0)" />
+                                <stop offset="0%" stopColor="rgba(14,165,233,0.4)" />
+                                <stop offset="100%" stopColor="rgba(14,165,233,0)" />
                               </linearGradient>
                             </defs>
                           </svg>
@@ -9396,7 +9396,7 @@ export default function Stage8FinalReview({
                           </div>
                           <div className="flex justify-between mt-1 px-0.5">
                             {svgPts.map((p, i) => (
-                              <span key={p.label} className={`text-[9px] font-mono ${i === fsCurrentIdx ? 'text-amber-400 font-bold' : 'text-amber-700 dark:text-amber-300/70'}`}>{p.label}{i === fsCurrentIdx ? ' ●' : ''}</span>
+                              <span key={p.label} className={`text-[9px] font-mono ${i === fsCurrentIdx ? 'text-sky-500 font-bold' : 'text-slate-500 dark:text-sky-300/70'}`}>{p.label}{i === fsCurrentIdx ? ' ●' : ''}</span>
                             ))}
                           </div>
                         </div>
@@ -9414,7 +9414,7 @@ export default function Stage8FinalReview({
                     >
                       <div className="flex items-center gap-2 px-1">
                         <div className="h-3 w-0.5 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
-                        <span className="text-[10px] text-amber-800 dark:text-white/60 uppercase tracking-widest font-semibold">Contracts ({contracts.length})</span>
+                        <span className="text-[10px] text-slate-600 dark:text-white/60 uppercase tracking-widest font-semibold">Contracts ({contracts.length})</span>
                       </div>
                       {contracts.map((contract, i) => (
                         <motion.div
