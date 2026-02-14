@@ -81,14 +81,30 @@ Provide accurate material quantities and current Ontario market labor rates for 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
     
+    if (!content || content.trim().length === 0) {
+      console.error("AI returned empty content. Full response:", JSON.stringify(data));
+      throw new Error("AI returned empty response");
+    }
+
     // Parse JSON from response (handle markdown code blocks)
     let parsed;
     try {
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
-      parsed = JSON.parse(jsonMatch[1]?.trim() || content.trim());
+      const cleaned = content.replace(/```(?:json)?\s*([\s\S]*?)```/, '$1').trim();
+      parsed = JSON.parse(cleaned);
     } catch (e) {
-      console.error("Failed to parse AI response:", content);
-      throw new Error("Failed to parse AI template response");
+      // Try extracting JSON object directly
+      try {
+        const jsonStart = content.indexOf('{');
+        const jsonEnd = content.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          parsed = JSON.parse(content.substring(jsonStart, jsonEnd + 1));
+        } else {
+          throw e;
+        }
+      } catch (e2) {
+        console.error("Failed to parse AI response:", content.substring(0, 500));
+        throw new Error("Failed to parse AI template response");
+      }
     }
 
     return new Response(JSON.stringify(parsed), {
