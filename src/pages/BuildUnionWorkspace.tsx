@@ -293,6 +293,8 @@ const BuildUnionWorkspace = () => {
       );
       return;
     }
+    // Clear any cached active project so the wizard starts fresh
+    localStorage.removeItem('active_project_id');
     navigate("/buildunion/new-project");
   };
 
