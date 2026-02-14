@@ -522,15 +522,18 @@ export default function Stage8FinalReview({
   
   // ✓ Conflict Map Modal
   const [showConflictMap, setShowConflictMap] = useState(false);
-  
-  // ✓ DNA Report PDF
-  const [isGeneratingDnaReport, setIsGeneratingDnaReport] = useState(false);
-  
-  // ✓ DNA Report Email
-  const [showDnaEmailDialog, setShowDnaEmailDialog] = useState(false);
-  const [dnaEmailClientName, setDnaEmailClientName] = useState('');
-  const [dnaEmailClientEmail, setDnaEmailClientEmail] = useState('');
-  const [isSendingDnaEmail, setIsSendingDnaEmail] = useState(false);
+   
+   // ✓ DNA Report PDF + Preview
+   const [isGeneratingDnaReport, setIsGeneratingDnaReport] = useState(false);
+   const [showDnaPreviewDialog, setShowDnaPreviewDialog] = useState(false);
+   const [dnaReportBlobUrl, setDnaReportBlobUrl] = useState<string | null>(null);
+   const [dnaReportFilename, setDnaReportFilename] = useState('');
+   
+   // ✓ DNA Report Email
+   const [showDnaEmailDialog, setShowDnaEmailDialog] = useState(false);
+   const [dnaEmailClientName, setDnaEmailClientName] = useState('');
+   const [dnaEmailClientEmail, setDnaEmailClientEmail] = useState('');
+   const [isSendingDnaEmail, setIsSendingDnaEmail] = useState(false);
   
   // ✓ OBC RAG Compliance Check
   const [obcComplianceResults, setObcComplianceResults] = useState<{
@@ -3764,7 +3767,7 @@ export default function Stage8FinalReview({
       // ============================================
       // ASSEMBLE FULL HTML
       // ============================================
-      const { buildUnionPdfHeader, buildUnionPdfFooter, downloadPDF } = await import('@/lib/pdfGenerator');
+      const { buildUnionPdfHeader, buildUnionPdfFooter } = await import('@/lib/pdfGenerator');
       
       const header = buildUnionPdfHeader({
         docType: 'M.E.S.S.A. DNA Deep Audit Report',
@@ -3830,12 +3833,58 @@ export default function Stage8FinalReview({
         footer +
       '</body></html>';
 
-      await downloadPDF(html, {
-        filename: 'dna-audit-' + (projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export') + '.pdf',
+      const { generatePDFBlob } = await import('@/lib/pdfGenerator');
+      const filename = 'dna-audit-' + (projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export') + '.pdf';
+      
+      const blob = await generatePDFBlob(html, {
+        filename,
         pageFormat: 'letter',
       });
 
-      toast.success('DNA Audit Report downloaded');
+      // Create preview URL
+      const blobUrl = URL.createObjectURL(blob);
+      setDnaReportBlobUrl(blobUrl);
+      setDnaReportFilename(filename);
+
+      // Auto-save to project documents (overwrite previous DNA report)
+      if (projectId) {
+        try {
+          const storagePath = `${projectId}/dna-report-latest.pdf`;
+          
+          // Upload (upsert) to storage
+          const { error: uploadErr } = await supabase.storage
+            .from('project-documents')
+            .upload(storagePath, blob, { contentType: 'application/pdf', upsert: true });
+          
+          if (!uploadErr) {
+            // Check if a DNA report doc record already exists
+            const { data: existingDocs } = await supabase
+              .from('project_documents')
+              .select('id')
+              .eq('project_id', projectId)
+              .eq('file_name', 'DNA Audit Report.pdf')
+              .limit(1);
+
+            if (existingDocs && existingDocs.length > 0) {
+              // Delete old record and re-insert (since UPDATE is not allowed on project_documents)
+              await supabase.from('project_documents').delete().eq('id', existingDocs[0].id);
+            }
+            
+            await supabase.from('project_documents').insert({
+              project_id: projectId,
+              file_name: 'DNA Audit Report.pdf',
+              file_path: storagePath,
+              file_size: blob.size,
+            });
+          }
+        } catch (saveErr) {
+          console.warn('[DNA Report] Auto-save to documents failed:', saveErr);
+        }
+      }
+
+      // Show preview dialog
+      setShowDnaPreviewDialog(true);
+      toast.success('DNA Audit Report ready');
     } catch (err) {
       console.error('[DNA Report] Error:', err);
       toast.error('Failed to generate DNA report');
@@ -12300,26 +12349,16 @@ export default function Stage8FinalReview({
                 <span className="hidden sm:inline">Summary</span>
               </Button>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDnaReportPdf}
-                disabled={isGeneratingDnaReport}
-                className="gap-1 text-[10px] lg:text-xs border-emerald-800/50 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300 bg-transparent h-7 px-2 shrink-0"
-              >
-                {isGeneratingDnaReport ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
-                DNA
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDnaEmailDialog(true)}
-                className="gap-1 text-[10px] lg:text-xs border-sky-800/50 text-sky-400 hover:bg-sky-950/30 hover:text-sky-300 bg-transparent h-7 px-2 shrink-0 hidden sm:flex"
-              >
-                <Send className="h-3 w-3" />
-                <span className="hidden md:inline">Email</span>
-              </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={handleDnaReportPdf}
+                 disabled={isGeneratingDnaReport}
+                 className="gap-1 text-[10px] lg:text-xs border-emerald-800/50 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300 bg-transparent h-7 px-2 shrink-0"
+               >
+                 {isGeneratingDnaReport ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
+                 DNA
+               </Button>
 
               {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
@@ -13018,55 +13057,119 @@ export default function Stage8FinalReview({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* DNA Report Email Dialog */}
-      <Dialog open={showDnaEmailDialog} onOpenChange={setShowDnaEmailDialog}>
-        <DialogContent className="sm:max-w-md bg-background border-border">
-          <DialogHeader>
+      {/* DNA Report Preview Dialog */}
+      <Dialog open={showDnaPreviewDialog} onOpenChange={(open) => {
+        setShowDnaPreviewDialog(open);
+        if (!open && dnaReportBlobUrl) {
+          URL.revokeObjectURL(dnaReportBlobUrl);
+          setDnaReportBlobUrl(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-background border-border p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 border-b border-border">
             <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Send className="h-5 w-5 text-sky-500" />
-              Send DNA Report via Email
+              <Shield className="h-5 w-5 text-emerald-500" />
+              M.E.S.S.A. DNA Audit Report
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">
-              Send the M.E.S.S.A. DNA audit summary directly to your client. They'll receive the 8-pillar validation matrix, integrity score, and financial snapshot.
-            </p>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Name</label>
-                <Input
-                  placeholder="e.g. John Smith"
-                  value={dnaEmailClientName}
-                  onChange={(e) => setDnaEmailClientName(e.target.value)}
-                  className="bg-muted/50"
-                />
+          
+          {/* PDF Preview */}
+          <div className="flex-1 overflow-hidden" style={{ height: '60vh' }}>
+            {dnaReportBlobUrl ? (
+              <iframe
+                src={dnaReportBlobUrl}
+                className="w-full h-full border-0"
+                title="DNA Audit Report Preview"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                Generating preview...
               </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Email</label>
-                <Input
-                  type="email"
-                  placeholder="e.g. john@example.com"
-                  value={dnaEmailClientEmail}
-                  onChange={(e) => setDnaEmailClientEmail(e.target.value)}
-                  className="bg-muted/50"
-                />
-              </div>
-            </div>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDnaEmailDialog(false)} size="sm">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSendDnaReportEmail}
-              disabled={isSendingDnaEmail || !dnaEmailClientEmail || !dnaEmailClientName}
-              size="sm"
-              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
-            >
-              {isSendingDnaEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              {isSendingDnaEmail ? 'Sending...' : 'Send Report'}
-            </Button>
-          </DialogFooter>
+
+          {/* Action Bar */}
+          <div className="px-6 py-4 border-t border-border bg-muted/30">
+            {!showDnaEmailDialog ? (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  ✅ Auto-saved to project documents
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (dnaReportBlobUrl) {
+                        const a = document.createElement('a');
+                        a.href = dnaReportBlobUrl;
+                        a.download = dnaReportFilename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        toast.success('PDF downloaded');
+                      }
+                    }}
+                    className="gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Download PDF
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowDnaEmailDialog(true)}
+                    className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    Send via Email
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Send className="h-4 w-4 text-sky-500" />
+                  Send DNA Report via Email
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Name</label>
+                    <Input
+                      placeholder="e.g. John Smith"
+                      value={dnaEmailClientName}
+                      onChange={(e) => setDnaEmailClientName(e.target.value)}
+                      className="bg-muted/50 h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Email</label>
+                    <Input
+                      type="email"
+                      placeholder="e.g. john@example.com"
+                      value={dnaEmailClientEmail}
+                      onChange={(e) => setDnaEmailClientEmail(e.target.value)}
+                      className="bg-muted/50 h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowDnaEmailDialog(false)}>
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleSendDnaReportEmail}
+                    disabled={isSendingDnaEmail || !dnaEmailClientEmail || !dnaEmailClientName}
+                    size="sm"
+                    className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+                  >
+                    {isSendingDnaEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                    {isSendingDnaEmail ? 'Sending...' : 'Send Report'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       
