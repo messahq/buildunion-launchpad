@@ -637,7 +637,7 @@ const BuildUnionWorkspace = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                       onClick={(e) => openDeleteDialog(e, project)}
                     >
                       <Trash2 className="h-4 w-4" />
