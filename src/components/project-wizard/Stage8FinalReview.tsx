@@ -8906,6 +8906,59 @@ export default function Stage8FinalReview({
                 </div>
               </motion.div>
 
+              {/* ─── Task Completion Progress ─── */}
+              {(() => {
+                const baseTasks = tasks.filter(t => !t.isSubTask);
+                const totalT = baseTasks.length;
+                const completedT = baseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+                const inProgressT = baseTasks.filter(t => t.status === 'in_progress').length;
+                const progressPct = totalT > 0 ? Math.round((completedT / totalT) * 100) : 0;
+                return totalT > 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="p-2.5 rounded-xl border border-amber-500/15 bg-gradient-to-r from-amber-950/15 to-orange-950/10"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="text-[10px] text-amber-700 dark:text-amber-200/80 uppercase tracking-widest font-semibold">Task Progress</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-amber-950 dark:text-white font-mono">{completedT}/{totalT}</span>
+                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${progressPct === 100 ? 'bg-emerald-500/20 text-emerald-300' : progressPct >= 50 ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'}`}>
+                          {progressPct}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full overflow-hidden flex bg-amber-900/25 border border-amber-500/15">
+                      {completedT > 0 && (
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(completedT / totalT) * 100}%` }}
+                          transition={{ duration: 0.8, delay: 0.1 }}
+                          className="h-full bg-emerald-500 rounded-l-full"
+                        />
+                      )}
+                      {inProgressT > 0 && (
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(inProgressT / totalT) * 100}%` }}
+                          transition={{ duration: 0.8, delay: 0.2 }}
+                          className="h-full bg-amber-400"
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[9px] text-amber-600 dark:text-amber-300/60">Done</span></div>
+                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-400" /><span className="text-[9px] text-amber-600 dark:text-amber-300/60">In Progress</span></div>
+                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-900/40" /><span className="text-[9px] text-amber-600 dark:text-amber-300/60">Pending</span></div>
+                    </div>
+                  </motion.div>
+                ) : null;
+              })()}
+
               {hasFinancialData ? (
                 <>
                   {/* ─── Totals Row: Net → Tax → Gross ─── */}
