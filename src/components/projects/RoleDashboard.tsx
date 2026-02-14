@@ -85,16 +85,16 @@ const ROLE_ACCENT: Record<string, string> = {
   member: "from-gray-500 to-slate-500",
 };
 
-// Which panels each role can see
+// Which panels each role can see — all members see ALL tasks (not just their own)
 const ROLE_PANELS: Record<string, string[]> = {
   owner: ["tasks", "documents", "team", "weather", "financials", "timeline", "contract", "sitelogs", "deliveries"],
   foreman: ["tasks", "documents", "team", "weather", "timeline", "contract", "sitelogs", "deliveries"],
-  worker: ["my-tasks", "weather", "timeline", "sitelogs"],
-  inspector: ["my-tasks", "documents", "weather", "contract", "sitelogs"],
-  subcontractor: ["my-tasks", "documents", "weather", "timeline", "deliveries"],
+  worker: ["tasks", "weather", "timeline", "sitelogs"],
+  inspector: ["tasks", "documents", "weather", "contract", "sitelogs"],
+  subcontractor: ["tasks", "documents", "weather", "timeline", "deliveries"],
   supplier: ["documents", "weather", "timeline", "deliveries"],
   client: ["overview", "documents", "weather", "timeline", "contract"],
-  member: ["my-tasks", "weather", "sitelogs"],
+  member: ["tasks", "weather", "sitelogs"],
 };
 
 const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
@@ -115,6 +115,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
     deliveryCount: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [memberNames, setMemberNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadDashboardData();
@@ -131,7 +132,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           .eq("project_id", projectId)
           .is("archived_at", null),
         supabase.from("project_documents").select("id").eq("project_id", projectId),
-        supabase.from("project_members").select("id").eq("project_id", projectId),
+        supabase.from("project_members").select("id, user_id, role").eq("project_id", projectId),
         supabase
           .from("project_summaries")
           .select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date")
@@ -143,6 +144,30 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
 
       const tasks = (tasksRes.data || []) as TaskItem[];
       const myTasks = tasks.filter((t) => t.assigned_to === userId);
+
+      // Fetch profile names for all assignees + team members
+      const allUserIds = new Set<string>();
+      tasks.forEach((t) => { if (t.assigned_to) allUserIds.add(t.assigned_to); });
+      (membersRes.data || []).forEach((m: any) => { if (m.user_id) allUserIds.add(m.user_id); });
+      
+      if (allUserIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, username")
+          .in("user_id", Array.from(allUserIds));
+        
+        const names: Record<string, string> = {};
+        (profiles || []).forEach((p) => {
+          names[p.user_id] = p.full_name || p.username || "Team Member";
+        });
+        // Also map member roles
+        (membersRes.data || []).forEach((m: any) => {
+          if (m.user_id && !names[m.user_id]) {
+            names[m.user_id] = "Team Member";
+          }
+        });
+        setMemberNames(names);
+      }
 
       // Extract timeline from verified_facts OR project_summaries columns
       let startDate: string | null = null;
@@ -313,22 +338,18 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                   <CardTitle className="text-sm font-medium text-cyan-400 flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <ClipboardList className="h-4 w-4" />
-                      {panels.includes("my-tasks")
-                        ? t("roleDashboard.myTasks", "My Tasks")
-                        : t("roleDashboard.allTasks", "All Tasks")}
+                      {t("roleDashboard.allTasks", "All Tasks")}
                     </span>
                     <span className="text-xs text-cyan-600">
-                      {panels.includes("my-tasks")
-                        ? `${data.taskStats.myCompleted}/${data.taskStats.myTasks} ${t("roleDashboard.done", "done")}`
-                        : `${data.taskStats.completed}/${data.taskStats.total} ${t("roleDashboard.done", "done")}`}
+                      {data.taskStats.completed}/{data.taskStats.total} {t("roleDashboard.done", "done")}
                     </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {/* Progress bar */}
                   {(() => {
-                    const total = panels.includes("my-tasks") ? data.taskStats.myTasks : data.taskStats.total;
-                    const completed = panels.includes("my-tasks") ? data.taskStats.myCompleted : data.taskStats.completed;
+                    const total = data.taskStats.total;
+                    const completed = data.taskStats.completed;
                     return total > 0 ? (
                       <div className="mb-4 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
                         <div
@@ -346,7 +367,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                         {t("roleDashboard.noTasks", "No tasks assigned yet")}
                       </p>
                     ) : (
-                      (panels.includes("my-tasks") ? data.myTaskItems : data.allTasks).map((task) => (
+                      data.allTasks.map((task) => (
                         <div
                           key={task.id}
                           className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
@@ -375,9 +396,20 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                             }`}>
                               {task.title}
                             </p>
-                            {task.description && (
-                              <p className="text-xs text-cyan-700 truncate mt-0.5">{task.description}</p>
-                            )}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {task.assigned_to && memberNames[task.assigned_to] && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                  task.assigned_to === userId 
+                                    ? "bg-cyan-800/40 text-cyan-300 font-medium" 
+                                    : "bg-slate-800/40 text-slate-400"
+                                }`}>
+                                  {task.assigned_to === userId ? "You" : memberNames[task.assigned_to]}
+                                </span>
+                              )}
+                              {task.description && (
+                                <p className="text-xs text-cyan-700 truncate">{task.description}</p>
+                              )}
+                            </div>
                           </div>
 
                           {/* Priority & date */}
