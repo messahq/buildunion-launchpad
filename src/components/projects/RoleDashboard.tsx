@@ -58,6 +58,9 @@ interface DashboardData {
   weather: { temp: number; description: string; alerts: any[] } | null;
   financials: { total: number; material: number; labor: number } | null;
   timeline: { start: string | null; end: string | null };
+  contractStatus: string | null;
+  siteLogCount: number;
+  deliveryCount: number;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -84,14 +87,14 @@ const ROLE_ACCENT: Record<string, string> = {
 
 // Which panels each role can see
 const ROLE_PANELS: Record<string, string[]> = {
-  owner: ["tasks", "documents", "team", "weather", "financials", "timeline"],
-  foreman: ["tasks", "documents", "team", "weather", "timeline"],
-  worker: ["my-tasks", "weather", "timeline"],
-  inspector: ["my-tasks", "documents", "weather"],
-  subcontractor: ["my-tasks", "documents", "weather", "timeline"],
-  supplier: ["documents", "weather", "timeline"],
-  client: ["overview", "documents", "weather", "timeline"],
-  member: ["my-tasks", "weather"],
+  owner: ["tasks", "documents", "team", "weather", "financials", "timeline", "contract", "sitelogs", "deliveries"],
+  foreman: ["tasks", "documents", "team", "weather", "timeline", "contract", "sitelogs", "deliveries"],
+  worker: ["my-tasks", "weather", "timeline", "sitelogs"],
+  inspector: ["my-tasks", "documents", "weather", "contract", "sitelogs"],
+  subcontractor: ["my-tasks", "documents", "weather", "timeline", "deliveries"],
+  supplier: ["documents", "weather", "timeline", "deliveries"],
+  client: ["overview", "documents", "weather", "timeline", "contract"],
+  member: ["my-tasks", "weather", "sitelogs"],
 };
 
 const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
@@ -107,6 +110,9 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
     weather: null,
     financials: null,
     timeline: { start: null, end: null },
+    contractStatus: null,
+    siteLogCount: 0,
+    deliveryCount: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -117,7 +123,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   const loadDashboardData = async () => {
     try {
       // Parallel fetch all data
-      const [projectRes, tasksRes, docsRes, membersRes, summaryRes] = await Promise.all([
+      const [projectRes, tasksRes, docsRes, membersRes, summaryRes, contractsRes, siteLogsRes, deliveriesRes] = await Promise.all([
         supabase.from("projects").select("name, address, trade, status").eq("id", projectId).single(),
         supabase
           .from("project_tasks")
@@ -130,6 +136,9 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           .from("project_summaries")
           .select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date")
           .eq("project_id", projectId),
+        supabase.from("contracts").select("id, status").eq("project_id", projectId).limit(1),
+        supabase.from("site_logs").select("id").eq("project_id", projectId),
+        supabase.from("material_deliveries").select("id").eq("project_id", projectId),
       ]);
 
       const tasks = (tasksRes.data || []) as TaskItem[];
@@ -189,6 +198,9 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
               }
             : null,
         timeline: { start: startDate, end: endDate },
+        contractStatus: contractsRes.data?.[0]?.status || null,
+        siteLogCount: siteLogsRes.data?.length || 0,
+        deliveryCount: deliveriesRes.data?.length || 0,
       });
     } catch (error) {
       console.error("Dashboard load error:", error);
@@ -517,6 +529,69 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                       <span className="text-amber-300">${data.financials.labor.toLocaleString()}</span>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Contract Status Panel */}
+          {panels.includes("contract") && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}>
+              <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-rose-400 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Contract
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {data.contractStatus ? (
+                    <Badge className={
+                      data.contractStatus === "signed" ? "bg-emerald-600" :
+                      data.contractStatus === "sent" ? "bg-amber-600" :
+                      "bg-slate-600"
+                    }>
+                      {data.contractStatus.charAt(0).toUpperCase() + data.contractStatus.slice(1)}
+                    </Badge>
+                  ) : (
+                    <p className="text-sm text-cyan-700">No contract created</p>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Site Logs Panel */}
+          {panels.includes("sitelogs") && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34 }}>
+              <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    Site Logs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-white">{data.siteLogCount}</p>
+                  <p className="text-xs text-emerald-600 mt-1">{data.siteLogCount === 0 ? "No site reports yet" : "reports filed"}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Deliveries Panel */}
+          {panels.includes("deliveries") && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}>
+              <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-orange-400 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Deliveries
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-white">{data.deliveryCount}</p>
+                  <p className="text-xs text-orange-600 mt-1">{data.deliveryCount === 0 ? "No deliveries logged" : "deliveries tracked"}</p>
                 </CardContent>
               </Card>
             </motion.div>
