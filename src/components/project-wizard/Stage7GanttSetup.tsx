@@ -539,7 +539,7 @@ export default function Stage7GanttSetup({
           : task.isSubTask
             ? `Template sub-task: ${getPhaseById(task.phaseId)?.name}`
             : `Phase: ${getPhaseById(task.phaseId)?.name}`,
-        assigned_to: task.assigneeId || userId,
+        assigned_to: task.assigneeId || userId, // Fallback to owner only on initial creation
         assigned_by: userId,
         priority: task.priority,
         status: 'pending',
@@ -587,8 +587,35 @@ export default function Stage7GanttSetup({
       return true;
     }
     
-    // Case 3: Both phase tasks and template sub-tasks already exist — skip
-    console.log('[Stage7] Tasks already complete, skipping insert');
+    // Case 3: Both phase tasks and template sub-tasks already exist — UPDATE assignees
+    // Match existing tasks by title and update their assigned_to
+    const updatePromises = phaseTasks.map(async (task) => {
+      const assignee = task.assigneeId || null; // Don't fallback to owner!
+      if (!assignee) return; // Skip unassigned
+      const matching = existingTasks?.find(et => et.id); // We need to match by title
+      // Find matching existing task by scanning all
+      const { data: matchedTasks } = await supabase
+        .from('project_tasks')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('title', task.name)
+        .is('archived_at', null)
+        .limit(1);
+      
+      if (matchedTasks && matchedTasks.length > 0) {
+        await supabase
+          .from('project_tasks')
+          .update({ 
+            assigned_to: assignee,
+            priority: task.priority,
+            due_date: task.endDate.toISOString(),
+          })
+          .eq('id', matchedTasks[0].id);
+      }
+    });
+    
+    await Promise.all(updatePromises);
+    console.log('[Stage7] ✓ Updated assignees for existing tasks');
     return true;
   }, [phaseTasks, projectId, userId, getPhaseById]);
 
