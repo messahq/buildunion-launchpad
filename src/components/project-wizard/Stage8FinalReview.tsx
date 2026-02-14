@@ -261,7 +261,7 @@ const PANELS: PanelConfig[] = [
     color: 'text-teal-600',
     bgColor: 'bg-teal-50 dark:bg-teal-950/30',
     borderColor: 'border-teal-300 dark:border-teal-700',
-    visibilityTier: 'foreman',
+    visibilityTier: 'worker',
     dataKeys: ['TEAM_STRUCTURE', 'TEAM_MEMBER_INVITE', 'TEAM_PERMISSION_SET', 'TEAM_SIZE'],
     description: 'Members, roles, permissions',
   },
