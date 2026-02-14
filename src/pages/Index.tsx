@@ -7,7 +7,7 @@ const runEngineeringAnalysis = async (projectData: any) => {
     try {
       const { data, error } = await supabase.functions.invoke('buildunion-brain', {
         body: { 
-          project_type: projectData.type || 'Renovation',
+          projectData?.type
           image_url: projectData.image || '',
           current_gross_sum: projectData.total_budget || 0
         },
