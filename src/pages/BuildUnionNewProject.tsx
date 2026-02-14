@@ -170,6 +170,7 @@ const BuildUnionNewProject = () => {
             .select('id')
             .eq('id', activeProjectId)
             .eq('user_id', user.id)
+            .is('archived_at', null)
             .maybeSingle();
           
           if (existingProject) {
