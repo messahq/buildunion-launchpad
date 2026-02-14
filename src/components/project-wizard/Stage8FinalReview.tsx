@@ -12327,7 +12327,7 @@ export default function Stage8FinalReview({
         <div className="max-w-7xl mx-auto flex flex-col gap-1.5 lg:gap-2">
           {/* Loading Status Indicator */}
           <AnimatePresence>
-            {(isGeneratingAI || isGeneratingSummary || isGeneratingInvoice) && (
+            {(isGeneratingDnaReport || isGeneratingInvoice) && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -12338,16 +12338,14 @@ export default function Stage8FinalReview({
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-400 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] lg:text-xs font-medium text-cyan-300 truncate">
-                      {isGeneratingAI && '🧠 M.E.S.S.A. Analysis...'}
-                      {isGeneratingSummary && '📊 Generating Summary...'}
+                      {isGeneratingDnaReport && '🧬 4D DNA Analysis...'}
                       {isGeneratingInvoice && '📄 Preparing Invoice...'}
                     </p>
                     <div className="mt-1 h-1 w-full rounded-full bg-cyan-950/80 overflow-hidden">
                       <motion.div
                         className={cn(
                           "h-full rounded-full",
-                          isGeneratingAI && "bg-gradient-to-r from-emerald-500 to-green-400",
-                          isGeneratingSummary && "bg-gradient-to-r from-blue-500 to-cyan-400",
+                          isGeneratingDnaReport && "bg-gradient-to-r from-emerald-500 to-green-400",
                           isGeneratingInvoice && "bg-gradient-to-r from-amber-500 to-yellow-400"
                         )}
                         initial={{ width: '5%' }}
@@ -12385,39 +12383,16 @@ export default function Stage8FinalReview({
                 </Button>
               )}
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateSummary}
-                disabled={isGeneratingSummary}
-                className="gap-1 text-[10px] lg:text-xs border-blue-800/50 text-blue-400 hover:bg-blue-950/30 hover:text-blue-300 bg-transparent h-7 px-2 shrink-0"
-              >
-                {isGeneratingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <ClipboardList className="h-3 w-3" />}
-                <span className="hidden sm:inline">Summary</span>
-              </Button>
-              
                <Button
-                 variant="outline"
                  size="sm"
                  onClick={handleDnaReportPdf}
                  disabled={isGeneratingDnaReport}
-                 className="gap-1 text-[10px] lg:text-xs border-emerald-800/50 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300 bg-transparent h-7 px-2 shrink-0"
+                 className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30 h-7 px-2 shrink-0"
                >
                  {isGeneratingDnaReport ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
-                 DNA
+                 <span className="hidden sm:inline">DNA Report</span>
+                 <span className="sm:hidden">DNA</span>
                </Button>
-
-              {(userRole === 'owner' || userRole === 'foreman') && (
-                <Button
-                  size="sm"
-                  onClick={handleMessaSynthesis}
-                  disabled={isGeneratingAI}
-                  className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30 h-7 px-2 shrink-0"
-                >
-                  {isGeneratingAI ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                  <span className="hidden sm:inline">M.E.S.S.A.</span>
-                </Button>
-              )}
               
               <TooltipProvider>
                 <Tooltip>
