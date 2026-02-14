@@ -26,6 +26,7 @@ import BuildUnionHeader from "@/components/BuildUnionHeader";
 import {
   saveProjectToLocalStorage,
   restoreProjectFromLocalStorage,
+  getActiveProjectIdFromStorage,
   syncCitationsToLocalStorage,
   logCriticalError,
   canDeleteProject,
@@ -120,7 +121,7 @@ const BuildUnionNewProject = () => {
   useEffect(() => {
     if (!user || projectId || queryProjectId) return;
     
-    // Check if continuing from existing project
+    // Check if continuing from existing project via sessionStorage
     const continueProjectId = sessionStorage.getItem('continueFromProjectId');
     const continueStage = parseInt(sessionStorage.getItem('continueFromStage') || '0');
     const continueGfaValue = parseFloat(sessionStorage.getItem('continueGfaValue') || '0');
@@ -132,7 +133,6 @@ const BuildUnionNewProject = () => {
       setCurrentStage(STAGES.STAGE_3);
       setGfaValue(continueGfaValue);
       
-      // Load citations from existing project
       const loadCitations = async () => {
         const { data: summary } = await supabase
           .from('project_summaries')
@@ -152,24 +152,62 @@ const BuildUnionNewProject = () => {
         setIsInitializing(false);
       });
       
-      // Clear session storage
       sessionStorage.removeItem('continueFromProjectId');
       sessionStorage.removeItem('continueFromStage');
       sessionStorage.removeItem('continueGfaValue');
       return;
     }
     
-    const createDraftProject = async () => {
+    // ✓ RESTORE: Check localStorage for an active in-progress project
+    const activeProjectId = getActiveProjectIdFromStorage();
+    if (activeProjectId) {
+      const restored = restoreProjectFromLocalStorage(activeProjectId);
+      if (restored && restored.userId === user.id) {
+        // Verify project still exists in DB before restoring
+        const verifyAndRestore = async () => {
+          const { data: existingProject } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('id', activeProjectId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (existingProject) {
+            console.log('[NewProject] Restoring active project from localStorage:', activeProjectId);
+            setProjectId(restored.projectId);
+            setCurrentStage(restored.currentStage);
+            setCitations(restored.citations || []);
+            setGfaValue(restored.gfaValue || 0);
+            setIsInitializing(false);
+            return;
+          }
+          
+          // Project no longer exists in DB, clear stale localStorage and create new
+          console.log('[NewProject] Stale project in localStorage, creating new');
+          localStorage.removeItem('active_project_id');
+          createNewDraftProject();
+        };
+        
+        verifyAndRestore().catch(() => {
+          setIsInitializing(false);
+          createNewDraftProject();
+        });
+        return;
+      }
+    }
+    
+    createNewDraftProject();
+    
+    async function createNewDraftProject() {
       try {
         const projectName = `Project-${Date.now()}`;
         
-        // ✓ IMMEDIATE PERSISTENCE: Create project with 'active' status from the start
         const { data: newProject, error } = await supabase
           .from('projects')
           .insert({
             name: projectName,
-            user_id: user.id,
-            status: 'active', // NOT 'draft' - active from minute 1
+            user_id: user!.id,
+            status: 'active',
           })
           .select('id')
           .single();
@@ -180,25 +218,22 @@ const BuildUnionNewProject = () => {
         console.log('[NewProject] Active project created:', newProject.id);
         setProjectId(newProject.id);
         
-        // Create project_summaries record with 'active' status
         const { error: summaryError } = await supabase
           .from('project_summaries')
           .insert({
             project_id: newProject.id,
-            user_id: user.id,
+            user_id: user!.id,
             status: 'active',
             verified_facts: [],
           });
 
         if (summaryError) {
           logCriticalError('[NewProject] Failed to create summary', summaryError);
-          // Non-fatal - continue anyway
         }
 
-        // ✓ LOCAL BACKUP: Save to localStorage immediately
         saveProjectToLocalStorage({
           projectId: newProject.id,
-          userId: user.id,
+          userId: user!.id,
           currentStage: 0,
           citations: [],
           gfaValue: 0,
@@ -211,9 +246,7 @@ const BuildUnionNewProject = () => {
       } finally {
         setIsInitializing(false);
       }
-    };
-
-    createDraftProject();
+    }
   }, [user, navigate]);
 
   // Handle citation saved
