@@ -145,10 +145,19 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
       const tasks = (tasksRes.data || []) as TaskItem[];
       const myTasks = tasks.filter((t) => t.assigned_to === userId);
 
-      // Fetch profile names for all assignees + team members
+      // Fetch profile names for all assignees + team members + project owner
       const allUserIds = new Set<string>();
       tasks.forEach((t) => { if (t.assigned_to) allUserIds.add(t.assigned_to); });
       (membersRes.data || []).forEach((m: any) => { if (m.user_id) allUserIds.add(m.user_id); });
+      // Include project owner
+      if (projectRes.data) {
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("user_id")
+          .eq("id", projectId)
+          .single();
+        if (proj?.user_id) allUserIds.add(proj.user_id);
+      }
       
       if (allUserIds.size > 0) {
         const { data: profiles } = await supabase
@@ -156,15 +165,25 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           .select("user_id, full_name, username")
           .in("user_id", Array.from(allUserIds));
         
+        // Build role map from members
+        const roleMap: Record<string, string> = {};
+        (membersRes.data || []).forEach((m: any) => {
+          if (m.user_id) roleMap[m.user_id] = m.role || "member";
+        });
+        // Mark project owner
+        const { data: projOwner } = await supabase
+          .from("projects")
+          .select("user_id")
+          .eq("id", projectId)
+          .single();
+        if (projOwner?.user_id) roleMap[projOwner.user_id] = "owner";
+
         const names: Record<string, string> = {};
         (profiles || []).forEach((p) => {
-          names[p.user_id] = p.full_name || p.username || "Team Member";
-        });
-        // Also map member roles
-        (membersRes.data || []).forEach((m: any) => {
-          if (m.user_id && !names[m.user_id]) {
-            names[m.user_id] = "Team Member";
-          }
+          const name = p.full_name || p.username || "Team Member";
+          const role = roleMap[p.user_id];
+          const roleLabel = role ? ` (${role.charAt(0).toUpperCase() + role.slice(1)})` : "";
+          names[p.user_id] = `${name}${roleLabel}`;
         });
         setMemberNames(names);
       }

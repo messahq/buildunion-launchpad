@@ -5129,15 +5129,17 @@ export default function Stage8FinalReview({
      const completedTasks = baseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
      const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-     // Get assignee name
-     const getAssigneeName = (assigneeId: string) => {
-       const member = teamMembers.find(m => m.userId === assigneeId);
-       return member?.name || 'Unassigned';
-     };
-     const getAssigneeInitial = (assigneeId: string) => {
-       const name = getAssigneeName(assigneeId);
-       return name.charAt(0).toUpperCase();
-     };
+     // Get assignee name with role
+      const getAssigneeName = (assigneeId: string) => {
+        const member = teamMembers.find(m => m.userId === assigneeId);
+        if (!member) return 'Unassigned';
+        const roleLabel = member.role ? ` (${member.role.charAt(0).toUpperCase() + member.role.slice(1)})` : '';
+        return `${member.name}${roleLabel}`;
+      };
+      const getAssigneeInitial = (assigneeId: string) => {
+        const member = teamMembers.find(m => m.userId === assigneeId);
+        return member?.name?.charAt(0)?.toUpperCase() || 'U';
+      };
 
       // Gantt bar width based on checklist completion
       const getTaskProgress = (task: TaskWithChecklist) => {
