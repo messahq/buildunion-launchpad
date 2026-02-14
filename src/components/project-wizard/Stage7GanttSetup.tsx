@@ -8,7 +8,7 @@
 // - Verification nodes for each major phase
 // ============================================
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -619,15 +619,27 @@ export default function Stage7GanttSetup({
     return true;
   }, [phaseTasks, projectId, userId, getPhaseById]);
 
-  // Auto-save tasks when they're generated (so skipping Stage 7 still persists them)
+  // Guard ref to prevent concurrent auto-saves
+  const isSavingRef = useRef(false);
+  const hasAutoSavedRef = useRef(false);
+
+  // Auto-save tasks ONCE when they're first generated (so skipping Stage 7 still persists them)
   useEffect(() => {
     if (phaseTasks.length === 0) return;
+    if (hasAutoSavedRef.current) return; // Only auto-save once
+    if (isSavingRef.current) return; // Prevent concurrent saves
     
     const autoSave = async () => {
-      await saveTasksToDb();
+      isSavingRef.current = true;
+      try {
+        await saveTasksToDb();
+        hasAutoSavedRef.current = true;
+      } finally {
+        isSavingRef.current = false;
+      }
     };
     autoSave();
-  }, [phaseTasks, saveTasksToDb]);
+  }, [phaseTasks.length > 0, saveTasksToDb]); // Only trigger on first generation, not every assignee change
 
   // Save and generate dashboard
   const handleGenerateDashboard = useCallback(async () => {
