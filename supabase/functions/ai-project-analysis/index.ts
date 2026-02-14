@@ -16,7 +16,6 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 // ============================================
 // SERVER-SIDE TIER RESOLUTION VIA STRIPE
-// Never trust client-sent tier parameter
 // ============================================
 const PRODUCT_TIERS: Record<string, string> = {
   "prod_Tog02cwkocBGA0": "pro",
@@ -66,18 +65,15 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
 // M.E.S.S.A. GRAND DUAL ENGINE ARCHITECTURE
 // Multi-Engine Synthesis & Structured Analysis
 // 
-// Gemini 2.5 Pro = Visual Analysis + Site Assessment
+// Gemini 2.5 Pro = Visual Analysis + 4D Progress Tracking
 // OpenAI GPT-5 = Building Code + Regulatory Validation
 // ============================================
 
 const AI_MODELS = {
-  // TOP TIER - Maximum Quality
   GEMINI_PRO: "google/gemini-2.5-pro",
   GPT5: "openai/gpt-5",
-  // HIGH TIER
   GEMINI_FLASH: "google/gemini-2.5-flash",
   GPT5_MINI: "openai/gpt-5-mini",
-  // STANDARD TIER
   GEMINI_FLASH_LITE: "google/gemini-2.5-flash-lite",
   GPT5_NANO: "openai/gpt-5-nano",
 } as const;
@@ -91,17 +87,15 @@ interface DualEngineConfig {
   synthesisVersion: string;
 }
 
-// M.E.S.S.A. Synthesis uses TOP models for maximum quality
 function getDualEngineConfig(tier: 'free' | 'pro' | 'premium' | 'messa'): DualEngineConfig {
   if (tier === 'messa' || tier === 'premium') {
-    // M.E.S.S.A. SYNTHESIS - Maximum power
     return {
-      geminiModel: AI_MODELS.GEMINI_PRO,    // Best Gemini
-      openaiModel: AI_MODELS.GPT5,           // Best OpenAI
+      geminiModel: AI_MODELS.GEMINI_PRO,
+      openaiModel: AI_MODELS.GPT5,
       geminiTokens: 4000,
       openaiTokens: 4000,
       runDualEngine: true,
-      synthesisVersion: 'M.E.S.S.A. v3.0',
+      synthesisVersion: 'M.E.S.S.A. v4.0 — 4D Progress',
     };
   } else if (tier === 'pro') {
     return {
@@ -110,17 +104,16 @@ function getDualEngineConfig(tier: 'free' | 'pro' | 'premium' | 'messa'): DualEn
       geminiTokens: 2000,
       openaiTokens: 1500,
       runDualEngine: true,
-      synthesisVersion: 'M.E.S.S.A. v2.0',
+      synthesisVersion: 'M.E.S.S.A. v3.0 — 4D Progress',
     };
   }
-  // Free tier
   return {
     geminiModel: AI_MODELS.GEMINI_FLASH_LITE,
     openaiModel: AI_MODELS.GPT5_NANO,
-    geminiTokens: 1000,
+    geminiTokens: 1500,
     openaiTokens: 800,
     runDualEngine: false,
-    synthesisVersion: 'M.E.S.S.A. v1.0',
+    synthesisVersion: 'M.E.S.S.A. v2.0 — 4D Progress',
   };
 }
 
@@ -146,8 +139,8 @@ interface ProjectData {
   totalBudget: number;
   hasContracts: boolean;
   documentCount: number;
-  sitePhotos: string[];
-  blueprints: string[];
+  sitePhotos: Array<{ path: string; uploadedAt: string; fileName: string }>;
+  blueprints: Array<{ path: string; uploadedAt: string; fileName: string }>;
   region: string;
   citations: any[];
 }
@@ -178,12 +171,8 @@ async function callAI(model: string, messages: Array<{role: string; content: any
   });
 
   if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error("Rate limit exceeded. Please try again later.");
-    }
-    if (response.status === 402) {
-      throw new Error("AI credits exhausted. Please add credits.");
-    }
+    if (response.status === 429) throw new Error("Rate limit exceeded. Please try again later.");
+    if (response.status === 402) throw new Error("AI credits exhausted. Please add credits.");
     const errorText = await response.text();
     throw new Error(`AI API error: ${response.status} - ${errorText}`);
   }
@@ -214,7 +203,6 @@ async function fetchImageAsBase64(filePath: string): Promise<{ base64: string; m
     }
     const base64 = btoa(binary);
 
-    // Detect mime type from extension
     const ext = filePath.split('.').pop()?.toLowerCase() || '';
     const mimeMap: Record<string, string> = {
       'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
@@ -230,49 +218,64 @@ async function fetchImageAsBase64(filePath: string): Promise<{ base64: string; m
   }
 }
 
-async function fetchProjectImages(filePaths: string[], maxImages: number = 5): Promise<Array<{ base64: string; mimeType: string; fileName: string }>> {
-  const results: Array<{ base64: string; mimeType: string; fileName: string }> = [];
-  const pathsToFetch = filePaths.slice(0, maxImages);
+async function fetchProjectImagesChronological(
+  imageDocs: Array<{ path: string; uploadedAt: string; fileName: string }>,
+  maxImages: number = 8
+): Promise<Array<{ base64: string; mimeType: string; fileName: string; uploadedAt: string; index: number }>> {
+  // Sort by upload date ascending (oldest first → newest last)
+  const sorted = [...imageDocs].sort((a, b) => 
+    new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
+  );
+  
+  const toFetch = sorted.slice(0, maxImages);
+  const results: Array<{ base64: string; mimeType: string; fileName: string; uploadedAt: string; index: number }> = [];
 
-  for (const filePath of pathsToFetch) {
-    const img = await fetchImageAsBase64(filePath);
+  for (let i = 0; i < toFetch.length; i++) {
+    const doc = toFetch[i];
+    const img = await fetchImageAsBase64(doc.path);
     if (img) {
-      // Skip images larger than 4MB base64 (roughly 3MB actual)
       if (img.base64.length > 4 * 1024 * 1024) {
-        logStep('Image too large, skipping', { filePath });
+        logStep('Image too large, skipping', { filePath: doc.path });
         continue;
       }
-      results.push({ ...img, fileName: filePath.split('/').pop() || filePath });
+      results.push({ ...img, fileName: doc.fileName, uploadedAt: doc.uploadedAt, index: i + 1 });
     }
   }
 
-  logStep('Images fetched for visual analysis', { count: results.length, requested: pathsToFetch.length });
+  logStep('Chronological images fetched', { 
+    count: results.length, 
+    dateRange: results.length > 1 
+      ? `${results[0].uploadedAt} → ${results[results.length - 1].uploadedAt}` 
+      : 'single image',
+  });
   return results;
 }
 
 // ============================================
-// BUILD MULTIMODAL GEMINI MESSAGE
+// BUILD 4D PROGRESS MULTIMODAL MESSAGE
 // ============================================
-function buildMultimodalMessage(
+function buildTimelineMultimodalMessage(
   textPrompt: string,
-  images: Array<{ base64: string; mimeType: string; fileName: string }>
+  images: Array<{ base64: string; mimeType: string; fileName: string; uploadedAt: string; index: number }>
 ): Array<{ type: string; text?: string; image_url?: { url: string } }> {
   const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
 
-  // Add text prompt first
   parts.push({ type: "text", text: textPrompt });
 
-  // Add each image
   for (const img of images) {
+    const dateLabel = new Date(img.uploadedAt).toLocaleDateString('en-US', { 
+      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    });
+    
+    parts.push({
+      type: "text",
+      text: `\n--- IMAGE ${img.index} of ${images.length} | Date: ${dateLabel} | File: ${img.fileName} ---`,
+    });
     parts.push({
       type: "image_url",
       image_url: {
         url: `data:${img.mimeType};base64,${img.base64}`,
       },
-    });
-    parts.push({
-      type: "text",
-      text: `[Image: ${img.fileName}]`,
     });
   }
 
@@ -280,46 +283,55 @@ function buildMultimodalMessage(
 }
 
 // ============================================
-// GEMINI - Visual & Site Assessment Engine
+// GEMINI - 4D PROGRESS TRACKING ENGINE
 // ============================================
-function buildGeminiSynthesisPrompt(projectData: ProjectData, hasImages: boolean): string {
+function buildGeminiSynthesisPrompt(projectData: ProjectData, imageCount: number, imageTimeline: string): string {
   const progressPercent = projectData.taskCount > 0 
     ? Math.round((projectData.completedTasks / projectData.taskCount) * 100) 
     : 0;
 
-  const visualInstructions = hasImages ? `
+  const visualInstructions = imageCount > 0 ? `
 
-### CRITICAL: VISUAL IMAGE ANALYSIS
-You have been provided with actual project images (blueprints and/or site photos).
-**YOU MUST analyze each image in detail.** For each image:
+### CRITICAL: 4D PROGRESS TRACKING — CHRONOLOGICAL VISUAL ANALYSIS
+You are receiving ${imageCount} images sorted from OLDEST to NEWEST.
+${imageTimeline}
+
+**YOUR MISSION:** Analyze these images as a CONSTRUCTION TIMELINE.
+Do NOT treat them as isolated snapshots. CONNECT them chronologically.
+
+**For EACH consecutive pair of images, describe:**
+1. What specific work was completed between them (e.g., "Framing was added since the previous photo")
+2. What materials appeared or were consumed
+3. Whether the pace of progress is accelerating, steady, or slowing
+4. Any safety concerns that appeared or were resolved
+5. Quality assessment: is the new work consistent with previous stages?
 
 **For BLUEPRINTS:**
-- Identify the type of drawing (floor plan, elevation, section, detail)
-- Read and report any dimensions, room labels, annotations visible
-- Estimate the total area from the floor plan if dimensions are readable
-- Identify structural elements (walls, columns, beams, foundations)
-- Note any mechanical/electrical/plumbing (MEP) routing shown
-- Flag any code compliance concerns visible in the design
-- Identify the scale if noted on the drawing
+- Read dimensions, room labels, annotations
+- Estimate total area from floor plans
+- Identify structural elements and MEP routing
+- Flag code compliance concerns
 
-**For SITE PHOTOS:**
-- Describe exactly what you see: construction stage, materials present, work in progress
-- Identify safety hazards (missing PPE, fall risks, improper scaffolding, exposed wiring)
-- Assess workmanship quality (level walls, proper joints, clean work area)
-- Note material storage conditions (covered, organized, weather-protected)
-- Identify the trade work visible (framing, electrical, plumbing, concrete, etc.)
-- Estimate completion percentage of visible work
-- Flag any building code violations visible
+**For SITE PHOTOS (timeline mode):**
+- Compare each photo to the previous one
+- Identify NEW work since last photo
+- Track material usage progression
+- Note worker count changes if visible
+- Flag NEW safety issues or resolution of old ones
+- Estimate completion delta between photos
 
-Include your visual findings in the "visualAnalysis" field of your JSON response.
+**OVERALL TIMELINE ASSESSMENT:**
+- Is the project on track based on visual progress rate?
+- What phase transitioned between first and last image?
+- Predict next 2 weeks of expected progress based on the observed pace.
 ` : `
 ### NOTE: No project images were available for visual analysis.
-Provide assessment based on project data only. Set visualAnalysis.imagesAnalyzed to 0.
+Provide assessment based on project data only.
 `;
 
   return `
-# M.E.S.S.A. VISUAL SYNTHESIS ENGINE
-## Multi-Engine Synthesis & Structured Analysis
+# M.E.S.S.A. 4D PROGRESS TRACKING ENGINE v4.0
+## Multi-Engine Synthesis & Structured Analysis — Timeline Mode
 
 ### PROJECT OVERVIEW
 - **Name:** ${projectData.name}
@@ -332,7 +344,7 @@ Provide assessment based on project data only. Set visualAnalysis.imagesAnalyzed
 - **Team Size:** ${projectData.teamSize} members
 - **Task Progress:** ${projectData.completedTasks}/${projectData.taskCount} (${progressPercent}%)
 - **Documents:** ${projectData.documentCount} files
-- **Site Photos:** ${projectData.sitePhotos.length} available
+- **Site Photos:** ${projectData.sitePhotos.length} available (chronologically sorted)
 - **Blueprints:** ${projectData.blueprints.length} available
 - **Contracts:** ${projectData.hasContracts ? 'Active' : 'None'}
 
@@ -348,82 +360,55 @@ Provide assessment based on project data only. Set visualAnalysis.imagesAnalyzed
 ${visualInstructions}
 ---
 
-## ANALYSIS REQUIREMENTS
+## RESPONSE FORMAT
 
-Provide a comprehensive VISUAL & SITE ASSESSMENT covering:
+**CRITICAL: Return ONLY clean, plain text. NO JSON blocks, NO markdown code fences, NO raw JSON keys.**
+**Write like a professional construction report — narrative paragraphs with section headers.**
 
-### 1. EXECUTIVE SUMMARY (3-4 sentences)
-Synthesize the project state in clear, professional language suitable for stakeholder reporting.
+Your response MUST follow this exact structure:
 
-### 2. PROJECT HEALTH SCORE
-Calculate a 0-100 score based on:
-- Budget utilization efficiency
-- Timeline adherence
-- Team resource allocation
-- Documentation completeness
-- Visual verification status
+EXECUTIVE SUMMARY
+[3-4 sentence professional overview of the project state]
 
-### 3. SITE CONDITION ASSESSMENT
-Based on available photos and documentation:
-- Current site state analysis
-- Material storage & handling
-- Safety compliance indicators
-- Work quality observations
+PROJECT HEALTH SCORE: [number]/100
+Grade: [Excellent|Good|Fair|Needs Attention|Critical]
 
-### 4. PROGRESS ANALYSIS
-- Completed phases identification
-- Active work areas
-- Pending milestones
-- Critical path items
+4D PROGRESS TIMELINE
+[If multiple images: describe the chronological progression between each pair of images]
+[Example: "Between the site visit on Jan 15 and Jan 22, the plumbing rough-in was completed in the basement level. New copper piping is visible along the west wall..."]
+[If single image: describe what the image shows about current progress]
+[If no images: note that visual verification is pending]
 
-### 5. VISUAL VERIFICATION STATUS
-- Documentation gaps
-- Photo evidence completeness
-- Verification checklist status
+SITE CONDITION ASSESSMENT
+- Current Status: [description]
+- Safety Score: [number]/100
+- Key Observations:
+  • [observation 1]
+  • [observation 2]
 
-### 6. RECOMMENDATIONS
-Top 5 actionable recommendations for project optimization.
+VISUAL VERIFICATION RESULTS
+- Images Analyzed: [number]
+- Blueprint Findings: [if any]
+- Site Photo Timeline Analysis: [chronological findings]
+- Critical Visual Flags: [if any]
 
-### 7. 30-DAY FORECAST
-Project trajectory and expected milestones.
+PROGRESS ANALYSIS
+- Overall Progress: [percent]%
+- Completed Phases: [list]
+- Active Work Areas: [list]
+- Critical Path Items: [list]
 
----
+RECOMMENDATIONS
+1. [actionable recommendation]
+2. [actionable recommendation]
+3. [actionable recommendation]
+4. [actionable recommendation]
+5. [actionable recommendation]
 
-Format your response as valid JSON with the following structure:
-{
-  "executiveSummary": "string",
-  "healthScore": number,
-  "healthGrade": "Excellent|Good|Fair|Needs Attention|Critical",
-  "visualAnalysis": {
-    "imagesAnalyzed": number,
-    "blueprintFindings": [{"fileName": "string", "type": "string", "dimensions": "string", "observations": ["array"], "codeFlags": ["array"]}],
-    "sitePhotoFindings": [{"fileName": "string", "stage": "string", "tradesVisible": ["array"], "safetyIssues": ["array"], "qualityScore": number, "observations": ["array"]}],
-    "overallVisualScore": number,
-    "criticalVisualFlags": ["array"]
-  },
-  "siteCondition": {
-    "status": "string",
-    "observations": ["array"],
-    "safetyScore": number
-  },
-  "progressAnalysis": {
-    "overallProgress": number,
-    "phasesComplete": ["array"],
-    "activePhases": ["array"],
-    "criticalItems": ["array"]
-  },
-  "verificationStatus": {
-    "documentsReviewed": number,
-    "gapsIdentified": ["array"],
-    "completeness": number
-  },
-  "recommendations": ["array of 5 items"],
-  "forecast30Day": {
-    "projectedProgress": number,
-    "keyMilestones": ["array"],
-    "riskFactors": ["array"]
-  }
-}`;
+30-DAY FORECAST
+- Projected Progress: [percent]%
+- Key Milestones: [list]
+- Risk Factors: [list]`;
 }
 
 // ============================================
@@ -464,77 +449,115 @@ function buildOpenAISynthesisPrompt(projectData: ProjectData): string {
 
 ---
 
-## VALIDATION REQUIREMENTS
+## RESPONSE FORMAT
 
-Provide a comprehensive REGULATORY & COMPLIANCE assessment:
+**CRITICAL: Return ONLY clean, plain text. NO JSON blocks, NO markdown code fences, NO raw JSON keys.**
+**Write like a professional compliance report — narrative paragraphs with clear section headers.**
 
-### 1. PERMIT STATUS ANALYSIS
-- Required permits for ${projectData.trade} work in ${projectData.region}
-- Typical permit timelines
-- Required inspections
+Your response MUST follow this structure:
 
-### 2. CODE COMPLIANCE CHECKLIST
-- Structural requirements for ${projectData.gfa} sq ft
-- Fire safety requirements
-- Accessibility (AODA/barrier-free) requirements
-- Energy efficiency standards
+PERMIT STATUS ANALYSIS
+- Required Permits: [list for ${projectData.trade} work in ${projectData.region}]
+- Estimated Timeline: [description]
+- Required Inspections: [list]
 
-### 3. TRADE-SPECIFIC REGULATIONS
-- ${projectData.trade} installation standards
-- Material specifications required by code
-- Workmanship standards
+CODE COMPLIANCE ASSESSMENT
+- Structural: [Compliant|Review Required|Non-Compliant] — [notes]
+- Fire Safety: [status] — [notes]
+- Accessibility (AODA): [status] — [notes]
+- Energy Efficiency: [status] — [notes]
 
-### 4. SAFETY COMPLIANCE (OHSA)
-- Worker safety requirements
-- PPE mandates
-- Fall protection thresholds
-- WHMIS requirements
+TRADE-SPECIFIC REGULATIONS (${projectData.trade})
+- Installation Standards: [list]
+- Material Specifications: [list]
+- Workmanship Standards: [list]
 
-### 5. INSPECTION SCHEDULE
-- Pre-construction requirements
-- Rough-in inspection points
-- Final inspection checklist
+SAFETY COMPLIANCE (OHSA)
+- Worker Safety Requirements: [list]
+- PPE Mandates: [list]
+- Training Required: [list]
 
-### 6. DOCUMENTATION REQUIREMENTS
-- Required permits list
-- Certificates needed
-- Record-keeping mandates
+INSPECTION SCHEDULE
+[List inspection milestones in order]
 
-### 7. COMPLIANCE RISK ASSESSMENT
-Overall compliance score and identified gaps.
+DOCUMENTATION REQUIREMENTS
+[List all required permits, certificates, records]
 
----
+COMPLIANCE SCORE: [number]/100
+Risk Level: [Low|Medium|High|Critical]
 
-Format your response as valid JSON with the following structure:
-{
-  "permitStatus": {
-    "required": ["array of permits"],
-    "timeline": "string",
-    "inspections": ["array"]
-  },
-  "codeCompliance": {
-    "structural": { "status": "Compliant|Review Required|Non-Compliant", "notes": "string" },
-    "fireSafety": { "status": "string", "notes": "string" },
-    "accessibility": { "status": "string", "notes": "string" },
-    "energy": { "status": "string", "notes": "string" }
-  },
-  "tradeRegulations": {
-    "standards": ["array"],
-    "materialSpecs": ["array"],
-    "workmanship": ["array"]
-  },
-  "safetyCompliance": {
-    "ohsaRequirements": ["array"],
-    "ppeRequired": ["array"],
-    "trainingRequired": ["array"]
-  },
-  "inspectionSchedule": ["array of inspection milestones"],
-  "documentationRequired": ["array of required documents"],
-  "complianceScore": number,
-  "riskLevel": "Low|Medium|High|Critical",
-  "identifiedGaps": ["array of gaps to address"],
-  "recommendations": ["array of 5 compliance recommendations"]
-}`;
+IDENTIFIED GAPS
+[List specific gaps to address]
+
+RECOMMENDATIONS
+1. [compliance recommendation]
+2. [compliance recommendation]
+3. [compliance recommendation]
+4. [compliance recommendation]
+5. [compliance recommendation]`;
+}
+
+// ============================================
+// CLEAN AI OUTPUT — Remove JSON artifacts
+// ============================================
+function cleanAiOutput(raw: string): string {
+  let cleaned = raw;
+  
+  // Remove markdown code fences
+  cleaned = cleaned.replace(/```json\s*/gi, '');
+  cleaned = cleaned.replace(/```\s*/g, '');
+  
+  // If the entire response is a JSON object, extract readable fields
+  try {
+    const trimmed = cleaned.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const parsed = JSON.parse(trimmed);
+      // Convert JSON to readable text
+      return jsonToReadableText(parsed);
+    }
+  } catch {
+    // Not JSON, continue cleaning
+  }
+  
+  // Remove inline JSON key patterns like "executiveSummary": 
+  cleaned = cleaned.replace(/"(\w+)":\s*/g, '');
+  // Remove stray braces/brackets at line starts
+  cleaned = cleaned.replace(/^\s*[{}\[\]],?\s*$/gm, '');
+  // Remove trailing commas
+  cleaned = cleaned.replace(/,\s*$/gm, '');
+  // Clean up excessive whitespace
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  
+  return cleaned.trim();
+}
+
+function jsonToReadableText(obj: any, depth: number = 0): string {
+  if (typeof obj === 'string') return obj;
+  if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
+  if (Array.isArray(obj)) {
+    return obj.map(item => {
+      if (typeof item === 'string') return `• ${item}`;
+      if (typeof item === 'object') return jsonToReadableText(item, depth + 1);
+      return `• ${String(item)}`;
+    }).join('\n');
+  }
+  if (typeof obj === 'object' && obj !== null) {
+    const lines: string[] = [];
+    for (const [key, value] of Object.entries(obj)) {
+      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        lines.push(`${label}: ${value}`);
+      } else if (Array.isArray(value)) {
+        lines.push(`\n${label}:`);
+        lines.push(jsonToReadableText(value, depth + 1));
+      } else if (typeof value === 'object' && value !== null) {
+        lines.push(`\n${label}:`);
+        lines.push(jsonToReadableText(value, depth + 1));
+      }
+    }
+    return lines.join('\n');
+  }
+  return '';
 }
 
 serve(async (req) => {
@@ -566,9 +589,7 @@ serve(async (req) => {
     const body: AnalysisRequest = await req.json();
     const { projectId, analysisType = 'synthesis', region = 'ontario' } = body;
     
-    // Server-side tier resolution - ignore client-sent tier
     const resolvedTier = await resolveUserTier(user.email || '');
-    // Map resolved tier: premium users get 'messa' (top models), others get their tier
     const tier = resolvedTier === 'premium' ? 'messa' as const : resolvedTier;
     logStep("Tier resolved server-side", { resolvedTier, effectiveTier: tier });
 
@@ -614,7 +635,7 @@ serve(async (req) => {
       supabaseClient.from("project_summaries").select("*").eq("project_id", projectId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabaseClient.from("project_members").select("id").eq("project_id", projectId),
       supabaseClient.from("project_tasks").select("id, status").eq("project_id", projectId).is("archived_at", null),
-      supabaseClient.from("project_documents").select("id, file_name, file_path").eq("project_id", projectId),
+      supabaseClient.from("project_documents").select("id, file_name, file_path, uploaded_at").eq("project_id", projectId).order("uploaded_at", { ascending: true }),
       supabaseClient.from("contracts").select("id").eq("project_id", projectId).is("archived_at", null),
     ]);
 
@@ -624,14 +645,18 @@ serve(async (req) => {
     const gfaCitation = verifiedFacts.find((f: any) => f.cite_type === 'GFA_LOCK');
     const gfa = gfaCitation?.metadata?.gfa_value || gfaCitation?.value || 0;
 
-    // Extract photos and blueprints
+    // ============================================
+    // 4D: SORT DOCUMENTS CHRONOLOGICALLY
+    // ============================================
     const documents = documentsRes.data || [];
-    const sitePhotos = documents
+    
+    const sitePhotoDocs = documents
       .filter((d: any) => d.file_name.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i))
-      .map((d: any) => d.file_path);
-    const blueprints = documents
+      .map((d: any) => ({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name }));
+    
+    const blueprintDocs = documents
       .filter((d: any) => d.file_name.match(/\.(pdf|dwg|dxf)$/i) || d.file_name.toLowerCase().includes('blueprint'))
-      .map((d: any) => d.file_path);
+      .map((d: any) => ({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name }));
 
     // Detect region from address
     const addressLower = (project.address || '').toLowerCase();
@@ -659,81 +684,98 @@ serve(async (req) => {
       totalBudget: summary?.total_cost || 0,
       hasContracts: (contractsRes.data?.length || 0) > 0,
       documentCount: documents.length,
-      sitePhotos,
-      blueprints,
+      sitePhotos: sitePhotoDocs,
+      blueprints: blueprintDocs,
       region: detectedRegion,
       citations: verifiedFacts,
     };
 
-    logStep("Project data gathered", { 
+    logStep("Project data gathered (4D mode)", { 
       gfa: projectData.gfa, 
       tasks: projectData.taskCount,
+      sitePhotos: sitePhotoDocs.length,
+      blueprints: blueprintDocs.length,
       budget: projectData.totalBudget,
       region: detectedRegion,
     });
 
     // ============================================
-    // M.E.S.S.A. GRAND DUAL ENGINE EXECUTION
+    // M.E.S.S.A. 4D DUAL ENGINE EXECUTION
     // ============================================
     const engineConfig = getDualEngineConfig(tier);
-    logStep("M.E.S.S.A. Dual Engine Config", { 
+    logStep("M.E.S.S.A. 4D Engine Config", { 
       geminiModel: engineConfig.geminiModel, 
       openaiModel: engineConfig.openaiModel,
       version: engineConfig.synthesisVersion,
     });
 
-    let geminiAnalysis: Record<string, unknown> | null = null;
-    let openaiAnalysis: Record<string, unknown> | null = null;
+    let geminiAnalysis: string = '';
+    let openaiAnalysis: string = '';
 
     // ============================================
-    // STEP 0: FETCH PROJECT IMAGES FOR VISUAL ANALYSIS
+    // STEP 0: FETCH ALL IMAGES CHRONOLOGICALLY
     // ============================================
-    const allImagePaths = [...projectData.sitePhotos, ...projectData.blueprints.filter((b: string) => b.match(/\.(jpg|jpeg|png|gif|webp)$/i))];
-    logStep("Fetching project images for visual analysis", { totalPaths: allImagePaths.length });
+    const allImageDocs = [
+      ...sitePhotoDocs,
+      ...blueprintDocs.filter(b => b.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i)),
+    ];
+    logStep("Fetching images chronologically for 4D analysis", { totalPaths: allImageDocs.length });
     
-    const projectImages = await fetchProjectImages(allImagePaths, 6);
-    logStep("Images ready for Gemini", { 
-      fetched: projectImages.length, 
-      fileNames: projectImages.map(i => i.fileName),
+    const projectImages = await fetchProjectImagesChronological(allImageDocs, 8);
+    
+    // Build timeline description for the prompt
+    const imageTimeline = projectImages.length > 1
+      ? `\nImage Timeline:\n${projectImages.map(img => {
+          const date = new Date(img.uploadedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+          return `  ${img.index}. ${img.fileName} — uploaded ${date}`;
+        }).join('\n')}`
+      : projectImages.length === 1 
+        ? `\nSingle image available: ${projectImages[0].fileName} (uploaded ${new Date(projectImages[0].uploadedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })})`
+        : '';
+
+    logStep("4D Timeline built", { 
+      imageCount: projectImages.length,
+      timeline: imageTimeline,
     });
 
     // ============================================
-    // STEP 1: GEMINI VISUAL SYNTHESIS (MULTIMODAL)
+    // STEP 1: GEMINI 4D VISUAL SYNTHESIS (MULTIMODAL)
     // ============================================
     const hasImages = projectImages.length > 0;
-    const geminiPrompt = buildGeminiSynthesisPrompt(projectData, hasImages);
+    const geminiPrompt = buildGeminiSynthesisPrompt(projectData, projectImages.length, imageTimeline);
     
     let geminiMessages: Array<{role: string; content: any}>;
     
     if (hasImages) {
-      // Build multimodal message with actual images
-      const multimodalContent = buildMultimodalMessage(geminiPrompt, projectImages);
+      const multimodalContent = buildTimelineMultimodalMessage(geminiPrompt, projectImages);
       geminiMessages = [
-        { role: "system", content: "You are M.E.S.S.A., an expert construction project analyzer specializing in VISUAL assessment of blueprints, site photos, and construction documentation. You MUST carefully analyze every image provided and describe what you see in detail. Always respond with valid JSON." },
+        { role: "system", content: "You are M.E.S.S.A. 4D Progress Tracking Engine, a construction project analyzer that treats site photos as a CHRONOLOGICAL TIMELINE. You compare images over time to identify progress, track material usage, and validate construction pace. NEVER return JSON. Write clean, professional plain text reports with section headers. No code fences. No JSON keys." },
         { role: "user", content: multimodalContent },
       ];
-      logStep("Sending multimodal request to Gemini", { imageCount: projectImages.length });
+      logStep("Sending 4D timeline request to Gemini", { imageCount: projectImages.length });
     } else {
-      // Text-only fallback
       geminiMessages = [
-        { role: "system", content: "You are M.E.S.S.A., an expert construction project analyzer specializing in visual assessment and site evaluation. Always respond with valid JSON." },
+        { role: "system", content: "You are M.E.S.S.A. 4D Progress Tracking Engine. Provide professional construction analysis. NEVER return JSON. Write clean, professional plain text reports with section headers. No code fences. No JSON keys." },
         { role: "user", content: geminiPrompt },
       ];
       logStep("No images available, sending text-only request to Gemini");
     }
     
-    const geminiResult = await callAI(engineConfig.geminiModel, geminiMessages, engineConfig.geminiTokens);
-    logStep("Gemini Visual Synthesis complete", { length: geminiResult.length, hadImages: hasImages });
+    const geminiRaw = await callAI(engineConfig.geminiModel, geminiMessages, engineConfig.geminiTokens);
+    logStep("Gemini 4D Synthesis complete", { length: geminiRaw.length, hadImages: hasImages });
 
+    // Clean the output — remove JSON artifacts
+    geminiAnalysis = cleanAiOutput(geminiRaw);
+
+    // Also try to extract structured data for conflict detection
+    let geminiStructured: Record<string, unknown> | null = null;
     try {
-      const jsonMatch = geminiResult.match(/\{[\s\S]*\}/);
+      const jsonMatch = geminiRaw.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        geminiAnalysis = JSON.parse(jsonMatch[0]);
-      } else {
-        geminiAnalysis = { rawAnalysis: geminiResult };
+        geminiStructured = JSON.parse(jsonMatch[0]);
       }
     } catch {
-      geminiAnalysis = { rawAnalysis: geminiResult };
+      // No JSON found, that's fine — we wanted clean text
     }
 
     // ============================================
@@ -743,25 +785,16 @@ serve(async (req) => {
       try {
         const openaiPrompt = buildOpenAISynthesisPrompt(projectData);
         const openaiMessages = [
-          { role: "system", content: "You are M.E.S.S.A., an expert construction regulatory analyst specializing in Canadian building codes and safety compliance. Always respond with valid JSON." },
+          { role: "system", content: "You are M.E.S.S.A. Regulatory Compliance Engine specializing in Canadian building codes and safety compliance. NEVER return JSON. Write clean, professional plain text compliance reports with section headers. No code fences. No JSON keys." },
           { role: "user", content: openaiPrompt },
         ];
         
-        const openaiResult = await callAI(engineConfig.openaiModel, openaiMessages, engineConfig.openaiTokens);
-        logStep("OpenAI Regulatory Synthesis complete", { length: openaiResult.length });
-
-        try {
-          const jsonMatch = openaiResult.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            openaiAnalysis = JSON.parse(jsonMatch[0]);
-          } else {
-            openaiAnalysis = { rawValidation: openaiResult };
-          }
-        } catch {
-          openaiAnalysis = { rawValidation: openaiResult };
-        }
+        const openaiRaw = await callAI(engineConfig.openaiModel, openaiMessages, engineConfig.openaiTokens);
+        logStep("OpenAI Regulatory Synthesis complete", { length: openaiRaw.length });
+        openaiAnalysis = cleanAiOutput(openaiRaw);
       } catch (openaiError) {
         logStep("OpenAI Synthesis failed, continuing with Gemini only", { error: String(openaiError) });
+        openaiAnalysis = '';
       }
     }
 
@@ -770,52 +803,43 @@ serve(async (req) => {
     // ============================================
     const conflictAlerts: Array<{ type: string; visual_value: number; db_value: number; deviation_pct: number; source: string }> = [];
     
-    if (geminiAnalysis) {
-      // Extract area values from Gemini visual analysis
-      const visualAnalysis = (geminiAnalysis as any)?.visualAnalysis;
-      const executiveSummary = (geminiAnalysis as any)?.executiveSummary || '';
-      const rawAnalysis = (geminiAnalysis as any)?.rawAnalysis || '';
-      const allText = JSON.stringify(geminiAnalysis);
-      
-      // Search for sq ft values in AI response
-      const sqftPattern = /(\d[\d,]*\.?\d*)\s*(?:sq\.?\s*ft|square\s*feet|sqft|SF)/gi;
-      const extractedAreas: number[] = [];
-      let match;
-      while ((match = sqftPattern.exec(allText)) !== null) {
-        const val = parseFloat(match[1].replace(/,/g, ''));
-        if (val > 0 && val < 1000000) extractedAreas.push(val);
-      }
-      
-      // Compare with project GFA
-      if (extractedAreas.length > 0 && projectData.gfa > 0) {
-        for (const extractedArea of extractedAreas) {
-          const deviation = Math.abs(extractedArea - projectData.gfa) / projectData.gfa * 100;
-          if (deviation > 15) { // >15% deviation = conflict
-            conflictAlerts.push({
-              type: 'AREA_MISMATCH',
-              visual_value: extractedArea,
-              db_value: projectData.gfa,
-              deviation_pct: Math.round(deviation),
-              source: 'Gemini Vision OCR',
-            });
-            logStep("CONFLICT DETECTED: Area mismatch", { 
-              visual: extractedArea, db: projectData.gfa, deviation: `${Math.round(deviation)}%` 
-            });
-          }
-        }
-      }
-      
-      // Deduplicate conflicts (keep the one with highest deviation)
-      const uniqueConflicts = conflictAlerts.reduce((acc, c) => {
-        const existing = acc.find(a => a.type === c.type);
-        if (!existing || c.deviation_pct > existing.deviation_pct) {
-          return [...acc.filter(a => a.type !== c.type), c];
-        }
-        return acc;
-      }, [] as typeof conflictAlerts);
-      conflictAlerts.length = 0;
-      conflictAlerts.push(...uniqueConflicts);
+    const allText = geminiRaw + (geminiStructured ? JSON.stringify(geminiStructured) : '');
+    const sqftPattern = /(\d[\d,]*\.?\d*)\s*(?:sq\.?\s*ft|square\s*feet|sqft|SF)/gi;
+    const extractedAreas: number[] = [];
+    let match;
+    while ((match = sqftPattern.exec(allText)) !== null) {
+      const val = parseFloat(match[1].replace(/,/g, ''));
+      if (val > 0 && val < 1000000) extractedAreas.push(val);
     }
+    
+    if (extractedAreas.length > 0 && projectData.gfa > 0) {
+      for (const extractedArea of extractedAreas) {
+        const deviation = Math.abs(extractedArea - projectData.gfa) / projectData.gfa * 100;
+        if (deviation > 15) {
+          conflictAlerts.push({
+            type: 'AREA_MISMATCH',
+            visual_value: extractedArea,
+            db_value: projectData.gfa,
+            deviation_pct: Math.round(deviation),
+            source: 'Gemini Vision 4D Timeline',
+          });
+          logStep("CONFLICT DETECTED: Area mismatch", { 
+            visual: extractedArea, db: projectData.gfa, deviation: `${Math.round(deviation)}%` 
+          });
+        }
+      }
+    }
+    
+    // Deduplicate conflicts
+    const uniqueConflicts = conflictAlerts.reduce((acc, c) => {
+      const existing = acc.find(a => a.type === c.type);
+      if (!existing || c.deviation_pct > existing.deviation_pct) {
+        return [...acc.filter(a => a.type !== c.type), c];
+      }
+      return acc;
+    }, [] as typeof conflictAlerts);
+    conflictAlerts.length = 0;
+    conflictAlerts.push(...uniqueConflicts);
 
     // ============================================
     // PERSIST: Save to photo_estimate + verified_facts
@@ -826,22 +850,19 @@ serve(async (req) => {
           ...(typeof summary.photo_estimate === 'object' && summary.photo_estimate ? summary.photo_estimate : {}),
           visual_analysis: {
             analyzed_at: new Date().toISOString(),
+            mode: '4D_PROGRESS_TRACKING',
             images_analyzed: projectImages.length,
-            image_file_names: projectImages.map(i => i.fileName),
-            gemini_findings: geminiAnalysis || null,
+            image_timeline: projectImages.map(i => ({ fileName: i.fileName, uploadedAt: i.uploadedAt, index: i.index })),
+            gemini_findings: geminiAnalysis,
             openai_findings: openaiAnalysis || null,
             conflict_alerts: conflictAlerts,
             analysis_status: conflictAlerts.length > 0 ? 'conflict_detected' : 'verified',
           },
         };
 
-        // Add CONFLICT_ALERT citations to verified_facts
         const currentFacts = Array.isArray(summary.verified_facts) ? [...(summary.verified_facts as any[])] : [];
-        
-        // Remove old CONFLICT_ALERT citations
         const filteredFacts = currentFacts.filter((f: any) => f.cite_type !== 'CONFLICT_ALERT');
         
-        // Add new conflict citations
         for (const conflict of conflictAlerts) {
           filteredFacts.push({
             id: crypto.randomUUID(),
@@ -868,7 +889,7 @@ serve(async (req) => {
           })
           .eq("id", summary.id);
 
-        logStep("Persisted analysis results", { 
+        logStep("Persisted 4D analysis results", { 
           conflicts: conflictAlerts.length,
           factsCount: filteredFacts.length,
           summaryId: summary.id,
@@ -879,9 +900,9 @@ serve(async (req) => {
     }
 
     // ============================================
-    // BUILD M.E.S.S.A. UNIFIED RESPONSE
+    // BUILD M.E.S.S.A. 4D UNIFIED RESPONSE
     // ============================================
-    const synthesisId = `MESSA-${projectId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+    const synthesisId = `MESSA4D-${projectId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
     
     const response = {
       synthesisId,
@@ -891,28 +912,32 @@ serve(async (req) => {
       tier,
       generatedAt: new Date().toISOString(),
       synthesisVersion: engineConfig.synthesisVersion,
-      dualEngineUsed: engineConfig.runDualEngine && openaiAnalysis !== null,
+      dualEngineUsed: engineConfig.runDualEngine && openaiAnalysis.length > 0,
       region: detectedRegion,
+      
+      // 4D Progress Mode
+      progressMode: '4D_TIMELINE',
+      imageTimeline: projectImages.map(i => ({ fileName: i.fileName, uploadedAt: i.uploadedAt, index: i.index })),
       
       // Conflict Detection Results
       conflictAlerts,
       
-      // M.E.S.S.A. Dual Engine Results
+      // M.E.S.S.A. 4D Dual Engine Results — CLEAN TEXT
       engines: {
         gemini: {
           model: engineConfig.geminiModel,
           provider: 'google',
-          role: 'Visual & Site Assessment',
+          role: '4D Visual Progress & Site Assessment',
           imagesAnalyzed: projectImages.length,
           imageFileNames: projectImages.map(i => i.fileName),
-          analysis: geminiAnalysis,
+          analysis: geminiAnalysis, // Clean plain text
         },
         openai: engineConfig.runDualEngine ? {
           model: engineConfig.openaiModel,
           provider: 'openai',
           role: 'Regulatory & Code Validation',
           region: detectedRegion,
-          analysis: openaiAnalysis,
+          analysis: openaiAnalysis, // Clean plain text
         } : null,
       },
       
@@ -942,28 +967,29 @@ serve(async (req) => {
         contracts: projectData.hasContracts,
       },
       
-      // Citation reference for audit trail
       citationCount: projectData.citations.length,
     };
 
-    logStep("M.E.S.S.A. Synthesis complete", { 
+    logStep("M.E.S.S.A. 4D Synthesis complete", { 
       synthesisId,
       dualEngine: response.dualEngineUsed,
       version: engineConfig.synthesisVersion,
       conflicts: conflictAlerts.length,
+      imagesTimeline: projectImages.length,
     });
 
-    // Log AI usage to database
+    // Log AI usage
     try {
       await supabaseClient.from("ai_model_usage").insert({
         user_id: user.id,
-        function_name: "ai-project-analysis",
+        function_name: "ai-project-analysis-4d",
         model_used: engineConfig.geminiModel + (response.dualEngineUsed ? ` + ${engineConfig.openaiModel}` : ""),
         tier: resolvedTier,
         tokens_used: engineConfig.geminiTokens,
         success: true,
       });
     } catch (logErr) { console.error("Usage log error:", logErr); }
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
