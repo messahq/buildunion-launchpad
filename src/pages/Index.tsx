@@ -90,12 +90,7 @@ const Index = () => {
 
       {/* Top Section - BuildUnion Text */}
       <div className="relative z-10 flex flex-col items-center pt-8 md:pt-16 flex-1">
-        <button 
-  onClick={() => runEngineeringAnalysis(selectedProject)} 
-  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-bold shadow-xl transition-all transform hover:scale-105 active:scale-95"
->
-  BUILDUNION AI RUN
-</button>
+      </div>
 
       {/* Center Section - Clickable Orb */}
       <div
