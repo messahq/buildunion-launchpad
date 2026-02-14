@@ -8961,6 +8961,13 @@ export default function Stage8FinalReview({
 
               {hasFinancialData ? (
                 <>
+                  {/* ─── Budget Source Label ─── */}
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="h-1 w-1 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-[9px] text-amber-600 dark:text-amber-400/70 uppercase tracking-widest font-medium">
+                      Planned Budget (from Template & Scope) — synced to Invoice
+                    </span>
+                  </div>
                   {/* ─── Totals Row: Net → Tax → Gross ─── */}
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -8974,7 +8981,7 @@ export default function Stage8FinalReview({
                        <div className="relative">
                          <div className="flex items-center gap-1.5 mb-1">
                            <div className="h-1.5 w-1.5 rounded-full bg-amber-300/70" />
-                           <span className="text-[9px] text-amber-700 dark:text-amber-200/80 uppercase tracking-widest font-semibold">Net</span>
+                           <span className="text-[9px] text-amber-700 dark:text-amber-200/80 uppercase tracking-widest font-semibold">Net (Planned)</span>
                          </div>
                          <p className="text-lg font-bold text-amber-950 dark:text-white font-mono leading-tight">
                            ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
@@ -9000,7 +9007,7 @@ export default function Stage8FinalReview({
                       <div className="relative">
                         <div className="flex items-center gap-1.5 mb-1">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                           <span className="text-[9px] text-emerald-700 dark:text-emerald-300/90 uppercase tracking-widest font-semibold">Gross</span>
+                           <span className="text-[9px] text-emerald-700 dark:text-emerald-300/90 uppercase tracking-widest font-semibold">Gross (Est.)</span>
                          </div>
                          <p className="text-xl font-black text-emerald-800 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-emerald-300 dark:to-teal-300 font-mono leading-tight">
                            ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
@@ -9017,6 +9024,11 @@ export default function Stage8FinalReview({
                       transition={{ delay: 0.2 }}
                       className="space-y-2"
                     >
+                      {/* Budget allocation label */}
+                      <div className="flex items-center justify-between px-0.5">
+                        <span className="text-[9px] text-amber-600 dark:text-amber-400/70 uppercase tracking-widest font-medium">Budget Allocation</span>
+                        <span className="text-[9px] text-amber-600 dark:text-amber-400/50 font-mono">${totalForPercentage.toLocaleString()} total</span>
+                      </div>
                       {/* Stacked bar */}
                       <div className="h-2.5 rounded-full overflow-hidden flex bg-amber-900/25 border border-amber-500/15">
                         {costBreakdownData.map((item, i) => (
