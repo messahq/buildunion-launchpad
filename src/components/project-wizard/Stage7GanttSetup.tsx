@@ -390,8 +390,8 @@ export default function Stage7GanttSetup({
   useEffect(() => {
     if (!projectStartDate || !projectEndDate) return;
     
-    const totalDays = differenceInDays(projectEndDate, projectStartDate);
-    if (totalDays <= 0) return;
+    let totalDays = differenceInDays(projectEndDate, projectStartDate);
+    if (totalDays <= 0) totalDays = 1; // Minimum 1 day for same-day or next-day projects
     
     // Filter phases based on demolition requirement
     const activePhaseDefs = hasDemolition 
