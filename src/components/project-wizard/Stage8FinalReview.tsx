@@ -3101,18 +3101,26 @@ export default function Stage8FinalReview({
         if (bp) profile = bp;
       } catch (_) { /* ignore */ }
 
-      // Fetch saved AI visual analysis from project_summaries
+      // Fetch saved AI visual analysis + line items from project_summaries
       let savedPhotoEstimate: any = null;
+      let savedLineItems: any[] = [];
+      let savedTemplateItems: any[] = [];
       try {
         const { data: summaryRow } = await supabase
           .from('project_summaries')
-          .select('photo_estimate')
+          .select('photo_estimate, line_items, template_items')
           .eq('project_id', projectId)
           .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         if (summaryRow?.photo_estimate) {
           savedPhotoEstimate = summaryRow.photo_estimate;
+        }
+        if (Array.isArray(summaryRow?.line_items)) {
+          savedLineItems = summaryRow.line_items as any[];
+        }
+        if (Array.isArray(summaryRow?.template_items)) {
+          savedTemplateItems = summaryRow.template_items as any[];
         }
       } catch (_) { /* ignore */ }
 
@@ -3275,10 +3283,31 @@ export default function Stage8FinalReview({
         projectDocCount = count || 0;
       } catch (_) { /* ignore */ }
 
-      // AI Visual Analysis from on-demand analysis
-      const geminiVisual = aiAnalysisData?.engines?.gemini?.analysis?.visualAnalysis;
-      const conflictAlerts = aiAnalysisData?.conflictAlerts || [];
-      const imagesAnalyzedCount = aiAnalysisData?.engines?.gemini?.imagesAnalyzed || 0;
+      // AI Visual Analysis — merge on-demand + saved DB data
+      const savedVisual = (savedPhotoEstimate as any)?.visual_analysis;
+      const savedGeminiFindings = savedVisual?.gemini_findings || {};
+      const savedOpenaiFindings = savedVisual?.openai_findings || {};
+      
+      const geminiVisual = aiAnalysisData?.engines?.gemini?.analysis?.visualAnalysis 
+        || savedGeminiFindings?.visualAnalysis 
+        || null;
+      const conflictAlerts = aiAnalysisData?.conflictAlerts 
+        || savedVisual?.conflict_alerts 
+        || [];
+      const imagesAnalyzedCount = aiAnalysisData?.engines?.gemini?.imagesAnalyzed 
+        || savedVisual?.images_analyzed 
+        || 0;
+      
+      // Extract executive summary / risk assessment from AI engines
+      const geminiExecSummary: string = aiAnalysisData?.engines?.gemini?.analysis?.executiveSummary 
+        || savedGeminiFindings?.executiveSummary 
+        || '';
+      const geminiRiskFactors: any[] = aiAnalysisData?.engines?.gemini?.analysis?.riskFactors 
+        || savedGeminiFindings?.riskFactors 
+        || [];
+      const openaiCompliance: any = aiAnalysisData?.engines?.openai?.analysis 
+        || savedOpenaiFindings 
+        || null;
       
       // Conflict Alerts Section
       let conflictHtml = '';
@@ -3456,6 +3485,239 @@ export default function Stage8FinalReview({
       }
 
       // ============================================
+      // EXECUTIVE SUMMARY (AI-Generated)
+      // ============================================
+      let execSummaryHtml = '';
+      const execText = geminiExecSummary || (aiAnalysisData?.engines?.gemini?.analysis?.rawAnalysis || '').slice(0, 500);
+      const dualEngineUsed = aiAnalysisData?.dualEngineUsed || !!savedOpenaiFindings?.rawValidation;
+      const geminiModel = aiAnalysisData?.engines?.gemini?.model || savedVisual?.gemini_findings ? 'Gemini' : '';
+      const openaiModel = aiAnalysisData?.engines?.openai?.model || (savedOpenaiFindings ? 'GPT-5' : '');
+      
+      if (execText) {
+        execSummaryHtml = '<div class="pdf-section" style="margin-top:24px;margin-bottom:20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:18px 20px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+            '<span style="font-size:16px;">🧠</span>' +
+            '<div style="font-size:14px;font-weight:700;color:#064e3b;">M.E.S.S.A. Executive Summary</div>' +
+            (dualEngineUsed ? '<span style="background:#7c3aed;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">DUAL ENGINE</span>' : '') +
+          '</div>' +
+          '<p style="font-size:12px;color:#374151;line-height:1.7;margin-bottom:8px;">' + esc(typeof execText === 'string' ? execText : JSON.stringify(execText).slice(0, 500)) + '</p>' +
+          '<div style="display:flex;gap:16px;margin-top:10px;font-size:10px;color:#6b7280;">' +
+            (geminiModel ? '<span>🔍 ' + esc(String(geminiModel)) + ' — Visual & Site</span>' : '') +
+            (openaiModel ? '<span>⚖️ ' + esc(String(openaiModel)) + ' — Regulatory</span>' : '') +
+            '<span style="margin-left:auto;">📊 ' + (aiAnalysisData?.citationCount || citations.length) + ' citations verified</span>' +
+          '</div>' +
+        '</div>';
+      }
+
+      // ============================================
+      // OBC COMPLIANCE CHECKLIST (OpenAI/GPT-5)
+      // ============================================
+      let obcChecklistHtml = '';
+      const obcChecklist: any[] = openaiCompliance?.complianceChecklist 
+        || openaiCompliance?.checklist 
+        || openaiCompliance?.regulatory_findings 
+        || [];
+      const obcOverallStatus = openaiCompliance?.overallStatus || openaiCompliance?.compliance_status || '';
+      const obcRecommendations: string[] = openaiCompliance?.recommendations 
+        || openaiCompliance?.suggested_actions 
+        || [];
+      
+      if (obcChecklist.length > 0 || obcOverallStatus) {
+        const checklistRows = obcChecklist.slice(0, 12).map((item: any) => {
+          const status = item.status || item.result || 'N/A';
+          const isPass = /pass|compliant|ok|yes/i.test(String(status));
+          const statusIcon = isPass ? '✅' : /fail|non.?compliant|no/i.test(String(status)) ? '❌' : '⚠️';
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;">' + statusIcon + '</td>' +
+            '<td style="padding:5px 8px;font-weight:600;color:#1e40af;">' + esc(item.code || item.section || '—') + '</td>' +
+            '<td style="padding:5px 8px;">' + esc(item.requirement || item.title || item.description || '—') + '</td>' +
+            '<td style="padding:5px 8px;color:' + (isPass ? '#059669' : '#dc2626') + ';font-weight:600;font-size:10px;">' + esc(String(status)) + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;max-width:180px;white-space:normal;line-height:1.3;">' + esc((item.notes || item.recommendation || '').slice(0, 120)) + '</td>' +
+          '</tr>';
+        }).join('');
+
+        obcChecklistHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+            '<span style="font-size:18px;">⚖️</span>' +
+            '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Regulatory Compliance Checklist</div>' +
+            (obcOverallStatus ? '<span style="background:' + (/pass|compliant/i.test(obcOverallStatus) ? '#dcfce7;color:#166534' : '#fef2f2;color:#991b1b') + ';padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">' + esc(String(obcOverallStatus)) + '</span>' : '') +
+          '</div>' +
+          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">AI-validated against Canadian Building Codes via GPT-5 Regulatory Engine</div>' +
+          (checklistRows ? (
+            '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+              '<thead><tr style="background:#eff6ff;font-size:9px;text-transform:uppercase;color:#3b82f6;letter-spacing:0.05em;">' +
+                '<th style="padding:6px 8px;text-align:center;width:30px;">Status</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Code</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Requirement</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Result</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Notes</th>' +
+              '</tr></thead>' +
+              '<tbody>' + checklistRows + '</tbody>' +
+            '</table>'
+          ) : '') +
+          (obcRecommendations.length > 0 ? (
+            '<div style="margin-top:12px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;">' +
+              '<div style="font-size:11px;font-weight:600;color:#92400e;margin-bottom:6px;">📋 Regulatory Recommendations</div>' +
+              '<ul style="margin:0;padding-left:16px;font-size:11px;color:#78350f;line-height:1.6;">' +
+                obcRecommendations.slice(0, 5).map((r: string) => '<li>' + esc(String(r)) + '</li>').join('') +
+              '</ul>' +
+            '</div>'
+          ) : '') +
+        '</div>';
+      }
+
+      // ============================================
+      // AI RISK ASSESSMENT
+      // ============================================
+      let riskHtml = '';
+      const risks: any[] = geminiRiskFactors.length > 0 ? geminiRiskFactors 
+        : (aiAnalysisData?.engines?.gemini?.analysis?.risks || []);
+      const missingPillars = pillars.filter(p => !p.status);
+      
+      if (risks.length > 0 || missingPillars.length > 0 || conflictAlerts.length > 0) {
+        let riskItems = '';
+        
+        // Missing pillars as risks
+        for (const mp of missingPillars) {
+          riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
+            '<td style="padding:5px 8px;"><span style="background:#fef2f2;color:#dc2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">HIGH</span></td>' +
+            '<td style="padding:5px 8px;font-weight:600;">Missing: ' + esc(mp.label) + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">Incomplete pillar data may affect project validation and compliance.</td>' +
+          '</tr>';
+        }
+        
+        // Conflict alerts as risks
+        for (const ca of conflictAlerts) {
+          riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
+            '<td style="padding:5px 8px;"><span style="background:#fef2f2;color:#dc2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">CRITICAL</span></td>' +
+            '<td style="padding:5px 8px;font-weight:600;">' + esc(ca.type) + ': Visual (' + ca.visual_value + ') vs DB (' + ca.db_value + ')</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">Deviation: ' + ca.deviation_pct + '%. Requires manual verification.</td>' +
+          '</tr>';
+        }
+        
+        // AI-detected risks
+        for (const r of risks.slice(0, 6)) {
+          const severity = r.severity || r.level || 'MEDIUM';
+          const sevColor = /high|critical/i.test(severity) ? '#dc2626' : /medium/i.test(severity) ? '#d97706' : '#059669';
+          const sevBg = /high|critical/i.test(severity) ? '#fef2f2' : /medium/i.test(severity) ? '#fefce8' : '#f0fdf4';
+          riskItems += '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;"><span style="background:' + sevBg + ';color:' + sevColor + ';padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">' + esc(String(severity).toUpperCase()) + '</span></td>' +
+            '<td style="padding:5px 8px;font-weight:600;">' + esc(r.title || r.factor || r.name || '—') + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;max-width:250px;white-space:normal;line-height:1.3;">' + esc((r.description || r.detail || r.mitigation || '').slice(0, 150)) + '</td>' +
+          '</tr>';
+        }
+        
+        if (riskItems) {
+          riskHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+              '<span style="font-size:18px;">⚠️</span>' +
+              '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Risk Assessment Matrix</div>' +
+            '</div>' +
+            '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+              '<thead><tr style="background:#fef2f2;font-size:9px;text-transform:uppercase;color:#dc2626;letter-spacing:0.05em;">' +
+                '<th style="padding:6px 8px;text-align:left;width:70px;">Severity</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Risk Factor</th>' +
+                '<th style="padding:6px 8px;text-align:left;">Description / Mitigation</th>' +
+              '</tr></thead>' +
+              '<tbody>' + riskItems + '</tbody>' +
+            '</table>' +
+          '</div>';
+        }
+      }
+
+      // ============================================
+      // MATERIAL & LABOR LINE ITEM BREAKDOWN
+      // ============================================
+      let lineItemHtml = '';
+      const allItems = savedLineItems.length > 0 ? savedLineItems : savedTemplateItems;
+      
+      if (allItems.length > 0 && financialSummary && (financialSummary.total_cost ?? 0) > 0) {
+        const fmt = (n: number | null) => n != null ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+        
+        const itemRows = allItems.slice(0, 20).map((item: any) => {
+          const name = item.name || item.item_name || item.description || '—';
+          const qty = item.quantity ?? item.qty ?? '';
+          const unit = item.unit || item.unit_type || '';
+          const unitPrice = item.unit_price ?? item.unitPrice ?? item.price ?? null;
+          const total = item.total ?? item.total_cost ?? (qty && unitPrice ? qty * unitPrice : null);
+          const category = item.category || item.type || '';
+          const catIcon = /labor|work|install/i.test(category) ? '👷' : '🧱';
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:4px 8px;">' + catIcon + '</td>' +
+            '<td style="padding:4px 8px;font-weight:600;">' + esc(String(name).slice(0, 50)) + '</td>' +
+            '<td style="padding:4px 8px;text-align:center;color:#6b7280;">' + (qty || '—') + ' ' + esc(String(unit)) + '</td>' +
+            '<td style="padding:4px 8px;text-align:right;color:#6b7280;">' + (unitPrice != null ? fmt(unitPrice) : '—') + '</td>' +
+            '<td style="padding:4px 8px;text-align:right;font-weight:600;color:#1f2937;">' + (total != null ? fmt(total) : '—') + '</td>' +
+          '</tr>';
+        }).join('');
+
+        const gfaVal = gfaCit?.metadata ? (gfaCit.metadata as any).gfa_value || 0 : 0;
+        const costPerSqFt = gfaVal > 0 && financialSummary.total_cost ? (financialSummary.total_cost / gfaVal).toFixed(2) : null;
+
+        lineItemHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+            '<span style="font-size:18px;">📋</span>' +
+            '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Material & Labor Breakdown</div>' +
+            (costPerSqFt ? '<span style="background:#f0fdf4;color:#059669;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">$' + costPerSqFt + '/sq ft</span>' : '') +
+          '</div>' +
+          '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+            '<thead><tr style="background:#f9fafb;font-size:9px;text-transform:uppercase;color:#6b7280;letter-spacing:0.05em;">' +
+              '<th style="padding:6px 8px;text-align:left;width:30px;">Type</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Item</th>' +
+              '<th style="padding:6px 8px;text-align:center;">Qty</th>' +
+              '<th style="padding:6px 8px;text-align:right;">Unit Price</th>' +
+              '<th style="padding:6px 8px;text-align:right;">Total</th>' +
+            '</tr></thead>' +
+            '<tbody>' + itemRows + '</tbody>' +
+            '<tfoot><tr style="background:#f0fdf4;font-size:12px;font-weight:700;">' +
+              '<td colspan="4" style="padding:8px;text-align:right;color:#064e3b;">Grand Total</td>' +
+              '<td style="padding:8px;text-align:right;color:#064e3b;">' + fmt(financialSummary.total_cost) + '</td>' +
+            '</tr></tfoot>' +
+          '</table>' +
+        '</div>';
+      }
+
+      // ============================================
+      // M.E.S.S.A. DUAL-ENGINE VERDICT
+      // ============================================
+      let verdictHtml = '';
+      const geminiRaw = aiAnalysisData?.engines?.gemini?.analysis?.rawAnalysis 
+        || savedGeminiFindings?.rawAnalysis || '';
+      const openaiRaw = openaiCompliance?.rawValidation 
+        || openaiCompliance?.summary || '';
+      
+      if (geminiRaw || openaiRaw || geminiExecSummary) {
+        verdictHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;border:2px solid #7c3aed;border-radius:10px;overflow:hidden;">' +
+          '<div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:14px 18px;color:white;">' +
+            '<div style="font-size:15px;font-weight:700;">M.E.S.S.A. Dual-Engine Verdict</div>' +
+            '<div style="font-size:10px;opacity:0.8;margin-top:2px;">Multi-Engine Synthesis & Structured Analysis — Final Assessment</div>' +
+          '</div>' +
+          '<div style="padding:16px 18px;">' +
+            // Gemini verdict
+            (geminiRaw ? (
+              '<div style="margin-bottom:14px;">' +
+                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+                  '<span style="background:#06b6d4;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">GEMINI</span>' +
+                  '<span style="font-size:11px;font-weight:600;color:#374151;">Visual & Site Assessment</span>' +
+                '</div>' +
+                '<p style="font-size:11px;color:#4b5563;line-height:1.6;margin:0;">' + esc(typeof geminiRaw === 'string' ? geminiRaw.slice(0, 400) : JSON.stringify(geminiRaw).slice(0, 400)) + (String(geminiRaw).length > 400 ? '...' : '') + '</p>' +
+              '</div>'
+            ) : '') +
+            // OpenAI verdict
+            (openaiRaw ? (
+              '<div style="padding-top:12px;border-top:1px solid #e5e7eb;">' +
+                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
+                  '<span style="background:#8b5cf6;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">GPT-5</span>' +
+                  '<span style="font-size:11px;font-weight:600;color:#374151;">Regulatory & Code Validation</span>' +
+                '</div>' +
+                '<p style="font-size:11px;color:#4b5563;line-height:1.6;margin:0;">' + esc(typeof openaiRaw === 'string' ? openaiRaw.slice(0, 400) : JSON.stringify(openaiRaw).slice(0, 400)) + (String(openaiRaw).length > 400 ? '...' : '') + '</p>' +
+              '</div>'
+            ) : '') +
+          '</div>' +
+        '</div>';
+      }
+
+      // ============================================
       // ASSEMBLE FULL HTML
       // ============================================
       const { buildUnionPdfHeader, buildUnionPdfFooter, downloadPDF } = await import('@/lib/pdfGenerator');
@@ -3488,6 +3750,8 @@ export default function Stage8FinalReview({
           (projAddr ? '<div style="font-size:11px;color:#9ca3af;margin-top:3px;">' + esc(projAddr) + '</div>' : '') +
           '<div style="font-size:10px;color:#9ca3af;margin-top:2px;">Generated: ' + new Date().toLocaleString() + '</div>' +
         '</div>' +
+        // Executive Summary (NEW)
+        execSummaryHtml +
         // Score bar
         '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:10px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;gap:14px;">' +
           '<div style="font-size:32px;font-weight:800;font-family:monospace;">' + passCount + '/8</div>' +
@@ -3504,12 +3768,20 @@ export default function Stage8FinalReview({
           '<span style="font-size:16px;">🧬</span> 8-Pillar Validation Matrix' +
         '</div>' +
         pillarRows +
-        // OBC Compliance
+        // OBC Compliance (RAG)
         obcHtml +
+        // OBC Checklist (AI - GPT-5) (NEW)
+        obcChecklistHtml +
+        // Risk Assessment (NEW)
+        riskHtml +
         // Visual Intelligence
         visualHtml +
-        // Financial
+        // Material & Labor Breakdown (NEW)
+        lineItemHtml +
+        // Financial Summary
         financialHtml +
+        // Dual-Engine Verdict (NEW)
+        verdictHtml +
         // Footer
         footer +
       '</body></html>';
