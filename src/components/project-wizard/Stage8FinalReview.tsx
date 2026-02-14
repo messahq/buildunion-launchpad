@@ -2172,7 +2172,7 @@ export default function Stage8FinalReview({
     }
   }, [selectedContractForEmail, contractRecipients, projectData]);
   
-  // Update task checklist item — persists status changes to DB
+  // Update task checklist item — persists status changes to DB + generates citations for DNA tracking
   const updateChecklistItem = useCallback(async (taskId: string, checklistItemId: string, done: boolean) => {
     // For verification photo: don't allow manual check — must upload a photo
     if (checklistItemId.includes('-verify')) {
@@ -2199,6 +2199,10 @@ export default function Stage8FinalReview({
       newStatus = 'pending';
     }
     
+    // Get task info for citation metadata
+    const taskInfo = tasks.find(t => t.id === taskId);
+    const memberName = teamMembers.find(m => m.userId === (taskInfo?.assigned_to || userId))?.name || 'Unknown';
+    
     // Update local state
     setTasks(prev => prev.map(task => {
       if (task.id === taskId) {
@@ -2222,12 +2226,51 @@ export default function Stage8FinalReview({
           .eq('id', taskId);
         if (error) throw error;
         console.log(`[Stage8] ✓ Task ${taskId} status → ${newStatus}`);
+        
+        // ✓ Generate citation for DNA visual analysis tracking
+        if (done && taskInfo) {
+          const citeType = isStartItem ? 'TASK_STARTED' : 'TASK_COMPLETED';
+          const eventLabel = isStartItem ? 'started' : 'completed';
+          const now = new Date().toISOString();
+          
+          const progressCitation: Citation = {
+            id: `cite_${citeType.toLowerCase()}_${taskId}_${Date.now()}`,
+            cite_type: citeType as any,
+            question_key: 'task_progress',
+            answer: `${taskInfo.title} ${eventLabel} by ${memberName}`,
+            value: taskId,
+            timestamp: now,
+            metadata: {
+              taskId,
+              taskTitle: taskInfo.title,
+              phase: taskInfo.phase,
+              eventType: eventLabel,
+              performedBy: taskInfo.assigned_to || userId,
+              performedByName: memberName,
+              eventTimestamp: now,
+            },
+          };
+          
+          setCitations(prev => {
+            const updated = [...prev, progressCitation];
+            // Persist citations to project_summaries for DNA analysis
+            supabase
+              .from('project_summaries')
+              .update({ verified_facts: updated as any })
+              .eq('project_id', projectId)
+              .then(({ error: persistErr }) => {
+                if (persistErr) console.error('[Stage8] Failed to persist task citation:', persistErr);
+                else console.log(`[Stage8] ✓ ${citeType} citation persisted for "${taskInfo.title}"`);
+              });
+            return updated;
+          });
+        }
       } catch (err) {
         console.error('[Stage8] Failed to update task status:', err);
         toast.error('Failed to save task status');
       }
     }
-  }, []);
+  }, [tasks, teamMembers, userId, projectId]);
   
   // Update task assignee
   const updateTaskAssignee = useCallback(async (taskId: string, assigneeId: string) => {
@@ -5598,6 +5641,40 @@ export default function Stage8FinalReview({
                                           setTasks(prev => prev.map(t => 
                                             t.id === task.id ? { ...t, status: newStatus } : t
                                           ));
+                                          // ✓ Generate citation for DNA visual tracking
+                                          if (checked) {
+                                            const memberName = teamMembers.find(m => m.userId === task.assigned_to)?.name || 'Unknown';
+                                            const now = new Date().toISOString();
+                                            const progressCitation: Citation = {
+                                              id: `cite_task_completed_${task.id}_${Date.now()}`,
+                                              cite_type: 'TASK_COMPLETED' as any,
+                                              question_key: 'task_progress',
+                                              answer: `${task.title} completed by ${memberName}`,
+                                              value: task.id,
+                                              timestamp: now,
+                                              metadata: {
+                                                taskId: task.id,
+                                                taskTitle: task.title,
+                                                phase: task.phase,
+                                                eventType: 'completed',
+                                                performedBy: task.assigned_to || userId,
+                                                performedByName: memberName,
+                                                eventTimestamp: now,
+                                              },
+                                            };
+                                            setCitations(prev => {
+                                              const updated = [...prev, progressCitation];
+                                              supabase
+                                                .from('project_summaries')
+                                                .update({ verified_facts: updated as any })
+                                                .eq('project_id', projectId)
+                                                .then(({ error: persistErr }) => {
+                                                  if (persistErr) console.error('[Stage8] Failed to persist task citation:', persistErr);
+                                                  else console.log(`[Stage8] ✓ TASK_COMPLETED citation for "${task.title}"`);
+                                                });
+                                              return updated;
+                                            });
+                                          }
                                         }
                                       });
                                   }}

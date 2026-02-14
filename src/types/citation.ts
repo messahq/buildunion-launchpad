@@ -38,6 +38,9 @@ export const CITATION_TYPES = {
   CONTRACT: 'CONTRACT',
   // Budget approval tracking
   BUDGET_APPROVAL: 'BUDGET_APPROVAL',
+  // Task progress tracking (for DNA visual analysis)
+  TASK_STARTED: 'TASK_STARTED',
+  TASK_COMPLETED: 'TASK_COMPLETED',
 } as const;
 
 export type CitationType = typeof CITATION_TYPES[keyof typeof CITATION_TYPES];
