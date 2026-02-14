@@ -134,7 +134,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         supabase.from("project_documents").select("id").eq("project_id", projectId),
         supabase.from("project_members").select("id, user_id, role").eq("project_id", projectId),
         supabase
-          .from("project_summaries")
+          .from("project_summaries_team")
           .select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date")
           .eq("project_id", projectId),
         supabase.from("contracts").select("id, status").eq("project_id", projectId).limit(1),
