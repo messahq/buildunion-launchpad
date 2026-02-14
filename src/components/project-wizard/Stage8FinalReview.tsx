@@ -1476,8 +1476,8 @@ export default function Stage8FinalReview({
               templateItemCost: taskCost,
               checklist: [
                 { id: `${task.id}-start`, text: 'Task started', done: task.status !== 'pending' },
+                { id: `${task.id}-complete`, text: 'Task completed', done: task.status === 'completed' || task.status === 'done' },
                 { id: `${task.id}-verify`, text: 'Verification photo', done: hasVerificationPhoto },
-                { id: `${task.id}-complete`, text: 'Task finished', done: task.status === 'completed' || task.status === 'done' },
               ],
             };
           });
@@ -2188,18 +2188,6 @@ export default function Stage8FinalReview({
     const isStartItem = checklistItemId.includes('-start');
     const isCompleteItem = checklistItemId.includes('-complete');
     
-    // Photo gate: cannot mark task as finished without verification photo
-    if (isCompleteItem && done) {
-      const task = tasks.find(t => t.id === taskId);
-      const hasPhoto = task?.checklist.find(c => c.id.includes('-verify'))?.done;
-      if (!hasPhoto) {
-        toast.warning('Upload a verification photo before marking the task as finished', {
-          description: 'Use the 📷 button to upload a site photo first.',
-        });
-        return;
-      }
-    }
-    
     let newStatus: string | null = null;
     if (isCompleteItem && done) {
       newStatus = 'completed';
@@ -2239,7 +2227,7 @@ export default function Stage8FinalReview({
         toast.error('Failed to save task status');
       }
     }
-  }, [tasks]);
+  }, []);
   
   // Update task assignee
   const updateTaskAssignee = useCallback(async (taskId: string, assigneeId: string) => {
@@ -5552,7 +5540,7 @@ export default function Stage8FinalReview({
                       {phase.tasks.length === 0 ? (
                         <p className="text-[10px] text-slate-600 italic py-1 pl-4">No tasks</p>
                       ) : (
-                        phase.tasks.filter(t => !t.isSubTask).map((task, taskIdx) => {
+                        phase.tasks.map((task, taskIdx) => {
                           const taskProgress = getTaskProgress(task);
                           const isCompleted = task.status === 'completed' || task.status === 'done';
                           const taskFileInputId = `task-photo-${task.id}`;
@@ -5587,14 +5575,6 @@ export default function Stage8FinalReview({
                                 <Checkbox
                                   checked={isCompleted}
                                   onCheckedChange={(checked) => {
-                                    // Photo gate: cannot complete without verification photo
-                                    if (checked) {
-                                      const hasPhoto = task.checklist.find(c => c.id.includes('-verify'))?.done;
-                                      if (!hasPhoto) {
-                                        toast.warning('Upload a verification photo before completing this task');
-                                        return;
-                                      }
-                                    }
                                     const newStatus = checked ? 'completed' : 'pending';
                                     supabase
                                       .from('project_tasks')
