@@ -1313,15 +1313,19 @@ export default function Stage8FinalReview({
             for (const phase of phases) {
               const days = Math.max(1, Math.round((phase.pct / totalPct) * totalDays));
               const phaseEnd = new Date(curDate.getTime() + days * 86400000);
-              autoTasks.push({
-                title: phase.name,
-                description: `Phase: ${phase.id}`,
-                priority: phase.pri,
-                due_date: phaseEnd.toISOString(),
-              });
+              
+              // Only add the phase parent task if there are NO sub-tasks for this phase
+              const phaseItems = itemsByPhase[phase.id] || [];
+              if (phaseItems.length === 0) {
+                autoTasks.push({
+                  title: phase.name,
+                  description: `Phase: ${phase.id}`,
+                  priority: phase.pri,
+                  due_date: phaseEnd.toISOString(),
+                });
+              }
               
               // Add template sub-tasks for this phase (LAB + MAT items)
-              const phaseItems = itemsByPhase[phase.id] || [];
               phaseItems.forEach((item: any) => {
                 autoTasks.push({
                   title: item.name || 'Template Item',
