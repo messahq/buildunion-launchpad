@@ -3,7 +3,7 @@
 // ============================================
 // Fixed bottom bar with glass effect containing:
 // - Pending Changes button (left, when active)
-// - Action buttons (right): Invoice, Send, Conflict Map, MESSA
+// - Action buttons (right): Invoice, DNA Report
 // ============================================
 
 import { useState, useEffect } from 'react';
@@ -14,8 +14,7 @@ import {
   AlertTriangle,
   FileText,
   Send,
-  Map,
-  Sparkles,
+  Shield,
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,11 +27,10 @@ interface Stage8CommandBarProps {
   onPendingClick: () => void;
   onGenerateInvoice: () => void;
   onSendToClient: () => void;
-  onConflictMap: () => void;
-  onMessaSynthesis: () => void;
+  onDnaReport: () => void;
   isGeneratingInvoice?: boolean;
   isSendingToClient?: boolean;
-  isGeneratingMessa?: boolean;
+  isGeneratingDna?: boolean;
   className?: string;
 }
 
@@ -43,22 +41,19 @@ export function Stage8CommandBar({
   onPendingClick,
   onGenerateInvoice,
   onSendToClient,
-  onConflictMap,
-  onMessaSynthesis,
+  onDnaReport,
   isGeneratingInvoice,
   isSendingToClient,
-  isGeneratingMessa,
+  isGeneratingDna,
   className,
 }: Stage8CommandBarProps) {
   const [realtimePendingCount, setRealtimePendingCount] = useState(pendingCount);
   const [hasNewPending, setHasNewPending] = useState(false);
 
-  // Update from props
   useEffect(() => {
     setRealtimePendingCount(pendingCount);
   }, [pendingCount]);
 
-  // Realtime subscription for pending changes
   useEffect(() => {
     if (!projectId || !isOwner) return;
 
@@ -76,7 +71,6 @@ export function Stage8CommandBar({
           console.log('[CommandBar] New pending change:', payload);
           setRealtimePendingCount((prev) => prev + 1);
           setHasNewPending(true);
-          // Reset flash after 3 seconds
           setTimeout(() => setHasNewPending(false), 3000);
         }
       )
@@ -89,7 +83,6 @@ export function Stage8CommandBar({
           filter: `project_id=eq.${projectId}`,
         },
         (payload) => {
-          // Refetch count when status changes
           if (payload.new && (payload.new as any).status !== 'pending') {
             setRealtimePendingCount((prev) => Math.max(0, prev - 1));
           }
@@ -156,7 +149,7 @@ export function Stage8CommandBar({
 
         {/* Right Side - Action Buttons */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Generate Invoice - Yellow Outline */}
+          {/* Generate Invoice */}
           <Button
             variant="outline"
             size="sm"
@@ -177,7 +170,7 @@ export function Stage8CommandBar({
             <span className="sm:hidden">Invoice</span>
           </Button>
 
-          {/* Send to Client - Blue Outline */}
+          {/* Send to Client */}
           <Button
             variant="outline"
             size="sm"
@@ -198,26 +191,24 @@ export function Stage8CommandBar({
             <span className="sm:hidden">Send</span>
           </Button>
 
-
-
-          {/* M.E.S.S.A. Synthesis - Green Filled */}
+          {/* DNA Report - Primary Action */}
           <Button
             size="sm"
-            onClick={onMessaSynthesis}
-            disabled={isGeneratingMessa}
+            onClick={onDnaReport}
+            disabled={isGeneratingDna}
             className={cn(
               "font-medium",
               "bg-emerald-600 hover:bg-emerald-700 text-white",
               "dark:bg-emerald-700 dark:hover:bg-emerald-800"
             )}
           >
-            {isGeneratingMessa ? (
+            {isGeneratingDna ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Shield className="h-4 w-4 mr-2" />
             )}
-            <span className="hidden sm:inline">M.E.S.S.A. Synthesis</span>
-            <span className="sm:hidden">MESSA</span>
+            <span className="hidden sm:inline">DNA Report</span>
+            <span className="sm:hidden">DNA</span>
           </Button>
         </div>
       </div>
