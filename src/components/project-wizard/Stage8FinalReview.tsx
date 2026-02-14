@@ -3101,6 +3101,21 @@ export default function Stage8FinalReview({
         if (bp) profile = bp;
       } catch (_) { /* ignore */ }
 
+      // Fetch saved AI visual analysis from project_summaries
+      let savedPhotoEstimate: any = null;
+      try {
+        const { data: summaryRow } = await supabase
+          .from('project_summaries')
+          .select('photo_estimate')
+          .eq('project_id', projectId)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (summaryRow?.photo_estimate) {
+          savedPhotoEstimate = summaryRow.photo_estimate;
+        }
+      } catch (_) { /* ignore */ }
+
       // Fetch user email
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const userEmail = authUser?.email || '';
@@ -3338,17 +3353,53 @@ export default function Stage8FinalReview({
       }
 
       if (photoCits.length > 0 || blueprintCit || projectDocCount > 0) {
+        // Build AI Vision lookup from multiple sources
+        const geminiSiteFindings: any[] = geminiVisual?.sitePhotoFindings || [];
+        const savedSiteFindings: any[] = (savedPhotoEstimate as any)?.engines?.gemini?.analysis?.visualAnalysis?.sitePhotoFindings 
+          || (savedPhotoEstimate as any)?.visualAnalysis?.sitePhotoFindings 
+          || (savedPhotoEstimate as any)?.sitePhotoFindings 
+          || [];
+        const allSiteFindings = geminiSiteFindings.length > 0 ? geminiSiteFindings : savedSiteFindings;
+        
+        // Also extract the top-level analysis text if available
+        const savedAnalysisText: string = (savedPhotoEstimate as any)?.engines?.gemini?.analysis?.summary 
+          || (savedPhotoEstimate as any)?.analysis 
+          || (typeof savedPhotoEstimate === 'string' ? savedPhotoEstimate : '') 
+          || '';
+        
         const photoRows = photoCits.slice(0, 8).map((pc, i) => {
           const ts = pc.timestamp ? new Date(pc.timestamp).toLocaleDateString() : '—';
           const cId = pc.id?.slice(0, 8) || '—';
           const desc = esc((pc.answer || '').slice(0, 80));
-          const meta = pc.metadata as any;
-          const aiTag = meta?.ai_analysis ? '✓ AI Analyzed' : '—';
+          
+          // Match AI finding to this photo by index or filename
+          const fileName = (pc.answer || '').toLowerCase();
+          const matchedFinding = allSiteFindings.find((f: any) => 
+            fileName.includes((f.fileName || '').toLowerCase().split('.')[0])
+          ) || allSiteFindings[i];
+          
+          let aiVisionText = '';
+          if (matchedFinding) {
+            const obs = (matchedFinding.observations || []).slice(0, 2).join('; ');
+            const stage = matchedFinding.stage || '';
+            const trades = (matchedFinding.tradesVisible || []).join(', ');
+            const quality = matchedFinding.qualityScore ? `Quality: ${matchedFinding.qualityScore}/100` : '';
+            const parts = [obs, stage ? `Stage: ${stage}` : '', trades ? `Trades: ${trades}` : '', quality].filter(Boolean);
+            aiVisionText = parts.join(' · ').slice(0, 160) || '✓ AI Analyzed';
+          } else if (savedAnalysisText && i === 0) {
+            // Fallback: use top-level analysis text for the first photo
+            aiVisionText = savedAnalysisText.slice(0, 160);
+            if (savedAnalysisText.length > 160) aiVisionText += '...';
+          } else {
+            const meta = pc.metadata as any;
+            aiVisionText = meta?.ai_analysis ? '✓ AI Analyzed' : '⏳ Pending';
+          }
+          
           return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
             '<td style="padding:5px 8px;color:#6b7280;">' + (pc.cite_type === 'VISUAL_VERIFICATION' ? '🔍 Verification' : '📷 Site Photo') + ' #' + (i + 1) + '</td>' +
             '<td style="padding:5px 8px;font-family:monospace;font-size:10px;color:#059669;">cite:' + cId + '</td>' +
-            '<td style="padding:5px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + desc + '</td>' +
-            '<td style="padding:5px 8px;color:#7c3aed;font-size:10px;">' + aiTag + '</td>' +
+            '<td style="padding:5px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + desc + '</td>' +
+            '<td style="padding:5px 8px;color:#7c3aed;font-size:10px;max-width:220px;line-height:1.4;word-wrap:break-word;white-space:normal;">' + esc(aiVisionText) + '</td>' +
             '<td style="padding:5px 8px;color:#9ca3af;font-size:10px;">' + ts + '</td>' +
           '</tr>';
         }).join('');
@@ -3358,7 +3409,7 @@ export default function Stage8FinalReview({
             '<span style="font-size:18px;">👁️</span>' +
             '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
           '</div>' +
-          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + ' · ' + projectDocCount + ' document(s) in storage</div>' +
+          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + ' · ' + projectDocCount + ' document(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">🔍 ' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
           conflictHtml +
           (photoRows ? (
             '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
@@ -3366,7 +3417,7 @@ export default function Stage8FinalReview({
                 '<th style="padding:6px 8px;text-align:left;">Asset</th>' +
                 '<th style="padding:6px 8px;text-align:left;">Citation</th>' +
                 '<th style="padding:6px 8px;text-align:left;">Description</th>' +
-                '<th style="padding:6px 8px;text-align:left;">AI Vision</th>' +
+                '<th style="padding:6px 8px;text-align:left;">AI Vision Analysis</th>' +
                 '<th style="padding:6px 8px;text-align:left;">Date</th>' +
               '</tr></thead>' +
               '<tbody>' + photoRows + '</tbody>' +
