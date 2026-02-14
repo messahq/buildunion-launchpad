@@ -243,7 +243,10 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     Define Your Project Area
                   </h3>
                   <p className="text-xs md:text-sm text-muted-foreground px-2">
-                    This value will be locked and used for all cost calculations
+                    This value will be locked and used for all cost calculations.
+                  </p>
+                  <p className="text-[10px] md:text-xs text-amber-600/80 dark:text-amber-400/80 px-2 mt-1">
+                    💡 For service-based trades (Plumbing, Electrical, HVAC), enter <strong>1 sq ft</strong> as a placeholder — costs will be based on your template items, not area.
                   </p>
                 </div>
                 
