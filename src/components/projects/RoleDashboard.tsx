@@ -91,7 +91,7 @@ const ROLE_PANELS: Record<string, string[]> = {
   foreman: ["tasks", "documents", "team", "weather", "timeline", "contract", "sitelogs", "deliveries"],
   worker: ["tasks", "weather", "timeline", "sitelogs"],
   inspector: ["tasks", "documents", "weather", "contract", "sitelogs"],
-  subcontractor: ["tasks", "documents", "weather", "timeline", "deliveries"],
+  subcontractor: ["tasks", "documents", "team", "weather", "timeline", "deliveries"],
   supplier: ["documents", "weather", "timeline", "deliveries"],
   client: ["overview", "documents", "weather", "timeline", "contract"],
   member: ["tasks", "weather", "sitelogs"],
