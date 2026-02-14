@@ -3493,14 +3493,41 @@ export default function Stage8FinalReview({
       const geminiModel = aiAnalysisData?.engines?.gemini?.model || savedVisual?.gemini_findings ? 'Gemini' : '';
       const openaiModel = aiAnalysisData?.engines?.openai?.model || (savedOpenaiFindings ? 'GPT-5' : '');
       
-      if (execText) {
+      // Helper to clean raw AI text: strip JSON wrappers, markdown fences, etc.
+      const cleanAiText = (raw: any): string => {
+        if (!raw) return '';
+        let text = typeof raw === 'string' ? raw : '';
+        if (!text && typeof raw === 'object') {
+          // Extract meaningful text from JSON objects
+          const obj = raw as Record<string, any>;
+          text = obj.executiveSummary || obj.executive_summary || obj.summary || obj.analysis || obj.text || obj.content || '';
+          if (!text) {
+            // Try to find any long string value
+            for (const val of Object.values(obj)) {
+              if (typeof val === 'string' && val.length > 40) { text = val; break; }
+            }
+          }
+          if (!text) text = JSON.stringify(raw);
+        }
+        // Strip markdown JSON fences: ```json ... ```
+        text = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+        // Strip leading { "key": " and trailing " }
+        const jsonWrapMatch = text.match(/^\s*\{\s*"[^"]+"\s*:\s*"([\s\S]+)"\s*\}\s*$/);
+        if (jsonWrapMatch) text = jsonWrapMatch[1];
+        // Unescape JSON string escapes
+        text = text.replace(/\\n/g, ' ').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        return text.trim();
+      };
+
+      const cleanExecText = cleanAiText(execText);
+      if (cleanExecText) {
         execSummaryHtml = '<div class="pdf-section" style="margin-top:24px;margin-bottom:20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:18px 20px;">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
             '<span style="font-size:16px;">🧠</span>' +
             '<div style="font-size:14px;font-weight:700;color:#064e3b;">M.E.S.S.A. Executive Summary</div>' +
             (dualEngineUsed ? '<span style="background:#7c3aed;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">DUAL ENGINE</span>' : '') +
           '</div>' +
-          '<p style="font-size:12px;color:#374151;line-height:1.7;margin-bottom:8px;">' + esc(typeof execText === 'string' ? execText : JSON.stringify(execText).slice(0, 500)) + '</p>' +
+          '<p style="font-size:12px;color:#374151;line-height:1.7;margin-bottom:8px;">' + esc(cleanExecText.slice(0, 600)) + '</p>' +
           '<div style="display:flex;gap:16px;margin-top:10px;font-size:10px;color:#6b7280;">' +
             (geminiModel ? '<span>🔍 ' + esc(String(geminiModel)) + ' — Visual & Site</span>' : '') +
             (openaiModel ? '<span>⚖️ ' + esc(String(openaiModel)) + ' — Regulatory</span>' : '') +
@@ -3681,38 +3708,55 @@ export default function Stage8FinalReview({
       // M.E.S.S.A. DUAL-ENGINE VERDICT
       // ============================================
       let verdictHtml = '';
-      const geminiRaw = aiAnalysisData?.engines?.gemini?.analysis?.rawAnalysis 
-        || savedGeminiFindings?.rawAnalysis || '';
       const openaiRaw = openaiCompliance?.rawValidation 
         || openaiCompliance?.summary || '';
       
-      if (geminiRaw || openaiRaw || geminiExecSummary) {
+      // Build a data-driven verdict instead of repeating the executive summary
+      const healthGrade = pct >= 90 ? 'A' : pct >= 75 ? 'B' : pct >= 50 ? 'C' : pct >= 25 ? 'D' : 'F';
+      const gradeColor = pct >= 75 ? '#059669' : pct >= 50 ? '#d97706' : '#dc2626';
+      const totalRisks = missingPillars.length + conflictAlerts.length + risks.length;
+      const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
+      
+      {
         verdictHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;border:2px solid #7c3aed;border-radius:10px;overflow:hidden;">' +
           '<div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:14px 18px;color:white;">' +
             '<div style="font-size:15px;font-weight:700;">M.E.S.S.A. Dual-Engine Verdict</div>' +
             '<div style="font-size:10px;opacity:0.8;margin-top:2px;">Multi-Engine Synthesis & Structured Analysis — Final Assessment</div>' +
           '</div>' +
           '<div style="padding:16px 18px;">' +
-            // Gemini verdict
-            (geminiRaw ? (
+            // Grade + Key Metrics row
+            '<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #e5e7eb;">' +
+              '<div style="width:64px;height:64px;border-radius:12px;background:' + gradeColor + ';display:flex;align-items:center;justify-content:center;color:white;font-size:32px;font-weight:800;font-family:monospace;">' + healthGrade + '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:13px;font-weight:700;color:#1f2937;margin-bottom:6px;">Project Health Grade: ' + healthGrade + ' (' + pct + '%)</div>' +
+                '<div style="display:flex;gap:12px;flex-wrap:wrap;">' +
+                  '<span style="font-size:10px;color:#6b7280;">✅ ' + passCount + '/8 Pillars Complete</span>' +
+                  '<span style="font-size:10px;color:#6b7280;">⚠️ ' + totalRisks + ' Risk Factors</span>' +
+                  (obcChecklist.length > 0 ? '<span style="font-size:10px;color:#6b7280;">⚖️ ' + obcPassCount + '/' + obcChecklist.length + ' OBC Checks Passed</span>' : '') +
+                  (financialSummary?.total_cost ? '<span style="font-size:10px;color:#6b7280;">💰 Budget: $' + financialSummary.total_cost.toLocaleString() + '</span>' : '') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            // OpenAI regulatory verdict (unique content, not repeated from exec summary)
+            (openaiRaw ? (
               '<div style="margin-bottom:14px;">' +
                 '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
-                  '<span style="background:#06b6d4;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">GEMINI</span>' +
-                  '<span style="font-size:11px;font-weight:600;color:#374151;">Visual & Site Assessment</span>' +
-                '</div>' +
-                '<p style="font-size:11px;color:#4b5563;line-height:1.6;margin:0;">' + esc(typeof geminiRaw === 'string' ? geminiRaw.slice(0, 400) : JSON.stringify(geminiRaw).slice(0, 400)) + (String(geminiRaw).length > 400 ? '...' : '') + '</p>' +
-              '</div>'
-            ) : '') +
-            // OpenAI verdict
-            (openaiRaw ? (
-              '<div style="padding-top:12px;border-top:1px solid #e5e7eb;">' +
-                '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">' +
                   '<span style="background:#8b5cf6;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">GPT-5</span>' +
-                  '<span style="font-size:11px;font-weight:600;color:#374151;">Regulatory & Code Validation</span>' +
+                  '<span style="font-size:11px;font-weight:600;color:#374151;">Regulatory Verdict</span>' +
                 '</div>' +
-                '<p style="font-size:11px;color:#4b5563;line-height:1.6;margin:0;">' + esc(typeof openaiRaw === 'string' ? openaiRaw.slice(0, 400) : JSON.stringify(openaiRaw).slice(0, 400)) + (String(openaiRaw).length > 400 ? '...' : '') + '</p>' +
+                '<p style="font-size:11px;color:#4b5563;line-height:1.6;margin:0;">' + esc(cleanAiText(openaiRaw).slice(0, 400)) + '</p>' +
               '</div>'
             ) : '') +
+            // Actionable next steps
+            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-top:10px;">' +
+              '<div style="font-size:11px;font-weight:600;color:#334155;margin-bottom:6px;">🎯 Recommended Next Steps</div>' +
+              '<ul style="margin:0;padding-left:16px;font-size:10px;color:#475569;line-height:1.7;">' +
+                (missingPillars.length > 0 ? '<li>Complete missing data pillars: ' + esc(missingPillars.map(p => p.label).slice(0, 3).join(', ')) + '</li>' : '<li>All data pillars are complete — proceed to project activation</li>') +
+                (conflictAlerts.length > 0 ? '<li>Resolve ' + conflictAlerts.length + ' visual conflict alert(s) identified by AI vision</li>' : '') +
+                (obcChecklist.length > 0 && obcPassCount < obcChecklist.length ? '<li>Address ' + (obcChecklist.length - obcPassCount) + ' non-compliant OBC item(s) before construction begins</li>' : '') +
+                (!financialSummary?.total_cost ? '<li>Lock in a finalized budget to complete financial readiness</li>' : '') +
+              '</ul>' +
+            '</div>' +
           '</div>' +
         '</div>';
       }
