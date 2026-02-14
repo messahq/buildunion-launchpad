@@ -38,9 +38,21 @@ interface RoleDashboardProps {
   userId: string;
 }
 
+interface TaskItem {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  assigned_to: string;
+  description: string | null;
+}
+
 interface DashboardData {
   project: { name: string; address: string | null; trade: string | null; status: string } | null;
   taskStats: { total: number; completed: number; myTasks: number; myCompleted: number };
+  allTasks: TaskItem[];
+  myTaskItems: TaskItem[];
   docCount: number;
   teamCount: number;
   weather: { temp: number; description: string; alerts: any[] } | null;
@@ -88,6 +100,8 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   const [data, setData] = useState<DashboardData>({
     project: null,
     taskStats: { total: 0, completed: 0, myTasks: 0, myCompleted: 0 },
+    allTasks: [],
+    myTaskItems: [],
     docCount: 0,
     teamCount: 0,
     weather: null,
@@ -107,7 +121,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         supabase.from("projects").select("name, address, trade, status").eq("id", projectId).single(),
         supabase
           .from("project_tasks")
-          .select("id, status, assigned_to")
+          .select("id, title, status, priority, due_date, assigned_to, description")
           .eq("project_id", projectId)
           .is("archived_at", null),
         supabase.from("project_documents").select("id").eq("project_id", projectId),
@@ -118,7 +132,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           .eq("project_id", projectId),
       ]);
 
-      const tasks = tasksRes.data || [];
+      const tasks = (tasksRes.data || []) as TaskItem[];
       const myTasks = tasks.filter((t) => t.assigned_to === userId);
 
       // Extract timeline from verified_facts
@@ -157,8 +171,10 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           myTasks: myTasks.length,
           myCompleted: myTasks.filter((t) => t.status === "completed").length,
         },
+        allTasks: tasks,
+        myTaskItems: myTasks,
         docCount: docsRes.data?.length || 0,
-        teamCount: (membersRes.data?.length || 0) + 1, // +1 for owner
+        teamCount: (membersRes.data?.length || 0) + 1,
         weather: weatherData,
         financials:
           role === "owner" && summaryRes.data?.[0]
@@ -266,54 +282,112 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Tasks Panel */}
+          {/* Tasks Panel - Expanded with Task List */}
           {(panels.includes("tasks") || panels.includes("my-tasks")) && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="md:col-span-2 lg:col-span-3"
+            >
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-cyan-400 flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" />
-                    {panels.includes("my-tasks")
-                      ? t("roleDashboard.myTasks", "My Tasks")
-                      : t("roleDashboard.allTasks", "All Tasks")}
+                  <CardTitle className="text-sm font-medium text-cyan-400 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      {panels.includes("my-tasks")
+                        ? t("roleDashboard.myTasks", "My Tasks")
+                        : t("roleDashboard.allTasks", "All Tasks")}
+                    </span>
+                    <span className="text-xs text-cyan-600">
+                      {panels.includes("my-tasks")
+                        ? `${data.taskStats.myCompleted}/${data.taskStats.myTasks} ${t("roleDashboard.done", "done")}`
+                        : `${data.taskStats.completed}/${data.taskStats.total} ${t("roleDashboard.done", "done")}`}
+                    </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {panels.includes("my-tasks") ? (
-                    <>
-                      <p className="text-3xl font-bold text-white">
-                        {data.taskStats.myCompleted}/{data.taskStats.myTasks}
+                  {/* Progress bar */}
+                  {(() => {
+                    const total = panels.includes("my-tasks") ? data.taskStats.myTasks : data.taskStats.total;
+                    const completed = panels.includes("my-tasks") ? data.taskStats.myCompleted : data.taskStats.completed;
+                    return total > 0 ? (
+                      <div className="mb-4 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all"
+                          style={{ width: `${(completed / total) * 100}%` }}
+                        />
+                      </div>
+                    ) : null;
+                  })()}
+
+                  {/* Task List */}
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                    {(panels.includes("my-tasks") ? data.myTaskItems : data.allTasks).length === 0 ? (
+                      <p className="text-sm text-cyan-700 text-center py-4">
+                        {t("roleDashboard.noTasks", "No tasks assigned yet")}
                       </p>
-                      <p className="text-xs text-cyan-600 mt-1">
-                        {t("roleDashboard.assignedToYou", "assigned to you")}
-                      </p>
-                      {data.taskStats.myTasks > 0 && (
-                        <div className="mt-3 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all"
-                            style={{ width: `${(data.taskStats.myCompleted / data.taskStats.myTasks) * 100}%` }}
-                          />
+                    ) : (
+                      (panels.includes("my-tasks") ? data.myTaskItems : data.allTasks).map((task) => (
+                        <div
+                          key={task.id}
+                          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                            task.status === "completed"
+                              ? "bg-emerald-950/20 border-emerald-900/30"
+                              : task.status === "in_progress"
+                                ? "bg-amber-950/20 border-amber-900/30"
+                                : "bg-cyan-950/20 border-cyan-900/20"
+                          }`}
+                        >
+                          {/* Status icon */}
+                          <div className="shrink-0">
+                            {task.status === "completed" ? (
+                              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                            ) : task.status === "in_progress" ? (
+                              <Clock className="h-5 w-5 text-amber-400" />
+                            ) : (
+                              <div className="h-5 w-5 rounded-full border-2 border-cyan-700" />
+                            )}
+                          </div>
+
+                          {/* Task info */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${
+                              task.status === "completed" ? "text-cyan-500 line-through" : "text-white"
+                            }`}>
+                              {task.title}
+                            </p>
+                            {task.description && (
+                              <p className="text-xs text-cyan-700 truncate mt-0.5">{task.description}</p>
+                            )}
+                          </div>
+
+                          {/* Priority & date */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-1.5 py-0 border-0 ${
+                                task.priority === "critical"
+                                  ? "bg-red-900/40 text-red-300"
+                                  : task.priority === "high"
+                                    ? "bg-orange-900/40 text-orange-300"
+                                    : task.priority === "medium"
+                                      ? "bg-amber-900/40 text-amber-300"
+                                      : "bg-green-900/40 text-green-300"
+                              }`}
+                            >
+                              {task.priority}
+                            </Badge>
+                            {task.due_date && (
+                              <span className="text-[10px] text-cyan-600">
+                                {new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-3xl font-bold text-white">
-                        {data.taskStats.completed}/{data.taskStats.total}
-                      </p>
-                      <p className="text-xs text-cyan-600 mt-1">
-                        {t("roleDashboard.tasksCompleted", "tasks completed")}
-                      </p>
-                      {data.taskStats.total > 0 && (
-                        <div className="mt-3 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all"
-                            style={{ width: `${(data.taskStats.completed / data.taskStats.total) * 100}%` }}
-                          />
-                        </div>
-                      )}
-                    </>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
