@@ -135,17 +135,21 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
       const tasks = (tasksRes.data || []) as TaskItem[];
       const myTasks = tasks.filter((t) => t.assigned_to === userId);
 
-      // Extract timeline from verified_facts
+      // Extract timeline from verified_facts OR project_summaries columns
       let startDate: string | null = null;
       let endDate: string | null = null;
       if (summaryRes.data && summaryRes.data.length > 0) {
-        const facts = summaryRes.data[0].verified_facts as any[];
+        const summary = summaryRes.data[0];
+        const facts = summary.verified_facts as any[];
         if (Array.isArray(facts)) {
           const timelineFact = facts.find((f: any) => f.cite_type === "TIMELINE");
           const endFact = facts.find((f: any) => f.cite_type === "END_DATE");
           if (timelineFact) startDate = timelineFact.answer;
           if (endFact) endDate = endFact.answer;
         }
+        // Fallback: use project_summaries date columns if citations missing
+        if (!startDate && summary.project_start_date) startDate = summary.project_start_date;
+        if (!endDate && summary.project_end_date) endDate = summary.project_end_date;
       }
 
       // Fetch weather if project has address
@@ -208,7 +212,9 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "Not set";
     try {
-      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "Not set";
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     } catch {
       return "Not set";
     }
