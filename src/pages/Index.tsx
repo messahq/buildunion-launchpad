@@ -3,7 +3,26 @@ import DockHeader from "@/components/DockHeader";
 
 const Index = () => {
   const navigate = useNavigate();
+const runEngineeringAnalysis = async (projectData: any) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('buildunion-brain', {
+        body: { 
+          project_type: projectData.type || 'Renovation',
+          image_url: projectData.image || '',
+          current_gross_sum: projectData.total_budget || 0
+        },
+      });
 
+      if (error) throw error;
+      
+      console.log("Mérnöki válasz:", data);
+      alert(`Elemzés kész! Státusz: ${data.financial_execution.status}`);
+      
+    } catch (err) {
+      console.error("Hiba az elemzés során:", err);
+      alert("Nem sikerült elérni a Mérnök Agyat.");
+    }
+  };
   return (
     <main className="relative min-h-screen w-full bg-slate-950 flex flex-col overflow-hidden">
       {/* Header */}
@@ -79,7 +98,7 @@ const Index = () => {
 
         {/* BuildUnion Text Button */}
         <button
-          onClick={() => navigate("/buildunion")}
+          onClick={() => { runEngineeringAnalysis({ type: 'Renovation', total_budget: 5000 }); navigate("/buildunion"); }}
           className="group cursor-pointer focus:outline-none transition-all duration-300 hover:opacity-80"
         >
           <span className="text-lg md:text-xl font-medium tracking-wide">
