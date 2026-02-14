@@ -5574,8 +5574,8 @@ export default function Stage8FinalReview({
                                 <Checkbox
                                   checked={isCompleted}
                                   onCheckedChange={(checked) => {
-                                    // If completing: check if verification photo exists
-                                    if (checked) {
+                                    // Only main phase tasks (not sub-tasks) require verification photo
+                                    if (checked && !task.isSubTask) {
                                       const hasPhoto = citations.some(c => 
                                         c.cite_type === 'SITE_PHOTO' && c.metadata?.taskId === task.id
                                       );
@@ -5841,8 +5841,8 @@ export default function Stage8FinalReview({
                                         </SelectContent>
                                       </Select>
                                     </div>
-                                    {/* Photo verification status */}
-                                    {(() => {
+                                    {/* Photo verification status - only for main phase tasks */}
+                                    {!task.isSubTask && (() => {
                                       const hasPhoto = citations.some(c => 
                                         c.cite_type === 'SITE_PHOTO' && c.metadata?.taskId === task.id
                                       );
