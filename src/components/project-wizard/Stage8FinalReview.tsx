@@ -3303,15 +3303,28 @@ export default function Stage8FinalReview({
         || 0;
       
       // Extract executive summary / risk assessment from AI engines
-      const geminiExecSummary: string = aiAnalysisData?.engines?.gemini?.analysis?.executiveSummary 
-        || savedGeminiFindings?.executiveSummary 
-        || '';
-      const geminiRiskFactors: any[] = aiAnalysisData?.engines?.gemini?.analysis?.riskFactors 
+      // CRITICAL: The edge function returns engines.gemini.analysis as a PLAIN TEXT STRING, not a structured object.
+      // Use the full text directly as executive summary.
+      const geminiRawAnalysis: string = typeof aiAnalysisData?.engines?.gemini?.analysis === 'string' 
+        ? aiAnalysisData.engines.gemini.analysis 
+        : '';
+      const savedRawAnalysis: string = typeof savedGeminiFindings === 'string' 
+        ? savedGeminiFindings 
+        : (savedGeminiFindings?.executiveSummary || savedGeminiFindings?.rawAnalysis || savedGeminiFindings?.analysis || '');
+      const geminiExecSummary: string = geminiRawAnalysis || savedRawAnalysis || '';
+      
+      // Risk factors: extract from structured data if available, or build from missing pillars
+      const geminiRiskFactors: any[] = (typeof aiAnalysisData?.engines?.gemini?.analysis === 'object' && aiAnalysisData?.engines?.gemini?.analysis?.riskFactors) 
         || savedGeminiFindings?.riskFactors 
         || [];
-      const openaiCompliance: any = aiAnalysisData?.engines?.openai?.analysis 
-        || savedOpenaiFindings 
-        || null;
+      
+      // OpenAI compliance: also a plain text string from the edge function  
+      const openaiRawText: string = typeof aiAnalysisData?.engines?.openai?.analysis === 'string'
+        ? aiAnalysisData.engines.openai.analysis
+        : '';
+      const openaiCompliance: any = openaiRawText 
+        ? { rawValidation: openaiRawText, summary: openaiRawText }
+        : (savedOpenaiFindings || null);
       
       // Conflict Alerts Section
       let conflictHtml = '';
@@ -3492,10 +3505,11 @@ export default function Stage8FinalReview({
       // EXECUTIVE SUMMARY (AI-Generated)
       // ============================================
       let execSummaryHtml = '';
-      const execText = geminiExecSummary || (aiAnalysisData?.engines?.gemini?.analysis?.rawAnalysis || '').slice(0, 500);
-      const dualEngineUsed = aiAnalysisData?.dualEngineUsed || !!savedOpenaiFindings?.rawValidation;
-      const geminiModel = aiAnalysisData?.engines?.gemini?.model || savedVisual?.gemini_findings ? 'Gemini' : '';
-      const openaiModel = aiAnalysisData?.engines?.openai?.model || (savedOpenaiFindings ? 'GPT-5' : '');
+      // Use the full Gemini analysis text as executive summary — it's already clean plain text from the edge function
+      const execText = geminiExecSummary;
+      const dualEngineUsed = aiAnalysisData?.dualEngineUsed || !!openaiRawText || !!savedOpenaiFindings?.rawValidation;
+      const geminiModel = aiAnalysisData?.engines?.gemini?.model || (geminiExecSummary ? 'Gemini' : '');
+      const openaiModel = aiAnalysisData?.engines?.openai?.model || (openaiRawText || savedOpenaiFindings ? 'GPT-5' : '');
       
       // Helper to clean raw AI text: strip JSON wrappers, markdown fences, etc.
       const cleanAiText = (raw: any): string => {
@@ -3531,7 +3545,7 @@ export default function Stage8FinalReview({
             '<div style="font-size:14px;font-weight:700;color:#064e3b;">M.E.S.S.A. Executive Summary</div>' +
             (dualEngineUsed ? '<span style="background:#7c3aed;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">DUAL ENGINE</span>' : '') +
           '</div>' +
-          '<p style="font-size:12px;color:#374151;line-height:1.7;margin-bottom:8px;">' + esc(cleanExecText.slice(0, 600)) + '</p>' +
+          '<div style="font-size:12px;color:#374151;line-height:1.7;margin-bottom:8px;white-space:pre-line;">' + esc(cleanExecText.slice(0, 2500)) + '</div>' +
           '<div style="display:flex;gap:16px;margin-top:10px;font-size:10px;color:#6b7280;">' +
             (geminiModel ? '<span>🔍 ' + esc(String(geminiModel)) + ' — Visual & Site</span>' : '') +
             (openaiModel ? '<span>⚖️ ' + esc(String(openaiModel)) + ' — Regulatory</span>' : '') +
