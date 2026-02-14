@@ -123,8 +123,13 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
 
   const loadDashboardData = async () => {
     try {
+      // Fetch summary separately based on role to avoid TS union issues
+      const summaryPromise = role === "owner"
+        ? supabase.from("project_summaries").select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date").eq("project_id", projectId)
+        : supabase.from("project_summaries_team").select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date").eq("project_id", projectId);
+
       // Parallel fetch all data
-      const [projectRes, tasksRes, docsRes, membersRes, summaryRes, contractsRes, siteLogsRes, deliveriesRes] = await Promise.all([
+      const [projectRes, tasksRes, docsRes, membersRes, summaryRaw, contractsRes, siteLogsRes, deliveriesRes] = await Promise.all([
         supabase.from("projects").select("name, address, trade, status").eq("id", projectId).single(),
         supabase
           .from("project_tasks")
@@ -133,14 +138,12 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           .is("archived_at", null),
         supabase.from("project_documents").select("id").eq("project_id", projectId),
         supabase.from("project_members").select("id, user_id, role").eq("project_id", projectId),
-        supabase
-          .from("project_summaries_team")
-          .select("total_cost, material_cost, labor_cost, verified_facts, project_start_date, project_end_date")
-          .eq("project_id", projectId),
+        summaryPromise,
         supabase.from("contracts").select("id, status").eq("project_id", projectId).limit(1),
         supabase.from("site_logs").select("id").eq("project_id", projectId),
         supabase.from("material_deliveries").select("id").eq("project_id", projectId),
       ]);
+      const summaryRes = { data: summaryRaw.data as any[] | null };
 
       const tasks = (tasksRes.data || []) as TaskItem[];
       const myTasks = tasks.filter((t) => t.assigned_to === userId);
