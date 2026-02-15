@@ -263,23 +263,23 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
         }}
         className={cn(
           "w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-left transition-all shadow-sm",
-          "bg-gradient-to-r from-sky-500/20 via-cyan-400/15 to-amber-400/15",
-          "hover:from-sky-500/30 hover:via-cyan-400/25 hover:to-amber-400/25",
-          "border border-sky-400/40 hover:border-sky-400/60",
-          "hover:shadow-[0_0_12px_rgba(56,189,248,0.15)]",
-          expanded && "from-sky-500/30 via-cyan-400/25 to-amber-400/25 border-sky-400/60 shadow-[0_0_12px_rgba(56,189,248,0.15)]"
+          "bg-gradient-to-r from-sky-500/25 via-cyan-400/20 to-amber-300/25",
+          "hover:from-sky-500/35 hover:via-cyan-400/30 hover:to-amber-300/35",
+          "border border-sky-400/50 hover:border-sky-300/70",
+          "hover:shadow-[0_0_14px_rgba(56,189,248,0.2)]",
+          expanded && "from-sky-500/35 via-cyan-400/30 to-amber-300/35 border-sky-300/70 shadow-[0_0_14px_rgba(56,189,248,0.2)]"
         )}
       >
-        <div className="h-5 w-5 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shrink-0">
-          <HelpCircle className="h-3 w-3 text-white" />
+        <div className="h-5 w-5 rounded-full bg-gradient-to-br from-amber-300 to-amber-400 flex items-center justify-center shrink-0 shadow-[0_0_6px_rgba(251,191,36,0.4)]">
+          <HelpCircle className="h-3 w-3 text-amber-900" />
         </div>
-        <span className="text-xs font-semibold bg-gradient-to-r from-sky-300 to-cyan-200 bg-clip-text text-transparent flex-1">
+        <span className="text-xs font-semibold text-sky-200 flex-1">
           How does this panel work?
         </span>
         {expanded ? (
-          <ChevronUp className="h-3.5 w-3.5 text-sky-400" />
+          <ChevronUp className="h-3.5 w-3.5 text-amber-300" />
         ) : (
-          <ChevronDown className="h-3.5 w-3.5 text-sky-400/60" />
+          <ChevronDown className="h-3.5 w-3.5 text-amber-300/70" />
         )}
       </button>
 
@@ -292,13 +292,13 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 py-3 mt-1.5 rounded-xl bg-gradient-to-br from-sky-500/10 via-cyan-500/5 to-transparent border border-sky-400/20 space-y-2.5">
-              <p className="text-xs text-sky-100/80 leading-relaxed">{helpContent.description}</p>
+            <div className="px-4 py-3 mt-1.5 rounded-xl bg-gradient-to-br from-sky-500/15 via-cyan-500/10 to-amber-400/5 border border-sky-400/25 space-y-2.5">
+              <p className="text-xs text-sky-100 leading-relaxed">{helpContent.description}</p>
               <div className="space-y-1.5">
                 {helpContent.tips.map((tip, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <span className="text-cyan-400 text-xs mt-0.5 shrink-0">✦</span>
-                    <span className="text-[11px] text-foreground/60">{tip}</span>
+                    <span className="text-amber-300 text-xs mt-0.5 shrink-0">✦</span>
+                    <span className="text-[11px] text-foreground/70">{tip}</span>
                   </div>
                 ))}
               </div>
