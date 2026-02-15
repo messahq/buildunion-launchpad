@@ -66,6 +66,7 @@ import {
   Mail,
   Send,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -449,7 +450,10 @@ export default function Stage8FinalReview({
   
   const [isFinancialLocked, setIsFinancialLocked] = useState(true);
   const [ownerLockOpen, setOwnerLockOpen] = useState(false);
-  const [ownerLockAction, setOwnerLockAction] = useState<'finish' | 'material_edit' | null>(null);
+  const [ownerLockAction, setOwnerLockAction] = useState<'finish' | 'material_edit' | 'material_table_edit' | null>(null);
+  const [editingMaterialIdx, setEditingMaterialIdx] = useState<number | null>(null);
+  const [editMaterialQty, setEditMaterialQty] = useState<string>('');
+  const [pendingMaterialEdit, setPendingMaterialEdit] = useState<{idx: number; qty: string} | null>(null);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [weatherModalOpen, setWeatherModalOpen] = useState(false);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
@@ -5383,15 +5387,69 @@ export default function Stage8FinalReview({
     }
   }, [projectId, onComplete, citations]);
 
+  // Execute material table edit after owner lock
+  const executeMaterialTableEdit = useCallback(async () => {
+    if (!pendingMaterialEdit) return;
+    const { idx, qty } = pendingMaterialEdit;
+    const newQty = Number(qty);
+    if (isNaN(newQty) || newQty <= 0) {
+      toast.error('Invalid quantity');
+      setPendingMaterialEdit(null);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      if (!templateCitation?.metadata?.items) throw new Error('No template data');
+      
+      const items = [...(templateCitation.metadata.items as any[])];
+      // Find only material items to match the displayed index
+      const materialItems = items.filter((item: any) => item.category === 'material');
+      if (idx >= materialItems.length) throw new Error('Invalid material index');
+      
+      const targetItem = materialItems[idx];
+      const globalIdx = items.indexOf(targetItem);
+      items[globalIdx] = { ...targetItem, quantity: newQty, baseQuantity: newQty };
+      
+      // Update citation metadata
+      const updatedCitations = citations.map(c => {
+        if (c.id === templateCitation.id) {
+          return { ...c, metadata: { ...c.metadata, items } };
+        }
+        return c;
+      });
+      
+      const { error } = await supabase
+        .from('project_summaries')
+        .update({ verified_facts: updatedCitations as any })
+        .eq('project_id', projectId);
+      
+      if (error) throw error;
+      
+      setCitations(updatedCitations);
+      toast.success(`Material quantity updated to ${newQty}`, { description: 'Owner-authorized override applied' });
+    } catch (err) {
+      console.error('[Stage8] Material table edit failed:', err);
+      toast.error('Failed to update material');
+    } finally {
+      setIsSaving(false);
+      setEditingMaterialIdx(null);
+      setEditMaterialQty('');
+      setPendingMaterialEdit(null);
+    }
+  }, [pendingMaterialEdit, citations, projectId]);
+
   // Owner lock callback dispatcher
   const handleOwnerLockAuthorized = useCallback(() => {
     if (ownerLockAction === 'finish') {
       executeComplete();
     } else if (ownerLockAction === 'material_edit') {
       saveEdit();
+    } else if (ownerLockAction === 'material_table_edit') {
+      executeMaterialTableEdit();
     }
     setOwnerLockAction(null);
-  }, [ownerLockAction, executeComplete, saveEdit]);
+  }, [ownerLockAction, executeComplete, saveEdit, executeMaterialTableEdit]);
   
   // Render citation value
   const renderCitationValue = useCallback((citation: Citation) => {
@@ -9143,7 +9201,7 @@ export default function Stage8FinalReview({
                       return (
                         <div 
                           key={idx} 
-                          className={cn("flex items-center justify-between p-4 rounded-xl border-2 hover:shadow-md transition-all", cardColors[idx % cardColors.length])}
+                          className={cn("flex items-center justify-between p-4 rounded-xl border-2 hover:shadow-md transition-all group", cardColors[idx % cardColors.length])}
                         >
                           <div className="flex items-center gap-3">
                             <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm", iconColors[idx % iconColors.length])}>
@@ -9156,9 +9214,70 @@ export default function Stage8FinalReview({
                               )}
                             </div>
                           </div>
-                          <Badge className="text-sm font-black bg-white/80 dark:bg-gray-900/50 text-gray-900 dark:text-white border border-gray-300/50 dark:border-gray-600/50 shadow-sm">
-                            {mat.qty.toLocaleString()} {mat.unit}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {editingMaterialIdx === idx ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={editMaterialQty}
+                                  onChange={(e) => setEditMaterialQty(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      setPendingMaterialEdit({ idx, qty: editMaterialQty });
+                                      setOwnerLockAction('material_table_edit');
+                                      setOwnerLockOpen(true);
+                                    }
+                                    if (e.key === 'Escape') {
+                                      setEditingMaterialIdx(null);
+                                      setEditMaterialQty('');
+                                    }
+                                  }}
+                                  className="w-20 h-8 text-sm font-bold border-amber-400"
+                                  autoFocus
+                                />
+                                <span className="text-xs text-muted-foreground">{mat.unit}</span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => {
+                                    setPendingMaterialEdit({ idx, qty: editMaterialQty });
+                                    setOwnerLockAction('material_table_edit');
+                                    setOwnerLockOpen(true);
+                                  }}
+                                >
+                                  <Check className="h-3.5 w-3.5 text-green-600" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => { setEditingMaterialIdx(null); setEditMaterialQty(''); }}
+                                >
+                                  <X className="h-3.5 w-3.5 text-red-500" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <Badge className="text-sm font-black bg-white/80 dark:bg-gray-900/50 text-gray-900 dark:text-white border border-gray-300/50 dark:border-gray-600/50 shadow-sm">
+                                  {mat.qty.toLocaleString()} {mat.unit}
+                                </Badge>
+                                {userRole === 'owner' && canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => {
+                                      setEditingMaterialIdx(idx);
+                                      setEditMaterialQty(String(mat.qty));
+                                    }}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5 text-amber-500" />
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
