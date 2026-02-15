@@ -311,12 +311,18 @@ export function TeamChatPanel({
 
       const publicUrl = urlData.publicUrl;
 
-      // Also register in project_documents table for Documents panel
+      // Also register in project_documents table for Documents panel with metadata
+      const uploaderInfo = memberMap.get(userId);
       await supabase.from("project_documents").insert({
         project_id: projectId,
         file_name: file.name,
         file_path: filePath,
         file_size: file.size,
+        uploaded_by: userId,
+        uploaded_by_name: uploaderInfo?.name || 'Unknown',
+        uploaded_by_role: uploaderInfo?.role || 'member',
+        mime_type: file.type || 'application/octet-stream',
+        ai_analysis_status: 'pending',
       });
 
       // Send as chat message with attachment
