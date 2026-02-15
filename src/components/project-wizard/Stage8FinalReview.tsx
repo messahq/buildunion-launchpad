@@ -11597,16 +11597,10 @@ export default function Stage8FinalReview({
                             <motion.div
                               key={pillar.key}
                               className={cn(
-                                "rounded-xl border overflow-hidden",
+                                "rounded-xl border overflow-hidden relative",
                                 pillar.color,
-                                isScanning && "dna-radar-scanning",
-                                isScanned && !isScanning && "dna-radar-scanned"
                               )}
                               style={{
-                                ...(isScanning ? {
-                                  '--radar-color': radarColorMap[pillar.color] || 'hsla(160, 80%, 50%, 0.15)',
-                                  '--radar-color-bright': radarBrightMap[pillar.color] || 'hsla(160, 80%, 50%, 0.35)',
-                                } as React.CSSProperties : {}),
                                 ...(isScanned && !isScanning ? {
                                   borderColor: scannedBorderMap[pillar.color] || 'hsla(160, 80%, 45%, 0.6)',
                                   boxShadow: `0 0 12px ${radarColorMap[pillar.color] || 'hsla(160, 80%, 45%, 0.2)'}`,
@@ -11616,6 +11610,23 @@ export default function Stage8FinalReview({
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.06 }}
                             >
+                              {/* Knight Rider Radar Beam */}
+                              {isScanning && (
+                                <motion.div
+                                  style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    width: '30%',
+                                    height: '100%',
+                                    background: `linear-gradient(90deg, transparent, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, ${radarBrightMap[pillar.color] || 'hsla(160,80%,50%,0.4)'}, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, transparent)`,
+                                    zIndex: 10,
+                                    pointerEvents: 'none' as const,
+                                  }}
+                                  initial={{ left: '-30%', opacity: 0 }}
+                                  animate={{ left: ['-30%', '130%'], opacity: [0, 1, 1, 0] }}
+                                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                              )}
                               <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
                                 <span className="text-lg">{pillar.icon}</span>
                                 <div className="flex-1 min-w-0">
@@ -12515,16 +12526,10 @@ export default function Stage8FinalReview({
                               <motion.div
                                 key={pillar.key}
                                 className={cn(
-                                  "rounded-xl border overflow-hidden",
+                                  "rounded-xl border overflow-hidden relative",
                                   pillar.color,
-                                  isScanning && "dna-radar-scanning",
-                                  isScanned && !isScanning && "dna-radar-scanned"
                                 )}
                                 style={{
-                                  ...(isScanning ? {
-                                    '--radar-color': radarColorMap[pillar.color] || 'hsla(160, 80%, 50%, 0.15)',
-                                    '--radar-color-bright': radarBrightMap[pillar.color] || 'hsla(160, 80%, 50%, 0.35)',
-                                  } as React.CSSProperties : {}),
                                   ...(isScanned && !isScanning ? {
                                     borderColor: scannedBorderMap[pillar.color] || 'hsla(160, 80%, 45%, 0.6)',
                                     boxShadow: `0 0 12px ${radarColorMap[pillar.color] || 'hsla(160, 80%, 45%, 0.2)'}`,
@@ -12534,6 +12539,23 @@ export default function Stage8FinalReview({
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.08 }}
                               >
+                                {/* Knight Rider Radar Beam */}
+                                {isScanning && (
+                                  <motion.div
+                                    style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      width: '30%',
+                                      height: '100%',
+                                      background: `linear-gradient(90deg, transparent, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, ${radarBrightMap[pillar.color] || 'hsla(160,80%,50%,0.4)'}, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, transparent)`,
+                                      zIndex: 10,
+                                      pointerEvents: 'none' as const,
+                                    }}
+                                    initial={{ left: '-30%', opacity: 0 }}
+                                    animate={{ left: ['-30%', '130%'], opacity: [0, 1, 1, 0] }}
+                                    transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                                  />
+                                )}
                                 <div className={cn("flex items-center gap-3 px-5 py-3", pillar.headerBg)}>
                                   <span className="text-xl">{pillar.icon}</span>
                                   <div className="flex-1 min-w-0">
