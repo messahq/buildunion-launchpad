@@ -14285,6 +14285,7 @@ export default function Stage8FinalReview({
           siteCondition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer || "Not assessed",
           currentUserRole: userRole,
           currentUserName: teamMembers.find(m => m.userId === userId)?.name || "Unknown",
+          projectId: projectId,
         }}
       />
       
