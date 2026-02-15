@@ -202,9 +202,10 @@ const BuildUnionAbout = () => {
                 <CardContent className="p-8 text-center">
                   <div className="flex items-center justify-center gap-3 mb-3">
                     <Cpu className="h-7 w-7 text-amber-600 dark:text-amber-400" />
-                    <h3 className="font-bold text-2xl">M.E.S.S.A. Synthesis</h3>
+                    <h3 className="font-bold text-2xl">M.E.S.S.A.</h3>
                   </div>
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-3">Multi-Engine Synthesis & Structured Analysis</p>
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">Multi-Engine Smart Synthesis Agents</p>
+                  <p className="text-xs text-muted-foreground mb-3">Multi-Engine Synthesis & Structured Analysis</p>
                   <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                     Both engines don't just run in parallel — they <strong className="text-foreground">cross-validate</strong> each other. Gemini identifies what's physically on-site; OpenAI checks if it meets code. When they disagree, the system flags a conflict and provides both perspectives in the DNA Audit Report. This dual-validation approach eliminates single-model hallucination risk.
                   </p>

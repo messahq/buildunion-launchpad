@@ -307,57 +307,6 @@ const BuildUnionCommunity = () => {
           </div>
         </section>
 
-        <section className="py-16 px-6 bg-muted/30">
-          <div className="max-w-6xl mx-auto">
-            <div className="bg-card rounded-xl shadow-sm border border-border p-5 flex flex-col md:flex-row gap-6 items-start transition-all duration-300 hover:shadow-lg hover:border-amber-200">
-              <div className="flex-shrink-0">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-amber-400 shadow-md flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-300 via-teal-300 to-amber-300 opacity-80" />
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-amber-600 font-semibold text-xs uppercase tracking-widest">
-                    Core Intelligence: M.E.S.S.A.
-                  </span>
-                </div>
-
-                <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
-                  Multi-Engine Smart Synthesis Agents
-                </h2>
-
-                <p className="text-muted-foreground text-sm leading-relaxed mb-3">
-                  Our system leverages industry-leading AI reasoning engines, like{" "}
-                  <span className="text-cyan-600 font-medium">OpenAI</span> and{" "}
-                  <span className="text-amber-600 font-medium">Google Gemini</span>, orchestrated through
-                  the MESSA synthesis layer to support complex, construction-grade decision making.
-                </p>
-                <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                  Rather than relying on a single model, MESSA operates a dual-engine reasoning and
-                  verification workflow, designed to reduce uncertainty, surface discrepancies, and
-                  prioritize grounded, source-linked outputs.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
-                    <span>Verified Data Retrieval</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
-                    <span>Dual-Model Consensus</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
-                    <span>Source-Linked Proof</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* The Process Section */}
         <section className="py-20 px-6 bg-card border-y border-border">
