@@ -327,7 +327,7 @@ serve(async (req) => {
     // Fetch contractor profile - FULL DATA from bu_profiles
     const { data: buProfile } = await supabaseClient
       .from("bu_profiles")
-      .select("company_name, phone, avatar_url, service_area, company_website")
+      .select("company_name, phone, avatar_url, service_area, company_website, hst_number")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -506,6 +506,7 @@ serve(async (req) => {
         address: buProfile?.service_area || '',
         website: buProfile?.company_website || '',
         province: taxInfo.province,
+        hstNumber: buProfile?.hst_number || '',
       },
       
       client: {
