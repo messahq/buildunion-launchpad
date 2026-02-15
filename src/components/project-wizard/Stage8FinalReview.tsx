@@ -3449,7 +3449,7 @@ export default function Stage8FinalReview({
         const statusBg = p.status ? '#dcfce7' : '#fef2f2';
         const statusTxt = p.status ? '#166534' : '#991b1b';
         const statusLabel = p.status ? '✓ PASS' : '✗ FAIL';
-        return '<div class="pdf-section" style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:14px;overflow:hidden;">' +
+        return '<div class="pdf-section" style="border:1px solid #e5e7eb;border-radius:6px;margin-bottom:8px;overflow:hidden;">' +
           '<div style="background:' + bgHex + ';padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5e7eb;">' +
             '<span style="font-size:18px;">' + p.icon + '</span>' +
             '<div style="flex:1;">' +
@@ -3487,7 +3487,7 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        obcHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+        obcHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:8px;">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
             '<span style="font-size:18px;">⚖️</span>' +
             '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">OBC 2024 Part 9 — Compliance Matrix</div>' +
@@ -3572,7 +3572,7 @@ export default function Stage8FinalReview({
           '</tr>'
         ).join('');
         
-        conflictHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:14px;border:2px solid #dc2626;border-radius:8px;overflow:hidden;">' +
+        conflictHtml = '<div class="pdf-section" style="margin-top:10px;margin-bottom:8px;border:2px solid #dc2626;border-radius:6px;overflow:hidden;">' +
           '<div style="background:#fef2f2;padding:10px 14px;border-bottom:1px solid #fecaca;">' +
             '<div style="font-size:14px;font-weight:700;color:#991b1b;">⚠️ CONFLICT DETECTED — Visual Evidence vs Database</div>' +
             '<div style="font-size:10px;color:#dc2626;margin-top:2px;">Automatic conflict detection by M.E.S.S.A. Visual Intelligence Engine</div>' +
@@ -3618,14 +3618,14 @@ export default function Stage8FinalReview({
             ).join('') + '</tbody></table>';
         }
         
-        aiVisionHtml = '<div class="pdf-section" style="margin-top:16px;">' +
+        aiVisionHtml = '<div class="pdf-section" style="margin-top:8px;">' +
           '<p style="font-size:12px;color:#374151;margin-bottom:8px;"><strong>AI Visual Intelligence Analysis</strong> <span style="background:#06b6d4;color:white;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;">🔍 ' + imagesAnalyzedCount + ' images analyzed</span></p>' +
           bpRows + photoRows2 +
           '<table style="margin-top:8px;"><tr><td style="width:40%;font-weight:600;">Overall Visual Score</td><td style="font-weight:700;color:' + ((geminiVisual.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + (geminiVisual.overallVisualScore || 0) + '/100</td></tr></table>' +
         '</div>';
       } else if (projectDocCount > 0 && imagesAnalyzedCount === 0) {
         // Files exist but were not analyzed — NEVER say "No images available"
-        aiVisionHtml = '<div class="pdf-section" style="margin-top:16px;padding:12px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;">' +
+        aiVisionHtml = '<div class="pdf-section" style="margin-top:8px;padding:10px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;">' +
           '<p style="font-size:12px;color:#92400e;font-weight:600;">📂 Unresolved Visual Evidence</p>' +
           '<p style="font-size:11px;color:#78350f;margin-top:4px;">' + projectDocCount + ' file(s) found in project documents but AI visual analysis could not process them. This may be due to file format limitations or processing errors. Files are present but unverified.</p>' +
         '</div>';
@@ -3683,7 +3683,7 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        visualHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:10px;">' +
+        visualHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">👁️</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
@@ -3753,7 +3753,7 @@ export default function Stage8FinalReview({
         const syncStatusColor = taxSyncPass ? '#166534' : '#991b1b';
         const syncStatusText = taxSyncPass ? '✓ PASS' : '✗ FAIL';
         
-        financialHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:10px;">' +
+        financialHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">💰</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Financial Snapshot</div>' +
@@ -3823,7 +3823,7 @@ export default function Stage8FinalReview({
         const completedSessions = siteCheckins.filter((c: any) => c.checked_out_at).length;
         const uniqueWorkers = new Set(siteCheckins.map((c: any) => c.user_id)).size;
         
-        sitePresenceHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:10px;">' +
+        sitePresenceHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">📍</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Site Presence Log</div>' +
@@ -3881,7 +3881,7 @@ export default function Stage8FinalReview({
 
       const cleanExecText = cleanAiText(execText);
       if (cleanExecText) {
-        execSummaryHtml = '<div class="pdf-section" style="margin-top:18px;margin-bottom:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;">' +
+        execSummaryHtml = '<div class="pdf-section" style="margin-top:10px;margin-bottom:8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 12px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">' +
             '<span style="font-size:14px;">🧠</span>' +
             '<div style="font-size:12px;font-weight:700;color:#064e3b;">M.E.S.S.A. Executive Summary</div>' +
@@ -3923,7 +3923,7 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        obcChecklistHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:10px;">' +
+        obcChecklistHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">⚖️</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Regulatory Compliance Checklist</div>' +
@@ -3995,7 +3995,7 @@ export default function Stage8FinalReview({
         }
         
         if (riskItems) {
-          riskHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:10px;">' +
+          riskHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
               '<span style="font-size:14px;">⚠️</span>' +
               '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Risk Assessment Matrix</div>' +
@@ -4041,7 +4041,7 @@ export default function Stage8FinalReview({
         const gfaVal = gfaCit?.metadata ? (gfaCit.metadata as any).gfa_value || 0 : 0;
         const costPerSqFt = gfaVal > 0 && financialSummary.total_cost ? (financialSummary.total_cost / gfaVal).toFixed(2) : null;
 
-        lineItemHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:10px;">' +
+        lineItemHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">📋</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Material & Labor Breakdown</div>' +
@@ -4078,7 +4078,7 @@ export default function Stage8FinalReview({
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
       
       {
-        verdictHtml = '<div class="pdf-section" style="margin-top:20px;margin-bottom:10px;border:2px solid #7c3aed;border-radius:8px;overflow:hidden;">' +
+        verdictHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;border:2px solid #7c3aed;border-radius:6px;overflow:hidden;">' +
           '<div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:10px 14px;color:white;">' +
             '<div style="font-size:13px;font-weight:700;">M.E.S.S.A. Dual-Engine Verdict</div>' +
             '<div style="font-size:9px;opacity:0.8;margin-top:2px;">Multi-Engine Synthesis & Structured Analysis — Final Assessment</div>' +
@@ -4142,36 +4142,35 @@ export default function Stage8FinalReview({
 
       const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
         '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 32px 36px; max-width: 800px; margin: 0 auto; font-size: 11px; line-height: 1.45; }' +
-        '.pdf-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 10px; }' +
-        'table { break-inside: avoid; page-break-inside: avoid; font-size: 10px; }' +
+        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 24px 28px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.4; }' +
+        '.pdf-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 6px; }' +
+        'table { break-inside: avoid; page-break-inside: avoid; font-size: 10px; border-spacing: 0; }' +
         'tr { break-inside: avoid; page-break-inside: avoid; }' +
-        'h3, h4 { font-size: 12px; }' +
+        'h3, h4 { font-size: 11px; margin-bottom: 4px; }' +
         '</style></head><body>' +
         header +
         // Title block
-        '<div class="pdf-section" style="text-align:center;margin-bottom:20px;">' +
-          '<div style="font-size:9px;text-transform:uppercase;letter-spacing:0.15em;color:#6b7280;margin-bottom:3px;">M.E.S.S.A. DNA Deep Audit</div>' +
-          '<div style="font-size:16px;font-weight:700;color:#064e3b;">' + esc(projName) + '</div>' +
-          (projAddr ? '<div style="font-size:10px;color:#9ca3af;margin-top:2px;">' + esc(projAddr) + '</div>' : '') +
-          '<div style="font-size:9px;color:#9ca3af;margin-top:2px;">Generated: ' + new Date().toLocaleString() + '</div>' +
+        '<div class="pdf-section" style="text-align:center;margin-bottom:12px;">' +
+          '<div style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;color:#6b7280;margin-bottom:2px;">M.E.S.S.A. DNA Deep Audit</div>' +
+          '<div style="font-size:15px;font-weight:700;color:#064e3b;">' + esc(projName) + '</div>' +
+          (projAddr ? '<div style="font-size:9px;color:#9ca3af;margin-top:1px;">' + esc(projAddr) + '</div>' : '') +
+          '<div style="font-size:8px;color:#9ca3af;margin-top:1px;">Generated: ' + new Date().toLocaleString() + '</div>' +
         '</div>' +
         // Executive Summary (NEW)
         execSummaryHtml +
         // Score bar
-        '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">' +
-          '<div style="font-size:26px;font-weight:800;font-family:monospace;">' + passCount + '/8</div>' +
+        '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
+          '<div style="font-size:24px;font-weight:800;font-family:monospace;">' + passCount + '/8</div>' +
           '<div style="flex:1;">' +
-            '<div style="font-size:11px;font-weight:600;margin-bottom:4px;">DNA Integrity Score — ' + pct + '%</div>' +
-            '<div style="height:6px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;">' +
+            '<div style="font-size:10px;font-weight:600;margin-bottom:3px;">DNA Integrity Score — ' + pct + '%</div>' +
+            '<div style="height:5px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;">' +
               '<div style="height:100%;width:' + pct + '%;background:' + scoreColor + ';border-radius:999px;"></div>' +
             '</div>' +
           '</div>' +
-          '<div style="background:rgba(255,255,255,0.15);padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;">' + scoreLabel + '</div>' +
+          '<div style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:20px;font-size:9px;font-weight:600;">' + scoreLabel + '</div>' +
         '</div>' +
-        // Section header: 8 Pillars
-        '<div style="font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
-          '<span style="font-size:14px;">🧬</span> 8-Pillar Validation Matrix' +
+        '<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:6px;display:flex;align-items:center;gap:5px;">' +
+          '<span style="font-size:13px;">🧬</span> 8-Pillar Validation Matrix' +
         '</div>' +
         pillarRows +
         // OBC Compliance (RAG)
