@@ -5974,7 +5974,12 @@ export default function Stage8FinalReview({
                                                   )}>
                                                     {task.priority[0]?.toUpperCase()}
                                                   </span>
-                                                  <span className="text-[9px] font-mono font-bold text-gray-500 dark:text-slate-500">{taskProgress}%</span>
+                                                   <span className="text-[9px] font-mono font-bold text-gray-500 dark:text-slate-500">{taskProgress}%</span>
+                                                  {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
+                                                    <span className="text-emerald-500" title="Verification photo uploaded">
+                                                      <Camera className="h-3 w-3" />
+                                                    </span>
+                                                  )}
                                                 </div>
                                               </div>
                                             </div>
