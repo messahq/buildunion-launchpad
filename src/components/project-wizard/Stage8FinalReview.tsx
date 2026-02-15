@@ -771,6 +771,11 @@ export default function Stage8FinalReview({
       return 'verification';
     }
     
+    // ✓ Task verification photos (stored in /verification/ path) → Verification
+    if (lowerPath.includes('/verification/')) {
+      return 'verification';
+    }
+    
     // ✓ Explicit verification keywords
     if (lowerName.includes('verification') || lowerName.includes('inspect') || lowerName.includes('qc')) {
       return 'verification';
@@ -5818,18 +5823,26 @@ export default function Stage8FinalReview({
                                         try {
                                           const file = files[0];
                                           const fileName = `${Date.now()}-${file.name}`;
-                                          const filePath = `${projectId}/${fileName}`;
+                                          const filePath = `${projectId}/verification/${fileName}`;
                                           const { error: uploadError } = await supabase.storage
                                             .from('project-documents')
                                             .upload(filePath, file);
                                           if (uploadError) throw uploadError;
+                                          // Get uploader info for metadata tracking
+                                          const uploaderName = teamMembers.find(m => m.userId === userId)?.name || 'Unknown';
+                                          const uploaderRole = userRole || 'member';
                                           const { data: docRecord, error: insertError } = await supabase
                                             .from('project_documents')
                                             .insert({
                                               project_id: projectId,
                                               file_name: file.name,
-                                              file_path: filePath,
+                                              file_path: `${projectId}/verification/${fileName}`,
                                               file_size: file.size,
+                                              uploaded_by: userId,
+                                              uploaded_by_name: uploaderName,
+                                              uploaded_by_role: uploaderRole,
+                                              mime_type: file.type || 'image/jpeg',
+                                              ai_analysis_status: 'pending',
                                             })
                                             .select()
                                             .single();
@@ -5837,28 +5850,32 @@ export default function Stage8FinalReview({
                                           const phaseInfo = TASK_PHASES.find(p => p.key === task.phase);
                                           const newCitation: Citation = {
                                             id: `doc-${docRecord.id}`,
-                                            cite_type: 'SITE_PHOTO' as any,
+                                            cite_type: 'VISUAL_VERIFICATION' as any,
                                             question_key: 'task_photo_upload',
-                                            answer: `Task Photo: ${task.title}`,
+                                            answer: `Task Verification Photo: ${task.title}`,
                                             value: filePath,
                                             timestamp: new Date().toISOString(),
                                             metadata: {
-                                              category: 'visual',
+                                              category: 'verification',
                                               fileName: file.name,
                                               fileSize: file.size,
                                               taskId: task.id,
                                               taskTitle: task.title,
                                               phase: task.phase,
                                               phaseLabel: phaseInfo?.label || task.phase,
+                                              uploadedBy: uploaderName,
+                                              uploadedByRole: uploaderRole,
                                             },
                                           };
                                           const newDoc: DocumentWithCategory = {
                                             id: docRecord.id,
                                             file_name: file.name,
                                             file_path: filePath,
-                                            category: 'visual',
+                                            category: 'verification',
                                             citationId: newCitation.id,
                                             uploadedAt: new Date().toISOString(),
+                                            uploaded_by_name: uploaderName,
+                                            uploaded_by_role: uploaderRole,
                                           };
                                           setDocuments(prev => [...prev, newDoc]);
                                           setCitations(prev => {
