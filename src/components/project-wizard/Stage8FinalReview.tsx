@@ -11310,9 +11310,9 @@ export default function Stage8FinalReview({
                 ref={canvasContentRef}
                 style={activeOrbitalPanel === 'messa-deep-audit' ? {} : { colorScheme: 'light' }}
               >
-                {/* In-App Help Section - outside text-foreground override */}
+                {/* In-App Help Section */}
                 {activeOrbitalPanel !== 'messa-deep-audit' && (
-                  <div className="mb-3 [&_*]:!text-[unset]">
+                  <div className="mb-3" style={{ all: 'initial', display: 'block', width: '100%', fontFamily: 'inherit' }}>
                     <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
                   </div>
                 )}
