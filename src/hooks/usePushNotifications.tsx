@@ -37,25 +37,57 @@ export function usePushNotifications() {
     permission: "default",
   });
 
-  // Check if push notifications are supported
+  // Check if push notifications are supported and listen for permission changes
   useEffect(() => {
-    const checkSupport = async () => {
-      const isSupported = "serviceWorker" in navigator && "PushManager" in window;
-      const permission = isSupported ? Notification.permission : "denied";
+    const isSupported = "serviceWorker" in navigator && "PushManager" in window;
+    const permission = isSupported ? Notification.permission : "denied";
 
-      setState((prev) => ({
-        ...prev,
-        isSupported,
-        permission,
-        isLoading: false,
-      }));
+    setState((prev) => ({
+      ...prev,
+      isSupported,
+      permission,
+      isLoading: false,
+    }));
 
-      if (isSupported && user) {
-        await checkSubscription();
-      }
+    if (isSupported && user) {
+      checkSubscription();
+    }
+
+    // Listen for permission changes via Permissions API
+    let permissionStatus: PermissionStatus | null = null;
+    const handlePermissionChange = () => {
+      const newPermission = Notification.permission;
+      setState((prev) => ({ ...prev, permission: newPermission }));
     };
 
-    checkSupport();
+    if (isSupported && navigator.permissions) {
+      navigator.permissions.query({ name: "notifications" }).then((status) => {
+        permissionStatus = status;
+        status.addEventListener("change", handlePermissionChange);
+      }).catch(() => {
+        // Fallback: poll permission every 2 seconds
+      });
+    }
+
+    // Fallback polling for browsers that don't support Permissions API well
+    const interval = setInterval(() => {
+      if (isSupported) {
+        const current = Notification.permission;
+        setState((prev) => {
+          if (prev.permission !== current) {
+            return { ...prev, permission: current };
+          }
+          return prev;
+        });
+      }
+    }, 3000);
+
+    return () => {
+      clearInterval(interval);
+      if (permissionStatus) {
+        permissionStatus.removeEventListener("change", handlePermissionChange);
+      }
+    };
   }, [user]);
 
   // Check if user is already subscribed
