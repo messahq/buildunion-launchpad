@@ -293,12 +293,12 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
             className="overflow-hidden"
           >
             <div className="px-4 py-3 mt-1.5 rounded-xl bg-gradient-to-br from-sky-400/15 via-cyan-400/10 to-yellow-300/10 border border-sky-400/25 space-y-2.5">
-              <p className="text-xs text-white font-medium leading-relaxed">{helpContent.description}</p>
+              <p className="text-xs font-medium leading-relaxed !text-white" style={{ color: 'white' }}>{helpContent.description}</p>
               <div className="space-y-1.5">
                 {helpContent.tips.map((tip, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-yellow-300 text-xs mt-0.5 shrink-0">✦</span>
-                    <span className="text-[11px] text-white/90">{tip}</span>
+                    <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.9)' }}>{tip}</span>
                   </div>
                 ))}
               </div>
