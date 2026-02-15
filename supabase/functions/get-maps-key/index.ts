@@ -6,9 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Rate limits - increased for development/heavy usage
-const RATE_LIMIT_AUTHENTICATED = 200; // More requests for logged-in users
-const RATE_LIMIT_GUEST = 20; // Fewer requests for guests
+// Rate limits
+const RATE_LIMIT = 200; // requests per hour for authenticated users
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 serve(async (req) => {
@@ -21,37 +20,42 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
+    // Require authentication - no guest access
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", message: "Authentication required to access Maps functionality." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    const supabaseClient = createClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", message: "Invalid or expired token." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
+
     // Create service role client for rate limiting (bypasses RLS)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    let userId: string | null = null;
-    let isAuthenticated = false;
-
-    // Check for authentication (optional)
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const supabaseClient = createClient(
-        supabaseUrl,
-        supabaseAnonKey,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      const token = authHeader.replace("Bearer ", "");
-      const { data: claimsData } = await supabaseClient.auth.getClaims(token);
-
-      if (claimsData?.claims?.sub) {
-        userId = claimsData.claims.sub as string;
-        isAuthenticated = true;
-      }
-    }
-
-    // For guests, use IP address as identifier
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
                      req.headers.get("x-real-ip") || 
                      "unknown";
 
-    const rateIdentifier = userId || `guest_${clientIp}`;
-    const rateLimit = isAuthenticated ? RATE_LIMIT_AUTHENTICATED : RATE_LIMIT_GUEST;
+    const rateIdentifier = userId;
+    const rateLimit = RATE_LIMIT;
 
     // Check rate limit - count requests in the last hour
     const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
@@ -74,9 +78,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Rate limit exceeded",
-          message: isAuthenticated 
-            ? "You have made too many requests. Please try again later."
-            : "Please sign in for more address lookups, or try again later.",
+          message: "You have made too many requests. Please try again later.",
           retryAfter: 3600
         }),
         { 
@@ -139,7 +141,7 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Get maps key error:", errorMessage);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Internal server error" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
