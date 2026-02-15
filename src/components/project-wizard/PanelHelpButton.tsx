@@ -302,13 +302,13 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
                   </div>
                 ))}
               </div>
-              <div className="pt-1 mt-1 border-t border-sky-400/15 space-y-0.5">
+              <div className="pt-1 mt-0.5 border-t border-sky-400/15 flex flex-col gap-0.5">
                 {normalizedRole === 'owner' && (
-                  <p className="text-[10px]" style={{ color: '#fbbf24' }}>
-                    🔓 Switch <strong>"👁 View → ✏️ Editing"</strong> in the header to unlock editable fields. Protected fields (materials, finances) require your Owner Lock password.
+                  <p className="text-[10px] leading-tight" style={{ color: '#fbbf24' }}>
+                    🔓 Switch <strong>👁 View → ✏️ Editing</strong> in the header to unlock editable fields. Protected fields (materials, finances) require your Owner Lock password.
                   </p>
                 )}
-                <p className="text-[10px] italic" style={{ color: 'rgba(253,224,71,0.6)' }}>
+                <p className="text-[10px] italic leading-tight" style={{ color: 'rgba(253,224,71,0.6)' }}>
                   💡 Click the panel card on the left to explore all features in full view.
                 </p>
               </div>
