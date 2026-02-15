@@ -3268,6 +3268,31 @@ export default function Stage8FinalReview({
       const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
       const budgetCit = citations.find(c => c.cite_type === 'BUDGET');
       const allTeamInviteCits = citations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+      const sitePresenceCits = citations.filter(c => c.cite_type === 'SITE_PRESENCE');
+
+      // Fetch site check-in records for DNA report
+      let siteCheckins: any[] = [];
+      try {
+        const { data: checkinData } = await supabase
+          .from('site_checkins')
+          .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
+          .eq('project_id', projectId)
+          .order('checked_in_at', { ascending: false })
+          .limit(20);
+        if (checkinData) {
+          // Fetch profile names
+          const checkinUserIds = [...new Set(checkinData.map(c => c.user_id))];
+          const { data: checkinProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, full_name')
+            .in('user_id', checkinUserIds);
+          const nameMap = new Map(checkinProfiles?.map(p => [p.user_id, p.full_name]) || []);
+          siteCheckins = checkinData.map(c => ({
+            ...c,
+            user_name: nameMap.get(c.user_id) || 'Unknown',
+          }));
+        }
+      } catch (_) { /* ignore */ }
 
       // Fetch user profile for branded header
       let profile: { company_name?: string | null; phone?: string | null; company_website?: string | null } = {};
@@ -3345,9 +3370,11 @@ export default function Stage8FinalReview({
           ...(photoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
           { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
         ]},
-        { label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit, sources: [
+        { label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness × Presence', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit || siteCheckins.length > 0 || sitePresenceCits.length > 0, sources: [
           { label: 'Weather Alert', cit: weatherCit, field: 'WEATHER_ALERT' },
           { label: 'Site Condition', cit: siteCondCit, field: 'SITE_CONDITION' },
+          ...sitePresenceCits.slice(0, 3).map((sp, i) => ({ label: `Site Presence #${i + 1}`, cit: sp, field: 'SITE_PRESENCE' })),
+          ...(sitePresenceCits.length === 0 && siteCheckins.length > 0 ? [{ label: `Site Check-ins (${siteCheckins.length})`, cit: undefined as Citation | undefined, field: 'SITE_PRESENCE' }] : []),
         ]},
         { label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)', icon: '💰', color: '#ef4444', status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit, sources: [
           { label: 'Location (Tax Region)', cit: locationCit, field: 'LOCATION' },
@@ -3673,6 +3700,57 @@ export default function Stage8FinalReview({
               '<div style="font-size:18px;font-weight:700;color:#d97706;margin-top:4px;">' + fmt(financialSummary.total_cost) + '</div>' +
             '</div>' +
           '</div>' +
+        '</div>';
+      }
+
+      // ============================================
+      // SITE PRESENCE LOG SECTION
+      // ============================================
+      let sitePresenceHtml = '';
+      if (siteCheckins.length > 0) {
+        const checkinRows = siteCheckins.slice(0, 15).map((c: any) => {
+          const inTime = new Date(c.checked_in_at);
+          const outTime = c.checked_out_at ? new Date(c.checked_out_at) : null;
+          const durationMs = (outTime || new Date()).getTime() - inTime.getTime();
+          const hours = Math.floor(durationMs / (1000 * 60 * 60));
+          const mins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+          const duration = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+          const weather = c.weather_snapshot || {};
+          const weatherStr = weather.temp != null ? `${Math.round(weather.temp)}° ${weather.description || ''}` : '—';
+          const statusBg = !c.checked_out_at ? '#dcfce7' : '#f9fafb';
+          const statusColor = !c.checked_out_at ? '#166534' : '#6b7280';
+          const statusText = !c.checked_out_at ? '● ACTIVE' : '✓ Completed';
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;font-weight:500;">' + esc(c.user_name) + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;">' + format(inTime, 'MMM d, HH:mm') + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;">' + (outTime ? format(outTime, 'HH:mm') : '—') + '</td>' +
+            '<td style="padding:5px 8px;font-weight:600;">' + duration + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">' + esc(weatherStr) + '</td>' +
+            '<td style="padding:5px 8px;text-align:center;"><span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;">' + statusText + '</span></td>' +
+          '</tr>';
+        }).join('');
+
+        const totalSessions = siteCheckins.length;
+        const completedSessions = siteCheckins.filter((c: any) => c.checked_out_at).length;
+        const uniqueWorkers = new Set(siteCheckins.map((c: any) => c.user_id)).size;
+        
+        sitePresenceHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+            '<span style="font-size:18px;">📍</span>' +
+            '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Site Presence Log</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + totalSessions + ' check-in session(s) · ' + completedSessions + ' completed · ' + uniqueWorkers + ' unique worker(s)</div>' +
+          '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+            '<thead><tr style="background:#ecfdf5;font-size:9px;text-transform:uppercase;color:#059669;letter-spacing:0.05em;">' +
+              '<th style="padding:6px 8px;text-align:left;">Worker</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Check In</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Check Out</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Duration</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Weather</th>' +
+              '<th style="padding:6px 8px;text-align:center;">Status</th>' +
+            '</tr></thead>' +
+            '<tbody>' + checkinRows + '</tbody>' +
+          '</table>' +
         '</div>';
       }
 
@@ -4017,6 +4095,8 @@ export default function Stage8FinalReview({
         lineItemHtml +
         // Financial Summary
         financialHtml +
+        // Site Presence Log
+        sitePresenceHtml +
         // Dual-Engine Verdict (NEW)
         verdictHtml +
         // Footer
@@ -4168,7 +4248,7 @@ export default function Stage8FinalReview({
         { label: '4 — Team Architecture', icon: '👥', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sourceSummary: `${teamMembers.length} members` },
         { label: '5 — Execution Timeline', icon: '📅', status: !!timelineCit && !!endDateCit, sourceSummary: [timelineCit?.answer, endDateCit?.answer].filter(Boolean).join(' → ').slice(0, 60) },
         { label: '6 — Visual Intelligence', icon: '👁️', status: photoCits.length > 0 || !!blueprintCit, sourceSummary: `${photoCits.length} photos${blueprintCit ? ' + blueprint' : ''}` },
-        { label: '7 — Site Log & Location', icon: '🌦️', status: !!weatherCit || !!siteCondCit, sourceSummary: weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '' },
+        { label: '7 — Site Log & Location', icon: '🌦️', status: !!weatherCit || !!siteCondCit || citations.some(c => c.cite_type === 'SITE_PRESENCE'), sourceSummary: citations.filter(c => c.cite_type === 'SITE_PRESENCE').length > 0 ? `${citations.filter(c => c.cite_type === 'SITE_PRESENCE').length} presence log(s)` : (weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '') },
         { label: '8 — Financial Summary', icon: '💰', status: (financialSummary?.total_cost ?? 0) > 0, sourceSummary: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()}` : '' },
       ];
 

@@ -1,31 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeatherWidget } from "./WeatherWidget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clipboard, Users, Clock, FileText, RefreshCw } from "lucide-react";
+import { MapPin, Users, Clock, RefreshCw, LogIn, LogOut, Loader2, Thermometer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+
+interface CheckinEntry {
+  id: string;
+  user_id: string;
+  checked_in_at: string;
+  checked_out_at: string | null;
+  weather_snapshot: any;
+  notes: string | null;
+  user_name: string;
+  user_role: string;
+}
 
 interface TeamMemberStatus {
   user_id: string;
   full_name: string;
   avatar_url: string | null;
-  location_status: string | null;
-  location_updated_at: string | null;
   role: string;
-}
-
-interface ActivityEntry {
-  id: string;
-  type: 'task' | 'document' | 'delivery' | 'chat' | 'site_log';
-  title: string;
-  detail: string;
-  actor: string;
-  timestamp: string;
-  icon: string;
+  is_on_site: boolean;
+  last_checkin_at: string | null;
 }
 
 interface WeatherMapModalProps {
@@ -38,12 +40,6 @@ interface WeatherMapModalProps {
   projectId?: string;
 }
 
-const STATUS_OPTIONS = [
-  { value: "on_site", label: "On Site", color: "bg-green-500" },
-  { value: "en_route", label: "En Route", color: "bg-amber-500" },
-  { value: "away", label: "Away", color: "bg-muted-foreground" },
-];
-
 export function WeatherMapModal({
   open,
   onOpenChange,
@@ -54,245 +50,180 @@ export function WeatherMapModal({
   projectId,
 }: WeatherMapModalProps) {
   const { user } = useAuth();
-  const [teamStatuses, setTeamStatuses] = useState<TeamMemberStatus[]>([]);
-  const [recentLogs, setRecentLogs] = useState<ActivityEntry[]>([]);
+  const [checkins, setCheckins] = useState<CheckinEntry[]>([]);
+  const [teamOnSite, setTeamOnSite] = useState<TeamMemberStatus[]>([]);
   const [loading, setLoading] = useState(false);
-  const [myStatus, setMyStatus] = useState<string>("away");
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [activeTab, setActiveTab] = useState("sitelog");
 
-  // Fetch team member statuses + recent site logs
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!projectId || !user) return;
     setLoading(true);
     try {
-      // Fetch team members with their status
-      const { data: members } = await supabase
-        .from("project_members")
-        .select("user_id, role")
-        .eq("project_id", projectId);
-
-      // Also include the owner
+      // Fetch all team user IDs (owner + members)
       const { data: project } = await supabase
         .from("projects")
         .select("user_id")
         .eq("id", projectId)
         .single();
 
+      const { data: members } = await supabase
+        .from("project_members")
+        .select("user_id, role")
+        .eq("project_id", projectId);
+
       const allUserIds = [
         ...(project ? [project.user_id] : []),
         ...(members?.map((m) => m.user_id) || []),
       ];
       const uniqueUserIds = [...new Set(allUserIds)];
+      const roleMap = new Map(members?.map((m) => [m.user_id, m.role]) || []);
 
-      if (uniqueUserIds.length > 0) {
-        // Fetch profiles for status
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, avatar_url")
-          .in("user_id", uniqueUserIds);
-
-        const { data: buProfiles } = await supabase
-          .from("bu_profiles")
-          .select("user_id, location_status, location_updated_at")
-          .in("user_id", uniqueUserIds);
-
-        const statusMap = new Map(
-          buProfiles?.map((bp) => [bp.user_id, bp]) || []
-        );
-        const roleMap = new Map(
-          members?.map((m) => [m.user_id, m.role]) || []
-        );
-
-        const combined: TeamMemberStatus[] = (profiles || []).map((p) => {
-          const bp = statusMap.get(p.user_id);
-          return {
-            user_id: p.user_id,
-            full_name: p.full_name || "Unknown",
-            avatar_url: p.avatar_url,
-            location_status: bp?.location_status || "away",
-            location_updated_at: bp?.location_updated_at || null,
-            role:
-              p.user_id === project?.user_id
-                ? "owner"
-                : roleMap.get(p.user_id) || "member",
-          };
-        });
-
-        setTeamStatuses(combined);
-
-        // Set my current status
-        const myBp = buProfiles?.find((bp) => bp.user_id === user.id);
-        if (myBp?.location_status) setMyStatus(myBp.location_status);
-      }
-
-      // Fetch automatic activity timeline
-      const activities: ActivityEntry[] = [];
-      const allProfiles = uniqueUserIds.length > 0 ? (await supabase
+      // Fetch profiles
+      const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", uniqueUserIds)).data || [] : [];
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", uniqueUserIds);
+      const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
 
-      // 1. Recent task changes
-      const { data: tasks } = await supabase
-        .from("project_tasks")
-        .select("id, title, status, updated_at, assigned_to")
+      // Fetch recent check-ins (last 30)
+      const { data: recentCheckins } = await supabase
+        .from("site_checkins")
+        .select("id, user_id, checked_in_at, checked_out_at, weather_snapshot, notes")
         .eq("project_id", projectId)
-        .order("updated_at", { ascending: false })
-        .limit(10);
+        .order("checked_in_at", { ascending: false })
+        .limit(30);
 
-      for (const t of tasks || []) {
-        const prof = allProfiles.find(p => p.user_id === t.assigned_to);
-        activities.push({
-          id: `task-${t.id}`,
-          type: 'task',
-          title: t.title,
-          detail: t.status === 'completed' ? '✅ Completed' : t.status === 'in_progress' ? '🔄 In Progress' : `📋 ${t.status}`,
-          actor: prof?.full_name || 'Team',
-          timestamp: t.updated_at,
-          icon: '🔨',
-        });
-      }
+      const checkinEntries: CheckinEntry[] = (recentCheckins || []).map((c) => {
+        const prof = profileMap.get(c.user_id);
+        return {
+          ...c,
+          weather_snapshot: c.weather_snapshot,
+          user_name: prof?.full_name || "Unknown",
+          user_role: c.user_id === project?.user_id
+            ? "Owner"
+            : (roleMap.get(c.user_id) || "member"),
+        };
+      });
+      setCheckins(checkinEntries);
 
-      // 2. Recent documents
-      const { data: docs } = await supabase
-        .from("project_documents")
-        .select("id, file_name, uploaded_at, uploaded_by_name, uploaded_by_role")
-        .eq("project_id", projectId)
-        .order("uploaded_at", { ascending: false })
-        .limit(5);
+      // Determine who is currently on site (checked in, not checked out)
+      const onSiteUserIds = new Set(
+        (recentCheckins || [])
+          .filter((c) => !c.checked_out_at)
+          .map((c) => c.user_id)
+      );
 
-      for (const d of docs || []) {
-        activities.push({
-          id: `doc-${d.id}`,
-          type: 'document',
-          title: d.file_name,
-          detail: d.uploaded_by_role ? `📎 ${d.uploaded_by_role}` : '📎 Uploaded',
-          actor: d.uploaded_by_name || 'Unknown',
-          timestamp: d.uploaded_at,
-          icon: '📄',
-        });
-      }
+      const teamStatus: TeamMemberStatus[] = uniqueUserIds.map((uid) => {
+        const prof = profileMap.get(uid);
+        const lastCheckin = (recentCheckins || []).find((c) => c.user_id === uid);
+        return {
+          user_id: uid,
+          full_name: prof?.full_name || "Unknown",
+          avatar_url: prof?.avatar_url || null,
+          role: uid === project?.user_id ? "Owner" : (roleMap.get(uid) || "member"),
+          is_on_site: onSiteUserIds.has(uid),
+          last_checkin_at: lastCheckin?.checked_in_at || null,
+        };
+      });
+      setTeamOnSite(teamStatus);
 
-      // 3. Recent deliveries
-      const { data: deliveries } = await supabase
-        .from("material_deliveries")
-        .select("id, material_name, delivered_quantity, unit, logged_at, logged_by")
-        .eq("project_id", projectId)
-        .order("logged_at", { ascending: false })
-        .limit(5);
-
-      for (const dl of deliveries || []) {
-        const prof = allProfiles.find(p => p.user_id === dl.logged_by);
-        activities.push({
-          id: `del-${dl.id}`,
-          type: 'delivery',
-          title: dl.material_name,
-          detail: `📦 ${dl.delivered_quantity} ${dl.unit}`,
-          actor: prof?.full_name || 'Team',
-          timestamp: dl.logged_at,
-          icon: '🚚',
-        });
-      }
-
-      // Sort all by timestamp desc
-      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      setRecentLogs(activities.slice(0, 15));
+      // Check if current user is checked in
+      const myActive = (recentCheckins || []).find(
+        (c) => c.user_id === user.id && !c.checked_out_at
+      );
+      setIsCheckedIn(!!myActive);
+      setActiveCheckinId(myActive?.id || null);
     } catch (err) {
       console.error("Error fetching site log data:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, user]);
 
   useEffect(() => {
     if (open && projectId) fetchData();
-  }, [open, projectId]);
+  }, [open, projectId, fetchData]);
 
-  // Update my status
-  const updateMyStatus = async (newStatus: string) => {
-    if (!user) return;
-    setUpdatingStatus(true);
+  // Handle check-in / check-out
+  const handleCheckin = async () => {
+    if (!user || !projectId) return;
+    setIsCheckingIn(true);
     try {
-      const { error } = await supabase
-        .from("bu_profiles")
-        .update({
-          location_status: newStatus,
-          location_updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
-
-      if (!error) {
-        setMyStatus(newStatus);
-        // Update local state
-        setTeamStatuses((prev) =>
-          prev.map((t) =>
-            t.user_id === user.id
-              ? {
-                  ...t,
-                  location_status: newStatus,
-                  location_updated_at: new Date().toISOString(),
-                }
-              : t
-          )
-        );
-
-        // Send push notification to team members when owner goes "On Site"
-        if (newStatus === "on_site" && projectId) {
-          // Check if current user is the owner
-          const { data: project } = await supabase
-            .from("projects")
-            .select("user_id")
-            .eq("id", projectId)
-            .single();
-
-          if (project?.user_id === user.id) {
-            // Get team member user IDs (exclude owner)
-            const { data: members } = await supabase
-              .from("project_members")
-              .select("user_id")
-              .eq("project_id", projectId);
-
-            const memberIds = members?.map((m) => m.user_id).filter((id) => id !== user.id) || [];
-
-            if (memberIds.length > 0) {
-              const { data: ownerProfile } = await supabase
-                .from("profiles")
-                .select("full_name")
-                .eq("user_id", user.id)
-                .single();
-
-              const ownerName = ownerProfile?.full_name || "The owner";
-
-              supabase.functions.invoke("send-push-notification", {
-                body: {
-                  title: "🏗️ Owner On Site",
-                  body: `${ownerName} has arrived at the project site`,
-                  userIds: memberIds,
-                  projectId,
-                  data: { type: "owner_on_site" },
-                },
-              }).catch((err) => console.error("Push notification error:", err));
+      if (isCheckedIn && activeCheckinId) {
+        // Check out
+        await supabase
+          .from("site_checkins")
+          .update({ checked_out_at: new Date().toISOString() })
+          .eq("id", activeCheckinId);
+        setIsCheckedIn(false);
+        setActiveCheckinId(null);
+        toast.success("Checked out from site");
+      } else {
+        // Check in with weather snapshot
+        let weatherSnapshot: any = {};
+        if (location) {
+          try {
+            const { data: weatherRes } = await supabase.functions.invoke("get-weather", {
+              body: { location, days: 1 },
+            });
+            if (weatherRes?.current) {
+              weatherSnapshot = {
+                temp: weatherRes.current.temp,
+                description: weatherRes.current.description,
+                humidity: weatherRes.current.humidity,
+                wind_speed: weatherRes.current.wind_speed,
+                timestamp: new Date().toISOString(),
+              };
             }
+          } catch (e) {
+            console.warn("Weather snapshot failed:", e);
           }
         }
+
+        const { data: newCheckin, error } = await supabase
+          .from("site_checkins")
+          .insert({
+            project_id: projectId,
+            user_id: user.id,
+            weather_snapshot: weatherSnapshot,
+          })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        setIsCheckedIn(true);
+        setActiveCheckinId(newCheckin.id);
+        toast.success("Checked in to site", {
+          description: weatherSnapshot.temp
+            ? `${Math.round(weatherSnapshot.temp)}° — ${weatherSnapshot.description}`
+            : undefined,
+        });
       }
+      // Refresh data
+      await fetchData();
     } catch (err) {
-      console.error("Error updating status:", err);
+      console.error("Check-in error:", err);
+      toast.error("Failed to check in/out");
     } finally {
-      setUpdatingStatus(false);
+      setIsCheckingIn(false);
     }
   };
 
-  const getStatusBadge = (status: string | null) => {
-    const opt = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[2];
-    return (
-      <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0.5">
-        <span className={`w-2 h-2 rounded-full ${opt.color}`} />
-        {opt.label}
-      </Badge>
-    );
-  };
+  const currentlyOnSite = teamOnSite.filter((t) => t.is_on_site);
 
+  // Calculate session duration
+  const getSessionDuration = (checkinTime: string, checkoutTime: string | null) => {
+    const start = new Date(checkinTime);
+    const end = checkoutTime ? new Date(checkoutTime) : new Date();
+    const diffMs = end.getTime() - start.getTime();
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -301,144 +232,180 @@ export function WeatherMapModal({
           <DialogTitle>Site Log & Location - {projectName}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="sitelog" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="sitelog">Site Log</TabsTrigger>
             <TabsTrigger value="weather">Weather</TabsTrigger>
             <TabsTrigger value="location">Location Map</TabsTrigger>
           </TabsList>
 
-          {/* Site Log Tab */}
+          {/* Site Log Tab — Check-In Driven */}
           <TabsContent value="sitelog" className="space-y-4">
-            {/* My Status Toggle */}
-            <div className="p-3 rounded-lg border bg-muted/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  My Status
-                </span>
+            {/* Check In / Check Out Action */}
+            <div className="p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold">
+                  {isCheckedIn ? "📍 You are on site" : "📌 Not on site"}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {isCheckedIn
+                    ? "Weather & time are being recorded"
+                    : "Check in to log your site presence"}
+                </div>
               </div>
-              <div className="flex gap-2">
-                {STATUS_OPTIONS.map((opt) => (
-                  <Button
-                    key={opt.value}
-                    size="sm"
-                    variant={myStatus === opt.value ? "default" : "outline"}
-                    className="text-xs gap-1.5"
-                    onClick={() => updateMyStatus(opt.value)}
-                    disabled={updatingStatus}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${opt.color}`} />
-                    {opt.label}
-                  </Button>
-                ))}
-              </div>
+              <Button
+                onClick={handleCheckin}
+                disabled={isCheckingIn}
+                variant={isCheckedIn ? "destructive" : "default"}
+                className="gap-2"
+              >
+                {isCheckingIn ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isCheckedIn ? (
+                  <LogOut className="h-4 w-4" />
+                ) : (
+                  <LogIn className="h-4 w-4" />
+                )}
+                {isCheckedIn ? "Check Out" : "Check In"}
+              </Button>
             </div>
 
-            {/* Team Member Statuses */}
-            <div className="p-3 rounded-lg border bg-muted/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Team Status
-                  </span>
+            {/* Currently On Site */}
+            {currentlyOnSite.length > 0 && (
+              <div className="p-3 rounded-lg border bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-emerald-600" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                      Currently On Site ({currentlyOnSite.length})
+                    </span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={fetchData} className="h-6 w-6 p-0">
+                    <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={fetchData}
-                  className="h-6 w-6 p-0"
-                >
-                  <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-                </Button>
-              </div>
-              {teamStatuses.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No team members yet</p>
-              ) : (
                 <div className="space-y-1.5">
-                  {teamStatuses.map((member) => (
-                    <div
-                      key={member.user_id}
-                      className="flex items-center justify-between py-1.5 px-2 rounded bg-background/50"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold flex-shrink-0 overflow-hidden">
-                          {member.avatar_url ? (
-                            <img
-                              src={member.avatar_url}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            member.full_name.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-medium truncate">
-                            {member.full_name}
-                            {member.user_id === user?.id && (
-                              <span className="text-muted-foreground ml-1">(you)</span>
+                  {currentlyOnSite.map((member) => {
+                    const checkin = checkins.find(
+                      (c) => c.user_id === member.user_id && !c.checked_out_at
+                    );
+                    return (
+                      <div
+                        key={member.user_id}
+                        className="flex items-center justify-between py-1.5 px-2 rounded bg-background/70"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-[10px] font-bold flex-shrink-0 overflow-hidden">
+                            {member.avatar_url ? (
+                              <img src={member.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              member.full_name.charAt(0).toUpperCase()
                             )}
                           </div>
-                          <div className="text-[10px] text-muted-foreground capitalize">
-                            {member.role}
+                          <div className="min-w-0">
+                            <div className="text-xs font-medium truncate">
+                              {member.full_name}
+                              {member.user_id === user?.id && (
+                                <span className="text-muted-foreground ml-1">(you)</span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground capitalize">
+                              {member.role}
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0.5 border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            On Site
+                          </Badge>
+                          {checkin && (
+                            <span className="text-[9px] text-muted-foreground">
+                              {getSessionDuration(checkin.checked_in_at, null)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {getStatusBadge(member.location_status)}
-                        {member.location_updated_at && (
-                          <span className="text-[9px] text-muted-foreground">
-                            {format(new Date(member.location_updated_at), "HH:mm")}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Activity Timeline */}
+            {/* Check-In / Check-Out History */}
             <div className="p-3 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Activity Timeline
+                    Presence History
                   </span>
                 </div>
+                <span className="text-[10px] text-muted-foreground">
+                  {checkins.length} records
+                </span>
               </div>
-              {recentLogs.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  No activity yet for this project
+              {checkins.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">
+                  No check-ins yet. Use the button above to log your site presence.
                 </p>
               ) : (
-                <div className="space-y-1.5 max-h-[260px] overflow-y-auto">
-                  {recentLogs.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center justify-between py-1.5 px-2 rounded bg-background/50"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-sm flex-shrink-0">{entry.icon}</span>
-                        <div className="min-w-0">
-                          <div className="text-xs font-medium truncate">
-                            {entry.title}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {entry.detail} · {entry.actor}
+                <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+                  {checkins.map((entry) => {
+                    const isActive = !entry.checked_out_at;
+                    const weather = entry.weather_snapshot as any;
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`flex items-center justify-between py-2 px-2.5 rounded ${
+                          isActive
+                            ? "bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800"
+                            : "bg-background/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${
+                            isActive ? "bg-emerald-500" : "bg-muted-foreground/30"
+                          }`} />
+                          <div className="min-w-0">
+                            <div className="text-xs font-medium truncate flex items-center gap-1">
+                              {entry.user_name}
+                              <span className="text-[9px] text-muted-foreground capitalize">
+                                ({entry.user_role})
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                              <LogIn className="h-2.5 w-2.5" />
+                              {format(new Date(entry.checked_in_at), "MMM d, HH:mm")}
+                              {entry.checked_out_at && (
+                                <>
+                                  <span>→</span>
+                                  <LogOut className="h-2.5 w-2.5" />
+                                  {format(new Date(entry.checked_out_at), "HH:mm")}
+                                </>
+                              )}
+                              {!entry.checked_out_at && (
+                                <Badge variant="outline" className="text-[8px] px-1 py-0 border-emerald-400 text-emerald-600">
+                                  ACTIVE
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {getSessionDuration(entry.checked_in_at, entry.checked_out_at)}
+                          </span>
+                          {weather?.temp != null && (
+                            <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                              <Thermometer className="h-2.5 w-2.5" />
+                              {Math.round(weather.temp)}° {weather.description || ""}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(entry.timestamp), "MMM d, HH:mm")}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -473,24 +440,44 @@ export function WeatherMapModal({
                 </div>
                 {location && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border">
-                    <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <MapPin className="h-4 w-4 text-primary mt-0.5" />
                     <div>
-                      <div className="font-medium text-sm">{projectName}</div>
-                      <div className="text-xs text-muted-foreground">{location}</div>
+                      <div className="text-sm font-medium">{location}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Coordinates: {lat.toFixed(4)}, {lon.toFixed(4)}
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Get Directions →
+                        </a>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="h-[400px] flex items-center justify-center rounded-lg border border-dashed bg-muted/50">
-                <div className="text-center text-muted-foreground">
-                  <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Map location not available</p>
-                  <p className="text-xs mt-1">Please set a project address first</p>
+            ) : location ? (
+              <div className="flex items-start gap-2 p-4 rounded-lg bg-muted/50 border">
+                <MapPin className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium">{location}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    <a
+                      href={`https://www.google.com/maps/search/${encodeURIComponent(location)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Open in Google Maps →
+                    </a>
+                  </div>
                 </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No location data available</p>
               </div>
             )}
           </TabsContent>
