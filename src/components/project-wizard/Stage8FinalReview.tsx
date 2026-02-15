@@ -1995,6 +1995,46 @@ export default function Stage8FinalReview({
       supabase.removeChannel(channel);
     };
   }, [projectId, teamMembers]);
+
+  // ✓ REALTIME SYNC: Subscribe to project_summaries changes
+  // When Owner approves a budget modification, Foreman/Worker views auto-refresh
+  // Updates: citations, financials, template_items (Material Tracker expected quantities)
+  useEffect(() => {
+    if (!projectId) return;
+    
+    const channel = supabase
+      .channel(`summaries-sync-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'project_summaries',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          console.log('[Stage8] ✓ Realtime project_summaries update received');
+          
+          // Refresh citations from verified_facts
+          if (updated.verified_facts && Array.isArray(updated.verified_facts)) {
+            setCitations(updated.verified_facts as unknown as Citation[]);
+          }
+          
+          // Refresh financial summary
+          setFinancialSummary({
+            material_cost: updated.material_cost ?? null,
+            labor_cost: updated.labor_cost ?? null,
+            total_cost: updated.total_cost ?? null,
+          });
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId]);
   
   // ✓ REALTIME: Unread chat message counter for Team panel badge
   useEffect(() => {
