@@ -5926,62 +5926,60 @@ export default function Stage8FinalReview({
                                       <TooltipProvider>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
-                                            <div className="absolute inset-y-0" style={{ left: barStyle.left, width: barStyle.width }}>
-                                              {/* Camera icon floating above bar for mobile visibility */}
-                                              {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
-                                                <span className="absolute -top-2.5 right-0 z-10 text-emerald-500 bg-background/80 rounded-full p-0.5 shadow-sm border border-emerald-300 dark:border-emerald-600">
-                                                  <Camera className="h-2.5 w-2.5" />
-                                                </span>
+                                            <div
+                                              className={cn(
+                                                "absolute inset-y-0 rounded-lg border overflow-hidden cursor-pointer transition-all shadow-sm",
+                                                colors.border,
+                                                isCompleted ? "bg-emerald-100 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30" : colors.bg,
+                                                "hover:brightness-110 dark:hover:brightness-125"
                                               )}
-                                              <div
+                                              style={{ left: barStyle.left, width: barStyle.width }}
+                                              onClick={() => togglePhaseExpansion(`task-${task.id}`)}
+                                            >
+                                              {/* Progress fill inside the bar */}
+                                              <motion.div
                                                 className={cn(
-                                                  "absolute inset-0 rounded-lg border overflow-hidden cursor-pointer transition-all shadow-sm",
-                                                  colors.border,
-                                                  isCompleted ? "bg-emerald-100 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30" : colors.bg,
-                                                  "hover:brightness-110 dark:hover:brightness-125"
+                                                  "absolute inset-y-0 left-0 rounded-md",
+                                                  isCompleted 
+                                                    ? "bg-emerald-500/30" 
+                                                    : task.priority === 'high' ? "bg-red-500/20" 
+                                                    : task.priority === 'medium' ? "bg-amber-500/20"
+                                                    : "bg-blue-500/20"
                                                 )}
-                                                onClick={() => togglePhaseExpansion(`task-${task.id}`)}
-                                              >
-                                                {/* Progress fill inside the bar */}
-                                                <motion.div
-                                                  className={cn(
-                                                    "absolute inset-y-0 left-0 rounded-md",
-                                                    isCompleted 
-                                                      ? "bg-emerald-500/30" 
-                                                      : task.priority === 'high' ? "bg-red-500/20" 
-                                                      : task.priority === 'medium' ? "bg-amber-500/20"
-                                                      : "bg-blue-500/20"
-                                                  )}
-                                                  initial={{ width: 0 }}
-                                                  animate={{ width: `${taskProgress}%` }}
-                                                  transition={{ duration: 0.5, delay: taskIdx * 0.05 }}
-                                                />
-                                                {/* Task name & info */}
-                                                <div className="relative h-full flex items-center justify-between px-1.5 gap-1">
-                                                  <span className={cn(
-                                                    "font-semibold truncate",
-                                                    task.isSubTask ? "text-[9px]" : "text-[10px]",
-                                                    isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
-                                                  )}>
-                                                    {task.isSubTask && <span className="text-muted-foreground mr-0.5">↳</span>}
-                                                    {task.title}
-                                                  </span>
-                                                  <div className="flex items-center gap-1 shrink-0">
-                                                    {canViewFinancials && task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
-                                                      <span className="text-[8px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">
-                                                        ${task.templateItemCost.toLocaleString()}
-                                                      </span>
-                                                    )}
-                                                    <span className={cn(
-                                                      "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
-                                                      task.priority === 'high' ? "bg-red-500/20 text-red-400"
-                                                      : task.priority === 'medium' ? "bg-amber-500/20 text-amber-400"
-                                                      : "bg-emerald-500/20 text-emerald-400"
-                                                    )}>
-                                                      {task.priority[0]?.toUpperCase()}
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${taskProgress}%` }}
+                                                transition={{ duration: 0.5, delay: taskIdx * 0.05 }}
+                                              />
+                                              {/* Task name & info */}
+                                              <div className="relative h-full flex items-center justify-between px-1.5 gap-1">
+                                                <span className={cn(
+                                                  "font-semibold truncate",
+                                                  task.isSubTask ? "text-[9px]" : "text-[10px]",
+                                                  isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
+                                                )}>
+                                                  {task.isSubTask && <span className="text-muted-foreground mr-0.5">↳</span>}
+                                                  {task.title}
+                                                </span>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                  {canViewFinancials && task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
+                                                    <span className="text-[8px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">
+                                                      ${task.templateItemCost.toLocaleString()}
                                                     </span>
-                                                     <span className="text-[9px] font-mono font-bold text-gray-500 dark:text-slate-500">{taskProgress}%</span>
-                                                  </div>
+                                                  )}
+                                                  <span className={cn(
+                                                    "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
+                                                    task.priority === 'high' ? "bg-red-500/20 text-red-400"
+                                                    : task.priority === 'medium' ? "bg-amber-500/20 text-amber-400"
+                                                    : "bg-emerald-500/20 text-emerald-400"
+                                                  )}>
+                                                    {task.priority[0]?.toUpperCase()}
+                                                  </span>
+                                                   <span className="text-[9px] font-mono font-bold text-gray-500 dark:text-slate-500">{taskProgress}%</span>
+                                                  {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
+                                                    <span className="text-emerald-500" title="Verification photo uploaded">
+                                                      <Camera className="h-3 w-3" />
+                                                    </span>
+                                                  )}
                                                 </div>
                                               </div>
                                             </div>
