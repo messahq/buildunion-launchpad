@@ -16,8 +16,31 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build project-aware system prompt
-    const ctx = projectContext || {};
+    // Server-side role verification: never trust client-sent role
+    const ctx = { ...(projectContext || {}) };
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        // Extract user from JWT
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user && ctx.projectId) {
+          const { data: dbRole } = await supabase.rpc("get_project_role", {
+            _project_id: ctx.projectId,
+            _user_id: user.id,
+          });
+          if (dbRole) {
+            ctx.currentUserRole = dbRole;
+            console.log(`[MESSA] Server-verified role: ${dbRole} for user ${user.id}`);
+          }
+        }
+      } catch (e) {
+        console.warn("[MESSA] Role verification failed, using client role:", e);
+      }
+    }
     const systemPrompt = `You are MESSA — the project-specific AI assistant embedded in BuildUnion's Stage 8 Command Dashboard.
 You have FULL CONTEXT about this specific construction project and complete visibility into all 8 dashboard panels.
 
