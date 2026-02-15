@@ -10784,7 +10784,6 @@ export default function Stage8FinalReview({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <PanelHelpButton panelId={panel.id} userRole={userRole} />
               {getTierBadge(panel.visibilityTier)}
               {isCollapsed ? (
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -11311,6 +11310,12 @@ export default function Stage8FinalReview({
                 ref={canvasContentRef}
                 style={activeOrbitalPanel === 'messa-deep-audit' ? {} : { colorScheme: 'light' }}
               >
+                {/* In-App Help Section */}
+                {activeOrbitalPanel !== 'messa-deep-audit' && (
+                  <div className="mb-3">
+                    <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
+                  </div>
+                )}
                 {activeOrbitalPanel === 'messa-deep-audit' ? (
                   <div className="space-y-4">
                     {(() => {
