@@ -6,6 +6,7 @@
 // ============================================
 
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -116,6 +117,99 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   });
   const [loading, setLoading] = useState(true);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
+  
+  // Site Check-In / Check-Out
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [recentCheckins, setRecentCheckins] = useState<Array<{
+    id: string; user_id: string; checked_in_at: string; checked_out_at: string | null; weather_snapshot: any;
+  }>>([]);
+
+  // Load check-in status & recent log
+  useEffect(() => {
+    const loadCheckins = async () => {
+      // My active check-in
+      const { data: active } = await supabase
+        .from('site_checkins')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .is('checked_out_at', null)
+        .order('checked_in_at', { ascending: false })
+        .limit(1);
+      if (active && active.length > 0) {
+        setIsCheckedIn(true);
+        setActiveCheckinId(active[0].id);
+      }
+      // Recent check-ins for this project
+      const { data: recent } = await supabase
+        .from('site_checkins')
+        .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
+        .eq('project_id', projectId)
+        .order('checked_in_at', { ascending: false })
+        .limit(10);
+      if (recent) setRecentCheckins(recent);
+    };
+    loadCheckins();
+  }, [projectId, userId]);
+
+  const handleSiteCheckin = async () => {
+    setIsCheckingIn(true);
+    try {
+      if (isCheckedIn && activeCheckinId) {
+        await supabase
+          .from('site_checkins')
+          .update({ checked_out_at: new Date().toISOString() })
+          .eq('id', activeCheckinId);
+        setIsCheckedIn(false);
+        setActiveCheckinId(null);
+        toast.success('Checked out from site');
+      } else {
+        let weatherSnapshot: any = {};
+        if (data.project?.address) {
+          try {
+            const { data: weatherRes } = await supabase.functions.invoke('get-weather', {
+              body: { location: data.project.address, days: 1 },
+            });
+            if (weatherRes?.current) {
+              weatherSnapshot = {
+                temp: weatherRes.current.temp,
+                description: weatherRes.current.description,
+                humidity: weatherRes.current.humidity,
+                wind_speed: weatherRes.current.wind_speed,
+                timestamp: new Date().toISOString(),
+              };
+            }
+          } catch (e) { console.warn('Weather snapshot failed:', e); }
+        }
+        const { data: newCheckin, error } = await supabase
+          .from('site_checkins')
+          .insert({ project_id: projectId, user_id: userId, weather_snapshot: weatherSnapshot })
+          .select('id')
+          .single();
+        if (error) throw error;
+        setIsCheckedIn(true);
+        setActiveCheckinId(newCheckin.id);
+        toast.success('Checked in to site', {
+          description: weatherSnapshot.temp ? `${Math.round(weatherSnapshot.temp)}° — ${weatherSnapshot.description}` : undefined,
+        });
+      }
+      // Reload recent checkins
+      const { data: recent } = await supabase
+        .from('site_checkins')
+        .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
+        .eq('project_id', projectId)
+        .order('checked_in_at', { ascending: false })
+        .limit(10);
+      if (recent) setRecentCheckins(recent);
+    } catch (err) {
+      console.error('Check-in error:', err);
+      toast.error('Failed to check in/out');
+    } finally {
+      setIsCheckingIn(false);
+    }
+  };
 
   useEffect(() => {
     loadDashboardData();
@@ -615,19 +709,51 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             </motion.div>
           )}
 
-          {/* Site Logs Panel */}
+          {/* Site Presence Panel */}
           {panels.includes("sitelogs") && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34 }}>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34 }} className="md:col-span-2 lg:col-span-3">
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-emerald-400 flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" />
-                    Site Logs
+                  <CardTitle className="text-sm font-medium text-emerald-400 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Site Presence Log
+                    </span>
+                    <Badge className={isCheckedIn ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-300"}>
+                      {isCheckedIn ? "🟢 On Site" : "⚫ Off Site"}
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-white">{data.siteLogCount}</p>
-                  <p className="text-xs text-emerald-600 mt-1">{data.siteLogCount === 0 ? "No site reports yet" : "reports filed"}</p>
+                  {recentCheckins.length === 0 ? (
+                    <p className="text-sm text-cyan-700 text-center py-4">No site visits recorded yet</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                      {recentCheckins.map((ci) => {
+                        const name = memberNames[ci.user_id] || 'Team Member';
+                        const inTime = new Date(ci.checked_in_at);
+                        const outTime = ci.checked_out_at ? new Date(ci.checked_out_at) : null;
+                        const weather = ci.weather_snapshot as any;
+                        return (
+                          <div key={ci.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-cyan-900/20 bg-cyan-950/20">
+                            <div className={`h-2 w-2 rounded-full shrink-0 ${ci.checked_out_at ? 'bg-slate-500' : 'bg-emerald-400 animate-pulse'}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-white truncate">{name}</p>
+                              <p className="text-[10px] text-cyan-600">
+                                {inTime.toLocaleDateString()} {inTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {outTime ? ` → ${outTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ' — still on site'}
+                              </p>
+                            </div>
+                            {weather?.temp && (
+                              <span className="text-[10px] text-cyan-500 shrink-0">
+                                {Math.round(weather.temp)}° {weather.description}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -677,7 +803,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-8 text-center"
+          className="mt-8 text-center pb-20"
         >
           <Button
             size="lg"
@@ -691,6 +817,32 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             Access the complete 8-panel orbital dashboard with all available features for your role
           </p>
         </motion.div>
+      </div>
+      {/* Sticky Footer - Check In */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0c1120]/95 backdrop-blur-xl border-t border-cyan-900/30 px-4 py-3">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="text-xs text-cyan-700">
+            {isCheckedIn && <span className="text-emerald-400">🟢 Currently on site</span>}
+          </div>
+          <Button
+            size="sm"
+            onClick={handleSiteCheckin}
+            disabled={isCheckingIn}
+            className={cn(
+              "gap-2 font-medium shadow-md",
+              isCheckedIn
+                ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
+                : "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+            )}
+          >
+            {isCheckingIn ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MapPin className="h-4 w-4" />
+            )}
+            {isCheckedIn ? 'Check Out' : 'Check In to Site'}
+          </Button>
+        </div>
       </div>
     </div>
   );
