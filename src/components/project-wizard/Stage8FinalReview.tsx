@@ -924,8 +924,8 @@ export default function Stage8FinalReview({
       return 'legal';
     }
     
-    // Technical documents (blueprints, PDFs)
-    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.match(/\.pdf$/i)) {
+    // Technical documents (blueprints, PDFs, DNA reports)
+    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.includes('dna') || lowerName.includes('audit') || lowerName.match(/\.pdf$/i)) {
       return 'technical';
     }
     
