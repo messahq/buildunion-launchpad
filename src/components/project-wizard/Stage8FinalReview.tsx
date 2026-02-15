@@ -4231,9 +4231,11 @@ export default function Stage8FinalReview({
 
       // Show preview dialog
       setShowDnaPreviewDialog(true);
+      toast.dismiss('dna-analysis');
       toast.success('DNA Audit Report ready');
     } catch (err) {
       console.error('[DNA Report] Error:', err);
+      toast.dismiss('dna-analysis');
       toast.error('Failed to generate DNA report');
     } finally {
       setIsGeneratingDnaReport(false);
