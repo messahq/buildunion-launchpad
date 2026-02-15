@@ -966,11 +966,34 @@ export default function Stage8FinalReview({
           .maybeSingle();
         
         // Store financial summary for Owner view
+        // ✓ FALLBACK: If total_cost is 0 but template_items has data, compute from items
         if (summary) {
+          let matCostVal = summary.material_cost;
+          let labCostVal = summary.labor_cost;
+          let totCostVal = summary.total_cost;
+          
+          if ((!totCostVal || totCostVal === 0) && Array.isArray(summary.template_items) && summary.template_items.length > 0) {
+            const items = summary.template_items as any[];
+            matCostVal = items.filter(i => i.category === 'material').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+            labCostVal = items.filter(i => i.category === 'labor').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+            totCostVal = matCostVal + labCostVal;
+            console.log('[Stage8] ✓ Financial fallback from template_items:', { matCostVal, labCostVal, totCostVal });
+            
+            // Also persist the computed values back to project_summaries
+            supabase
+              .from('project_summaries')
+              .update({ material_cost: matCostVal, labor_cost: labCostVal, total_cost: totCostVal })
+              .eq('project_id', projectId)
+              .then(({ error }) => {
+                if (error) console.error('[Stage8] Failed to persist computed financials:', error);
+                else console.log('[Stage8] ✓ Persisted computed financials to project_summaries');
+              });
+          }
+          
           setFinancialSummary({
-            material_cost: summary.material_cost,
-            labor_cost: summary.labor_cost,
-            total_cost: summary.total_cost,
+            material_cost: matCostVal,
+            labor_cost: labCostVal,
+            total_cost: totCostVal,
           });
         }
         
@@ -1346,33 +1369,41 @@ export default function Stage8FinalReview({
           }
         }
         
+        // ✓ Compute effective financial values (with template_items fallback)
+        let effectiveMatCost = Number(summary?.material_cost || 0);
+        let effectiveLabCost = Number(summary?.labor_cost || 0);
+        let effectiveTotalCost = Number(summary?.total_cost || 0);
+        if (effectiveTotalCost === 0 && Array.isArray(summary?.template_items) && summary!.template_items.length > 0) {
+          const items = summary!.template_items as any[];
+          effectiveMatCost = items.filter(i => i.category === 'material').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+          effectiveLabCost = items.filter(i => i.category === 'labor').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+          effectiveTotalCost = effectiveMatCost + effectiveLabCost;
+        }
+        
         // 3d. Generate BUDGET citation from financial data if not present
         const hasBudgetCit = loadedCitations.some(c => c.cite_type === 'BUDGET');
-        if (!hasBudgetCit && summary && (summary.total_cost ?? 0) > 0) {
+        if (!hasBudgetCit && summary && effectiveTotalCost > 0) {
           const budgetCitation: Citation = {
             id: `cite_budget_${Date.now()}`,
             cite_type: 'BUDGET' as any,
             question_key: 'total_budget',
-            answer: `$${Number(summary.total_cost).toLocaleString()}`,
-            value: Number(summary.total_cost),
+            answer: `$${effectiveTotalCost.toLocaleString()}`,
+            value: effectiveTotalCost,
             timestamp: new Date().toISOString(),
             metadata: {
-              material_cost: Number(summary.material_cost || 0),
-              labor_cost: Number(summary.labor_cost || 0),
-              total_cost: Number(summary.total_cost),
+              material_cost: effectiveMatCost,
+              labor_cost: effectiveLabCost,
+              total_cost: effectiveTotalCost,
               source: 'project_summaries',
             },
           };
           loadedCitations.push(budgetCitation);
-          newTeamCitations.push(budgetCitation); // piggyback on persist block
+          newTeamCitations.push(budgetCitation);
         }
         
         // 3e. Generate TEMPLATE_LOCK synthetic citation if financial data exists but no template citation
         const hasTemplateLockCit = loadedCitations.some(c => c.cite_type === 'TEMPLATE_LOCK');
-        if (!hasTemplateLockCit && summary && (Number(summary.material_cost || 0) > 0 || Number(summary.labor_cost || 0) > 0)) {
-          const matCost = Number(summary.material_cost || 0);
-          const labCost = Number(summary.labor_cost || 0);
-          // Also try to load individual template_items from DB for subtask generation
+        if (!hasTemplateLockCit && summary && (effectiveMatCost > 0 || effectiveLabCost > 0)) {
           const dbTemplateItems = Array.isArray(summary.template_items) && summary.template_items.length > 0
             ? summary.template_items
             : undefined;
@@ -1380,13 +1411,13 @@ export default function Stage8FinalReview({
             id: `synthetic_template_lock_${Date.now()}`,
             cite_type: 'TEMPLATE_LOCK',
             question_key: 'template_lock',
-            answer: `Materials: $${matCost.toLocaleString()} · Labor: $${labCost.toLocaleString()}`,
+            answer: `Materials: $${effectiveMatCost.toLocaleString()} · Labor: $${effectiveLabCost.toLocaleString()}`,
             value: 'locked',
             timestamp: new Date().toISOString(),
             metadata: {
-              material_cost: matCost,
-              labor_cost: labCost,
-              total_cost: Number(summary.total_cost || 0),
+              material_cost: effectiveMatCost,
+              labor_cost: effectiveLabCost,
+              total_cost: effectiveTotalCost,
               source: 'financial_recovery',
               ...(dbTemplateItems ? { items: dbTemplateItems } : {}),
             },
@@ -2022,12 +2053,17 @@ export default function Stage8FinalReview({
             setCitations(updated.verified_facts as unknown as Citation[]);
           }
           
-          // Refresh financial summary
-          setFinancialSummary({
-            material_cost: updated.material_cost ?? null,
-            labor_cost: updated.labor_cost ?? null,
-            total_cost: updated.total_cost ?? null,
-          });
+          // Refresh financial summary (with template_items fallback)
+          let rtMat = updated.material_cost ?? null;
+          let rtLab = updated.labor_cost ?? null;
+          let rtTot = updated.total_cost ?? null;
+          if ((!rtTot || rtTot === 0) && Array.isArray(updated.template_items) && updated.template_items.length > 0) {
+            const items = updated.template_items as any[];
+            rtMat = items.filter((i: any) => i.category === 'material').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+            rtLab = items.filter((i: any) => i.category === 'labor').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+            rtTot = rtMat + rtLab;
+          }
+          setFinancialSummary({ material_cost: rtMat, labor_cost: rtLab, total_cost: rtTot });
         }
       )
       .subscribe();
