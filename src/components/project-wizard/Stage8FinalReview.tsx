@@ -13050,12 +13050,13 @@ export default function Stage8FinalReview({
                     onSignatureChange={(data) => setContractorSignatureData(data)}
                     height={120}
                   />
-                  {/* HST Number from business profile */}
-                  {ownerProfile?.company_name && (
-                    <p className="text-[9px] text-muted-foreground mt-2 italic">
-                      HST #: _____________________ (as registered)
-                    </p>
-                  )}
+                  {/* HST Registration Number */}
+                  <p className="text-[10px] text-muted-foreground mt-3 font-medium">
+                    HST Reg. No.: ________________________
+                  </p>
+                  <p className="text-[8px] text-muted-foreground/60 mt-0.5 italic">
+                    (Business Number as registered with CRA)
+                  </p>
                 </div>
               </div>
             </div>
