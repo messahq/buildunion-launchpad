@@ -457,10 +457,6 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
             </SheetContent>
           </Sheet>
 
-          {/* Unit Toggle - hidden on mobile */}
-          <div className="hidden md:flex items-center">
-            <UnitToggle compact className="border rounded-full px-2 py-1 bg-muted/30" />
-          </div>
 
           {/* Dark Mode Toggle - hidden on mobile */}
           <Button
