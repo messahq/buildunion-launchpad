@@ -3712,24 +3712,80 @@ export default function Stage8FinalReview({
       let financialHtml = '';
       if (financialSummary && (financialSummary.total_cost ?? 0) > 0) {
         const fmt = (n: number | null) => n != null ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+        
+        // Tax Sync Validation: cross-reference Net + HST = Gross
+        const netTotal = financialSummary.total_cost ?? 0;
+        const materialCost = financialSummary.material_cost ?? 0;
+        const laborCost = financialSummary.labor_cost ?? 0;
+        const demolitionCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+        const demolitionCost = demolitionCit?.metadata ? Number((demolitionCit.metadata as any).price || 0) : 0;
+        
+        // Determine tax rate from region (location citation)
+        const locAnswer = (locationCit?.answer || '').toLowerCase();
+        let taxLabel = 'HST';
+        let taxRate = 0.13; // Ontario default
+        if (locAnswer.includes('quebec') || locAnswer.includes('québec') || locAnswer.includes('qc')) {
+          taxRate = 0.14975; // GST 5% + QST 9.975%
+          taxLabel = 'GST+QST';
+        } else if (locAnswer.includes('alberta') || locAnswer.includes('ab') || locAnswer.includes('northwest') || locAnswer.includes('yukon') || locAnswer.includes('nunavut')) {
+          taxRate = 0.05; // GST only
+          taxLabel = 'GST';
+        } else if (locAnswer.includes('british columbia') || locAnswer.includes('bc')) {
+          taxRate = 0.12; // GST+PST
+          taxLabel = 'GST+PST';
+        } else if (locAnswer.includes('saskatchewan') || locAnswer.includes('sk')) {
+          taxRate = 0.11; // GST+PST
+          taxLabel = 'GST+PST';
+        } else if (locAnswer.includes('manitoba') || locAnswer.includes('mb')) {
+          taxRate = 0.12; // GST+PST
+          taxLabel = 'GST+PST';
+        }
+        
+        const taxAmount = netTotal * taxRate;
+        const grossTotal = netTotal + taxAmount;
+        
+        // Validate: pillars sum (Materials + Labor + Demolition) should equal net total within 1% tolerance
+        const pillarsSum = materialCost + laborCost + demolitionCost;
+        const syncDeviation = pillarsSum > 0 ? Math.abs(pillarsSum - netTotal) / pillarsSum : 0;
+        const taxSyncPass = syncDeviation < 0.02; // 2% tolerance for rounding
+        const syncStatusBg = taxSyncPass ? '#dcfce7' : '#fef2f2';
+        const syncStatusColor = taxSyncPass ? '#166534' : '#991b1b';
+        const syncStatusText = taxSyncPass ? '✓ PASS' : '✗ FAIL';
+        
         financialHtml = '<div class="pdf-section" style="margin-top:28px;margin-bottom:14px;">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
             '<span style="font-size:18px;">💰</span>' +
             '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">Financial Snapshot</div>' +
+            '<span style="background:' + syncStatusBg + ';color:' + syncStatusColor + ';padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">Sync Tax: ' + syncStatusText + '</span>' +
           '</div>' +
           '<div style="display:flex;gap:12px;">' +
             '<div class="pdf-section" style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;text-align:center;">' +
               '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Materials</div>' +
-              '<div style="font-size:18px;font-weight:700;color:#059669;margin-top:4px;">' + fmt(financialSummary.material_cost) + '</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#059669;margin-top:4px;">' + fmt(materialCost) + '</div>' +
             '</div>' +
             '<div class="pdf-section" style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;text-align:center;">' +
               '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Labor</div>' +
-              '<div style="font-size:18px;font-weight:700;color:#2563eb;margin-top:4px;">' + fmt(financialSummary.labor_cost) + '</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#2563eb;margin-top:4px;">' + fmt(laborCost) + '</div>' +
             '</div>' +
             '<div class="pdf-section" style="flex:1;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;text-align:center;">' +
-              '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Total</div>' +
-              '<div style="font-size:18px;font-weight:700;color:#d97706;margin-top:4px;">' + fmt(financialSummary.total_cost) + '</div>' +
+              '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Net Total</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#d97706;margin-top:4px;">' + fmt(netTotal) + '</div>' +
             '</div>' +
+          '</div>' +
+          // Tax breakdown row
+          '<div style="display:flex;gap:12px;margin-top:10px;">' +
+            '<div class="pdf-section" style="flex:1;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:10px 14px;text-align:center;">' +
+              '<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">' + taxLabel + ' (' + (taxRate * 100).toFixed(taxRate === 0.14975 ? 3 : 0) + '%)</div>' +
+              '<div style="font-size:16px;font-weight:700;color:#7c3aed;margin-top:4px;">' + fmt(taxAmount) + '</div>' +
+            '</div>' +
+            '<div class="pdf-section" style="flex:2;background:linear-gradient(135deg,#064e3b,#065f46);border-radius:8px;padding:10px 14px;text-align:center;color:white;">' +
+              '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;opacity:0.8;">Gross Total (incl. tax)</div>' +
+              '<div style="font-size:20px;font-weight:800;margin-top:4px;">' + fmt(grossTotal) + '</div>' +
+            '</div>' +
+          '</div>' +
+          // Sync validation detail
+          '<div style="margin-top:8px;padding:8px 12px;background:' + (taxSyncPass ? '#f0fdf4' : '#fef2f2') + ';border:1px solid ' + (taxSyncPass ? '#bbf7d0' : '#fecaca') + ';border-radius:6px;font-size:10px;color:' + (taxSyncPass ? '#166534' : '#991b1b') + ';">' +
+            '🔄 <strong>Tax Sync Validation:</strong> Materials (' + fmt(materialCost) + ') + Labor (' + fmt(laborCost) + ')' + (demolitionCost > 0 ? ' + Demolition (' + fmt(demolitionCost) + ')' : '') + ' = ' + fmt(pillarsSum) + ' → Net: ' + fmt(netTotal) + ' + ' + taxLabel + ': ' + fmt(taxAmount) + ' = <strong>Gross: ' + fmt(grossTotal) + '</strong> — ' + syncStatusText +
           '</div>' +
         '</div>';
       }

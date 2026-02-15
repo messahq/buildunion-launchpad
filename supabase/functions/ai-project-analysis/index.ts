@@ -340,6 +340,20 @@ Do NOT treat them as isolated snapshots. CONNECT them chronologically.
 - Is the project on track based on visual progress rate?
 - What phase transitioned between first and last image?
 - Predict next 2 weeks of expected progress based on the observed pace.
+
+${imageCount >= 3 ? `
+**TREND SUMMARY (3+ PHOTOS DETECTED):**
+Since you have ${imageCount} images spanning multiple visits, you MUST provide a TREND SUMMARY section:
+- **Velocity Assessment:** Is the construction pace accelerating, steady, or decelerating? Cite specific evidence from the photo sequence.
+- **Bottleneck Detection:** Identify any work areas that appear stalled or behind schedule compared to other areas.
+- **Phase Transition Tracking:** Which construction phases (Demolition → Rough-In → MEP → Finishes) are visible across the timeline?
+- **Momentum Score:** Rate the project momentum from 1-10 based on the visual evidence progression.
+- **Forecast:** Based on the observed velocity trend, predict whether the project is on track to meet its target end date.
+` : `
+**INDIVIDUAL ANALYSIS MODE (< 3 photos):**
+Since fewer than 3 photos are available, provide detailed individual analysis for each image rather than a trend summary.
+Describe what each image reveals about the current project state in full detail.
+`}
 ` : `
 ### NOTE: No project images were available for visual analysis.
 Provide assessment based on project data only.
@@ -394,6 +408,13 @@ Grade: [Excellent|Good|Fair|Needs Attention|Critical]
 [Example: "Between the site visit on Jan 15 and Jan 22, the plumbing rough-in was completed in the basement level. New copper piping is visible along the west wall..."]
 [If single image: describe what the image shows about current progress]
 [If no images: note that visual verification is pending]
+
+TREND SUMMARY (only if 3+ images were provided)
+- Velocity: [Accelerating / Steady / Decelerating] — [evidence]
+- Bottlenecks: [identified bottleneck areas or "None detected"]
+- Phase Transitions: [which phases transitioned across the timeline]
+- Momentum Score: [1-10]
+- On-Track Forecast: [Yes/No — explanation]
 
 SITE CONDITION ASSESSMENT
 - Current Status: [description]
