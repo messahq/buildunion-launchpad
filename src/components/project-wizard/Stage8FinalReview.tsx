@@ -12796,8 +12796,8 @@ export default function Stage8FinalReview({
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[200px] text-center">
-                  <p className="text-xs">{userRole === 'owner' && !isFinancialSummaryUnlocked ? 'Add financial data to unlock.' : 'Finalize and close this project.'}</p>
+                <TooltipContent side="top" className="max-w-[220px] text-center">
+                  <p className="text-xs">{userRole === 'owner' && !isFinancialSummaryUnlocked ? 'Lock budget & contract data first to enable closure.' : 'Close & archive this project. All work marked as completed — this action is final.'}</p>
                 </TooltipContent>
               </Tooltip>
               </TooltipProvider>
