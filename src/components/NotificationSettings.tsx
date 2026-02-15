@@ -86,9 +86,28 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
       </CardHeader>
       <CardContent className="space-y-4">
         {permission === "denied" ? (
-          <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+          <div className="p-4 rounded-lg bg-red-50 border border-red-200 space-y-3">
             <p className="text-sm text-red-700">
               Notifications are blocked for this site. Please enable them in your browser settings.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-red-700 border-red-300 hover:bg-red-100"
+              onClick={() => {
+                // Try to re-request permission (works if user dismissed, not if explicitly blocked)
+                Notification.requestPermission().then((result) => {
+                  if (result === "granted") {
+                    window.location.reload();
+                  }
+                });
+              }}
+            >
+              <Bell className="w-4 h-4 mr-2" />
+              Értesítések engedélyezése újra
+            </Button>
+            <p className="text-xs text-red-500">
+              Ha nem működik: kattints a böngésző címsorában a lakat/info ikonra → Értesítések → Engedélyezés
             </p>
           </div>
         ) : (
