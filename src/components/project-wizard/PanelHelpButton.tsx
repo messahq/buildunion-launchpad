@@ -262,19 +262,24 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
           setExpanded(!expanded);
         }}
         className={cn(
-          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all",
-          "bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 border border-emerald-500/30",
-          expanded && "from-emerald-500/25 to-cyan-500/25"
+          "w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-left transition-all shadow-sm",
+          "bg-gradient-to-r from-sky-500/20 via-cyan-400/15 to-amber-400/15",
+          "hover:from-sky-500/30 hover:via-cyan-400/25 hover:to-amber-400/25",
+          "border border-sky-400/40 hover:border-sky-400/60",
+          "hover:shadow-[0_0_12px_rgba(56,189,248,0.15)]",
+          expanded && "from-sky-500/30 via-cyan-400/25 to-amber-400/25 border-sky-400/60 shadow-[0_0_12px_rgba(56,189,248,0.15)]"
         )}
       >
-        <HelpCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-        <span className="text-xs font-medium text-foreground/80 flex-1">
+        <div className="h-5 w-5 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shrink-0">
+          <HelpCircle className="h-3 w-3 text-white" />
+        </div>
+        <span className="text-xs font-semibold bg-gradient-to-r from-sky-300 to-cyan-200 bg-clip-text text-transparent flex-1">
           How does this panel work?
         </span>
         {expanded ? (
-          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+          <ChevronUp className="h-3.5 w-3.5 text-sky-400" />
         ) : (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <ChevronDown className="h-3.5 w-3.5 text-sky-400/60" />
         )}
       </button>
 
@@ -287,12 +292,12 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-3 py-2.5 mt-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-              <p className="text-xs text-foreground/70">{helpContent.description}</p>
-              <div className="space-y-1">
+            <div className="px-4 py-3 mt-1.5 rounded-xl bg-gradient-to-br from-sky-500/10 via-cyan-500/5 to-transparent border border-sky-400/20 space-y-2.5">
+              <p className="text-xs text-sky-100/80 leading-relaxed">{helpContent.description}</p>
+              <div className="space-y-1.5">
                 {helpContent.tips.map((tip, i) => (
-                  <div key={i} className="flex items-start gap-1.5">
-                    <span className="text-emerald-400 text-xs mt-0.5 shrink-0">•</span>
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-cyan-400 text-xs mt-0.5 shrink-0">✦</span>
                     <span className="text-[11px] text-foreground/60">{tip}</span>
                   </div>
                 ))}
