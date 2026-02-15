@@ -177,12 +177,61 @@ M.E.S.S.A. = Multi-Engine Structural Site Analysis
 - Public profiles with certifications
 - Direct messaging (Premium)
 
+## STAGE 8 DASHBOARD (COMMAND CENTER)
+
+The project dashboard is an "Orbital Command Center" with 8 panels:
+- Panel 1: Project Overview — name, address, mode, health score
+- Panel 2: Data Sources — 16-point verification status (pillars + workflow sources)
+- Panel 3: Trade/Materials — material quantities, GFA-based calculations, waste factors, unit prices
+- Panel 4: Conflict Monitor — AI cross-verification between data sources
+- Panel 5: Task List — real-time synced tasks with assignees, statuses, due dates
+- Panel 6: Documents — uploaded files, blueprints, AI analysis results
+- Panel 7: Weather & Map — 5-day forecast, Google Maps with team locations
+- Panel 8: Finance Board — cost breakdown (materials, labor, markup, taxes) — OWNER ONLY
+
+### TIER GATES ON THE DASHBOARD
+- FREE users: Can create 1 active project, NO team members, NO invoices, NO project finalization (Finish Project blocked)
+- PRO users: Up to 10 team members, full AI, contracts, invoices, task management
+- PREMIUM users: Up to 50 members, priority AI, direct messaging, conflict visualization, project reports
+
+### ACTION BAR (Bottom of Dashboard)
+4 action buttons: [Check In/Out] [Invoice] [DNA Report] [Finish Project]
+- Check In/Out: Records site presence with timestamp and optional weather snapshot
+- Invoice: Generates professional PDF invoice with regional tax calculation (e.g., Ontario 13% HST)
+- DNA Report: Comprehensive AI audit of the project — the "M.E.S.S.A. Brief"
+- Finish Project: Archives project — requires financial security lock (budget/citation/contract must be set)
+
+### FINANCIAL LOGIC
+- All costs stored as NET (pre-tax) in the database
+- Tax is calculated dynamically based on project location (Ontario HST 13%, Quebec GST+QST 14.975%, etc.)
+- Profit margin is separate from automated totals
+- Financial data (Panel 8) is HIDDEN from non-owner roles (Foreman, Worker, Subcontractor)
+
+### ROLE-BASED ACCESS
+- Owner: Full access to all panels, financial data, team management, project finalization
+- Foreman: Can manage tasks, view all project data, but NO financial visibility
+- Worker: Can update own task status, upload documents, check in/out
+- Subcontractor: Similar to Worker, can upload documents
+- Inspector: Read-only access to project data and documents
+
+### PROJECT MODES
+- Solo Mode (Free): Individual contractor, no team features, 13-point health score
+- Team Mode (Pro/Premium): Full collaboration, real-time sync, 16-point health score
+- Users can upgrade from Solo to Team Mode via the Project Mode Toggle in the header
+
+### BUDGET MODIFICATION WORKFLOW (Team Mode)
+- Non-owner team members can REQUEST budget changes (not directly edit)
+- Owner receives notification and can Approve or Reject with notes
+- This preserves the "Operational Truth" — only the owner controls financial data
+
 ## TIPS FOR SUCCESS
 - Upload clear, well-lit photos for better AI analysis
 - Include dimensions in project descriptions when known
 - Use templates to save time on recurring work
 - Lock baseline before starting work to track changes
 - Export documents as PDFs for client records
+- Use the Ask MESSA button on the dashboard for project-specific AI guidance
+- Check your Health Score regularly — aim for 100% before finalizing
 
 ═══════════════════════════════════════════════════════════════════════════════
 📐 PART 2: CANADIAN CONSTRUCTION EXPERTISE
