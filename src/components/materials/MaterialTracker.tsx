@@ -277,6 +277,19 @@ export function MaterialTracker({
                   </Button>
                 )}
               </div>
+              {/* Show delivery notes if any */}
+              {row.deliveries.filter(d => d.notes).length > 0 && (
+                <div className="mt-2 pl-12 space-y-1">
+                  {row.deliveries.filter(d => d.notes).map(d => (
+                    <p key={d.id} className="text-[11px] text-muted-foreground italic border-l-2 border-amber-300 dark:border-amber-600 pl-2">
+                      {d.notes}
+                      <span className="ml-2 text-[10px] text-muted-foreground/60 not-italic">
+                        {new Date(d.logged_at).toLocaleDateString()}
+                      </span>
+                    </p>
+                  ))}
+                </div>
+              )}
             </motion.div>
           );
         })}
