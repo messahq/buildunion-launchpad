@@ -47,6 +47,7 @@ export interface InvoiceData {
     logo?: string;
     province?: string;
     website?: string;
+    hstNumber?: string;
   };
   
   client: {
@@ -658,6 +659,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
               <div class="signature-field">Name: <span></span></div>
               <div class="signature-field">Date: <span></span></div>
             </div>
+            ${data.contractor.hstNumber ? `<div style="margin-top:8px;font-size:10px;color:#6b7280;">HST Reg. No.: ${escapeHtml(data.contractor.hstNumber)}</div>` : ''}
           </div>
         </div>
       </div>
