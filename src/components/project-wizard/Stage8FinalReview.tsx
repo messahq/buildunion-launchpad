@@ -3744,10 +3744,10 @@ export default function Stage8FinalReview({
         const taxAmount = netTotal * taxRate;
         const grossTotal = netTotal + taxAmount;
         
-        // Validate: pillars sum (Materials + Labor + Demolition) should equal net total within 1% tolerance
+        // Owner-centric validation: Net Total vs Budget (total_cost from DB)
         const pillarsSum = materialCost + laborCost + demolitionCost;
-        const syncDeviation = pillarsSum > 0 ? Math.abs(pillarsSum - netTotal) / pillarsSum : 0;
-        const taxSyncPass = syncDeviation < 0.02; // 2% tolerance for rounding
+        const budgetValue = financialSummary?.total_cost ? Number(financialSummary.total_cost) : netTotal;
+        const taxSyncPass = netTotal <= budgetValue * 1.02; // 2% tolerance for rounding
         const syncStatusBg = taxSyncPass ? '#dcfce7' : '#fef2f2';
         const syncStatusColor = taxSyncPass ? '#166534' : '#991b1b';
         const syncStatusText = taxSyncPass ? '✓ PASS' : '✗ FAIL';
@@ -3758,6 +3758,7 @@ export default function Stage8FinalReview({
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Financial Snapshot</div>' +
             '<span style="background:' + syncStatusBg + ';color:' + syncStatusColor + ';padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">Sync Tax: ' + syncStatusText + '</span>' +
           '</div>' +
+          // Line 1: Net Total
           '<div style="display:flex;gap:10px;">' +
             '<div class="pdf-section" style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 12px;text-align:center;">' +
               '<div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Materials</div>' +
@@ -3772,7 +3773,7 @@ export default function Stage8FinalReview({
               '<div style="font-size:15px;font-weight:700;color:#d97706;margin-top:3px;">' + fmt(netTotal) + '</div>' +
             '</div>' +
           '</div>' +
-          // Tax breakdown row
+          // Line 2: HST + Line 3: Gross Total
           '<div style="display:flex;gap:10px;margin-top:8px;">' +
             '<div class="pdf-section" style="flex:1;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:8px 12px;text-align:center;">' +
               '<div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">' + taxLabel + ' (' + (taxRate * 100).toFixed(taxRate === 0.14975 ? 3 : 0) + '%)</div>' +
@@ -3783,9 +3784,9 @@ export default function Stage8FinalReview({
               '<div style="font-size:17px;font-weight:800;margin-top:3px;">' + fmt(grossTotal) + '</div>' +
             '</div>' +
           '</div>' +
-          // Sync validation detail
+          // Sync validation detail: Net vs Budget
           '<div style="margin-top:8px;padding:8px 12px;background:' + (taxSyncPass ? '#f0fdf4' : '#fef2f2') + ';border:1px solid ' + (taxSyncPass ? '#bbf7d0' : '#fecaca') + ';border-radius:6px;font-size:10px;color:' + (taxSyncPass ? '#166534' : '#991b1b') + ';">' +
-            '🔄 <strong>Tax Sync Validation:</strong> Materials (' + fmt(materialCost) + ') + Labor (' + fmt(laborCost) + ')' + (demolitionCost > 0 ? ' + Demolition (' + fmt(demolitionCost) + ')' : '') + ' = ' + fmt(pillarsSum) + ' → Net: ' + fmt(netTotal) + ' + ' + taxLabel + ': ' + fmt(taxAmount) + ' = <strong>Gross: ' + fmt(grossTotal) + '</strong> — ' + syncStatusText +
+            '🔄 <strong>Budget Sync:</strong> Net Total ' + fmt(netTotal) + ' vs Budget ' + fmt(budgetValue) + ' → ' + syncStatusText + ' <span style="opacity:0.7;">(Tax is informational only: ' + taxLabel + ' ' + fmt(taxAmount) + ')</span>' +
           '</div>' +
         '</div>';
       }
