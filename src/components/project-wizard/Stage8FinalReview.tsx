@@ -6160,13 +6160,26 @@ export default function Stage8FinalReview({
                                     </div>
                                     {/* Photo verification status */}
                                     {(() => {
-                                      const hasPhoto = citations.some(c => 
-                                        c.cite_type === 'SITE_PHOTO' && c.metadata?.taskId === task.id
+                                      const photoCitation = citations.find(c => 
+                                        (c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') && c.metadata?.taskId === task.id
                                       );
-                                      return hasPhoto ? (
-                                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-500">
-                                          <Camera className="h-3 w-3" />
-                                          <span>Photo verified</span>
+                                      return photoCitation ? (
+                                        <div className="flex flex-col gap-1">
+                                          <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-medium">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            <span>✓ Photo verified</span>
+                                          </div>
+                                          <div className="ml-4.5 text-[9px] text-muted-foreground/70 space-y-0.5">
+                                            {photoCitation.metadata?.uploadedBy && (
+                                              <p>By: {String(photoCitation.metadata.uploadedBy)}{photoCitation.metadata?.uploadedByRole ? ` (${String(photoCitation.metadata.uploadedByRole)})` : ''}</p>
+                                            )}
+                                            {photoCitation.metadata?.fileName && (
+                                              <p className="truncate max-w-[180px]">📎 {String(photoCitation.metadata.fileName)}</p>
+                                            )}
+                                            {photoCitation.timestamp && (
+                                              <p>🕐 {format(new Date(photoCitation.timestamp), 'MMM dd, HH:mm')}</p>
+                                            )}
+                                          </div>
                                         </div>
                                       ) : (
                                         <div className="flex items-center gap-1.5 text-[10px] text-amber-500">
