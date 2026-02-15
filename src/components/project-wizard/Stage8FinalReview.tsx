@@ -129,6 +129,7 @@ import { TeamChatPanel } from "@/components/project-wizard/TeamChatPanel";
 import { MaterialTracker } from "@/components/materials/MaterialTracker";
 import { MaterialsLaborPreview } from "@/components/project-wizard/MaterialsLaborPreview";
 import { ProjectMessaChat } from "@/components/project-wizard/ProjectMessaChat";
+import { OwnerLockModal } from "@/components/OwnerLockModal";
 
 // ============================================
 // VISIBILITY TIERS
@@ -447,6 +448,8 @@ export default function Stage8FinalReview({
   const [isSendingContract, setIsSendingContract] = useState(false);
   
   const [isFinancialLocked, setIsFinancialLocked] = useState(true);
+  const [ownerLockOpen, setOwnerLockOpen] = useState(false);
+  const [ownerLockAction, setOwnerLockAction] = useState<'finish' | 'material_edit' | null>(null);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [weatherModalOpen, setWeatherModalOpen] = useState(false);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
@@ -2117,6 +2120,21 @@ export default function Stage8FinalReview({
     setEditingField(fieldId);
     setEditValue(currentValue);
   }, [canEdit]);
+
+  // Gate material edits through owner lock
+  const requestSaveWithLock = useCallback(() => {
+    if (!editingField) return;
+    // Check if the edited field is a material/financial citation
+    const editedCitation = citations.find(c => c.id === editingField);
+    const isMaterialField = editedCitation && ['TEMPLATE_LOCK', 'GFA_LOCK', 'DEMOLITION_PRICE', 'MATERIAL_OVERRIDE'].includes(editedCitation.cite_type);
+    if (isMaterialField && userRole === 'owner') {
+      setOwnerLockAction('material_edit');
+      setOwnerLockOpen(true);
+      return;
+    }
+    // Non-material edits proceed directly
+    saveEdit();
+  }, [editingField, citations, userRole]);
   
   // Save edited field
   const saveEdit = useCallback(async () => {
@@ -5320,9 +5338,8 @@ export default function Stage8FinalReview({
     }
   }, [summaryPreviewHtml, projectId, userId, projectData, categorizeDocument]);
   
-  // Complete and go to dashboard
-  const handleComplete = useCallback(async () => {
-    // NAVIGATION LOCK: Owner must have financial data unlocked to proceed
+  // Owner-lock gate for Finish
+  const requestFinishWithLock = useCallback(() => {
     if (userRole === 'owner' && !isFinancialSummaryUnlocked) {
       toast.error('Financial Summary must be active before activation', {
         description: 'Add budget or contract data to unlock the Financial panel',
@@ -5330,15 +5347,18 @@ export default function Stage8FinalReview({
       });
       return;
     }
-    
+    setOwnerLockAction('finish');
+    setOwnerLockOpen(true);
+  }, [userRole, isFinancialSummaryUnlocked]);
+
+  // Complete and go to dashboard (called after owner lock passes)
+  const executeComplete = useCallback(async () => {
     setIsSaving(true);
     try {
-      // Sync citations to localStorage one final time
       if (projectId) {
         syncCitationsToLocalStorage(projectId, citations, 8, 0);
       }
       
-      // 1. Set project status to 'completed'
       const { error: projectError } = await supabase
         .from('projects')
         .update({ status: 'completed' })
@@ -5346,7 +5366,6 @@ export default function Stage8FinalReview({
       
       if (projectError) throw projectError;
 
-      // 2. Auto-close any open site_checkins (prevent ghost sessions)
       await supabase
         .from('site_checkins')
         .update({ checked_out_at: new Date().toISOString() })
@@ -5362,7 +5381,17 @@ export default function Stage8FinalReview({
     } finally {
       setIsSaving(false);
     }
-  }, [projectId, onComplete, userRole, isFinancialSummaryUnlocked, citations]);
+  }, [projectId, onComplete, citations]);
+
+  // Owner lock callback dispatcher
+  const handleOwnerLockAuthorized = useCallback(() => {
+    if (ownerLockAction === 'finish') {
+      executeComplete();
+    } else if (ownerLockAction === 'material_edit') {
+      saveEdit();
+    }
+    setOwnerLockAction(null);
+  }, [ownerLockAction, executeComplete, saveEdit]);
   
   // Render citation value
   const renderCitationValue = useCallback((citation: Citation) => {
@@ -5406,7 +5435,7 @@ export default function Stage8FinalReview({
           <Button
             size="sm"
             variant="ghost"
-            onClick={saveEdit}
+            onClick={requestSaveWithLock}
             disabled={isSaving}
             className="h-8 w-8 p-0"
           >
@@ -5439,7 +5468,7 @@ export default function Stage8FinalReview({
         )}
       </div>
     );
-  }, [editingField, editValue, isSaving, canEdit, saveEdit, cancelEdit, startEditing]);
+  }, [editingField, editValue, isSaving, canEdit, requestSaveWithLock, cancelEdit, startEditing]);
   
   // Get tier badge
   const getTierBadge = useCallback((tier: VisibilityTier) => {
@@ -12943,7 +12972,7 @@ export default function Stage8FinalReview({
                   <span>
                     <Button
                       size="sm"
-                      onClick={handleComplete}
+                      onClick={requestFinishWithLock}
                       disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
                       className={cn(
                         "gap-1 text-[10px] lg:text-xs shadow-md h-8 sm:h-7 px-3 sm:px-2 shrink-0 sm:shrink flex-1 sm:flex-initial min-w-0",
@@ -13804,6 +13833,18 @@ export default function Stage8FinalReview({
         }}
       />
       
+      {/* OWNER-LOCK MODAL */}
+      <OwnerLockModal
+        open={ownerLockOpen}
+        onOpenChange={setOwnerLockOpen}
+        onAuthorized={handleOwnerLockAuthorized}
+        title="Owner Authorization Required"
+        description={
+          ownerLockAction === 'finish'
+            ? "You are completing this project. This will mark all work as done and close open sessions."
+            : "You are modifying Operational Truth data. Owner Authorization Required."
+        }
+      />
     </div>
   );
 }
