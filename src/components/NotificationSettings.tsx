@@ -59,7 +59,7 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
           <div>
             <p className="text-sm font-medium">Push Notifications</p>
             <p className="text-xs text-muted-foreground">
-              {isSubscribed ? "Enabled" : "Disabled"}
+              {isSubscribed ? "Enabled" : permission === "denied" ? "Blocked - tap to fix" : "Disabled"}
             </p>
           </div>
         </div>
@@ -69,7 +69,6 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
           <Switch
             checked={isSubscribed}
             onCheckedChange={handleToggle}
-            disabled={permission === "denied"}
           />
         )}
       </div>
@@ -88,68 +87,48 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {permission === "denied" ? (
-          <div className="p-4 rounded-lg bg-red-50 border border-red-200 space-y-3">
-            <p className="text-sm text-red-700">
-              Notifications are blocked for this site. Please enable them in your browser settings.
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">
+              {isSubscribed ? "Notifications Enabled" : "Enable Notifications"}
             </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-red-700 border-red-300 hover:bg-red-100"
-              onClick={() => {
-                // Try to re-request permission (works if user dismissed, not if explicitly blocked)
-                Notification.requestPermission().then((result) => {
-                  if (result === "granted") {
-                    window.location.reload();
-                  }
-                });
-              }}
-            >
-              <Bell className="w-4 h-4 mr-2" />
-              Re-enable Notifications
-            </Button>
-            <p className="text-xs text-red-500">
-              If this doesn't work: click the lock/info icon in the browser address bar → Notifications → Allow
+            <p className="text-sm text-muted-foreground">
+              {isSubscribed
+                ? "You'll receive push notifications for updates"
+                : "Stay updated with project changes and team activity"}
             </p>
           </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">
-                {isSubscribed ? "Notifications Enabled" : "Enable Notifications"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {isSubscribed
-                  ? "You'll receive push notifications for updates"
-                  : "Stay updated with project changes and team activity"}
-              </p>
-            </div>
-            {isLoading ? (
-              <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
-            ) : (
-              <Button
-                onClick={handleToggle}
-                variant={isSubscribed ? "outline" : "default"}
-                className={
-                  isSubscribed
-                    ? ""
-                    : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                }
-              >
-                {isSubscribed ? (
-                  <>
-                    <BellOff className="w-4 h-4 mr-2" />
-                    Disable
-                  </>
-                ) : (
-                  <>
-                    <Bell className="w-4 h-4 mr-2" />
-                    Enable
-                  </>
-                )}
-              </Button>
-            )}
+          {isLoading ? (
+            <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+          ) : (
+            <Button
+              onClick={handleToggle}
+              variant={isSubscribed ? "outline" : "default"}
+              className={
+                isSubscribed
+                  ? ""
+                  : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              }
+            >
+              {isSubscribed ? (
+                <>
+                  <BellOff className="w-4 h-4 mr-2" />
+                  Disable
+                </>
+              ) : (
+                <>
+                  <Bell className="w-4 h-4 mr-2" />
+                  Enable
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+        {permission === "denied" && !isSubscribed && (
+          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              ⚠️ Notifications are currently blocked for this site. To fix: click the 🔒 lock icon in your browser's address bar → find "Notifications" → change to "Allow" → then refresh the page and click Enable again.
+            </p>
           </div>
         )}
       </CardContent>
