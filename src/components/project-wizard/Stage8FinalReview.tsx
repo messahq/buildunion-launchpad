@@ -424,6 +424,15 @@ export default function Stage8FinalReview({
     service_area: string | null;
   } | null>(null);
   
+  // Project Owner profile (Client in contracts) — always fetched from project owner
+  const [ownerProfile, setOwnerProfile] = useState<{
+    full_name: string | null;
+    company_name: string | null;
+    phone: string | null;
+    email: string | null;
+    service_area: string | null;
+  } | null>(null);
+  
   // UI state
   const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set([
     'citations-panel-1-basics',
@@ -949,7 +958,7 @@ export default function Stage8FinalReview({
         // 1. Load project - ALSO load trade field for fallback
         const { data: project } = await supabase
           .from('projects')
-          .select('name, address, status, trade')
+          .select('name, address, status, trade, user_id')
           .eq('id', projectId)
           .single();
         
@@ -1908,7 +1917,7 @@ export default function Stage8FinalReview({
           setIsFinancialLocked(true);
         }
         
-        // 7. Load user profile for contractor fields in contracts
+        // 7. Load current user profile for contracts
         const { data: profile } = await supabase
           .from('bu_profiles')
           .select('company_name, phone, service_area')
@@ -1916,13 +1925,40 @@ export default function Stage8FinalReview({
           .maybeSingle();
         
         if (profile) {
-          // Fetch user email from auth
           const { data: { user } } = await supabase.auth.getUser();
           setUserProfile({
             company_name: profile.company_name,
             phone: profile.phone,
             email: user?.email || null,
             service_area: profile.service_area,
+          });
+        }
+        
+        // 7b. Load PROJECT OWNER profile (Client in contracts)
+        // Always fetch the project owner's data, even when Foreman is creating contract
+        if (project) {
+          const projectOwnerId = project.user_id;
+          const { data: ownerBuProfile } = await supabase
+            .from('bu_profiles')
+            .select('company_name, phone, service_area')
+            .eq('user_id', projectOwnerId)
+            .maybeSingle();
+          const { data: ownerBasicProfile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', projectOwnerId)
+            .maybeSingle();
+          // Get owner email from auth admin or fallback
+          const ownerEmail = projectOwnerId === userId 
+            ? (await supabase.auth.getUser()).data.user?.email || null
+            : null; // For non-owner users, email will come from contract flow
+          
+          setOwnerProfile({
+            full_name: ownerBasicProfile?.full_name || null,
+            company_name: ownerBuProfile?.company_name || null,
+            phone: ownerBuProfile?.phone || null,
+            email: ownerEmail,
+            service_area: ownerBuProfile?.service_area || null,
           });
         }
         
@@ -2711,13 +2747,19 @@ export default function Stage8FinalReview({
       endDate: endDateCitation?.value || 'Not set',
       teamSize: teamMembers.length,
       taskCount: tasks.length,
-      // Contractor fields - will be populated from bu_profiles
+      // Client = Project Owner (who hires)
+      clientOwnerName: ownerProfile?.full_name || ownerProfile?.company_name || '',
+      clientOwnerCompany: ownerProfile?.company_name || '',
+      clientOwnerPhone: ownerProfile?.phone || '',
+      clientOwnerEmail: ownerProfile?.email || '',
+      clientOwnerAddress: ownerProfile?.service_area || '',
+      // Contractor = Selected team member (who is hired)
       contractorName: userProfile?.company_name || '',
       contractorPhone: userProfile?.phone || '',
       contractorEmail: userProfile?.email || '',
       contractorAddress: userProfile?.service_area || '',
     };
-  }, [citations, projectData, teamMembers.length, tasks.length, projectId, userProfile]);
+  }, [citations, projectData, teamMembers.length, tasks.length, projectId, userProfile, ownerProfile]);
   
   // ============================================
   // M.E.S.S.A. SYNTHESIS - Grand Dual Engine Analysis
@@ -12818,24 +12860,25 @@ export default function Stage8FinalReview({
                   Parties to This Agreement
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Contractor / Owner (auto-filled) */}
+                  {/* Client = Project Owner (who hires) */}
                   <div className="p-4 rounded-lg border-2 border-emerald-200/60 dark:border-emerald-700/30 bg-emerald-50/30 dark:bg-emerald-950/10">
                     <h4 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5" /> Owner / General Contractor
+                      <Users className="h-3.5 w-3.5" /> Client (Project Owner)
                     </h4>
                     <div className="space-y-2 text-sm">
-                      <div><span className="text-[10px] text-muted-foreground uppercase block">Company / Name</span><span className="font-medium">{generateContractPreviewData.contractorName || 'Not set'}</span></div>
-                      <div><span className="text-[10px] text-muted-foreground uppercase block">Address</span><span className="font-medium">{generateContractPreviewData.contractorAddress || '—'}</span></div>
-                      <div><span className="text-[10px] text-muted-foreground uppercase block">Phone</span><span className="font-medium">{generateContractPreviewData.contractorPhone || '—'}</span></div>
-                      <div><span className="text-[10px] text-muted-foreground uppercase block">Email</span><span className="font-medium">{generateContractPreviewData.contractorEmail || '—'}</span></div>
+                      <div><span className="text-[10px] text-muted-foreground uppercase block">Name</span><span className="font-medium">{generateContractPreviewData.clientOwnerName || 'Not set'}</span></div>
+                      <div><span className="text-[10px] text-muted-foreground uppercase block">Company</span><span className="font-medium">{generateContractPreviewData.clientOwnerCompany || '—'}</span></div>
+                      <div><span className="text-[10px] text-muted-foreground uppercase block">Address</span><span className="font-medium">{generateContractPreviewData.clientOwnerAddress || '—'}</span></div>
+                      <div><span className="text-[10px] text-muted-foreground uppercase block">Phone</span><span className="font-medium">{generateContractPreviewData.clientOwnerPhone || '—'}</span></div>
+                      <div><span className="text-[10px] text-muted-foreground uppercase block">Email</span><span className="font-medium">{generateContractPreviewData.clientOwnerEmail || '—'}</span></div>
                     </div>
-                    <p className="text-[9px] text-emerald-600 dark:text-emerald-500 mt-2 italic">Auto-filled from your business profile</p>
+                    <p className="text-[9px] text-emerald-600 dark:text-emerald-500 mt-2 italic">Auto-filled from project owner's profile</p>
                   </div>
                   
-                  {/* Team Member (auto-filled from selection, with editable email) */}
+                  {/* Contractor = Selected Team Member (who is hired) */}
                   <div className="p-4 rounded-lg border-2 border-amber-200/60 dark:border-amber-700/30 bg-amber-50/30 dark:bg-amber-950/10">
                     <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <User className="h-3.5 w-3.5" /> {selectedContractMember.role === 'foreman' ? 'Foreman' : selectedContractMember.role === 'subcontractor' ? 'Subcontractor' : selectedContractMember.role === 'inspector' ? 'Inspector' : 'Team Member'}
+                      <User className="h-3.5 w-3.5" /> Contractor ({selectedContractMember.role === 'foreman' ? 'Foreman' : selectedContractMember.role === 'subcontractor' ? 'Subcontractor' : selectedContractMember.role === 'inspector' ? 'Inspector' : 'Team Member'})
                     </h4>
                     <div className="space-y-2">
                       <div><span className="text-[10px] text-muted-foreground uppercase block">Name</span><span className="font-medium text-sm">{selectedContractMember.name}</span></div>
@@ -12843,7 +12886,7 @@ export default function Stage8FinalReview({
                       {selectedContractMember.primary_trade && <div><span className="text-[10px] text-muted-foreground uppercase block">Trade</span><span className="font-medium text-sm capitalize">{selectedContractMember.primary_trade.replace(/_/g, ' ')}</span></div>}
                       <div>
                         <label className="text-[10px] text-muted-foreground uppercase block mb-1">Email *</label>
-                        <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="team.member@example.com" className="h-8 text-sm" />
+                        <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="contractor@example.com" className="h-8 text-sm" />
                       </div>
                     </div>
                     <p className="text-[9px] text-amber-600 dark:text-amber-500 mt-2 italic">Auto-filled from Stage 6 team data</p>
@@ -12974,7 +13017,7 @@ export default function Stage8FinalReview({
                     <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Dispute Resolution:</strong> Any dispute shall first be submitted to mediation. If mediation fails, the dispute shall be resolved by binding arbitration.</span></div>
                     <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Termination:</strong> Either party may terminate with 14 days written notice. Upon termination, Client shall pay for all work completed and materials ordered.</span></div>
                     <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Permits & Compliance:</strong> Contractor shall obtain all necessary permits and ensure compliance with applicable building codes, safety regulations, and environmental standards.</span></div>
-                    <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Governing Law:</strong> This Agreement shall be governed by the laws of the province/state in which the project is located.</span></div>
+                    <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Governing Law:</strong> This Agreement shall be governed by the laws of the Province in which the project is located.</span></div>
                   </div>
                 </div>
               </div>
@@ -13007,6 +13050,12 @@ export default function Stage8FinalReview({
                     onSignatureChange={(data) => setContractorSignatureData(data)}
                     height={120}
                   />
+                  {/* HST Number from business profile */}
+                  {ownerProfile?.company_name && (
+                    <p className="text-[9px] text-muted-foreground mt-2 italic">
+                      HST #: _____________________ (as registered)
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -13026,7 +13075,8 @@ export default function Stage8FinalReview({
                       // Auto-detect contract type from role
                       const roleToType: Record<string, string> = { foreman: 'foreman', subcontractor: 'subcontractor', inspector: 'inspector', worker: 'worker', member: 'subcontractor' };
                       setSelectedContractType(roleToType[selectedContractMember.role] || 'subcontractor');
-                      setClientName(selectedContractMember.name);
+                      // Client = Project Owner, Contractor = Selected team member
+                      setClientName(ownerProfile?.full_name || ownerProfile?.company_name || '');
                       setContractStep('preview');
                     }
                   }}
@@ -13066,13 +13116,15 @@ export default function Stage8FinalReview({
                         endDate: String(generateContractPreviewData.endDate),
                         teamSize: generateContractPreviewData.teamSize,
                         taskCount: generateContractPreviewData.taskCount,
-                        contractorName: generateContractPreviewData.contractorName,
-                        contractorPhone: generateContractPreviewData.contractorPhone,
-                        contractorEmail: generateContractPreviewData.contractorEmail,
-                        contractorAddress: generateContractPreviewData.contractorAddress,
-                        clientName: clientName || undefined,
-                        clientEmail: clientEmail || undefined,
-                        totalAmount: financialSummary?.total_cost || undefined,
+                        // Contractor = Team member (who is hired)
+                        contractorName: selectedContractMember?.name || '',
+                        contractorPhone: '',
+                        contractorEmail: clientEmail || '',
+                        contractorAddress: '',
+                        // Client = Project Owner
+                        clientName: ownerProfile?.full_name || ownerProfile?.company_name || clientName || undefined,
+                        clientEmail: ownerProfile?.email || undefined,
+                        totalAmount: Math.round((financialSummary?.total_cost || 0) * 100) / 100 || undefined,
                       };
                       await downloadContractPDF(contractData);
                       toast.success('Professional contract PDF downloaded!');
@@ -13112,13 +13164,18 @@ export default function Stage8FinalReview({
                         template_type: selectedContractType || 'subcontractor',
                         project_name: generateContractPreviewData.projectName,
                         project_address: generateContractPreviewData.projectAddress,
-                        client_name: clientName,
-                        client_email: clientEmail,
-                        client_phone: contractClientPhone || null,
-                        client_address: contractClientAddress || null,
-                        total_amount: financialSummary?.total_cost || 0,
+                        // Client = Project Owner
+                        client_name: ownerProfile?.full_name || ownerProfile?.company_name || clientName,
+                        client_email: ownerProfile?.email || '',
+                        client_phone: ownerProfile?.phone || contractClientPhone || null,
+                        client_address: ownerProfile?.service_area || contractClientAddress || null,
+                        // Contractor = Selected Team Member
+                        contractor_name: selectedContractMember?.name || '',
+                        contractor_phone: '',
+                        contractor_email: clientEmail,
+                        total_amount: Math.round((financialSummary?.total_cost || 0) * 100) / 100,
                         deposit_percentage: Number(contractDeposit) || 50,
-                        deposit_amount: ((financialSummary?.total_cost ?? 0) * (Number(contractDeposit) || 50) / 100),
+                        deposit_amount: Math.round(((financialSummary?.total_cost ?? 0) * (Number(contractDeposit) || 50) / 100) * 100) / 100,
                         scope_of_work: contractScopeOfWork || `Complete ${generateContractPreviewData.trade} work at ${generateContractPreviewData.projectAddress}. GFA: ${generateContractPreviewData.gfa} ${generateContractPreviewData.gfaUnit}.`,
                         payment_schedule: contractPaymentTerms || null,
                         additional_terms: contractAdditionalTerms || null,
@@ -13129,9 +13186,6 @@ export default function Stage8FinalReview({
                         estimated_end_date: typeof generateContractPreviewData.endDate === 'string' && generateContractPreviewData.endDate !== 'Not set'
                           ? (() => { try { return new Date(generateContractPreviewData.endDate as string).toISOString().split('T')[0]; } catch { return null; } })()
                           : null,
-                        contractor_name: generateContractPreviewData.contractorName,
-                        contractor_phone: generateContractPreviewData.contractorPhone,
-                        contractor_email: generateContractPreviewData.contractorEmail,
                         status: 'pending_client',
                       }).select().single();
                       
@@ -13142,9 +13196,9 @@ export default function Stage8FinalReview({
                       
                       const { error: emailError } = await supabase.functions.invoke('send-contract-email', {
                         body: {
-                          clientEmail,
-                          clientName,
-                          contractorName: generateContractPreviewData.contractorName || 'Your Contractor',
+                          clientEmail: clientEmail, // Send to the contractor (team member)
+                          clientName: selectedContractMember?.name || 'Contractor',
+                          contractorName: ownerProfile?.company_name || ownerProfile?.full_name || 'Project Owner',
                           projectName: generateContractPreviewData.projectName,
                           contractUrl,
                           contractId: newContract.id,
@@ -13158,7 +13212,7 @@ export default function Stage8FinalReview({
                         await supabase.from('contracts').update({
                           sent_to_client_at: new Date().toISOString(),
                         }).eq('id', newContract.id);
-                        toast.success(`Contract signed & sent to ${clientName}!`);
+                        toast.success(`Contract signed & sent to ${selectedContractMember?.name}!`);
                       }
                       
                       setShowContractPreview(false);
@@ -13196,8 +13250,8 @@ export default function Stage8FinalReview({
                           contract_number: newContract.contract_number,
                           status: 'pending_client',
                           total_amount: financialSummary?.total_cost || 0,
-                          client_name: clientName,
-                          contractor_name: generateContractPreviewData.contractorName,
+                          client_name: ownerProfile?.full_name || ownerProfile?.company_name || '',
+                          contractor_name: selectedContractMember?.name || '',
                           team_member_role: selectedContractMember?.role,
                           client_signed: false,
                           contractor_signed: true,
