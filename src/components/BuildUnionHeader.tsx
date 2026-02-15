@@ -232,25 +232,17 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
 
         {/* Right - Navigation & Auth */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-          {/* Ask Messa Button - Always visible */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMessaChatOpen(true)}
-                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2"
-                  aria-label="Ask Messa AI"
-                >
-                  <HelpCircle className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Ask Messa - AI Assistant</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Ask Messa Button - Prominent */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMessaChatOpen(true)}
+            className="border-amber-500/50 text-amber-600 hover:bg-amber-500 hover:text-white dark:border-amber-500/40 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-white gap-1.5 px-3 font-medium transition-all"
+            aria-label="Ask Messa AI"
+          >
+            <HelpCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">Ask MESSA</span>
+          </Button>
 
           {/* Global Search Button */}
           <GlobalSearchTrigger onClick={() => setSearchOpen(true)} />
