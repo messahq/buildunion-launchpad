@@ -3487,7 +3487,7 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        obcHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:8px;">' +
+        obcHtml = '<div class="pdf-section obc-card" style="margin-top:12px;margin-bottom:8px;">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
             '<span style="font-size:18px;">⚖️</span>' +
             '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">OBC 2024 Part 9 — Compliance Matrix</div>' +
@@ -3683,7 +3683,7 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        visualHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
+        visualHtml = '<div class="pdf-section visual-intel-card" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">👁️</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
@@ -3753,7 +3753,7 @@ export default function Stage8FinalReview({
         const syncStatusColor = taxSyncPass ? '#166534' : '#991b1b';
         const syncStatusText = taxSyncPass ? '✓ PASS' : '✗ FAIL';
         
-        financialHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
+        financialHtml = '<div class="pdf-section financial-snapshot-card" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">💰</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Financial Snapshot</div>' +
@@ -3823,7 +3823,7 @@ export default function Stage8FinalReview({
         const completedSessions = siteCheckins.filter((c: any) => c.checked_out_at).length;
         const uniqueWorkers = new Set(siteCheckins.map((c: any) => c.user_id)).size;
         
-        sitePresenceHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
+        sitePresenceHtml = '<div class="pdf-section site-presence-card" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">📍</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Site Presence Log</div>' +
@@ -3923,7 +3923,7 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        obcChecklistHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
+        obcChecklistHtml = '<div class="pdf-section obc-card" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">⚖️</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Regulatory Compliance Checklist</div>' +
@@ -3995,7 +3995,7 @@ export default function Stage8FinalReview({
         }
         
         if (riskItems) {
-          riskHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
+          riskHtml = '<div class="pdf-section risk-card" style="margin-top:12px;margin-bottom:6px;">' +
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
               '<span style="font-size:14px;">⚠️</span>' +
               '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Risk Assessment Matrix</div>' +
@@ -4041,7 +4041,7 @@ export default function Stage8FinalReview({
         const gfaVal = gfaCit?.metadata ? (gfaCit.metadata as any).gfa_value || 0 : 0;
         const costPerSqFt = gfaVal > 0 && financialSummary.total_cost ? (financialSummary.total_cost / gfaVal).toFixed(2) : null;
 
-        lineItemHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;">' +
+        lineItemHtml = '<div class="pdf-section line-item-card" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">📋</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Material & Labor Breakdown</div>' +
@@ -4078,7 +4078,7 @@ export default function Stage8FinalReview({
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
       
       {
-        verdictHtml = '<div class="pdf-section" style="margin-top:12px;margin-bottom:6px;border:2px solid #7c3aed;border-radius:6px;overflow:hidden;">' +
+        verdictHtml = '<div class="pdf-section verdict-card" style="margin-top:12px;margin-bottom:6px;border:2px solid #7c3aed;border-radius:6px;overflow:hidden;">' +
           '<div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:10px 14px;color:white;">' +
             '<div style="font-size:13px;font-weight:700;">M.E.S.S.A. Dual-Engine Verdict</div>' +
             '<div style="font-size:9px;opacity:0.8;margin-top:2px;">Multi-Engine Synthesis & Structured Analysis — Final Assessment</div>' +
@@ -4143,10 +4143,22 @@ export default function Stage8FinalReview({
       const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
         '* { margin: 0; padding: 0; box-sizing: border-box; }' +
         'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 24px 28px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.4; }' +
-        '.pdf-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 6px; }' +
-        'table { break-inside: avoid; page-break-inside: avoid; font-size: 10px; border-spacing: 0; }' +
-        'tr { break-inside: avoid; page-break-inside: avoid; }' +
-        'h3, h4 { font-size: 11px; margin-bottom: 4px; }' +
+        // Core section integrity — NO-SPLIT ZONES
+        '.pdf-section { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 6px; }' +
+        '.financial-snapshot-card, .site-presence-card, .visual-intel-card, .verdict-card, .risk-card, .obc-card, .line-item-card { break-inside: avoid !important; page-break-inside: avoid !important; }' +
+        // Table integrity
+        'table { break-inside: avoid !important; page-break-inside: avoid !important; font-size: 10px; border-spacing: 0; }' +
+        'tr { break-inside: avoid !important; page-break-inside: avoid !important; }' +
+        'thead { display: table-header-group; }' +
+        'tfoot { display: table-footer-group; }' +
+        // PREVENT ORPHANED HEADERS — title must stay with content
+        'h2, h3, h4 { page-break-after: avoid !important; break-after: avoid !important; orphans: 3; widows: 3; font-size: 11px; margin-bottom: 4px; }' +
+        // Site Presence Log — smaller font for density
+        '.site-presence-card table { font-size: 9px !important; }' +
+        '.site-presence-card td, .site-presence-card th { padding: 3px 6px !important; }' +
+        // Line item table density
+        '.line-item-card table { font-size: 9.5px !important; }' +
+        '.line-item-card td, .line-item-card th { padding: 3px 8px !important; }' +
         '</style></head><body>' +
         header +
         // Title block
