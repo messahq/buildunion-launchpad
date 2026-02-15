@@ -306,7 +306,9 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
                 <p className="text-[11px]" style={{ color: '#fbbf24' }}>
                   {normalizedRole === 'owner'
                     ? '🔓 Switch 👁 View → ✏️ Editing in the header to unlock editable fields. Protected fields (materials, finances) require your Owner Lock password. 💡 Click a panel card on the left to explore it in full view.'
-                    : '💡 Click the panel card on the left to explore all features in full view.'}
+                    : normalizedRole === 'foreman'
+                    ? '📋 You can view project data, assign tasks, and request budget modifications. Changes you propose go to the Owner for approval. 💡 Click a panel card on the left to explore it in full view.'
+                    : '👷 You can view your assigned tasks, upload verification photos, and check project details. Contact your Foreman for task questions. 💡 Click a panel card on the left to explore it in full view.'}
                 </p>
               </div>
             </div>
