@@ -187,14 +187,19 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
     }
   }, [projectId, user?.id]);
 
-  // Apply approved changes to project_summaries line_items
-  const applyApprovedChange = useCallback(async (change: PendingBudgetChange) => {
+  // Apply approved changes to ALL sources of truth:
+  // 1. line_items (invoice source)
+  // 2. template_items (Stage 8 panels source)
+  // 3. verified_facts → TEMPLATE_LOCK citation (citation-driven panels)
+  // 4. material_cost / labor_cost / total_cost (Financial Summary)
+  // 5. Create MATERIAL_OVERRIDE citation for DNA synthesis traceability
+  const applyApprovedChange = useCallback(async (change: PendingBudgetChange, reviewNotes?: string) => {
     if (!projectId) return;
     
     try {
       const { data: sumData, error: fetchErr } = await supabase
         .from('project_summaries')
-        .select('id, line_items, material_cost, labor_cost, total_cost')
+        .select('id, line_items, template_items, material_cost, labor_cost, total_cost, verified_facts')
         .eq('project_id', projectId)
         .maybeSingle();
       
@@ -203,13 +208,11 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
         return;
       }
 
+      // ── 1. Update line_items (invoice & PDF source) ──
       const lineItems: any[] = Array.isArray(sumData.line_items) ? [...sumData.line_items] : [];
-      
-      // Find matching line item by item_id
       const itemIndex = lineItems.findIndex((item: any) => item.id === change.item_id);
       
       if (itemIndex >= 0) {
-        // Update existing item with approved values
         if (change.new_quantity !== null) lineItems[itemIndex].quantity = change.new_quantity;
         if (change.new_unit_price !== null) lineItems[itemIndex].unitPrice = change.new_unit_price;
         if (change.new_total !== null) {
@@ -219,7 +222,77 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
         }
       }
 
-      // Recalculate totals dynamically from line items
+      // ── 2. Update template_items (Stage 8 material cards source) ──
+      const templateItems: any[] = Array.isArray(sumData.template_items) ? [...sumData.template_items] : [];
+      const templateIdx = templateItems.findIndex((item: any) => 
+        item.id === change.item_id || item.name === change.item_name
+      );
+      if (templateIdx >= 0) {
+        if (change.new_quantity !== null) templateItems[templateIdx].quantity = change.new_quantity;
+        if (change.new_unit_price !== null) templateItems[templateIdx].unitPrice = change.new_unit_price;
+        if (change.new_total !== null) {
+          templateItems[templateIdx].total = change.new_total;
+        } else if (change.new_quantity !== null && change.new_unit_price !== null) {
+          templateItems[templateIdx].total = change.new_quantity * change.new_unit_price;
+        }
+      }
+
+      // ── 3. Update TEMPLATE_LOCK citation in verified_facts ──
+      const currentFacts: Citation[] = Array.isArray(sumData.verified_facts)
+        ? (sumData.verified_facts as unknown as Citation[])
+        : [];
+      
+      const updatedFacts = currentFacts.map(fact => {
+        if (fact.cite_type !== CITATION_TYPES.TEMPLATE_LOCK) return fact;
+        
+        // TEMPLATE_LOCK value contains material items array
+        const factValue = typeof fact.value === 'object' && fact.value !== null ? { ...fact.value } : {};
+        const materials: any[] = Array.isArray((factValue as any).materials) 
+          ? [...(factValue as any).materials] 
+          : [];
+        
+        const matIdx = materials.findIndex((m: any) => 
+          m.id === change.item_id || m.name === change.item_name
+        );
+        
+        if (matIdx >= 0) {
+          if (change.new_quantity !== null) materials[matIdx].quantity = change.new_quantity;
+          if (change.new_unit_price !== null) materials[matIdx].unitPrice = change.new_unit_price;
+          if (change.new_total !== null) {
+            materials[matIdx].total = change.new_total;
+          } else if (change.new_quantity !== null && change.new_unit_price !== null) {
+            materials[matIdx].total = change.new_quantity * change.new_unit_price;
+          }
+        }
+        
+        return {
+          ...fact,
+          value: { ...factValue, materials },
+          timestamp: new Date().toISOString(),
+        };
+      });
+
+      // ── 4. Add MATERIAL_OVERRIDE citation for DNA synthesis traceability ──
+      const overrideCitation = createCitation({
+        cite_type: CITATION_TYPES.MATERIAL_OVERRIDE,
+        question_key: `material_override_${change.item_id}_${Date.now()}`,
+        answer: `Owner-approved override: ${change.item_name} — qty ${change.original_quantity}→${change.new_quantity}, price $${change.original_unit_price}→$${change.new_unit_price}`,
+        value: {
+          item_id: change.item_id,
+          item_name: change.item_name,
+          item_type: change.item_type,
+          original: { qty: change.original_quantity, price: change.original_unit_price, total: change.original_total },
+          approved: { qty: change.new_quantity, price: change.new_unit_price, total: change.new_total },
+          reason: change.change_reason,
+          review_notes: reviewNotes || null,
+          requested_by: change.requested_by,
+          approved_by: user?.id,
+          approved_at: new Date().toISOString(),
+        },
+      });
+      updatedFacts.push(overrideCitation);
+
+      // ── 5. Recalculate totals dynamically from line items ──
       let materialCost = 0;
       let laborCost = 0;
       for (const item of lineItems) {
@@ -231,13 +304,17 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
         }
       }
 
+      // ── 6. Atomic Supabase update — all sources of truth at once ──
       const { error: updateErr } = await supabase
         .from('project_summaries')
         .update({
           line_items: lineItems as any,
+          template_items: templateItems as any,
+          verified_facts: updatedFacts as any,
           material_cost: materialCost,
           labor_cost: laborCost,
           total_cost: materialCost + laborCost,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', sumData.id);
       
@@ -245,12 +322,12 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
         console.error('[usePendingBudgetChanges] Failed to apply approved change:', updateErr);
         toast.error('Approved but failed to update budget');
       } else {
-        console.log('[usePendingBudgetChanges] ✓ Budget updated with approved values');
+        console.log('[usePendingBudgetChanges] ✓ Full Operational Truth sync completed: line_items + template_items + TEMPLATE_LOCK + MATERIAL_OVERRIDE citation + financials');
       }
     } catch (err) {
       console.error('[usePendingBudgetChanges] Apply error:', err);
     }
-  }, [projectId]);
+  }, [projectId, user?.id]);
 
   // Approve a pending change (Owner action)
   const approveChange = useCallback(async (changeId: string, reviewNotes?: string) => {
@@ -275,9 +352,10 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       
       if (updateError) throw updateError;
 
-      // Apply the approved values to project_summaries
+      // Apply approved values to ALL sources of truth (line_items, template_items, TEMPLATE_LOCK, MATERIAL_OVERRIDE citation, financials)
       if (change) {
-        await applyApprovedChange(change);
+        await applyApprovedChange(change, reviewNotes);
+        // BUDGET_APPROVAL citation is kept for separate audit trail
         await persistApprovalCitation(change, 'approved', reviewNotes);
       }
       
