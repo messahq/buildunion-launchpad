@@ -247,7 +247,66 @@ const BuildUnionCommunity = () => {
           </div>
         </section>
 
-        {/* M.E.S.S.A. Section */}
+        {/* Union & Community Section */}
+        <section className="py-20 px-6 bg-muted/30">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Users className="h-5 w-5 text-amber-600" />
+                <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">Stronger Together</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+                Union & Community
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Join 4.6 million skilled professionals building a stronger future.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-5 mb-8">
+              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
+                <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="text-2xl font-bold text-foreground mb-1">+27%</div>
+                <h3 className="text-base font-bold text-foreground mb-2">Higher Wages</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">Union workers earn 27% more on average.</p>
+              </div>
+
+              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
+                <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-3">
+                  <Heart className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="text-2xl font-bold text-foreground mb-1">94%</div>
+                <h3 className="text-base font-bold text-foreground mb-2">Health Coverage</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">Employer-sponsored health insurance coverage.</p>
+              </div>
+
+              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
+                <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
+                  <Briefcase className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold text-foreground mb-1">3.2x</div>
+                <h3 className="text-base font-bold text-foreground mb-2">Job Security</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">More likely to have pension plans.</p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-200 dark:border-amber-700">
+              <div className="text-center md:text-left">
+                <h3 className="text-xl font-semibold text-foreground mb-1">Ready to Join the Movement?</h3>
+                <p className="text-muted-foreground text-sm">Connect with local unions and access exclusive training programs.</p>
+              </div>
+              <Button 
+                className="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 whitespace-nowrap"
+                onClick={() => setIsUnionFinderOpen(true)}
+              >
+                Find Your Local Union
+              </Button>
+            </div>
+          </div>
+        </section>
+
         <section className="py-16 px-6 bg-muted/30">
           <div className="max-w-6xl mx-auto">
             <div className="bg-card rounded-xl shadow-sm border border-border p-5 flex flex-col md:flex-row gap-6 items-start transition-all duration-300 hover:shadow-lg hover:border-amber-200">
@@ -511,66 +570,6 @@ const BuildUnionCommunity = () => {
           </div>
         </section>
 
-
-        {/* Union & Community Section */}
-        <section className="py-20 px-6 bg-muted/30">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Users className="h-5 w-5 text-amber-600" />
-                <span className="text-amber-600 font-semibold text-sm uppercase tracking-wider">Stronger Together</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                Union & Community
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Join 4.6 million skilled professionals building a stronger future.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-5 mb-8">
-              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
-                <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
-                  <DollarSign className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="text-2xl font-bold text-foreground mb-1">+27%</div>
-                <h3 className="text-base font-bold text-foreground mb-2">Higher Wages</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">Union workers earn 27% more on average.</p>
-              </div>
-
-              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
-                <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-3">
-                  <Heart className="h-6 w-6 text-red-500" />
-                </div>
-                <div className="text-2xl font-bold text-foreground mb-1">94%</div>
-                <h3 className="text-base font-bold text-foreground mb-2">Health Coverage</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">Employer-sponsored health insurance coverage.</p>
-              </div>
-
-              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
-                <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
-                  <Briefcase className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="text-2xl font-bold text-foreground mb-1">3.2x</div>
-                <h3 className="text-base font-bold text-foreground mb-2">Job Security</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">More likely to have pension plans.</p>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-200 dark:border-amber-700">
-              <div className="text-center md:text-left">
-                <h3 className="text-xl font-semibold text-foreground mb-1">Ready to Join the Movement?</h3>
-                <p className="text-muted-foreground text-sm">Connect with local unions and access exclusive training programs.</p>
-              </div>
-              <Button 
-                className="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 whitespace-nowrap"
-                onClick={() => setIsUnionFinderOpen(true)}
-              >
-                Find Your Local Union
-              </Button>
-            </div>
-          </div>
-        </section>
 
         {/* Latest News Feed Section */}
         <section className="py-20 px-6 bg-card">
