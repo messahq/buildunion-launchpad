@@ -11440,7 +11440,7 @@ export default function Stage8FinalReview({
               >
                 {/* In-App Help Section */}
                 {activeOrbitalPanel !== 'messa-deep-audit' && (
-                  <div className="mb-3" style={{ all: 'initial', display: 'block', width: '100%', fontFamily: 'inherit' }}>
+                  <div className="mb-3 w-full">
                     <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
                   </div>
                 )}
