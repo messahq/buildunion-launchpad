@@ -12704,7 +12704,7 @@ export default function Stage8FinalReview({
             </div>
             
             {/* Right - Actions: scrollable on mobile */}
-            <div className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto flex-1 sm:flex-initial justify-end scrollbar-hide">
+            <div className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto flex-1 justify-end scrollbar-hide">
               <TooltipProvider delayDuration={400}>
               {/* Site Check-In / Check-Out */}
               <Tooltip>
@@ -12715,7 +12715,7 @@ export default function Stage8FinalReview({
                     onClick={handleSiteCheckin}
                     disabled={isCheckingIn}
                     className={cn(
-                      "gap-1 text-[10px] lg:text-xs h-7 px-2 shrink-0 bg-transparent",
+                      "gap-1 text-[10px] lg:text-xs h-8 sm:h-7 px-3 sm:px-2 shrink-0 sm:shrink bg-transparent flex-1 sm:flex-initial min-w-0",
                       isCheckedIn
                         ? "border-emerald-600/70 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300"
                         : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300"
@@ -12742,7 +12742,7 @@ export default function Stage8FinalReview({
                     variant="outline"
                     size="sm"
                     onClick={() => setShowProjectMessa(true)}
-                    className="gap-1 text-[10px] lg:text-xs h-7 px-2 shrink-0 bg-transparent border-amber-600/60 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 animate-pulse hover:animate-none"
+                    className="gap-1 text-[10px] lg:text-xs h-8 sm:h-7 px-3 sm:px-2 shrink-0 sm:shrink bg-transparent border-amber-600/60 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 animate-pulse hover:animate-none flex-1 sm:flex-initial min-w-0"
                   >
                     <Sparkles className="h-3 w-3" />
                     <span className="hidden sm:inline">Ask MESSA</span>
@@ -12762,7 +12762,7 @@ export default function Stage8FinalReview({
                       size="sm"
                       onClick={handleGenerateInvoice}
                       disabled={isGeneratingInvoice}
-                      className="gap-1 text-[10px] lg:text-xs border-amber-800/50 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 bg-transparent h-7 px-2 shrink-0"
+                      className="gap-1 text-[10px] lg:text-xs border-amber-800/50 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 bg-transparent h-8 sm:h-7 px-3 sm:px-2 shrink-0 sm:shrink flex-1 sm:flex-initial min-w-0"
                     >
                       {isGeneratingInvoice ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
                       <span className="hidden sm:inline">Invoice</span>
@@ -12780,7 +12780,7 @@ export default function Stage8FinalReview({
                     size="sm"
                     onClick={handleDnaReportPdf}
                     disabled={isGeneratingDnaReport}
-                    className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30 h-7 px-2 shrink-0"
+                    className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30 h-8 sm:h-7 px-3 sm:px-2 shrink-0 sm:shrink flex-1 sm:flex-initial min-w-0"
                   >
                     {isGeneratingDnaReport ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
                     <span className="hidden sm:inline">DNA Report</span>
@@ -12800,7 +12800,7 @@ export default function Stage8FinalReview({
                       onClick={handleComplete}
                       disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
                       className={cn(
-                        "gap-1 text-[10px] lg:text-xs shadow-md h-7 px-2 shrink-0",
+                        "gap-1 text-[10px] lg:text-xs shadow-md h-8 sm:h-7 px-3 sm:px-2 shrink-0 sm:shrink flex-1 sm:flex-initial min-w-0",
                         userRole === 'owner' && !isFinancialSummaryUnlocked
                           ? "bg-gray-800 text-gray-500 cursor-not-allowed"
                           : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-cyan-900/30"
