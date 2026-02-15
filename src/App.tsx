@@ -32,6 +32,9 @@ import OrbPage from "./pages/OrbPage";
 import ContractSignature from "./pages/ContractSignature";
 import AdminDashboard from "./pages/AdminDashboard";
 import BuildUnionAbout from "./pages/BuildUnionAbout";
+import BuildUnionPrivacy from "./pages/BuildUnionPrivacy";
+import BuildUnionTerms from "./pages/BuildUnionTerms";
+import BuildUnionSecurity from "./pages/BuildUnionSecurity";
 import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
 import QuickLog from "./pages/QuickLog";
@@ -83,6 +86,9 @@ const App = () => (
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/buildunion/quick-log" element={<RequireEmailVerification><QuickLog /></RequireEmailVerification>} />
                     <Route path="/buildunion/about" element={<BuildUnionAbout />} />
+                    <Route path="/buildunion/privacy" element={<BuildUnionPrivacy />} />
+                    <Route path="/buildunion/terms" element={<BuildUnionTerms />} />
+                    <Route path="/buildunion/security" element={<BuildUnionSecurity />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
