@@ -4404,10 +4404,11 @@ export default function Stage8FinalReview({
         try {
           const storagePath = `${projectId}/dna-report-latest.pdf`;
           
-          // Upload (upsert) to storage
+          // Delete existing file first, then upload fresh (avoids UPDATE policy issues)
+          await supabase.storage.from('project-documents').remove([storagePath]);
           const { error: uploadErr } = await supabase.storage
             .from('project-documents')
-            .upload(storagePath, blob, { contentType: 'application/pdf', upsert: true });
+            .upload(storagePath, blob, { contentType: 'application/pdf' });
           
           if (uploadErr) {
             console.warn('[DNA Report] Storage upload error:', uploadErr);
