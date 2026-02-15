@@ -629,7 +629,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             </motion.div>
           )}
 
-          {/* Timeline Panel */}
+          {/* Timeline + Contract + Deliveries row */}
           {panels.includes("timeline") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
@@ -709,6 +709,24 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             </motion.div>
           )}
 
+          {/* Deliveries Panel - next to Contract */}
+          {panels.includes("deliveries") && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.33 }}>
+              <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-orange-400 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Deliveries
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold text-white">{data.deliveryCount}</p>
+                  <p className="text-xs text-orange-600 mt-1">{data.deliveryCount === 0 ? "No deliveries logged" : "deliveries tracked"}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
           {/* Site Presence Panel */}
           {panels.includes("sitelogs") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34 }} className="md:col-span-2 lg:col-span-3">
@@ -759,23 +777,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             </motion.div>
           )}
 
-          {/* Deliveries Panel */}
-          {panels.includes("deliveries") && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}>
-              <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-orange-400 flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Deliveries
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-white">{data.deliveryCount}</p>
-                  <p className="text-xs text-orange-600 mt-1">{data.deliveryCount === 0 ? "No deliveries logged" : "deliveries tracked"}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+
 
           {/* Overview Panel - Client */}
           {panels.includes("overview") && (
