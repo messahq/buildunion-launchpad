@@ -35,6 +35,7 @@ import BuildUnionAbout from "./pages/BuildUnionAbout";
 import BuildUnionPrivacy from "./pages/BuildUnionPrivacy";
 import BuildUnionTerms from "./pages/BuildUnionTerms";
 import BuildUnionSecurity from "./pages/BuildUnionSecurity";
+import BuildUnionContact from "./pages/BuildUnionContact";
 import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
 import QuickLog from "./pages/QuickLog";
@@ -89,6 +90,7 @@ const App = () => (
                     <Route path="/buildunion/privacy" element={<BuildUnionPrivacy />} />
                     <Route path="/buildunion/terms" element={<BuildUnionTerms />} />
                     <Route path="/buildunion/security" element={<BuildUnionSecurity />} />
+                    <Route path="/buildunion/contact" element={<BuildUnionContact />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
