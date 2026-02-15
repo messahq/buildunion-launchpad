@@ -107,7 +107,17 @@ const BuildUnionNewProject = () => {
         }
       }
       
-      setUserRole(validRoles.includes(queryRole as UserRoleType) ? queryRole as UserRoleType : 'member');
+      // CRITICAL: Fetch actual role from database instead of trusting URL parameter
+      const { data: dbRole } = await supabase
+        .rpc('get_project_role', { _project_id: queryProjectId, _user_id: user.id });
+      
+      if (dbRole && validRoles.includes(dbRole as UserRoleType)) {
+        console.log('[NewProject] DB role resolved:', dbRole);
+        setUserRole(dbRole as UserRoleType);
+      } else {
+        // Fallback to URL param only if DB lookup fails
+        setUserRole(validRoles.includes(queryRole as UserRoleType) ? queryRole as UserRoleType : 'member');
+      }
       setIsInitializing(false);
     };
     
