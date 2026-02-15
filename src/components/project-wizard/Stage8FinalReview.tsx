@@ -401,9 +401,9 @@ export default function Stage8FinalReview({
     trade: string | null;
   } | null>(null);
   const [citations, setCitations] = useState<Citation[]>([]);
-  const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string; userId: string; primary_trade?: string}[]>([]);
+  const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string; userId: string; primary_trade?: string; hst_number?: string}[]>([]);
   const [contractStep, setContractStep] = useState<'select_member' | 'preview'>('select_member');
-  const [selectedContractMember, setSelectedContractMember] = useState<{id: string; role: string; name: string; userId: string; primary_trade?: string} | null>(null);
+  const [selectedContractMember, setSelectedContractMember] = useState<{id: string; role: string; name: string; userId: string; primary_trade?: string; hst_number?: string} | null>(null);
   const [tasks, setTasks] = useState<TaskWithChecklist[]>([]);
   const [documents, setDocuments] = useState<DocumentWithCategory[]>([]);
   const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null; share_token?: string | null; project_name?: string | null; client_name?: string | null; client_email?: string | null; contractor_name?: string | null; contractor_email?: string | null; start_date?: string | null; estimated_end_date?: string | null; contractor_signature?: unknown; client_signature?: unknown; client_signed_at?: string | null; sent_to_client_at?: string | null; client_viewed_at?: string | null}[]>([]);
@@ -1257,7 +1257,7 @@ export default function Stage8FinalReview({
           if (userIds.length > 0) {
             const [{ data: profiles }, { data: buProfiles }] = await Promise.all([
               supabase.from('profiles').select('user_id, full_name').in('user_id', userIds),
-              supabase.from('bu_profiles').select('user_id, primary_trade').in('user_id', userIds),
+              supabase.from('bu_profiles').select('user_id, primary_trade, hst_number').in('user_id', userIds),
             ]);
             
             const memberData = members
@@ -1271,6 +1271,7 @@ export default function Stage8FinalReview({
                   role: m.role,
                   name: profile?.full_name || 'Team Member',
                   primary_trade: buProfile?.primary_trade || undefined,
+                  hst_number: (buProfile as any)?.hst_number || undefined,
                 };
               });
             teamData = [...teamData, ...memberData];
@@ -13052,7 +13053,7 @@ export default function Stage8FinalReview({
                   />
                   {/* HST Registration Number */}
                   <p className="text-[10px] text-muted-foreground mt-3 font-medium">
-                    HST Reg. No.: ________________________
+                    HST Reg. No.: {selectedContractMember?.hst_number || '________________________'}
                   </p>
                   <p className="text-[8px] text-muted-foreground/60 mt-0.5 italic">
                     (Business Number as registered with CRA)
