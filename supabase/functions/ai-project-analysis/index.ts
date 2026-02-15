@@ -220,22 +220,37 @@ async function fetchImageAsBase64(filePath: string): Promise<{ base64: string; m
 
 async function fetchProjectImagesChronological(
   imageDocs: Array<{ path: string; uploadedAt: string; fileName: string }>,
-  maxImages: number = 8
+  maxImages: number = 6
 ): Promise<Array<{ base64: string; mimeType: string; fileName: string; uploadedAt: string; index: number }>> {
   // Sort by upload date ascending (oldest first → newest last)
   const sorted = [...imageDocs].sort((a, b) => 
     new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
   );
   
-  const toFetch = sorted.slice(0, maxImages);
+  // If more than maxImages, sample evenly: first, last, and spread in between
+  let toFetch: typeof sorted;
+  if (sorted.length <= maxImages) {
+    toFetch = sorted;
+  } else {
+    // Always include first and last, sample middle evenly
+    const indices = [0];
+    const step = (sorted.length - 1) / (maxImages - 1);
+    for (let i = 1; i < maxImages - 1; i++) {
+      indices.push(Math.round(step * i));
+    }
+    indices.push(sorted.length - 1);
+    toFetch = [...new Set(indices)].sort((a, b) => a - b).map(i => sorted[i]);
+  }
+
   const results: Array<{ base64: string; mimeType: string; fileName: string; uploadedAt: string; index: number }> = [];
+  const MAX_BASE64_SIZE = 1.5 * 1024 * 1024; // 1.5MB base64 limit per image (prevents WORKER_LIMIT)
 
   for (let i = 0; i < toFetch.length; i++) {
     const doc = toFetch[i];
     const img = await fetchImageAsBase64(doc.path);
     if (img) {
-      if (img.base64.length > 4 * 1024 * 1024) {
-        logStep('Image too large, skipping', { filePath: doc.path });
+      if (img.base64.length > MAX_BASE64_SIZE) {
+        logStep('Image too large, skipping', { filePath: doc.path, sizeKB: Math.round(img.base64.length / 1024) });
         continue;
       }
       results.push({ ...img, fileName: doc.fileName, uploadedAt: doc.uploadedAt, index: i + 1 });
@@ -244,6 +259,7 @@ async function fetchProjectImagesChronological(
 
   logStep('Chronological images fetched', { 
     count: results.length, 
+    totalAvailable: imageDocs.length,
     dateRange: results.length > 1 
       ? `${results[0].uploadedAt} → ${results[results.length - 1].uploadedAt}` 
       : 'single image',
@@ -721,7 +737,7 @@ serve(async (req) => {
     ];
     logStep("Fetching images chronologically for 4D analysis", { totalPaths: allImageDocs.length });
     
-    const projectImages = await fetchProjectImagesChronological(allImageDocs, 8);
+    const projectImages = await fetchProjectImagesChronological(allImageDocs, 6);
     
     // Build timeline description for the prompt
     const imageTimeline = projectImages.length > 1

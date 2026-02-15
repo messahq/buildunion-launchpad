@@ -3253,17 +3253,29 @@ export default function Stage8FinalReview({
     // ============================================
     let aiAnalysisData: any = null;
     try {
-      toast.loading('Analyzing project visuals...', { id: 'dna-analysis' });
-      const { data: analysisResult } = await supabase.functions.invoke('ai-project-analysis', {
+      toast.loading('Step 1/4 — Fetching project images...', { id: 'dna-analysis', description: 'Downloading site photos & blueprints for AI analysis' });
+      
+      // Small delay so user sees first step
+      await new Promise(r => setTimeout(r, 600));
+      toast.loading('Step 2/4 — AI Visual Analysis running...', { id: 'dna-analysis', description: 'Gemini is analyzing up to 6 images chronologically' });
+
+      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('ai-project-analysis', {
         body: { projectId, analysisType: 'synthesis' },
       });
-      if (analysisResult) {
+      
+      if (analysisError) {
+        console.warn('[DNA Report] AI analysis error:', analysisError);
+        toast.loading('Step 3/4 — Compiling report data...', { id: 'dna-analysis', description: 'Visual analysis skipped, building PDF from project data' });
+      } else if (analysisResult) {
         aiAnalysisData = analysisResult;
-        toast.dismiss('dna-analysis');
+        toast.loading('Step 3/4 — Compiling report data...', { id: 'dna-analysis', description: 'AI analysis complete, assembling PDF sections' });
       }
+      
+      await new Promise(r => setTimeout(r, 400));
+      toast.loading('Step 4/4 — Generating PDF...', { id: 'dna-analysis', description: 'Building the M.E.S.S.A. DNA Report document' });
     } catch (analysisErr) {
       console.warn('[DNA Report] AI analysis skipped:', analysisErr);
-      toast.dismiss('dna-analysis');
+      toast.loading('Generating PDF...', { id: 'dna-analysis', description: 'AI analysis unavailable, building report from project data' });
     }
     try {
       const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
