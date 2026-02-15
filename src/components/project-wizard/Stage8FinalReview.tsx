@@ -8482,18 +8482,19 @@ export default function Stage8FinalReview({
             return cit.answer || fallback;
           };
 
+          const rowColor = { border: 'border-gray-200 dark:border-gray-700', bg: 'bg-white dark:bg-gray-800', text: 'text-gray-900 dark:text-gray-100', glow: 'bg-amber-500' };
           const dataRows = [
-            { label: 'Project Name', cit: nameCit, fallback: projectData?.name || '—', icon: <Building2 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />, color: { border: 'border-cyan-300 dark:border-cyan-400/30', bg: 'bg-gradient-to-r from-cyan-50 to-sky-50 dark:from-cyan-950/50 dark:to-sky-950/30', text: 'text-gray-800 dark:text-cyan-200', glow: 'bg-cyan-400' } },
-            { label: 'Location', cit: locCit, fallback: 'Not set', icon: <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />, color: { border: 'border-emerald-300 dark:border-emerald-400/30', bg: 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/50 dark:to-teal-950/30', text: 'text-gray-800 dark:text-emerald-200', glow: 'bg-emerald-400' } },
-            { label: 'Work Type', cit: workCit, fallback: 'Not set', icon: <Hammer className="h-4 w-4 text-orange-600 dark:text-amber-400" />, color: { border: 'border-orange-300 dark:border-amber-400/30', bg: 'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-amber-950/50 dark:to-orange-950/30', text: 'text-gray-800 dark:text-amber-200', glow: 'bg-orange-400' } },
-            { label: 'Gross Floor Area', cit: gfaCit, fallback: 'Not set', icon: <Ruler className="h-4 w-4 text-sky-600 dark:text-blue-400" />, color: { border: 'border-sky-300 dark:border-blue-400/30', bg: 'bg-gradient-to-r from-sky-50 to-blue-50 dark:from-blue-950/50 dark:to-indigo-950/30', text: 'text-gray-800 dark:text-blue-200', glow: 'bg-sky-400' } },
-            { label: 'Trade', cit: tradeCit, fallback: 'Not set', icon: <Settings className="h-4 w-4 text-violet-600 dark:text-violet-400" />, color: { border: 'border-violet-300 dark:border-violet-400/30', bg: 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/50 dark:to-purple-950/30', text: 'text-gray-800 dark:text-violet-200', glow: 'bg-violet-400' } },
-            { label: 'Team', cit: teamCit, fallback: `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`, icon: <Users className="h-4 w-4 text-teal-600 dark:text-teal-400" />, color: { border: 'border-teal-300 dark:border-teal-400/30', bg: 'bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/50 dark:to-cyan-950/30', text: 'text-gray-800 dark:text-teal-200', glow: 'bg-teal-400' } },
-            { label: 'Start Date', cit: timelineCit, fallback: 'Not set', icon: <Calendar className="h-4 w-4 text-yellow-600 dark:text-indigo-400" />, color: { border: 'border-yellow-300 dark:border-indigo-400/30', bg: 'bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-indigo-950/50 dark:to-blue-950/30', text: 'text-gray-800 dark:text-indigo-200', glow: 'bg-yellow-400' } },
-            { label: 'End Date', cit: endDateCit, fallback: 'Not set', icon: <span className="text-sm">🏁</span>, color: { border: 'border-pink-300 dark:border-purple-400/30', bg: 'bg-gradient-to-r from-pink-50 to-rose-50 dark:from-purple-950/50 dark:to-pink-950/30', text: 'text-gray-800 dark:text-purple-200', glow: 'bg-pink-400' } },
-            { label: 'Site Condition', cit: siteCit, fallback: null, icon: <Settings className="h-4 w-4 text-rose-600 dark:text-rose-400" />, color: { border: 'border-rose-300 dark:border-rose-400/30', bg: 'bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-950/50 dark:to-red-950/30', text: 'text-gray-800 dark:text-rose-200', glow: 'bg-rose-400' } },
-            { label: 'Template', cit: templateCit, fallback: null, icon: <ClipboardList className="h-4 w-4 text-fuchsia-600 dark:text-pink-400" />, color: { border: 'border-fuchsia-300 dark:border-pink-400/30', bg: 'bg-gradient-to-r from-fuchsia-50 to-pink-50 dark:from-pink-950/50 dark:to-rose-950/30', text: 'text-gray-800 dark:text-pink-200', glow: 'bg-fuchsia-400' } },
-            { label: 'Demolition Cost', cit: demoCit, fallback: null, icon: <span className="text-sm">💥</span>, color: { border: 'border-red-300 dark:border-orange-400/30', bg: 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-orange-950/50 dark:to-red-950/30', text: 'text-gray-800 dark:text-orange-200', glow: 'bg-red-400' } },
+            { label: 'Project Name', cit: nameCit, fallback: projectData?.name || '—', icon: <Building2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Location', cit: locCit, fallback: 'Not set', icon: <MapPin className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Work Type', cit: workCit, fallback: 'Not set', icon: <Hammer className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Gross Floor Area', cit: gfaCit, fallback: 'Not set', icon: <Ruler className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Trade', cit: tradeCit, fallback: 'Not set', icon: <Settings className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Team', cit: teamCit, fallback: `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`, icon: <Users className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Start Date', cit: timelineCit, fallback: 'Not set', icon: <Calendar className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'End Date', cit: endDateCit, fallback: 'Not set', icon: <span className="text-sm">🏁</span>, color: rowColor },
+            { label: 'Site Condition', cit: siteCit, fallback: null, icon: <Settings className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Template', cit: templateCit, fallback: null, icon: <ClipboardList className="h-4 w-4 text-gray-600 dark:text-gray-300" />, color: rowColor },
+            { label: 'Demolition Cost', cit: demoCit, fallback: null, icon: <span className="text-sm">💥</span>, color: rowColor },
           ].filter(r => r.cit || r.fallback !== null);
 
           // Gather extra citations not shown in main rows (CONTRACT, WEATHER, TEAM_MEMBER_INVITE, etc.)
@@ -8503,18 +8504,18 @@ export default function Stage8FinalReview({
           return (
             <div className="space-y-6">
               {/* Completion Header — Bright */}
-              <div className="flex items-center justify-between p-4 rounded-xl border border-cyan-300 dark:border-cyan-400/20 bg-gradient-to-r from-cyan-50 to-sky-50 dark:from-cyan-950/40 dark:to-sky-950/30">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <div>
-                  <p className="text-xs font-mono uppercase tracking-wider text-cyan-600/80 dark:text-cyan-400/60">Data Integrity</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{completionPct}%</p>
-                  <p className="text-xs text-cyan-600/60 dark:text-cyan-300/50">{filled} of {allItems.length} core fields · {citations.length} total citations</p>
+                  <p className="text-xs font-mono uppercase tracking-wider text-gray-500 dark:text-gray-400">Data Integrity</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{completionPct}%</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{filled} of {allItems.length} core fields · {citations.length} total citations</p>
                 </div>
                 <div className="relative w-16 h-16">
                   <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                    <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2" className="stroke-cyan-200 dark:stroke-slate-700/50" />
-                    <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5" className="stroke-cyan-500 dark:stroke-cyan-400" strokeDasharray={`${completionPct} ${100 - completionPct}`} strokeLinecap="round" />
+                    <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2" className="stroke-gray-200 dark:stroke-gray-600" />
+                    <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5" className="stroke-amber-500 dark:stroke-amber-400" strokeDasharray={`${completionPct} ${100 - completionPct}`} strokeLinecap="round" />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-cyan-700 dark:text-cyan-300">{completionPct}%</span>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">{completionPct}%</span>
                 </div>
               </div>
 
@@ -8526,21 +8527,21 @@ export default function Stage8FinalReview({
                     row.cit ? `${row.color.border} ${row.color.bg}` : "border-gray-200 dark:border-slate-700/20 bg-gray-50 dark:bg-slate-900/30"
                   )}>
                     <div className={cn(
-                      "w-9 h-9 rounded-lg flex items-center justify-center shadow-sm",
-                      row.cit ? "bg-white/70 dark:bg-white/10" : "bg-gray-100 dark:bg-slate-800/50"
+                      "w-9 h-9 rounded-lg flex items-center justify-center",
+                      row.cit ? "bg-gray-100 dark:bg-gray-700" : "bg-gray-100 dark:bg-gray-800"
                     )}>{row.icon}</div>
                     <div className="flex-1 min-w-0">
-                      <p className={cn("text-[10px] font-mono uppercase tracking-wider", row.cit ? `${row.color.text} opacity-60` : "text-gray-400 dark:text-muted-foreground/60")}>{row.label}</p>
-                      <p className={cn("text-sm font-semibold", row.cit ? row.color.text : "text-gray-400 dark:text-muted-foreground italic")}>
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 dark:text-gray-400">{row.label}</p>
+                      <p className={cn("text-sm font-semibold", row.cit ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500 italic")}>
                         {formatCitValue(row.cit, row.fallback || 'Not set')}
                       </p>
                     </div>
                     {row.cit && (
-                      <Badge variant="outline" className={cn("text-[9px] font-mono shrink-0", row.color.border, `${row.color.text} opacity-50`)}>
+                      <Badge variant="outline" className="text-[9px] font-mono shrink-0 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400">
                         [{row.cit.id.slice(0, 10)}]
                       </Badge>
                     )}
-                    {row.cit && <div className={cn("w-2.5 h-2.5 rounded-full", row.color.glow, "shadow-[0_0_8px_currentColor]")} />}
+                    {row.cit && <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />}
                   </div>
                 ))}
               </div>
@@ -8556,13 +8557,13 @@ export default function Stage8FinalReview({
                     })}
                     className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
                   >
-                    <p className="text-xs font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50">
+                    <p className="text-xs font-mono uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       Additional Citations ({extraCitations.length})
                     </p>
                     {collapsedPanels.has('extra-citations') ? (
-                      <ChevronRight className="h-3.5 w-3.5 text-cyan-400" />
+                      <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
                     ) : (
-                      <ChevronDown className="h-3.5 w-3.5 text-cyan-400" />
+                      <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
                     )}
                   </button>
                   <AnimatePresence>
