@@ -39,7 +39,8 @@ import {
   Zap,
   ArrowLeft,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Hash
 } from "lucide-react";
 import {
   AlertDialog,
@@ -78,6 +79,7 @@ const BuildUnionProfile = () => {
   const [phone, setPhone] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
+  const [hstNumber, setHstNumber] = useState("");
   const [bio, setBio] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [availability, setAvailability] = useState("available");
@@ -97,6 +99,7 @@ const BuildUnionProfile = () => {
       setPhone(profile.phone || "");
       setCompanyName(profile.company_name || "");
       setCompanyWebsite(profile.company_website || "");
+      setHstNumber((profile as any).hst_number || "");
       setCompanyLogoUrl(profile.company_logo_url || null);
       setBio(profile.bio || "");
       setHourlyRate(profile.hourly_rate?.toString() || "");
@@ -254,6 +257,7 @@ const BuildUnionProfile = () => {
       phone: phone || null,
       company_name: companyName || null,
       company_website: companyWebsite || null,
+      hst_number: hstNumber || null,
       bio: bio || null,
       hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
       availability,
@@ -264,7 +268,7 @@ const BuildUnionProfile = () => {
       profile_completed: Boolean(primaryTrade && experienceLevel && phone)
     };
     
-    await updateProfile(updates);
+    await updateProfile(updates as any);
   };
 
   const handleDeleteAccount = async () => {
@@ -592,6 +596,20 @@ const BuildUnionProfile = () => {
                     value={companyWebsite}
                     onChange={(e) => setCompanyWebsite(e.target.value)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hstNumber" className="flex items-center gap-2">
+                    <Hash className="h-4 w-4" />
+                    HST / Business Number
+                  </Label>
+                  <Input 
+                    id="hstNumber"
+                    placeholder="e.g. 123456789RT0001"
+                    value={hstNumber}
+                    onChange={(e) => setHstNumber(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Your CRA Business Number (appears on contracts)</p>
                 </div>
 
                 <div className="space-y-2">
