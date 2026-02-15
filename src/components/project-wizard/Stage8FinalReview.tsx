@@ -11610,21 +11610,20 @@ export default function Stage8FinalReview({
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.06 }}
                             >
-                              {/* Knight Rider Radar Beam */}
+                              {/* Knight Rider Radar Beam - sweeps back and forth */}
                               {isScanning && (
                                 <motion.div
                                   style={{
                                     position: 'absolute',
                                     top: 0,
-                                    width: '30%',
+                                    width: '35%',
                                     height: '100%',
                                     background: `linear-gradient(90deg, transparent, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, ${radarBrightMap[pillar.color] || 'hsla(160,80%,50%,0.4)'}, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, transparent)`,
                                     zIndex: 10,
                                     pointerEvents: 'none' as const,
                                   }}
-                                  initial={{ left: '-30%', opacity: 0 }}
-                                  animate={{ left: ['-30%', '130%'], opacity: [0, 1, 1, 0] }}
-                                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                                  animate={{ left: ['-35%', '100%', '-35%'] }}
+                                  transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
                                 />
                               )}
                               <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
@@ -12545,15 +12544,14 @@ export default function Stage8FinalReview({
                                     style={{
                                       position: 'absolute',
                                       top: 0,
-                                      width: '30%',
+                                      width: '35%',
                                       height: '100%',
                                       background: `linear-gradient(90deg, transparent, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, ${radarBrightMap[pillar.color] || 'hsla(160,80%,50%,0.4)'}, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, transparent)`,
                                       zIndex: 10,
                                       pointerEvents: 'none' as const,
                                     }}
-                                    initial={{ left: '-30%', opacity: 0 }}
-                                    animate={{ left: ['-30%', '130%'], opacity: [0, 1, 1, 0] }}
-                                    transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                                    animate={{ left: ['-35%', '100%', '-35%'] }}
+                                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
                                   />
                                 )}
                                 <div className={cn("flex items-center gap-3 px-5 py-3", pillar.headerBg)}>
