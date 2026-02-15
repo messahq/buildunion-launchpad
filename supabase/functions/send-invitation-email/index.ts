@@ -60,6 +60,18 @@ const ROLE_LABELS: Record<string, string> = {
   member: "Team Member",
 };
 
+const escapeHtml = (text: string): string => {
+  if (!text) return '';
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -148,12 +160,15 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const roleLabel = ROLE_LABELS[role] || "Team Member";
+    const safeProjectName = escapeHtml(projectName);
+    const safeInviterName = escapeHtml(inviterName || 'A project owner');
+    const safeRoleLabel = escapeHtml(roleLabel);
     const appUrl = "https://buildunionca.lovable.app";
 
     const emailResponse = await resend.send({
       from: "BuildUnion <admin@buildunion.ca>",
       to: [recipientEmail],
-      subject: `You're Invited to Join "${projectName}" on BuildUnion`,
+      subject: `You're Invited to Join "${safeProjectName}" on BuildUnion`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -180,14 +195,14 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="content">
               <h2 style="margin-top: 0;">You've Been Invited!</h2>
               
-              <p><strong>${inviterName || 'A project owner'}</strong> has invited you to join their construction project on BuildUnion.</p>
+              <p><strong>${safeInviterName}</strong> has invited you to join their construction project on BuildUnion.</p>
               
               <div class="highlight">
-                <p style="margin: 0;"><strong>Project:</strong> ${projectName}</p>
-                <p style="margin: 10px 0 0 0;"><strong>Your Role:</strong> <span class="role-badge">${roleLabel}</span></p>
+                <p style="margin: 0;"><strong>Project:</strong> ${safeProjectName}</p>
+                <p style="margin: 10px 0 0 0;"><strong>Your Role:</strong> <span class="role-badge">${safeRoleLabel}</span></p>
               </div>
               
-              <p>As a ${roleLabel.toLowerCase()}, you'll be able to:</p>
+              <p>As a ${safeRoleLabel.toLowerCase()}, you'll be able to:</p>
               <ul>
                 ${role === 'foreman' ? `
                   <li>Create and manage tasks</li>
