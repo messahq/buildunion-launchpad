@@ -31,6 +31,8 @@ interface ProjectContext {
   gfa: string;
   executionMode: string;
   siteCondition: string;
+  currentUserRole?: string;
+  currentUserName?: string;
 }
 
 interface ProjectMessaChatProps {
