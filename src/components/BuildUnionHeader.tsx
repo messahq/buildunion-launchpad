@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { GlobalSearch, GlobalSearchTrigger } from "@/components/GlobalSearch";
-// AskMessaChat removed - will be rebuilt in Project 3.0
+import { GeneralMessaChat } from "@/components/GeneralMessaChat";
 import { UnitToggle } from "@/components/UnitToggle";
 
 const languages = [
@@ -765,7 +765,8 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
     {/* Global Search Modal */}
     <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     
-    {/* Ask Messa Chat Modal - removed for Project 3.0 */}
+    {/* Ask Messa General Chat */}
+    <GeneralMessaChat open={messaChatOpen} onClose={() => setMessaChatOpen(false)} />
     </>
   );
 };
