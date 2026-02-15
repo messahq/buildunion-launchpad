@@ -302,15 +302,13 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
                   </div>
                 ))}
               </div>
-              {normalizedRole === 'owner' && (
-                <div className="pt-1.5 mt-1 border-t border-amber-400/20">
-                  <p className="text-[10px] font-medium" style={{ color: '#fbbf24' }}>
-                    🔓 Use the <strong>"👁 View"</strong> button in the header (under BuildUnion) to switch to <strong>Editing mode</strong> — this unlocks fields you can modify. Protected fields (materials, finances) require your Owner Lock password.
+              <div className="pt-1 mt-1 border-t border-sky-400/15 space-y-0.5">
+                {normalizedRole === 'owner' && (
+                  <p className="text-[10px]" style={{ color: '#fbbf24' }}>
+                    🔓 Switch <strong>"👁 View → ✏️ Editing"</strong> in the header to unlock editable fields. Protected fields (materials, finances) require your Owner Lock password.
                   </p>
-                </div>
-              )}
-              <div className="pt-1.5 mt-1 border-t border-sky-400/15">
-                <p className="text-[10px] italic" style={{ color: 'rgba(253,224,71,0.7)' }}>
+                )}
+                <p className="text-[10px] italic" style={{ color: 'rgba(253,224,71,0.6)' }}>
                   💡 Click the panel card on the left to explore all features in full view.
                 </p>
               </div>
