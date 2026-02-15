@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.send-dna-report]
 verify_jwt = false
+
+[functions.contact-form]
+verify_jwt = false
