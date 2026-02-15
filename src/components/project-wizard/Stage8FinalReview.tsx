@@ -466,6 +466,9 @@ export default function Stage8FinalReview({
     file_path: string;
     category: string;
     citationId?: string;
+    uploaded_by_name?: string;
+    uploaded_by_role?: string;
+    uploadedAt?: string;
   } | null>(null);
   const [isSendingDocument, setIsSendingDocument] = useState(false);
   
@@ -6396,7 +6399,10 @@ export default function Stage8FinalReview({
                             file_name: doc.file_name, 
                             file_path: doc.file_path, 
                             category: cat.key,
-                            citationId: doc.citationId 
+                            citationId: doc.citationId,
+                            uploaded_by_name: doc.uploaded_by_name,
+                            uploaded_by_role: doc.uploaded_by_role,
+                            uploadedAt: doc.uploadedAt,
                           })}
                         >
                           {/* Thumbnail */}
@@ -9318,6 +9324,9 @@ export default function Stage8FinalReview({
                                   file_path: doc.file_path,
                                   category: doc.category,
                                   citationId: doc.citationId || matchingCit?.id,
+                                  uploaded_by_name: doc.uploaded_by_name,
+                                  uploaded_by_role: doc.uploaded_by_role,
+                                  uploadedAt: doc.uploadedAt,
                                 })}
                               >
                                 {/* Thumbnail */}
@@ -9344,7 +9353,7 @@ export default function Stage8FinalReview({
                                 </div>
                                 
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setPreviewDocument({ file_name: doc.file_name, file_path: doc.file_path, category: doc.category, citationId: doc.citationId || matchingCit?.id }); }}>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setPreviewDocument({ file_name: doc.file_name, file_path: doc.file_path, category: doc.category, citationId: doc.citationId || matchingCit?.id, uploaded_by_name: doc.uploaded_by_name, uploaded_by_role: doc.uploaded_by_role, uploadedAt: doc.uploadedAt }); }}>
                                     <Eye className="h-3.5 w-3.5" />
                                   </Button>
                                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
@@ -12878,6 +12887,37 @@ export default function Stage8FinalReview({
                 )}
               </DialogTitle>
             </DialogHeader>
+            
+            {/* Metadata bar */}
+            {(previewDocument.uploaded_by_name || previewDocument.uploadedAt || previewDocument.uploaded_by_role) && (
+              <div className="flex flex-wrap items-center gap-3 px-1 py-2 border-b text-xs text-muted-foreground">
+                {previewDocument.uploaded_by_name && (
+                  <span className="flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    {previewDocument.uploaded_by_name}
+                  </span>
+                )}
+                {previewDocument.uploaded_by_role && (
+                  <Badge variant="outline" className="text-[10px] h-5 capitalize">
+                    {previewDocument.uploaded_by_role}
+                  </Badge>
+                )}
+                {previewDocument.uploadedAt && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {(() => {
+                      try { return format(new Date(previewDocument.uploadedAt), 'MMM dd, yyyy HH:mm'); }
+                      catch { return previewDocument.uploadedAt; }
+                    })()}
+                  </span>
+                )}
+                {previewDocument.category === 'verification' && (
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[10px] h-5 border-emerald-300 dark:border-emerald-700">
+                    ✓ Verified
+                  </Badge>
+                )}
+              </div>
+            )}
             
             {/* Preview content */}
             <div className="flex-1 overflow-auto bg-muted/30 rounded-lg p-4 min-h-[400px]">
