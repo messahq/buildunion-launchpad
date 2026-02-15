@@ -12703,85 +12703,103 @@ export default function Stage8FinalReview({
             
             {/* Right - Actions: scrollable on mobile */}
             <div className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto flex-1 sm:flex-initial justify-end scrollbar-hide">
+              <TooltipProvider delayDuration={400}>
               {/* Site Check-In / Check-Out */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSiteCheckin}
-                disabled={isCheckingIn}
-                className={cn(
-                  "gap-1 text-[10px] lg:text-xs h-7 px-2 shrink-0 bg-transparent",
-                  isCheckedIn
-                    ? "border-emerald-600/70 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300"
-                    : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300"
-                )}
-              >
-                {isCheckingIn ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : isCheckedIn ? (
-                  <MapPin className="h-3 w-3" />
-                ) : (
-                  <MapPin className="h-3 w-3" />
-                )}
-                <span className="hidden sm:inline">{isCheckedIn ? 'Check Out' : 'Check In'}</span>
-                <span className="sm:hidden">{isCheckedIn ? '📍' : '📌'}</span>
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSiteCheckin}
+                    disabled={isCheckingIn}
+                    className={cn(
+                      "gap-1 text-[10px] lg:text-xs h-7 px-2 shrink-0 bg-transparent",
+                      isCheckedIn
+                        ? "border-emerald-600/70 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300"
+                        : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300"
+                    )}
+                  >
+                    {isCheckingIn ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <MapPin className="h-3 w-3" />
+                    )}
+                    <span className="hidden sm:inline">{isCheckedIn ? 'Check Out' : 'Check In'}</span>
+                    <span className="sm:hidden">{isCheckedIn ? '📍' : '📌'}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-center">
+                  <p className="text-xs">{isCheckedIn ? 'End your site session. Details in Site Log panel.' : 'Log your site arrival. Weather & time recorded automatically.'}</p>
+                </TooltipContent>
+              </Tooltip>
+
               {canViewFinancials && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateInvoice}
-                  disabled={isGeneratingInvoice}
-                  className="gap-1 text-[10px] lg:text-xs border-amber-800/50 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 bg-transparent h-7 px-2 shrink-0"
-                >
-                  {isGeneratingInvoice ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
-                  <span className="hidden sm:inline">Invoice</span>
-                </Button>
-              )}
-              
-               <Button
-                 size="sm"
-                 onClick={handleDnaReportPdf}
-                 disabled={isGeneratingDnaReport}
-                 className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30 h-7 px-2 shrink-0"
-               >
-                 {isGeneratingDnaReport ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
-                 <span className="hidden sm:inline">DNA Report</span>
-                 <span className="sm:hidden">DNA</span>
-               </Button>
-              
-              <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span>
-                      <Button
-                        size="sm"
-                        onClick={handleComplete}
-                        disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
-                        className={cn(
-                          "gap-1 text-[10px] lg:text-xs shadow-md h-7 px-2 shrink-0",
-                          userRole === 'owner' && !isFinancialSummaryUnlocked
-                            ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-cyan-900/30"
-                        )}
-                      >
-                        {isSaving ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : userRole === 'owner' && !isFinancialSummaryUnlocked ? (
-                          <LockKeyhole className="h-3 w-3" />
-                        ) : (
-                          <CheckCircle2 className="h-3 w-3" />
-                        )}
-                        <span className="hidden sm:inline">Finish</span>
-                      </Button>
-                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateInvoice}
+                      disabled={isGeneratingInvoice}
+                      className="gap-1 text-[10px] lg:text-xs border-amber-800/50 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 bg-transparent h-7 px-2 shrink-0"
+                    >
+                      {isGeneratingInvoice ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                      <span className="hidden sm:inline">Invoice</span>
+                    </Button>
                   </TooltipTrigger>
-                  {userRole === 'owner' && !isFinancialSummaryUnlocked && (
-                    <TooltipContent side="top">
-                      <p className="text-xs">Add financial data to unlock</p>
-                    </TooltipContent>
-                  )}
+                  <TooltipContent side="top" className="max-w-[200px] text-center">
+                    <p className="text-xs">Generate a PDF invoice with materials, labor & tax breakdown.</p>
+                  </TooltipContent>
                 </Tooltip>
+              )}
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={handleDnaReportPdf}
+                    disabled={isGeneratingDnaReport}
+                    className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md shadow-emerald-900/30 h-7 px-2 shrink-0"
+                  >
+                    {isGeneratingDnaReport ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
+                    <span className="hidden sm:inline">DNA Report</span>
+                    <span className="sm:hidden">DNA</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px] text-center">
+                  <p className="text-xs">Full project audit: AI analysis, OBC compliance, risk matrix & site presence log.</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      size="sm"
+                      onClick={handleComplete}
+                      disabled={isSaving || (userRole === 'owner' && !isFinancialSummaryUnlocked)}
+                      className={cn(
+                        "gap-1 text-[10px] lg:text-xs shadow-md h-7 px-2 shrink-0",
+                        userRole === 'owner' && !isFinancialSummaryUnlocked
+                          ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                          : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-cyan-900/30"
+                      )}
+                    >
+                      {isSaving ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : userRole === 'owner' && !isFinancialSummaryUnlocked ? (
+                        <LockKeyhole className="h-3 w-3" />
+                      ) : (
+                        <CheckCircle2 className="h-3 w-3" />
+                      )}
+                      <span className="hidden sm:inline">Finish</span>
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-center">
+                  <p className="text-xs">{userRole === 'owner' && !isFinancialSummaryUnlocked ? 'Add financial data to unlock.' : 'Finalize and close this project.'}</p>
+                </TooltipContent>
+              </Tooltip>
               </TooltipProvider>
             </div>
           </div>
