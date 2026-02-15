@@ -4142,23 +4142,33 @@ export default function Stage8FinalReview({
 
       const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
         '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 24px 28px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.4; }' +
-        // Core section integrity — NO-SPLIT ZONES
-        '.pdf-section { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 6px; }' +
+        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 20px 24px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.35; }' +
+        // Core section integrity — NO-SPLIT ZONES, ultra-tight margins
+        '.pdf-section { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 4px; margin-top: 2px; }' +
         '.financial-snapshot-card, .site-presence-card, .visual-intel-card, .verdict-card, .risk-card, .obc-card, .line-item-card { break-inside: avoid !important; page-break-inside: avoid !important; }' +
         // Table integrity
-        'table { break-inside: avoid !important; page-break-inside: avoid !important; font-size: 10px; border-spacing: 0; }' +
+        'table { break-inside: avoid !important; page-break-inside: avoid !important; font-size: 10px; border-spacing: 0; margin-bottom: 2px; }' +
         'tr { break-inside: avoid !important; page-break-inside: avoid !important; }' +
         'thead { display: table-header-group; }' +
         'tfoot { display: table-footer-group; }' +
-        // PREVENT ORPHANED HEADERS — title must stay with content
-        'h2, h3, h4 { page-break-after: avoid !important; break-after: avoid !important; orphans: 3; widows: 3; font-size: 11px; margin-bottom: 4px; }' +
-        // Site Presence Log — smaller font for density
+        // PREVENT ORPHANED HEADERS
+        'h2, h3, h4 { page-break-after: avoid !important; break-after: avoid !important; orphans: 3; widows: 3; font-size: 11px; margin-bottom: 3px; margin-top: 0; }' +
+        // Site Presence Log — compact
         '.site-presence-card table { font-size: 9px !important; }' +
-        '.site-presence-card td, .site-presence-card th { padding: 3px 6px !important; }' +
+        '.site-presence-card td, .site-presence-card th { padding: 2px 5px !important; }' +
+        '.site-presence-card { margin-top: 2px !important; }' +
+        // Visual audit — compact
+        '.visual-intel-card { margin-top: 2px !important; }' +
+        '.visual-intel-card table { font-size: 9px !important; }' +
+        '.visual-intel-card td, .visual-intel-card th { padding: 2px 5px !important; }' +
         // Line item table density
         '.line-item-card table { font-size: 9.5px !important; }' +
-        '.line-item-card td, .line-item-card th { padding: 3px 8px !important; }' +
+        '.line-item-card td, .line-item-card th { padding: 2px 6px !important; }' +
+        // Kill all excessive gaps between sections
+        'div[style*="margin-top:12px"] { margin-top: 4px !important; }' +
+        'div[style*="margin-bottom:10px"] { margin-bottom: 4px !important; }' +
+        'div[style*="margin-bottom:12px"] { margin-bottom: 4px !important; }' +
+        'div[style*="padding:10px"] { padding: 6px 10px !important; }' +
         '</style></head><body>' +
         header +
         // Title block
