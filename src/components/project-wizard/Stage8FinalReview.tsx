@@ -128,6 +128,7 @@ import { ConflictMapModal } from "@/components/project-wizard/ConflictMapModal";
 import { TeamChatPanel } from "@/components/project-wizard/TeamChatPanel";
 import { MaterialTracker } from "@/components/materials/MaterialTracker";
 import { MaterialsLaborPreview } from "@/components/project-wizard/MaterialsLaborPreview";
+import { ProjectMessaChat } from "@/components/project-wizard/ProjectMessaChat";
 
 // ============================================
 // VISIBILITY TIERS
@@ -556,10 +557,13 @@ export default function Stage8FinalReview({
    const [unreadChatCount, setUnreadChatCount] = useState(0);
    const lastSeenChatRef = useRef<string | null>(null);
    
-   // ✓ Site Check-In / Check-Out
-   const [isCheckedIn, setIsCheckedIn] = useState(false);
-   const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
-   const [isCheckingIn, setIsCheckingIn] = useState(false);
+    // ✓ Project MESSA Chat
+    const [showProjectMessa, setShowProjectMessa] = useState(false);
+    
+    // ✓ Site Check-In / Check-Out
+    const [isCheckedIn, setIsCheckedIn] = useState(false);
+    const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
+    const [isCheckingIn, setIsCheckingIn] = useState(false);
    
    // Load active check-in status on mount
    useEffect(() => {
@@ -12731,6 +12735,25 @@ export default function Stage8FinalReview({
                 </TooltipContent>
               </Tooltip>
 
+              {/* Ask MESSA - Project AI */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowProjectMessa(true)}
+                    className="gap-1 text-[10px] lg:text-xs h-7 px-2 shrink-0 bg-transparent border-amber-600/60 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 animate-pulse hover:animate-none"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    <span className="hidden sm:inline">Ask MESSA</span>
+                    <span className="sm:hidden">AI</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px] text-center">
+                  <p className="text-xs">Ask MESSA anything about this project — costs, tasks, team, status & more.</p>
+                </TooltipContent>
+              </Tooltip>
+
               {canViewFinancials && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -13570,6 +13593,39 @@ export default function Stage8FinalReview({
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Project-Specific MESSA Chat */}
+      <ProjectMessaChat
+        open={showProjectMessa}
+        onClose={() => setShowProjectMessa(false)}
+        projectContext={{
+          projectName: projectData?.name || "",
+          address: projectData?.address || "",
+          trade: projectData?.trade || null,
+          status: projectData?.status || "",
+          workType: citations.find(c => c.cite_type === 'WORK_TYPE')?.answer || "",
+          materialCost: financialSummary?.material_cost || null,
+          laborCost: financialSummary?.labor_cost || null,
+          totalCost: financialSummary?.total_cost || null,
+          teamSize: teamMembers.length,
+          teamMembers: teamMembers.map(m => `${m.name} (${m.role})`).join(", ") || "None",
+          totalTasks: tasks.length,
+          completedTasks: tasks.filter(t => t.status === 'completed' || t.status === 'done').length,
+          pendingTasks: tasks.filter(t => t.status !== 'completed' && t.status !== 'done').length,
+          documentCount: documents.length,
+          contractCount: contracts.length,
+          citationCount: citations.length,
+          citationTypes: [...new Set(citations.map(c => c.cite_type))].join(", ") || "None",
+          startDate: citations.find(c => c.cite_type === 'TIMELINE')?.answer || "",
+          endDate: citations.find(c => c.cite_type === 'END_DATE')?.answer || "",
+          gfa: (() => {
+            const g = citations.find(c => c.cite_type === 'GFA_LOCK');
+            return g ? `${g.value} sq ft` : "Not locked";
+          })(),
+          executionMode: citations.find(c => c.cite_type === 'EXECUTION_MODE')?.answer || "Not set",
+          siteCondition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer || "Not assessed",
+        }}
+      />
       
     </div>
   );
