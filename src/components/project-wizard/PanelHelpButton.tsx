@@ -1,19 +1,14 @@
 // ============================================
-// PANEL HELP BUTTON - In-App Help Center
+// PANEL HELP SECTION - In-App Help Center
 // ============================================
-// '?' icon on each Stage 8 panel with role-specific
-// contextual help via Popover
+// Collapsible help section inside each panel
+// with role-specific contextual tips
 // ============================================
 
 import { useState } from "react";
-import { HelpCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 type UserRole = 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'member';
 
@@ -25,7 +20,6 @@ interface PanelHelpContent {
 
 type HelpData = Record<string, Record<string, PanelHelpContent>>;
 
-// Role-specific help content for each panel
 const HELP_DATA: HelpData = {
   'panel-1-basics': {
     owner: {
@@ -75,9 +69,7 @@ const HELP_DATA: HelpData = {
     worker: {
       title: 'Area & Dimensions',
       description: 'The total project area and site conditions.',
-      tips: [
-        'Check site conditions before starting work',
-      ],
+      tips: ['Check site conditions before starting work'],
     },
   },
   'panel-3-trade': {
@@ -143,7 +135,6 @@ const HELP_DATA: HelpData = {
       tips: [
         'Toggle task status by clicking the checkbox',
         'Tasks are grouped by phase (Demolition → Finishing)',
-        'Completed tasks auto-update the progress bar',
         'Labor costs recalculate when tasks change status',
       ],
     },
@@ -162,19 +153,17 @@ const HELP_DATA: HelpData = {
       tips: [
         'Check your assigned tasks daily',
         'Upload photos to verify completed work',
-        'Mark checklist items as you go',
       ],
     },
   },
   'panel-6-documents': {
     owner: {
       title: 'Documents & Contracts',
-      description: 'All project documents, blueprints, contracts, and verification photos in one place.',
+      description: 'All project documents, blueprints, contracts, and verification photos.',
       tips: [
         'Drag & drop files to upload',
-        'Generate contracts with auto-filled project data',
+        'Generate contracts with auto-filled data',
         'Send contracts to clients for e-signature',
-        'Team uploads appear as "Verification" documents',
       ],
     },
     foreman: {
@@ -182,7 +171,6 @@ const HELP_DATA: HelpData = {
       description: 'Project documents and photos. You can upload site documentation.',
       tips: [
         'Upload site photos and progress reports',
-        'View contracts (read-only)',
         'Your uploads are tagged as "Verification"',
       ],
     },
@@ -198,7 +186,7 @@ const HELP_DATA: HelpData = {
   'panel-7-weather': {
     owner: {
       title: 'Site Log & Location',
-      description: 'Weather forecasts, site check-ins, and delivery tracking for the project location.',
+      description: 'Weather forecasts, site check-ins, and delivery tracking.',
       tips: [
         'Weather alerts can affect scheduling',
         'Track team check-ins and hours',
@@ -207,7 +195,7 @@ const HELP_DATA: HelpData = {
     },
     foreman: {
       title: 'Site Log & Location',
-      description: 'Weather, check-ins, and deliveries. Log your site activities here.',
+      description: 'Weather, check-ins, and deliveries.',
       tips: [
         'Check weather before scheduling outdoor work',
         'Log check-ins when arriving/leaving site',
@@ -216,7 +204,7 @@ const HELP_DATA: HelpData = {
     },
     worker: {
       title: 'Site Log & Location',
-      description: 'Weather conditions and site information.',
+      description: 'Weather conditions and site info.',
       tips: [
         'Check weather alerts before heading to site',
         'Log your check-in when you arrive',
@@ -226,34 +214,27 @@ const HELP_DATA: HelpData = {
   'panel-8-financial': {
     owner: {
       title: 'Financial Summary',
-      description: 'Complete financial overview — material costs, labor, profit margins. Owner-only access.',
+      description: 'Complete financial overview — material costs, labor, profit margins. Owner-only.',
       tips: [
         'Material costs = GROSS quantities × unit prices',
         'Labor costs auto-sync from active tasks',
         'Owner Lock protects financial data integrity',
-        'Generate invoices and DNA reports from here',
         'Only you can see this panel — team cannot',
       ],
     },
     foreman: {
       title: 'Financial Summary',
-      description: 'This panel is restricted to the Project Owner for financial security.',
-      tips: [
-        'Financial data is hidden from your view',
-        'Request budget changes through the Trade panel',
-      ],
+      description: 'This panel is restricted to the Project Owner.',
+      tips: ['Request budget changes through the Trade panel'],
     },
     worker: {
       title: 'Financial Summary',
-      description: 'This panel contains sensitive financial data and is restricted to the Owner.',
-      tips: [
-        'Contact your Foreman for budget-related questions',
-      ],
+      description: 'Restricted to the Owner.',
+      tips: ['Contact your Foreman for budget questions'],
     },
   },
 };
 
-// Normalize role to help data key
 function normalizeRole(role: UserRole): string {
   if (role === 'inspector' || role === 'subcontractor' || role === 'member') return 'worker';
   return role;
@@ -266,54 +247,60 @@ interface PanelHelpButtonProps {
 }
 
 export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButtonProps) {
-  const [open, setOpen] = useState(false);
-  
+  const [expanded, setExpanded] = useState(false);
+
   const normalizedRole = normalizeRole(userRole);
   const helpContent = HELP_DATA[panelId]?.[normalizedRole];
-  
+
   if (!helpContent) return null;
-  
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-6 w-6 p-0 rounded-full opacity-50 hover:opacity-100 transition-opacity",
-            "hover:bg-accent",
-            className
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen(!open);
-          }}
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="right"
-        align="start"
-        className="w-72 p-0 z-[60]"
-        onClick={(e) => e.stopPropagation()}
+    <div className={cn("w-full", className)}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setExpanded(!expanded);
+        }}
+        className={cn(
+          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors",
+          "bg-accent/40 hover:bg-accent/60 border border-border/50",
+          expanded && "bg-accent/60"
+        )}
       >
-        <div className="p-3 border-b bg-accent/30">
-          <h4 className="text-sm font-semibold">{helpContent.title}</h4>
-          <p className="text-xs text-muted-foreground mt-0.5">{helpContent.description}</p>
-        </div>
-        <div className="p-3 space-y-1.5">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tips</p>
-          <ul className="space-y-1">
-            {helpContent.tips.map((tip, i) => (
-              <li key={i} className="text-xs text-foreground/80 flex items-start gap-1.5">
-                <span className="text-amber-500 mt-0.5 shrink-0">•</span>
-                <span>{tip}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </PopoverContent>
-    </Popover>
+        <HelpCircle className="h-4 w-4 text-amber-500 shrink-0" />
+        <span className="text-xs font-medium text-foreground/80 flex-1">
+          How does this panel work?
+        </span>
+        {expanded ? (
+          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 py-2.5 mt-1 rounded-lg bg-accent/20 border border-border/30 space-y-2">
+              <p className="text-xs text-foreground/70">{helpContent.description}</p>
+              <div className="space-y-1">
+                {helpContent.tips.map((tip, i) => (
+                  <div key={i} className="flex items-start gap-1.5">
+                    <span className="text-amber-500 text-xs mt-0.5 shrink-0">•</span>
+                    <span className="text-[11px] text-foreground/60">{tip}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
