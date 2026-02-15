@@ -3487,12 +3487,14 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        obcHtml = '<div class="pdf-section obc-card" style="margin-top:12px;margin-bottom:8px;">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
-            '<span style="font-size:18px;">⚖️</span>' +
-            '<div style="font-size:15px;font-weight:700;color:#1e3a5f;">OBC 2024 Part 9 — Compliance Matrix</div>' +
+        obcHtml = '<div class="pdf-section obc-card" style="margin-top:4px;margin-bottom:4px;">' +
+          '<div class="section-header-block">' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+              '<span style="font-size:14px;">⚖️</span>' +
+              '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">OBC 2024 Part 9 — Compliance Matrix</div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;">Trade-specific regulatory requirements retrieved via RAG pipeline (' + esc(tradeCit?.answer || 'N/A') + ')</div>' +
           '</div>' +
-          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">Trade-specific regulatory requirements retrieved via RAG pipeline (' + esc(tradeCit?.answer || 'N/A') + ')</div>' +
           '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
             '<thead><tr style="background:#eff6ff;font-size:9px;text-transform:uppercase;color:#3b82f6;letter-spacing:0.05em;">' +
               '<th style="padding:6px 8px;text-align:left;">Section</th>' +
@@ -3683,12 +3685,14 @@ export default function Stage8FinalReview({
           '</tr>';
         }).join('');
 
-        visualHtml = '<div class="pdf-section visual-intel-card" style="margin-top:12px;margin-bottom:6px;">' +
-          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
-            '<span style="font-size:14px;">👁️</span>' +
-            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+        visualHtml = '<div class="pdf-section visual-intel-card" style="margin-top:4px;margin-bottom:3px;">' +
+          '<div class="section-header-block">' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+              '<span style="font-size:13px;">👁️</span>' +
+              '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + ' · ' + projectDocCount + ' document(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">🔍 ' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
           '</div>' +
-          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + ' · ' + projectDocCount + ' document(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">🔍 ' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
           conflictHtml +
           (photoRows ? (
             '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
@@ -3823,12 +3827,14 @@ export default function Stage8FinalReview({
         const completedSessions = siteCheckins.filter((c: any) => c.checked_out_at).length;
         const uniqueWorkers = new Set(siteCheckins.map((c: any) => c.user_id)).size;
         
-        sitePresenceHtml = '<div class="pdf-section site-presence-card" style="margin-top:12px;margin-bottom:6px;">' +
-          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
-            '<span style="font-size:14px;">📍</span>' +
-            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Site Presence Log</div>' +
+        sitePresenceHtml = '<div class="pdf-section site-presence-card" style="margin-top:4px;margin-bottom:3px;">' +
+          '<div class="section-header-block">' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+              '<span style="font-size:13px;">📍</span>' +
+              '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Site Presence Log</div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;">' + totalSessions + ' check-in session(s) · ' + completedSessions + ' completed · ' + uniqueWorkers + ' unique worker(s)</div>' +
           '</div>' +
-          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">' + totalSessions + ' check-in session(s) · ' + completedSessions + ' completed · ' + uniqueWorkers + ' unique worker(s)</div>' +
           '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
             '<thead><tr style="background:#ecfdf5;font-size:9px;text-transform:uppercase;color:#059669;letter-spacing:0.05em;">' +
               '<th style="padding:6px 8px;text-align:left;">Worker</th>' +
@@ -4041,10 +4047,10 @@ export default function Stage8FinalReview({
         const gfaVal = gfaCit?.metadata ? (gfaCit.metadata as any).gfa_value || 0 : 0;
         const costPerSqFt = gfaVal > 0 && financialSummary.total_cost ? (financialSummary.total_cost / gfaVal).toFixed(2) : null;
 
-        lineItemHtml = '<div class="pdf-section line-item-card" style="margin-top:12px;margin-bottom:6px;">' +
-          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
-            '<span style="font-size:14px;">📋</span>' +
-            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Material & Labor Breakdown</div>' +
+        lineItemHtml = '<div class="pdf-section line-item-card" style="margin-top:4px;margin-bottom:3px;">' +
+          '<div class="section-header-block" style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+            '<span style="font-size:13px;">📋</span>' +
+            '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Material & Labor Breakdown</div>' +
             (costPerSqFt ? '<span style="background:#f0fdf4;color:#059669;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">$' + costPerSqFt + '/sq ft</span>' : '') +
           '</div>' +
           '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
@@ -4142,33 +4148,41 @@ export default function Stage8FinalReview({
 
       const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
         '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 20px 24px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.35; }' +
-        // Core section integrity — NO-SPLIT ZONES, ultra-tight margins
-        '.pdf-section { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 4px; margin-top: 2px; }' +
-        '.financial-snapshot-card, .site-presence-card, .visual-intel-card, .verdict-card, .risk-card, .obc-card, .line-item-card { break-inside: avoid !important; page-break-inside: avoid !important; }' +
-        // Table integrity
-        'table { break-inside: avoid !important; page-break-inside: avoid !important; font-size: 10px; border-spacing: 0; margin-bottom: 2px; }' +
+        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 18px 22px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.3; }' +
+        // Small cards (financial, verdict, risk) — keep together as one block
+        '.financial-snapshot-card, .verdict-card, .risk-card { break-inside: avoid !important; page-break-inside: avoid !important; }' +
+        // LARGE sections (visual, site presence, line items, obc) — ALLOW page breaks INSIDE so they flow into available space instead of jumping to next page
+        '.visual-intel-card, .site-presence-card, .line-item-card, .obc-card { break-inside: auto !important; page-break-inside: auto !important; }' +
+        // But keep each section HEADER + first few rows together
+        '.section-header-block { break-inside: avoid !important; page-break-inside: avoid !important; break-after: avoid !important; page-break-after: avoid !important; margin-bottom: 2px; }' +
+        // Generic section spacing — ultra tight
+        '.pdf-section { margin-bottom: 3px; margin-top: 1px; }' +
+        // Tables — allow breaking between rows for long tables
+        'table { font-size: 10px; border-spacing: 0; margin-bottom: 1px; }' +
         'tr { break-inside: avoid !important; page-break-inside: avoid !important; }' +
         'thead { display: table-header-group; }' +
-        'tfoot { display: table-footer-group; }' +
-        // PREVENT ORPHANED HEADERS
-        'h2, h3, h4 { page-break-after: avoid !important; break-after: avoid !important; orphans: 3; widows: 3; font-size: 11px; margin-bottom: 3px; margin-top: 0; }' +
-        // Site Presence Log — compact
-        '.site-presence-card table { font-size: 9px !important; }' +
-        '.site-presence-card td, .site-presence-card th { padding: 2px 5px !important; }' +
-        '.site-presence-card { margin-top: 2px !important; }' +
+        // Headers — never orphan a title at page bottom
+        'h2, h3, h4 { page-break-after: avoid !important; break-after: avoid !important; orphans: 3; widows: 3; font-size: 11px; margin-bottom: 2px; margin-top: 0; }' +
+        // Site Presence Log — compact font
+        '.site-presence-card table { font-size: 8.5px !important; }' +
+        '.site-presence-card td, .site-presence-card th { padding: 2px 4px !important; }' +
         // Visual audit — compact
-        '.visual-intel-card { margin-top: 2px !important; }' +
         '.visual-intel-card table { font-size: 9px !important; }' +
-        '.visual-intel-card td, .visual-intel-card th { padding: 2px 5px !important; }' +
+        '.visual-intel-card td, .visual-intel-card th { padding: 2px 4px !important; }' +
         // Line item table density
-        '.line-item-card table { font-size: 9.5px !important; }' +
-        '.line-item-card td, .line-item-card th { padding: 2px 6px !important; }' +
-        // Kill all excessive gaps between sections
-        'div[style*="margin-top:12px"] { margin-top: 4px !important; }' +
-        'div[style*="margin-bottom:10px"] { margin-bottom: 4px !important; }' +
-        'div[style*="margin-bottom:12px"] { margin-bottom: 4px !important; }' +
-        'div[style*="padding:10px"] { padding: 6px 10px !important; }' +
+        '.line-item-card table { font-size: 9px !important; }' +
+        '.line-item-card td, .line-item-card th { padding: 2px 5px !important; }' +
+        // OBC tables
+        '.obc-card table { font-size: 9px !important; }' +
+        '.obc-card td, .obc-card th { padding: 2px 5px !important; }' +
+        // Kill inline style gaps globally
+        'div[style*="margin-top:12px"] { margin-top: 3px !important; }' +
+        'div[style*="margin-top:8px"] { margin-top: 2px !important; }' +
+        'div[style*="margin-bottom:10px"] { margin-bottom: 2px !important; }' +
+        'div[style*="margin-bottom:12px"] { margin-bottom: 3px !important; }' +
+        'div[style*="margin-bottom:8px"] { margin-bottom: 2px !important; }' +
+        'div[style*="padding:10px"] { padding: 5px 8px !important; }' +
+        'div[style*="padding:14px"] { padding: 6px 10px !important; }' +
         '</style></head><body>' +
         header +
         // Title block
