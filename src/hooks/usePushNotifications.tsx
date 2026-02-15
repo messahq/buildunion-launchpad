@@ -137,6 +137,7 @@ export function usePushNotifications() {
 
   // Subscribe to push notifications
   const subscribe = useCallback(async () => {
+    console.log("[Push] subscribe called, user:", !!user, "isSupported:", state.isSupported);
     if (!user || !state.isSupported) {
       toast.error("Push notifications are not supported");
       return false;
@@ -146,30 +147,37 @@ export function usePushNotifications() {
 
     try {
       // Request notification permission
+      console.log("[Push] Requesting permission, current:", Notification.permission);
       const permission = await Notification.requestPermission();
+      console.log("[Push] Permission result:", permission);
       setState((prev) => ({ ...prev, permission }));
 
       if (permission !== "granted") {
-        toast.error("Notification permission denied");
+        toast.error("Notification permission denied. Please allow notifications in your browser settings (click the lock icon in the address bar).");
         setState((prev) => ({ ...prev, isLoading: false }));
         return false;
       }
 
       // Get service worker registration
+      console.log("[Push] Waiting for service worker...");
       const registration = await navigator.serviceWorker.ready;
+      console.log("[Push] Service worker ready, scope:", registration.scope);
 
       // Subscribe to push
       const vapidKey = await getVapidPublicKey();
+      console.log("[Push] VAPID key fetched, length:", vapidKey?.length);
       if (!vapidKey) {
         toast.error("Push notification configuration is missing");
         setState((prev) => ({ ...prev, isLoading: false }));
         return false;
       }
       const applicationServerKey = urlBase64ToUint8Array(vapidKey);
+      console.log("[Push] Subscribing to push manager...");
       const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
       });
+      console.log("[Push] Subscription successful:", subscription.endpoint);
 
       const subscriptionJSON = subscription.toJSON();
 
@@ -196,9 +204,9 @@ export function usePushNotifications() {
 
       toast.success("Push notifications enabled!");
       return true;
-    } catch (error) {
-      console.error("Error subscribing to push:", error);
-      toast.error("Failed to enable push notifications");
+    } catch (error: any) {
+      console.error("[Push] Error subscribing:", error);
+      toast.error(`Failed to enable push notifications: ${error?.message || 'Unknown error'}`);
       setState((prev) => ({ ...prev, isLoading: false }));
       return false;
     }

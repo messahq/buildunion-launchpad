@@ -24,7 +24,10 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
     unsubscribe,
   } = usePushNotifications();
 
+  console.log("[NotifSettings] isSupported:", isSupported, "isSubscribed:", isSubscribed, "isLoading:", isLoading, "permission:", permission);
+
   const handleToggle = async () => {
+    console.log("[NotifSettings] handleToggle called, isSubscribed:", isSubscribed);
     if (isSubscribed) {
       await unsubscribe();
     } else {
