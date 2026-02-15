@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Users, Target, Heart, Shield, Award, Globe, ArrowLeft } from "lucide-react";
+import { Users, Target, Heart, Shield, Award, Globe, ArrowLeft, Brain, Database, Cpu, Eye, FileCheck, Zap, Lock, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
