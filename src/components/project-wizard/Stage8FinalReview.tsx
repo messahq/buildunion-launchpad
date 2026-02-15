@@ -3744,10 +3744,11 @@ export default function Stage8FinalReview({
         const taxAmount = netTotal * taxRate;
         const grossTotal = netTotal + taxAmount;
         
-        // Owner-centric validation: Net Total vs Budget (total_cost from DB)
+        // Owner-centric validation: Actual costs (pillars) vs Budget (DB total_cost)
         const pillarsSum = materialCost + laborCost + demolitionCost;
-        const budgetValue = financialSummary?.total_cost ? Number(financialSummary.total_cost) : netTotal;
-        const taxSyncPass = netTotal <= budgetValue * 1.02; // 2% tolerance for rounding
+        const budgetValue = financialSummary?.total_cost ? Number(financialSummary.total_cost) : pillarsSum;
+        // PASS if actual spending (pillars) doesn't exceed the stored budget (with 2% rounding tolerance)
+        const taxSyncPass = pillarsSum <= budgetValue * 1.02;
         const syncStatusBg = taxSyncPass ? '#dcfce7' : '#fef2f2';
         const syncStatusColor = taxSyncPass ? '#166534' : '#991b1b';
         const syncStatusText = taxSyncPass ? '✓ PASS' : '✗ FAIL';
@@ -3786,7 +3787,7 @@ export default function Stage8FinalReview({
           '</div>' +
           // Sync validation detail: Net vs Budget
           '<div style="margin-top:8px;padding:8px 12px;background:' + (taxSyncPass ? '#f0fdf4' : '#fef2f2') + ';border:1px solid ' + (taxSyncPass ? '#bbf7d0' : '#fecaca') + ';border-radius:6px;font-size:10px;color:' + (taxSyncPass ? '#166534' : '#991b1b') + ';">' +
-            '🔄 <strong>Budget Sync:</strong> Net Total ' + fmt(netTotal) + ' vs Budget ' + fmt(budgetValue) + ' → ' + syncStatusText + ' <span style="opacity:0.7;">(Tax is informational only: ' + taxLabel + ' ' + fmt(taxAmount) + ')</span>' +
+            '🔄 <strong>Budget Sync:</strong> Actual Costs ' + fmt(pillarsSum) + ' vs Budget ' + fmt(budgetValue) + ' → ' + syncStatusText + ' <span style="opacity:0.7;">(Tax is informational only: ' + taxLabel + ' ' + fmt(taxAmount) + ')</span>' +
           '</div>' +
         '</div>';
       }
