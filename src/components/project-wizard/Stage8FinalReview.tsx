@@ -761,10 +761,16 @@ export default function Stage8FinalReview({
     });
   }, []);
   
-  // Categorize document based on file name AND file path
-  const categorizeDocument = useCallback((fileName: string, filePath?: string): DocumentCategory => {
+  // Categorize document based on file name, file path, AND uploader role
+  const categorizeDocument = useCallback((fileName: string, filePath?: string, uploadedByRole?: string | null): DocumentCategory => {
     const lowerName = fileName.toLowerCase();
     const lowerPath = (filePath || '').toLowerCase();
+    
+    // ✓ ANY team member upload (non-owner) → Verification
+    // Team members photograph work progress, so their uploads are verification evidence
+    if (uploadedByRole && uploadedByRole !== 'owner') {
+      return 'verification';
+    }
     
     // ✓ Chat-uploaded files (team verification photos) → Verification
     if (lowerPath.includes('/chat/')) {
@@ -1510,7 +1516,7 @@ export default function Stage8FinalReview({
         // 5. Load documents + add document citations from verified_facts
         const { data: docsData } = await supabase
           .from('project_documents')
-          .select('id, file_name, file_path, uploaded_at')
+          .select('id, file_name, file_path, uploaded_at, uploaded_by_name, uploaded_by_role')
           .eq('project_id', projectId);
         
         let docsWithCategory: DocumentWithCategory[] = [];
@@ -1541,9 +1547,11 @@ export default function Stage8FinalReview({
               id: doc.id,
               file_name: doc.file_name,
               file_path: doc.file_path,
-              category: citationMatch?.category || categorizeDocument(doc.file_name, doc.file_path),
+              category: citationMatch?.category || categorizeDocument(doc.file_name, doc.file_path, doc.uploaded_by_role),
               citationId: citationMatch?.citation.id,
               uploadedAt: doc.uploaded_at,
+              uploaded_by_name: doc.uploaded_by_name || undefined,
+              uploaded_by_role: doc.uploaded_by_role || undefined,
             };
           });
         }
