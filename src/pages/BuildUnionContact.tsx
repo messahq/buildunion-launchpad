@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 
@@ -15,15 +16,22 @@ const BuildUnionContact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate submission
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke("contact-form", {
+        body: formData,
+      });
+      if (error) throw error;
       toast.success("Message sent! We'll get back to you within 48 hours.");
       setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (err) {
+      console.error("Contact form error:", err);
+      toast.error("Failed to send message. Please try again or email us directly.");
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -49,7 +57,7 @@ const BuildUnionContact = () => {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Email</h3>
-                <p className="text-sm text-muted-foreground">hello@buildunion.ca</p>
+                <p className="text-sm text-muted-foreground">admin@buildunion.ca</p>
               </div>
             </CardContent>
           </Card>
@@ -60,7 +68,7 @@ const BuildUnionContact = () => {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Location</h3>
-                <p className="text-sm text-muted-foreground">Ontario, Canada</p>
+                <p className="text-sm text-muted-foreground">Toronto, Ontario, Canada</p>
               </div>
             </CardContent>
           </Card>
