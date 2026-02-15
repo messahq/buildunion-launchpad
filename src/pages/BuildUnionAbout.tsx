@@ -142,6 +142,140 @@ const BuildUnionAbout = () => {
           </div>
         </section>
 
+        {/* Technology Section */}
+        <section className="py-16 md:py-20 bg-muted/20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-14">
+                <p className="text-sm font-semibold tracking-widest uppercase text-amber-500 mb-3">What Powers Us</p>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Technology That Sets Us Apart
+                </h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+                  BuildUnion isn't just another construction app — it's an AI-native platform built on proprietary engines that no competitor can match.
+                </p>
+              </div>
+
+              {/* Dual Engine */}
+              <div className="grid md:grid-cols-2 gap-8 mb-12">
+                <Card className="border-border/50 bg-gradient-to-br from-background to-muted/30">
+                  <CardContent className="p-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                        <Eye className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="font-bold text-xl">Gemini Vision Engine</h3>
+                    </div>
+                    <p className="text-muted-foreground leading-relaxed mb-4">
+                      Our visual AI core uses Google Gemini 2.5 to analyze site photos, blueprints, and floor plans. It extracts square footage, identifies materials, detects structural elements, and generates cost estimates — all from images alone.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {["Photo Analysis", "Blueprint Reading", "Material Detection", "Area Calculation"].map(tag => (
+                        <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">{tag}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/50 bg-gradient-to-br from-background to-muted/30">
+                  <CardContent className="p-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
+                        <Brain className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h3 className="font-bold text-xl">OpenAI Reasoning Engine</h3>
+                    </div>
+                    <p className="text-muted-foreground leading-relaxed mb-4">
+                      GPT-5 serves as our regulatory validation backbone. It cross-references every project against the Ontario Building Code 2024, detects compliance conflicts, and provides paragraph-level (§) citations in audit reports.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {["OBC Compliance", "Conflict Detection", "Audit Reports", "§ Citations"].map(tag => (
+                        <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-medium">{tag}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* MESSA Synthesis Banner */}
+              <Card className="border-amber-400/30 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 mb-12">
+                <CardContent className="p-8 text-center">
+                  <div className="flex items-center justify-center gap-3 mb-3">
+                    <Cpu className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                    <h3 className="font-bold text-2xl">M.E.S.S.A. Synthesis</h3>
+                  </div>
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-3">Multi-Engine Synthesis & Structured Analysis</p>
+                  <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                    Both engines don't just run in parallel — they <strong className="text-foreground">cross-validate</strong> each other. Gemini identifies what's physically on-site; OpenAI checks if it meets code. When they disagree, the system flags a conflict and provides both perspectives in the DNA Audit Report. This dual-validation approach eliminates single-model hallucination risk.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Feature Grid */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  {
+                    icon: Database,
+                    title: "Hybrid Data Architecture",
+                    desc: "A dual-database system that mirrors data between Lovable Cloud and an external Supabase Pro instance in real-time, ensuring zero data loss and full UUID consistency across both systems.",
+                    color: "purple"
+                  },
+                  {
+                    icon: Layers,
+                    title: "RAG Compliance Engine",
+                    desc: "A true Retrieval-Augmented Generation pipeline powered by pgvector embeddings of the OBC 2024 Part 9 (Residential). Trade-specific semantic search delivers paragraph-level citations — not generic AI summaries.",
+                    color: "indigo"
+                  },
+                  {
+                    icon: FileCheck,
+                    title: "16-Source Citation System",
+                    desc: "Every number in your estimate traces back to one of 16 verified data sources — from RSMeans to CNESST standards. Nothing is invented; everything is auditable.",
+                    color: "teal"
+                  },
+                  {
+                    icon: Lock,
+                    title: "Baseline Lock Protocol",
+                    desc: "Once an estimate is approved, it's cryptographically versioned. Any modification triggers a formal change-order flow with full audit trail, protecting both contractors and clients.",
+                    color: "red"
+                  },
+                  {
+                    icon: Zap,
+                    title: "Tiered AI Cost Optimization",
+                    desc: "Smart model routing sends simple tasks to lightweight models (Gemini Flash Lite) and reserves heavyweight reasoning (GPT-5) for compliance checks — cutting AI costs by up to 70% without sacrificing quality.",
+                    color: "yellow"
+                  },
+                  {
+                    icon: Shield,
+                    title: "RBAC + Row-Level Security",
+                    desc: "Role-Based Access Control meets Postgres RLS policies. Owners, foremen, workers, and inspectors each see only what they're authorized to — enforced at the database level, not just the UI.",
+                    color: "cyan"
+                  },
+                ].map((item) => {
+                  const colorMap: Record<string, string> = {
+                    purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+                    indigo: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
+                    teal: "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400",
+                    red: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
+                    yellow: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
+                    cyan: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
+                  };
+                  return (
+                    <Card key={item.title} className="border-border/50 hover:border-amber-400/30 transition-colors">
+                      <CardContent className="p-6">
+                        <div className={`p-3 rounded-xl w-fit mb-4 ${colorMap[item.color]?.split(" ").slice(0, 2).join(" ")}`}>
+                          <item.icon className={`h-5 w-5 ${colorMap[item.color]?.split(" ").slice(2).join(" ")}`} />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                        <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section className="py-16 md:py-20 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/20">
           <div className="container mx-auto px-4 text-center">
