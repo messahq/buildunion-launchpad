@@ -41,6 +41,8 @@ export const CITATION_TYPES = {
   // Task progress tracking (for DNA visual analysis)
   TASK_STARTED: 'TASK_STARTED',
   TASK_COMPLETED: 'TASK_COMPLETED',
+  // Site Presence Tracking
+  SITE_PRESENCE: 'SITE_PRESENCE',
 } as const;
 
 export type CitationType = typeof CITATION_TYPES[keyof typeof CITATION_TYPES];

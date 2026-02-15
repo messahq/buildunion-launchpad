@@ -1299,6 +1299,47 @@ export type Database = {
         }
         Relationships: []
       }
+      site_checkins: {
+        Row: {
+          checked_in_at: string
+          checked_out_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          project_id: string
+          user_id: string
+          weather_snapshot: Json | null
+        }
+        Insert: {
+          checked_in_at?: string
+          checked_out_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id: string
+          user_id: string
+          weather_snapshot?: Json | null
+        }
+        Update: {
+          checked_in_at?: string
+          checked_out_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id?: string
+          user_id?: string
+          weather_snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_checkins_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_logs: {
         Row: {
           completed_count: number | null

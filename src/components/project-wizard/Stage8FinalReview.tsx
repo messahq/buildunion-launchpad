@@ -106,7 +106,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { RequestModificationDialog } from "@/components/projects/RequestModificationDialog";
-import { Citation, CITATION_TYPES } from "@/types/citation";
+import { Citation, CITATION_TYPES, createCitation } from "@/types/citation";
 import { useTranslation } from "react-i18next";
 import {
   restoreProjectFromLocalStorage,
@@ -552,9 +552,110 @@ export default function Stage8FinalReview({
     lastCheckedAt: string | null;
   }>({ sections: [], loading: false, error: null, lastCheckedAt: null });
   
-  // ✓ Unread chat messages indicator for Team panel
-  const [unreadChatCount, setUnreadChatCount] = useState(0);
-  const lastSeenChatRef = useRef<string | null>(null);
+   // ✓ Unread chat messages indicator for Team panel
+   const [unreadChatCount, setUnreadChatCount] = useState(0);
+   const lastSeenChatRef = useRef<string | null>(null);
+   
+   // ✓ Site Check-In / Check-Out
+   const [isCheckedIn, setIsCheckedIn] = useState(false);
+   const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
+   const [isCheckingIn, setIsCheckingIn] = useState(false);
+   
+   // Load active check-in status on mount
+   useEffect(() => {
+     const loadCheckinStatus = async () => {
+       const { data } = await supabase
+         .from('site_checkins')
+         .select('id')
+         .eq('project_id', projectId)
+         .eq('user_id', userId)
+         .is('checked_out_at', null)
+         .order('checked_in_at', { ascending: false })
+         .limit(1);
+       if (data && data.length > 0) {
+         setIsCheckedIn(true);
+         setActiveCheckinId(data[0].id);
+       }
+     };
+     loadCheckinStatus();
+   }, [projectId, userId]);
+   
+   const handleSiteCheckin = useCallback(async () => {
+     setIsCheckingIn(true);
+     try {
+       if (isCheckedIn && activeCheckinId) {
+         // Check out
+         await supabase
+           .from('site_checkins')
+           .update({ checked_out_at: new Date().toISOString() })
+           .eq('id', activeCheckinId);
+         setIsCheckedIn(false);
+         setActiveCheckinId(null);
+         toast.success('Checked out from site');
+       } else {
+         // Check in — fetch weather snapshot
+         let weatherSnapshot: any = {};
+         const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+         if (locationCit?.answer) {
+           try {
+             const { data: weatherRes } = await supabase.functions.invoke('get-weather', {
+               body: { location: locationCit.answer, days: 1 },
+             });
+             if (weatherRes?.current) {
+               weatherSnapshot = {
+                 temp: weatherRes.current.temp,
+                 description: weatherRes.current.description,
+                 humidity: weatherRes.current.humidity,
+                 wind_speed: weatherRes.current.wind_speed,
+                 timestamp: new Date().toISOString(),
+               };
+             }
+           } catch (e) { console.warn('Weather snapshot failed:', e); }
+         }
+         
+         const { data: newCheckin, error } = await supabase
+           .from('site_checkins')
+           .insert({
+             project_id: projectId,
+             user_id: userId,
+             weather_snapshot: weatherSnapshot,
+           })
+           .select('id')
+           .single();
+         
+         if (error) throw error;
+         setIsCheckedIn(true);
+         setActiveCheckinId(newCheckin.id);
+         
+         // Create SITE_PRESENCE citation using createCitation
+         const presenceCitation = createCitation({
+           cite_type: 'SITE_PRESENCE',
+           question_key: 'site_checkin',
+           answer: new Date().toLocaleString(),
+           value: newCheckin.id,
+           metadata: {
+             userId,
+             weather: weatherSnapshot,
+             action: 'check_in',
+           },
+         });
+         setCitations(prev => {
+           const updated = [...prev, presenceCitation];
+           supabase.from('project_summaries').update({ verified_facts: updated as unknown as any }).eq('project_id', projectId).then(() => {});
+           return updated;
+         });
+         
+         toast.success('Checked in to site', {
+           description: weatherSnapshot.temp ? `${Math.round(weatherSnapshot.temp)}° — ${weatherSnapshot.description}` : undefined,
+         });
+       }
+     } catch (err) {
+       console.error('Check-in error:', err);
+       toast.error('Failed to check in/out');
+     } finally {
+       setIsCheckingIn(false);
+     }
+   }, [isCheckedIn, activeCheckinId, projectId, userId, citations]);
 
 
   // ✓ OBC RAG Compliance: Auto-fetch when DNA panel is active
@@ -12510,6 +12611,29 @@ export default function Stage8FinalReview({
             
             {/* Right - Actions: scrollable on mobile */}
             <div className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto flex-1 sm:flex-initial justify-end scrollbar-hide">
+              {/* Site Check-In / Check-Out */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSiteCheckin}
+                disabled={isCheckingIn}
+                className={cn(
+                  "gap-1 text-[10px] lg:text-xs h-7 px-2 shrink-0 bg-transparent",
+                  isCheckedIn
+                    ? "border-emerald-600/70 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300"
+                    : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30 hover:text-cyan-300"
+                )}
+              >
+                {isCheckingIn ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : isCheckedIn ? (
+                  <MapPin className="h-3 w-3" />
+                ) : (
+                  <MapPin className="h-3 w-3" />
+                )}
+                <span className="hidden sm:inline">{isCheckedIn ? 'Check Out' : 'Check In'}</span>
+                <span className="sm:hidden">{isCheckedIn ? '📍' : '📌'}</span>
+              </Button>
               {canViewFinancials && (
                 <Button
                   variant="outline"
