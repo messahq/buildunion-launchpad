@@ -627,23 +627,35 @@ export default function Stage8FinalReview({
          setIsCheckedIn(true);
          setActiveCheckinId(newCheckin.id);
          
-         // Create SITE_PRESENCE citation using createCitation
-         const presenceCitation = createCitation({
-           cite_type: 'SITE_PRESENCE',
-           question_key: 'site_checkin',
-           answer: new Date().toLocaleString(),
-           value: newCheckin.id,
-           metadata: {
-             userId,
-             weather: weatherSnapshot,
-             action: 'check_in',
-           },
-         });
-         setCitations(prev => {
-           const updated = [...prev, presenceCitation];
-           supabase.from('project_summaries').update({ verified_facts: updated as unknown as any }).eq('project_id', projectId).then(() => {});
-           return updated;
-         });
+          // Create SITE_PRESENCE citation and persist immediately
+          const presenceCitation = createCitation({
+            cite_type: 'SITE_PRESENCE',
+            question_key: 'site_checkin',
+            answer: new Date().toLocaleString(),
+            value: newCheckin.id,
+            metadata: {
+              userId,
+              weather: weatherSnapshot,
+              action: 'check_in',
+            },
+          });
+          
+          // Read current verified_facts from DB to avoid stale state
+          const { data: currentSummary } = await supabase
+            .from('project_summaries')
+            .select('verified_facts')
+            .eq('project_id', projectId)
+            .single();
+          
+          const currentFacts = Array.isArray(currentSummary?.verified_facts) ? currentSummary.verified_facts : [];
+          const updatedFacts = [...currentFacts, presenceCitation];
+          
+          await supabase
+            .from('project_summaries')
+            .update({ verified_facts: updatedFacts as unknown as any })
+            .eq('project_id', projectId);
+          
+          setCitations(updatedFacts as unknown as Citation[]);
          
          toast.success('Checked in to site', {
            description: weatherSnapshot.temp ? `${Math.round(weatherSnapshot.temp)}° — ${weatherSnapshot.description}` : undefined,
