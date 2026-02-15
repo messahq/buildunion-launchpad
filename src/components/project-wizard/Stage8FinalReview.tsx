@@ -12974,7 +12974,7 @@ export default function Stage8FinalReview({
                     <div className="mt-3 grid grid-cols-2 gap-3">
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase mb-1">Deposit ({contractDeposit}%)</p>
-                        <p className="font-semibold text-sm">${((financialSummary.total_cost ?? 0) * (Number(contractDeposit) || 50) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="font-semibold text-sm">${(Math.round((financialSummary.total_cost ?? 0) * (Number(contractDeposit) || 50) / 100 * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase mb-1">Source</p>
@@ -13017,7 +13017,7 @@ export default function Stage8FinalReview({
                     <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Dispute Resolution:</strong> Any dispute shall first be submitted to mediation. If mediation fails, the dispute shall be resolved by binding arbitration.</span></div>
                     <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Termination:</strong> Either party may terminate with 14 days written notice. Upon termination, Client shall pay for all work completed and materials ordered.</span></div>
                     <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Permits & Compliance:</strong> Contractor shall obtain all necessary permits and ensure compliance with applicable building codes, safety regulations, and environmental standards.</span></div>
-                    <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Governing Law:</strong> This Agreement shall be governed by the laws of the Province in which the project is located.</span></div>
+                    <div className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" /><span><strong>Governing Law:</strong> This Agreement shall be governed by the laws of the Province of Ontario.</span></div>
                   </div>
                 </div>
               </div>
