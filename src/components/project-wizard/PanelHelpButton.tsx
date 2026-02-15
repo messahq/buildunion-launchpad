@@ -302,6 +302,13 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
                   </div>
                 ))}
               </div>
+              {normalizedRole === 'owner' && (
+                <div className="pt-1.5 mt-1 border-t border-amber-400/20">
+                  <p className="text-[10px] font-medium" style={{ color: '#fbbf24' }}>
+                    🔓 Toggle <strong>"View → Editing"</strong> in the header to unlock modifications. Owner Lock password required for protected fields.
+                  </p>
+                </div>
+              )}
               <div className="pt-1.5 mt-1 border-t border-sky-400/15">
                 <p className="text-[10px] italic" style={{ color: 'rgba(253,224,71,0.7)' }}>
                   💡 Click the panel card on the left to explore all features in full view.
