@@ -3,6 +3,7 @@
 // ============================================
 // Shows pending modifications that need Owner approval
 // Supports approve/reject with notes
+// Owner-Lock: Approve requires password re-authentication
 // ============================================
 
 import { useState } from 'react';
@@ -33,6 +34,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { OwnerLockModal } from '@/components/OwnerLockModal';
 import type { PendingBudgetChange } from '@/hooks/usePendingBudgetChanges';
 
 interface PendingApprovalModalProps {
@@ -70,6 +72,10 @@ export function PendingApprovalModal({
   const [selectedChangeId, setSelectedChangeId] = useState<string | null>(null);
   const [reviewNotesMap, setReviewNotesMap] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Owner-Lock state
+  const [ownerLockOpen, setOwnerLockOpen] = useState(false);
+  const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);
 
   const pendingOnly = pendingChanges.filter(c => c.status === 'pending');
 
@@ -77,7 +83,18 @@ export function PendingApprovalModal({
   const setReviewNotes = (id: string, value: string) =>
     setReviewNotesMap(prev => ({ ...prev, [id]: value }));
 
-  const handleApprove = async (changeId: string) => {
+  // Step 1: User clicks Approve → open Owner-Lock modal
+  const requestApprove = (changeId: string) => {
+    setPendingApproveId(changeId);
+    setOwnerLockOpen(true);
+  };
+
+  // Step 2: Password verified → execute the actual approve
+  const executeApprove = async () => {
+    if (!pendingApproveId) return;
+    const changeId = pendingApproveId;
+    setPendingApproveId(null);
+    
     setActionLoading(changeId);
     const success = await onApprove(changeId, getReviewNotes(changeId));
     if (success) {
@@ -108,175 +125,189 @@ export function PendingApprovalModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <span>{t('pendingApproval.title', 'Pending Approvals')}</span>
-              {pendingOnly.length > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700">
-                  {pendingOnly.length} {t('pendingApproval.pending', 'pending')}
-                </Badge>
-              )}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <span>{t('pendingApproval.title', 'Pending Approvals')}</span>
+                {pendingOnly.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700">
+                    {pendingOnly.length} {t('pendingApproval.pending', 'pending')}
+                  </Badge>
+                )}
+              </div>
+            </DialogTitle>
+          </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
-          {pendingOnly.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>{t('pendingApproval.noModifications', 'No pending modifications')}</p>
-              <p className="text-sm">{t('pendingApproval.allReviewed', 'All team changes have been reviewed')}</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <AnimatePresence>
-                {pendingOnly.map((change, index) => {
-                  const Icon = ITEM_TYPE_ICONS[change.item_type] || Wrench;
-                  const colorClass = ITEM_TYPE_COLORS[change.item_type] || ITEM_TYPE_COLORS.other;
-                  const isExpanded = selectedChangeId === change.id;
-                  
-                  return (
-                    <motion.div
-                      key={change.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={cn(
-                        "border rounded-lg overflow-hidden transition-all",
-                        isExpanded ? "ring-2 ring-primary/30" : "hover:border-primary/30"
-                      )}
-                    >
-                      {/* Header */}
-                      <div
-                        className="flex items-center gap-3 p-4 cursor-pointer"
-                        onClick={() => setSelectedChangeId(isExpanded ? null : change.id)}
-                      >
-                        <div className={cn("p-2 rounded-lg", colorClass)}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{change.item_name}</div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Clock className="h-3 w-3" />
-                            {format(new Date(change.requested_at), 'MMM d, h:mm a')}
-                          </div>
-                        </div>
-                        
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                          {t('pendingApproval.pendingBadge', 'Pending')}
-                        </Badge>
-                      </div>
-                      
-                      {/* Expanded Details */}
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="border-t bg-muted/30"
-                          >
-                            <div className="p-4 space-y-4">
-                              {/* Change Details */}
-                              <div className="grid grid-cols-3 gap-4 text-sm">
-                                <div className="space-y-1">
-                                  <div className="text-muted-foreground">{t('pendingApproval.original', 'Original')}</div>
-                                  <div className="font-mono">
-                                    {formatNumber(change.original_quantity)} × {formatCurrency(change.original_unit_price)}
-                                  </div>
-                                  <div className="font-semibold">{formatCurrency(change.original_total)}</div>
-                                </div>
-                                
-                                <div className="flex items-center justify-center">
-                                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                                
-                                <div className="space-y-1">
-                                  <div className="text-muted-foreground">{t('pendingApproval.proposed', 'Proposed')}</div>
-                                  <div className="font-mono text-primary">
-                                    {formatNumber(change.new_quantity)} × {formatCurrency(change.new_unit_price)}
-                                  </div>
-                                  <div className="font-semibold text-primary">{formatCurrency(change.new_total)}</div>
-                                </div>
-                              </div>
-                              
-                              {/* Change Reason */}
-                              {change.change_reason && (
-                                <div className="text-sm">
-                                  <div className="text-muted-foreground mb-1">{t('pendingApproval.reason', 'Reason:')}</div>
-                                  <div className="bg-background p-2 rounded border italic">
-                                    "{change.change_reason}"
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Review Notes Input */}
-                              <div>
-                                <Textarea
-                                  placeholder={t('pendingApproval.reviewNotes', 'Add review notes (optional)...')}
-                                  value={getReviewNotes(change.id)}
-                                  onChange={(e) => setReviewNotes(change.id, e.target.value)}
-                                  className="min-h-[60px] text-sm"
-                                />
-                              </div>
-                              
-                              {/* Action Buttons */}
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => handleApprove(change.id)}
-                                  disabled={actionLoading === change.id}
-                                  className="flex-1 bg-green-600 hover:bg-green-700"
-                                >
-                                  {actionLoading === change.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                  )}
-                                   {t('pendingApproval.approve', 'Approve')}
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleReject(change.id)}
-                                  disabled={actionLoading === change.id}
-                                  className="flex-1"
-                                >
-                                  {actionLoading === change.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <XCircle className="h-4 w-4 mr-1" />
-                                  )}
-                                   {t('pendingApproval.reject', 'Reject')}
-                                </Button>
-                              </div>
-                            </div>
-                          </motion.div>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            {pendingOnly.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>{t('pendingApproval.noModifications', 'No pending modifications')}</p>
+                <p className="text-sm">{t('pendingApproval.allReviewed', 'All team changes have been reviewed')}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <AnimatePresence>
+                  {pendingOnly.map((change, index) => {
+                    const Icon = ITEM_TYPE_ICONS[change.item_type] || Wrench;
+                    const colorClass = ITEM_TYPE_COLORS[change.item_type] || ITEM_TYPE_COLORS.other;
+                    const isExpanded = selectedChangeId === change.id;
+                    
+                    return (
+                      <motion.div
+                        key={change.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={cn(
+                          "border rounded-lg overflow-hidden transition-all",
+                          isExpanded ? "ring-2 ring-primary/30" : "hover:border-primary/30"
                         )}
-                      </AnimatePresence>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-          )}
-        </ScrollArea>
+                      >
+                        {/* Header */}
+                        <div
+                          className="flex items-center gap-3 p-4 cursor-pointer"
+                          onClick={() => setSelectedChangeId(isExpanded ? null : change.id)}
+                        >
+                          <div className={cn("p-2 rounded-lg", colorClass)}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{change.item_name}</div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(change.requested_at), 'MMM d, h:mm a')}
+                            </div>
+                          </div>
+                          
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            {t('pendingApproval.pendingBadge', 'Pending')}
+                          </Badge>
+                        </div>
+                        
+                        {/* Expanded Details */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="border-t bg-muted/30"
+                            >
+                              <div className="p-4 space-y-4">
+                                {/* Change Details */}
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                  <div className="space-y-1">
+                                    <div className="text-muted-foreground">{t('pendingApproval.original', 'Original')}</div>
+                                    <div className="font-mono">
+                                      {formatNumber(change.original_quantity)} × {formatCurrency(change.original_unit_price)}
+                                    </div>
+                                    <div className="font-semibold">{formatCurrency(change.original_total)}</div>
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-center">
+                                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <div className="text-muted-foreground">{t('pendingApproval.proposed', 'Proposed')}</div>
+                                    <div className="font-mono text-primary">
+                                      {formatNumber(change.new_quantity)} × {formatCurrency(change.new_unit_price)}
+                                    </div>
+                                    <div className="font-semibold text-primary">{formatCurrency(change.new_total)}</div>
+                                  </div>
+                                </div>
+                                
+                                {/* Change Reason */}
+                                {change.change_reason && (
+                                  <div className="text-sm">
+                                    <div className="text-muted-foreground mb-1">{t('pendingApproval.reason', 'Reason:')}</div>
+                                    <div className="bg-background p-2 rounded border italic">
+                                      "{change.change_reason}"
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Review Notes Input */}
+                                <div>
+                                  <Textarea
+                                    placeholder={t('pendingApproval.reviewNotes', 'Add review notes (optional)...')}
+                                    value={getReviewNotes(change.id)}
+                                    onChange={(e) => setReviewNotes(change.id, e.target.value)}
+                                    className="min-h-[60px] text-sm"
+                                  />
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => requestApprove(change.id)}
+                                    disabled={actionLoading === change.id}
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                  >
+                                    {actionLoading === change.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                                    )}
+                                     {t('pendingApproval.approve', 'Approve')}
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleReject(change.id)}
+                                    disabled={actionLoading === change.id}
+                                    className="flex-1"
+                                  >
+                                    {actionLoading === change.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                    )}
+                                     {t('pendingApproval.reject', 'Reject')}
+                                  </Button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
+          </ScrollArea>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('pendingApproval.close', 'Close')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t('pendingApproval.close', 'Close')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Owner-Lock Modal for Approve action */}
+      <OwnerLockModal
+        open={ownerLockOpen}
+        onOpenChange={(v) => {
+          setOwnerLockOpen(v);
+          if (!v) setPendingApproveId(null);
+        }}
+        onAuthorized={executeApprove}
+        title="Owner Authorization Required"
+        description="You are approving a budget modification that will overwrite Operational Truth data. This change will be reflected on invoices, financial reports, and the project DNA. Owner password is required."
+      />
+    </>
   );
 }
