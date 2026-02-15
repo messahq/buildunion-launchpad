@@ -217,7 +217,7 @@ const BuildUnionAbout = () => {
                   {
                     icon: Database,
                     title: "Hybrid Data Architecture",
-                    desc: "A dual-database system that mirrors data between Lovable Cloud and an external Supabase Pro instance in real-time, ensuring zero data loss and full UUID consistency across both systems.",
+                    desc: "Your project data lives in two independent, geographically separated databases that mirror each other in real-time. If one goes down, the other keeps running — zero data loss, zero downtime. Every record maintains full UUID consistency across both systems.",
                     color: "purple"
                   },
                   {
