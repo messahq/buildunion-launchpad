@@ -302,6 +302,11 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
                   </div>
                 ))}
               </div>
+              <div className="pt-1.5 mt-1 border-t border-sky-400/15">
+                <p className="text-[10px] italic" style={{ color: 'rgba(253,224,71,0.7)' }}>
+                  💡 Click full-screen to see the full view, or click the panel card to see all features.
+                </p>
+              </div>
             </div>
           </motion.div>
         )}
