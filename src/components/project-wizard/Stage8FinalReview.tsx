@@ -4398,6 +4398,8 @@ export default function Stage8FinalReview({
 
       // Auto-save to project documents (overwrite previous DNA report)
       let savedToDocuments = false;
+      const reportTimestamp = new Date().toISOString();
+      const reportDateLabel = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       if (projectId) {
         try {
           const storagePath = `${projectId}/dna-report-latest.pdf`;
@@ -4410,16 +4412,19 @@ export default function Stage8FinalReview({
           if (uploadErr) {
             console.warn('[DNA Report] Storage upload error:', uploadErr);
           } else {
-            // Check if a DNA report doc record already exists
+            // Archive existing DNA report records (rename, don't delete)
             const { data: existingDocs } = await supabase
               .from('project_documents')
-              .select('id')
+              .select('id, file_name, uploaded_at')
               .eq('project_id', projectId)
               .eq('file_name', 'DNA Audit Report.pdf')
               .limit(1);
 
             if (existingDocs && existingDocs.length > 0) {
-              await supabase.from('project_documents').delete().eq('id', existingDocs[0].id);
+              const archiveDate = new Date(existingDocs[0].uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+              await supabase.from('project_documents')
+                .update({ file_name: `DNA Report — ${archiveDate} (archived)` })
+                .eq('id', existingDocs[0].id);
             }
             
             const { error: insertErr } = await supabase.from('project_documents').insert({
@@ -4427,14 +4432,22 @@ export default function Stage8FinalReview({
               file_name: 'DNA Audit Report.pdf',
               file_path: storagePath,
               file_size: blob.size,
+              mime_type: 'application/pdf',
+              uploaded_by: userId,
+              uploaded_by_name: profile?.company_name || 'Owner',
+              uploaded_by_role: 'owner',
             });
             
             if (!insertErr) {
               savedToDocuments = true;
-              // Also update local documents state
               setDocuments(prev => {
-                const filtered = prev.filter(d => d.file_name !== 'DNA Audit Report.pdf');
-                return [...filtered, {
+                // Mark old DNA reports as archived in local state
+                const updated = prev.map(d => 
+                  d.file_name === 'DNA Audit Report.pdf' 
+                    ? { ...d, file_name: `DNA Report — archived` }
+                    : d
+                );
+                return [...updated, {
                   id: crypto.randomUUID(),
                   file_name: 'DNA Audit Report.pdf',
                   file_path: storagePath,
@@ -4448,25 +4461,35 @@ export default function Stage8FinalReview({
         }
       }
 
-      // Create DNA_FINALIZED citation
+      // Count how many previous DNA reports exist (for version tracking)
+      let versionNumber = 1;
+      const prevDnaCits = citations.filter(c => c.cite_type === 'DNA_FINALIZED');
+      versionNumber = prevDnaCits.length + 1;
+
+      // Create DNA_FINALIZED citation — keep previous ones as history
       const dnaCitation: Citation = {
         id: `cite-dna-finalized-${Date.now()}`,
         cite_type: 'DNA_FINALIZED',
         question_key: 'dna_report',
-        answer: `DNA Audit Report generated on ${new Date().toLocaleDateString('en-US')}`,
-        value: `DNA Report generated on ${new Date().toLocaleDateString('en-US')}`,
-        timestamp: new Date().toISOString(),
+        answer: `DNA Audit Report v${versionNumber} — ${reportDateLabel}`,
+        value: `DNA Report v${versionNumber} generated on ${reportDateLabel}`,
+        timestamp: reportTimestamp,
         metadata: {
           filename,
           savedToDocuments,
-          generatedAt: new Date().toISOString(),
+          generatedAt: reportTimestamp,
+          version: versionNumber,
+          previousVersions: prevDnaCits.map(c => ({
+            id: c.id,
+            timestamp: c.timestamp,
+            version: c.metadata?.version || 1,
+          })),
         },
       };
       
       setCitations(prev => {
-        // Replace existing DNA_FINALIZED citation if any
-        const filtered = prev.filter(c => c.cite_type !== 'DNA_FINALIZED');
-        const updated = [...filtered, dnaCitation];
+        // Keep ALL previous DNA_FINALIZED citations as history
+        const updated = [...prev, dnaCitation];
         // Persist
         supabase.from('project_summaries')
           .update({ verified_facts: updated as any })
