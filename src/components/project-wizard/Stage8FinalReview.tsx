@@ -13123,6 +13123,7 @@ export default function Stage8FinalReview({
                         contractorPhone: '',
                         contractorEmail: clientEmail || '',
                         contractorAddress: '',
+                        contractorHstNumber: selectedContractMember?.hst_number || '',
                         // Client = Project Owner
                         clientName: ownerProfile?.full_name || ownerProfile?.company_name || clientName || undefined,
                         clientEmail: ownerProfile?.email || undefined,

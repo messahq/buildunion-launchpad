@@ -352,6 +352,7 @@ export interface ContractTemplateData {
   contractorPhone?: string;
   contractorEmail?: string;
   contractorLicense?: string;
+  contractorHstNumber?: string;
   contractorLogo?: string;
   clientName?: string;
   clientAddress?: string;
@@ -759,6 +760,7 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
             <div class="party-field"><strong>Phone</strong>${escapeHtml(data.contractorPhone || '________________________________')}</div>
             <div class="party-field"><strong>Email</strong>${escapeHtml(data.contractorEmail || '________________________________')}</div>
             ${data.contractorLicense ? `<div class="party-field"><strong>License No.</strong>${escapeHtml(data.contractorLicense)}</div>` : ''}
+            ${data.contractorHstNumber ? `<div class="party-field"><strong>HST Reg. No.</strong>${escapeHtml(data.contractorHstNumber)}</div>` : ''}
           </div>
           <div class="party-box">
             <h4>Client (Owner)</h4>
@@ -943,6 +945,7 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
           <div class="sig-line"></div>
           <div class="sig-label">Authorized Signature &mdash; Contractor</div>
           <div class="sig-name">${escapeHtml(data.contractorName || '________________________________')}</div>
+          ${data.contractorHstNumber ? `<div style="font-size:10px;color:#666;margin-top:4px;font-family:system-ui,sans-serif;">HST Reg. No.: ${escapeHtml(data.contractorHstNumber)}</div>` : ''}
           <div class="sig-date">
             <div class="sig-line" style="margin-top: 20px;"></div>
             <div class="sig-label">Date</div>
