@@ -41,10 +41,38 @@ const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usab
     const bottomInContainer = topInContainer + rect.height;
     const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
 
-    // If the section spans two pages and it's small enough to fit on one page (use 70% threshold)
-    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.70) {
+    // If the section spans two pages and it's small enough to fit on one page (use 80% threshold)
+    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.80) {
       const nextPageTop = (pageStart + 1) * usablePageHeightPx;
-      const spacerHeight = nextPageTop - topInContainer + 10;
+      const spacerHeight = nextPageTop - topInContainer + 8;
+      el.style.marginTop = `${spacerHeight}px`;
+      cumulativeOffset += spacerHeight;
+    }
+    
+    // If section is too tall even for one page, shrink its font to fit
+    if (rect.height > usablePageHeightPx * 0.95) {
+      const scale = (usablePageHeightPx * 0.90) / rect.height;
+      if (scale < 1 && scale > 0.6) {
+        const currentFontSize = parseFloat(window.getComputedStyle(el).fontSize) || 13;
+        el.style.fontSize = `${Math.max(8, currentFontSize * scale)}px`;
+      }
+    }
+  });
+
+  // Second pass: handle rows inside tables that might split at page boundaries
+  const rows = container.querySelectorAll('tr');
+  rows.forEach((row) => {
+    const el = row as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const topInContainer = rect.top - containerRect.top + cumulativeOffset;
+    const pageStart = Math.floor(topInContainer / usablePageHeightPx);
+    const bottomInContainer = topInContainer + rect.height;
+    const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
+
+    if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.15) {
+      const nextPageTop = (pageStart + 1) * usablePageHeightPx;
+      const spacerHeight = nextPageTop - topInContainer + 4;
       el.style.marginTop = `${spacerHeight}px`;
       cumulativeOffset += spacerHeight;
     }
