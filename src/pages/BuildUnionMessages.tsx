@@ -257,6 +257,10 @@ export default function BuildUnionMessages() {
   const [isTeamPickerOpen, setIsTeamPickerOpen] = useState(false);
   const [teamSearchQuery, setTeamSearchQuery] = useState("");
   
+  // Directory members (public profiles from member directory)
+  const [directoryMembers, setDirectoryMembers] = useState<TeamMemberInfo[]>([]);
+  const [isLoadingDirectory, setIsLoadingDirectory] = useState(false);
+  
   // Attachment state
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
@@ -547,7 +551,40 @@ export default function BuildUnionMessages() {
     
     checkTeamAccess();
   }, [user]);
-  // Handle template selection
+  // Fetch directory members (public profiles) when picker opens
+  useEffect(() => {
+    const fetchDirectoryMembers = async () => {
+      if (!isTeamPickerOpen || !user) return;
+      setIsLoadingDirectory(true);
+      try {
+        const { data, error } = await supabase.rpc('get_public_profiles', {
+          result_limit: 50,
+        });
+        if (error) throw error;
+        if (data) {
+          const members: TeamMemberInfo[] = data
+            .filter((p: any) => p.user_id !== user.id)
+            .map((p: any) => ({
+              id: p.user_id,
+              full_name: p.company_name || 'Member',
+              userId: p.user_id,
+              fullName: p.company_name || 'Member',
+              avatarUrl: p.avatar_url || undefined,
+              companyName: p.company_name || undefined,
+              primaryTrade: p.primary_trade || undefined,
+              role: 'directory',
+            }));
+          setDirectoryMembers(members);
+        }
+      } catch (err) {
+        console.error('[Messages] Failed to fetch directory members:', err);
+      } finally {
+        setIsLoadingDirectory(false);
+      }
+    };
+    fetchDirectoryMembers();
+  }, [isTeamPickerOpen, user]);
+
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId);
     const template = emailTemplates.find(t => t.id === templateId);
@@ -741,12 +778,15 @@ export default function BuildUnionMessages() {
   const canAccessMessaging = hasPremiumAccess || isAdmin || isTeamMember;
   const canSendAttachments = hasPremiumAccess || isAdmin;
   
-  // Check if the selected conversation partner is a team member (for non-premium users)
+  // Check if the selected conversation partner is a team member or directory member
   const isConversationWithTeamMember = selectedConversation && teamMembers.some(
     member => member.userId === selectedConversation.partnerId
   );
+  const isConversationWithDirectoryMember = selectedConversation && directoryMembers.some(
+    member => member.userId === selectedConversation.partnerId
+  );
   
-  // Team members can message other team members even without premium
+  // Premium/Admin users can message anyone; team members can message other team members
   const canSendMessages = hasPremiumAccess || isAdmin || (isTeamMember && isConversationWithTeamMember);
 
   useEffect(() => {
@@ -1254,6 +1294,22 @@ export default function BuildUnionMessages() {
       primaryTrade.includes(query)
     );
   });
+
+  // Filter directory members (exclude those already in team members)
+  const filteredDirectoryMembers = directoryMembers
+    .filter(dm => !teamMembers.some(tm => tm.userId === dm.userId))
+    .filter(member => {
+      if (!teamSearchQuery.trim()) return true;
+      const query = teamSearchQuery.toLowerCase();
+      const memberName = (member.fullName || member.full_name || '').toLowerCase();
+      const companyName = (member.companyName || '').toLowerCase();
+      const primaryTrade = (member.primaryTrade || '').toLowerCase();
+      return (
+        memberName.includes(query) ||
+        companyName.includes(query) ||
+        primaryTrade.includes(query)
+      );
+    });
 
   // HTML escape function to prevent XSS
   const escapeHtml = (text: string): string => {
@@ -2081,7 +2137,7 @@ export default function BuildUnionMessages() {
           </DialogContent>
         </Dialog>
 
-        {/* Team Member Picker Dialog */}
+        {/* Team & Directory Member Picker Dialog */}
         <Dialog open={isTeamPickerOpen} onOpenChange={setIsTeamPickerOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -2090,81 +2146,122 @@ export default function BuildUnionMessages() {
                 Start New Conversation
               </DialogTitle>
               <DialogDescription>
-                Select a team member to message
+                Select a team member or community member to message
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search team members..."
+                  placeholder="Search members..."
                   value={teamSearchQuery}
                   onChange={(e) => setTeamSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
               
-              {/* Team Members List */}
-              <ScrollArea className="h-[300px] pr-4">
-                {isLoadingTeamMembers ? (
+              <ScrollArea className="h-[400px] pr-4">
+                {(isLoadingTeamMembers || isLoadingDirectory) ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map(i => (
                       <Skeleton key={i} className="h-16 w-full" />
                     ))}
                   </div>
-                ) : filteredTeamMembers.length === 0 ? (
+                ) : (filteredTeamMembers.length === 0 && filteredDirectoryMembers.length === 0) ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Users className="h-10 w-10 text-muted-foreground/30 mb-3" />
                     <p className="text-muted-foreground">
-                      {teamSearchQuery ? "No team members found" : "No team members yet"}
+                      {teamSearchQuery ? "No members found" : "No members available"}
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {filteredTeamMembers.map(member => {
-                      const initials = member.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-                      const hasExistingConversation = conversations.some(c => c.partnerId === member.userId);
-                      
-                      return (
-                        <button
-                          key={member.userId}
-                          onClick={() => startConversationWithTeamMember(member)}
-                          className="w-full p-3 text-left rounded-lg border hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={member.avatarUrl || undefined} />
-                              <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-sm">
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium truncate">{member.fullName}</p>
-                                {hasExistingConversation && (
-                                  <Badge variant="outline" className="text-xs shrink-0">
-                                    Active
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {member.companyName || (member.primaryTrade ? tradeLabels[member.primaryTrade] || member.primaryTrade : "")}
-                              </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Badge variant="secondary" className="text-xs">
-                                  {member.role === "owner" ? "Project Owner" : member.role}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground truncate">
-                                  • {member.projectName}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-4">
+                    {/* Team Members Section */}
+                    {filteredTeamMembers.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                          Team Members
+                        </p>
+                        <div className="space-y-2">
+                          {filteredTeamMembers.map(member => {
+                            const initials = (member.fullName || 'U').split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+                            const hasExistingConversation = conversations.some(c => c.partnerId === member.userId);
+                            return (
+                              <button
+                                key={`team-${member.userId}`}
+                                onClick={() => startConversationWithTeamMember(member)}
+                                className="w-full p-3 text-left rounded-lg border hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage src={member.avatarUrl || undefined} />
+                                    <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 text-sm">
+                                      {initials}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium truncate">{member.fullName}</p>
+                                      {hasExistingConversation && <Badge variant="outline" className="text-xs shrink-0">Active</Badge>}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground truncate">
+                                      {member.companyName || (member.primaryTrade ? tradeLabels[member.primaryTrade] || member.primaryTrade : "")}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <Badge variant="secondary" className="text-xs">
+                                        {member.role === "owner" ? "Project Owner" : member.role}
+                                      </Badge>
+                                      {member.projectName && <span className="text-xs text-muted-foreground truncate">• {member.projectName}</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Directory Members Section */}
+                    {filteredDirectoryMembers.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                          Community Directory
+                        </p>
+                        <div className="space-y-2">
+                          {filteredDirectoryMembers.map(member => {
+                            const initials = (member.fullName || 'U').split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+                            const hasExistingConversation = conversations.some(c => c.partnerId === member.userId);
+                            return (
+                              <button
+                                key={`dir-${member.userId}`}
+                                onClick={() => startConversationWithTeamMember(member)}
+                                className="w-full p-3 text-left rounded-lg border hover:border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage src={member.avatarUrl || undefined} />
+                                    <AvatarFallback className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 text-sm">
+                                      {initials}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium truncate">{member.fullName}</p>
+                                      {hasExistingConversation && <Badge variant="outline" className="text-xs shrink-0">Active</Badge>}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground truncate">
+                                      {member.primaryTrade ? tradeLabels[member.primaryTrade] || member.primaryTrade : ""}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </ScrollArea>
@@ -2197,14 +2294,14 @@ export default function BuildUnionMessages() {
                     className="pl-9"
                   />
                 </div>
-                {/* New Conversation Button - Show for team members */}
-                {isTeamMember && teamMembers.length > 0 && (
+                {/* New Conversation Button - Show for premium/admin/team members */}
+                {canAccessMessaging && (
                   <Button
                     size="icon"
                     variant="outline"
                     onClick={() => setIsTeamPickerOpen(true)}
                     className="h-9 w-9 shrink-0 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50"
-                    title="New conversation with team member"
+                    title="New conversation"
                   >
                     <Plus className="h-4 w-4 text-emerald-600" />
                   </Button>
@@ -2223,10 +2320,10 @@ export default function BuildUnionMessages() {
                 <div className="flex flex-col items-center justify-center p-8 text-center">
                   <MessageSquare className="h-12 w-12 text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground">No conversations yet</p>
-                  {isTeamMember && teamMembers.length > 0 ? (
+                  {canAccessMessaging ? (
                     <>
                       <p className="text-sm text-muted-foreground">
-                        Message your team members
+                        Message your team or community members
                       </p>
                       <Button
                         variant="default"
@@ -2235,7 +2332,7 @@ export default function BuildUnionMessages() {
                         onClick={() => setIsTeamPickerOpen(true)}
                       >
                         <Users className="h-4 w-4 mr-2" />
-                        Choose Team Member
+                        Start Conversation
                       </Button>
                     </>
                   ) : (
