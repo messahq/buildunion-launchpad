@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { WeatherWidget } from "./WeatherWidget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Users, Clock, RefreshCw, LogIn, LogOut, Loader2, Thermometer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 
 interface CheckinEntry {
@@ -29,7 +30,136 @@ interface TeamMemberStatus {
   is_on_site: boolean;
   last_checkin_at: string | null;
 }
+// Helper: group checkins by day, render collapsible accordion
+function PresenceHistoryGrouped({
+  checkins,
+  getSessionDuration,
+}: {
+  checkins: CheckinEntry[];
+  getSessionDuration: (start: string, end: string | null) => string;
+}) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, CheckinEntry[]>();
+    checkins.forEach((entry) => {
+      const dateKey = format(new Date(entry.checked_in_at), "yyyy-MM-dd");
+      if (!map.has(dateKey)) map.set(dateKey, []);
+      map.get(dateKey)!.push(entry);
+    });
+    return Array.from(map.entries()); // already sorted desc from query
+  }, [checkins]);
 
+  const getDayLabel = (dateKey: string) => {
+    const d = new Date(dateKey + "T12:00:00");
+    if (isToday(d)) return "Today";
+    if (isYesterday(d)) return "Yesterday";
+    return format(d, "EEEE, MMM d");
+  };
+
+  if (checkins.length === 0) {
+    return (
+      <div className="p-3 rounded-lg border bg-muted/30">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Presence History
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground py-4 text-center">
+          No check-ins yet. Use the button above to log your site presence.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 rounded-lg border bg-muted/30">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Presence History
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground">
+          {checkins.length} records
+        </span>
+      </div>
+      <Accordion type="multiple" defaultValue={grouped.length > 0 ? [grouped[0][0]] : []} className="max-h-[350px] overflow-y-auto">
+        {grouped.map(([dateKey, entries]) => (
+          <AccordionItem key={dateKey} value={dateKey} className="border-b-0">
+            <AccordionTrigger className="py-2 px-2 rounded hover:no-underline hover:bg-muted/50 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{getDayLabel(dateKey)}</span>
+                <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                  {entries.length}
+                </Badge>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-1 pt-0 px-1">
+              <div className="space-y-1">
+                {entries.map((entry) => {
+                  const isActive = !entry.checked_out_at;
+                  const weather = entry.weather_snapshot as any;
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`flex items-center justify-between py-2 px-2.5 rounded ${
+                        isActive
+                          ? "bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800"
+                          : "bg-background/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${
+                          isActive ? "bg-emerald-500" : "bg-muted-foreground/30"
+                        }`} />
+                        <div className="min-w-0">
+                          <div className="text-xs font-medium truncate flex items-center gap-1">
+                            {entry.user_name}
+                            <span className="text-[9px] text-muted-foreground capitalize">
+                              ({entry.user_role})
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                            <LogIn className="h-2.5 w-2.5" />
+                            {format(new Date(entry.checked_in_at), "HH:mm")}
+                            {entry.checked_out_at && (
+                              <>
+                                <span>→</span>
+                                <LogOut className="h-2.5 w-2.5" />
+                                {format(new Date(entry.checked_out_at), "HH:mm")}
+                              </>
+                            )}
+                            {!entry.checked_out_at && (
+                              <Badge variant="outline" className="text-[8px] px-1 py-0 border-emerald-400 text-emerald-600">
+                                ACTIVE
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {getSessionDuration(entry.checked_in_at, entry.checked_out_at)}
+                        </span>
+                        {weather?.temp != null && (
+                          <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                            <Thermometer className="h-2.5 w-2.5" />
+                            {Math.round(weather.temp)}° {weather.description || ""}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  );
+}
 interface WeatherMapModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -332,83 +462,8 @@ export function WeatherMapModal({
               </div>
             )}
 
-            {/* Check-In / Check-Out History */}
-            <div className="p-3 rounded-lg border bg-muted/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Presence History
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {checkins.length} records
-                </span>
-              </div>
-              {checkins.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">
-                  No check-ins yet. Use the button above to log your site presence.
-                </p>
-              ) : (
-                <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
-                  {checkins.map((entry) => {
-                    const isActive = !entry.checked_out_at;
-                    const weather = entry.weather_snapshot as any;
-                    return (
-                      <div
-                        key={entry.id}
-                        className={`flex items-center justify-between py-2 px-2.5 rounded ${
-                          isActive
-                            ? "bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800"
-                            : "bg-background/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${
-                            isActive ? "bg-emerald-500" : "bg-muted-foreground/30"
-                          }`} />
-                          <div className="min-w-0">
-                            <div className="text-xs font-medium truncate flex items-center gap-1">
-                              {entry.user_name}
-                              <span className="text-[9px] text-muted-foreground capitalize">
-                                ({entry.user_role})
-                              </span>
-                            </div>
-                            <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                              <LogIn className="h-2.5 w-2.5" />
-                              {format(new Date(entry.checked_in_at), "MMM d, HH:mm")}
-                              {entry.checked_out_at && (
-                                <>
-                                  <span>→</span>
-                                  <LogOut className="h-2.5 w-2.5" />
-                                  {format(new Date(entry.checked_out_at), "HH:mm")}
-                                </>
-                              )}
-                              {!entry.checked_out_at && (
-                                <Badge variant="outline" className="text-[8px] px-1 py-0 border-emerald-400 text-emerald-600">
-                                  ACTIVE
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                          <span className="text-[10px] font-medium text-muted-foreground">
-                            {getSessionDuration(entry.checked_in_at, entry.checked_out_at)}
-                          </span>
-                          {weather?.temp != null && (
-                            <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                              <Thermometer className="h-2.5 w-2.5" />
-                              {Math.round(weather.temp)}° {weather.description || ""}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {/* Check-In / Check-Out History — collapsible, grouped by day */}
+            <PresenceHistoryGrouped checkins={checkins} getSessionDuration={getSessionDuration} />
           </TabsContent>
 
           {/* Weather Tab */}
